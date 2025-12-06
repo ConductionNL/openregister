@@ -65,70 +65,117 @@ class SchemaFacetCacheService
 
     /**
      * Cache table name for facet data
+     *
+     * Database table used for persistent facet caching.
+     *
+     * @var string Facet cache table name
      */
     private const FACET_CACHE_TABLE = 'openregister_schema_facet_cache';
 
     /**
-     * Default cache TTL in seconds (30 minutes for facets)
+     * Default cache TTL in seconds
+     *
+     * Default time-to-live for cached facet data (30 minutes).
+     * Facets are cached for shorter periods than schemas due to data volatility.
+     *
+     * @var int Default facet cache TTL in seconds (1800 = 30 minutes)
      */
     private const DEFAULT_FACET_TTL = 1800;
 
     /**
-     * Maximum cache TTL for office environments (8 hours in seconds)
+     * Maximum cache TTL for office environments
      *
+     * Maximum time-to-live for cached facet data (8 hours in seconds).
      * This prevents indefinite cache buildup while maintaining performance
      * during business hours.
+     *
+     * @var int Maximum cache TTL in seconds (28800 = 8 hours)
      */
     private const MAX_CACHE_TTL = 28800;
 
     /**
-     * Supported facet types
+     * Facet type constant for terms facets
+     *
+     * Used for categorical/string field faceting.
+     *
+     * @var string Facet type identifier
      */
-    private const FACET_TYPE_TERMS          = 'terms';
+    private const FACET_TYPE_TERMS = 'terms';
+
+    /**
+     * Facet type constant for date histogram facets
+     *
+     * Used for date/time field faceting with time buckets.
+     *
+     * @var string Facet type identifier
+     */
     private const FACET_TYPE_DATE_HISTOGRAM = 'date_histogram';
-    private const FACET_TYPE_RANGE          = 'range';
+
+    /**
+     * Facet type constant for range facets
+     *
+     * Used for numeric range faceting.
+     *
+     * @var string Facet type identifier
+     */
+    private const FACET_TYPE_RANGE = 'range';
 
     /**
      * In-memory cache for facet configurations
      *
-     * @var array<string, mixed>
+     * Static array cache for ultra-fast access to facet configurations.
+     * Shared across all instances of this service.
+     *
+     * @var array<string, mixed> In-memory facet configuration cache
      */
     private static array $facetConfigCache = [];
 
     /**
      * Database connection
      *
-     * @var IDBConnection
+     * Used for persistent facet cache storage and retrieval.
+     *
+     * @var IDBConnection Database connection instance
      */
-    private IDBConnection $db;
+    private readonly IDBConnection $db;
 
     /**
      * Schema mapper for database operations
      *
-     * @var SchemaMapper
+     * Used to load schemas when computing facet configurations.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private SchemaMapper $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
     /**
      * Logger for performance monitoring
      *
-     * @var LoggerInterface
+     * Used for logging cache operations and performance metrics.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor
      *
-     * @param IDBConnection   $db           Database connection
-     * @param SchemaMapper    $schemaMapper Schema mapper for database operations
-     * @param LoggerInterface $logger       Logger for performance monitoring
+     * Initializes service with database connection, schema mapper, and logger
+     * for facet caching operations.
+     *
+     * @param IDBConnection   $db           Database connection for persistent facet cache
+     * @param SchemaMapper    $schemaMapper Schema mapper for loading schemas
+     * @param LoggerInterface $logger       Logger for performance monitoring and debugging
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
         SchemaMapper $schemaMapper,
         LoggerInterface $logger
     ) {
+        // Store dependencies for use in service methods.
         $this->db           = $db;
         $this->schemaMapper = $schemaMapper;
         $this->logger       = $logger;
@@ -149,7 +196,7 @@ class SchemaFacetCacheService
      */
     public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
     {
-        $this->setCachedFacetData($schemaId, 'facetable_fields', 'config', 'facetable_fields', [], $facetableFields, $ttl);
+        $this->setCachedFacetData(schemaId: $schemaId, cacheKey: 'facetable_fields', facetType: 'config', fieldName: 'facetable_fields', facetConfig: [], data: $facetableFields, ttl: $ttl);
 
         // Store in memory cache.
         $cacheKey = "facetable_fields_{$schemaId}";
@@ -389,7 +436,7 @@ class SchemaFacetCacheService
         if (is_array($properties) === true) {
             foreach ($properties as $propertyName => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
-                    $fieldConfig = $this->generateFieldConfigFromProperty($propertyName, $property);
+                    $fieldConfig = $this->generateFieldConfigFromProperty(propertyKey: $propertyName, property: $property);
                     $facetableFields['object_fields'][$propertyName] = $fieldConfig;
                 }
             }
@@ -564,7 +611,7 @@ class SchemaFacetCacheService
 
         $config = [
             'type'        => $type,
-            'facet_types' => $this->determineFacetTypesFromProperty($type, $format),
+            'facet_types' => $this->determineFacetTypesFromProperty(type: $type, _format: $format),
             'description' => $property['description'] ?? "Facet for {$propertyKey}",
         ];
 
@@ -668,7 +715,7 @@ class SchemaFacetCacheService
             $expires = new \DateTime($result['expires']);
             if ($expires <= new \DateTime()) {
                 // Cache expired, remove it.
-                $this->removeCachedFacetData($schemaId, $cacheKey);
+                $this->removeCachedFacetData(schemaId: $schemaId, cacheKey: $cacheKey);
                 return null;
             }
         }
@@ -729,8 +776,7 @@ class SchemaFacetCacheService
         if ($updated === 0) {
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::FACET_CACHE_TABLE)
-                ->values(
-                       [
+                ->values(values: [
                            'schema_id'    => $qb->createNamedParameter($schemaId),
                            'facet_type'   => $qb->createNamedParameter($facetType),
                            'field_name'   => $qb->createNamedParameter($cacheKey),

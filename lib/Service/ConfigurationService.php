@@ -85,32 +85,40 @@ class ConfigurationService
     private ConfigurationMapper $configurationMapper;
 
     /**
-     * OpenConnector service instance for handling OpenConnector operations.
+     * OpenConnector service instance for handling OpenConnector operations
      *
-     * @var object|null The OpenConnector service instance (from openconnector app).
+     * Lazily loaded from container when OpenConnector app is installed.
+     *
+     * @var object|null OpenConnector service instance (from openconnector app) or null
      */
-    private $openConnectorConfigurationService;
+    private ?object $openConnectorConfigurationService = null;
 
     /**
-     * App manager for checking installed apps.
+     * App manager for checking installed apps
      *
-     * @var \OCP\App\IAppManager The app manager instance.
+     * Used to check if OpenConnector app is installed.
+     *
+     * @var IAppManager App manager instance
      */
-    private $appManager;
+    private readonly IAppManager $appManager;
 
     /**
-     * Container for getting services.
+     * Container for getting services
      *
-     * @var \Psr\Container\ContainerInterface The container instance.
+     * Used to lazily load OpenConnector service when needed.
+     *
+     * @var ContainerInterface Container instance
      */
-    private $container;
+    private readonly ContainerInterface $container;
 
     /**
-     * App config for storing configuration metadata.
+     * App config for storing configuration metadata
      *
-     * @var \OCP\IAppConfig The app config instance.
+     * Used for reading and writing configuration metadata.
+     *
+     * @var IAppConfig App config instance
      */
-    private $appConfig;
+    private readonly IAppConfig $appConfig;
 
     /**
      * Logger instance for logging operations.
@@ -154,6 +162,51 @@ class ConfigurationService
      */
     private string $appDataPath;
 
+    /**
+     * Constructor
+     *
+     * Initializes service with required dependencies for configuration operations.
+     *
+     * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations
+     * @param RegisterMapper      $registerMapper      Register mapper for register operations
+     * @param ObjectEntityMapper  $objectEntityMapper  Object entity mapper for object operations
+     * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
+     * @param IAppManager         $appManager          App manager for checking installed apps
+     * @param ContainerInterface  $container           Container for lazy service loading
+     * @param IAppConfig          $appConfig           App config for configuration metadata
+     * @param LoggerInterface     $logger              Logger for error tracking
+     * @param Client              $client              HTTP client for external requests
+     * @param ObjectService       $objectService       Object service for object operations
+     * @param string              $appDataPath         Application data path
+     *
+     * @return void
+     */
+    public function __construct(
+        SchemaMapper $schemaMapper,
+        RegisterMapper $registerMapper,
+        ObjectEntityMapper $objectEntityMapper,
+        ConfigurationMapper $configurationMapper,
+        IAppManager $appManager,
+        ContainerInterface $container,
+        IAppConfig $appConfig,
+        LoggerInterface $logger,
+        Client $client,
+        ObjectService $objectService,
+        string $appDataPath
+    ) {
+        // Store dependencies for use in service methods.
+        $this->schemaMapper        = $schemaMapper;
+        $this->registerMapper      = $registerMapper;
+        $this->objectEntityMapper  = $objectEntityMapper;
+        $this->configurationMapper = $configurationMapper;
+        $this->appManager          = $appManager;
+        $this->container           = $container;
+        $this->appConfig           = $appConfig;
+        $this->logger              = $logger;
+        $this->client              = $client;
+        $this->objectService       = $objectService;
+        $this->appDataPath         = $appDataPath;
+    }//end __construct()
 
     /**
      * Attempts to retrieve the OpenConnector service from the container.
@@ -246,7 +299,7 @@ class ConfigurationService
                     'path'   => $input->getGithubPath(),
                 ],
             ];
-        } else if ($input instanceof Register) {
+        } elseif ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
             $registers = [$input];
             // Set the info from the register.
@@ -673,7 +726,7 @@ class ConfigurationService
             foreach ($data as $key => $value) {
                 if (is_object($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
-                } else if (is_array($value) === true) {
+                } elseif (is_array($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
                 }
             }
@@ -1457,7 +1510,7 @@ class ConfigurationService
                     if (($property['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
-                        } else if (($this->schemasMap[$property['$ref']] ?? null) !== null) {
+                        } elseif (($this->schemasMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
                         }
                     }
@@ -1465,7 +1518,7 @@ class ConfigurationService
                     if (($property['items']['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
-                        } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
+                        } elseif (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
@@ -1592,7 +1645,7 @@ class ConfigurationService
                     if (($property['register'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $slugsAndIdsMap[$property['register']];
-                        } else if (($this->registersMap[$property['register']] ?? null) !== null) {
+                        } elseif (($this->registersMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $this->registersMap[$property['register']]->getId();
                         }
                     }
@@ -1600,7 +1653,7 @@ class ConfigurationService
                     if (($property['items']['register'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
-                        } else if (($this->registersMap[$property['items']['register']] ?? null) !== null) {
+                        } elseif (($this->registersMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
@@ -1953,13 +2006,13 @@ class ConfigurationService
                 // Standard OAS properties from info section.
                 if (($info['title'] ?? null) !== null) {
                     $configuration->setTitle($info['title']);
-                } else if (($xOpenregister['title'] ?? null) !== null) {
+                } elseif (($xOpenregister['title'] ?? null) !== null) {
                     $configuration->setTitle($xOpenregister['title']);
                 }
 
                 if (($info['description'] ?? null) !== null) {
                     $configuration->setDescription($info['description']);
-                } else if (($xOpenregister['description'] ?? null) !== null) {
+                } elseif (($xOpenregister['description'] ?? null) !== null) {
                     $configuration->setDescription($xOpenregister['description']);
                 }
 
@@ -2278,7 +2331,7 @@ class ConfigurationService
         if ($comparison > 0) {
             $result['hasUpdate'] = true;
             $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
-        } else if ($comparison === 0) {
+        } elseif ($comparison === 0) {
             $result['message'] = 'Local version is up to date';
         } else {
             $result['message'] = 'Local version is newer than remote version';
@@ -2718,7 +2771,7 @@ class ConfigurationService
                     $nestedChanges = $this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $fieldName);
                     $changes       = array_merge($changes, $nestedChanges);
                 }
-            } else if ($proposedValue !== $currentValue) {
+            } elseif ($proposedValue !== $currentValue) {
                 // Values are different.
                 $changes[] = [
                     'field'    => $fieldName,

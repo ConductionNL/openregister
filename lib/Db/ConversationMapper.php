@@ -31,9 +31,21 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
- * Class ConversationMapper
+ * ConversationMapper handles database operations for Conversation entities
  *
- * @package OCA\OpenRegister\Db
+ * Mapper for Conversation entities to handle database operations.
+ * Extends QBMapper to provide standard CRUD operations with event dispatching.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  *
  * @template-extends QBMapper<Conversation>
  * @method           Conversation insert(Entity $entity)
@@ -51,22 +63,33 @@ class ConversationMapper extends QBMapper
     /**
      * Event dispatcher for dispatching conversation events
      *
-     * @var IEventDispatcher
+     * Used to dispatch ConversationCreatedEvent, ConversationUpdatedEvent,
+     * and ConversationDeletedEvent for event-driven architecture.
+     *
+     * @var IEventDispatcher Event dispatcher instance
      */
-    private IEventDispatcher $eventDispatcher;
+    private readonly IEventDispatcher $eventDispatcher;
 
 
     /**
      * Constructor
      *
+     * Initializes mapper with database connection and event dispatcher.
+     * Calls parent constructor to set up base mapper functionality.
+     *
      * @param IDBConnection    $db              Database connection
-     * @param IEventDispatcher $eventDispatcher Event dispatcher
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for conversation lifecycle events
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher
     ) {
+        // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_conversations', Conversation::class);
+        
+        // Store event dispatcher for use in CRUD operations.
         $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
@@ -75,35 +98,39 @@ class ConversationMapper extends QBMapper
     /**
      * Insert a new conversation entity
      *
-     * Ensures UUID and timestamps are set before insertion.
+     * Inserts conversation entity into database with automatic UUID and timestamp
+     * generation. Dispatches ConversationCreatedEvent after successful insertion.
      *
      * @param Entity $entity The conversation entity to insert
      *
-     * @return Conversation The inserted conversation entity
+     * @return Conversation The inserted conversation entity with database-generated ID
      */
     public function insert(Entity $entity): Conversation
     {
         if ($entity instanceof Conversation) {
-            // Ensure UUID is set.
+            // Step 1: Ensure UUID is set (generate if missing or empty).
             $uuid = $entity->getUuid();
             if (($uuid === null || $uuid === '') || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
 
-            // Set timestamps if not already set.
+            // Step 2: Set created timestamp if not already set.
             if ($entity->getCreated() === null) {
                 $entity->setCreated(new \DateTime());
             }
 
+            // Step 3: Set updated timestamp if not already set.
             if ($entity->getUpdated() === null) {
                 $entity->setUpdated(new \DateTime());
             }
         }
 
+        // Step 4: Insert entity into database using parent method.
         $entity = parent::insert($entity);
 
-        // Dispatch creation event.
+        // Step 5: Dispatch creation event for event-driven architecture.
+        // Listeners can react to conversation creation (e.g., notifications, logging).
         $this->eventDispatcher->dispatchTyped(new ConversationCreatedEvent($entity));
 
         return $entity;
@@ -114,25 +141,31 @@ class ConversationMapper extends QBMapper
     /**
      * Update a conversation entity
      *
-     * Ensures the updated timestamp is set before update.
+     * Updates conversation entity in database with automatic updated timestamp.
+     * Dispatches ConversationUpdatedEvent with both old and new entity states.
      *
      * @param Entity $entity The conversation entity to update
      *
      * @return Conversation The updated conversation entity
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If conversation not found
      */
     public function update(Entity $entity): Conversation
     {
-        // Get old state before update.
+        // Step 1: Get old state before update for event payload.
+        // This allows listeners to compare old and new values.
         $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Conversation) {
-            // Always update the updated timestamp.
+            // Step 2: Always update the updated timestamp to current time.
             $entity->setUpdated(new \DateTime());
         }
 
+        // Step 3: Update entity in database using parent method.
         $entity = parent::update($entity);
 
-        // Dispatch update event.
+        // Step 4: Dispatch update event with old and new entity states.
+        // Listeners can react to conversation updates (e.g., cache invalidation, notifications).
         $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, $oldEntity));
 
         return $entity;

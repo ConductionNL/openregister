@@ -638,16 +638,16 @@ class SaveObjects
         if ($totalObjects <= 100) {
             // Process all at once for small sets.
             return $totalObjects;
-        } else if ($totalObjects <= 1000) {
+        } elseif ($totalObjects <= 1000) {
             // Process all at once for medium sets.
             return $totalObjects;
-        } else if ($totalObjects <= 5000) {
+        } elseif ($totalObjects <= 5000) {
             // Large chunks for large sets.
             return 2000;
-        } else if ($totalObjects <= 10000) {
+        } elseif ($totalObjects <= 10000) {
             // Very large chunks.
             return 3000;
-        } else if ($totalObjects <= 50000) {
+        } elseif ($totalObjects <= 50000) {
             // Ultra-large chunks for massive datasets.
             return 5000;
         } else {
@@ -776,7 +776,7 @@ class SaveObjects
             $isNewObject = empty($selfData['id']) === true || isset($selfData['id']) === false;
             if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
                 // Check if published date was already set from @self data (CSV).
-                $publishedFromCsv = ($selfData['published'] ?? null) !== null && !empty($selfData['published']) === false;
+                $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
                 if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                     $this->logger->debug('Auto-publishing NEW object in bulk creation', [
                         'schema' => $schema->getTitle(),
@@ -785,7 +785,7 @@ class SaveObjects
                         'publishedFromCsv' => false
                     ]);
                     $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv === true) {
+                } elseif ($publishedFromCsv === true) {
                     $this->logger->debug('Skipping auto-publish - published date provided from CSV (mixed schema)', [
                         'schema' => $schema->getTitle(),
                         'publishedFromCsv' => true,
@@ -987,7 +987,7 @@ class SaveObjects
                 $isNewObject = empty($selfData['uuid']) === true || isset($selfData['uuid']) === false;
                 if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
                     // Check if published date was already set from @self data (CSV).
-                    $publishedFromCsv = ($selfData['published'] ?? null) !== null && !empty($selfData['published']) === false;
+                    $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
                     if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                         $this->logger->debug('Auto-publishing NEW object in bulk creation (single schema)', [
                             'schema' => $schemaObj->getTitle(),
@@ -996,7 +996,7 @@ class SaveObjects
                             'publishedFromCsv' => false
                         ]);
                         $tempEntity->setPublished(new DateTime());
-                    } else if ($publishedFromCsv === true) {
+                    } elseif ($publishedFromCsv === true) {
                         $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
                             'schema' => $schemaObj->getTitle(),
                             'publishedFromCsv' => true,
@@ -1450,7 +1450,7 @@ class SaveObjects
         ];
 
         $analysis['metadataFields'] = array_filter($metadataFieldMap, function($field) {
-            return !empty($field);
+            return empty($field) === false;
         });
 
         // PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
@@ -1586,7 +1586,7 @@ class SaveObjects
                         }
                         $_processedCount++;
                     }
-                } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
+                } elseif (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
@@ -2167,7 +2167,7 @@ class SaveObjects
                                     schema: $schema
                                     );
                             $relations     = array_merge($relations, $itemRelations);
-                        } else if (is_string($item) === true && empty($item) === false) {
+                        } elseif (is_string($item) === true && empty($item) === false) {
                             // String values in object arrays are always treated as relations.
                             $relations[$currentPath.'.'.$index] = $item;
                         }
@@ -2183,7 +2183,7 @@ class SaveObjects
                                     schema: $schema
                                     );
                             $relations = array_merge($relations, $itemRelations);
-                        } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
+                        } elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                             // Check if the string looks like a reference.
                             if ($this->isReference($item) === true) {
                                 $relations[$currentPath.'.'.$index] = $item;
@@ -2191,7 +2191,7 @@ class SaveObjects
                         }
                     }
                 }
-            } else if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
+            } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                 $shouldTreatAsRelation = false;
 
                 // Check schema property configuration first.
@@ -2203,7 +2203,7 @@ class SaveObjects
                     // Check for explicit relation types.
                     if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'], true) === true) {
                         $shouldTreatAsRelation = true;
-                    } else if ($propertyType === 'object') {
+                    } elseif ($propertyType === 'object') {
                         // Object properties with string values are always relations.
                         $shouldTreatAsRelation = true;
                     }

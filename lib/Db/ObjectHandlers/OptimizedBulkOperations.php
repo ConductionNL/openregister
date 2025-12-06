@@ -245,7 +245,7 @@ class OptimizedBulkOperations
             // Mostly creates, some might be unchanged.
             $estimatedCreated = $affectedRows;
             $estimatedUpdated = 0;
-        } else if ($affectedRows <= $totalObjects * 2) {
+                } elseif ($affectedRows <= $totalObjects * 2) {
             // Mixed creates and updates.
             // This is an approximation - exact counts would require separate queries.
             $estimatedCreated = max(0, $totalObjects * 2 - $affectedRows);
@@ -372,7 +372,7 @@ class OptimizedBulkOperations
                         if ($dataCol === 'object') {
                             // SPECIAL HANDLING: JSON comparison for object data.
                             $changeChecks[] = "JSON_EXTRACT(`{$dataCol}`, '$') != JSON_EXTRACT(VALUES(`{$dataCol}`), '$')";
-                        } else if (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
+                        } elseif (in_array($dataCol, ['files', 'relations', 'authorization', 'validation', 'geo', 'retention', 'groups']) === true) {
                             // JSON fields comparison.
                             $changeChecks[] = "COALESCE(`{$dataCol}`, '{}') != COALESCE(VALUES(`{$dataCol}`), '{}')";
                         } else {
@@ -437,9 +437,9 @@ class OptimizedBulkOperations
                 // The UUID might be in getObject() data, so extract it to top level.
                 if (method_exists($updateObj, 'getUuid') === true && $updateObj->getUuid() !== null) {
                     $newFormatArray['uuid'] = $updateObj->getUuid();
-                } else if (($newFormatArray['object']['uuid'] ?? null) !== null) {
+                } elseif (($newFormatArray['object']['uuid'] ?? null) !== null) {
                     $newFormatArray['uuid'] = $newFormatArray['object']['uuid'];
-                } else if (($newFormatArray['object']['id'] ?? null) !== null) {
+                } elseif (($newFormatArray['object']['id'] ?? null) !== null) {
                     // Fallback: use id field as uuid if no uuid field exists.
                     $newFormatArray['uuid'] = $newFormatArray['object']['id'];
                 }

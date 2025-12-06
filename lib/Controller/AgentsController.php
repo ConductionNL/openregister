@@ -33,65 +33,89 @@ use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
- * AgentsController
+ * AgentsController handles REST API endpoints for AI agent management
  *
- * REST API controller for managing AI agents.
+ * Provides REST API endpoints for managing AI agents including CRUD operations,
+ * RBAC checks, tool management, and statistics. RBAC filtering is handled in
+ * the mapper layer.
  *
- * @package OCA\OpenRegister\Controller
- */
-/**
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class AgentsController extends Controller
 {
 
     /**
      * Agent mapper for database operations
      *
-     * @var AgentMapper
+     * Handles all database CRUD operations for agent entities with RBAC support.
+     *
+     * @var AgentMapper Agent mapper instance
      */
-    private AgentMapper $agentMapper;
+    private readonly AgentMapper $agentMapper;
 
     /**
      * Organisation service
      *
-     * @var OrganisationService
+     * Used to get active organisation for multi-tenancy filtering.
+     *
+     * @var OrganisationService Organisation service instance
      */
-    private OrganisationService $organisationService;
+    private readonly OrganisationService $organisationService;
 
     /**
      * Tool registry
      *
-     * @var ToolRegistry
+     * Provides access to all registered tools from all apps for agent configuration.
+     *
+     * @var ToolRegistry Tool registry instance
      */
-    private ToolRegistry $toolRegistry;
+    private readonly ToolRegistry $toolRegistry;
 
     /**
      * Logger for debugging and error tracking
      *
-     * @var LoggerInterface
+     * Used for logging errors, debug information, and operation tracking.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     /**
      * User ID
      *
-     * @var string|null
+     * Current user ID for RBAC checks and ownership validation.
+     *
+     * @var string|null User ID or null if not authenticated
      */
-    private ?string $userId;
+    private readonly ?string $userId;
 
 
     /**
-     * AgentsController constructor
+     * Constructor
+     *
+     * Initializes controller with required dependencies for agent operations.
+     * Calls parent constructor to set up base controller functionality.
      *
      * @param string              $appName             Application name
-     * @param IRequest            $request             HTTP request
-     * @param AgentMapper         $agentMapper         Agent mapper
-     * @param OrganisationService $organisationService Organisation service
-     * @param ToolRegistry        $toolRegistry        Tool registry
-     * @param LoggerInterface     $logger              Logger service
-     * @param string|null         $userId              User ID
+     * @param IRequest            $request             HTTP request object
+     * @param AgentMapper         $agentMapper         Agent mapper for database operations
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param ToolRegistry        $toolRegistry        Tool registry for available tools
+     * @param LoggerInterface     $logger              Logger for error tracking
+     * @param string|null         $userId              Current user ID for RBAC checks
+     *
+     * @return void
      */
     public function __construct(
         string $appName,
@@ -102,32 +126,37 @@ class AgentsController extends Controller
         LoggerInterface $logger,
         ?string $userId
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
+
+        // Store dependencies for use in controller methods.
         $this->agentMapper         = $agentMapper;
         $this->organisationService = $organisationService;
         $this->toolRegistry        = $toolRegistry;
-        $this->logger = $logger;
-        $this->userId = $userId;
-
+        $this->logger             = $logger;
+        $this->userId             = $userId;
     }//end __construct()
 
 
     /**
-     * This returns the template of the main app's page
+     * Render the Agents page
+     *
+     * Returns the template for the main agents page.
+     * All routing is handled client-side by the SPA.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return TemplateResponse
+     * @return TemplateResponse Template response for agents SPA
      */
     public function page(): TemplateResponse
     {
+        // Return SPA template response (routing handled client-side).
         return new TemplateResponse(
-                appName: 'openregister',
-                templateName: 'index',
-                params: []
+            appName: 'openregister',
+            templateName: 'index',
+            params: []
         );
-
     }//end page()
 
 
@@ -169,13 +198,14 @@ class AgentsController extends Controller
                 $page = null;
             }
 
-            // Convert page to offset if provided.
+            // Convert page to offset if provided (page-based pagination).
             if ($page !== null) {
                 $offset = ($page - 1) * $limit;
             }
 
-            // Get agents with RBAC filtering (handled in mapper).
+            // Get agents with RBAC filtering (handled in mapper layer).
             if ($organisationUuid !== null) {
+                // Filter by organisation for multi-tenancy.
                 $agents = $this->agentMapper->findByOrganisation(
                     organisationUuid: $organisationUuid,
                     userId: $this->userId,
@@ -183,11 +213,17 @@ class AgentsController extends Controller
                     offset: $offset
                 );
             } else {
+                // Get all agents (for global/legacy agents without organisation).
                 $agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);
             }
 
-            return new JSONResponse(data: ['results' => $agents], statusCode: Http::STATUS_OK);
+            // Return successful response with agents list.
+            return new JSONResponse(
+                data: ['results' => $agents],
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with full context.
             $this->logger->error(
                 'Failed to get agents',
                 [
@@ -196,36 +232,51 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to retrieve agents'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            // Return error response.
+            return new JSONResponse(
+                data: ['error' => 'Failed to retrieve agents'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
-
     }//end index()
 
 
     /**
      * Get a single agent
      *
-     * RBAC check is handled in the mapper layer.
+     * Retrieves a specific agent by its database ID.
+     * Performs additional RBAC check using mapper method to verify user access.
      *
-     * @param int $id Agent ID
+     * @param int $id Agent database ID
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse Agent details
+     * @return JSONResponse JSON response containing agent data or error message
+     *
+     * @psalm-return JSONResponse<mixed|array{error: string}>
      */
     public function show(int $id): JSONResponse
     {
         try {
+            // Retrieve agent using mapper (includes basic RBAC check).
             $agent = $this->agentMapper->find($id);
 
-            // Check access rights using mapper method.
+            // Perform additional access check using mapper method.
             if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $this->userId) === false) {
-                return new JSONResponse(data: ['error' => 'Access denied to this agent'], statusCode: Http::STATUS_FORBIDDEN);
+                return new JSONResponse(
+                    data: ['error' => 'Access denied to this agent'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
             }
 
-            return new JSONResponse(data: $agent, statusCode: Http::STATUS_OK);
+            // Return successful response with agent data.
+            return new JSONResponse(
+                data: $agent,
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with agent ID.
             $this->logger->error(
                 'Failed to get agent',
                 [
@@ -234,9 +285,12 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Agent not found'], statusCode: Http::STATUS_NOT_FOUND);
+            // Return not found error response.
+            return new JSONResponse(
+                data: ['error' => 'Agent not found'],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
         }//end try
-
     }//end show()
 
 
@@ -262,34 +316,47 @@ class AgentsController extends Controller
             $data['owner'] = $this->userId;
 
             // Set default values for new properties if not provided.
-            if (!isset($data['isPrivate']) === false && !isset($data['is_private'])) {
+            $isPrivateSet = isset($data['isPrivate']) === true || isset($data['is_private']) === true;
+
+            if ($isPrivateSet === false) {
                 $data['isPrivate'] = true;
                 // Private by default.
             }
 
-            if (!isset($data['searchFiles']) === false && !isset($data['search_files'])) {
+            $searchFilesSet = isset($data['searchFiles']) === true || isset($data['search_files']) === true;
+
+            if ($searchFilesSet === false) {
                 $data['searchFiles'] = true;
                 // Search files by default.
             }
 
-            if (!isset($data['searchObjects']) === false && !isset($data['search_objects'])) {
+            $searchObjectsSet = isset($data['searchObjects']) === true || isset($data['search_objects']) === true;
+
+            if ($searchObjectsSet === false) {
                 $data['searchObjects'] = true;
                 // Search objects by default.
             }
 
+            // Create agent using mapper (handles UUID, timestamps, RBAC).
             $agent = $this->agentMapper->createFromArray($data);
 
+            // Log successful creation.
             $this->logger->info(
-                    'Agent created successfully',
-                    [
-                        'id'           => $agent->getId(),
-                        'organisation' => $agent->getOrganisation(),
-                        'isPrivate'    => $agent->getIsPrivate(),
-                    ]
-                    );
+                'Agent created successfully',
+                [
+                    'id'           => $agent->getId(),
+                    'organisation' => $agent->getOrganisation(),
+                    'isPrivate'    => $agent->getIsPrivate(),
+                ]
+            );
 
-            return new JSONResponse(data: $agent, statusCode: Http::STATUS_CREATED);
+            // Return successful response with created agent.
+            return new JSONResponse(
+                data: $agent,
+                statusCode: Http::STATUS_CREATED
+            );
         } catch (Exception $e) {
+            // Log error with full context.
             $this->logger->error(
                 'Failed to create agent',
                 [
@@ -298,9 +365,12 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to create agent: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+            // Return error response with message.
+            return new JSONResponse(
+                data: ['error' => 'Failed to create agent: '.$e->getMessage()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         }//end try
-
     }//end create()
 
 
@@ -345,12 +415,22 @@ class AgentsController extends Controller
             $agent->setOrganisation($currentOrganisation);
             $agent->setOwner($currentOwner);
 
+            // Update agent using mapper (handles timestamp, RBAC, events).
             $updatedAgent = $this->agentMapper->update($agent);
 
-            $this->logger->info(message: 'Agent updated successfully', context: ['id' => $id]);
+            // Log successful update.
+            $this->logger->info(
+                message: 'Agent updated successfully',
+                context: ['id' => $id]
+            );
 
-            return new JSONResponse(data: $updatedAgent, statusCode: Http::STATUS_OK);
+            // Return successful response with updated agent.
+            return new JSONResponse(
+                data: $updatedAgent,
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with agent ID.
             $this->logger->error(
                 'Failed to update agent',
                 [
@@ -359,26 +439,34 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to update agent: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+            // Return error response with message.
+            return new JSONResponse(
+                data: ['error' => 'Failed to update agent: '.$e->getMessage()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         }//end try
-
     }//end update()
 
 
     /**
      * Patch (partially update) an agent
      *
+     * Partially updates an agent entity (PATCH method).
+     * Delegates to update() method which handles partial updates.
+     *
      * @param int $id The ID of the agent to patch
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse The updated agent data
+     * @return JSONResponse JSON response containing updated agent or error message
+     *
+     * @psalm-return JSONResponse<mixed|array{error: string}>
      */
     public function patch(int $id): JSONResponse
     {
+        // Delegate to update method (both handle partial updates).
         return $this->update($id);
-
     }//end patch()
 
 
@@ -404,12 +492,22 @@ class AgentsController extends Controller
                 return new JSONResponse(data: ['error' => 'You do not have permission to delete this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
+            // Delete agent using mapper (handles RBAC, events).
             $this->agentMapper->delete($agent);
 
-            $this->logger->info(message: 'Agent deleted successfully', context: ['id' => $id]);
+            // Log successful deletion.
+            $this->logger->info(
+                message: 'Agent deleted successfully',
+                context: ['id' => $id]
+            );
 
-            return new JSONResponse(data: ['message' => 'Agent deleted successfully'], statusCode: Http::STATUS_OK);
+            // Return successful response.
+            return new JSONResponse(
+                data: ['message' => 'Agent deleted successfully'],
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with agent ID.
             $this->logger->error(
                 'Failed to delete agent',
                 [
@@ -418,9 +516,12 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to delete agent'], statusCode: Http::STATUS_BAD_REQUEST);
+            // Return error response.
+            return new JSONResponse(
+                data: ['error' => 'Failed to delete agent'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         }//end try
-
     }//end destroy()
 
 
@@ -476,15 +577,21 @@ class AgentsController extends Controller
         try {
             $tools = $this->toolRegistry->getAllTools();
 
+            // Log debug information about tools returned.
             $this->logger->debug(
-                    '[AgentsController] Returning available tools',
-                    [
-                        'count' => count($tools),
-                    ]
-                    );
+                '[AgentsController] Returning available tools',
+                [
+                    'count' => count($tools),
+                ]
+            );
 
-            return new JSONResponse(data: ['results' => $tools], statusCode: Http::STATUS_OK);
+            // Return successful response with tools list.
+            return new JSONResponse(
+                data: ['results' => $tools],
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with full context.
             $this->logger->error(
                 'Failed to get available tools',
                 [
@@ -493,9 +600,12 @@ class AgentsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to retrieve tools'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            // Return error response.
+            return new JSONResponse(
+                data: ['error' => 'Failed to retrieve tools'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
-
     }//end tools()
 
 

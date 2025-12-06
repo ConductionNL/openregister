@@ -219,15 +219,15 @@ class MariaDbSearchHandler
                         $sqlOperator = $operator;
                         if ($operator === 'gte') {
                             $sqlOperator = '>=';
-                        } else if ($operator === 'lte') {
+                        } elseif ($operator === 'lte') {
                             $sqlOperator = '<=';
-                        } else if ($operator === 'gt') {
+                        } elseif ($operator === 'gt') {
                             $sqlOperator = '>';
-                        } else if ($operator === 'lt') {
+                        } elseif ($operator === 'lt') {
                             $sqlOperator = '<';
-                        } else if ($operator === 'ne') {
+                        } elseif ($operator === 'ne') {
                             $sqlOperator = '!=';
-                        } else if ($operator === 'eq') {
+                        } elseif ($operator === 'eq') {
                             $sqlOperator = '=';
                         }
 
@@ -362,7 +362,7 @@ class MariaDbSearchHandler
                         }
 
                         $queryBuilder->andWhere($orConditions);
-                    } else if (($value['and'] ?? null) !== null) {
+                    } elseif (($value['and'] ?? null) !== null) {
                         // AND logic: multiple andWhere clauses.
                         $values = is_string($value['and']) === true ? array_map('trim', explode(',', $value['and'])) : $value['and'];
                         foreach ($values as $val) {

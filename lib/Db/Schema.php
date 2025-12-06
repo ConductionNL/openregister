@@ -568,7 +568,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If action is not specified in authorization, everyone has permission.
-        if (!isset($this->authorization[$action])) {
+        if (isset($this->authorization[$action]) === false) {
             return true;
         }
 
@@ -593,7 +593,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // If action is not specified, return empty array (meaning all groups).
-        if (!isset($this->authorization[$action])) {
+        if (isset($this->authorization[$action]) === false) {
             return [];
         }
 
@@ -622,7 +622,7 @@ class Schema extends Entity implements JsonSerializable
             if (($property['inversedBy'] ?? null) !== null) {
                 if (is_array($property['inversedBy']) === true && (($property['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
-                } else if (is_string($property['inversedBy']) === false) {
+                } elseif (is_string($property['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['inversedBy']);
                 }
@@ -633,7 +633,7 @@ class Schema extends Entity implements JsonSerializable
             if (($property['items']['inversedBy'] ?? null) !== null) {
                 if (is_array($property['items']['inversedBy']) === true && (($property['items']['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
-                } else if (is_string($property['items']['inversedBy']) === false) {
+                } elseif (is_string($property['items']['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['items']['inversedBy']);
                 }
@@ -658,7 +658,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (!isset($object['metadata'])) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
@@ -1252,7 +1252,7 @@ class Schema extends Entity implements JsonSerializable
                 if ($facetType === 'date_histogram') {
                     $facetConfig['object_fields'][$propertyKey]['default_interval']    = 'month';
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
-                } else if ($facetType === 'range') {
+                } elseif ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
                 } else if ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];

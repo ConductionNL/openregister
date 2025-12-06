@@ -30,11 +30,21 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class DashboardService
+ * DashboardService handles dashboard related operations
  *
- * Service for handling dashboard related operations.
+ * Service for handling dashboard related operations including statistics,
+ * register/schema aggregation, and data size calculations.
  *
- * @package OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class DashboardService
 {
@@ -42,55 +52,69 @@ class DashboardService
     /**
      * Object entity mapper
      *
-     * @var ObjectEntityMapper
+     * Handles database operations for object entities.
+     *
+     * @var ObjectEntityMapper Object entity mapper instance
      */
-    private ObjectEntityMapper $objectMapper;
+    private readonly ObjectEntityMapper $objectMapper;
 
     /**
      * Audit trail mapper
      *
-     * @var AuditTrailMapper
+     * Handles database operations for audit trail entries.
+     *
+     * @var AuditTrailMapper Audit trail mapper instance
      */
-    private AuditTrailMapper $auditTrailMapper;
+    private readonly AuditTrailMapper $auditTrailMapper;
 
     /**
      * Webhook log mapper
      *
-     * @var WebhookLogMapper
+     * Handles database operations for webhook log entries.
+     *
+     * @var WebhookLogMapper Webhook log mapper instance
      */
-    private WebhookLogMapper $webhookLogMapper;
+    private readonly WebhookLogMapper $webhookLogMapper;
 
     /**
      * Register mapper
      *
-     * @var RegisterMapper
+     * Handles database operations for register entities.
+     *
+     * @var RegisterMapper Register mapper instance
      */
-    private RegisterMapper $registerMapper;
+    private readonly RegisterMapper $registerMapper;
 
     /**
      * Logger
      *
-     * @var LoggerInterface
+     * Used for logging dashboard operations and errors.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     /**
      * Schema mapper
      *
-     * @var SchemaMapper
+     * Handles database operations for schema entities.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private SchemaMapper $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
 
     /**
      * Constructor for DashboardService
      *
-     * @param ObjectEntityMapper $objectMapper     Object entity mapper
-     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper
-     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper
-     * @param RegisterMapper     $registerMapper   Register mapper
-     * @param SchemaMapper       $schemaMapper     Schema mapper
-     * @param LoggerInterface    $logger           Logger instance
+     * Initializes service with required mappers and logger for dashboard operations.
+     *
+     * @param ObjectEntityMapper $objectMapper     Object entity mapper for object statistics
+     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper for log statistics
+     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper for webhook statistics
+     * @param RegisterMapper     $registerMapper   Register mapper for register operations
+     * @param SchemaMapper       $schemaMapper     Schema mapper for schema operations
+     * @param LoggerInterface    $logger           Logger instance for error tracking
      *
      * @return void
      */
@@ -102,6 +126,7 @@ class DashboardService
         SchemaMapper $schemaMapper,
         LoggerInterface $logger
     ) {
+        // Store dependencies for use in service methods.
         $this->objectMapper     = $objectMapper;
         $this->auditTrailMapper = $auditTrailMapper;
         $this->webhookLogMapper = $webhookLogMapper;

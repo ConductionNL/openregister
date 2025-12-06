@@ -153,7 +153,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $config = $this->settingsService->getObjectSettingsOnly();
 
         // Serialize object to text.
-        $text = $this->serializeObject($objectData, $config);
+        $text = $this->serializeObject(objectData: $objectData, config: $config);
 
         // Objects produce a single vectorization item.
         return [
@@ -279,7 +279,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     private function extractSelfKeys(array $objectData): array
     {
-        if (!isset($objectData['@self']) || !is_array($objectData['@self'])) {
+        if (isset($objectData['@self']) === false || is_array($objectData['@self']) === false) {
             return [];
         }
 

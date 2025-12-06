@@ -35,57 +35,76 @@ use Psr\Log\LoggerInterface;
 /**
  * EndpointsController handles endpoint management operations
  *
+ * Provides REST API endpoints for managing external API endpoints configuration.
+ * Supports CRUD operations, endpoint testing, and log management.
+ *
  * @category Controller
- * @package  OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2
- * @link     https://github.com/ConductionNL/openregister
- */
-/**
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class EndpointsController extends Controller
 {
 
     /**
-     * Endpoint mapper
+     * Endpoint mapper for database operations
      *
-     * @var EndpointMapper
+     * Handles CRUD operations for endpoint entities in the database.
+     *
+     * @var EndpointMapper Endpoint mapper instance
      */
-    private EndpointMapper $endpointMapper;
+    private readonly EndpointMapper $endpointMapper;
 
     /**
-     * Endpoint service
+     * Endpoint service for business logic
      *
-     * @var EndpointService
+     * Handles endpoint testing and execution logic.
+     *
+     * @var EndpointService Endpoint service instance
      */
-    private EndpointService $endpointService;
+    private readonly EndpointService $endpointService;
 
     /**
-     * Endpoint log mapper
+     * Endpoint log mapper for log operations
      *
-     * @var EndpointLogMapper
+     * Handles database operations for endpoint execution logs.
+     *
+     * @var EndpointLogMapper Endpoint log mapper instance
      */
-    private EndpointLogMapper $endpointLogMapper;
+    private readonly EndpointLogMapper $endpointLogMapper;
 
     /**
-     * Logger
+     * Logger for error tracking and debugging
      *
-     * @var LoggerInterface
+     * Used to log errors, warnings, and informational messages.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor
      *
+     * Initializes controller with required dependencies for endpoint management.
+     * Calls parent constructor to set up base controller functionality.
+     *
      * @param string            $appName           Application name
-     * @param IRequest          $request           HTTP request
-     * @param EndpointMapper    $endpointMapper    Endpoint mapper
-     * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper
-     * @param EndpointService   $endpointService   Endpoint service
-     * @param LoggerInterface   $logger            Logger
+     * @param IRequest          $request           HTTP request object
+     * @param EndpointMapper    $endpointMapper    Endpoint mapper for database operations
+     * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
+     * @param EndpointService   $endpointService   Endpoint service for business logic
+     * @param LoggerInterface   $logger            Logger for error tracking
+     *
+     * @return void
      */
     public function __construct(
         string $appName,
@@ -95,7 +114,10 @@ class EndpointsController extends Controller
         EndpointService $endpointService,
         LoggerInterface $logger
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
+        
+        // Store dependencies for use in controller methods.
         $this->endpointMapper    = $endpointMapper;
         $this->endpointLogMapper = $endpointLogMapper;
         $this->endpointService   = $endpointService;
@@ -107,18 +129,25 @@ class EndpointsController extends Controller
     /**
      * List all endpoints
      *
-     * @return JSONResponse
+     * Retrieves all configured endpoints from the database and returns them
+     * as a JSON response with total count. Used for endpoint management UI.
+     *
+     * @return JSONResponse JSON response containing endpoints array and total count
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{results: array<int, mixed>, total: int}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function index(): JSONResponse
     {
         try {
+            // Retrieve all endpoints from database.
             $endpoints = $this->endpointMapper->findAll();
 
+            // Return successful response with endpoints and total count.
             return new JSONResponse(
                 data: [
                     'results' => $endpoints,
@@ -127,6 +156,7 @@ class EndpointsController extends Controller
                 statusCode: 200
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 message: 'Error listing endpoints: '.$e->getMessage(),
                 context: [
@@ -134,6 +164,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to list endpoints',
@@ -148,22 +179,30 @@ class EndpointsController extends Controller
     /**
      * Get a single endpoint
      *
-     * @param int $id Endpoint ID
+     * Retrieves endpoint details by ID from the database.
+     * Returns 404 if endpoint doesn't exist, 500 on database errors.
      *
-     * @return JSONResponse
+     * @param int $id Endpoint ID to retrieve
+     *
+     * @return JSONResponse JSON response containing endpoint data or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function show(int $id): JSONResponse
     {
         try {
+            // Find endpoint by ID in database.
             $endpoint = $this->endpointMapper->find($id);
 
+            // Return successful response with endpoint data.
             return new JSONResponse(data: $endpoint);
         } catch (DoesNotExistException $e) {
+            // Endpoint not found - return 404 error.
             return new JSONResponse(
                 data: [
                     'error' => 'Endpoint not found',
@@ -171,6 +210,7 @@ class EndpointsController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 message: 'Error retrieving endpoint: '.$e->getMessage(),
                 context: [
@@ -179,6 +219,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to retrieve endpoint',
@@ -193,19 +234,26 @@ class EndpointsController extends Controller
     /**
      * Create a new endpoint
      *
-     * @return JSONResponse
+     * Creates a new endpoint configuration from request data.
+     * Validates required fields (name and endpoint path) before creation.
+     * Returns 201 Created on success, 400 Bad Request on validation failure.
+     *
+     * @return JSONResponse JSON response containing created endpoint or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function create(): JSONResponse
     {
         try {
+            // Get endpoint data from request parameters.
             $data = $this->request->getParams();
 
-            // Validate required fields.
+            // Validate required fields: name and endpoint path must be provided.
             if (empty($data['name']) === true || empty($data['endpoint']) === true) {
                 return new JSONResponse(
                     data: [
@@ -215,8 +263,10 @@ class EndpointsController extends Controller
                 );
             }
 
+            // Create endpoint entity from array data.
             $endpoint = $this->endpointMapper->createFromArray($data);
 
+            // Log successful endpoint creation for audit trail.
             $this->logger->info(
                 message: 'Endpoint created',
                 context: [
@@ -226,8 +276,10 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return successful response with created endpoint (HTTP 201 Created).
             return new JSONResponse(data: $endpoint, statusCode: 201);
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 'Error creating endpoint: '.$e->getMessage(),
                 [
@@ -236,6 +288,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to create endpoint: '.$e->getMessage(),
@@ -250,25 +303,35 @@ class EndpointsController extends Controller
     /**
      * Update an existing endpoint
      *
-     * @param int $id Endpoint ID
+     * Updates endpoint configuration with data from request.
+     * Removes ID from update data to prevent ID modification.
+     * Returns 404 if endpoint doesn't exist, 500 on database errors.
      *
-     * @return JSONResponse
+     * @param int $id Endpoint ID to update
+     *
+     * @return JSONResponse JSON response containing updated endpoint or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
     {
         try {
+            // Get update data from request parameters.
             $data = $this->request->getParams();
 
-            // Remove ID from data if present.
+            // Remove ID from data if present to prevent ID modification.
+            // ID is determined by route parameter, not request body.
             unset($data['id']);
 
+            // Update endpoint in database with new data.
             $endpoint = $this->endpointMapper->updateFromArray(id: $id, data: $data);
 
+            // Log successful endpoint update for audit trail.
             $this->logger->info(
                 message: 'Endpoint updated',
                 context: [
@@ -277,8 +340,10 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return successful response with updated endpoint.
             return new JSONResponse(data: $endpoint);
         } catch (DoesNotExistException $e) {
+            // Endpoint not found - return 404 error.
             return new JSONResponse(
                 data: [
                     'error' => 'Endpoint not found',
@@ -286,6 +351,7 @@ class EndpointsController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 'Error updating endpoint: '.$e->getMessage(),
                 [
@@ -295,6 +361,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to update endpoint: '.$e->getMessage(),
@@ -309,21 +376,30 @@ class EndpointsController extends Controller
     /**
      * Delete an endpoint
      *
-     * @param int $id Endpoint ID
+     * Deletes endpoint configuration from database by ID.
+     * Returns 204 No Content on success, 404 if endpoint doesn't exist.
      *
-     * @return JSONResponse
+     * @param int $id Endpoint ID to delete
+     *
+     * @return JSONResponse JSON response with null data (204) or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<null|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
     {
         try {
+            // Find endpoint by ID to ensure it exists before deletion.
             $endpoint = $this->endpointMapper->find($id);
+            
+            // Delete endpoint from database.
             $this->endpointMapper->delete($endpoint);
 
+            // Log successful endpoint deletion for audit trail.
             $this->logger->info(
                 message: 'Endpoint deleted',
                 context: [
@@ -332,8 +408,10 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return successful response with no content (HTTP 204 No Content).
             return new JSONResponse(data: null, statusCode: 204);
         } catch (DoesNotExistException $e) {
+            // Endpoint not found - return 404 error.
             return new JSONResponse(
                 data: [
                     'error' => 'Endpoint not found',
@@ -341,6 +419,7 @@ class EndpointsController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 'Error deleting endpoint: '.$e->getMessage(),
                 [
@@ -349,6 +428,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to delete endpoint',
@@ -363,24 +443,35 @@ class EndpointsController extends Controller
     /**
      * Test an endpoint by executing it with test data
      *
-     * @param int $id Endpoint ID
+     * Executes endpoint with optional test data to verify endpoint configuration.
+     * Returns execution result including status code and response data.
+     * Used for endpoint validation and debugging.
      *
-     * @return JSONResponse
+     * @param int $id Endpoint ID to test
+     *
+     * @return JSONResponse JSON response containing test execution results or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{success: bool, message: string, statusCode?: int, response?: mixed, error?: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
     {
         try {
+            // Find endpoint by ID to ensure it exists.
             $endpoint = $this->endpointMapper->find($id);
 
+            // Get test data from request parameters (optional).
+            // Test data is used to simulate endpoint execution with sample payload.
             $testData = $this->request->getParams()['data'] ?? [];
 
-            $result = $this->endpointService->testEndpoint($endpoint, $testData);
+            // Execute endpoint test using endpoint service.
+            $result = $this->endpointService->testEndpoint(endpoint: $endpoint, testData: $testData);
 
+            // Return success response if test executed successfully.
             if ($result['success'] === true) {
                 return new JSONResponse(
                     data: [
@@ -391,6 +482,7 @@ class EndpointsController extends Controller
                     ]
                 );
             } else {
+                // Return failure response with error details.
                 return new JSONResponse(
                     data: [
                         'success'    => false,
@@ -401,6 +493,7 @@ class EndpointsController extends Controller
                 );
             }
         } catch (DoesNotExistException $e) {
+            // Endpoint not found - return 404 error.
             return new JSONResponse(
                 data: [
                     'error' => 'Endpoint not found',
@@ -408,6 +501,7 @@ class EndpointsController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 'Error testing endpoint: '.$e->getMessage(),
                 [
@@ -416,6 +510,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to test endpoint: '.$e->getMessage(),
@@ -430,12 +525,18 @@ class EndpointsController extends Controller
     /**
      * Get logs for a specific endpoint
      *
-     * @param int $id Endpoint ID
+     * Retrieves execution logs for a specific endpoint with pagination support.
+     * Validates endpoint exists before retrieving logs.
+     * Returns paginated log entries with total count.
      *
-     * @return JSONResponse
+     * @param int $id Endpoint ID to retrieve logs for
+     *
+     * @return JSONResponse JSON response containing logs array and total count or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{results: array<int, mixed>, total: int}|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -443,13 +544,17 @@ class EndpointsController extends Controller
     {
         try {
             // Validate endpoint exists by attempting to find it.
+            // Throws DoesNotExistException if endpoint not found.
             $this->endpointMapper->find($id);
 
+            // Get pagination parameters from request (with defaults).
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-            $logs = $this->endpointLogMapper->findByEndpoint($id, $limit, $offset);
+            // Retrieve logs for this endpoint with pagination.
+            $logs = $this->endpointLogMapper->findByEndpoint(endpointId: $id, limit: $limit, offset: $offset);
 
+            // Return successful response with logs and total count.
             return new JSONResponse(
                 data: [
                     'results' => $logs,
@@ -458,6 +563,7 @@ class EndpointsController extends Controller
                 statusCode: 200
             );
         } catch (DoesNotExistException $e) {
+            // Endpoint not found - return 404 error.
             return new JSONResponse(
                 data: [
                     'error' => 'Endpoint not found',
@@ -465,6 +571,7 @@ class EndpointsController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 message: 'Error retrieving endpoint logs: '.$e->getMessage(),
                 context: [
@@ -473,6 +580,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to retrieve endpoint logs',
@@ -487,12 +595,18 @@ class EndpointsController extends Controller
     /**
      * Get statistics for a specific endpoint
      *
-     * @param int $id Endpoint ID
+     * Retrieves aggregated statistics for endpoint execution logs.
+     * Includes metrics like total requests, success rate, average response time, etc.
+     * Validates endpoint exists before calculating statistics.
      *
-     * @return JSONResponse
+     * @param int $id Endpoint ID to retrieve statistics for
+     *
+     * @return JSONResponse JSON response containing statistics data or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -500,12 +614,17 @@ class EndpointsController extends Controller
     {
         try {
             // Validate endpoint exists by attempting to find it.
+            // Throws DoesNotExistException if endpoint not found.
             $this->endpointMapper->find($id);
 
+            // Calculate statistics from endpoint logs.
+            // Statistics include counts, success rates, response times, etc.
             $stats = $this->endpointLogMapper->getStatistics($id);
 
+            // Return successful response with statistics data.
             return new JSONResponse(data: $stats);
         } catch (DoesNotExistException $e) {
+            // Endpoint not found - return 404 error.
             return new JSONResponse(
                 data: [
                     'error' => 'Endpoint not found',
@@ -513,6 +632,7 @@ class EndpointsController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 message: 'Error retrieving endpoint log statistics: '.$e->getMessage(),
                 context: [
@@ -521,6 +641,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to retrieve endpoint log statistics',
@@ -535,35 +656,50 @@ class EndpointsController extends Controller
     /**
      * Get all endpoint logs with optional filtering
      *
-     * @return JSONResponse
+     * Retrieves endpoint execution logs with optional filtering by endpoint ID.
+     * Supports pagination via limit and offset parameters.
+     * Returns logs for specific endpoint if endpoint_id provided, otherwise all logs.
+     *
+     * @return JSONResponse JSON response containing logs array and total count or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{results: array<int, mixed>, total: int}|array{error: string}>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function allLogs(): JSONResponse
     {
         try {
+            // Get optional endpoint ID filter from request parameters.
             $endpointId = $this->request->getParam('endpoint_id');
-            $limit      = (int) ($this->request->getParam('limit') ?? 50);
-            $offset     = (int) ($this->request->getParam('offset') ?? 0);
+            
+            // Get pagination parameters from request (with defaults).
+            $limit  = (int) ($this->request->getParam('limit') ?? 50);
+            $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-            // If endpoint_id is provided and valid, use findByEndpoint method.
+            // If endpoint_id is provided and valid, filter logs by endpoint.
             if ($endpointId !== null && $endpointId !== '' && $endpointId !== '0') {
+                // Convert endpoint ID to integer for database query.
                 $endpointIdInt = (int) $endpointId;
-                $logs          = $this->endpointLogMapper->findByEndpoint($endpointIdInt, $limit, $offset);
-                // Get total count for this endpoint.
-                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint($endpointIdInt, null, null);
+                
+                // Retrieve paginated logs for this specific endpoint.
+                $logs = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: $limit, offset: $offset);
+                
+                // Get total count for this endpoint (without pagination).
+                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: null, offset: null);
                 $total = count($allLogsForEndpoint);
             } else {
-                // Get all logs.
-                $logs = $this->endpointLogMapper->findAll($limit, $offset);
-                // Get total count for all logs.
-                $allLogs = $this->endpointLogMapper->findAll(null, null);
+                // No endpoint filter - get all logs from all endpoints.
+                $logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
+                
+                // Get total count for all logs (without pagination).
+                $allLogs = $this->endpointLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
             }
 
+            // Return successful response with logs and total count.
             return new JSONResponse(
                 data: [
                     'results' => $logs,
@@ -572,6 +708,7 @@ class EndpointsController extends Controller
                 statusCode: 200
             );
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 message: 'Error retrieving endpoint logs: '.$e->getMessage(),
                 context: [
@@ -579,6 +716,7 @@ class EndpointsController extends Controller
                 ]
             );
 
+            // Return error response to client.
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to retrieve endpoint logs: '.$e->getMessage(),

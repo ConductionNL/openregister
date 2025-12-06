@@ -474,8 +474,8 @@ class GitLabService
             $content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Validate that it's a valid OpenRegister configuration.
-            if (!isset($content['openapi'])
-                || !isset($content['x-openregister'])
+            if (isset($content['openapi']) === false
+                || isset($content['x-openregister']) === false
             ) {
                 $this->logger->debug(
                         message: 'File does not contain required OpenRegister structure',

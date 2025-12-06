@@ -24,12 +24,22 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCP\ISession;
 
 /**
- * Service for caching configurations in user session
+ * ConfigurationCacheService caches configurations in user session
  *
- * This service provides session-based caching of configurations per organisation
- * to improve performance when checking if entities are managed by configurations.
+ * Service for caching configurations in user session to avoid excessive database
+ * queries when checking if entities are managed by configurations. Uses session-based
+ * caching per organisation for optimal performance.
  *
- * @package OCA\OpenRegister\Service
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 class ConfigurationCacheService
 {
@@ -37,63 +47,77 @@ class ConfigurationCacheService
     /**
      * Session key prefix for storing configurations
      *
-     * @var string
+     * Prefix used for session keys to store cached configurations per organisation.
+     *
+     * @var string Session key prefix
      */
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
 
     /**
      * Session interface for storing cached data
      *
-     * @var ISession
+     * Used to store and retrieve cached configurations from user session.
+     *
+     * @var ISession Session instance
      */
-    private ISession $session;
+    private readonly ISession $session;
 
     /**
      * Configuration mapper for database queries
      *
-     * @var ConfigurationMapper
+     * Used to fetch configurations from database on cache miss.
+     *
+     * @var ConfigurationMapper Configuration mapper instance
      */
-    private ConfigurationMapper $configurationMapper;
+    private readonly ConfigurationMapper $configurationMapper;
 
     /**
      * Organisation service for getting active organisation
      *
-     * @var OrganisationService
+     * Used to determine which organisation's configurations to cache.
+     *
+     * @var OrganisationService Organisation service instance
      */
-    private OrganisationService $organisationService;
+    private readonly OrganisationService $organisationService;
 
 
     /**
      * Get configurations for the active organisation
      *
-     * Returns configurations from session cache if available,
-     * otherwise fetches from database and caches in session.
+     * Returns configurations from session cache if available, otherwise fetches
+     * from database and caches in session. Cache is keyed by organisation UUID
+     * to support multi-tenancy.
      *
-     * @return Configuration[] Array of configuration entities
+     * @return Configuration[] Array of configuration entities for active organisation
      */
     public function getConfigurationsForActiveOrganisation(): array
     {
+        // Step 1: Get active organisation from organisation service.
         $activeOrg = $this->organisationService->getActiveOrganisation();
         if ($activeOrg === null) {
+            // No active organisation - return empty array.
             return [];
         }
 
+        // Step 2: Build session cache key using organisation UUID.
+        // This ensures cache is isolated per organisation.
         $orgUuid    = $activeOrg->getUuid();
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
-        // Check if configurations are cached in session.
+        // Step 3: Check if configurations are cached in session.
         $cachedData = $this->session->get($sessionKey);
         if ($cachedData !== null) {
-            // Configurations are cached, unserialize and return.
+            // Configurations are cached - unserialize and return.
             return unserialize($cachedData);
         }
 
-        // Not cached, fetch from database.
+        // Step 4: Not cached - fetch configurations from database.
         $configurations = $this->configurationMapper->findAll();
 
-        // Cache in session.
+        // Step 5: Cache configurations in session for future requests.
         $this->session->set($sessionKey, serialize($configurations));
 
+        // Step 6: Return fetched configurations.
         return $configurations;
 
     }//end getConfigurationsForActiveOrganisation()

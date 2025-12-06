@@ -153,7 +153,7 @@ class AuditTrailMapper extends QBMapper
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($field));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
             } else {
                 // Handle comma-separated values (e.g., action=create,update).
@@ -239,10 +239,10 @@ class AuditTrailMapper extends QBMapper
         if ($new === null && $action === 'update') {
             $action       = 'delete';
             $objectEntity = $old;
-        } else if ($old === null && $action === 'update') {
+        } elseif ($old === null && $action === 'update') {
             $action       = 'create';
             $objectEntity = $new;
-        } else if ($action === 'delete') {
+        } elseif ($action === 'delete') {
             $objectEntity = $old;
         } else {
             $objectEntity = $new;
@@ -261,7 +261,7 @@ class AuditTrailMapper extends QBMapper
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
-                if ((!isset($oldArray[$key])) || ($oldArray[$key] !== $value)) {
+                if ((isset($oldArray[$key]) === false) || ($oldArray[$key] !== $value)) {
                     $changed[$key] = [
                         'old' => ($oldArray[$key] ?? null),
                         'new' => $value,
@@ -272,7 +272,7 @@ class AuditTrailMapper extends QBMapper
             // For updates, check for removed fields.
             if ($action === 'update') {
                 foreach ($oldArray as $key => $value) {
-                    if (!isset($newArray[$key])) {
+                    if (isset($newArray[$key]) === false) {
                         $changed[$key] = [
                             'old' => $value,
                             'new' => null,
@@ -355,7 +355,7 @@ class AuditTrailMapper extends QBMapper
                                     )
                             )
                     );
-        } else if (is_string($until) === true) {
+        } elseif (is_string($until) === true) {
             if ($this->isSemanticVersion($until) === true) {
                 // Handle semantic version.
                 $qb->andWhere(
@@ -647,7 +647,7 @@ class AuditTrailMapper extends QBMapper
             // Initialize data structure.
             foreach ($results as $row) {
                 $date = $row['date'];
-                if (!isset($dateData[$date])) {
+                if (isset($dateData[$date]) === false) {
                     $dateData[$date] = array_fill_keys($actions, 0);
                 }
 

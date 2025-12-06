@@ -36,11 +36,22 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\FileService;
 
 /**
- * The RegisterMapper class
+ * RegisterMapper handles database operations for Register entities
  *
  * Handles database operations for Register entities with multi-tenancy support.
+ * Provides CRUD operations with automatic organisation filtering, RBAC checks,
+ * and event dispatching.
  *
- * @package OCA\OpenRegister\Db
+ * @category Mapper
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
  *
  * @method Register insert(Entity $entity)
  * @method Register update(Entity $entity)
@@ -58,32 +69,40 @@ class RegisterMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
-     * The schema mapper instance
+     * Schema mapper instance
      *
-     * @var SchemaMapper
+     * Used for finding schemas associated with registers.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
     /**
      * User session for multi-tenancy (from trait)
      *
-     * @var IUserSession
+     * Used to get current user context for multi-tenancy filtering.
+     *
+     * @var IUserSession User session instance
      */
     protected IUserSession $userSession;
 
     /**
      * Group manager for RBAC (from trait)
      *
-     * @var IGroupManager
+     * Used to check user group memberships for permission verification.
+     *
+     * @var IGroupManager Group manager instance
      */
     protected IGroupManager $groupManager;
 
     /**
-     * The event dispatcher instance
+     * Event dispatcher instance
      *
-     * @var IEventDispatcher
+     * Dispatches events when registers are created, updated, or deleted.
+     *
+     * @var IEventDispatcher Event dispatcher instance
      */
-    private $eventDispatcher;
+    private readonly IEventDispatcher $eventDispatcher;
 
     /**
      * The object entity mapper instance
@@ -95,21 +114,35 @@ class RegisterMapper extends QBMapper
     /**
      * Organisation service for multi-tenancy (from trait)
      *
-     * @var OrganisationService
+     * Used to get active organisation and apply organisation filters.
+     *
+     * @var OrganisationService Organisation service instance
      */
     protected OrganisationService $organisationService;
 
+    /**
+     * App configuration
+     *
+     * Used for reading multitenancy configuration settings.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    protected IAppConfig $appConfig;
+
 
     /**
-     * Constructor for RegisterMapper
+     * Constructor
      *
-     * @param IDBConnection       $db                  The database connection
-     * @param SchemaMapper        $schemaMapper        The schema mapper
-     * @param IEventDispatcher    $eventDispatcher     The event dispatcher
-     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper
-     * @param OrganisationService $organisationService The organisation service (for multi-tenancy)
-     * @param IUserSession        $userSession         The user session (for multi-tenancy)
-     * @param IGroupManager       $groupManager        The group manager (for RBAC)
+     * Initializes mapper with database connection and required dependencies
+     * for multi-tenancy, RBAC, and event dispatching.
+     *
+     * @param IDBConnection       $db                  Database connection for queries
+     * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher for register events
+     * @param ObjectEntityMapper  $objectEntityMapper  Object entity mapper for object queries
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session for current user context
+     * @param IGroupManager       $groupManager        Group manager for RBAC checks
      * @param IAppConfig          $appConfig           App configuration for multitenancy settings
      *
      * @return void
@@ -124,17 +157,19 @@ class RegisterMapper extends QBMapper
         IGroupManager $groupManager,
         IAppConfig $appConfig
     ) {
+        // Initialize parent mapper with table name and entity class.
         parent::__construct($db, 'openregister_registers', Register::class);
+
+        // Store dependencies for use in mapper methods.
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
 
-        // Initialize multi-tenancy trait dependencies
+        // Initialize multi-tenancy trait dependencies.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->appConfig           = $appConfig;
-
     }//end __construct()
 
 
@@ -395,7 +430,7 @@ class RegisterMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -574,7 +609,7 @@ class RegisterMapper extends QBMapper
         $register = $this->find(id: $id);
 
         // Set or update the version.
-        if (!isset($object['version'])) {
+        if (isset($object['version']) === false) {
             $currentVersion = $register->getVersion() ?? '0.0.0';
             $version        = explode('.', $currentVersion);
             $version[2]     = ((int) $version[2] + 1);

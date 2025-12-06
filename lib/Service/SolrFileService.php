@@ -342,7 +342,7 @@ class SolrFileService
                 foreach ($section->getElements() as $element) {
                     if (method_exists($element, 'getText') === true) {
                         $text .= $element->getText()."\n";
-                    } else if (method_exists($element, 'getElements') === true) {
+                    } elseif (method_exists($element, 'getElements') === true) {
                         foreach ($element->getElements() as $childElement) {
                             if (method_exists($childElement, 'getText') === true) {
                                 $text .= $childElement->getText()."\n";
@@ -560,11 +560,11 @@ class SolrFileService
 
                 if (is_scalar($value) === true) {
                     $text .= $newPrefix.': '.$value."\n";
-                } else if (is_array($value) === true || is_object($value) === true) {
+                } elseif (is_array($value) === true || is_object($value) === true) {
                     $text .= $this->jsonToText($value, $newPrefix);
                 }
             }
-        } else if (is_object($data) === true) {
+        } elseif (is_object($data) === true) {
             $text .= $this->jsonToText((array) $data, $prefix);
         }
 
@@ -586,7 +586,7 @@ class SolrFileService
          * @psalm-suppress ForbiddenCode
          */
         $result = shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)));
-        return !empty($result);
+        return empty($result) === false;
 
     }//end commandExists()
 
@@ -752,7 +752,7 @@ class SolrFileService
             }
         }//end while
 
-        return array_filter($chunks, fn($c) => !empty(trim($c)));
+        return array_filter($chunks, fn($c) => empty(trim($c)) === false);
 
     }//end chunkFixedSize()
 
@@ -874,7 +874,7 @@ class SolrFileService
             $chunks[] = trim($currentChunk);
         }
 
-        return array_filter($chunks, fn($c) => !empty(trim($c)));
+        return array_filter($chunks, fn($c) => empty(trim($c)) === false);
 
     }//end recursiveSplit()
 

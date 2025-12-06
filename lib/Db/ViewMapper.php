@@ -34,11 +34,21 @@ use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * The ViewMapper class
+ * ViewMapper handles database operations for View entities
  *
  * Mapper for View entities with multi-tenancy and RBAC support.
+ * Extends QBMapper to provide standard CRUD operations with access control.
  *
- * @package OCA\OpenRegister\Db
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  *
  * @method View insert(Entity $entity)
  * @method View update(Entity $entity)
@@ -58,48 +68,63 @@ class ViewMapper extends QBMapper
     /**
      * Organisation service for multi-tenancy
      *
-     * @var OrganisationService
+     * Used to filter views by organisation for multi-tenant support.
+     *
+     * @var OrganisationService Organisation service instance
      */
-    private OrganisationService $organisationService;
+    private readonly OrganisationService $organisationService;
 
     /**
      * User session for current user
      *
-     * @var IUserSession
+     * Used to determine current user context for RBAC filtering.
+     *
+     * @var IUserSession User session instance
      */
-    private IUserSession $userSession;
+    private readonly IUserSession $userSession;
 
     /**
      * Group manager for RBAC
      *
-     * @var IGroupManager
+     * Used to check user group memberships for access control.
+     *
+     * @var IGroupManager Group manager instance
      */
-    private IGroupManager $groupManager;
+    private readonly IGroupManager $groupManager;
 
     /**
      * Configuration cache service
      *
-     * @var ConfigurationCacheService
+     * Used to invalidate configuration cache when views change.
+     *
+     * @var ConfigurationCacheService Configuration cache service instance
      */
-    private ConfigurationCacheService $configurationCacheService;
+    private readonly ConfigurationCacheService $configurationCacheService;
 
     /**
      * Event dispatcher for dispatching view events
      *
-     * @var IEventDispatcher
+     * Used to dispatch ViewCreatedEvent, ViewUpdatedEvent, and ViewDeletedEvent.
+     *
+     * @var IEventDispatcher Event dispatcher instance
      */
-    private IEventDispatcher $eventDispatcher;
+    private readonly IEventDispatcher $eventDispatcher;
 
 
     /**
      * Constructor
      *
+     * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
+     * Calls parent constructor to set up base mapper functionality.
+     *
      * @param IDBConnection             $db                        Database connection
-     * @param OrganisationService       $organisationService       Organisation service
-     * @param IUserSession              $userSession               User session
-     * @param IGroupManager             $groupManager              Group manager
-     * @param ConfigurationCacheService $configurationCacheService Configuration cache service
-     * @param IEventDispatcher          $eventDispatcher           Event dispatcher
+     * @param OrganisationService       $organisationService       Organisation service for multi-tenancy
+     * @param IUserSession              $userSession               User session for RBAC
+     * @param IGroupManager             $groupManager              Group manager for RBAC
+     * @param ConfigurationCacheService $configurationCacheService Configuration cache service for cache invalidation
+     * @param IEventDispatcher          $eventDispatcher           Event dispatcher for view lifecycle events
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
@@ -109,10 +134,13 @@ class ViewMapper extends QBMapper
         ConfigurationCacheService $configurationCacheService,
         IEventDispatcher $eventDispatcher
     ) {
+        // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_views', View::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
+        
+        // Store dependencies for use in mapper methods.
+        $this->organisationService       = $organisationService;
+        $this->userSession               = $userSession;
+        $this->groupManager              = $groupManager;
         $this->configurationCacheService = $configurationCacheService;
         $this->eventDispatcher           = $eventDispatcher;
 
@@ -122,20 +150,27 @@ class ViewMapper extends QBMapper
     /**
      * Find a view by its ID
      *
-     * @param int|string $id The ID of the view to find
+     * Retrieves view by ID (supports both integer ID and UUID) with RBAC and
+     * organisation filtering. Verifies user has read permission before querying.
      *
-     * @return View The found view
+     * @param int|string $id The ID (integer) or UUID (string) of the view to find
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found
-     * @throws \Exception If user doesn't have read permission
+     * @return View The found view entity
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found or not accessible
+     * @throws \Exception If user doesn't have read permission for views
      */
     public function find($id): View
     {
-        // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'view');
+        // Step 1: Verify RBAC permission to read views.
+        // Throws exception if user doesn't have required permissions.
+        $this->verifyRbacPermission(action: 'read', entityType: 'view');
 
+        // Step 2: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 3: Build SELECT query with ID or UUID filter.
+        // Supports both integer IDs and UUID strings for flexibility.
         $qb->select('*')
             ->from($this->getTableName())
             ->where(
@@ -145,7 +180,8 @@ class ViewMapper extends QBMapper
                 )
             );
 
-        // Apply organisation filter (all users including admins must have active org).
+        // Step 4: Apply organisation filter for multi-tenancy.
+        // All users including admins must have active organisation.
         $this->applyOrganisationFilter($qb);
 
         $entity = $this->findEntity(query: $qb);
@@ -169,7 +205,7 @@ class ViewMapper extends QBMapper
     public function findAll(?string $owner=null): array
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'view');
+        $this->verifyRbacPermission(action: 'read', entityType: 'view');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -213,7 +249,7 @@ class ViewMapper extends QBMapper
     public function insert(Entity $entity): View
     {
         // Verify RBAC permission to create.
-        $this->verifyRbacPermission('create', 'view');
+        $this->verifyRbacPermission(action: 'create', entityType: 'view');
 
         // Generate UUID if not present.
         if (empty($entity->getUuid()) === true) {
@@ -248,7 +284,7 @@ class ViewMapper extends QBMapper
     public function update(Entity $entity): View
     {
         // Verify RBAC permission to update.
-        $this->verifyRbacPermission('update', 'view');
+        $this->verifyRbacPermission(action: 'update', entityType: 'view');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -282,7 +318,7 @@ class ViewMapper extends QBMapper
     public function delete(Entity $entity): View
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', 'view');
+        $this->verifyRbacPermission(action: 'delete', entityType: 'view');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);

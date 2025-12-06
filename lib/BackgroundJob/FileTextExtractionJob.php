@@ -47,37 +47,47 @@ class FileTextExtractionJob extends QueuedJob
     /**
      * Configuration service
      *
-     * @var IAppConfig
+     * Used to check if file text extraction is enabled in settings.
+     *
+     * @var IAppConfig Application configuration service
      */
-    private IAppConfig $config;
+    private readonly IAppConfig $config;
 
     /**
      * Logger service
      *
-     * @var LoggerInterface
+     * Used for logging extraction progress, errors, and debug information.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     /**
      * Text extraction service
      *
-     * @var TextExtractionService
+     * Handles actual text extraction from various file formats.
+     *
+     * @var TextExtractionService Text extraction service instance
      */
-    private TextExtractionService $textExtractionService;
+    private readonly TextExtractionService $textExtractionService;
 
 
     /**
      * Run the background job
      *
      * Extracts text from the specified file and stores it in the database.
-     * The job expects an argument array with 'file_id' key.
+     * Checks if extraction is enabled before proceeding. Validates job arguments
+     * and handles errors gracefully.
      *
-     * @param array $argument Job arguments containing file_id
+     * @param array<string, mixed> $argument Job arguments containing:
+     *                                     - file_id: The ID of the file to extract text from (required)
      *
      * @return void
      */
     protected function run($argument): void
     {
+        // Step 1: Check if file text extraction is enabled in configuration.
+        // Skip extraction if disabled to avoid unnecessary processing.
         if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
             || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
         ) {
@@ -85,8 +95,8 @@ class FileTextExtractionJob extends QueuedJob
             return;
         }
 
-        // Validate argument.
-        if (!isset($argument['file_id'])) {
+        // Step 2: Validate that required file_id argument is present.
+        if (isset($argument['file_id']) === false) {
             $this->logger->error(
                     '[FileTextExtractionJob] Missing file_id in job arguments',
                     [
@@ -96,8 +106,10 @@ class FileTextExtractionJob extends QueuedJob
             return;
         }
 
+        // Step 3: Extract and cast file ID to integer.
         $fileId = (int) $argument['file_id'];
 
+        // Log start of extraction process for monitoring.
         $this->logger->info(
                 '[FileTextExtractionJob] Starting text extraction',
                 [
@@ -106,14 +118,18 @@ class FileTextExtractionJob extends QueuedJob
                 ]
                 );
 
+        // Record start time for performance metrics.
         $startTime = microtime(true);
 
         try {
-            // Extract text using TextExtractionService.
-            $this->textExtractionService->extractFile($fileId, false);
+            // Step 4: Extract text from file using TextExtractionService.
+            // forceReExtract is false to avoid re-extracting already processed files.
+            $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
 
+            // Calculate processing time in milliseconds.
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
+            // Log successful completion with performance metrics.
             $this->logger->info(
                     '[FileTextExtractionJob] Text extraction completed successfully',
                     [
@@ -122,8 +138,10 @@ class FileTextExtractionJob extends QueuedJob
                     ]
                     );
         } catch (\Exception $e) {
+            // Calculate processing time even on failure for metrics.
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
+            // Log error with full exception details for debugging.
             $this->logger->error(
                     '[FileTextExtractionJob] Exception during text extraction',
                     [

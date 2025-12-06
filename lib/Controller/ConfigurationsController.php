@@ -140,13 +140,13 @@ class ConfigurationsController extends Controller
         }
 
         // Ensure we have a UUID.
-        if (!isset($data['uuid'])) {
+        if (isset($data['uuid']) === false) {
             $data['uuid'] = Uuid::v4();
         }
 
         // Set default values for new local configurations.
         // If sourceType is not provided, assume it's a local configuration.
-        if (!isset($data['sourceType']) || $data['sourceType'] === null || $data['sourceType'] === '') {
+        if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
             $data['sourceType'] = 'local';
         }
 
@@ -155,9 +155,9 @@ class ConfigurationsController extends Controller
         // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
         if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
             $data['isLocal'] = true;
-        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+        } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
             $data['isLocal'] = false;
-        } else if (!isset($data['isLocal'])) {
+        } elseif (isset($data['isLocal']) === false) {
             // Fallback: if sourceType is something else and isLocal not set, default to true.
             $data['isLocal'] = true;
         }
@@ -204,7 +204,7 @@ class ConfigurationsController extends Controller
         if (($data['sourceType'] ?? null) !== null) {
             if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
                 $data['isLocal'] = true;
-            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+            } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
                 $data['isLocal'] = false;
             }
         }

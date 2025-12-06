@@ -1,19 +1,21 @@
 <?php
 /**
- * Class SchemasController
+ * SchemasController handles REST API endpoints for schema management
  *
  * Controller for managing schema operations in the OpenRegister app.
+ * Provides endpoints for CRUD operations, schema exploration, caching,
+ * import/export, and statistics.
  *
  * @category Controller
- * @package  OCA\OpenRegister\AppInfo
+ * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version  GIT: <git-id>
  *
- * @link https://OpenRegister.app
+ * @link     https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -43,32 +45,47 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class SchemasController
- */
-/**
+ * SchemasController handles REST API endpoints for schema management
+ *
+ * Provides REST API endpoints for managing schemas including CRUD operations,
+ * schema exploration, caching, import/export, and statistics.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class SchemasController extends Controller
 {
 
 
     /**
-     * Constructor for the SchemasController
+     * Constructor
      *
-     * @param string                  $appName                 The name of the app
-     * @param IRequest                $request                 The request object
-     * @param IAppConfig              $config                  The app configuration object
-     * @param SchemaMapper            $schemaMapper            The schema mapper
-     * @param ObjectEntityMapper      $objectEntityMapper      The object entity mapper
-     * @param DownloadService         $downloadService         The download service
-     * @param UploadService           $uploadService           The upload service
-     * @param AuditTrailMapper        $auditTrailMapper        The audit trail mapper
-     * @param OrganisationService     $organisationService     The organisation service
-     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema operations
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet operations
+     * Initializes controller with required dependencies for schema operations.
+     * Calls parent constructor to set up base controller functionality.
+     *
+     * @param string                  $appName                 Application name
+     * @param IRequest                $request                 HTTP request object
+     * @param IAppConfig              $config                  App configuration for settings
+     * @param SchemaMapper            $schemaMapper            Schema mapper for database operations
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper for object queries
+     * @param DownloadService         $downloadService         Download service for file downloads
+     * @param UploadService           $uploadService           Upload service for file uploads
+     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for log statistics
+     * @param OrganisationService     $organisationService     Organisation service for multi-tenancy
+     * @param SchemaCacheService      $schemaCacheService      Schema cache service for caching operations
+     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching
      * @param SchemaService           $schemaService           Schema service for exploration operations
-     * @param LoggerInterface         $logger                  Logger for debugging
+     * @param LoggerInterface         $logger                  Logger for error tracking
      *
      * @return void
      */
@@ -87,21 +104,23 @@ class SchemasController extends Controller
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
 
     /**
      * Retrieves a list of all schemas
      *
-     * This method returns a JSON response containing an array of all schemas in the system.
+     * Returns a JSON response containing an array of all schemas in the system.
+     * Supports pagination, filtering, and extended properties (stats, extendedBy).
      *
-     * @return JSONResponse A JSON response containing the list of schemas
+     * @return JSONResponse JSON response containing the list of schemas
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{results: array<int, mixed>}>
      */
     public function index(): JSONResponse
     {
@@ -112,21 +131,26 @@ class SchemasController extends Controller
         $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
         $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
         $page   = isset($params['_page']) === true ? (int) $params['_page'] : null;
+
         // Note: search parameter not currently used in this endpoint.
+        // Extract extend parameter for additional properties.
         $extend = $params['_extend'] ?? [];
+
+        // Normalize extend to array if string.
         if (is_string($extend) === true) {
             $extend = [$extend];
         }
 
-        // Convert page to offset if provided.
+        // Convert page to offset if provided (page-based pagination).
         if ($page !== null && $limit !== null) {
             $offset = ($page - 1) * $limit;
         }
 
-        // Extract filters.
+        // Extract filters from request parameters.
         $filters = $params['filters'] ?? [];
 
-        $schemas    = $this->schemaMapper->findAll(
+        // Retrieve schemas using mapper with pagination and filters.
+        $schemas = $this->schemaMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
@@ -134,7 +158,14 @@ class SchemasController extends Controller
             searchParams: [],
             extend: []
         );
-        $schemasArr = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
+
+        // Serialize schemas to arrays.
+        $schemasArr = array_map(
+            function ($schema) {
+                return $schema->jsonSerialize();
+            },
+            $schemas
+        );
 
         // Add extendedBy property to each schema showing UUIDs of schemas that extend it.
         foreach ($schemasArr as &$schema) {
@@ -182,7 +213,7 @@ class SchemasController extends Controller
             $extend = [$extend];
         }
 
-            $schema    = $this->schemaMapper->find($id, []);
+            $schema    = $this->schemaMapper->find(id: $id, extend: []);
             $schemaArr = $schema->jsonSerialize();
 
             // Add extendedBy property showing UUIDs of schemas that extend this schema.
@@ -765,7 +796,7 @@ class SchemasController extends Controller
     {
         try {
             // Get property updates from request.
-            $propertyUpdates = $this->request->getParam('properties', []);
+            $propertyUpdates = $this->request->getParam(key: 'properties', default: []);
 
             if (empty($propertyUpdates) === true) {
                 return new JSONResponse(data: ['error' => 'No property updates provided'], statusCode: 400);
@@ -829,8 +860,8 @@ class SchemasController extends Controller
             $updatedSchema = $this->schemaMapper->update($schema);
 
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
-            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'publish');
-            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'publish');
+            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'publish');
+            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'publish');
 
             $this->logger->info(
                     'Schema published',
@@ -890,8 +921,8 @@ class SchemasController extends Controller
             $updatedSchema = $this->schemaMapper->update($schema);
 
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
-            $this->schemaCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'depublish');
-            $this->schemaFacetCacheService->invalidateForSchemaChange($updatedSchema->getId(), 'depublish');
+            $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'depublish');
+            $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'depublish');
 
             $this->logger->info(
                     'Schema depublished',

@@ -29,49 +29,68 @@ use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
- * ApplicationsController
+ * ApplicationsController handles REST API endpoints for application management
  *
- * REST API controller for managing applications.
+ * Provides REST API endpoints for managing applications including CRUD operations,
+ * pagination, filtering, and error handling.
  *
- * @package OCA\OpenRegister\Controller
- */
-/**
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class ApplicationsController extends Controller
 {
 
     /**
      * Application service for business logic
      *
-     * @var ApplicationService
+     * Handles application business logic, validation, and service layer operations.
+     *
+     * @var ApplicationService Application service instance
      */
-    private ApplicationService $applicationService;
+    private readonly ApplicationService $applicationService;
 
     /**
      * Application mapper for direct database operations
      *
-     * @var ApplicationMapper
+     * Used for direct database queries when needed, bypassing service layer.
+     *
+     * @var ApplicationMapper Application mapper instance
      */
-    private ApplicationMapper $applicationMapper;
+    private readonly ApplicationMapper $applicationMapper;
 
     /**
      * Logger for debugging and error tracking
      *
-     * @var LoggerInterface
+     * Used for logging errors, debug information, and operation tracking.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
-     * ApplicationsController constructor
+     * Constructor
+     *
+     * Initializes controller with required dependencies for application operations.
+     * Calls parent constructor to set up base controller functionality.
      *
      * @param string             $appName            Application name
-     * @param IRequest           $request            HTTP request
-     * @param ApplicationService $applicationService Application service
-     * @param ApplicationMapper  $applicationMapper  Application mapper
-     * @param LoggerInterface    $logger             Logger service
+     * @param IRequest           $request            HTTP request object
+     * @param ApplicationService $applicationService Application service for business logic
+     * @param ApplicationMapper  $applicationMapper  Application mapper for database operations
+     * @param LoggerInterface    $logger             Logger for error tracking
+     *
+     * @return void
      */
     public function __construct(
         string $appName,
@@ -80,44 +99,55 @@ class ApplicationsController extends Controller
         ApplicationMapper $applicationMapper,
         LoggerInterface $logger
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
+
+        // Store dependencies for use in controller methods.
         $this->applicationService = $applicationService;
         $this->applicationMapper  = $applicationMapper;
-        $this->logger = $logger;
-
+        $this->logger            = $logger;
     }//end __construct()
 
 
     /**
-     * This returns the template of the main app's page
+     * Render the Applications page
+     *
+     * Returns the template for the main applications page.
+     * All routing is handled client-side by the SPA.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return TemplateResponse
+     * @return TemplateResponse Template response for applications SPA
      */
     public function page(): TemplateResponse
     {
+        // Return SPA template response (routing handled client-side).
         return new TemplateResponse(
-                appName: 'openregister',
-                templateName: 'index',
-                params: []
+            appName: 'openregister',
+            templateName: 'index',
+            params: []
         );
-
     }//end page()
 
 
     /**
      * Get all applications
      *
+     * Retrieves a list of all applications with optional pagination and filtering.
+     * Supports limit/offset pagination or page-based pagination.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse List of applications
+     * @return JSONResponse JSON response containing applications list or error message
+     *
+     * @psalm-return JSONResponse<array{results: array<int, mixed>}|array{error: string}>
      */
     public function index(): JSONResponse
     {
         try {
+            // Get all request parameters.
             $params = $this->request->getParams();
 
             // Extract pagination and search parameters.
@@ -125,23 +155,35 @@ class ApplicationsController extends Controller
             $offset = $this->extractOffset($params);
             $page   = $this->extractPage($params);
 
-            // Convert page to offset if provided.
+            // Convert page to offset if provided (page-based pagination).
             if ($page !== null && $limit !== null) {
                 $offset = ($page - 1) * $limit;
             }
 
-            // Remove special query params from filters.
+            // Remove special query params from filters (keep only application fields).
             $filters = $params;
-            unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
+            unset(
+                $filters['_limit'],
+                $filters['_offset'],
+                $filters['_page'],
+                $filters['_search'],
+                $filters['_route']
+            );
 
+            // Retrieve applications using mapper with pagination and filters.
             $applications = $this->applicationMapper->findAll(
                 limit: $limit,
                 offset: $offset,
                 filters: $filters
             );
 
-            return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
+            // Return successful response with applications list.
+            return new JSONResponse(
+                data: ['results' => $applications],
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with full context.
             $this->logger->error(
                 message: 'Failed to get applications',
                 context: [
@@ -150,29 +192,43 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to retrieve applications'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            // Return error response.
+            return new JSONResponse(
+                data: ['error' => 'Failed to retrieve applications'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
-
     }//end index()
 
 
     /**
      * Get a single application
      *
-     * @param int $id Application ID
+     * Retrieves a specific application by its database ID.
+     * Returns application details or error if not found.
      *
-     * @return JSONResponse Application details
+     * @param int $id Application database ID
+     *
+     * @return JSONResponse JSON response containing application data or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<mixed|array{error: string}>
      */
     public function show(int $id): JSONResponse
     {
         try {
+            // Retrieve application using service layer.
             $application = $this->applicationService->find($id);
 
-            return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
+            // Return successful response with application data.
+            return new JSONResponse(
+                data: $application,
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with application ID.
             $this->logger->error(
                 message: 'Failed to get application',
                 context: [
@@ -181,30 +237,45 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Application not found'], statusCode: Http::STATUS_NOT_FOUND);
+            // Return not found error response.
+            return new JSONResponse(
+                data: ['error' => 'Application not found'],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
         }
-
     }//end show()
 
 
     /**
      * Create a new application
      *
+     * Creates a new application entity from request data.
+     * Validates input and returns created application or error.
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse Created application
+     * @return JSONResponse JSON response containing created application or error message
+     *
+     * @psalm-return JSONResponse<mixed|array{error: string}>
      */
     public function create(): JSONResponse
     {
         try {
+            // Get request data and remove internal route parameter.
             $data = $this->request->getParams();
             unset($data['_route']);
 
+            // Create application using service layer.
             $application = $this->applicationService->create($data);
 
-            return new JSONResponse(data: $application, statusCode: Http::STATUS_CREATED);
+            // Return successful response with created application.
+            return new JSONResponse(
+                data: $application,
+                statusCode: Http::STATUS_CREATED
+            );
         } catch (Exception $e) {
+            // Log error with full context.
             $this->logger->error(
                 message: 'Failed to create application',
                 context: [
@@ -213,25 +284,34 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to create application: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+            // Return error response with message.
+            return new JSONResponse(
+                data: ['error' => 'Failed to create application: '.$e->getMessage()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         }//end try
-
     }//end create()
 
 
     /**
      * Update an existing application
      *
-     * @param int $id Application ID
+     * Updates an existing application entity with new data.
+     * Prevents modification of immutable fields (id, organisation, owner, created).
      *
-     * @return JSONResponse Updated application
+     * @param int $id Application database ID
+     *
+     * @return JSONResponse JSON response containing updated application or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<mixed|array{error: string}>
      */
     public function update(int $id): JSONResponse
     {
         try {
+            // Get request data.
             $data = $this->request->getParams();
 
             // Remove internal parameters and immutable fields.
@@ -241,10 +321,16 @@ class ApplicationsController extends Controller
             unset($data['owner']);
             unset($data['created']);
 
+            // Update application using service layer.
             $application = $this->applicationService->update($id, $data);
 
-            return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
+            // Return successful response with updated application.
+            return new JSONResponse(
+                data: $application,
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with application ID.
             $this->logger->error(
                 message: 'Failed to update application',
                 context: [
@@ -253,46 +339,65 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to update application: '.$e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+            // Return error response with message.
+            return new JSONResponse(
+                data: ['error' => 'Failed to update application: '.$e->getMessage()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         }//end try
-
     }//end update()
 
 
     /**
      * Patch (partially update) an application
      *
+     * Partially updates an application entity (PATCH method).
+     * Delegates to update() method which handles partial updates.
+     *
      * @param int $id The ID of the application to patch
      *
-     * @return JSONResponse The updated application data
+     * @return JSONResponse JSON response containing updated application or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<mixed|array{error: string}>
      */
     public function patch(int $id): JSONResponse
     {
+        // Delegate to update method (both handle partial updates).
         return $this->update($id);
-
     }//end patch()
 
 
     /**
      * Delete an application
      *
-     * @param int $id Application ID
+     * Deletes an application entity by ID.
+     * Returns success message or error if deletion fails.
      *
-     * @return JSONResponse Success message
+     * @param int $id Application database ID
+     *
+     * @return JSONResponse JSON response containing success message or error
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{message: string}|array{error: string}>
      */
     public function destroy(int $id): JSONResponse
     {
         try {
+            // Delete application using service layer.
             $this->applicationService->delete($id);
 
-            return new JSONResponse(data: ['message' => 'Application deleted successfully'], statusCode: Http::STATUS_OK);
+            // Return successful response.
+            return new JSONResponse(
+                data: ['message' => 'Application deleted successfully'],
+                statusCode: Http::STATUS_OK
+            );
         } catch (Exception $e) {
+            // Log error with application ID.
             $this->logger->error(
                 message: 'Failed to delete application',
                 context: [
@@ -301,63 +406,82 @@ class ApplicationsController extends Controller
                 ]
             );
 
-            return new JSONResponse(data: ['error' => 'Failed to delete application'], statusCode: Http::STATUS_BAD_REQUEST);
+            // Return error response.
+            return new JSONResponse(
+                data: ['error' => 'Failed to delete application'],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
         }
-
     }//end destroy()
 
 
     /**
-     * Extract limit parameter from request params.
+     * Extract limit parameter from request params
+     *
+     * Extracts the _limit parameter from request parameters and converts to integer.
+     * Returns null if parameter is not present.
      *
      * @param array<string, mixed> $params Request parameters
      *
-     * @return int|null Limit value or null
+     * @return int|null Limit value or null if not provided
+     *
+     * @psalm-return int|null
      */
     private function extractLimit(array $params): ?int
     {
+        // Check if _limit parameter exists and extract as integer.
         if (($params['_limit'] ?? null) !== null) {
             return (int) $params['_limit'];
         }
 
+        // Return null if parameter not provided.
         return null;
-
     }//end extractLimit()
 
-
     /**
-     * Extract offset parameter from request params.
+     * Extract offset parameter from request params
+     *
+     * Extracts the _offset parameter from request parameters and converts to integer.
+     * Returns null if parameter is not present.
      *
      * @param array<string, mixed> $params Request parameters
      *
-     * @return int|null Offset value or null
+     * @return int|null Offset value or null if not provided
+     *
+     * @psalm-return int|null
      */
     private function extractOffset(array $params): ?int
     {
+        // Check if _offset parameter exists and extract as integer.
         if (($params['_offset'] ?? null) !== null) {
             return (int) $params['_offset'];
         }
 
+        // Return null if parameter not provided.
         return null;
-
     }//end extractOffset()
 
-
     /**
-     * Extract page parameter from request params.
+     * Extract page parameter from request params
+     *
+     * Extracts the _page parameter from request parameters and converts to integer.
+     * Returns null if parameter is not present.
      *
      * @param array<string, mixed> $params Request parameters
      *
-     * @return int|null Page value or null
+     * @return int|null Page value or null if not provided
+     *
+     * @psalm-return int|null
      */
     private function extractPage(array $params): ?int
     {
+        // Check if _page parameter exists and extract as integer.
         if (($params['_page'] ?? null) !== null) {
             return (int) $params['_page'];
         }
 
+        // Return null if parameter not provided.
         return null;
-
     }//end extractPage()
 
 

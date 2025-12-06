@@ -532,7 +532,7 @@ class ImportService
 
         // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
         // This will reveal the real bulk save problem immediately.
-        if (!empty($allObjects) === true && $register !== null && $schema !== null) {
+        if ((empty($allObjects) === false) && $register !== null && $schema !== null) {
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
                 $publishDate = (new \DateTime('now'))->format('c');
@@ -653,7 +653,7 @@ class ImportService
 
         // Call saveObjects ONCE with all objects - NO ERROR SUPPRESSION!
         // This will reveal the real bulk save problem immediately.
-        if (!empty($allObjects)) {
+        if (empty($allObjects) === false) {
             // Log publish processing for debugging.
             $this->logger->debug(
                     message: 'CSV import processing objects',
@@ -677,7 +677,7 @@ class ImportService
                 $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
 
                 // Log first object structure for debugging.
-                if (!empty($allObjects[0]['@self'])) {
+                if (empty($allObjects[0]['@self']) === false) {
                     $this->logger->debug(
                             message: 'First object @self structure after adding publish date',
                             context: [
@@ -754,7 +754,7 @@ class ImportService
         // Ensure schemaId is string for array key.
         $schemaIdKey = is_string($schemaId) ? $schemaId : (string) $schemaId;
 
-        if (!isset($this->schemaPropertiesCache[$schemaIdKey])) {
+        if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
             /*
              * @psalm-suppress InvalidPropertyAssignmentValue - getProperties() returns array compatible with array<string, array>
              */
@@ -786,7 +786,7 @@ class ImportService
             if ($firstChar === '_') {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } else if ($firstChar === '@') {
+            } elseif ($firstChar === '@') {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -813,7 +813,7 @@ class ImportService
         }//end foreach
 
         // Add ID if present in the data (for updates) - check once at the end.
-        if (!empty($rowData['id'])) {
+        if (empty($rowData['id']) === false) {
             $selfData['id'] = $rowData['id'];
         }
 
@@ -978,7 +978,7 @@ class ImportService
             if (str_starts_with($key, '_') === true) {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } else if (str_starts_with($key, '@') === true) {
+            } elseif (str_starts_with($key, '@') === true) {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -1217,7 +1217,7 @@ class ImportService
                 $selfPropertyName = substr($key, 1);
                 // Remove the _ prefix.
                 $selfData[$selfPropertyName] = $value;
-            } else if (str_starts_with($key, '@self.') === true) {
+            } elseif (str_starts_with($key, '@self.') === true) {
                 // Move properties starting with @self. to @self array and remove the @self. prefix.
                 $selfPropertyName = substr($key, 6);
                 // Remove the @self. prefix (6 characters).
@@ -1664,7 +1664,7 @@ class ImportService
         if ($totalImported > 10000) {
             // Fast mode for large imports.
             return 'fast';
-        } else if ($totalImported > 1000) {
+        } elseif ($totalImported > 1000) {
             // Balanced mode for medium imports.
             return 'balanced';
         } else {

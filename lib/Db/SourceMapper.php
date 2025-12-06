@@ -119,7 +119,7 @@ class SourceMapper extends QBMapper
     public function find(int $id): Source
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'source');
+        $this->verifyRbacPermission(action: 'read', entityType: 'source');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -157,7 +157,7 @@ class SourceMapper extends QBMapper
         ?array $searchParams=[]
     ): array {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'source');
+        $this->verifyRbacPermission(action: 'read', entityType: 'source');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -202,7 +202,7 @@ class SourceMapper extends QBMapper
     public function insert(Entity $entity): Source
     {
         // Verify RBAC permission to create.
-        $this->verifyRbacPermission('create', 'source');
+        $this->verifyRbacPermission(action: 'create', entityType: 'source');
 
         if ($entity instanceof Source) {
             // Generate UUID if not set.
@@ -238,7 +238,7 @@ class SourceMapper extends QBMapper
     public function update(Entity $entity): Source
     {
         // Verify RBAC permission to update.
-        $this->verifyRbacPermission('update', 'source');
+        $this->verifyRbacPermission(action: 'update', entityType: 'source');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -273,7 +273,7 @@ class SourceMapper extends QBMapper
     public function delete(Entity $entity): Source
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', 'source');
+        $this->verifyRbacPermission(action: 'delete', entityType: 'source');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -324,7 +324,7 @@ class SourceMapper extends QBMapper
         $obj->hydrate($object);
 
         // Set or update the version.
-        if (!isset($object['version'])) {
+        if (isset($object['version']) === false) {
             $version    = explode('.', $obj->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $obj->setVersion(implode('.', $version));

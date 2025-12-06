@@ -29,8 +29,20 @@ use Psr\Log\LoggerInterface;
 /**
  * Background job for webhook delivery with retries
  *
- * This job handles asynchronous webhook delivery, particularly for retries
- * after failed delivery attempts.
+ * Handles asynchronous webhook delivery, particularly for retries after failed
+ * delivery attempts. Implements exponential backoff and retry logic for reliable
+ * webhook delivery.
+ *
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  *
  * @psalm-suppress UnusedClass
  */
@@ -40,32 +52,43 @@ class WebhookDeliveryJob extends QueuedJob
     /**
      * Webhook mapper
      *
-     * @var WebhookMapper
+     * Handles database operations for webhook entities.
+     *
+     * @var WebhookMapper Webhook mapper instance
      */
-    private WebhookMapper $webhookMapper;
+    private readonly WebhookMapper $webhookMapper;
 
     /**
      * Webhook service
      *
-     * @var WebhookService
+     * Handles webhook delivery logic and HTTP requests.
+     *
+     * @var WebhookService Webhook service instance
      */
-    private WebhookService $webhookService;
+    private readonly WebhookService $webhookService;
 
     /**
      * Logger
      *
-     * @var LoggerInterface
+     * Used for logging delivery attempts, successes, and errors.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor
      *
-     * @param ITimeFactory    $time           Time factory
-     * @param WebhookMapper   $webhookMapper  Webhook mapper
-     * @param WebhookService  $webhookService Webhook service
-     * @param LoggerInterface $logger         Logger
+     * Initializes background job with required dependencies for webhook delivery.
+     * Calls parent constructor to set up base job functionality with time factory.
+     *
+     * @param ITimeFactory    $time           Time factory for job scheduling
+     * @param WebhookMapper   $webhookMapper  Webhook mapper for database operations
+     * @param WebhookService  $webhookService Webhook service for delivery logic
+     * @param LoggerInterface $logger         Logger for error tracking
+     *
+     * @return void
      */
     public function __construct(
         ITimeFactory $time,
@@ -73,7 +96,10 @@ class WebhookDeliveryJob extends QueuedJob
         WebhookService $webhookService,
         LoggerInterface $logger
     ) {
+        // Call parent constructor to initialize base job with time factory.
         parent::__construct($time);
+        
+        // Store dependencies for use in job execution.
         $this->webhookMapper  = $webhookMapper;
         $this->webhookService = $webhookService;
         $this->logger         = $logger;
@@ -84,16 +110,20 @@ class WebhookDeliveryJob extends QueuedJob
     /**
      * Run the background job
      *
-     * @param array $argument Job arguments containing:
-     *                        - webhook_id: Webhook ID
-     *                        - event_name: Event class name
-     *                        - payload: Event payload data
-     *                        - attempt: Current attempt number
+     * Executes webhook delivery with retry logic. Extracts webhook configuration,
+     * delivers payload to webhook URL, and handles retries on failure.
+     *
+     * @param array<string, mixed> $argument Job arguments containing:
+     *                                     - webhook_id: Webhook ID to deliver (required)
+     *                                     - event_name: Event class name (required)
+     *                                     - payload: Event payload data (required)
+     *                                     - attempt: Current attempt number (default: 1)
      *
      * @return void
      */
     protected function run($argument): void
     {
+        // Extract job arguments with defaults.
         $webhookId = $argument['webhook_id'] ?? null;
         $eventName = $argument['event_name'] ?? null;
         $payload   = $argument['payload'] ?? [];
@@ -124,10 +154,10 @@ class WebhookDeliveryJob extends QueuedJob
 
             // Deliver webhook.
             $success = $this->webhookService->deliverWebhook(
-                $webhook,
-                $eventName,
-                $payload,
-                $attempt
+                webhook: $webhook,
+                eventName: $eventName,
+                payload: $payload,
+                attempt: $attempt
             );
 
             if ($success === true) {

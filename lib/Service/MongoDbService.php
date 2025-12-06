@@ -211,7 +211,7 @@ class MongoDbService
         );
 
         // Return updated document.
-        return $this->findObject($filters, $config);
+        return $this->findObject(filters: $filters, config: $config);
 
     }//end updateObject()
 

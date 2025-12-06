@@ -28,7 +28,22 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
- * EndpointLogMapper
+ * EndpointLogMapper handles database operations for EndpointLog entities
+ *
+ * Mapper for EndpointLog entities to handle database operations for endpoint
+ * execution logs. Provides methods for querying logs by endpoint, retrieving
+ * statistics, and managing log entries.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  *
  * @method EndpointLog insert(Entity $entity)
  * @method EndpointLog update(Entity $entity)
@@ -48,10 +63,16 @@ class EndpointLogMapper extends QBMapper
     /**
      * Constructor
      *
+     * Initializes mapper with database connection.
+     * Calls parent constructor to set up base mapper functionality.
+     *
      * @param IDBConnection $db Database connection
+     *
+     * @return void
      */
     public function __construct(IDBConnection $db)
     {
+        // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_endpoint_logs', EndpointLog::class);
 
     }//end __construct()
@@ -60,27 +81,35 @@ class EndpointLogMapper extends QBMapper
     /**
      * Find all endpoint logs
      *
-     * @param int|null $limit  Maximum number of results
-     * @param int|null $offset Starting offset
+     * Retrieves all endpoint execution logs with optional pagination.
+     * Results are ordered by creation date descending (newest first).
      *
-     * @return EndpointLog[]
+     * @param int|null $limit  Maximum number of results to return (null = no limit)
+     * @param int|null $offset Starting offset for pagination (null = no offset)
+     *
+     * @return EndpointLog[] Array of endpoint log entities
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query for all columns.
         $qb->select('*')
             ->from($this->getTableName())
             ->orderBy('created', 'DESC');
 
+        // Step 3: Apply pagination if limit specified.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
 
+        // Step 4: Apply offset if specified.
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
 
+        // Step 5: Execute query and return entities.
         return $this->findEntities($qb);
 
     }//end findAll()
@@ -89,29 +118,37 @@ class EndpointLogMapper extends QBMapper
     /**
      * Find logs by endpoint ID
      *
-     * @param int      $endpointId Endpoint ID
-     * @param int|null $limit      Maximum number of results
-     * @param int|null $offset     Starting offset
+     * Retrieves all execution logs for a specific endpoint with optional pagination.
+     * Results are ordered by creation date descending (newest first).
      *
-     * @return EndpointLog[]
+     * @param int      $endpointId Endpoint ID to filter logs by
+     * @param int|null $limit      Maximum number of results to return (null = no limit)
+     * @param int|null $offset     Starting offset for pagination (null = no offset)
+     *
+     * @return EndpointLog[] Array of endpoint log entities for the specified endpoint
      */
     public function findByEndpoint(int $endpointId, ?int $limit=null, ?int $offset=null): array
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query with endpoint ID filter.
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('endpoint_id', $qb->createNamedParameter($endpointId, IQueryBuilder::PARAM_INT)))
             ->orderBy('created', 'DESC');
 
+        // Step 3: Apply pagination if limit specified.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
 
+        // Step 4: Apply offset if specified.
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
 
+        // Step 5: Execute query and return entities.
         return $this->findEntities($qb);
 
     }//end findByEndpoint()
@@ -120,20 +157,26 @@ class EndpointLogMapper extends QBMapper
     /**
      * Find a single log by ID
      *
-     * @param int $id Log ID
+     * Retrieves endpoint log entry by ID. Throws exception if log not found.
      *
-     * @return EndpointLog
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
+     * @param int $id Log ID to find
+     *
+     * @return EndpointLog The found endpoint log entity
+     *
+     * @throws DoesNotExistException If log entry not found
+     * @throws MultipleObjectsReturnedException If multiple log entries found (should not happen)
      */
     public function find($id): EndpointLog
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query with ID filter.
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
+        // Step 3: Execute query and return single entity.
         return $this->findEntity($qb);
 
     }//end find()

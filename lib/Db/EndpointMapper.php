@@ -33,7 +33,21 @@ use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * EndpointMapper
+ * EndpointMapper handles database operations for Endpoint entities
+ *
+ * Mapper for Endpoint entities to handle database operations with multi-tenancy
+ * and RBAC support. Extends QBMapper to provide standard CRUD operations.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  *
  * @method Endpoint insert(Entity $entity)
  * @method Endpoint update(Entity $entity)
@@ -51,12 +65,44 @@ class EndpointMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+     * Organisation service for multi-tenancy
+     *
+     * Used to filter endpoints by organisation for multi-tenant support.
+     *
+     * @var OrganisationService Organisation service instance
+     */
+    private readonly OrganisationService $organisationService;
+
+    /**
+     * User session for current user
+     *
+     * Used to determine current user context for RBAC filtering.
+     *
+     * @var IUserSession User session instance
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * Used to check user group memberships for access control.
+     *
+     * @var IGroupManager Group manager instance
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
      * EndpointMapper constructor
      *
+     * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
+     * Calls parent constructor to set up base mapper functionality.
+     *
      * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session for RBAC
+     * @param IGroupManager       $groupManager        Group manager for RBAC
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
@@ -64,32 +110,14 @@ class EndpointMapper extends QBMapper
         IUserSession $userSession,
         IGroupManager $groupManager
     ) {
+        // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_endpoints', Endpoint::class);
+        
+        // Store dependencies for use in mapper methods.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
     }
-
-    /**
-     * Organisation service for multi-tenancy
-     *
-     * @var OrganisationService
-     */
-    private OrganisationService $organisationService;
-
-    /**
-     * User session for current user
-     *
-     * @var IUserSession
-     */
-    private IUserSession $userSession;
-
-    /**
-     * Group manager for RBAC
-     *
-     * @var IGroupManager
-     */
-    private IGroupManager $groupManager;
 
 
 
@@ -97,29 +125,38 @@ class EndpointMapper extends QBMapper
     /**
      * Find all endpoints
      *
-     * @param int|null $limit  Maximum number of results
-     * @param int|null $offset Starting offset
+     * Retrieves all endpoints with optional pagination and organisation filtering.
+     * Applies multi-tenancy filter to return only endpoints for current organisation.
      *
-     * @return Endpoint[]
+     * @param int|null $limit  Maximum number of results to return (null = no limit)
+     * @param int|null $offset Starting offset for pagination (null = no offset)
+     *
+     * @return Endpoint[] Array of endpoint entities
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query for all columns.
         $qb->select('*')
             ->from($this->getTableName());
 
-        // Apply organisation filter.
+        // Step 3: Apply organisation filter for multi-tenancy.
+        // This ensures users only see endpoints from their organisation.
         $this->applyOrganisationFilter($qb);
 
+        // Step 4: Apply pagination if limit specified.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
 
+        // Step 5: Apply offset if specified.
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
 
+        // Step 6: Execute query and return entities.
         return $this->findEntities($qb);
 
     }//end findAll()
@@ -128,23 +165,31 @@ class EndpointMapper extends QBMapper
     /**
      * Find a single endpoint by ID
      *
-     * @param int $id Endpoint ID
+     * Retrieves endpoint by ID with organisation filtering for multi-tenancy.
+     * Throws exception if endpoint not found or doesn't belong to current organisation.
      *
-     * @return Endpoint
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
+     * @param int $id Endpoint ID to find
+     *
+     * @return Endpoint The found endpoint entity
+     *
+     * @throws DoesNotExistException If endpoint not found or not accessible
+     * @throws MultipleObjectsReturnedException If multiple endpoints found (should not happen)
      */
     public function find($id): Endpoint
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query with ID filter.
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter.
+        // Step 3: Apply organisation filter for multi-tenancy.
+        // This ensures users can only access endpoints from their organisation.
         $this->applyOrganisationFilter($qb);
 
+        // Step 4: Execute query and return single entity.
         return $this->findEntity($qb);
 
     }//end find()
@@ -161,12 +206,12 @@ class EndpointMapper extends QBMapper
     public function createFromArray(array $data): Endpoint
     {
         // Check RBAC permissions.
-        $this->verifyRbacPermission('create', 'endpoint');
+        $this->verifyRbacPermission(action: 'create', entityType: 'endpoint');
 
         $endpoint = new Endpoint();
 
         // Generate UUID if not provided.
-        if (!isset($data['uuid']) === false || empty($data['uuid']) === true) {
+        if (isset($data['uuid']) === false || empty($data['uuid']) === true) {
             $data['uuid'] = Uuid::v4()->toRfc4122();
         }
 
@@ -201,7 +246,7 @@ class EndpointMapper extends QBMapper
     public function updateFromArray(int $id, array $data): Endpoint
     {
         // Check RBAC permissions.
-        $this->verifyRbacPermission('update', 'endpoint');
+        $this->verifyRbacPermission(action: 'update', entityType: 'endpoint');
 
         // Find the existing endpoint.
         $endpoint = $this->find($id);
@@ -237,7 +282,7 @@ class EndpointMapper extends QBMapper
     public function delete(Entity $entity): Endpoint
     {
         // Check RBAC permissions.
-        $this->verifyRbacPermission('delete', 'endpoint');
+        $this->verifyRbacPermission(action: 'delete', entityType: 'endpoint');
 
         // Verify organisation access.
         $this->verifyOrganisationAccess($entity);

@@ -188,8 +188,8 @@ class ObjectsProvider implements IFilteringProvider
     public function getCustomFilters(): array
     {
         return [
-            new FilterDefinition('register', FilterDefinition::TYPE_STRING),
-            new FilterDefinition('schema', FilterDefinition::TYPE_STRING),
+            new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
+            new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
         ];
 
     }//end getCustomFilters()
@@ -318,11 +318,11 @@ class ObjectsProvider implements IFilteringProvider
                 $description = $this->buildDescription($result);
 
                 $searchResultEntries[] = new SearchResultEntry(
-                    $objectUrl,
-                    $title,
-                    $description,
-                    $objectUrl,
-                    'icon-openregister'
+                    url: $objectUrl,
+                    title: $title,
+                    text: $description,
+                    link: $objectUrl,
+                    icon: 'icon-openregister'
                 );
             }
         }//end if
@@ -336,8 +336,8 @@ class ObjectsProvider implements IFilteringProvider
                 );
 
         return SearchResult::complete(
-            $this->l10n->t('Open Register Objects'),
-            $searchResultEntries
+            name: $this->l10n->t(text: 'Open Register Objects'),
+            entries: $searchResultEntries
         );
 
     }//end search()
@@ -356,27 +356,27 @@ class ObjectsProvider implements IFilteringProvider
 
         // Add schema/register information if available.
         if (!empty($object['schema'])) {
-            $parts[] = $this->l10n->t('Schema: %s', [$object['schema']]);
+            $parts[] = $this->l10n->t(text: 'Schema: %s', args: [$object['schema']]);
         }
 
         if (!empty($object['register'])) {
-            $parts[] = $this->l10n->t('Register: %s', [$object['register']]);
+            $parts[] = $this->l10n->t(text: 'Register: %s', args: [$object['register']]);
         }
 
         // Add summary/description if available.
         if (!empty($object['summary'])) {
             $parts[] = $object['summary'];
-        } else if (!empty($object['description'])) {
+        } elseif (empty($object['description']) === false) {
             $parts[] = substr($object['description'], 0, 100).(strlen($object['description']) > 100 ? '...' : '');
         }
 
         // Add last updated info if available.
         if (!empty($object['updated'])) {
-            $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
+            $parts[] = $this->l10n->t(text: 'Updated: %s', args: [date('Y-m-d H:i', strtotime($object['updated']))]);
         }
 
         $description = implode(' • ', $parts);
-        return $description !== '' ? $description : $this->l10n->t('Open Register Object');
+        return $description !== '' ? $description : $this->l10n->t(text: 'Open Register Object');
 
     }//end buildDescription()
 

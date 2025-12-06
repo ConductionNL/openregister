@@ -210,7 +210,7 @@ class MagicBulkHandler
         $chunks = array_chunk($objects, $chunkSize);
 
         foreach ($chunks as $chunk) {
-            $chunkUuids    = $this->executeBulkInsertChunk($chunk, $tableName);
+            $chunkUuids    = $this->executeBulkInsertChunk(chunk: $chunk, tableName: $tableName);
             $insertedUuids = array_merge($insertedUuids, $chunkUuids);
         }
 
@@ -422,11 +422,11 @@ class MagicBulkHandler
                 // > 64MB.
                 $this->maxPacketSizeBuffer = 0.6;
                 // 60% buffer.
-            } else if ($maxPacketSize > 33554432) {
+            } elseif ($maxPacketSize > 33554432) {
                 // > 32MB.
                 $this->maxPacketSizeBuffer = 0.5;
                 // 50% buffer.
-            } else if ($maxPacketSize > 16777216) {
+            } elseif ($maxPacketSize > 16777216) {
                 // > 16MB.
                 $this->maxPacketSizeBuffer = 0.4;
                 // 40% buffer.

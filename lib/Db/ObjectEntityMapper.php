@@ -288,11 +288,11 @@ class ObjectEntityMapper extends QBMapper
                     // > 64MB
                     $this->maxPacketSizeBuffer = 0.6;
                     // 60% buffer
-                } else if ($maxPacketSize > 33554432) {
+                } elseif ($maxPacketSize > 33554432) {
                     // > 32MB
                     $this->maxPacketSizeBuffer = 0.5;
                     // 50% buffer
-                } else if ($maxPacketSize > 16777216) {
+                } elseif ($maxPacketSize > 16777216) {
                     // > 16MB
                     $this->maxPacketSizeBuffer = 0.4;
                     // 40% buffer
@@ -940,7 +940,7 @@ class ObjectEntityMapper extends QBMapper
                     return empty($term) === false;
                 }
             );
-        } else if (is_string($search) === true) {
+        } elseif (is_string($search) === true) {
             // Handle comma-separated values in string.
             $searchTerms = array_filter(
                 array_map('trim', explode(',', $search)),
@@ -1773,7 +1773,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Add register filter if provided.
         if ($register !== null) {
-            $registerColumn = !empty($tableAlias) ? $tableAlias.'.register' : 'register';
+            $registerColumn = (empty($tableAlias) === false) ? $tableAlias.'.register' : 'register';
             if (is_array($register) === true) {
                 // Handle array of register IDs.
                 $queryBuilder->andWhere(
@@ -1794,7 +1794,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Add schema filter if provided.
         if ($schema !== null) {
-            $schemaColumn = !empty($tableAlias) ? $tableAlias.'.schema' : 'schema';
+            $schemaColumn = (empty($tableAlias) === false) ? $tableAlias.'.schema' : 'schema';
             if (is_array($schema) === true) {
                 // Handle array of schema IDs.
                 $queryBuilder->andWhere(
@@ -2262,7 +2262,7 @@ class ObjectEntityMapper extends QBMapper
         $startTime = microtime(true);
 
         // Filter out empty values and ensure uniqueness.
-        $cleanIds = array_filter(array_unique($ids), fn($id) => !empty($id));
+        $cleanIds = array_filter(array_unique($ids), fn($id) => empty($id) === false);
 
         if (empty($cleanIds) === true) {
             return [];

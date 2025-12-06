@@ -58,11 +58,17 @@ class SearchTrailService
     /**
      * Constructor for SearchTrailService
      *
+     * Initializes service with required mappers and optional configuration.
+     * Sets retention period and self-clearing flag if provided.
+     *
      * @param SearchTrailMapper $searchTrailMapper Mapper for search trail database operations
      * @param RegisterMapper    $registerMapper    Mapper for register database operations
      * @param SchemaMapper      $schemaMapper      Mapper for schema database operations
      * @param int|null          $retentionDays     Optional retention period in days (default: 365)
-     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing (default: false, use cron jobs instead)
+     * @param bool|null         $selfClearing      Optional flag to enable/disable self-clearing
+     *                                             (default: false, use cron jobs instead)
+     *
+     * @return void
      */
     public function __construct(
         private readonly SearchTrailMapper $searchTrailMapper,
@@ -71,10 +77,12 @@ class SearchTrailService
         ?int $retentionDays=null,
         ?bool $selfClearing=null
     ) {
+        // Set retention period if provided, otherwise use default (365 days).
         if ($retentionDays !== null) {
             $this->retentionDays = $retentionDays;
         }
 
+        // Set self-clearing flag if provided, otherwise use default (false).
         if ($selfClearing !== null) {
             $this->selfClearingEnabled = $selfClearing;
         }
@@ -85,20 +93,22 @@ class SearchTrailService
     /**
      * Create a search trail log entry
      *
-     * This method processes search query parameters and creates a comprehensive
-     * search trail entry for analytics and monitoring purposes. System parameters
-     * (starting with _) are automatically excluded from tracking.
-     * If self-clearing is enabled, it will also trigger cleanup of old search trails.
+     * Processes search query parameters and creates a comprehensive search trail entry
+     * for analytics and monitoring purposes. System parameters (starting with _) are
+     * automatically excluded from tracking by the mapper.
      *
-     * @param array  $query         The search query parameters
-     * @param int    $resultCount   The number of results returned
-     * @param int    $totalResults  The total number of matching results
-     * @param float  $responseTime  The response time in milliseconds
-     * @param string $executionType The execution type ('sync' or 'async')
+     * If self-clearing is enabled, automatically triggers cleanup of old search trails
+     * after creating the new entry.
+     *
+     * @param array<string, mixed> $query         The search query parameters (system params excluded)
+     * @param int                   $resultCount   The number of results returned in this page
+     * @param int                   $totalResults  The total number of matching results
+     * @param float                 $responseTime  The response time in milliseconds (default: 0.0)
+     * @param string                $executionType The execution type: 'sync' or 'async' (default: 'sync')
      *
      * @return SearchTrail The created search trail entity
      *
-     * @throws Exception If search trail creation fails
+     * @throws Exception If search trail creation fails (database error, validation error, etc.)
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
@@ -110,6 +120,8 @@ class SearchTrailService
         string $executionType='sync'
     ): SearchTrail {
         try {
+            // Step 1: Create search trail entry using mapper.
+            // Mapper handles filtering of system parameters (starting with _).
             $trail = $this->searchTrailMapper->createSearchTrail(
                 searchQuery: $query,
                 resultCount: $resultCount,
@@ -118,13 +130,16 @@ class SearchTrailService
                 executionType: $executionType
             );
 
-            // Self-clearing: automatically clean up old search trails if enabled.
+            // Step 2: Self-clearing: automatically clean up old search trails if enabled.
+            // This prevents database growth but may impact performance on high-traffic systems.
             if ($this->selfClearingEnabled === true) {
                 $this->clearExpiredSearchTrails();
             }
 
+            // Step 3: Return created search trail entity.
             return $trail;
         } catch (Exception $e) {
+            // Wrap exception with more context for debugging.
             throw new Exception("Search trail creation failed: ".$e->getMessage(), 0, $e);
         }
 
@@ -228,7 +243,7 @@ class SearchTrailService
             'results' => $enrichedTrails,
             'total'   => $total,
             'page'    => $processedConfig['page'],
-            'pages'   => $this->calculatePages($total, $processedConfig['limit']),
+            'pages'   => $this->calculatePages(total: $total, limit: $processedConfig['limit']),
             'limit'   => $processedConfig['limit'],
             'offset'  => $processedConfig['offset'],
         ];
@@ -282,7 +297,7 @@ class SearchTrailService
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
-        $baseStats = $this->searchTrailMapper->getSearchStatistics($from, $to);
+        $baseStats = $this->searchTrailMapper->getSearchStatistics(from: $from, to: $to);
 
         // Add additional calculated metrics.
         $baseStats['searches_with_results']    = $baseStats['non_empty_searches'];
@@ -508,11 +523,11 @@ class SearchTrailService
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
-        $stats = $this->searchTrailMapper->getUserAgentStatistics($limit, $from, $to);
+        $stats = $this->searchTrailMapper->getUserAgentStatistics(limit: $limit, from: $from, to: $to);
 
         $enhancedStats = array_map(
                 function ($stat) {
-                    $stat['browser_info'] = $this->parseUserAgent($stat['user_agent']);
+                    $stat['browser_info'] = $this->parseUserAgent(userAgent: $stat['user_agent']);
                     return $stat;
                 },
                 $stats
@@ -618,7 +633,7 @@ class SearchTrailService
         // Process pagination parameters.
         if (($config['limit'] ?? null) !== null) {
             $processed['limit'] = max(1, (int) $config['limit']);
-        } else if (($config['_limit'] ?? null) !== null) {
+        } elseif (($config['_limit'] ?? null) !== null) {
             $processed['limit'] = max(1, (int) $config['_limit']);
         }
 
@@ -630,7 +645,7 @@ class SearchTrailService
 
         if (($config['page'] ?? null) !== null) {
             $processed['page'] = max(1, (int) $config['page']);
-        } else if (($config['_page'] ?? null) !== null) {
+        } elseif (($config['_page'] ?? null) !== null) {
             $processed['page'] = max(1, (int) $config['_page']);
         }
 
@@ -792,7 +807,7 @@ class SearchTrailService
 
         if ($slope > 0.1) {
             return 'increasing';
-        } else if ($slope < -0.1) {
+        } elseif ($slope < -0.1) {
             return 'decreasing';
         } else {
             return 'stable';
@@ -818,7 +833,7 @@ class SearchTrailService
             return 'excellent';
         } else if ($avgResults >= 5 && $avgResponseTime <= 200) {
             return 'good';
-        } else if ($avgResults >= 1 && $avgResponseTime <= 500) {
+        } elseif ($avgResults >= 1 && $avgResponseTime <= 500) {
             return 'average';
         } else {
             return 'poor';

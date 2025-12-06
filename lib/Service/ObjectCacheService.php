@@ -410,15 +410,15 @@ class ObjectCacheService
                     $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
                     $dynamicFields = array_merge($dynamicFields, $nestedFields);
                 }
-            } else if (is_string($value) === true) {
+            } elseif (is_string($value) === true) {
                 $dynamicFields[$fieldName.'_s']   = $value;
                 $dynamicFields[$fieldName.'_txt'] = $value;
-            } else if (is_int($value) === true || is_float($value) === true) {
+            } elseif (is_int($value) === true || is_float($value) === true) {
                 $suffix = is_int($value) === true ? '_i' : '_f';
                 $dynamicFields[$fieldName.$suffix] = $value;
-            } else if (is_bool($value) === true) {
+            } elseif (is_bool($value) === true) {
                 $dynamicFields[$fieldName.'_b'] = $value;
-            } else if ($this->isDateString($value) === true) {
+            } elseif ($this->isDateString($value) === true) {
                 $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr($value);
             }//end if
         }//end foreach
@@ -466,7 +466,7 @@ class ObjectCacheService
         foreach ($data as $_key => $value) {
             if (is_string($value) === true) {
                 $textContent[] = $value;
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 $this->extractTextFromArray(data: $value, textContent: $textContent);
             }
         }
@@ -801,7 +801,7 @@ class ObjectCacheService
                 if (($object->getId() !== null) === true && (string) $object->getId() !== $object->getUuid()) {
                     $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
-            } else if ($operation === 'delete') {
+            } elseif ($operation === 'delete') {
                 // Remove from SOLR index with immediate commit for instant visibility.
                 $this->removeObjectFromSolr(object: $object, commit: true);
 

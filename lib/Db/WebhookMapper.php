@@ -33,7 +33,21 @@ use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * WebhookMapper
+ * WebhookMapper handles database operations for Webhook entities
+ *
+ * Mapper for Webhook entities to handle database operations with multi-tenancy
+ * and RBAC support. Extends QBMapper to provide standard CRUD operations.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  *
  * @method Webhook insert(Entity $entity)
  * @method Webhook update(Entity $entity)
@@ -53,32 +67,43 @@ class WebhookMapper extends QBMapper
     /**
      * Organisation service for multi-tenancy
      *
-     * @var OrganisationService
+     * Used to filter webhooks by organisation for multi-tenant support.
+     *
+     * @var OrganisationService Organisation service instance
      */
-    private OrganisationService $organisationService;
+    private readonly OrganisationService $organisationService;
 
     /**
      * User session for current user
      *
-     * @var IUserSession
+     * Used to determine current user context for RBAC filtering.
+     *
+     * @var IUserSession User session instance
      */
-    private IUserSession $userSession;
+    private readonly IUserSession $userSession;
 
     /**
      * Group manager for RBAC
      *
-     * @var IGroupManager
+     * Used to check user group memberships for access control.
+     *
+     * @var IGroupManager Group manager instance
      */
-    private IGroupManager $groupManager;
+    private readonly IGroupManager $groupManager;
 
 
     /**
      * Constructor
      *
+     * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
+     * Calls parent constructor to set up base mapper functionality.
+     *
      * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session for RBAC
+     * @param IGroupManager       $groupManager        Group manager for RBAC
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
@@ -86,7 +111,10 @@ class WebhookMapper extends QBMapper
         IUserSession $userSession,
         IGroupManager $groupManager
     ) {
+        // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_webhooks', Webhook::class);
+        
+        // Store dependencies for use in mapper methods.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
@@ -97,18 +125,25 @@ class WebhookMapper extends QBMapper
     /**
      * Find all webhooks
      *
-     * @return Webhook[]
+     * Retrieves all webhooks with organisation filtering for multi-tenancy.
+     * Returns only webhooks belonging to the current organisation.
+     *
+     * @return Webhook[] Array of webhook entities
      */
     public function findAll(): array
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query for all columns.
         $qb->select('*')
             ->from($this->getTableName());
 
-        // Apply organisation filter.
+        // Step 3: Apply organisation filter for multi-tenancy.
+        // This ensures users only see webhooks from their organisation.
         $this->applyOrganisationFilter($qb);
 
+        // Step 4: Execute query and return entities.
         return $this->findEntities($qb);
 
     }//end findAll()
@@ -117,23 +152,31 @@ class WebhookMapper extends QBMapper
     /**
      * Find a single webhook by ID
      *
-     * @param int $id Webhook ID
+     * Retrieves webhook by ID with organisation filtering for multi-tenancy.
+     * Throws exception if webhook not found or doesn't belong to current organisation.
      *
-     * @return Webhook
-     * @throws DoesNotExistException
-     * @throws MultipleObjectsReturnedException
+     * @param int $id Webhook ID to find
+     *
+     * @return Webhook The found webhook entity
+     *
+     * @throws DoesNotExistException If webhook not found or not accessible
+     * @throws MultipleObjectsReturnedException If multiple webhooks found (should not happen)
      */
     public function find(int $id): Webhook
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Step 2: Build SELECT query with ID filter.
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter.
+        // Step 3: Apply organisation filter for multi-tenancy.
+        // This ensures users can only access webhooks from their organisation.
         $this->applyOrganisationFilter($qb);
 
+        // Step 4: Execute query and return single entity.
         return $this->findEntity($qb);
 
     }//end find()
@@ -142,10 +185,14 @@ class WebhookMapper extends QBMapper
     /**
      * Find all enabled webhooks
      *
-     * @return Webhook[]
+     * Retrieves all enabled webhooks with organisation filtering for multi-tenancy.
+     * Only returns webhooks that are currently enabled and belong to current organisation.
+     *
+     * @return Webhook[] Array of enabled webhook entities
      */
     public function findEnabled(): array
     {
+        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -194,7 +241,7 @@ class WebhookMapper extends QBMapper
     public function insert(Entity $entity): Entity
     {
         // Verify RBAC permission to create.
-        $this->verifyRbacPermission('create', 'webhook');
+        $this->verifyRbacPermission(action: 'create', entityType: 'webhook');
 
         if ($entity instanceof Webhook) {
             // Generate UUID if not set.
@@ -225,7 +272,7 @@ class WebhookMapper extends QBMapper
     public function update(Entity $entity): Entity
     {
         // Verify RBAC permission to update.
-        $this->verifyRbacPermission('update', 'webhook');
+        $this->verifyRbacPermission(action: 'update', entityType: 'webhook');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -250,7 +297,7 @@ class WebhookMapper extends QBMapper
     public function delete(Entity $entity): Entity
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', 'webhook');
+        $this->verifyRbacPermission(action: 'delete', entityType: 'webhook');
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);

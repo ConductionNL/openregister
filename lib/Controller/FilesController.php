@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * FilesController
  *
  * Controller for file operations in the OpenRegister application.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\Controller
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git-id>
- * @link      https://OpenRegister.app
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version  GIT: <git-id>
+ * @link     https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -29,36 +29,42 @@ use OCP\Files\NotFoundException;
 use OCP\IRequest;
 
 /**
- * FilesController
+ * FilesController handles file operations for objects in registers
  *
- * Handles file operations for objects in registers
+ * Provides REST API endpoints for managing files associated with objects.
+ * Supports file upload, download, listing, and deletion operations.
  *
- * @category  Controller
- * @package   OCA\OpenRegister\Controller
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git-id>
- * @link      https://OpenRegister.app
- */
-/**
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class FilesController extends Controller
 {
 
     /**
      * File service for handling file operations
      *
-     * @var FileService
+     * Handles file storage, retrieval, and management operations.
+     *
+     * @var FileService File service instance
      */
     private readonly FileService $fileService;
 
     /**
      * Object service for handling object operations
      *
-     * @var ObjectService
+     * Used to validate object existence and permissions.
+     *
+     * @var ObjectService Object service instance
      */
     private readonly ObjectService $objectService;
 
@@ -66,10 +72,13 @@ class FilesController extends Controller
     /**
      * Constructor
      *
+     * Initializes controller with required dependencies for file operations.
+     * Calls parent constructor to set up base controller functionality.
+     *
      * @param string        $appName       Application name
-     * @param IRequest      $request       HTTP request
-     * @param FileService   $fileService   File service
-     * @param ObjectService $objectService Object service
+     * @param IRequest      $request       HTTP request object
+     * @param FileService   $fileService   File service for file operations
+     * @param ObjectService $objectService Object service for object validation
      *
      * @return void
      */
@@ -79,36 +88,38 @@ class FilesController extends Controller
         FileService $fileService,
         ObjectService $objectService
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
+        
+        // Store dependencies for use in controller methods.
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
-
     }//end __construct()
 
-
-     /**
-      * Get all files associated with a specific object
-      *
-      * @param string $register The register slug or identifier
-      * @param string $schema   The schema slug or identifier
-      * @param string $id       The ID of the object to retrieve files for
-      *
-      * @return JSONResponse
-      *
-      * @NoAdminRequired
-      * @NoCSRFRequired
-      */
+    /**
+     * Get all files associated with a specific object
+     *
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID of the object to retrieve files for
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
     public function index(
         string $register,
         string $schema,
         string $id
     ): JSONResponse {
-        // Note: $register and $schema are route parameters for API consistency
+        // Note: $register and $schema are route parameters for API consistency.
         // They are part of the URL structure (/api/objects/{register}/{schema}/{id}/files)
-        // but only $id is used to fetch files
+        // but only $id is used to fetch files.
         // Reference them to satisfy static analysis.
         $routeParams = ['register' => $register, 'schema' => $schema];
         unset($routeParams);
+
         try {
             // Get the raw files from the file service.
             $files = $this->fileService->getFiles(object: $id);
@@ -131,15 +142,20 @@ class FilesController extends Controller
     /**
      * Get a specific file associated with an object
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
+     * Retrieves file details and metadata for a specific file ID.
+     * Validates that the file belongs to the specified object.
+     *
+     * @param string $register The register slug or identifier (route parameter, used for validation)
+     * @param string $schema   The schema slug or identifier (route parameter, used for validation)
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   The ID of the file to retrieve
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response containing file data or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
      */
     public function show(
         string $register,
@@ -147,7 +163,7 @@ class FilesController extends Controller
         string $id,
         int $fileId
     ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
+        // Set the schema and register to the object service (forces a check if they are valid).
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
@@ -155,8 +171,12 @@ class FilesController extends Controller
 
         try {
             $file = $this->fileService->getFile(object: $object, file: $fileId);
+
             if ($file === null) {
-                return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
+                return new JSONResponse(
+                    data: ['error' => 'File not found'],
+                    statusCode: 404
+                );
             }
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -192,12 +212,19 @@ class FilesController extends Controller
 
         try {
             $data = $this->request->getParams();
+
             if (empty($data['name']) === true) {
-                return new JSONResponse(data: ['error' => 'File name is required'], statusCode: 400);
+                return new JSONResponse(
+                    data: ['error' => 'File name is required'],
+                    statusCode: 400
+                );
             }
 
             if (array_key_exists('content', $data) === false) {
-                return new JSONResponse(data: ['error' => 'File content is required'], statusCode: 400);
+                return new JSONResponse(
+                    data: ['error' => 'File content is required'],
+                    statusCode: 400
+                );
             }
 
             $share = $this->parseBool($data['share'] ?? false);
@@ -250,18 +277,32 @@ class FilesController extends Controller
 
             // Validate required parameters.
             if (empty($data['name']) === true) {
-                return new JSONResponse(data: ['error' => 'File name is required'], statusCode: 400);
+                return new JSONResponse(
+                    data: ['error' => 'File name is required'],
+                    statusCode: 400
+                );
             }
 
-            if (array_key_exists('content', $data) === false || empty($data['content']) === true) {
-                return new JSONResponse(data: ['error' => 'File content is required'], statusCode: 400);
+            $contentExists = array_key_exists('content', $data) === false;
+            $contentEmpty  = empty($data['content']) === true;
+
+            if ($contentExists || $contentEmpty) {
+                return new JSONResponse(
+                    data: ['error' => 'File content is required'],
+                    statusCode: 400
+                );
             }
 
             // Extract parameters with defaults.
             $fileName = (string) $data['name'];
             $content  = (string) $data['content'];
-            $share    = isset($data['share']) && $data['share'] === true;
-            $tags     = $data['tags'] ?? [];
+
+            $share = false;
+            if (isset($data['share']) === true && $data['share'] === true) {
+                $share = true;
+            }
+
+            $tags = $data['tags'] ?? [];
 
             // Ensure tags is an array.
             if (is_string($tags) === true) {
@@ -330,6 +371,7 @@ class FilesController extends Controller
              * @var string|array<int, string>|null $fileName
              */
             $fileName = $files['name'] ?? null;
+
             if ($fileName !== null && is_array($fileName) === false) {
                 // Single file upload - $fileName is a string.
                 $tags = $data['tags'] ?? '';
@@ -351,7 +393,7 @@ class FilesController extends Controller
                     'share'    => $data['share'] === 'true',
                     'tags'     => $tags,
                 ];
-            } else if (is_array($fileName)) {
+            } elseif (is_array($fileName) === true) {
                 // Multiple file upload - $fileName is an array.
                 // Loop through each file using the count of 'name'.
                 for ($i = 0; $i < count($fileName); $i++) {
@@ -366,8 +408,22 @@ class FilesController extends Controller
                      * @var array<int, int>|null $errorArray
                      * @var array<int, int>|null $sizeArray
                      */
-                    $typeArray    = is_array($files['type'] ?? null) ? $files['type'] : null;
-                    $tmpNameArray = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : null;
+                    $filesType = $files['type'] ?? null;
+
+                    if (is_array($filesType) === true) {
+                        $typeArray = $filesType;
+                    } else {
+                        $typeArray = null;
+                    }
+
+                    $filesTmpName = $files['tmp_name'] ?? null;
+
+                    if (is_array($filesTmpName) === true) {
+                        $tmpNameArray = $filesTmpName;
+                    } else {
+                        $tmpNameArray = null;
+                    }
+
                     // Get error and size arrays, handling both single values and arrays.
                     /*
                      * @var int|array<int, int>|null $errorValue
@@ -376,16 +432,58 @@ class FilesController extends Controller
                     /*
                      * @var int|array<int, int>|null $sizeValue
                      */
-                    $sizeValue  = $files['size'] ?? null;
-                    $errorArray = is_array($errorValue) ? $errorValue : null;
-                    $sizeArray  = is_array($sizeValue) ? $sizeValue : null;
+                    $sizeValue = $files['size'] ?? null;
+
+                    if (is_array($errorValue) === true) {
+                        $errorArray = $errorValue;
+                    } else {
+                        $errorArray = null;
+                    }
+
+                    if (is_array($sizeValue) === true) {
+                        $sizeArray = $sizeValue;
+                    } else {
+                        $sizeArray = null;
+                    }
+
+                    // Determine type value.
+                    $typeValue = '';
+
+                    if ($typeArray !== null && isset($typeArray[$i]) === true) {
+                        $typeValue = $typeArray[$i];
+                    }
+
+                    // Determine tmp_name value.
+                    $tmpNameValue = '';
+
+                    if ($tmpNameArray !== null && isset($tmpNameArray[$i]) === true) {
+                        $tmpNameValue = $tmpNameArray[$i];
+                    }
+
+                    // Determine error value.
+                    $errorValueFinal = UPLOAD_ERR_NO_FILE;
+
+                    if ($errorArray !== null && isset($errorArray[$i]) === true) {
+                        $errorValueFinal = $errorArray[$i];
+                    } elseif (is_int($errorValue) === true) {
+                        $errorValueFinal = $errorValue;
+                    }
+
+                    // Determine size value.
+                    $sizeValueFinal = 0;
+
+                    if ($sizeArray !== null && isset($sizeArray[$i]) === true) {
+                        $sizeValueFinal = $sizeArray[$i];
+                    } elseif (is_int($sizeValue) === true) {
+                        $sizeValueFinal = $sizeValue;
+                    }
 
                     $uploadedFiles[] = [
                         'name'     => $fileName[$i] ?? '',
-                        'type'     => ($typeArray !== null && isset($typeArray[$i])) ? $typeArray[$i] : '',
-                        'tmp_name' => ($tmpNameArray !== null && isset($tmpNameArray[$i])) ? $tmpNameArray[$i] : '',
-                        'error'    => ($errorArray !== null && isset($errorArray[$i])) ? $errorArray[$i] : (is_int($errorValue) ? $errorValue : UPLOAD_ERR_NO_FILE),
-                        'size'     => ($sizeArray !== null && isset($sizeArray[$i])) ? $sizeArray[$i] : (is_int($sizeValue) ? $sizeValue : 0),
+                        'type'     => $typeValue,
+                        'tmp_name' => $tmpNameValue,
+                        'error'    => $errorValueFinal,
+                        'size'     => $sizeValueFinal,
                         'share'    => $data['share'] === 'true',
                         'tags'     => $tags,
                     ];
@@ -394,6 +492,7 @@ class FilesController extends Controller
 
             // Get the uploaded file from the request if a single file hase been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
+
             if (empty($uploadedFile) === false) {
                 $uploadedFiles[] = $uploadedFile;
             }
@@ -404,21 +503,34 @@ class FilesController extends Controller
 
             // Create file using the uploaded file's content and name.
             $results = [];
+
             foreach ($uploadedFiles as $file) {
                 // Check for upload errors first.
-                if (($file['error'] ?? null) !== null && ($file['error'] !== UPLOAD_ERR_OK) === true) {
-                    throw new Exception('File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($file['error']));
+                $fileError = $file['error'] ?? null;
+
+                if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
+                    throw new Exception(
+                        'File upload error for '.$file['name'].': '.
+                        $this->getUploadErrorMessage($fileError)
+                    );
                 }
 
                 // Verify the temporary file exists and is readable.
-                if (file_exists($file['tmp_name']) === false || is_readable($file['tmp_name']) === false) {
-                    throw new Exception('Temporary file not found or not readable for: '.$file['name']);
+                $tmpName = $file['tmp_name'];
+
+                if (file_exists($tmpName) === false || is_readable($tmpName) === false) {
+                    throw new Exception(
+                        'Temporary file not found or not readable for: '.$file['name']
+                    );
                 }
 
                 // Read the file content with error handling.
-                $content = file_get_contents($file['tmp_name']);
+                $content = file_get_contents($tmpName);
+
                 if ($content === false) {
-                    throw new Exception('Failed to read uploaded file content for: '.$file['name']);
+                    throw new Exception(
+                        'Failed to read uploaded file content for: '.$file['name']
+                    );
                 }
 
                 // Create file.
@@ -431,7 +543,12 @@ class FilesController extends Controller
                 );
             }//end foreach
 
-            return new JSONResponse(data: $this->fileService->formatFiles(files: $results, requestParams: $this->request->getParams())['results']);
+            $formattedFiles = $this->fileService->formatFiles(
+                files: $results,
+                requestParams: $this->request->getParams()
+            );
+
+            return new JSONResponse(data: $formattedFiles['results']);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -465,11 +582,20 @@ class FilesController extends Controller
 
         try {
             $data = $this->request->getParams();
+
             // Ensure tags is set to empty array if not provided.
             $tags = $data['tags'] ?? [];
+
             // Content is optional for metadata-only updates.
             $content = $data['content'] ?? null;
-            $result  = $this->fileService->updateFile(filePath: $fileId, content: $content, tags: $tags, object: $this->objectService->getObject());
+
+            $result = $this->fileService->updateFile(
+                filePath: $fileId,
+                content: $content,
+                tags: $tags,
+                object: $this->objectService->getObject()
+            );
+
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -503,10 +629,17 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->deleteFile(file: $fileId, object: $this->objectService->getObject());
+            $result = $this->fileService->deleteFile(
+                file: $fileId,
+                object: $this->objectService->getObject()
+            );
+
             return new JSONResponse(data: ['success' => $result]);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 400
+            );
         }
 
     }//end delete()
@@ -537,7 +670,11 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->publishFile(object: $this->objectService->getObject(), file: $fileId);
+            $result = $this->fileService->publishFile(
+                object: $this->objectService->getObject(),
+                file: $fileId
+            );
+
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -571,7 +708,11 @@ class FilesController extends Controller
         $this->objectService->setObject($id);
 
         try {
-            $result = $this->fileService->unpublishFile(object: $this->objectService->getObject(), filePath: $fileId);
+            $result = $this->fileService->unpublishFile(
+                object: $this->objectService->getObject(),
+                filePath: $fileId
+            );
+
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -666,6 +807,7 @@ class FilesController extends Controller
         // Handle string values.
         if (is_string($value) === true) {
             $value = strtolower(trim($value));
+
             return in_array($value, ['true', '1', 'on', 'yes'], true);
         }
 
@@ -676,7 +818,6 @@ class FilesController extends Controller
 
         // Fallback to false for other types.
         return false;
-
     }//end parseBool()
 
 
@@ -700,12 +841,12 @@ class FilesController extends Controller
         // If string, split by comma and trim.
         if (is_string($tags) === true) {
             $tags = explode(',', $tags);
+
             return array_map('trim', $tags);
         }
 
         // Default to empty array.
         return [];
-
     }//end normalizeTags()
 
 
@@ -719,8 +860,11 @@ class FilesController extends Controller
      */
     public function page(): TemplateResponse
     {
-        return new TemplateResponse(appName: 'openregister', templateName: 'index', params: []);
-
+        return new TemplateResponse(
+            appName: 'openregister',
+            templateName: 'index',
+            params: []
+        );
     }//end page()
 
 

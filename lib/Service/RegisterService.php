@@ -29,10 +29,23 @@ use OCA\OpenRegister\Service\OrganisationService;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service class for managing registers in the OpenRegister application.
+ * RegisterService manages registers in the OpenRegister application
  *
- * This service acts as a facade for register operations,
- * coordinating between RegisterMapper and FileService.
+ * Service class for managing registers in the OpenRegister application.
+ * This service acts as a facade for register operations, coordinating between
+ * RegisterMapper and FileService. Handles register CRUD operations, file management,
+ * and organisation-related operations.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class RegisterService
 {
@@ -40,39 +53,51 @@ class RegisterService
     /**
      * Register mapper
      *
-     * @var RegisterMapper
+     * Handles database operations for register entities.
+     *
+     * @var RegisterMapper Register mapper instance
      */
-    private RegisterMapper $registerMapper;
+    private readonly RegisterMapper $registerMapper;
 
     /**
      * File service
      *
-     * @var FileService
+     * Handles file operations related to registers.
+     *
+     * @var FileService File service instance
      */
-    private FileService $fileService;
+    private readonly FileService $fileService;
 
     /**
      * Organisation service
      *
-     * @var OrganisationService
+     * Handles organisation-related operations and permissions.
+     *
+     * @var OrganisationService Organisation service instance
      */
-    private OrganisationService $organisationService;
+    private readonly OrganisationService $organisationService;
 
     /**
      * Logger
      *
-     * @var LoggerInterface
+     * Used for logging register operations and errors.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor
      *
-     * @param RegisterMapper      $registerMapper      Register mapper
-     * @param FileService         $fileService         File service
-     * @param OrganisationService $organisationService Organisation service
-     * @param LoggerInterface     $logger              Logger
+     * Initializes service with required dependencies for register operations.
+     *
+     * @param RegisterMapper      $registerMapper      Register mapper for database operations
+     * @param FileService         $fileService         File service for file operations
+     * @param OrganisationService $organisationService Organisation service for permissions
+     * @param LoggerInterface     $logger              Logger for error tracking
+     *
+     * @return void
      */
     public function __construct(
         RegisterMapper $registerMapper,
@@ -80,44 +105,53 @@ class RegisterService
         OrganisationService $organisationService,
         LoggerInterface $logger
     ) {
+        // Store dependencies for use in service methods.
         $this->registerMapper      = $registerMapper;
         $this->fileService         = $fileService;
         $this->organisationService = $organisationService;
-        $this->logger = $logger;
+        $this->logger              = $logger;
 
     }//end __construct()
 
 
     /**
-     * Find a register by ID with optional extensions.
+     * Find a register by ID with optional extensions
+     *
+     * Retrieves register entity by ID with optional extended data.
+     * Extensions can include related entities like schemas, objects, etc.
      *
      * @param int|string $id     The ID of the register to find
-     * @param array      $extend Optional array of extensions
+     * @param array<string> $extend Optional array of extension names to include
      *
-     * @return Register The found register
+     * @return Register The found register entity
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple found
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
      */
     public function find(int | string $id, array $extend=[]): Register
     {
+        // Find register by ID with optional extensions.
         return $this->registerMapper->find($id, $extend);
 
     }//end find()
 
 
     /**
-     * Find all registers with optional filters and extensions.
+     * Find all registers with optional filters and extensions
      *
-     * @param int|null   $limit            The limit of results
-     * @param int|null   $offset           The offset of results
-     * @param array|null $filters          The filters to apply
-     * @param array|null $searchConditions Array of search conditions
-     * @param array|null $searchParams     Array of search parameters
-     * @param array      $extend           Optional extensions
+     * Retrieves all registers matching optional filters and search conditions.
+     * Supports pagination via limit and offset parameters.
+     * Extensions can include related entities like schemas, objects, etc.
      *
-     * @return Register[] Array of found registers
+     * @param int|null   $limit            Maximum number of results to return (null = no limit)
+     * @param int|null   $offset           Number of results to skip for pagination
+     * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])
+     * @param array<string, mixed>|null $searchConditions Search conditions for advanced filtering
+     * @param array<string, mixed>|null $searchParams     Search parameters for query building
+     * @param array<string> $extend           Optional extensions to include in results
+     *
+     * @return Register[] Array of found register entities
      *
      * @psalm-return array<Register>
      */
@@ -129,6 +163,7 @@ class RegisterService
         ?array $searchParams=[],
         ?array $extend=[]
     ): array {
+        // Find all registers with optional filtering, pagination, and extensions.
         return $this->registerMapper->findAll(
             limit: $limit,
             offset: $offset,
@@ -183,7 +218,7 @@ class RegisterService
     public function updateFromArray(int $id, array $data): Register
     {
         // Update the register first.
-        $register = $this->registerMapper->updateFromArray($id, $data);
+        $register = $this->registerMapper->updateFromArray(id: $id, object: $data);
 
         // Ensure folder exists for the updated register (handles legacy folder properties).
         $this->ensureRegisterFolderExists($register);

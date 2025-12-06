@@ -1010,8 +1010,7 @@ class VectorEmbeddingService
 
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
-                ->values(
-                        [
+                ->values(values: [
                             'entity_type'          => $qb->createNamedParameter($entityType),
                             'entity_id'            => $qb->createNamedParameter($entityId),
                             'chunk_index'          => $qb->createNamedParameter($chunkIndex, \PDO::PARAM_INT),
@@ -1413,9 +1412,9 @@ class VectorEmbeddingService
             foreach ($finalResults as $result) {
                 if ($result['in_vector'] === true && $result['in_solr'] === true) {
                     $both++;
-                } else if ($result['in_vector'] === true) {
+                } elseif ($result['in_vector'] === true) {
                     $vectorOnly++;
-                } else if ($result['in_solr'] === true) {
+                } elseif ($result['in_solr'] === true) {
                     $solrOnly++;
                 }
             }
@@ -1983,19 +1982,24 @@ class VectorEmbeddingService
             /**
              * Logger instance
              *
-             * @var \Psr\Log\LoggerInterface
+             * Used for logging embedding operations and errors.
+             *
+             * @var \Psr\Log\LoggerInterface Logger instance
              */
-            private $logger;
-
+            private readonly \Psr\Log\LoggerInterface $logger;
 
             /**
              * Constructor
              *
+             * Initializes embedding generator with model, configuration, and logger.
+             *
              * @param string                   $model  Model name
-             * @param array<string,mixed>      $config Configuration array
+             * @param array<string, mixed>      $config Configuration array
              * @param \Psr\Log\LoggerInterface $logger Logger instance
+             *
+             * @return void
              */
-            public function __construct(string $model, array $config, $logger)
+            public function __construct(string $model, array $config, \Psr\Log\LoggerInterface $logger)
             {
                 $this->model  = $model;
                 $this->config = $config;
@@ -2247,9 +2251,9 @@ class VectorEmbeddingService
 
             if ($currentProvider === 'openai') {
                 $currentModel = $settings['openaiConfig']['model'] ?? null;
-            } else if ($currentProvider === 'ollama') {
+            } elseif ($currentProvider === 'ollama') {
                 $currentModel = $settings['ollamaConfig']['model'] ?? null;
-            } else if ($currentProvider === 'fireworks') {
+            } elseif ($currentProvider === 'fireworks') {
                 $currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
             }
 

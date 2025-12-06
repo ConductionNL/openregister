@@ -32,6 +32,20 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * EndpointService handles endpoint execution and logging
+ *
+ * Service for executing external API endpoints and logging execution results.
+ * Supports multiple endpoint target types (view, agent, webhook, register, schema).
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class EndpointService
 {
@@ -39,46 +53,59 @@ class EndpointService
     /**
      * Endpoint log mapper
      *
-     * @var EndpointLogMapper
+     * Handles database operations for endpoint execution logs.
+     *
+     * @var EndpointLogMapper Endpoint log mapper instance
      */
-    private EndpointLogMapper $endpointLogMapper;
+    private readonly EndpointLogMapper $endpointLogMapper;
 
     /**
      * Logger
      *
-     * @var LoggerInterface
+     * Used for logging endpoint execution, errors, and debug information.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     /**
      * User session
      *
-     * @var IUserSession
+     * Provides current user context for permission checks.
+     *
+     * @var IUserSession User session instance
      */
-    private IUserSession $userSession;
+    private readonly IUserSession $userSession;
 
     /**
      * Group manager
      *
-     * @var IGroupManager
+     * Used for checking user group permissions for endpoint access.
+     *
+     * @var IGroupManager Group manager instance
      */
-    private IGroupManager $groupManager;
+    private readonly IGroupManager $groupManager;
 
 
     /**
      * Test an endpoint by executing it with test data
      *
-     * @param Endpoint $endpoint The endpoint to test
-     * @param array    $testData Optional test data to use
+     * Executes endpoint with optional test data to verify endpoint configuration
+     * and functionality. Checks permissions before execution and logs results.
      *
-     * @return         array Test result with success status and response
+     * @param Endpoint $endpoint The endpoint to test
+     * @param array<string, mixed> $testData Optional test data to use in execution
+     *
+     * @return array<string, mixed> Test result with success status, status code, response, and optional error
+     *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
     public function testEndpoint(Endpoint $endpoint, array $testData=[]): array
     {
         try {
-            // Check if user has permission to execute this endpoint.
+            // Step 1: Check if user has permission to execute this endpoint.
+            // Validates user group membership and endpoint access permissions.
             if ($this->canExecuteEndpoint($endpoint) === false) {
                 return [
                     'success'    => false,
@@ -88,7 +115,8 @@ class EndpointService
                 ];
             }
 
-            // Prepare test request data.
+            // Step 2: Prepare test request data from endpoint configuration.
+            // Combines endpoint method and path with provided test data.
             $request = [
                 'method'  => $endpoint->getMethod() ?? 'GET',
                 'path'    => $endpoint->getEndpoint(),
@@ -96,14 +124,17 @@ class EndpointService
                 'headers' => [],
             ];
 
-            // Execute the endpoint based on target type.
-            $result = $this->executeEndpoint($endpoint, $request);
+            // Step 3: Execute the endpoint based on target type.
+            // Different target types (view, agent, webhook, etc.) have different execution logic.
+            $result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
 
-            // Log the test execution.
-            $this->logEndpointCall($endpoint, $request, $result);
+            // Step 4: Log the test execution for audit trail and debugging.
+            $this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
 
+            // Step 5: Return execution result.
             return $result;
         } catch (\Exception $e) {
+            // Log error for debugging and monitoring.
             $this->logger->error(
                 'Error testing endpoint: '.$e->getMessage(),
                 [
@@ -112,6 +143,7 @@ class EndpointService
                 ]
             );
 
+            // Return error result.
             return [
                 'success'    => false,
                 'statusCode' => 500,
@@ -126,27 +158,37 @@ class EndpointService
     /**
      * Execute an endpoint with given request data
      *
-     * @param Endpoint $endpoint The endpoint to execute
-     * @param array    $request  Request data
+     * Routes endpoint execution to appropriate handler based on target type.
+     * Supports multiple target types: view, agent, webhook, register, and schema.
      *
-     * @return         array Execution result
+     * @param Endpoint $endpoint The endpoint to execute
+     * @param array<string, mixed> $request Request data containing method, path, data, and headers
+     *
+     * @return array<string, mixed> Execution result with success status, status code, response, and optional error
+     *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
     private function executeEndpoint(Endpoint $endpoint, array $request): array
     {
-        // Based on targetType, execute different logic.
+        // Route execution to appropriate handler based on endpoint target type.
+        // Each target type has specific execution logic.
         switch ($endpoint->getTargetType()) {
             case 'view':
-                return $this->executeViewEndpoint($endpoint, $request);
+                // Execute view-based endpoint (queries view data).
+                return $this->executeViewEndpoint(_endpoint: $endpoint, _request: $request);
             case 'agent':
-                return $this->executeAgentEndpoint($endpoint, $request);
+                // Execute agent-based endpoint (uses AI agent).
+                return $this->executeAgentEndpoint(_endpoint: $endpoint, _request: $request);
             case 'webhook':
-                return $this->executeWebhookEndpoint($endpoint, $request);
+                // Execute webhook-based endpoint (HTTP webhook call).
+                return $this->executeWebhookEndpoint(_endpoint: $endpoint, _request: $request);
             case 'register':
-                return $this->executeRegisterEndpoint($endpoint, $request);
+                // Execute register-based endpoint (queries register data).
+                return $this->executeRegisterEndpoint(_endpoint: $endpoint, _request: $request);
             case 'schema':
-                return $this->executeSchemaEndpoint($endpoint, $request);
+                // Execute schema-based endpoint (queries schema data).
+                return $this->executeSchemaEndpoint(_endpoint: $endpoint, _request: $request);
             default:
                 return [
                     'success'    => false,
@@ -244,7 +286,7 @@ class EndpointService
             $functions  = [];
             $agentTools = $agent->getTools() ?? [];
 
-            if (!empty($agentTools)) {
+            if (empty($agentTools) === false) {
                 foreach ($agentTools as $toolName) {
                     try {
                         $tool = $toolRegistry->getTool($toolName);
@@ -576,12 +618,10 @@ class EndpointService
 
             // Set request/response data.
             $log->setRequest($request);
-            $log->setResponse(
-                    [
+            $log->setResponse(response: [
                         'statusCode' => $result['statusCode'],
                         'body'       => $result['response'],
-                    ]
-                    );
+                    ]);
 
             // Set status.
             $log->setStatusCode($result['statusCode']);

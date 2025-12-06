@@ -65,71 +65,117 @@ class SchemaCacheService
 
     /**
      * Cache table name for schema data
+     *
+     * Database table used for persistent schema caching.
+     *
+     * @var string Cache table name
      */
     private const CACHE_TABLE = 'openregister_schema_cache';
 
     /**
-     * Default cache TTL in seconds (1 hour)
+     * Default cache TTL in seconds
+     *
+     * Default time-to-live for cached schema data (1 hour).
+     *
+     * @var int Default cache TTL in seconds (3600 = 1 hour)
      */
     private const DEFAULT_TTL = 3600;
 
     /**
-     * Maximum cache TTL for office environments (8 hours in seconds)
+     * Maximum cache TTL for office environments
      *
+     * Maximum time-to-live for cached schema data (8 hours in seconds).
      * This prevents indefinite cache buildup while maintaining performance
      * during business hours.
+     *
+     * @var int Maximum cache TTL in seconds (28800 = 8 hours)
      */
     private const MAX_CACHE_TTL = 28800;
 
     /**
-     * Cache keys for different types of cached data
+     * Cache key for schema object data
+     *
+     * @var string Cache key identifier
      */
-    private const CACHE_KEY_SCHEMA           = 'schema_object';
+    private const CACHE_KEY_SCHEMA = 'schema_object';
+
+    /**
+     * Cache key for facetable fields configuration
+     *
+     * @var string Cache key identifier
+     */
     private const CACHE_KEY_FACETABLE_FIELDS = 'facetable_fields';
-    private const CACHE_KEY_CONFIGURATION    = 'configuration';
-    private const CACHE_KEY_PROPERTIES       = 'properties';
+
+    /**
+     * Cache key for schema configuration
+     *
+     * @var string Cache key identifier
+     */
+    private const CACHE_KEY_CONFIGURATION = 'configuration';
+
+    /**
+     * Cache key for schema properties
+     *
+     * @var string Cache key identifier
+     */
+    private const CACHE_KEY_PROPERTIES = 'properties';
 
     /**
      * In-memory cache for frequently accessed data
      *
-     * @var array<string, mixed>
+     * Static array cache for ultra-fast access to frequently used schema data.
+     * Shared across all instances of this service.
+     *
+     * @var array<string, mixed> In-memory cache array
      */
     private static array $memoryCache = [];
 
     /**
      * Database connection
      *
-     * @var IDBConnection
+     * Used for persistent cache storage and retrieval.
+     *
+     * @var IDBConnection Database connection instance
      */
-    private IDBConnection $db;
+    private readonly IDBConnection $db;
 
     /**
      * Schema mapper for database operations
      *
-     * @var SchemaMapper
+     * Used to load schemas from database when cache misses occur.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private SchemaMapper $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
     /**
      * Logger for performance monitoring
      *
-     * @var LoggerInterface
+     * Used for logging cache hits, misses, and performance metrics.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor
      *
-     * @param IDBConnection   $db           Database connection
-     * @param SchemaMapper    $schemaMapper Schema mapper for database operations
-     * @param LoggerInterface $logger       Logger for performance monitoring
+     * Initializes service with database connection, schema mapper, and logger
+     * for schema caching operations.
+     *
+     * @param IDBConnection   $db           Database connection for persistent cache
+     * @param SchemaMapper    $schemaMapper Schema mapper for loading schemas on cache miss
+     * @param LoggerInterface $logger       Logger for performance monitoring and debugging
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
         SchemaMapper $schemaMapper,
         LoggerInterface $logger
     ) {
+        // Store dependencies for use in service methods.
         $this->db           = $db;
         $this->schemaMapper = $schemaMapper;
         $this->logger       = $logger;
@@ -152,7 +198,7 @@ class SchemaCacheService
      */
     public function getSchema(int $schemaId): ?Schema
     {
-        $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA);
+        $cacheKey = $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
 
         // Check in-memory cache first.
         if ((self::$memoryCache[$cacheKey] ?? null) !== null) {
@@ -161,7 +207,7 @@ class SchemaCacheService
         }
 
         // Check database cache.
-        $cachedData = $this->getCachedData($schemaId, self::CACHE_KEY_SCHEMA);
+        $cachedData = $this->getCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
         if ($cachedData !== null) {
             // Reconstruct schema object from cached data.
             $schema = $this->reconstructSchemaFromCache($cachedData);
@@ -562,7 +608,7 @@ class SchemaCacheService
         if ($updated === 0) {
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::CACHE_TABLE)
-                ->values(
+                ->values(values: [
                        [
                            'schema_id'  => $qb->createNamedParameter($schemaId),
                            'cache_key'  => $qb->createNamedParameter($cacheKey),

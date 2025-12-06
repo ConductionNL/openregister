@@ -38,12 +38,24 @@ use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Service for handling file and JSON uploads.
+ * UploadService handles file and JSON uploads
  *
+ * Service for handling file and JSON uploads in the OpenRegister application.
  * This service processes uploaded JSON data, either directly via a POST body,
  * from a provided URL, or from an uploaded file. It supports multiple data
  * formats (e.g., JSON, YAML) and integrates with schemas and registers for
  * database updates.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class UploadService
 {
@@ -51,40 +63,52 @@ class UploadService
     /**
      * HTTP client
      *
-     * @var Client
+     * Used for fetching JSON data from URLs.
+     *
+     * @var Client HTTP client instance
      */
-    private Client $client;
+    private readonly Client $client;
 
 
     /**
-     * Gets the uploaded json from the request data. And returns it as a PHP array.
-     * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
+     * Gets the uploaded JSON from the request data and returns it as a PHP array
      *
-     * @param array $data All request params.
+     * Processes uploaded JSON data from multiple sources in priority order:
+     * 1. Uploaded file (if 'file' key present)
+     * 2. URL (if 'url' key present - fetches JSON from URL)
+     * 3. Direct JSON (if 'json' key present - JSON string or array)
      *
-     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     * @throws \Exception
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * Removes internal parameters (starting with '_') before processing.
+     *
+     * @param array<string, mixed> $data All request parameters
+     *
+     * @return array<string, mixed>|JSONResponse PHP array with uploaded JSON data or JSONResponse with error message
+     *
+     * @throws \Exception If file processing fails
+     * @throws \GuzzleHttp\Exception\GuzzleException If URL fetching fails
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {
+        // Step 1: Remove internal parameters (starting with '_') from data.
+        // Internal parameters are used for pagination, filtering, etc. and shouldn't be processed.
         foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Define the allowed keys.
+        // Step 2: Define allowed keys for JSON upload sources.
         $allowedKeys = ['file', 'url', 'json'];
 
-        // Find which of the allowed keys are in the array.
+        // Step 3: Find which of the allowed keys are present in the data array.
         $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
 
-        // Check if there is exactly one matching key.
+        // Step 4: Validate that exactly one source key is provided.
         if (count($matchingKeys) === 0) {
             return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
         }
 
+        // Step 5: Process uploaded file (if 'file' key is present).
         if (empty($data['file']) === false) {
             // @todo use .json file content from POST as $json.
             // Method always throws, so this is unreachable but kept for API compatibility.
@@ -93,15 +117,18 @@ class UploadService
             return [];
         }
 
+        // Step 6: Process URL source (if 'url' key is present).
         if (empty($data['url']) === false) {
+            // Fetch JSON data from URL.
             $phpArray = $this->getJSONfromURL($data['url']);
-            // JSONResponse doesn't implement ArrayAccess, convert to array.
+            
+            // Handle array response (direct array return).
             if (is_array($phpArray)) {
                 $phpArray['source'] = $data['url'];
                 return $phpArray;
             }
 
-            // If it's a JSONResponse, extract data.
+            // Handle JSONResponse return type (extract data from response).
             // @psalm-suppress RedundantCondition - JSONResponse always has getData method
             $phpArrayData = $phpArray->getData();
             if (is_array($phpArrayData)) {
@@ -109,44 +136,56 @@ class UploadService
                 return $phpArrayData;
             }
 
-            // Fallback: return error response.
+            // Fallback: return error response if parsing failed.
             return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
         }
 
+        // Step 7: Process direct JSON input (if 'json' key is present).
         $phpArray = $data['json'];
+        
+        // Decode JSON string if input is a string.
         if (is_string($phpArray) === true) {
             $phpArray = json_decode($phpArray, associative: true);
         }
 
+        // Validate that JSON decoding succeeded.
         if ($phpArray === null || $phpArray === false) {
             return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
         }
 
+        // Return decoded JSON array.
         return $phpArray;
 
     }//end getUploadedJson()
 
 
     /**
-     * Uses Guzzle to call the given URL and returns response as PHP array.
+     * Uses Guzzle to call the given URL and returns response as PHP array
      *
-     * @param string $url The URL to call.
+     * Fetches JSON or YAML data from a remote URL using HTTP GET request.
+     * Automatically detects content type and parses accordingly.
      *
-     * @throws GuzzleException
+     * @param string $url The URL to fetch JSON/YAML data from
      *
-     * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
+     * @return array<string, mixed>|JSONResponse The response converted to PHP array or JSONResponse with error message
+     *
+     * @throws GuzzleException If HTTP request fails
      */
     private function getJSONfromURL(string $url): array | JSONResponse
     {
         try {
+            // Step 1: Make HTTP GET request to fetch data from URL.
             $response = $this->client->request('GET', $url);
         } catch (\GuzzleHttp\Exception\BadResponseException $e) {
+            // Return error response if HTTP request fails.
             return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
         }
 
+        // Step 2: Get response body content as string.
         $responseBody = $response->getBody()->getContents();
 
-        // Use Content-Type header to determine the format.
+        // Step 3: Use Content-Type header to determine the data format.
+        // Supports JSON and YAML formats based on Content-Type.
         $contentType = $response->getHeaderLine('Content-Type');
         switch ($contentType) {
             case 'application/json':

@@ -124,11 +124,13 @@ class SettingsController extends Controller
 {
 
     /**
-     * The OpenRegister object service.
+     * The OpenRegister object service
      *
-     * @var \OCA\OpenRegister\Service\ObjectService|null The OpenRegister object service.
+     * Lazily loaded from container when needed.
+     *
+     * @var \OCA\OpenRegister\Service\ObjectService|null OpenRegister object service or null
      */
-    private $objectService;
+    private ?\OCA\OpenRegister\Service\ObjectService $objectService = null;
 
 
     /**
@@ -3245,7 +3247,7 @@ class SettingsController extends Controller
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
                 $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-            } else if (strpos($platformName, 'postgres') !== false) {
+            } elseif (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
                 try {
@@ -3278,7 +3280,7 @@ class SettingsController extends Controller
                     $recommendedPlugin = 'pgvector (not found)';
                     $performanceNote   = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
                 }
-            } else if (strpos($platformName, 'sqlite') !== false) {
+            } elseif (strpos($platformName, 'sqlite') !== false) {
                 $dbType            = 'SQLite';
                 $vectorSupport     = false;
                 $recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';

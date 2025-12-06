@@ -438,7 +438,7 @@ class ChatService
                     ]
                         );
             }
-        } else if (empty($selectedViews) === false) {
+        } elseif (empty($selectedViews) === false) {
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
@@ -481,7 +481,7 @@ class ChatService
                     filters: $vectorFilters
                 // Pass filters array instead of 0.7.
                 );
-            } else if ($searchMode === 'hybrid') {
+            } elseif ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
                     query: $query,
                     solrFilters: ['vector_filters' => $vectorFilters],
@@ -580,7 +580,7 @@ class ChatService
                 // Increment the appropriate counter.
                 if ($isFile === true) {
                     $fileSourceCount++;
-                } else if ($isObject === true) {
+                } elseif ($isObject === true) {
                     $objectSourceCount++;
                 }
 
@@ -775,9 +775,9 @@ class ChatService
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
-                } else if ($role === 'assistant') {
+                } elseif ($role === 'assistant') {
                     $history[] = LLPhantMessage::assistant($content);
-                } else if ($role === 'system') {
+                } elseif ($role === 'system') {
                     $history[] = LLPhantMessage::system($content);
                 } else {
                     $this->logger->warning(
@@ -1378,7 +1378,7 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        'url'      => property_exists($llphantConfig, 'url') && !empty($llphantConfig->url) ? $llphantConfig->url : 'default',
+                        'url'      => $this->getLlphantUrl($llphantConfig),
                     ]
                         );
 
@@ -1393,7 +1393,7 @@ class ChatService
                     context: [
                         'provider' => $provider,
                         'model'    => $llphantConfig->model,
-                        'url'      => property_exists($llphantConfig, 'url') && !empty($llphantConfig->url) ? $llphantConfig->url : 'default',
+                        'url'      => $this->getLlphantUrl($llphantConfig),
                     ]
                         );
 
@@ -2055,6 +2055,24 @@ class ChatService
         return $functionInfoObjects;
 
     }//end convertFunctionsToFunctionInfo()
+
+    /**
+     * Get LLPhant URL from config or return default
+     *
+     * Returns URL from config if present, otherwise returns 'default'.
+     *
+     * @param object $llphantConfig LLPhant configuration object
+     *
+     * @return string URL value or 'default'
+     */
+    private function getLlphantUrl(object $llphantConfig): string
+    {
+        if (property_exists($llphantConfig, 'url') === true && empty($llphantConfig->url) === false) {
+            return $llphantConfig->url;
+        }
+
+        return 'default';
+    }//end getLlphantUrl()
 
 
 }//end class

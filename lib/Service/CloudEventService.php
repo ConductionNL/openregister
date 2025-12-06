@@ -24,7 +24,7 @@ use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * CloudEvent Service
+ * CloudEventService formats events as CloudEvents specification compliant payloads
  *
  * Formats events according to the CloudEvents specification (https://cloudevents.io/).
  * CloudEvents is a specification for describing event data in a common way, making it
@@ -37,10 +37,15 @@ use Symfony\Component\Uid\Uuid;
  * - Extensibility through attributes
  *
  * @category Service
- * @package  OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/ConductionNL/openregister
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class CloudEventService
 {
@@ -73,7 +78,7 @@ class CloudEventService
 
         // Parse JSON body if present.
         $parsedBody = [];
-        if (!empty($rawBody)) {
+        if (empty($rawBody) === false) {
             $decoded = json_decode($rawBody, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $parsedBody = $decoded;
@@ -93,7 +98,7 @@ class CloudEventService
             'time'            => date('c'),
 
             // Optional CloudEvent attributes.
-            'datacontenttype' => !empty($request->getHeader('Content-Type')) ? $request->getHeader('Content-Type') : 'application/json',
+            'datacontenttype' => $this->getContentTypeHeader($request),
             'subject'         => $this->getSubject($request),
             'dataschema'      => null,
 
@@ -124,16 +129,20 @@ class CloudEventService
      *
      * Determines the source identifier for the CloudEvent.
      * The source identifies the context in which the event occurred.
+     * Format: {protocol}://{host}/apps/openregister
      *
-     * @param IRequest $request The HTTP request
+     * @param IRequest $request The HTTP request to extract source from
      *
-     * @return string Event source identifier
+     * @return string Event source identifier (URI format)
      */
     private function getSource(IRequest $request): string
     {
+        // Build source URI from request protocol and host.
+        // Protocol is determined from server protocol (https or http).
         $host  = $request->getServerProtocol() === 'https' ? 'https://' : 'http://';
         $host .= $request->getServerHost();
 
+        // Append OpenRegister app path to source.
         return $host.'/apps/openregister';
 
     }//end getSource()
@@ -203,6 +212,26 @@ class CloudEventService
 
 
     /**
+     * Get content type header from request
+     *
+     * Returns Content-Type header if present, otherwise defaults to 'application/json'.
+     *
+     * @param mixed $request Request object with getHeader method
+     *
+     * @return string Content type header value
+     */
+    private function getContentTypeHeader(mixed $request): string
+    {
+        $contentType = $request->getHeader('Content-Type');
+
+        if (empty($contentType) === false) {
+            return $contentType;
+        }
+
+        return 'application/json';
+    }//end getContentTypeHeader()
+
+    /**
      * Get application version
      *
      * @return string Application version
@@ -211,7 +240,6 @@ class CloudEventService
     {
         // @todo Get actual version from appinfo/info.xml or composer.json.
         return '1.0.0';
-
     }//end getAppVersion()
 
 
