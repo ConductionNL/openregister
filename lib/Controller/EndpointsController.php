@@ -379,7 +379,7 @@ class EndpointsController extends Controller
 
             $testData = $this->request->getParams()['data'] ?? [];
 
-            $result = $this->endpointService->testEndpoint($endpoint, $testData);
+            $result = $this->endpointService->testEndpoint(endpoint: $endpoint, testData: $testData);
 
             if ($result['success'] === true) {
                 return new JSONResponse(
@@ -448,7 +448,7 @@ class EndpointsController extends Controller
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-            $logs = $this->endpointLogMapper->findByEndpoint($id, $limit, $offset);
+            $logs = $this->endpointLogMapper->findByEndpoint(endpointId: $id, limit: $limit, offset: $offset);
 
             return new JSONResponse(
                 data: [
@@ -552,7 +552,7 @@ class EndpointsController extends Controller
             // If endpoint_id is provided and valid, use findByEndpoint method.
             if ($endpointId !== null && $endpointId !== '' && $endpointId !== '0') {
                 $endpointIdInt = (int) $endpointId;
-                $logs          = $this->endpointLogMapper->findByEndpoint($endpointIdInt, $limit, $offset);
+                $logs          = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: $limit, offset: $offset);
                 // Get total count for this endpoint.
                 $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint($endpointIdInt, null, null);
                 $total = count($allLogsForEndpoint);

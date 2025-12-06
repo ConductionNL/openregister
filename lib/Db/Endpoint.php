@@ -388,7 +388,7 @@ class Endpoint extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        return [
+        $result = [
             'id'             => $this->id,
             'uuid'           => $this->uuid,
             'name'           => $this->name,
@@ -409,9 +409,21 @@ class Endpoint extends Entity implements JsonSerializable
             'slug'           => $this->getSlug(),
             'groups'         => $this->getGroups(),
             'organisation'   => $this->organisation,
-            'created'        => isset($this->created) === true ? $this->created->format('c') : null,
-            'updated'        => isset($this->updated) === true ? $this->updated->format('c') : null,
         ];
+
+        if (isset($this->created) === true) {
+            $result['created'] = $this->created->format('c');
+        } else {
+            $result['created'] = null;
+        }
+
+        if (isset($this->updated) === true) {
+            $result['updated'] = $this->updated->format('c');
+        } else {
+            $result['updated'] = null;
+        }
+
+        return $result;
 
     }//end jsonSerialize()
 

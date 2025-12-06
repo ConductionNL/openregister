@@ -181,7 +181,7 @@ class ViewService
         ?array $favoredBy=null
     ): View {
         try {
-            $view = $this->find($id, $owner);
+            $view = $this->find(id: $id, owner: $owner);
 
             // If this is set as default, schema: unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
@@ -221,7 +221,7 @@ class ViewService
     public function delete(int | string $id, string $owner): void
     {
         try {
-            $view = $this->find($id, $owner);
+            $view = $this->find(id: $id, owner: $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
             $this->logger->error(message: 'Error deleting view: '.$e->getMessage());

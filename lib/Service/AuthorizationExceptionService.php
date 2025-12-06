@@ -131,7 +131,7 @@ class AuthorizationExceptionService
         ?string $organizationUuid=null
     ): ?bool {
         // Create cache key for this specific permission check.
-        $cacheKey = $this->buildPermissionCacheKey($userId, $action, $schemaUuid, $registerUuid, $organizationUuid);
+        $cacheKey = $this->buildPermissionCacheKey(userId: $userId, action: $action, schemaUuid: $schemaUuid, registerUuid: $registerUuid, organizationUuid: $organizationUuid);
 
         // Try distributed cache first.
         if ($this->cache !== null) {
@@ -142,7 +142,7 @@ class AuthorizationExceptionService
         }
 
         // If not cached, evaluate and cache result.
-        $result = $this->evaluateUserPermission($userId, $action, $schemaUuid, $registerUuid, $organizationUuid);
+        $result = $this->evaluateUserPermission(userId: $userId, action: $action, schemaUuid: $schemaUuid, registerUuid: $registerUuid, organizationUuid: $organizationUuid);
 
         // Cache the result for future requests (5 minutes TTL).
         if ($this->cache !== null) {

@@ -1227,7 +1227,7 @@ class SolrSchemaService
                     'docValues'   => $this->shouldCoreFieldHaveDocValues($fieldName),
                 ];
 
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
+                if ($this->addOrUpdateSolrField(fieldName: $fieldName, fieldConfig: $fieldConfig, force: $force) === true) {
                     $successCount++;
                     $this->logger->debug(
                             '✅ Core metadata field ensured',
@@ -1303,6 +1303,7 @@ class SolrSchemaService
                         !str_starts_with($fieldName, 'self_object') &&
             // JSON storage fields don't need docValues.
                         !str_starts_with($fieldName, 'self_schema') &&
+                        //end try
                         !str_starts_with($fieldName, 'self_register') &&
                         !str_ends_with($fieldName, '_json');
 
@@ -1491,7 +1492,7 @@ class SolrSchemaService
         $successCount = 0;
         foreach ($solrFields as $fieldName => $fieldConfig) {
             try {
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
+                if ($this->addOrUpdateSolrField(fieldName: $fieldName, fieldConfig: $fieldConfig, force: $force) === true) {
                     $successCount++;
                     $this->logger->info(
                             '✅ Applied SOLR field',

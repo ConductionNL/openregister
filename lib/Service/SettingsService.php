@@ -520,7 +520,7 @@ class SettingsService
         $users = [];
 
         // Get all Nextcloud users (limit to prevent performance issues).
-        $nextcloudUsers = $this->userManager->search('', 100);
+        $nextcloudUsers = $this->userManager->search(search: '', limit: 100);
         foreach ($nextcloudUsers as $user) {
             $users[$user->getUID()] = (($user->getDisplayName() !== null) === true && ($user->getDisplayName() !== '') === true) ? $user->getDisplayName() : $user->getUID();
         }
@@ -1318,6 +1318,7 @@ class SettingsService
             if ($objectCacheService === null) {
                 throw new \Exception('ObjectCacheService not available');
             }
+            //end try
 
             $beforeStats = $objectCacheService->getStats();
 

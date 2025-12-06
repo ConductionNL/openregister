@@ -306,7 +306,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
                 $textParts[] = "{$contextKey}: {$boolStr}";
             } else if (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.
-                $nestedText = $this->extractTextFromArray($value, $contextKey, $depth + 1);
+                $nestedText = $this->extractTextFromArray(data: $value, prefix: $contextKey, depth: $depth + 1);
                 if (empty($nestedText) === false) {
                     $textParts[] = $nestedText;
                 }

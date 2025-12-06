@@ -178,6 +178,7 @@ class HyperFacetHandler
                 $this->fragmentCache      = $this->cacheFactory->createLocal('openregister_facet_fragments');
                 $this->cardinalityCache    = $this->cacheFactory->createLocal('openregister_cardinality');
             } catch (\Exception $fallbackError) {
+                //end try
                 // No caching available - will use in-memory caching.
                 $this->logger->warning('Facet caching unavailable, performance will be reduced');
             }//end try
@@ -258,20 +259,20 @@ class HyperFacetHandler
         // **STEP 3**: Execute optimized facet calculation based on strategy.
         switch ($optimizationStrategy) {
             case 'exact_parallel':
-                $results = $this->calculateExactFacetsParallel($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
                 break;
 
             case 'smart_sampling':
-                $results = $this->calculateSampledFacetsParallel($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateSampledFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, datasetStats: $datasetStats);
                 break;
 
             case 'hyperloglog_estimation':
-                $results = $this->calculateApproximateFacetsHyperLogLog($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateApproximateFacetsHyperLogLog(facetConfig: $facetConfig, baseQuery: $baseQuery, datasetStats: $datasetStats);
                 break;
 
             default:
                 // Fallback to exact calculation.
-                $results = $this->calculateExactFacetsParallel($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
         }
 
         // **STEP 4**: Enhanced response with performance metadata.
@@ -360,7 +361,7 @@ class HyperFacetHandler
         // Cache the analysis for future use.
         if ($this->cardinalityCache !== null) {
             try {
-                $this->cardinalityCache->set($cardinalityCacheKey, $stats, self::CARDINALITY_TTL);
+                $this->cardinalityCache->set(key: $cardinalityCacheKey, value: $stats, ttl: self::CARDINALITY_TTL);
             } catch (\Exception $e) {
                 // Continue without caching.
             }
@@ -514,7 +515,7 @@ class HyperFacetHandler
 
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
         $extrapolationFactor = 1 / $sampleRate;
-        $extrapolatedFacets = $this->extrapolateFacetResults($sampleFacets, $extrapolationFactor, $sampleSize, $totalSize);
+        $extrapolatedFacets = $this->extrapolateFacetResults(sampleFacets: $sampleFacets, factor: $extrapolationFactor, sampleSize: $sampleSize, totalSize: $totalSize);
 
         return $extrapolatedFacets;
 
@@ -561,7 +562,7 @@ class HyperFacetHandler
                 $approximateFacets[$facetName] = $this->calculateMetadataFacetsHyperFast($config, $baseQuery);
             } else {
                 // JSON field facets use statistical estimation.
-                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet($facetName, $config, $baseQuery, $datasetStats);
+                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(field: $facetName, config: $config, baseQuery: $baseQuery, stats: $datasetStats);
             }
         }
 
@@ -596,18 +597,19 @@ class HyperFacetHandler
 
                 // **BATCH OPTIMIZATION**: Combine multiple metadata facets in minimal queries.
                 $batchableFields = ['register', 'schema', 'organisation', 'owner'];
-                $batchResults = $this->getBatchedMetadataFacets($batchableFields, $metadataFacets, $baseQuery);
+                $batchResults = $this->getBatchedMetadataFacets(fields: $batchableFields, facetConfig: $metadataFacets, baseQuery: $baseQuery);
 
                 $results = array_merge($results, $batchResults);
 
                 // Process remaining non-batchable facets (date histograms, ranges).
                 foreach ($metadataFacets as $field => $config) {
                     if (in_array($field, $batchableFields) === false) {
-                        $results[$field] = $this->calculateSingleMetadataFacet($field, $config, $baseQuery);
+                        $results[$field] = $this->calculateSingleMetadataFacet(_field: $field, _config: $config, _baseQuery: $baseQuery);
                     }
                 }
 
                 $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+                //end try
                 $this->logger->debug('Metadata facets completed', [
                     'executionTime' => $executionTime . 'ms',
                     'facetCount' => count($results),
@@ -886,7 +888,7 @@ class HyperFacetHandler
         }
 
         try {
-            $this->facetCache->set($cacheKey, $result, self::FACET_RESULT_TTL);
+            $this->facetCache->set(key: $cacheKey, value: $result, ttl: self::FACET_RESULT_TTL);
         } catch (\Exception $e) {
             // Continue without caching.
         }

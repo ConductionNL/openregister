@@ -78,14 +78,14 @@ class MetaDataFacetHandler
             ->orderBy('doc_count', 'DESC');
         // Note: Still using doc_count in ORDER BY as it's the SQL alias
         // Apply base filters (this would be implemented to apply the base query filters).
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
             $key   = $row[$actualField];
-            $label = $this->getFieldLabel($field, $key);
+            $label = $this->getFieldLabel(field: $field, value: $key);
 
             $buckets[] = [
                 'key'     => $key,
@@ -171,7 +171,7 @@ class MetaDataFacetHandler
             ->orderBy('date_key', 'ASC');
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
@@ -318,12 +318,12 @@ class MetaDataFacetHandler
 
         // Apply IDs filter if provided.
         if ($ids !== null && is_array($ids) === true && !empty($ids)) {
-            $this->applyIdsFilter($queryBuilder, $ids);
+            $this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
         }
 
         // Apply metadata filters from @self.
         if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
-            $this->applyMetadataFilters($queryBuilder, $baseQuery['@self']);
+            $this->applyMetadataFilters(queryBuilder: $queryBuilder, metadataFilters: $baseQuery['@self']);
         }
 
         // Apply JSON object field filters (non-@self filters).
@@ -336,7 +336,7 @@ class MetaDataFacetHandler
                 );
 
         if (!empty($objectFilters)) {
-            $this->applyObjectFieldFilters($queryBuilder, $objectFilters);
+            $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
 
     }//end applyBaseFilters()
@@ -635,7 +635,7 @@ class MetaDataFacetHandler
                     );
                 } else {
                     // Simple equals with both exact match and array containment.
-                    $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $value);
+                    $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
                 }
 
                 continue;
@@ -646,7 +646,7 @@ class MetaDataFacetHandler
                 // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
-                    $this->addObjectFieldValueCondition($queryBuilder, $orConditions, $jsonPath, $val);
+                    $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $orConditions, jsonPath: $jsonPath, value: $val);
                 }
 
                 $queryBuilder->andWhere($orConditions);
@@ -655,7 +655,7 @@ class MetaDataFacetHandler
 
             // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
-                $this->applyObjectFieldOperator($queryBuilder, $jsonPath, $operator, $operatorValue);
+                $this->applyObjectFieldOperator(queryBuilder: $queryBuilder, jsonPath: $jsonPath, operator: $operator, operatorValue: $operatorValue);
             }
         }//end foreach
 
@@ -682,7 +682,7 @@ class MetaDataFacetHandler
     private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void
     {
         $singleValueConditions = $queryBuilder->expr()->orX();
-        $this->addObjectFieldValueCondition($queryBuilder, $singleValueConditions, $jsonPath, $value);
+        $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $singleValueConditions, jsonPath: $jsonPath, value: $value);
         $queryBuilder->andWhere($singleValueConditions);
 
     }//end applySimpleObjectFieldFilter()
@@ -838,7 +838,7 @@ class MetaDataFacetHandler
                 break;
             default:
                 // Default to simple filter for unknown operators.
-                $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $operatorValue);
+                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $operatorValue);
                 break;
         }//end switch
 
@@ -1029,17 +1029,17 @@ class MetaDataFacetHandler
 
         // Check which fields actually have data in the database.
         foreach ($metadataFields as $field => $config) {
-            if ($this->hasFieldData($field, $baseQuery) === true) {
+            if ($this->hasFieldData(field: $field, baseQuery: $baseQuery) === true) {
                 $fieldConfig = $config;
 
                 // Add sample values for categorical fields.
                 if ($config['type'] === 'categorical') {
-                    $fieldConfig['sample_values'] = $this->getSampleValues($field, $baseQuery, 10);
+                    $fieldConfig['sample_values'] = $this->getSampleValues(field: $field, baseQuery: $baseQuery, limit: 10);
                 }
 
                 // Add date range for date fields.
                 if ($config['type'] === 'date') {
-                    $dateRange = $this->getDateRange($field, $baseQuery);
+                    $dateRange = $this->getDateRange(field: $field, baseQuery: $baseQuery);
                     if ($dateRange !== null) {
                         $fieldConfig['date_range'] = $dateRange;
                     }
@@ -1079,7 +1079,7 @@ class MetaDataFacetHandler
             ->where($queryBuilder->expr()->isNotNull($field));
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result = $queryBuilder->executeQuery();
         $count  = (int) $result->fetchOne();
@@ -1121,7 +1121,7 @@ class MetaDataFacetHandler
             ->setMaxResults($limit);
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
         $samples = [];
@@ -1168,7 +1168,7 @@ class MetaDataFacetHandler
             ->where($queryBuilder->expr()->isNotNull($field));
 
         // Apply base filters.
-        $this->applyBaseFilters($queryBuilder, $baseQuery);
+        $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
         $result = $queryBuilder->executeQuery();
         $row    = $result->fetch();

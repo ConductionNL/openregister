@@ -110,13 +110,13 @@ class SolrNightlyWarmupJob extends TimedJob
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is enabled and available.
-            if ($this->isSolrEnabledAndAvailable($solrService, $settingsService, $logger) === false) {
+            if ($this->isSolrEnabledAndAvailable(solrService: $solrService, settingsService: $settingsService, logger: $logger) === false) {
                 $logger->info(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
                 return;
             }
 
             // Get warmup configuration from settings.
-            $config = $this->getWarmupConfiguration($settingsService, $logger);
+            $config = $this->getWarmupConfiguration(_settingsService: $settingsService, _logger: $logger);
 
             // Get all schemas for comprehensive warmup.
             $schemas = $schemaMapper->findAll();
@@ -153,7 +153,7 @@ class SolrNightlyWarmupJob extends TimedJob
                             'conflicts_resolved'     => $result['operations']['conflicts_resolved'] ?? 0,
                             'performance_metrics'    => [
                                 'total_time_ms'      => $result['execution_time_ms'] ?? 0,
-                                'objects_per_second' => $this->calculateObjectsPerSecond($result, $executionTime),
+                                'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
                                 'next_run'           => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
                             ],
                             'operations_summary'     => $this->summarizeOperations($result['operations'] ?? []),
@@ -161,7 +161,7 @@ class SolrNightlyWarmupJob extends TimedJob
                         );
 
                 // Log performance statistics for monitoring.
-                $this->logPerformanceStats($result, $executionTime, $logger);
+                $this->logPerformanceStats(result: $result, executionTime: $executionTime, logger: $logger);
             } else {
                 $logger->error(
                         '❌ SOLR Nightly Warmup Job Failed',

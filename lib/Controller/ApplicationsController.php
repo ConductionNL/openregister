@@ -241,7 +241,7 @@ class ApplicationsController extends Controller
             unset($data['owner']);
             unset($data['created']);
 
-            $application = $this->applicationService->update($id, $data);
+            $application = $this->applicationService->update(id: $id, data: $data);
 
             return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
         } catch (Exception $e) {

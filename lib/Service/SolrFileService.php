@@ -626,9 +626,9 @@ class SolrFileService
 
         // Choose chunking strategy.
         $chunks = match ($strategy) {
-            self::FIXED_SIZE => $this->chunkFixedSize($text, $chunkSize, $chunkOverlap),
-            self::RECURSIVE_CHARACTER => $this->chunkRecursive($text, $chunkSize, $chunkOverlap),
-            default => $this->chunkRecursive($text, $chunkSize, $chunkOverlap)
+            self::FIXED_SIZE => $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            self::RECURSIVE_CHARACTER => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            default => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap)
         };
 
         // Respect max chunks limit.
@@ -795,7 +795,7 @@ class SolrFileService
         // Words.
         ];
 
-        return $this->recursiveSplit($text, $separators, $chunkSize, $chunkOverlap);
+        return $this->recursiveSplit(text: $text, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 
     }//end chunkRecursive()
 
@@ -819,7 +819,7 @@ class SolrFileService
 
         // If no separators left, use fixed size chunking.
         if ($separators === []) {
-            return $this->chunkFixedSize($text, $chunkSize, $chunkOverlap);
+            return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
         }
 
         // Try splitting with current separator.
@@ -857,7 +857,7 @@ class SolrFileService
                 } else {
                     // Single split is too large, need to split it further.
                     if (strlen($split) > $chunkSize) {
-                        $subChunks    = $this->recursiveSplit($split, $separators, $chunkSize, $chunkOverlap);
+                        $subChunks    = $this->recursiveSplit(text: $split, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
                         $chunks       = array_merge($chunks, $subChunks);
                         $currentChunk = '';
                     } else {

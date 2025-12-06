@@ -829,7 +829,7 @@ class WebhooksController extends Controller
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-            $logs = $this->webhookLogMapper->findByWebhook($id, $limit, $offset);
+            $logs = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: $limit, offset: $offset);
 
             return new JSONResponse(
                 data: [
@@ -939,15 +939,15 @@ class WebhooksController extends Controller
             // If webhook_id is provided and valid, use findByWebhook method.
             if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                 $webhookIdInt = (int) $webhookId;
-                $logs         = $this->webhookLogMapper->findByWebhook($webhookIdInt, $limit, $offset);
+                $logs         = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: $limit, offset: $offset);
                 // Get total count for this webhook.
-                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
+                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: null, offset: null);
                 $total = count($allLogsForWebhook);
             } else {
                 // Get all logs.
-                $logs = $this->webhookLogMapper->findAll($limit, $offset);
+                $logs = $this->webhookLogMapper->findAll(limit: $limit, offset: $offset);
                 // Get total count for all logs.
-                $allLogs = $this->webhookLogMapper->findAll(null, null);
+                $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
             }
 
@@ -975,7 +975,7 @@ class WebhooksController extends Controller
                             )
                             );
                 } else {
-                    $allLogs = $this->webhookLogMapper->findAll(null, null);
+                    $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                     $total   = count(
                             array_filter(
                             $allLogs,

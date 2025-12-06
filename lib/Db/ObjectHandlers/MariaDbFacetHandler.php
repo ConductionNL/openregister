@@ -808,7 +808,7 @@ class MariaDbFacetHandler
                     );
                 } else {
                     // Simple equals with both exact match and array containment.
-                    $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $value);
+                    $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
                 }
 
                 continue;
@@ -855,7 +855,7 @@ class MariaDbFacetHandler
     private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void
     {
                 $singleValueConditions = $queryBuilder->expr()->orX();
-        $this->addObjectFieldValueCondition($queryBuilder, $singleValueConditions, $jsonPath, $value);
+        $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $singleValueConditions, jsonPath: $jsonPath, value: $value);
         $queryBuilder->andWhere($singleValueConditions);
 
     }//end applySimpleObjectFieldFilter()
@@ -1011,7 +1011,7 @@ class MariaDbFacetHandler
                 break;
             default:
                 // Default to simple filter for unknown operators.
-                $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $operatorValue);
+                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $operatorValue);
                 break;
         }//end switch
 
@@ -1173,12 +1173,12 @@ class MariaDbFacetHandler
                 if (empty($value) === false && is_array($value[0]) === true) {
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
                     // Recursively analyze nested objects.
-                    $this->analyzeObjectFields($value[0], $fieldAnalysis, $fieldPath, $depth + 1);
+                    $this->analyzeObjectFields(objectData: $value[0], fieldAnalysis: $fieldAnalysis, prefix: $fieldPath, depth: $depth + 1);
                 } else {
                     // Array of simple values - not nested.
                     foreach ($value as $item) {
-                        $this->recordValueType($fieldAnalysis[$fieldPath], $item);
-                        $this->recordSampleValue($fieldAnalysis[$fieldPath], $item);
+                        $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
+                        $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
                     }
                 }
             } else if (is_object($value) === true) {
@@ -1189,7 +1189,7 @@ class MariaDbFacetHandler
                 // For array-like objects, convert to array first.
                 if (method_exists($value, '__toArray') === true) {
                     $valueArray = (array) $value->__toArray();
-                    $this->analyzeObjectFields($valueArray, $fieldAnalysis, $fieldPath, $depth + 1);
+                    $this->analyzeObjectFields(objectData: $valueArray, fieldAnalysis: $fieldAnalysis, prefix: $fieldPath, depth: $depth + 1);
                 }
             } else {
                 // Simple value.

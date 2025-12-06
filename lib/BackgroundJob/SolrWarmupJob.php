@@ -103,7 +103,7 @@ class SolrWarmupJob extends QueuedJob
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is available before proceeding.
-            if ($this->isSolrAvailable($solrService, $logger) === false) {
+            if ($this->isSolrAvailable(solrService: $solrService, logger: $logger) === false) {
                 $logger->warning(
                         message: 'SOLR Warmup Job skipped - SOLR not available',
                         context: [

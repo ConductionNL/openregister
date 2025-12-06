@@ -512,7 +512,9 @@ class ValidateObject
                 // Create a temporary object for isSelfReference check.
                 $tempSchema = (object) ['$ref' => $schemaSlug];
                 if ($this->isSelfReference($tempSchema, $schemaSlug) === true) {
+                    //end if
                     $objectSchema->type        = 'object';
+                    //end if
                     $objectSchema->description = 'Nested object (self-reference prevented)';
                     unset($objectSchema->{'$ref'});
 
@@ -1069,8 +1071,8 @@ class ValidateObject
 
         $validator = new Validator();
         $validator->setMaxErrors(100);
-        $validator->parser()->getFormatResolver()->register('string', 'bsn', new BsnFormat());
-        $validator->parser()->getFormatResolver()->register('string', 'semver', new \OCA\OpenRegister\Formats\SemVerFormat());
+        $validator->parser()->getFormatResolver()->register(type: 'string', format: 'bsn', resolver: new BsnFormat());
+        $validator->parser()->getFormatResolver()->register(type: 'string', format: 'semver', resolver: new \OCA\OpenRegister\Formats\SemVerFormat());
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);

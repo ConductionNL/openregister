@@ -97,10 +97,10 @@ class EndpointService
             ];
 
             // Execute the endpoint based on target type.
-            $result = $this->executeEndpoint($endpoint, $request);
+            $result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
 
             // Log the test execution.
-            $this->logEndpointCall($endpoint, $request, $result);
+            $this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
 
             return $result;
         } catch (\Exception $e) {
@@ -138,15 +138,15 @@ class EndpointService
         // Based on targetType, execute different logic.
         switch ($endpoint->getTargetType()) {
             case 'view':
-                return $this->executeViewEndpoint($endpoint, $request);
+                return $this->executeViewEndpoint(_endpoint: $endpoint, _request: $request);
             case 'agent':
-                return $this->executeAgentEndpoint($endpoint, $request);
+                return $this->executeAgentEndpoint(_endpoint: $endpoint, _request: $request);
             case 'webhook':
-                return $this->executeWebhookEndpoint($endpoint, $request);
+                return $this->executeWebhookEndpoint(_endpoint: $endpoint, _request: $request);
             case 'register':
-                return $this->executeRegisterEndpoint($endpoint, $request);
+                return $this->executeRegisterEndpoint(_endpoint: $endpoint, _request: $request);
             case 'schema':
-                return $this->executeSchemaEndpoint($endpoint, $request);
+                return $this->executeSchemaEndpoint(_endpoint: $endpoint, _request: $request);
             default:
                 return [
                     'success'    => false,
@@ -351,6 +351,7 @@ class EndpointService
      * @param mixed  $toolRegistry Tool registry
      *
      * @return array Function result
+     //end try
      */
     private function executeToolFunction(string $functionName, array $arguments, $agent, $toolRegistry): array
     {
@@ -487,6 +488,7 @@ class EndpointService
      * @param array    $request  Request data
      *
      * @return         array Execution result
+     //end foreach
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
@@ -569,12 +571,14 @@ class EndpointService
             $log->setEndpointId($endpoint->getId());
 
             // Set user info.
+            //end if
             $user = $this->userSession->getUser();
             if ($user !== null) {
                 $log->setUserId($user->getUID());
             }
 
             // Set request/response data.
+            //end foreach
             $log->setRequest($request);
             $log->setResponse(
                     [

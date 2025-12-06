@@ -182,7 +182,7 @@ class SchemasController extends Controller
             $extend = [$extend];
         }
 
-            $schema    = $this->schemaMapper->find($id, []);
+            $schema    = $this->schemaMapper->find(id: $id, extend: []);
             $schemaArr = $schema->jsonSerialize();
 
             // Add extendedBy property showing UUIDs of schemas that extend this schema.

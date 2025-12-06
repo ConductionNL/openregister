@@ -1099,7 +1099,7 @@ class VectorEmbeddingService
                 $this->logger->debug(
                 message:'Step 2: Searching vectors in Solr using KNN'
                         );
-                $results = $this->searchVectorsInSolr($queryEmbedding, $limit, $filters);
+                $results = $this->searchVectorsInSolr(queryEmbedding: $queryEmbedding, limit: $limit, filters: $filters);
             } else {
                 // Use PHP/database similarity calculation.
                 $this->logger->debug(

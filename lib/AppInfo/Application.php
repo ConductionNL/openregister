@@ -467,8 +467,8 @@ class Application extends App implements IBootstrap
                     );
 
                     // Register strategies.
-                    $service->registerStrategy('file', $container->get(FileVectorizationStrategy::class));
-                    $service->registerStrategy('object', $container->get(ObjectVectorizationStrategy::class));
+                    $service->registerStrategy(entityType: 'file', strategy: $container->get(FileVectorizationStrategy::class));
+                    $service->registerStrategy(entityType: 'object', strategy: $container->get(ObjectVectorizationStrategy::class));
 
                     return $service;
                 }
@@ -605,8 +605,8 @@ class Application extends App implements IBootstrap
             $jobList = $container->get(id: 'OCP\BackgroundJob\IJobList');
 
             // Check if the nightly warmup job is already registered.
-            if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
-                $jobList->add(SolrNightlyWarmupJob::class);
+            if ($jobList->has(class: SolrNightlyWarmupJob::class, argument: null) === false) {
+                $jobList->add(job: SolrNightlyWarmupJob::class);
                 $logger->info(
                         message: '🌙 SOLR Nightly Warmup Job registered successfully',
                         context: [
@@ -619,8 +619,8 @@ class Application extends App implements IBootstrap
             }
 
             // Register recurring cron file text extraction job.
-            if ($jobList->has(CronFileTextExtractionJob::class, null) === false) {
-                $jobList->add(CronFileTextExtractionJob::class);
+            if ($jobList->has(class: CronFileTextExtractionJob::class, argument: null) === false) {
+                $jobList->add(job: CronFileTextExtractionJob::class);
                 $logger->info(
                         message: '🔄 Cron File Text Extraction Job registered successfully',
                         context: [
@@ -634,8 +634,8 @@ class Application extends App implements IBootstrap
 
             // Register recurring webhook retry job.
             $webhookRetryJobClass = 'OCA\OpenRegister\Cron\WebhookRetryJob';
-            if ($jobList->has($webhookRetryJobClass, null) === false) {
-                $jobList->add($webhookRetryJobClass);
+            if ($jobList->has(class: $webhookRetryJobClass, argument: null) === false) {
+                $jobList->add(job: $webhookRetryJobClass);
                 $logger->info(
                         message: '🔄 Webhook Retry Job registered successfully',
                         context: [
