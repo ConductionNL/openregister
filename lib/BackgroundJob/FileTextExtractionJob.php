@@ -110,7 +110,7 @@ class FileTextExtractionJob extends QueuedJob
 
         try {
             // Extract text using TextExtractionService.
-            $this->textExtractionService->extractFile($fileId, false);
+            $this->textExtractionService->extractFile(fileId: $fileId, forceReextraction: false);
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
