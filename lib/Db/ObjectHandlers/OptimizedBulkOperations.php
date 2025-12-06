@@ -126,7 +126,7 @@ class OptimizedBulkOperations
             $chunkStartTime = microtime(true);
 
             // MEMORY-INTENSIVE: Build massive INSERT...ON DUPLICATE KEY UPDATE statement.
-            $chunkUUIDs     = $this->processUnifiedChunk($chunk, $chunkIndex + 1, $totalChunks);
+            $chunkUUIDs     = $this->processUnifiedChunk(objects: $chunk, chunkNumber: $chunkIndex + 1, _totalChunks: $totalChunks);
             $processedUUIDs = array_merge($processedUUIDs, $chunkUUIDs);
 
             $chunkTime = microtime(true) - $chunkStartTime;

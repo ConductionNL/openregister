@@ -136,7 +136,7 @@ class MagicSearchHandler
 
         // Apply object field filters (schema-specific columns).
         if (empty($objectFilters) === false) {
-            $this->applyObjectFilters($queryBuilder, $objectFilters, $schema);
+            $this->applyObjectFilters(qb: $queryBuilder, filters: $objectFilters, schema: $schema);
         }
 
         // Apply ID filtering if provided.
@@ -151,7 +151,7 @@ class MagicSearchHandler
 
         // Apply sorting (skip for count queries).
         if ($count === false && empty($order) === false) {
-            $this->applySorting($queryBuilder, $order, $schema);
+            $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema);
         }
 
         // Execute query and return results.
@@ -159,7 +159,7 @@ class MagicSearchHandler
             $result = $queryBuilder->executeQuery();
             return (int) $result->fetchOne();
         } else {
-            return $this->executeSearchQuery($queryBuilder, $register, $schema, $tableName);
+            return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
         }
 
     }//end searchObjects()
@@ -365,7 +365,7 @@ class MagicSearchHandler
         $objects = [];
 
         foreach ($rows as $row) {
-            $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema, $tableName);
+            $objectEntity = $this->convertRowToObjectEntity(row: $row, register: $register, schema: $schema, tableName: $tableName);
             if ($objectEntity !== null) {
                 $objects[] = $objectEntity;
             }

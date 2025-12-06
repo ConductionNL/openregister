@@ -894,14 +894,14 @@ class SchemaMapper extends QBMapper
 
             // Recursively check nested properties.
             if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
-                if ($this->hasReferenceToSchema($property['properties'], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug) === true) {
+                if ($this->hasReferenceToSchema(properties: $property['properties'], targetSchemaId: $targetSchemaId, targetSchemaUuid: $targetSchemaUuid, targetSchemaSlug: $targetSchemaSlug) === true) {
                     return true;
                 }
             }
 
             // Check array items for references.
             if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
-                if ($this->hasReferenceToSchema([$property['items']], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug) === true) {
+                if ($this->hasReferenceToSchema(properties: [$property['items']], targetSchemaId: $targetSchemaId, targetSchemaUuid: $targetSchemaUuid, targetSchemaSlug: $targetSchemaSlug) === true) {
                     return true;
                 }
             }
