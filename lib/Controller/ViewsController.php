@@ -590,7 +590,7 @@ class ViewsController extends Controller
                         );
             }
 
-            $this->viewService->delete($id, $user->getUID());
+            $this->viewService->delete(id: $id, owner: $user->getUID());
 
             return new JSONResponse(
                     data: [

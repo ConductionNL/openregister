@@ -499,7 +499,7 @@ class MagicMapper
 
         try {
             foreach ($objects as $object) {
-                $uuid = $this->saveObjectToRegisterSchemaTable($object, $register, $schema, $tableName);
+                $uuid = $this->saveObjectToRegisterSchemaTable(objectData: $object, register: $register, schema: $schema, tableName: $tableName);
                 if ($uuid !== null && $uuid !== '') {
                     $savedUuids[] = $uuid;
                 }
@@ -557,7 +557,7 @@ class MagicMapper
         $tableName = $this->getTableNameForRegisterSchema($register, $schema);
 
         try {
-            return $this->executeRegisterSchemaTableSearch($query, $register, $schema, $tableName);
+            return $this->executeRegisterSchemaTableSearch(query: $query, register: $register, schema: $schema, tableName: $tableName);
         } catch (Exception $e) {
             $this->logger->error(
                     'Failed to search register+schema table',
@@ -666,7 +666,7 @@ class MagicMapper
         $this->createTable($tableName, $columns);
 
         // Create indexes for performance.
-        $this->createTableIndexes($tableName, $register, $schema);
+        $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
 
         // Store schema version for change detection.
         $this->storeRegisterSchemaVersion($register, $schema);
@@ -723,10 +723,10 @@ class MagicMapper
             $requiredColumns = $this->buildTableColumnsFromSchema($schema);
 
             // Compare and update table structure.
-            $this->updateTableStructure($tableName, $currentColumns, $requiredColumns);
+            $this->updateTableStructure(tableName: $tableName, currentColumns: $currentColumns, requiredColumns: $requiredColumns);
 
             // Update indexes.
-            $this->updateTableIndexes($tableName, $register, $schema);
+            $this->updateTableIndexes(tableName: $tableName, register: $register, schema: $schema);
 
             // Store updated schema version and refresh cache.
             $this->storeRegisterSchemaVersion($register, $schema);
@@ -1377,7 +1377,7 @@ class MagicMapper
     private function saveObjectToRegisterSchemaTable(array $objectData, Register $register, Schema $schema, string $tableName): string
     {
         // Prepare object data for table storage with register+schema context.
-        $preparedData = $this->prepareObjectDataForTable($objectData, $register, $schema);
+        $preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
 
         // Generate UUID if not provided.
         if (empty($preparedData[self::METADATA_PREFIX.'uuid']) === true) {
@@ -1392,7 +1392,7 @@ class MagicMapper
 
             if ($existingObject !== null) {
                 // Update existing object.
-                $this->updateObjectInRegisterSchemaTable($uuid, $preparedData, $tableName);
+                $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
                 $this->logger->debug(
                         'Updated object in register+schema table',
                         [
@@ -1590,7 +1590,7 @@ class MagicMapper
             // Convert rows back to ObjectEntity objects.
             $objects = [];
             foreach ($rows as $row) {
-                $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema);
+                $objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
                 if ($objectEntity !== null) {
                     $objects[] = $objectEntity;
                 }
@@ -2115,7 +2115,7 @@ class MagicMapper
     private function updateTableIndexes(string $tableName, Register $register, Schema $schema): void
     {
         // For now, recreate all indexes (more complex differential updates can be added later).
-        $this->createTableIndexes($tableName, $register, $schema);
+        $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
 
     }//end updateTableIndexes()
 

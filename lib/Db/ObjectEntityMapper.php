@@ -453,7 +453,7 @@ class ObjectEntityMapper extends QBMapper
                             $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
                         ),
 // Schemas that explicitly allow public read access.
-                        $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
+                        $this->createJsonContainsCondition(qb: $qb, column: "{$schemaTableAlias}.authorization", path: '$.read', value: 'public'),
 // Objects that are currently published (publication-based public access).
                         $qb->expr()->andX(
                             $qb->expr()->isNotNull("{$objectTableAlias}.published"),
@@ -482,7 +482,7 @@ class ObjectEntityMapper extends QBMapper
                         $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
                         $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
                     ),
-                    $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', 'public'),
+                    $this->createJsonContainsCondition(qb: $qb, column: "{$schemaTableAlias}.authorization", path: '$.read', value: 'public'),
 // Objects that are currently published (publication-based public access).
                     $qb->expr()->andX(
                         $qb->expr()->isNotNull("{$objectTableAlias}.published"),
@@ -505,7 +505,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
 // Check for authorization exceptions first (highest priority).
-        $exceptionResult = $this->applyAuthorizationExceptions($qb, $userId, $objectTableAlias, $schemaTableAlias, 'read');
+        $exceptionResult = $this->applyAuthorizationExceptions(qb: $qb, userId: $userId, objectTableAlias: $objectTableAlias, schemaTableAlias: $schemaTableAlias, action: 'read');
         if ($exceptionResult === false) {
 // User is explicitly denied access via exclusion - apply very restrictive filter.
 // Always false.
@@ -537,7 +537,7 @@ class ObjectEntityMapper extends QBMapper
         // 4. User's groups are in the authorized groups for read action
         foreach ($userGroups as $groupId) {
             $readConditions->add(
-                $this->createJsonContainsCondition($qb, "{$schemaTableAlias}.authorization", '$.read', $groupId)
+                $this->createJsonContainsCondition(qb: $qb, column: "{$schemaTableAlias}.authorization", path: '$.read', value: $groupId)
             );
         }
 
@@ -783,7 +783,7 @@ class ObjectEntityMapper extends QBMapper
             ->setFirstResult($offset);
 
 // Apply RBAC filtering based on user permissions.
-        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
+        $this->applyRbacFilters(qb: $qb, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac);
 
 		// By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -1339,7 +1339,7 @@ class ObjectEntityMapper extends QBMapper
             // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck)
             $rbacStart = microtime(true);
             // Disable published bypass if _published=false is explicitly set (dashboard users want only their org)
-            $this->applyRbacFilters($queryBuilder, 'o', 's', null, $rbac, $disablePublishedBypass);
+            $this->applyRbacFilters(qb: $queryBuilder, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac, disablePublishedBypass: $disablePublishedBypass);
             $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
 
             $this->logger->info('🔒 RBAC FILTERING COMPLETED', [
@@ -1879,7 +1879,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
 // Apply RBAC filtering based on user permissions.
-        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
+        $this->applyRbacFilters(qb: $qb, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {

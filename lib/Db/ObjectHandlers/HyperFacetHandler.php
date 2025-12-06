@@ -361,7 +361,7 @@ class HyperFacetHandler
         // Cache the analysis for future use.
         if ($this->cardinalityCache !== null) {
             try {
-                $this->cardinalityCache->set($cardinalityCacheKey, $stats, self::CARDINALITY_TTL);
+                $this->cardinalityCache->set(key: $cardinalityCacheKey, value: $stats, ttl: self::CARDINALITY_TTL);
             } catch (\Exception $e) {
                 // Continue without caching.
             }
@@ -515,7 +515,7 @@ class HyperFacetHandler
 
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
         $extrapolationFactor = 1 / $sampleRate;
-        $extrapolatedFacets = $this->extrapolateFacetResults($sampleFacets, $extrapolationFactor, $sampleSize, $totalSize);
+        $extrapolatedFacets = $this->extrapolateFacetResults(sampleFacets: $sampleFacets, factor: $extrapolationFactor, sampleSize: $sampleSize, totalSize: $totalSize);
 
         return $extrapolatedFacets;
 
@@ -562,7 +562,7 @@ class HyperFacetHandler
                 $approximateFacets[$facetName] = $this->calculateMetadataFacetsHyperFast($config, $baseQuery);
             } else {
                 // JSON field facets use statistical estimation.
-                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet($facetName, $config, $baseQuery, $datasetStats);
+                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(field: $facetName, config: $config, baseQuery: $baseQuery, stats: $datasetStats);
             }
         }
 
@@ -888,7 +888,7 @@ class HyperFacetHandler
         }
 
         try {
-            $this->facetCache->set($cacheKey, $result, self::FACET_RESULT_TTL);
+            $this->facetCache->set(key: $cacheKey, value: $result, ttl: self::FACET_RESULT_TTL);
         } catch (\Exception $e) {
             // Continue without caching.
         }

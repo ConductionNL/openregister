@@ -327,7 +327,7 @@ class DeletedController extends Controller
     public function restore(string $id): JSONResponse
     {
         try {
-            $object = $this->objectEntityMapper->find($id, null, null, true);
+            $object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
 
             if ($object->getDeleted() === null) {
                 return new JSONResponse(
@@ -340,7 +340,7 @@ class DeletedController extends Controller
 
             // Clear the deleted status.
             $object->setDeleted(null);
-            $this->objectEntityMapper->update($object, true);
+            $this->objectEntityMapper->update(entity: $object, includeDeleted: true);
 
             return new JSONResponse(
                     data: [
@@ -412,7 +412,7 @@ class DeletedController extends Controller
                 try {
                     if ($object->getDeleted() !== null) {
                         $object->setDeleted(null);
-                        $this->objectEntityMapper->update($object, true);
+                        $this->objectEntityMapper->update(entity: $object, includeDeleted: true);
                         $restored++;
                     } else {
                         // Object exists but is not deleted.
@@ -461,7 +461,7 @@ class DeletedController extends Controller
     public function destroy(string $id): JSONResponse
     {
         try {
-            $object = $this->objectEntityMapper->find($id, null, null, true);
+            $object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
 
             if ($object->getDeleted() === null) {
                 return new JSONResponse(
