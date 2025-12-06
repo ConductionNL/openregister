@@ -127,7 +127,7 @@ class MagicSearchHandler
         }
 
         // Apply basic filters (deleted, published, etc.).
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published);
+        $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
 
         // Apply metadata filters.
         if (empty($metadataFilters) === false) {

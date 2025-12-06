@@ -222,10 +222,10 @@ class ObjectsTool extends AbstractTool
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
-        $this->log($functionName, $parameters);
+        $this->log(functionName: $functionName, parameters: $parameters);
 
         if ($this->hasUserContext($userId) === false) {
-            return $this->formatError('No user context available. Tool cannot execute without user session.');
+            return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
         try {
@@ -235,8 +235,8 @@ class ObjectsTool extends AbstractTool
             // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
-            $this->log($functionName, $parameters, 'error', $e->getMessage());
-            return $this->formatError($e->getMessage());
+            $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+            return $this->formatError(message: $e->getMessage());
         }
 
     }//end executeFunction()
@@ -270,13 +270,11 @@ class ObjectsTool extends AbstractTool
 
         $filters = $this->applyViewFilters($filters);
 
-        $result = $this->objectService->findAll(
-            [
+        $result = $this->objectService->findAll(query: [
                 'limit'   => $limit,
                 'offset'  => $offset,
                 'filters' => $filters,
-            ]
-        );
+            ]);
 
         $objectList = array_map(
                 function ($object) {
@@ -294,11 +292,11 @@ class ObjectsTool extends AbstractTool
                 );
 
         return $this->formatSuccess(
-            [
+            data: [
                 'objects' => $objectList,
                 'total'   => $result['total'] ?? count($objectList),
             ],
-            sprintf('Found %d objects', count($objectList))
+            message: sprintf('Found %d objects', count($objectList))
         );
 
     }//end searchObjects()
@@ -315,10 +313,10 @@ class ObjectsTool extends AbstractTool
      */
     public function getObject(string $id): array
     {
-        $object = $this->objectService->find($id);
+        $object = $this->objectService->find(id: $id);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'           => $object->getId(),
                 'uuid'         => $object->getUuid(),
                 'register'     => $object->getRegister(),
@@ -329,7 +327,7 @@ class ObjectsTool extends AbstractTool
                 'created'      => $object->getCreated()?->format('Y-m-d H:i:s'),
                 'updated'      => $object->getUpdated()?->format('Y-m-d H:i:s'),
             ],
-            'Object retrieved successfully'
+            message: 'Object retrieved successfully'
         );
 
     }//end getObject()
@@ -365,14 +363,14 @@ class ObjectsTool extends AbstractTool
         );
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'       => $object->getId(),
                 'uuid'     => $object->getUuid(),
                 'register' => $object->getRegister(),
                 'schema'   => $object->getSchema(),
                 'data'     => $object->getObject(),
             ],
-            'Object created successfully'
+            message: 'Object created successfully'
         );
 
     }//end createObject()
@@ -408,14 +406,14 @@ class ObjectsTool extends AbstractTool
         );
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'       => $object->getId(),
                 'uuid'     => $object->getUuid(),
                 'register' => $object->getRegister(),
                 'schema'   => $object->getSchema(),
                 'data'     => $object->getObject(),
             ],
-            'Object updated successfully'
+            message: 'Object updated successfully'
         );
 
     }//end updateObject()
@@ -432,13 +430,13 @@ class ObjectsTool extends AbstractTool
      */
     public function deleteObject(string $id): array
     {
-        $object = $this->objectService->find($id);
+        $object = $this->objectService->find(id: $id);
         $uuid   = $object->getUuid() ?? (string) $object->getId();
-        $this->objectService->deleteObject($uuid);
+        $this->objectService->deleteObject(uuid: $uuid);
 
         return $this->formatSuccess(
-            ['id' => $id],
-            'Object deleted successfully'
+            data: ['id' => $id],
+            message: 'Object deleted successfully'
         );
 
     }//end deleteObject()

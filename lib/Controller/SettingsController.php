@@ -4798,7 +4798,7 @@ class SettingsController extends Controller
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
             // Perform hybrid search.
-            $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+            $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
             // Ensure result is an array for spread operator.
             $resultArray = is_array($result) === true ? $result : [];

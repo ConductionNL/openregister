@@ -945,9 +945,9 @@ class WebhooksController extends Controller
                 $total = count($allLogsForWebhook);
             } else {
                 // Get all logs.
-                $logs = $this->webhookLogMapper->findAll($limit, $offset);
+                $logs = $this->webhookLogMapper->findAll(limit: $limit, offset: $offset);
                 // Get total count for all logs.
-                $allLogs = $this->webhookLogMapper->findAll(null, null);
+                $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
             }
 
@@ -975,7 +975,7 @@ class WebhooksController extends Controller
                             )
                             );
                 } else {
-                    $allLogs = $this->webhookLogMapper->findAll(null, null);
+                    $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                     $total   = count(
                             array_filter(
                             $allLogs,

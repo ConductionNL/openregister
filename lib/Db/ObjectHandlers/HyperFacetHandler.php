@@ -263,16 +263,16 @@ class HyperFacetHandler
                 break;
 
             case 'smart_sampling':
-                $results = $this->calculateSampledFacetsParallel($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateSampledFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, datasetStats: $datasetStats);
                 break;
 
             case 'hyperloglog_estimation':
-                $results = $this->calculateApproximateFacetsHyperLogLog($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateApproximateFacetsHyperLogLog(facetConfig: $facetConfig, baseQuery: $baseQuery, datasetStats: $datasetStats);
                 break;
 
             default:
                 // Fallback to exact calculation.
-                $results = $this->calculateExactFacetsParallel($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
         }
 
         // **STEP 4**: Enhanced response with performance metadata.

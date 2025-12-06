@@ -229,20 +229,20 @@ class AgentTool extends AbstractTool implements ToolInterface
                     );
 
             // Get agents via mapper (RBAC is enforced in mapper).
-            $agents = $this->agentMapper->findAll($limit, $offset);
+            $agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);
             $total  = $this->agentMapper->count();
 
             // Convert to array.
             $results = array_map(fn ($agent) => $agent->jsonSerialize(), $agents);
 
             return $this->formatSuccess(
-                    [
+                    data: [
                         'agents' => $results,
                         'total'  => $total,
                         'limit'  => $limit,
                         'offset' => $offset,
                     ],
-                    "Found {$total} agents."
+                    message: "Found {$total} agents."
                     );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -251,7 +251,7 @@ class AgentTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to list agents: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to list agents: '.$e->getMessage());
         }//end try
 
     }//end listAgents()
@@ -270,14 +270,14 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->info('[AgentTool] Getting agent', ['uuid' => $uuid]);
 
             // Find agent (RBAC enforced in mapper).
-            $agent = $this->agentMapper->findByUuid($uuid);
+            $agent = $this->agentMapper->findByUuid(uuid: $uuid);
 
             return $this->formatSuccess(
-                $agent->jsonSerialize(),
-                "Agent '{$agent->getName()}' retrieved successfully."
+                data: $agent->jsonSerialize(),
+                message: "Agent '{$agent->getName()}' retrieved successfully."
             );
         } catch (DoesNotExistException $e) {
-            return $this->formatError("Agent with UUID '{$uuid}' not found.");
+            return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
                     '[AgentTool] Failed to get agent',
@@ -286,7 +286,7 @@ class AgentTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to get agent: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to get agent: '.$e->getMessage());
         }//end try
 
     }//end getAgent()
@@ -336,8 +336,8 @@ class AgentTool extends AbstractTool implements ToolInterface
             $agent = $this->agentMapper->insert($agent);
 
             return $this->formatSuccess(
-                $agent->jsonSerialize(),
-                "Agent '{$name}' created successfully with UUID {$agent->getUuid()}."
+                data: $agent->jsonSerialize(),
+                message: "Agent '{$name}' created successfully with UUID {$agent->getUuid()}."
             );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -347,7 +347,7 @@ class AgentTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to create agent: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to create agent: '.$e->getMessage());
         }//end try
 
     }//end createAgent()
@@ -373,7 +373,7 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->info('[AgentTool] Updating agent', ['uuid' => $uuid]);
 
             // Find agent (RBAC enforced in mapper).
-            $agent = $this->agentMapper->findByUuid($uuid);
+            $agent = $this->agentMapper->findByUuid(uuid: $uuid);
 
             // Update fields.
             if ($name !== null) {
@@ -392,11 +392,11 @@ class AgentTool extends AbstractTool implements ToolInterface
             $agent = $this->agentMapper->update($agent);
 
             return $this->formatSuccess(
-                $agent->jsonSerialize(),
-                "Agent updated successfully."
+                data: $agent->jsonSerialize(),
+                message: "Agent updated successfully."
             );
         } catch (DoesNotExistException $e) {
-            return $this->formatError("Agent with UUID '{$uuid}' not found.");
+            return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
                     '[AgentTool] Failed to update agent',
@@ -405,7 +405,7 @@ class AgentTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to update agent: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to update agent: '.$e->getMessage());
         }//end try
 
     }//end updateAgent()
@@ -424,18 +424,18 @@ class AgentTool extends AbstractTool implements ToolInterface
             $this->logger->info('[AgentTool] Deleting agent', ['uuid' => $uuid]);
 
             // Find agent (RBAC enforced in mapper).
-            $agent = $this->agentMapper->findByUuid($uuid);
+            $agent = $this->agentMapper->findByUuid(uuid: $uuid);
             $name  = $agent->getName();
 
             // Delete (RBAC enforced in mapper).
             $this->agentMapper->delete($agent);
 
             return $this->formatSuccess(
-                ['uuid' => $uuid],
-                "Agent '{$name}' deleted successfully."
+                data: ['uuid' => $uuid],
+                message: "Agent '{$name}' deleted successfully."
             );
         } catch (DoesNotExistException $e) {
-            return $this->formatError("Agent with UUID '{$uuid}' not found.");
+            return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
                     '[AgentTool] Failed to delete agent',
@@ -444,7 +444,7 @@ class AgentTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to delete agent: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to delete agent: '.$e->getMessage());
         }//end try
 
     }//end deleteAgent()
