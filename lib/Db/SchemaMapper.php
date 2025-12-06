@@ -228,7 +228,7 @@ class SchemaMapper extends QBMapper
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id, [], $published, $rbac, $multi);
+                $result[] = $this->find(id: $id, extend: [], published: $published, rbac: $rbac, multi: $multi);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
