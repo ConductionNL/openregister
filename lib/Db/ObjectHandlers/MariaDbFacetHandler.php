@@ -1011,7 +1011,7 @@ class MariaDbFacetHandler
                 break;
             default:
                 // Default to simple filter for unknown operators.
-                $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $operatorValue);
+                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $operatorValue);
                 break;
         }//end switch
 
@@ -1177,8 +1177,8 @@ class MariaDbFacetHandler
                 } else {
                     // Array of simple values - not nested.
                     foreach ($value as $item) {
-                        $this->recordValueType($fieldAnalysis[$fieldPath], $item);
-                        $this->recordSampleValue($fieldAnalysis[$fieldPath], $item);
+                        $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
+                        $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
                     }
                 }
             } else if (is_object($value) === true) {

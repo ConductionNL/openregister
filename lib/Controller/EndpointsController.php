@@ -379,7 +379,7 @@ class EndpointsController extends Controller
 
             $testData = $this->request->getParams()['data'] ?? [];
 
-            $result = $this->endpointService->testEndpoint($endpoint, $testData);
+            $result = $this->endpointService->testEndpoint(endpoint: $endpoint, testData: $testData);
 
             if ($result['success'] === true) {
                 return new JSONResponse(
