@@ -1023,7 +1023,7 @@ class MagicMapper
 
         switch ($type) {
             case 'string':
-                return $this->mapStringProperty($columnName, $propertyConfig, $format);
+                return $this->mapStringProperty(columnName: $columnName, propertyConfig: $propertyConfig, format: $format);
 
             case 'integer':
                 return $this->mapIntegerProperty($columnName, $propertyConfig);
@@ -1884,7 +1884,7 @@ class MagicMapper
             if ($key === '@self' && is_array($value) === true) {
                 foreach ($value as $metaField => $metaValue) {
                     $columnName = self::METADATA_PREFIX.$metaField;
-                    $this->addWhereCondition($qb, $columnName, $metaValue);
+                    $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $metaValue);
                 }
 
                 continue;
@@ -1892,7 +1892,7 @@ class MagicMapper
 
             // Handle schema property filters.
             $columnName = $this->sanitizeColumnName($key);
-            $this->addWhereCondition($qb, $columnName, $value);
+            $this->addWhereCondition(qb: $qb, columnName: $columnName, value: $value);
         }
 
     }//end applySearchFilters()

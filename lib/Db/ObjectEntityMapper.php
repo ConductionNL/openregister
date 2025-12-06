@@ -2125,7 +2125,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Attempt to lock the object.
-        $object->lock($this->userSession, $process, $duration);
+        $object->lock(userSession: $this->userSession, process: $process, duration: $duration);
 
         // Save the locked object.
         $object = $this->update($object);
@@ -2596,10 +2596,10 @@ class ObjectEntityMapper extends QBMapper
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getTermsFacet($field, $baseQuery);
                 } else if ($type === 'date_histogram') {
                     $interval = $config['interval'] ?? 'month';
-                    $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet(field: $field, interval: $interval, baseQuery: $baseQuery);
                 } else if ($type === 'range') {
                     $ranges = $config['ranges'] ?? [];
-                    $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet(field: $field, ranges: $ranges, baseQuery: $baseQuery);
                 }
             }
         }
@@ -2616,10 +2616,10 @@ class ObjectEntityMapper extends QBMapper
                 $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
             } else if ($type === 'date_histogram') {
                 $interval = $config['interval'] ?? 'month';
-                $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+                $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet(field: $field, interval: $interval, baseQuery: $baseQuery);
             } else if ($type === 'range') {
                 $ranges = $config['ranges'] ?? [];
-                $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+                $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet(field: $field, ranges: $ranges, baseQuery: $baseQuery);
             }
         }
 
@@ -4401,7 +4401,7 @@ class ObjectEntityMapper extends QBMapper
                 }
 
 // Process batch of objects.
-                $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
+                $batchResults = $this->processBulkOwnerDeclarationBatch(objects: $objects, defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation);
 
 // Update statistics.
                 $results['totalProcessed'] += count($objects);

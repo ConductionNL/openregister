@@ -635,7 +635,7 @@ class MetaDataFacetHandler
                     );
                 } else {
                     // Simple equals with both exact match and array containment.
-                    $this->applySimpleObjectFieldFilter($queryBuilder, $jsonPath, $value);
+                    $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
                 }
 
                 continue;
@@ -646,7 +646,7 @@ class MetaDataFacetHandler
                 // This is an array of values, not operators.
                 $orConditions = $queryBuilder->expr()->orX();
                 foreach ($value as $val) {
-                    $this->addObjectFieldValueCondition($queryBuilder, $orConditions, $jsonPath, $val);
+                    $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $orConditions, jsonPath: $jsonPath, value: $val);
                 }
 
                 $queryBuilder->andWhere($orConditions);
@@ -655,7 +655,7 @@ class MetaDataFacetHandler
 
             // Handle operator-based filters.
             foreach ($value as $operator => $operatorValue) {
-                $this->applyObjectFieldOperator($queryBuilder, $jsonPath, $operator, $operatorValue);
+                $this->applyObjectFieldOperator(queryBuilder: $queryBuilder, jsonPath: $jsonPath, operator: $operator, operatorValue: $operatorValue);
             }
         }//end foreach
 
@@ -682,7 +682,7 @@ class MetaDataFacetHandler
     private function applySimpleObjectFieldFilter(IQueryBuilder $queryBuilder, string $jsonPath, mixed $value): void
     {
         $singleValueConditions = $queryBuilder->expr()->orX();
-        $this->addObjectFieldValueCondition($queryBuilder, $singleValueConditions, $jsonPath, $value);
+        $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $singleValueConditions, jsonPath: $jsonPath, value: $value);
         $queryBuilder->andWhere($singleValueConditions);
 
     }//end applySimpleObjectFieldFilter()

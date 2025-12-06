@@ -259,7 +259,7 @@ class HyperFacetHandler
         // **STEP 3**: Execute optimized facet calculation based on strategy.
         switch ($optimizationStrategy) {
             case 'exact_parallel':
-                $results = $this->calculateExactFacetsParallel($facetConfig, $baseQuery, $datasetStats);
+                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);
                 break;
 
             case 'smart_sampling':
@@ -597,14 +597,14 @@ class HyperFacetHandler
 
                 // **BATCH OPTIMIZATION**: Combine multiple metadata facets in minimal queries.
                 $batchableFields = ['register', 'schema', 'organisation', 'owner'];
-                $batchResults = $this->getBatchedMetadataFacets($batchableFields, $metadataFacets, $baseQuery);
+                $batchResults = $this->getBatchedMetadataFacets(fields: $batchableFields, facetConfig: $metadataFacets, baseQuery: $baseQuery);
 
                 $results = array_merge($results, $batchResults);
 
                 // Process remaining non-batchable facets (date histograms, ranges).
                 foreach ($metadataFacets as $field => $config) {
                     if (in_array($field, $batchableFields) === false) {
-                        $results[$field] = $this->calculateSingleMetadataFacet($field, $config, $baseQuery);
+                        $results[$field] = $this->calculateSingleMetadataFacet(_field: $field, _config: $config, _baseQuery: $baseQuery);
                     }
                 }
 

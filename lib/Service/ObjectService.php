@@ -2221,7 +2221,7 @@ class ObjectService
             ]);
 
             // Use async version and return synchronous result.
-            return $this->searchObjectsPaginatedSync($query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
+            return $this->searchObjectsPaginatedSync(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
@@ -3436,7 +3436,7 @@ class ObjectService
                         $schema = $this->schemaMapper->find($objectSchema);
                         // TODO: Add property-level RBAC check for 'create' action here
                         // Check individual property permissions before allowing property values to be set
-                        if (!$this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac)) {
+                        if (!$this->hasPermission(schema: $schema, action: 'create', userId: $userId, objectOwner: $objectOwner, rbac: $rbac)) {
                             continue;
                             // Skip this object if user doesn't have permission
                         }

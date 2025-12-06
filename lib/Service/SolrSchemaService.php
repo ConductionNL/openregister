@@ -1227,7 +1227,7 @@ class SolrSchemaService
                     'docValues'   => $this->shouldCoreFieldHaveDocValues($fieldName),
                 ];
 
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
+                if ($this->addOrUpdateSolrField(fieldName: $fieldName, fieldConfig: $fieldConfig, force: $force) === true) {
                     $successCount++;
                     $this->logger->debug(
                             '✅ Core metadata field ensured',
@@ -1492,7 +1492,7 @@ class SolrSchemaService
         $successCount = 0;
         foreach ($solrFields as $fieldName => $fieldConfig) {
             try {
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
+                if ($this->addOrUpdateSolrField(fieldName: $fieldName, fieldConfig: $fieldConfig, force: $force) === true) {
                     $successCount++;
                     $this->logger->info(
                             '✅ Applied SOLR field',
