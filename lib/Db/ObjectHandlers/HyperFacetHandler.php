@@ -178,6 +178,7 @@ class HyperFacetHandler
                 $this->fragmentCache      = $this->cacheFactory->createLocal('openregister_facet_fragments');
                 $this->cardinalityCache    = $this->cacheFactory->createLocal('openregister_cardinality');
             } catch (\Exception $fallbackError) {
+                //end try
                 // No caching available - will use in-memory caching.
                 $this->logger->warning('Facet caching unavailable, performance will be reduced');
             }//end try
@@ -608,6 +609,7 @@ class HyperFacetHandler
                 }
 
                 $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+                //end try
                 $this->logger->debug('Metadata facets completed', [
                     'executionTime' => $executionTime . 'ms',
                     'facetCount' => count($results),

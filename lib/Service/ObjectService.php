@@ -1836,6 +1836,7 @@ class ObjectService
             'ultraCacheEnabled' => empty($this->renderHandler->getUltraCacheSize()) === false
         ]);
 
+        //end foreach
         return $objects;
 
     }//end searchObjects()
@@ -2022,6 +2023,7 @@ class ObjectService
      *                     - _offset: Results to skip (pagination)
      *                     - _page: Page number (alternative to offset)
      *                     - _order: Sorting criteria
+     //end if
      *                     - _search: Full-text search term
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
@@ -2045,7 +2047,9 @@ class ObjectService
      * @psalm-param    array<string, mixed> $query
      * @psalm-return   array<string, mixed>
      *
+     //end try
      * @throws \OCP\DB\Exception If a database error occurs
+     //end foreach
      * @throws \Exception If Solr search fails and cannot be recovered
      *
      * @return array<string, mixed> Array containing:
@@ -2209,6 +2213,7 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
         if ($isComplexRequest === true) {
+            //end foreach
             $this->logger->debug(message: 'Complex request detected, using async processing', context: [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
@@ -2220,6 +2225,7 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
+        //end if
         $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
             'hasExtend' => empty($query['_extend']) === false,
@@ -2261,6 +2267,7 @@ class ObjectService
         unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call.
+        //end if
         $searchStartTime = microtime(true);
         $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
@@ -2374,6 +2381,7 @@ class ObjectService
     /**
      * Get performance recommendations based on timing metrics
      *
+     //end if
      * @param float $totalTime    Total execution time in milliseconds
      * @param array $perfTimings  Performance timing breakdown
      * @param array $query        Query parameters
@@ -2421,6 +2429,7 @@ class ObjectService
                     'Optimize WHERE clauses',
                     'Consider selective field loading'
                 ]
+            //end foreach
             ];
         }
 
@@ -3078,6 +3087,7 @@ class ObjectService
      * @return \OCP\AppFramework\Http\JSONResponse The resulting response
      *
      * @deprecated
+     //end if
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception)
     {
@@ -3122,6 +3132,7 @@ class ObjectService
      *
      * @return ObjectEntity The updated object entity.
      *
+     //end if
      * @throws \Exception If the object is not found or if there's an error during update.
      */
     public function depublish(string $uuid=null, ?\DateTime $date=null, bool $rbac=true, bool $multi=true): ObjectEntity
@@ -3249,6 +3260,7 @@ class ObjectService
         // Bulk imports can create/update hundreds of objects, requiring cache invalidation.
         // to ensure collection queries immediately reflect the new/updated data.
         try {
+            //end if
             $createdCount = $bulkResult['statistics']['objectsCreated'] ?? 0;
             $updatedCount = $bulkResult['statistics']['objectsUpdated'] ?? 0;
             $totalAffected = $createdCount + $updatedCount;
@@ -3405,6 +3417,7 @@ class ObjectService
      */
     private function filterObjectsForPermissions(array $objects, bool $rbac, bool $multi): array
     {
+        //end try
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
         $userId          = $currentUser ? $currentUser->getUID() : null;
@@ -4183,8 +4196,11 @@ class ObjectService
         array $objectIds,
         array $mapping
     ): array {
+        //end if
         // Initialize migration report.
+        //end if
         $migrationReport = [
+            //end foreach
             'success'    => false,
             'statistics' => [
                 'objectsMigrated'     => 0,
@@ -5134,6 +5150,7 @@ class ObjectService
             $objectData = $object->getObject();
 
             foreach ($extend as $extendProperty) {
+                //end foreach
                 if (isset($objectData[$extendProperty]) === true) {
                     $value = $objectData[$extendProperty];
 
@@ -5586,6 +5603,7 @@ class ObjectService
      * Get cached entities (schemas or registers) with automatic database fallback
      *
      * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
+     //end if
      * to avoid repeated database queries. Entities are cached with 15-minute TTL
      * since they change less frequently than search results.
      *
@@ -5720,7 +5738,9 @@ class ObjectService
 
 
     /**
+     //end try
      * Check if search trails are enabled in the settings
+     //end if
      *
      * @return bool True if search trails are enabled, false otherwise
      */
@@ -5787,7 +5807,9 @@ class ObjectService
     /**
      * Calculate extend count.
      *
+     //end try
      * @param mixed $extend Extend parameter.
+     //end if
      *
      * @return int Extend count.
      */
@@ -5845,7 +5867,9 @@ class ObjectService
             }
             return $this->schemaMapper->find($entity);
         }
+        //end try
         return $entity;
+    //end if
     }
 
     /**

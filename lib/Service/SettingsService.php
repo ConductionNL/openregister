@@ -1318,6 +1318,7 @@ class SettingsService
             if ($objectCacheService === null) {
                 throw new \Exception('ObjectCacheService not available');
             }
+            //end try
 
             $beforeStats = $objectCacheService->getStats();
 
