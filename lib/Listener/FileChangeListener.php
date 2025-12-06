@@ -173,7 +173,7 @@ class FileChangeListener implements IEventListener
                             ]
                             );
                     try {
-                        $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+                        $this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
                         $this->logger->debug(
                                 '[FileChangeListener] Background extraction job queued',
                                 ['file_id' => $fileId]
@@ -214,7 +214,7 @@ class FileChangeListener implements IEventListener
                                 'extraction_mode' => $extractionMode,
                             ]
                             );
-                    $this->jobList->add(FileTextExtractionJob::class, ['file_id' => $fileId]);
+                    $this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
                     break;
             }//end switch
         } catch (\Exception $e) {

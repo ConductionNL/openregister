@@ -1014,7 +1014,7 @@ class ObjectService
     {
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
-            $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
+            $objectToDelete = $this->objectEntityMapper->find(identifier: $uuid, register: null, schema: null, includeDeleted: true);
 
             // If no schema was provided but we have an object, derive the schema from the object.
             if ($this->currentSchema === null) {
@@ -3737,7 +3737,7 @@ class ObjectService
             $mergeReport['actions']['references'] = $updatedReferences;
 
             // Soft delete source object using the entity's delete method.
-            $sourceObject->delete($this->userSession, 'Merged into object '.$targetObject->getUuid());
+            $sourceObject->delete(userSession: $this->userSession, reason: 'Merged into object '.$targetObject->getUuid());
             $this->objectEntityMapper->update($sourceObject);
 
             // Set success and add merged object to report.

@@ -97,10 +97,10 @@ class EndpointService
             ];
 
             // Execute the endpoint based on target type.
-            $result = $this->executeEndpoint($endpoint, $request);
+            $result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
 
             // Log the test execution.
-            $this->logEndpointCall($endpoint, $request, $result);
+            $this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
 
             return $result;
         } catch (\Exception $e) {
@@ -138,15 +138,15 @@ class EndpointService
         // Based on targetType, execute different logic.
         switch ($endpoint->getTargetType()) {
             case 'view':
-                return $this->executeViewEndpoint($endpoint, $request);
+                return $this->executeViewEndpoint(_endpoint: $endpoint, _request: $request);
             case 'agent':
-                return $this->executeAgentEndpoint($endpoint, $request);
+                return $this->executeAgentEndpoint(_endpoint: $endpoint, _request: $request);
             case 'webhook':
-                return $this->executeWebhookEndpoint($endpoint, $request);
+                return $this->executeWebhookEndpoint(_endpoint: $endpoint, _request: $request);
             case 'register':
-                return $this->executeRegisterEndpoint($endpoint, $request);
+                return $this->executeRegisterEndpoint(_endpoint: $endpoint, _request: $request);
             case 'schema':
-                return $this->executeSchemaEndpoint($endpoint, $request);
+                return $this->executeSchemaEndpoint(_endpoint: $endpoint, _request: $request);
             default:
                 return [
                     'success'    => false,
