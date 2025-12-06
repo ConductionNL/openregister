@@ -1563,7 +1563,7 @@ class MagicMapper
         $qb->select('*')->from($tableName);
 
         // Apply filters.
-        $this->applySearchFilters($qb, $query);
+        $this->applySearchFilters(qb: $qb, query: $query);
 
         // Apply pagination.
         if (($query['_limit'] ?? null) !== null) {

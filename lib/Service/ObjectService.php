@@ -2276,7 +2276,7 @@ class ObjectService
         $countStartTime = microtime(true);
         $countQuery = $query;
         unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
-        $total = $this->countSearchObjects($countQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
+        $total = $this->countSearchObjects(query: $countQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $countTime = round((microtime(true) - $countStartTime) * 1000, 2);
 
         // Calculate total pages.

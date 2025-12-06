@@ -295,7 +295,7 @@ class ObjectsProvider implements IFilteringProvider
                 );
 
         // Use searchObjectsPaginated for optimal performance.
-        $searchResults = $this->objectService->searchObjectsPaginated($searchQuery, rbac: true, multi: true);
+        $searchResults = $this->objectService->searchObjectsPaginated(query: $searchQuery, rbac: true, multi: true);
 
         // Convert results to SearchResultEntry format.
         $searchResultEntries = [];

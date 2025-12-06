@@ -1373,7 +1373,7 @@ class ObjectEntityMapper extends QBMapper
         $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
+        $this->applyBasicFilters(queryBuilder: $queryBuilder, includeDeleted: $includeDeleted, published: $published, register: $basicRegister, schema: $basicSchema, tableAlias: 'o', bypassPublishedFilter: $bypassPublishedFilter);
 
 // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -1572,7 +1572,7 @@ class ObjectEntityMapper extends QBMapper
         $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
         $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
-        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o', $bypassPublishedFilter);
+        $this->applyBasicFilters(queryBuilder: $queryBuilder, includeDeleted: $includeDeleted, published: $published, register: $basicRegister, schema: $basicSchema, tableAlias: 'o', bypassPublishedFilter: $bypassPublishedFilter);
 
 // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join).
         $this->applyOrganisationFilter(

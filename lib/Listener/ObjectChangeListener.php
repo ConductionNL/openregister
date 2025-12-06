@@ -138,7 +138,7 @@ class ObjectChangeListener implements IEventListener
                             ]
                             );
                     try {
-                        $this->jobList->add(ObjectTextExtractionJob::class, ['object_id' => $objectId]);
+                        $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
                         $this->logger->debug(
                                 '[ObjectChangeListener] Background extraction job queued',
                                 ['object_id' => $objectId]
@@ -179,7 +179,7 @@ class ObjectChangeListener implements IEventListener
                                 'extraction_mode' => $extractionMode,
                             ]
                             );
-                    $this->jobList->add(ObjectTextExtractionJob::class, ['object_id' => $objectId]);
+                    $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
                     break;
             }//end switch
         } catch (\Exception $e) {

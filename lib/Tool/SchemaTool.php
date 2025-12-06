@@ -226,10 +226,10 @@ class SchemaTool extends AbstractTool
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
-        $this->log($functionName, $parameters);
+            $this->log(functionName: $functionName, parameters: $parameters);
 
         if ($this->hasUserContext($userId) === false) {
-            return $this->formatError('No user context available. Tool cannot execute without user session.');
+            return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
         try {
@@ -239,8 +239,8 @@ class SchemaTool extends AbstractTool
             // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
-            $this->log($functionName, $parameters, 'error', $e->getMessage());
-            return $this->formatError($e->getMessage());
+            $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+            return $this->formatError(message: $e->getMessage());
         }
 
     }//end executeFunction()
@@ -264,7 +264,7 @@ class SchemaTool extends AbstractTool
 
         $filters = $this->applyViewFilters($filters);
 
-        $schemas = $this->schemaMapper->findAll($limit, $offset, $filters);
+        $schemas = $this->schemaMapper->findAll(limit: $limit, offset: $offset, filters: $filters);
 
         $schemaList = array_map(
                 function ($schema) {
@@ -279,7 +279,7 @@ class SchemaTool extends AbstractTool
                 $schemas
                 );
 
-        return $this->formatSuccess($schemaList, sprintf('Found %d schemas', count($schemaList)));
+        return $this->formatSuccess(data: $schemaList, message: sprintf('Found %d schemas', count($schemaList)));
 
     }//end listSchemas()
 
@@ -295,10 +295,10 @@ class SchemaTool extends AbstractTool
      */
     public function getSchema(string $id): array
     {
-        $schema = $this->schemaMapper->find($id);
+        $schema = $this->schemaMapper->find(id: $id);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'           => $schema->getId(),
                 'uuid'         => $schema->getUuid(),
                 'title'        => $schema->getTitle(),
@@ -313,7 +313,7 @@ class SchemaTool extends AbstractTool
                 'created'      => $schema->getCreated()?->format('Y-m-d H:i:s'),
                 'updated'      => $schema->getUpdated()?->format('Y-m-d H:i:s'),
             ],
-            'Schema retrieved successfully'
+            message: 'Schema retrieved successfully'
         );
 
     }//end getSchema()
@@ -343,10 +343,10 @@ class SchemaTool extends AbstractTool
             $data['required'] = $required;
         }
 
-        $schema = $this->schemaMapper->createFromArray($data);
+        $schema = $this->schemaMapper->createFromArray(object: $data);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'          => $schema->getId(),
                 'uuid'        => $schema->getUuid(),
                 'title'       => $schema->getTitle(),
@@ -354,7 +354,7 @@ class SchemaTool extends AbstractTool
                 'version'     => $schema->getVersion(),
                 'properties'  => $schema->getProperties(),
             ],
-            'Schema created successfully'
+            message: 'Schema created successfully'
         );
 
     }//end createSchema()
@@ -375,7 +375,7 @@ class SchemaTool extends AbstractTool
      */
     public function updateSchema(string $id, ?string $title=null, ?string $description=null, ?array $properties=null, ?array $required=null): array
     {
-        $schema = $this->schemaMapper->find($id);
+        $schema = $this->schemaMapper->find(id: $id);
 
         if ($title !== null) {
             $schema->setTitle($title);
@@ -393,10 +393,10 @@ class SchemaTool extends AbstractTool
             $schema->setRequired($required);
         }
 
-        $schema = $this->schemaMapper->update($schema);
+        $schema = $this->schemaMapper->update(entity: $schema);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'          => $schema->getId(),
                 'uuid'        => $schema->getUuid(),
                 'title'       => $schema->getTitle(),
@@ -404,7 +404,7 @@ class SchemaTool extends AbstractTool
                 'version'     => $schema->getVersion(),
                 'properties'  => $schema->getProperties(),
             ],
-            'Schema updated successfully'
+            message: 'Schema updated successfully'
         );
 
     }//end updateSchema()
@@ -421,12 +421,12 @@ class SchemaTool extends AbstractTool
      */
     public function deleteSchema(string $id): array
     {
-        $schema = $this->schemaMapper->find($id);
-        $this->schemaMapper->delete($schema);
+        $schema = $this->schemaMapper->find(id: $id);
+        $this->schemaMapper->delete(entity: $schema);
 
         return $this->formatSuccess(
-            ['id' => $id],
-            'Schema deleted successfully'
+            data: ['id' => $id],
+            message: 'Schema deleted successfully'
         );
 
     }//end deleteSchema()

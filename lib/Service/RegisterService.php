@@ -102,7 +102,7 @@ class RegisterService
      */
     public function find(int | string $id, array $extend=[]): Register
     {
-        return $this->registerMapper->find($id, $extend);
+        return $this->registerMapper->find(id: $id, extend: $extend);
 
     }//end find()
 
@@ -153,7 +153,7 @@ class RegisterService
     public function createFromArray(array $data): Register
     {
         // Create the register first.
-        $register = $this->registerMapper->createFromArray($data);
+        $register = $this->registerMapper->createFromArray(object: $data);
 
         // Set organisation from active organisation for multi-tenancy (if not already set).
         if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
@@ -183,7 +183,7 @@ class RegisterService
     public function updateFromArray(int $id, array $data): Register
     {
         // Update the register first.
-        $register = $this->registerMapper->updateFromArray($id, $data);
+        $register = $this->registerMapper->updateFromArray(id: $id, object: $data);
 
         // Ensure folder exists for the updated register (handles legacy folder properties).
         $this->ensureRegisterFolderExists($register);
