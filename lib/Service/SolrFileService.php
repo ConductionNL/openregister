@@ -626,9 +626,9 @@ class SolrFileService
 
         // Choose chunking strategy.
         $chunks = match ($strategy) {
-            self::FIXED_SIZE => $this->chunkFixedSize($text, $chunkSize, $chunkOverlap),
-            self::RECURSIVE_CHARACTER => $this->chunkRecursive($text, $chunkSize, $chunkOverlap),
-            default => $this->chunkRecursive($text, $chunkSize, $chunkOverlap)
+            self::FIXED_SIZE => $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            self::RECURSIVE_CHARACTER => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap),
+            default => $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap)
         };
 
         // Respect max chunks limit.
