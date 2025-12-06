@@ -2027,8 +2027,22 @@ class SaveObject
         // Hydrate name and description from schema configuration.
         $this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
-        // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again.
-        // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties.
+        // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
+        // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
+        // Update object relations.
+
+        try {
+            $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
+        } catch (Exception $e) {
+            // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
+            throw new \Exception(
+                'Object relations processing failed: ' . $e->getMessage() .
+                '. This indicates invalid relation data or schema configuration problems.',
+                0,
+                $e
+            );
+        }
+
         return $existingObject;
 
     }//end prepareObjectForUpdate()
