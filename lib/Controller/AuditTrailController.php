@@ -85,7 +85,7 @@ class AuditTrailController extends Controller
         // Extract pagination parameters.
         if (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
-        } else if (($params['_limit'] ?? null) !== null) {
+        } elseif (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
         } else {
             $limit = 20;
@@ -93,7 +93,7 @@ class AuditTrailController extends Controller
 
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (($params['_offset'] ?? null) !== null) {
+        } elseif (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
@@ -101,7 +101,7 @@ class AuditTrailController extends Controller
 
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (($params['_page'] ?? null) !== null) {
+        } elseif (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         } else {
             $page = null;
@@ -487,7 +487,7 @@ class AuditTrailController extends Controller
                 // Handle both comma-separated string and array.
                 if (is_string($ids) === true) {
                     $deleteConfig['ids'] = array_map('intval', explode(',', $ids));
-                } else if (is_array($ids) === true) {
+                } elseif (is_array($ids) === true) {
                     $deleteConfig['ids'] = array_map('intval', $ids);
                 }
             }

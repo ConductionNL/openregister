@@ -222,7 +222,7 @@ class DeleteObject
     ): void {
         $properties = $schema->getProperties();
         foreach ($properties as $propertyName => $property) {
-            if (!isset($property['cascade']) === false || $property['cascade'] !== true) {
+            if (isset($property['cascade']) === false || $property['cascade'] !== true) {
                 continue;
             }
 

@@ -24,22 +24,34 @@ use OCP\IRequest;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 
 /**
- * Class SearchController
+ * SearchController handles search operations
  *
  * Controller for handling search operations in the application.
- * Provides functionality to search across the application using the Nextcloud search service.
- */
-/**
+ * Provides functionality to search across objects using SOLR search service.
+ * Supports query processing, pagination, and result formatting.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class SearchController extends Controller
 {
 
     /**
      * The SOLR search service
      *
-     * @var GuzzleSolrService
+     * Handles SOLR-based search operations for objects.
+     *
+     * @var GuzzleSolrService SOLR search service instance
      */
     private readonly GuzzleSolrService $solrService;
 
@@ -47,9 +59,12 @@ class SearchController extends Controller
     /**
      * Constructor for the SearchController
      *
+     * Initializes controller with SOLR search service for object search operations.
+     * Calls parent constructor to set up base controller functionality.
+     *
      * @param string            $appName     The name of the app
-     * @param IRequest          $request     The request object
-     * @param GuzzleSolrService $solrService The Solr search service
+     * @param IRequest          $request     The HTTP request object
+     * @param GuzzleSolrService $solrService The Solr search service instance
      *
      * @return void
      */
@@ -58,32 +73,40 @@ class SearchController extends Controller
         IRequest $request,
         GuzzleSolrService $solrService
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
+        
+        // Store SOLR service for search operations.
         $this->solrService = $solrService;
 
     }//end __construct()
 
 
     /**
-     * Handles search requests and forwards them to the Nextcloud search service
+     * Handles search requests and forwards them to the SOLR search service
+     *
+     * Processes search query, performs SOLR search, and formats results for JSON response.
+     * Supports pagination via offset and limit parameters.
+     * Returns formatted search results with facets and total count.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse A JSON response containing the search results
+     * @return JSONResponse JSON response containing search results, total count, and facets
      *
      * @psalm-return JSONResponse<200, array{facets: array<never, never>|mixed, results: array<array{id: mixed|null, name: mixed|'Unknown', source: 'openregister', type: 'object', url: mixed|null}>, total: int|mixed}, array<never, never>>
      */
     public function search(): JSONResponse
     {
-        // Get the search query from the request parameters.
+        // Step 1: Get the search query from request parameters (default to empty string).
         $query = $this->request->getParam('query', '');
 
-        // Process the search query to handle multiple search words.
+        // Step 2: Process the search query to handle multiple search words.
+        // This handles comma-separated values, arrays, and case-insensitive matching.
         $processedQuery = $this->processSearchQuery($query);
 
-        // Perform the search using GuzzleSolrService.
+        // Step 3: Build search parameters for SOLR query.
         // Note: This is a simplified search endpoint. For full Nextcloud search integration,
         // use the ObjectsProvider which implements IFilteringProvider.
         $searchParams = [
@@ -92,10 +115,12 @@ class SearchController extends Controller
             'rows'  => (int) ($this->request->getParam('limit', 25)),
         ];
 
+        // Step 4: Perform search using SOLR service.
+        // Returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float].
         $results = $this->solrService->searchObjects($searchParams);
 
-        // Format the search results for the JSON response.
-        // GuzzleSolrService returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float].
+        // Step 5: Format search results for JSON response.
+        // Extract relevant fields from each object and standardize format.
         $formattedResults = array_map(
             function ($object) {
                 return [
@@ -109,6 +134,7 @@ class SearchController extends Controller
             $results['objects'] ?? []
         );
 
+        // Step 6: Return formatted search results with metadata.
         return new JSONResponse(
             data: [
                 'results' => $formattedResults,
@@ -123,7 +149,7 @@ class SearchController extends Controller
     /**
      * Process search query to support multiple search words and case-insensitive partial matches
      *
-     * This method handles multiple search words by:
+     * Processes raw search query to handle various input formats and search requirements:
      * 1. Supporting comma-separated values in the query parameter
      * 2. Supporting array parameters (_search[])
      * 3. Making searches case-insensitive
@@ -131,7 +157,7 @@ class SearchController extends Controller
      *
      * @param string $query The raw search query from the request
      *
-     * @return string The processed search query ready for the search service
+     * @return string The processed search query ready for the SOLR search service
      */
     private function processSearchQuery(string $query): string
     {

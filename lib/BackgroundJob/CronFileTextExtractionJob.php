@@ -157,7 +157,7 @@ class CronFileTextExtractionJob extends TimedJob
                             ]
                             );
 
-                    $textExtractionService->extractFile($fileId, false);
+                    $textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
                     $processed++;
 
                     $logger->debug(

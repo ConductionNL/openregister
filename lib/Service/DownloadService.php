@@ -29,11 +29,23 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;
 
 /**
- * Service for handling download requests for database entities.
+ * DownloadService handles download requests for database entities
  *
+ * Service for handling download requests for database entities.
  * This service enables downloading database entities as files in various formats,
  * determined by the `Accept` header of the request. It retrieves the appropriate
  * data from mappers and generates responses or downloadable files.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class DownloadService
 {
@@ -41,67 +53,87 @@ class DownloadService
     /**
      * Register mapper
      *
-     * @var RegisterMapper
+     * Handles database operations for register entities.
+     *
+     * @var RegisterMapper Register mapper instance
      */
-    private RegisterMapper $registerMapper;
+    private readonly RegisterMapper $registerMapper;
 
     /**
      * Schema mapper
      *
-     * @var SchemaMapper
+     * Handles database operations for schema entities.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private SchemaMapper $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
 
     /**
-     * Generate a downloadable json file response.
+     * Generate a downloadable JSON file response
      *
-     * @param string $jsonData The json data to create a json file with.
-     * @param string $filename The filename, .json will be added after this filename in this function.
+     * Creates a temporary JSON file from provided data and sends it as a download
+     * to the client. Sets appropriate HTTP headers for file download and cleans
+     * up temporary file after sending.
      *
-     * @return never
+     * @param string $jsonData The JSON data to create a JSON file with
+     * @param string $filename The base filename (without extension).
+     *                         .json extension will be added automatically
+     *
+     * @return never This method exits script execution after sending file
+     *
+     * @NoReturn
      */
-    private function downloadJson(string $jsonData, string $filename)
+    private function downloadJson(string $jsonData, string $filename): never
     {
-        // Define the file name and path for the temporary JSON file.
+        // Step 1: Define the file name and path for the temporary JSON file.
+        // Uses system temporary directory for file storage.
         $fileName = $filename.'.json';
         $filePath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$fileName;
 
-        // Create and write the JSON data to the file.
+        // Step 2: Create and write the JSON data to the temporary file.
         file_put_contents($filePath, $jsonData);
 
-        // Set headers to download the file.
+        // Step 3: Set HTTP headers to trigger file download.
+        // Content-Type tells browser this is JSON data.
+        // Content-Disposition tells browser to download file with specified name.
+        // Content-Length specifies file size for download progress.
         header('Content-Type: application/json');
         header('Content-Disposition: attachment; filename="'.$fileName.'"');
         header('Content-Length: '.filesize($filePath));
 
-        // Output the file contents.
+        // Step 4: Output the file contents to client.
         readfile($filePath);
 
-        // Clean up: delete the temporary file.
+        // Step 5: Clean up temporary file after sending.
         unlink($filePath);
 
-        // Ensure no further script execution.
+        // Step 6: Exit script execution to prevent further output.
         exit;
 
     }//end downloadJson()
 
 
     /**
-     * Gets the appropriate mapper based on the object type.
+     * Gets the appropriate mapper based on the object type
      *
-     * @param string $objectType The type of object to retrieve the mapper for.
+     * Returns the correct mapper instance for the specified object type.
+     * Used to route download requests to the appropriate data source.
      *
-     * @throws InvalidArgumentException If an unknown object type is provided.
-     * @throws Exception
+     * @param string $objectType The type of object to retrieve the mapper for
+     *                          (e.g., 'schema', 'register')
      *
-     * @return mixed The appropriate mapper.
+     * @return RegisterMapper|SchemaMapper The appropriate mapper instance
+     *
+     * @throws InvalidArgumentException If an unknown object type is provided
      */
-    private function getMapper(string $objectType): mixed
+    private function getMapper(string $objectType): RegisterMapper|SchemaMapper
     {
+        // Normalize object type to lowercase for case-insensitive matching.
         $objectTypeLower = strtolower($objectType);
 
-        // If the source is internal, return the appropriate mapper based on the object type.
+        // Return the appropriate mapper based on object type.
+        // Match expression provides type-safe routing.
         return match ($objectTypeLower) {
             'schema' => $this->schemaMapper,
             'register' => $this->registerMapper,

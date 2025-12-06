@@ -1,19 +1,21 @@
 <?php
 /**
- * Class RegistersController
+ * RegistersController handles REST API endpoints for register management
  *
  * Controller for managing register operations in the OpenRegister app.
+ * Provides endpoints for CRUD operations, import/export, GitHub publishing,
+ * and OpenAPI specification generation.
  *
  * @category Controller
- * @package  OCA\OpenRegister\AppInfo
+ * @package  OCA\OpenRegister\Controller
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
+ * @version  GIT: <git-id>
  *
- * @link https://OpenRegister.app
+ * @link     https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -48,12 +50,24 @@ use Symfony\Component\Uid\Uuid;
 use Exception;
 
 /**
- * Class RegistersController
- */
-/**
+ * RegistersController handles REST API endpoints for register management
+ *
+ * Provides REST API endpoints for managing registers including CRUD operations,
+ * import/export functionality, GitHub publishing, and OpenAPI specification generation.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class RegistersController extends Controller
 {
 
@@ -122,23 +136,26 @@ class RegistersController extends Controller
 
 
     /**
-     * Constructor for the RegistersController
+     * Constructor
      *
-     * @param string               $appName              The name of the app
-     * @param IRequest             $request              The request object
-     * @param RegisterService      $registerService      The register service
-     * @param ObjectEntityMapper   $objectEntityMapper   The object entity mapper
-     * @param UploadService        $uploadService        The upload service
-     * @param LoggerInterface      $logger               The logger interface
-     * @param ConfigurationService $configurationService The configuration service
-     * @param AuditTrailMapper     $auditTrailMapper     The audit trail mapper
-     * @param ExportService        $exportService        The export service
-     * @param ImportService        $importService        The import service
-     * @param SchemaMapper         $schemaMapper         The schema mapper
-     * @param RegisterMapper       $registerMapper       The register mapper
-     * @param GitHubService        $githubService        GitHub service
-     * @param IAppManager          $appManager           App manager
-     * @param OasService           $oasService           OAS service
+     * Initializes controller with required dependencies for register operations.
+     * Calls parent constructor to set up base controller functionality.
+     *
+     * @param string               $appName              Application name
+     * @param IRequest             $request              HTTP request object
+     * @param RegisterService      $registerService      Register service for business logic
+     * @param ObjectEntityMapper   $objectEntityMapper   Object entity mapper for database operations
+     * @param UploadService        $uploadService        Upload service for file uploads
+     * @param LoggerInterface      $logger               Logger for error tracking
+     * @param ConfigurationService $configurationService Configuration service for import/export
+     * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for log statistics
+     * @param ExportService        $exportService        Export service for data exports
+     * @param ImportService        $importService        Import service for data imports
+     * @param SchemaMapper         $schemaMapper         Schema mapper for schema operations
+     * @param RegisterMapper       $registerMapper       Register mapper for database operations
+     * @param GitHubService        $githubService        GitHub service for publishing
+     * @param IAppManager          $appManager           App manager for app version
+     * @param OasService           $oasService           OAS service for OpenAPI generation
      *
      * @return void
      */
@@ -265,7 +282,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $register    = $this->registerService->find($id, []);
+        $register    = $this->registerService->find(id: $id, extend: []);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {
@@ -728,7 +745,7 @@ class RegistersController extends Controller
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 if (in_array($extension, ['xlsx', 'xls']) === true) {
                     $type = 'excel';
-                } else if ($extension === 'csv') {
+                } elseif ($extension === 'csv') {
                     $type = 'csv';
                 } else {
                     $type = 'configuration';
@@ -761,7 +778,7 @@ class RegistersController extends Controller
                     // Get additional performance parameters with enhanced boolean parsing.
                     $rbac      = $this->parseBooleanParam(paramName: 'rbac', default: true);
                     $multi     = $this->parseBooleanParam(paramName: 'multi', default: true);
-                    $chunkSize = (int) $this->request->getParam('chunkSize', 5);
+                    $chunkSize = (int) $this->request->getParam(key: 'chunkSize', default: 5);
                     // Use optimized default.
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
@@ -790,7 +807,7 @@ class RegistersController extends Controller
                     // Get additional performance parameters with enhanced boolean parsing.
                     $rbac      = $this->parseBooleanParam(paramName: 'rbac', default: true);
                     $multi     = $this->parseBooleanParam(paramName: 'multi', default: true);
-                    $chunkSize = (int) $this->request->getParam('chunkSize', 5);
+                    $chunkSize = (int) $this->request->getParam(key: 'chunkSize', default: 5);
                     // Use optimized default.
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
@@ -940,7 +957,7 @@ class RegistersController extends Controller
      */
     private function parseBooleanParam(string $paramName, bool $default=false): bool
     {
-        $value = $this->request->getParam($paramName, $default);
+        $value = $this->request->getParam(key: $paramName, default: $default);
 
         // If already boolean, return as-is.
         if (is_bool($value) === true) {

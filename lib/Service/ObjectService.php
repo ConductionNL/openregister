@@ -787,7 +787,7 @@ class ObjectService
     {
         // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
-        $logs   = $this->getHandler->findLogs($object, filters: $filters);
+        $logs   = $this->getHandler->findLogs(object: $object, filters: $filters);
 
         return $logs;
 
@@ -1016,7 +1016,7 @@ class ObjectService
     {
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
-            $objectToDelete = $this->objectEntityMapper->find($uuid, null, null, true);
+            $objectToDelete = $this->objectEntityMapper->find(identifier: $uuid, register: null, schema: null, includeDeleted: true);
 
             // If no schema was provided but we have an object, derive the schema from the object.
             if ($this->currentSchema === null) {
@@ -1404,7 +1404,7 @@ class ObjectService
                 }
 
                 // Apply search terms
-                if (!empty($viewQuery['searchTerms'])) {
+                if (empty($viewQuery['searchTerms']) === false) {
                     $searchTerms = is_array($viewQuery['searchTerms'])
                         ? implode(' ', $viewQuery['searchTerms'])
                         : $viewQuery['searchTerms'];
@@ -1798,7 +1798,7 @@ class ObjectService
         if ($isLargeDataset === true) {
             $this->logger->info(message: '📊 PERFORMANCE: Large dataset detected, using circuit breakers', context: [
                 'objectCount' => $objectCount,
-                'hasExtend' => !empty($extend),
+                'hasExtend' => (empty($extend) === false),
                 'renderTimeout' => $maxRenderTime . 'ms',
                 'expectedImpact' => 'prevent_2min_timeouts'
             ]);
@@ -1951,7 +1951,7 @@ class ObjectService
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService.
-        return $this->facetService->getFacetableFields($baseQuery, $sampleSize);
+        return $this->facetService->getFacetableFields(baseQuery: $baseQuery, _limit: $sampleSize);
 
     }//end getFacetableFields()
 
@@ -2223,7 +2223,7 @@ class ObjectService
             ]);
 
             // Use async version and return synchronous result.
-            return $this->searchObjectsPaginatedSync($query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
+            return $this->searchObjectsPaginatedSync(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
@@ -2269,14 +2269,14 @@ class ObjectService
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call.
         $searchStartTime = microtime(true);
-        $results = $this->searchObjects($paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
+        $results = $this->searchObjects(query: $paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
 
         // **PERFORMANCE OPTIMIZATION**: Use combined query to get count without additional database call.
         $countStartTime = microtime(true);
         $countQuery = $query;
         unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
-        $total = $this->countSearchObjects($countQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
+        $total = $this->countSearchObjects(query: $countQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $countTime = round((microtime(true) - $countStartTime) * 1000, 2);
 
         // Calculate total pages.
@@ -2369,7 +2369,7 @@ class ObjectService
             $this->logger->info(message: '📊 PERFORMANCE METRICS INCLUDED', context: [
                 'totalTime' => $totalTime,
                 'objectCount' => count($results),
-                'hasExtend' => !empty($extend),
+                'hasExtend' => (empty($extend) === false),
             ]);
         }
 
@@ -2652,7 +2652,7 @@ class ObjectService
                 $registerValue = $query['@self']['register'];
                 // Handle both single values and arrays.
                 $registerIds = $this->normalizeToArray($registerValue);
-                $this->getCachedEntities('register', $registerIds, function($ids) {
+                $this->getCachedEntities(entityType: 'register', ids: $registerIds, fallbackFunc: function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) === true || is_int($id) === true) {
@@ -2672,7 +2672,7 @@ class ObjectService
                 $schemaValue = $query['@self']['schema'];
                 // Handle both single values and arrays.
                 $schemaIds = $this->normalizeToArray($schemaValue);
-                $this->getCachedEntities('schema', $schemaIds, function($ids) {
+                $this->getCachedEntities(entityType: 'schema', ids: $schemaIds, fallbackFunc: function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) === true || is_int($id) === true) {
@@ -3436,7 +3436,7 @@ class ObjectService
                         $schema = $this->schemaMapper->find($objectSchema);
                         // TODO: Add property-level RBAC check for 'create' action here
                         // Check individual property permissions before allowing property values to be set
-                        if (!$this->hasPermission($schema, 'create', $userId, $objectOwner, $rbac)) {
+                        if ($this->hasPermission(schema: $schema, action: 'create', userId: $userId, objectOwner: $objectOwner, rbac: $rbac) === false) {
                             continue;
                             // Skip this object if user doesn't have permission
                         }
@@ -3482,7 +3482,7 @@ class ObjectService
 
         foreach ($objects as $index => $object) {
             // Check if object has @self section
-            if (!isset($object['@self']) || !is_array($object['@self'])) {
+            if (isset($object['@self']) === false || is_array($object['@self']) === false) {
                 throw new \InvalidArgumentException(
                     "Object at index {$index} is missing required '@self' section"
                 );
@@ -3492,7 +3492,7 @@ class ObjectService
 
             // Check each required field
             foreach ($requiredFields as $field) {
-                if (!isset($self[$field]) || empty($self[$field])) {
+                if (isset($self[$field]) === false || empty($self[$field]) === true) {
                     throw new \InvalidArgumentException(
                         "Object at index {$index} is missing required field '{$field}' in @self section"
                     );
@@ -3737,7 +3737,7 @@ class ObjectService
             $mergeReport['actions']['references'] = $updatedReferences;
 
             // Soft delete source object using the entity's delete method.
-            $sourceObject->delete($this->userSession, 'Merged into object '.$targetObject->getUuid());
+            $sourceObject->delete(userSession: $this->userSession, deletedReason: 'Merged into object '.$targetObject->getUuid());
             $this->objectEntityMapper->update($sourceObject);
 
             // Set success and add merged object to report.
@@ -3863,7 +3863,7 @@ class ObjectService
                     $fileName = $file->getName();
 
                     // Delete the file using FileService.
-                    $this->fileService->deleteFile($file, $sourceObject);
+                    $this->fileService->deleteFile(file: $file, object: $sourceObject);
 
                     $result['files'][] = [
                         'name'    => $fileName,

@@ -115,7 +115,7 @@ class GitHubService
 
         // Add authentication token if configured.
         $token = $this->config->getAppValue('openregister', 'github_api_token', '');
-        if (!empty($token)) {
+        if (empty($token) === false) {
             $headers['Authorization'] = 'Bearer '.$token;
             $this->logger->debug(
                     'Using GitHub API token for authentication',
@@ -167,7 +167,7 @@ class GitHubService
             // GitHub Code Search looks for exact text matches in file content.
             // We search for the exact property name that should appear in JSON files.
             $searchQuery = '"x-openregister" extension:json';
-            if (!empty($search)) {
+            if (empty($search) === false) {
                 // If search term is provided, add it to the query.
                 // GitHub Code Search supports searching in specific repos: repo:owner/repo.
                 // Or we can add the search term as additional filter.
@@ -703,7 +703,7 @@ class GitHubService
             $content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
             // Validate that it's a valid OpenRegister configuration.
-            if (!isset($content['openapi']) === false || !isset($content['x-openregister'])) {
+            if (isset($content['openapi']) === false || isset($content['x-openregister']) === false) {
                 $this->logger->debug(
                         'File does not contain required OpenRegister structure',
                         [
@@ -804,7 +804,7 @@ class GitHubService
                         'GitHub API authentication failed or not configured - returning empty repositories list',
                         [
                             'status_code' => $statusCode,
-                            'has_token'   => !empty($token),
+                            'has_token'   => (empty($token) === false),
                         ]
                         );
                 return [];
@@ -984,9 +984,9 @@ class GitHubService
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
                         $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
-                    } else if ($statusCode === 403) {
+                    } elseif ($statusCode === 403) {
                         $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' or the branch '{$branch}' is protected";
-                    } else if ($statusCode === 422) {
+                    } elseif ($statusCode === 422) {
                         $errorMessage = "Validation Error - {$errorMessage}. Check that the branch '{$branch}' exists and the path '{$path}' is valid";
                     }
                 }

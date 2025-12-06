@@ -161,7 +161,7 @@ class ValidateObject
             // Handle both string and object formats for $ref.
             if (is_object($reference) === true && (($reference->id ?? null) !== null)) {
                 $reference = $reference->id;
-            } else if (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
+            } elseif (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
                 $reference = $reference['id'];
             }
 
@@ -300,7 +300,7 @@ class ValidateObject
                         ],
                     ],
                 ];
-            } else if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
+            } elseif (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
                 // For inversedBy object properties, allow objects, UUIDs, or null (pre-validation cascading will handle transformation).
                 $propertySchema->oneOf = [
                     (object) [
@@ -496,7 +496,7 @@ class ValidateObject
             // Handle both string and object formats for $ref.
             if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
                 $reference = $ref->id;
-            } else if (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
+            } elseif (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
                 $reference = $ref['id'];
             } else {
                 $reference = $ref;
@@ -588,7 +588,7 @@ class ValidateObject
                     }//end if
 
                     unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
-                } else if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'array'
+                } elseif (($propertySchema->type ?? null) !== null && $propertySchema->type === 'array'
                     && (($propertySchema->items ?? null) !== null) === true && is_object($propertySchema->items) === true && $this->isSelfReference(propertySchema: $propertySchema->items, schemaSlug: $currentSchemaSlug) === true
                 ) {
                     // Check if array items are self-referencing.
@@ -885,7 +885,7 @@ class ValidateObject
             // Handle both string and object formats for $ref.
             if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
                 $refId = $ref->id;
-            } else if (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
+            } elseif (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
                 $refId = $ref['id'];
             } else {
                 $refId = $ref;
@@ -962,7 +962,7 @@ class ValidateObject
         if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if ($schema !== null) {
+            } elseif ($schema !== null) {
                 // Explicitly handle int and string types separately for better type narrowing.
                 if (is_int($schema) === true) {
                     $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
@@ -1078,7 +1078,7 @@ class ValidateObject
                     if (($propertySchema->type ?? null) !== null && is_string($propertySchema->type) === true) {
                         // Convert single type to array with null support.
                         $propertySchema->type = [$propertySchema->type, 'null'];
-                    } else if (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
+                    } elseif (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
                         // Add null to existing type array if not already present.
                         if (in_array('null', $propertySchema->type, true) === false) {
                             $propertySchema->type[] = 'null';
@@ -1413,7 +1413,7 @@ class ValidateObject
             foreach ($uniqueFields as $field) {
                 $filters[$field] = $object[$field];
             }
-        } else if (is_string($uniqueFields) === true) {
+        } elseif (is_string($uniqueFields) === true) {
             $filters[$uniqueFields] = $object[$uniqueFields];
         }
 

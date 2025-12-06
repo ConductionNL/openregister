@@ -160,7 +160,7 @@ class NamesController extends Controller
                     } else {
                         $requestedIds = array_map('trim', explode(',', $requestedIds));
                     }
-                } else if (is_array($requestedIds) === false) {
+                } elseif (is_array($requestedIds) === false) {
                     $requestedIds = [(string) $requestedIds];
                 }
 

@@ -269,8 +269,8 @@ class TextExtractionService
         ];
 
         $chunks = $this->textToChunks(
-            $payload,
-            [
+            payload: $payload,
+            options: [
                 'source_type' => $payload['source_type'],
                 'source_id'   => $payload['source_id'],
             ]
@@ -421,7 +421,7 @@ class TextExtractionService
         if (preg_match('/\b(de|het|een)\b/i', $text) === 1) {
             $language   = 'nl';
             $confidence = 0.35;
-        } else if (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
+        } elseif (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
             $language   = 'en';
             $confidence = 0.35;
         }
@@ -805,13 +805,13 @@ class TextExtractionService
                             'length' => strlen($extractedText),
                         ]
                         );
-            } else if ($mimeType === 'application/pdf') {
+            } elseif ($mimeType === 'application/pdf') {
                 // Extract text from PDF using Smalot PdfParser.
                 $extractedText = $this->extractPdf($file);
-            } else if ($this->isWordDocument($mimeType) === true) {
+            } elseif ($this->isWordDocument($mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
                 $extractedText = $this->extractWord($file);
-            } else if ($this->isSpreadsheet($mimeType) === true) {
+            } elseif ($this->isSpreadsheet($mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet($file);
             } else {
@@ -1270,7 +1270,7 @@ class TextExtractionService
                 foreach ($section->getElements() as $element) {
                     if (method_exists($element, 'getText') === true) {
                         $text .= $element->getText()."\n";
-                    } else if (method_exists($element, 'getElements') === true) {
+                    } elseif (method_exists($element, 'getElements') === true) {
                         // Handle nested elements (tables, etc.).
                         foreach ($element->getElements() as $childElement) {
                             if (method_exists($childElement, 'getText') === true) {

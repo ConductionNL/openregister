@@ -495,7 +495,7 @@ class SolrSchemaService
 
             // STEP 3: Apply resolved field definitions to SOLR.
             if (empty($resolvedFields['fields']) === false) {
-                $this->applySolrFields($resolvedFields['fields'], $force);
+                $this->applySolrFields(fields: $resolvedFields['fields'], force: $force);
                 $stats['fields_created'] = count($resolvedFields['fields']);
             }
 
@@ -1200,11 +1200,11 @@ class SolrSchemaService
 
             // ensureVectorFieldType expects a string collection name, not boolean.
             if (is_string($objectCollection) && empty($objectCollection) === false) {
-                $this->ensureVectorFieldType($objectCollection, 4096, 'cosine');
+                $this->ensureVectorFieldType(collection: $objectCollection, dimensions: 4096, similarity: 'cosine');
             }
 
             if (is_string($fileCollection) && empty($fileCollection) === false) {
-                $this->ensureVectorFieldType($fileCollection, 4096, 'cosine');
+                $this->ensureVectorFieldType(collection: $fileCollection, dimensions: 4096, similarity: 'cosine');
             }
         } catch (\Exception $e) {
             $this->logger->warning(
@@ -1224,11 +1224,11 @@ class SolrSchemaService
                     'stored'      => true,
                     'indexed'     => $this->shouldCoreFieldBeIndexed($fieldName),
                     // @psalm-suppress TooFewArguments - fieldType parameter is optional
-                    'multiValued' => $this->isCoreFieldMultiValued($fieldName, $fieldType),
+                    'multiValued' => $this->isCoreFieldMultiValued(fieldName: $fieldName, _fieldType: $fieldType),
                     'docValues'   => $this->shouldCoreFieldHaveDocValues($fieldName),
                 ];
 
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
+                if ($this->addOrUpdateSolrField(fieldName: $fieldName, fieldConfig: $fieldConfig, force: $force) === true) {
                     $successCount++;
                     $this->logger->debug(
                             '✅ Core metadata field ensured',
@@ -1493,7 +1493,7 @@ class SolrSchemaService
         $successCount = 0;
         foreach ($solrFields as $fieldName => $fieldConfig) {
             try {
-                if ($this->addOrUpdateSolrField($fieldName, $fieldConfig, $force) === true) {
+                if ($this->addOrUpdateSolrField(fieldName: $fieldName, fieldConfig: $fieldConfig, force: $force) === true) {
                     $successCount++;
                     $this->logger->info(
                             '✅ Applied SOLR field',
@@ -1601,7 +1601,7 @@ class SolrSchemaService
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
         ];
 
-        if ($this->makeSolrSchemaRequest($url, $payload) === true) {
+        if ($this->makeSolrSchemaRequest(url: $url, payload: $payload) === true) {
             return true;
         }
 
@@ -1610,7 +1610,7 @@ class SolrSchemaService
             $payload = [
                 'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
             ];
-            return $this->makeSolrSchemaRequest($url, $payload);
+            return $this->makeSolrSchemaRequest(url: $url, payload: $payload);
         }
 
         return false;
@@ -1695,9 +1695,9 @@ class SolrSchemaService
 
                 // Add field to SOLR using the schema API.
                 $result = $this->addFieldToCollection(
-                    $collection,
-                    $fieldName,
-                    $fieldConfig
+                    collection: $collection,
+                    fieldName: $fieldName,
+                    fieldConfig: $fieldConfig
                 );
 
                 if ($result === true) {

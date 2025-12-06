@@ -807,7 +807,7 @@ class RenderObject
                     $extend[] = $key;
                 }
             }
-        } else if (is_string($extend) === true) {
+        } elseif (is_string($extend) === true) {
             $extend = explode(',', $extend);
         }
 
@@ -1189,7 +1189,7 @@ class RenderObject
                 $isArray            = true;
             }
             // Check if this is a direct object property with inversedBy.
-            else if (($propertyConfig['inversedBy'] ?? null) !== null) {
+            elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
                 $isArray            = false;

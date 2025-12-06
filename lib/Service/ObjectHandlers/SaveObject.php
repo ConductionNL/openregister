@@ -356,7 +356,7 @@ class SaveObject
                                     schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
-                            } else if (is_string($item) === true && empty($item) === false) {
+                            } elseif (is_string($item) === true && empty($item) === false) {
                                 // String values in object arrays are always treated as relations.
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
@@ -372,7 +372,7 @@ class SaveObject
                                     schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
-                            } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
+                            } elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                                 // Check if the string looks like a reference.
                                 if ($this->isReference($item) === true) {
                                     $relations[$currentPath.'.'.$index] = $item;
@@ -380,7 +380,7 @@ class SaveObject
                             }
                         }
                     }//end if
-                } else if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
+                } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                     $shouldTreatAsRelation = false;
 
                     // Check schema property configuration first.
@@ -392,7 +392,7 @@ class SaveObject
                         // Check for explicit relation types.
                         if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true) {
                             $shouldTreatAsRelation = true;
-                        } else if ($propertyType === 'object') {
+                        } elseif ($propertyType === 'object') {
                             // Object properties with string values are always relations.
                             $shouldTreatAsRelation = true;
                         }
@@ -615,10 +615,10 @@ class SaveObject
                                 ]
                                 );
                     }//end try
-                } else if (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null)) {
+                } elseif (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null) {
                     // Array of file objects - use first file's downloadUrl.
                     $entity->setImage($firstElement['downloadUrl']);
-                } else if (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {
+                } elseif (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {
                     // Fallback to accessUrl if downloadUrl not available.
                     $entity->setImage($firstElement['accessUrl']);
                 }//end if

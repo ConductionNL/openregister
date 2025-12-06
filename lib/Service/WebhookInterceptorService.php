@@ -287,7 +287,7 @@ class WebhookInterceptorService
             );
 
             // Update webhook statistics.
-            $this->updateWebhookStatistics($webhook, $response->getStatusCode() < 400);
+            $this->updateWebhookStatistics(webhook: $webhook, success: $response->getStatusCode() < 400);
 
             // Return response if not async.
             if ($isAsync === false) {
@@ -300,7 +300,7 @@ class WebhookInterceptorService
             return null;
         } catch (GuzzleException $e) {
             // Update webhook statistics.
-            $this->updateWebhookStatistics($webhook, false);
+            $this->updateWebhookStatistics(webhook: $webhook, success: false);
 
             throw $e;
         }//end try
@@ -400,7 +400,7 @@ class WebhookInterceptorService
         foreach ($mapping as $responseField => $requestField) {
             if (($response[$responseField] ?? null) !== null) {
                 // Support nested field access using dot notation.
-                $this->setNestedValue($modifiedData, $requestField, $response[$responseField]);
+                $this->setNestedValue(data: $modifiedData, path: $requestField, value: $response[$responseField]);
             }
         }
 
@@ -428,7 +428,7 @@ class WebhookInterceptorService
             /*
              * @psalm-suppress TypeDoesNotContainType
              */
-            if (!isset($current[$key]) === false || is_array($current[$key]) === false) {
+            if (isset($current[$key]) === false || is_array($current[$key]) === false) {
                 $current[$key] = [];
             }
 
@@ -455,7 +455,7 @@ class WebhookInterceptorService
     private function updateWebhookStatistics(Webhook $webhook, bool $success): void
     {
         try {
-            $this->webhookMapper->updateStatistics($webhook, $success);
+            $this->webhookMapper->updateStatistics(webhook: $webhook, success: $success);
         } catch (\Exception $e) {
             // Log error but don't fail the request.
             $this->logger->error(

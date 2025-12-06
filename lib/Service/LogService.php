@@ -25,8 +25,22 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 
 /**
- * Class LogService
- * Service for handling audit trail logs
+ * LogService handles audit trail logs
+ *
+ * Service class for handling audit trail logs in the OpenRegister application.
+ * Provides methods for retrieving, filtering, and counting audit trail entries
+ * for objects and system-wide operations.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class LogService
 {
@@ -34,51 +48,63 @@ class LogService
     /**
      * Audit trail mapper
      *
-     * @var AuditTrailMapper
+     * Handles database operations for audit trail entries.
+     *
+     * @var AuditTrailMapper Audit trail mapper instance
      */
-    private AuditTrailMapper $auditTrailMapper;
+    private readonly AuditTrailMapper $auditTrailMapper;
 
     /**
      * Object entity mapper
      *
-     * @var ObjectEntityMapper
+     * Used to validate object existence and retrieve object details.
+     *
+     * @var ObjectEntityMapper Object entity mapper instance
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private readonly ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Register mapper
      *
-     * @var RegisterMapper
+     * Reserved for future use in log filtering and validation.
+     *
+     * @var RegisterMapper Register mapper instance
      *
      * @psalm-suppress UnusedProperty
      */
-    private RegisterMapper $registerMapper;
+    private readonly RegisterMapper $registerMapper;
 
     /**
      * Schema mapper
      *
-     * @var SchemaMapper
+     * Reserved for future use in log filtering and validation.
+     *
+     * @var SchemaMapper Schema mapper instance
      *
      * @psalm-suppress UnusedProperty
      */
-    private SchemaMapper $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
 
     /**
      * Get logs for an object
      *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     * @param string $id       The object ID
-     * @param array  $config   Configuration array containing:
-     *                         - limit: (int) Maximum number of items per page
-     *                         - offset: (int|null) Number of items to skip
-     *                         - page: (int|null) Current page number
-     *                         - filters: (array) Filter parameters
-     *                         - sort: (array) Sort parameters ['field' => 'ASC|DESC']
-     *                         - search: (string|null) Search term
+     * Retrieves audit trail logs for a specific object with optional filtering,
+     * pagination, sorting, and search capabilities. Validates that the object
+     * belongs to the specified register and schema.
      *
-     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
+     * @param string $register The register identifier (slug or ID)
+     * @param string $schema   The schema identifier (slug or ID)
+     * @param string $id       The object ID to retrieve logs for
+     * @param array<string, mixed> $config   Configuration array containing:
+     *                                      - limit: (int) Maximum number of items per page (default: 20)
+     *                                      - offset: (int|null) Number of items to skip for pagination
+     *                                      - page: (int|null) Current page number (alternative to offset)
+     *                                      - filters: (array) Filter parameters (e.g., ['action' => 'create'])
+     *                                      - sort: (array) Sort parameters ['field' => 'ASC|DESC'] (default: ['created' => 'DESC'])
+     *                                      - search: (string|null) Search term for log content
+     *
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail log entries
      *
      * @throws \InvalidArgumentException If object does not belong to specified register/schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
@@ -87,18 +113,20 @@ class LogService
      */
     public function getLogs(string $register, string $schema, string $id, array $config=[]): array
     {
-        // Get the object to ensure it exists and belongs to the correct register/schema.
+        // Step 1: Get the object to ensure it exists.
         $object = $this->objectEntityMapper->find($id);
 
+        // Step 2: Validate that object belongs to specified register and schema.
+        // This prevents unauthorized access to logs from other registers/schemas.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
-        // Add object ID to filters.
+        // Step 3: Add object ID to filters to restrict logs to this object.
         $filters           = $config['filters'] ?? [];
         $filters['object'] = $object->getId();
 
-        // Get logs from audit trail mapper.
+        // Step 4: Retrieve logs from audit trail mapper with pagination and filtering.
         return $this->auditTrailMapper->findAll(
             limit: $config['limit'] ?? 20,
             offset: $config['offset'] ?? 0,
@@ -113,11 +141,14 @@ class LogService
     /**
      * Count logs for an object
      *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     * @param string $id       The object ID
+     * Counts total number of audit trail entries for a specific object.
+     * Validates that the object belongs to the specified register and schema.
      *
-     * @return int Number of logs
+     * @param string $register The register identifier (slug or ID)
+     * @param string $schema   The schema identifier (slug or ID)
+     * @param string $id       The object ID to count logs for
+     *
+     * @return int Number of log entries (0 or positive integer)
      *
      * @throws \InvalidArgumentException If object does not belong to specified register/schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
@@ -126,18 +157,22 @@ class LogService
      */
     public function count(string $register, string $schema, string $id): int
     {
-        // Get the object to ensure it exists and belongs to the correct register/schema.
+        // Step 1: Get the object to ensure it exists.
         $object = $this->objectEntityMapper->find($id);
 
+        // Step 2: Validate that object belongs to specified register and schema.
+        // This prevents unauthorized access to log counts from other registers/schemas.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
             throw new \InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
-        // Get logs using findAll with a filter for the object.
+        // Step 3: Get all logs for this object using filter.
+        // No pagination needed since we're only counting.
         $logs = $this->auditTrailMapper->findAll(
             filters: ['object' => $object->getId()]
         );
 
+        // Step 4: Return count of log entries.
         return count($logs);
 
     }//end count()

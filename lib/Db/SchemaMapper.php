@@ -36,11 +36,22 @@ use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
- * The SchemaMapper class
+ * SchemaMapper handles database operations for Schema entities
  *
  * Mapper for Schema entities with multi-tenancy and RBAC support.
+ * Provides CRUD operations with automatic organisation filtering, RBAC checks,
+ * schema extension resolution, and event dispatching.
  *
- * @package OCA\OpenRegister\Db
+ * @category Mapper
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version  GIT: <git-id>
+ *
+ * @link     https://OpenRegister.app
  *
  * @method Schema insert(Entity $entity)
  * @method Schema update(Entity $entity)
@@ -58,51 +69,75 @@ class SchemaMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
-     * The event dispatcher instance
+     * Event dispatcher instance
      *
-     * @var IEventDispatcher
+     * Dispatches events when schemas are created, updated, or deleted.
+     *
+     * @var IEventDispatcher Event dispatcher instance
      */
-    private $eventDispatcher;
+    private readonly IEventDispatcher $eventDispatcher;
 
     /**
-     * The schema property validator instance
+     * Schema property validator instance
      *
-     * @var SchemaPropertyValidatorService
+     * Validates schema property definitions and types.
+     *
+     * @var SchemaPropertyValidatorService Schema property validator instance
      */
-    private $validator;
+    private readonly SchemaPropertyValidatorService $validator;
 
     /**
      * Organisation service for multi-tenancy
      *
-     * @var OrganisationService
+     * Used to get active organisation and apply organisation filters.
+     *
+     * @var OrganisationService Organisation service instance
      */
-    private OrganisationService $organisationService;
+    private readonly OrganisationService $organisationService;
 
     /**
      * User session for current user
      *
-     * @var IUserSession
+     * Used to get current user context for RBAC and multi-tenancy.
+     *
+     * @var IUserSession User session instance
      */
-    private IUserSession $userSession;
+    private readonly IUserSession $userSession;
 
     /**
      * Group manager for RBAC
      *
-     * @var IGroupManager
+     * Used to check user group memberships for permission verification.
+     *
+     * @var IGroupManager Group manager instance
      */
-    private IGroupManager $groupManager;
+    private readonly IGroupManager $groupManager;
+
+    /**
+     * App configuration
+     *
+     * Used for reading multitenancy configuration settings.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    private readonly IAppConfig $appConfig;
 
 
     /**
-     * Constructor for the SchemaMapper
+     * Constructor
      *
-     * @param IDBConnection                  $db                  Database connection
-     * @param IEventDispatcher               $eventDispatcher     Event dispatcher
-     * @param SchemaPropertyValidatorService $validator           Schema property validator
-     * @param OrganisationService            $organisationService Organisation service
-     * @param IUserSession                   $userSession         User session
-     * @param IGroupManager                  $groupManager        Group manager for RBAC
+     * Initializes mapper with database connection and required dependencies
+     * for multi-tenancy, RBAC, validation, and event dispatching.
+     *
+     * @param IDBConnection                  $db                  Database connection for queries
+     * @param IEventDispatcher               $eventDispatcher     Event dispatcher for schema events
+     * @param SchemaPropertyValidatorService $validator           Schema property validator for validation
+     * @param OrganisationService            $organisationService Organisation service for multi-tenancy
+     * @param IUserSession                   $userSession         User session for current user context
+     * @param IGroupManager                  $groupManager        Group manager for RBAC checks
      * @param IAppConfig                     $appConfig           App configuration for multitenancy settings
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
@@ -113,14 +148,16 @@ class SchemaMapper extends QBMapper
         IGroupManager $groupManager,
         IAppConfig $appConfig
     ) {
+        // Initialize parent mapper with table name and entity class.
         parent::__construct($db, 'openregister_schemas', Schema::class);
+
+        // Store dependencies for use in mapper methods.
         $this->eventDispatcher     = $eventDispatcher;
         $this->validator           = $validator;
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->appConfig           = $appConfig;
-
     }//end __construct()
 
 
@@ -322,7 +359,7 @@ class SchemaMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -527,10 +564,10 @@ class SchemaMapper extends QBMapper
             if (($property['$ref'] ?? null) !== null) {
                 if (is_array($property['$ref']) === true && (($property['$ref']['id'] ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']['id'];
-                } else if (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
+                } elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']->id;
-                } else if (is_int($property['$ref']) === true) {
-                } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
+                } elseif (is_int($property['$ref']) === true) {
+                } elseif (is_string($property['$ref']) === false && $property['$ref'] !== '') {
                     throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
                 }
             }
@@ -1647,7 +1684,7 @@ class SchemaMapper extends QBMapper
                         "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from ".json_encode($parentValue)." to ".json_encode($childValue)." (adds types not in parent)"
                     );
                 }
-            } else if (is_array($parentValue) === false && is_array($childValue) === false) {
+            } elseif (is_array($parentValue) === false && is_array($childValue) === false) {
                 throw new \Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from "."'{$parentValue}' to '{$childValue}'"
                 );
@@ -1928,7 +1965,7 @@ class SchemaMapper extends QBMapper
             if (isset($parentProperty[$key]) === false) {
                 // New field in child.
                 $delta[$key] = $value;
-            } else if ($this->arePropertiesDifferent($parentProperty[$key], $value) === true) {
+            } elseif ($this->arePropertiesDifferent($parentProperty[$key], $value) === true) {
                 // Changed field.
                 if ($key === 'properties' && is_array($value) === true && is_array($parentProperty[$key]) === true) {
                     // Recursively extract delta for nested properties.

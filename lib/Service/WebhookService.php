@@ -295,7 +295,7 @@ class WebhookService
                 if (in_array($actualValue, $value) === false) {
                     return false;
                 }
-            } else if ($actualValue !== $value) {
+            } elseif ($actualValue !== $value) {
                 return false;
             }
         }

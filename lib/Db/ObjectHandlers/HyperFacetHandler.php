@@ -777,7 +777,7 @@ class HyperFacetHandler
             ARRAY_FILTER_USE_KEY
         );
 
-        if (!empty($objectFilters)) {
+        if (empty($objectFilters) === false) {
             $this->applyJsonFieldFilters($queryBuilder, $objectFilters);
         }
 

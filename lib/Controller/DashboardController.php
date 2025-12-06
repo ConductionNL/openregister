@@ -25,40 +25,57 @@ use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class DashboardController
+ * DashboardController handles dashboard related operations
  *
  * Controller for handling dashboard related operations in the application.
- * Provides functionality to display the dashboard page and retrieve dashboard data.
- */
-/**
+ * Provides functionality to display the dashboard page and retrieve dashboard data
+ * including registers, schemas, and statistics.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
  * @psalm-suppress UnusedClass
  */
-
 class DashboardController extends Controller
 {
 
     /**
      * The dashboard service instance
      *
-     * @var DashboardService
+     * Handles business logic for dashboard data retrieval and aggregation.
+     *
+     * @var DashboardService Dashboard service instance
      */
-    private DashboardService $dashboardService;
+    private readonly DashboardService $dashboardService;
 
     /**
      * Logger instance
      *
-     * @var LoggerInterface
+     * Used for error tracking and debugging dashboard operations.
+     *
+     * @var LoggerInterface Logger instance
      */
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
 
     /**
      * Constructor for the DashboardController
      *
+     * Initializes controller with required dependencies for dashboard operations.
+     * Calls parent constructor to set up base controller functionality.
+     *
      * @param string           $appName          The name of the app
-     * @param IRequest         $request          The request object
+     * @param IRequest         $request          The HTTP request object
      * @param DashboardService $dashboardService The dashboard service instance
-     * @param LoggerInterface  $logger           Logger instance
+     * @param LoggerInterface  $logger           Logger instance for error tracking
      *
      * @return void
      */
@@ -68,7 +85,10 @@ class DashboardController extends Controller
         DashboardService $dashboardService,
         LoggerInterface $logger
     ) {
+        // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
+        
+        // Store dependencies for use in controller methods.
         $this->dashboardService = $dashboardService;
         $this->logger           = $logger;
 
@@ -78,9 +98,10 @@ class DashboardController extends Controller
     /**
      * Returns the template of the dashboard page
      *
-     * This method renders the dashboard page of the application, adding any necessary data to the template.
+     * Renders the dashboard page template with Content Security Policy configured
+     * to allow API connections. Returns error template if rendering fails.
      *
-     * @return TemplateResponse The rendered template response
+     * @return TemplateResponse The rendered template response (or error template on failure)
      *
      * @NoAdminRequired
      *
@@ -89,18 +110,23 @@ class DashboardController extends Controller
     public function page(): TemplateResponse
     {
         try {
+            // Create template response for dashboard page.
             $response = new TemplateResponse(
                 appName: $this->appName,
                 templateName: 'index',
                 params: []
             );
 
+            // Configure Content Security Policy to allow API connections.
+            // This is necessary for the frontend to make API calls.
             $csp = new ContentSecurityPolicy();
             $csp->addAllowedConnectDomain('*');
             $response->setContentSecurityPolicy($csp);
 
+            // Return successful template response.
             return $response;
         } catch (\Exception $e) {
+            // Return error template if rendering fails.
             return new TemplateResponse(
                 appName: $this->appName,
                 templateName: 'error',
@@ -115,28 +141,39 @@ class DashboardController extends Controller
     /**
      * Retrieves dashboard data including registers with their schemas
      *
-     * This method returns a JSON response containing dashboard data.
+     * Returns JSON response containing dashboard data with registers and schemas.
+     * Supports optional filtering by registerId and schemaId query parameters.
+     * Removes pagination and routing parameters before processing.
      *
-     * @return JSONResponse A JSON response containing the dashboard data
+     * @return JSONResponse JSON response containing dashboard data with registers array or error message
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array{registers: array<int, mixed>}|array{error: string}>
      */
     public function index(): JSONResponse
     {
         try {
+            // Get all request parameters.
             $params = $this->request->getParams();
 
+            // Remove pagination and routing parameters that shouldn't be passed to service.
+            // These are handled by the controller, not the business logic layer.
             unset($params['id'], $params['_route'], $params['limit'], $params['offset'], $params['page']);
 
+            // Retrieve registers with schemas from dashboard service.
+            // Optional filtering by registerId and schemaId if provided in query parameters.
             $registers = $this->dashboardService->getRegistersWithSchemas(
                 registerId: $params['registerId'] ?? null,
                 schemaId: $params['schemaId'] ?? null
             );
 
+            // Return successful response with registers data.
             return new JSONResponse(data: ['registers' => $registers]);
         } catch (\Exception $e) {
+            // Return error response if dashboard data retrieval fails.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -146,20 +183,31 @@ class DashboardController extends Controller
     /**
      * Calculate sizes for objects and logs
      *
-     * @param int|null $registerId Optional register ID to filter by
-     * @param int|null $schemaId   Optional schema ID to filter by
+     * Calculates storage sizes and statistics for objects and logs.
+     * Supports optional filtering by registerId and schemaId to calculate
+     * sizes for specific subsets of data.
      *
-     * @return JSONResponse The calculation results
+     * @param int|null $registerId Optional register ID to filter calculations by
+     * @param int|null $schemaId   Optional schema ID to filter calculations by
+     *
+     * @return JSONResponse JSON response containing calculation results or error message
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<array<string, mixed>|array{status: 'error', message: string, timestamp: string}>
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
         try {
+            // Calculate sizes and statistics using dashboard service.
+            // Service handles aggregation of object and log sizes.
             $result = $this->dashboardService->calculate(registerId: $registerId, schemaId: $schemaId);
+            
+            // Return successful response with calculation results.
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
+            // Return error response with timestamp for debugging.
             return new JSONResponse(
                 data: [
                     'status'    => 'error',

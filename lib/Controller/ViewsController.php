@@ -204,7 +204,7 @@ class ViewsController extends Controller
                         );
             }
 
-            $view = $this->viewService->find($id, $userId);
+            $view = $this->viewService->find(id: $id, owner: $userId);
 
             return new JSONResponse(
                     data: [
@@ -288,7 +288,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -386,7 +386,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -472,7 +472,7 @@ class ViewsController extends Controller
             }
 
             // Get existing view.
-            $view = $this->viewService->find($id, $userId);
+            $view = $this->viewService->find(id: $id, owner: $userId);
 
             $data = $this->request->getParams();
 
@@ -503,7 +503,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 $query = $data['query'];
             }
 
@@ -590,7 +590,7 @@ class ViewsController extends Controller
                         );
             }
 
-            $this->viewService->delete($id, $user->getUID());
+            $this->viewService->delete(id: $id, owner: $user->getUID());
 
             return new JSONResponse(
                     data: [

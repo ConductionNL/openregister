@@ -26,83 +26,115 @@ use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class OasService
+ * OasService generates OpenAPI Specification documentation
  *
- * Service for generating OpenAPI Specification documentation.
+ * Service for generating OpenAPI Specification (OAS) documentation for registers and schemas.
+ * Creates comprehensive API documentation including endpoints, schemas, parameters,
+ * and examples based on register and schema definitions.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class OasService
 {
     /**
-     * Base path to OAS resources.
+     * Base path to OAS resources
      *
-     * @var string
+     * Path to base OpenAPI specification template file.
+     *
+     * @var string Base OAS resource file path
      */
     private const OAS_RESOURCE_PATH = __DIR__.'/Resources/BaseOas.json';
 
     /**
      * The OpenAPI specification being built
      *
-     * @var array<string, mixed>
+     * Array containing the complete OpenAPI specification structure.
+     *
+     * @var array<string, mixed> OpenAPI specification array
      */
     private array $oas = [];
 
     /**
      * Register mapper
      *
-     * @var RegisterMapper
+     * Handles database operations for register entities.
+     *
+     * @var RegisterMapper Register mapper instance
      */
-    private RegisterMapper $registerMapper;
+    private readonly RegisterMapper $registerMapper;
 
     /**
      * Schema mapper
      *
-     * @var SchemaMapper
+     * Handles database operations for schema entities.
+     *
+     * @var SchemaMapper Schema mapper instance
      */
-    private SchemaMapper $schemaMapper;
+    private readonly SchemaMapper $schemaMapper;
 
     /**
      * URL generator
      *
-     * @var IURLGenerator
+     * Generates absolute URLs for API endpoints in OAS documentation.
+     *
+     * @var IURLGenerator URL generator instance
      */
-    private IURLGenerator $urlGenerator;
+    private readonly IURLGenerator $urlGenerator;
 
     /**
      * Create OpenAPI Specification for register(s)
      *
-     * @param string|null $registerId Optional register ID to generate OAS for specific register
+     * Generates complete OpenAPI Specification documentation for one or all registers.
+     * Includes all schemas associated with the register(s), generates endpoint definitions,
+     * and creates comprehensive API documentation.
      *
-     * @return array The complete OpenAPI specification
+     * @param string|null $registerId Optional register ID to generate OAS for specific register.
+     *                                If null, generates OAS for all registers.
+     *
+     * @return array<string, mixed> The complete OpenAPI specification array
      *
      * @throws \Exception When base OAS file cannot be read or parsed
      */
     public function createOas(?string $registerId=null): array
     {
-        // Reset OAS to base state.
+        // Step 1: Reset OAS to base state from template file.
         $this->oas = $this->getBaseOas();
 
-        // Get registers.
+        // Step 2: Get registers to document.
+        // If registerId provided, get only that register; otherwise get all registers.
         if ($registerId === null) {
             $registers = $this->registerMapper->findAll();
         } else {
             $registers = [$this->registerMapper->find($registerId)];
         }
 
-        // Extract unique schema IDs from registers.
+        // Step 3: Extract unique schema IDs from all registers.
+        // Multiple registers may share schemas, so we deduplicate.
         $schemaIds = [];
         foreach ($registers as $register) {
             $schemaIds = array_merge($schemaIds, $register->getSchemas());
         }
 
+        // Remove duplicates to avoid loading same schema multiple times.
         $uniqueSchemaIds = array_unique($schemaIds);
 
-        // Get all schemas using the unique schema IDs and index them by schema slug.
+        // Step 4: Get all schemas using unique schema IDs and index by schema ID.
+        // Indexing by ID allows fast lookup when processing registers.
         $schemas = [];
         foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) as $schema) {
             $schemas[$schema->getId()] = $schema;
         }
 
-        // Update servers configuration.
+        // Step 5: Update servers configuration with actual API base URL.
         $this->oas['servers'] = [
             [
                 'url'         => $this->urlGenerator->getAbsoluteURL('/apps/openregister/api'),
@@ -110,17 +142,17 @@ class OasService
             ],
         ];
 
-        // If specific register, update info while preserving contact and license.
+        // Step 6: If specific register requested, update info section with register details.
         if ($registerId !== null) {
             $register = $registers[0];
 
-            // Build enhanced description.
+            // Build enhanced description from register description or generate default.
             $description = $register->getDescription();
             if (empty($description) === true) {
                 $description = 'API for '.$register->getTitle().' register providing CRUD operations, filtering, and search capabilities.';
             }
 
-            // Update info while preserving base contact and license.
+            // Update info section while preserving base contact and license information.
             $this->oas['info'] = array_merge(
                 $this->oas['info'],
                 [
@@ -131,22 +163,22 @@ class OasService
             );
         }
 
-        // Initialize tags array.
+        // Step 7: Initialize tags array for API endpoint grouping.
         $this->oas['tags'] = [];
 
-        // Add schemas to components and create tags.
+        // Step 8: Add schemas to components and create tags for each schema.
         foreach ($schemas as $schema) {
-            // Ensure schema has valid title.
+            // Step 8a: Ensure schema has valid title (skip if empty).
             $schemaTitle = $schema->getTitle();
             if (empty($schemaTitle) === true) {
                 continue;
             }
 
-            // Add schema to components with sanitized name.
+            // Step 8b: Enrich schema definition with OpenAPI-specific properties.
             $schemaDefinition     = $this->enrichSchema($schema);
             $sanitizedSchemaName  = $this->sanitizeSchemaName($schemaTitle);
 
-            // Validate schema definition before adding.
+            // Step 8c: Validate schema definition before adding to components.
             if (empty($schemaDefinition) === false && is_array($schemaDefinition) === true) {
                 $this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
 
@@ -1295,7 +1327,7 @@ class OasService
                         // Validate each allOf item has required structure.
                         if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
                             $validAllOfItems[] = $item;
-                        } else if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
+                        } elseif (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
                             $validAllOfItems[] = $item;
                         } else {
                         }

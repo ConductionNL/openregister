@@ -104,7 +104,7 @@ class FileHandler implements TextExtractionHandlerInterface
 
         // Extract text based on MIME type.
         $mimeType = $file->getMimeType();
-        $text     = $this->performTextExtraction($file, $mimeType);
+        $text     = $this->performTextExtraction(file: $file, mimeType: $mimeType);
 
         if ($text === null || trim($text) === '') {
             throw new Exception("No text extracted from file {$sourceId}");
@@ -156,7 +156,7 @@ class FileHandler implements TextExtractionHandlerInterface
         }
 
         // Check if chunks exist and are up-to-date.
-        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp('file', $sourceId);
+        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: 'file', sourceId: $sourceId);
 
         if ($latestChunkTimestamp === null) {
             return true;

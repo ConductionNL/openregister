@@ -554,7 +554,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (!isset($object['metadata'])) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
@@ -759,29 +759,25 @@ class ObjectEntity extends Entity implements JsonSerializable
             $newExpiration = clone $now;
             $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->setLocked(
-                    [
+            $this->setLocked(locked: [
                         'user'       => $userId,
                         'process'    => ($process ?? $lock['process']),
                         'created'    => $lock['created'],
                         'duration'   => $duration,
                         'expiration' => $newExpiration->format('c'),
-                    ]
-                    );
+                    ]);
         } else {
             // Create new lock.
             $expiration = clone $now;
             $expiration->add(new \DateInterval('PT'.$duration.'S'));
 
-            $this->setLocked(
-                    [
+            $this->setLocked(locked: [
                         'user'       => $userId,
                         'process'    => $process,
                         'created'    => $now->format('c'),
                         'duration'   => $duration,
                         'expiration' => $expiration->format('c'),
-                    ]
-                    );
+                    ]);
         }//end if
 
         return true;
@@ -818,7 +814,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             throw new Exception('Object is locked by another user');
         }
 
-        $this->setLocked(null);
+        $this->setLocked(locked: null);
         return true;
 
     }//end unlock()
@@ -884,15 +880,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         // $purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
         $purgeDate->add(new \DateInterval('P31D'));
 
-        $this->setDeleted(
-                [
+        $this->setDeleted(deleted: [
                     'deleted'         => $now->format('c'),
                     'deletedBy'       => $userId,
                     'deletedReason'   => $deletedReason,
                     'retentionPeriod' => $retentionPeriod,
                     'purgeDate'       => $purgeDate->format('c'),
-                ]
-                );
+                ]);
 
         return $this;
 

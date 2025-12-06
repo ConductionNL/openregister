@@ -400,11 +400,11 @@ class WebhooksController extends Controller
                 );
             } else {
                 // Get the latest log entry to retrieve error details.
-                $latestLogs   = $this->webhookLogMapper->findByWebhook($id, 1, 0);
+                $latestLogs   = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: 1, offset: 0);
                 $errorMessage = 'Test webhook delivery failed';
                 $errorDetails = null;
 
-                if (!empty($latestLogs)) {
+                if (empty($latestLogs) === false) {
                     $latestLog = $latestLogs[0];
                     if ($latestLog->getErrorMessage() !== null) {
                         $errorMessage = $latestLog->getErrorMessage();
@@ -829,7 +829,7 @@ class WebhooksController extends Controller
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-            $logs = $this->webhookLogMapper->findByWebhook($id, $limit, $offset);
+            $logs = $this->webhookLogMapper->findByWebhook(webhookId: $id, limit: $limit, offset: $offset);
 
             return new JSONResponse(
                 data: [
@@ -939,15 +939,15 @@ class WebhooksController extends Controller
             // If webhook_id is provided and valid, use findByWebhook method.
             if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                 $webhookIdInt = (int) $webhookId;
-                $logs         = $this->webhookLogMapper->findByWebhook($webhookIdInt, $limit, $offset);
+                $logs         = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: $limit, offset: $offset);
                 // Get total count for this webhook.
-                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
+                $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: null, offset: null);
                 $total = count($allLogsForWebhook);
             } else {
                 // Get all logs.
-                $logs = $this->webhookLogMapper->findAll($limit, $offset);
+                $logs = $this->webhookLogMapper->findAll(limit: $limit, offset: $offset);
                 // Get total count for all logs.
-                $allLogs = $this->webhookLogMapper->findAll(null, null);
+                $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);
             }
 
@@ -965,7 +965,7 @@ class WebhooksController extends Controller
                 // Recalculate total if filtering by success.
                 if ($webhookId !== null && $webhookId !== '' && $webhookId !== '0') {
                     $webhookIdInt      = (int) $webhookId;
-                    $allLogsForWebhook = $this->webhookLogMapper->findByWebhook($webhookIdInt, null, null);
+                    $allLogsForWebhook = $this->webhookLogMapper->findByWebhook(webhookId: $webhookIdInt, limit: null, offset: null);
                     $total = count(
                             array_filter(
                             $allLogsForWebhook,
@@ -975,7 +975,7 @@ class WebhooksController extends Controller
                             )
                             );
                 } else {
-                    $allLogs = $this->webhookLogMapper->findAll(null, null);
+                    $allLogs = $this->webhookLogMapper->findAll(limit: null, offset: null);
                     $total   = count(
                             array_filter(
                             $allLogs,
@@ -1051,7 +1051,7 @@ class WebhooksController extends Controller
                 if ($decoded !== null) {
                     $payload = $decoded;
                 }
-            } else if ($log->getPayload() !== null) {
+            } elseif ($log->getPayload() !== null) {
                 $payload = $log->getPayloadArray();
             }
 
@@ -1090,7 +1090,7 @@ class WebhooksController extends Controller
                 $errorMessage = 'Webhook retry delivery failed';
                 $errorDetails = null;
 
-                if (!empty($latestLogs)) {
+                if (empty($latestLogs) === false) {
                     $latestLog = $latestLogs[0];
                     if ($latestLog->getErrorMessage() !== null) {
                         $errorMessage = $latestLog->getErrorMessage();

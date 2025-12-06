@@ -208,7 +208,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
         }
 
         // Check if chunks exist and are up-to-date.
-        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp('object', $sourceId);
+        $latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: 'object', sourceId: $sourceId);
 
         if ($latestChunkTimestamp === null) {
             return true;
@@ -294,9 +294,9 @@ class ObjectHandler implements TextExtractionHandlerInterface
             // Handle different value types.
             if (is_string($value) === true && trim($value) !== '' && trim($value) !== null) {
                 $textParts[] = "{$contextKey}: {$value}";
-            } else if (is_numeric($value) === true) {
+            } elseif (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
-            } else if (is_bool($value) === true) {
+            } elseif (is_bool($value) === true) {
                 if ($value === true) {
                     $boolStr = 'true';
                 } else {
@@ -304,9 +304,9 @@ class ObjectHandler implements TextExtractionHandlerInterface
                 }
 
                 $textParts[] = "{$contextKey}: {$boolStr}";
-            } else if (is_array($value) === true && empty($value) === false) {
+            } elseif (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.
-                $nestedText = $this->extractTextFromArray($value, $contextKey, $depth + 1);
+                $nestedText = $this->extractTextFromArray(data: $value, prefix: $contextKey, depth: $depth + 1);
                 if (empty($nestedText) === false) {
                     $textParts[] = $nestedText;
                 }

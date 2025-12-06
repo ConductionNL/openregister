@@ -413,9 +413,9 @@ class MagicFacetHandler
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } else if ($value === 'IS NULL') {
+                } elseif ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value) === true) {
+                } elseif (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -437,9 +437,9 @@ class MagicFacetHandler
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));

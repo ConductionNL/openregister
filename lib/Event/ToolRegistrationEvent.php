@@ -100,7 +100,7 @@ class ToolRegistrationEvent extends Event
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        $this->registry->registerTool($id, $tool, $metadata);
+        $this->registry->registerTool(id: $id, tool: $tool, metadata: $metadata);
 
     }//end registerTool()
 

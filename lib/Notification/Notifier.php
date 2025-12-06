@@ -102,7 +102,7 @@ class Notifier implements INotifier
 
         switch ($notification->getSubject()) {
             case 'configuration_update_available':
-                return $this->prepareConfigurationUpdate($notification, $l);
+                return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
             default:
                 // Unknown subject.
@@ -129,30 +129,30 @@ class Notifier implements INotifier
         $newVersion         = $parameters['newVersion'] ?? 'unknown';
 
         $notification->setParsedSubject(
-            $l->t('Configuration update available: %s', [$configurationTitle])
+            $l->t(text: 'Configuration update available: %s', args: [$configurationTitle])
         );
 
         $notification->setParsedMessage(
             $l->t(
-                'A new version (%s) of configuration "%s" is available. Current version: %s',
-                [$newVersion, $configurationTitle, $currentVersion]
+                text: 'A new version (%s) of configuration "%s" is available. Current version: %s',
+                args: [$newVersion, $configurationTitle, $currentVersion]
             )
         );
 
         $notification->setIcon(
-            \OC::$server->getURLGenerator()->imagePath('openregister', 'app.svg')
+            \OC::$server->getURLGenerator()->imagePath(app: 'openregister', file: 'app.svg')
         );
 
         // Add action to view the configuration.
         if (($parameters['configurationId'] ?? null) !== null) {
             $action = $notification->createAction();
-            $action->setLabel($l->t('View'))
+            $action->setLabel($l->t(text: 'View'))
                 ->setPrimary(true)
                 ->setLink(
-                    \OC::$server->getURLGenerator()->linkToRouteAbsolute(
-                        'openregister.dashboard.page'
+                    link: \OC::$server->getURLGenerator()->linkToRouteAbsolute(
+                        route: 'openregister.dashboard.page'
                     ).'#/configurations/'.$parameters['configurationId'],
-                    'GET'
+                    requestType: 'GET'
                 );
 
             $notification->addAction($action);

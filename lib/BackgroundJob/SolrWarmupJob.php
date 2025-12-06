@@ -47,31 +47,49 @@ class SolrWarmupJob extends QueuedJob
 {
     /**
      * Default maximum objects to index during warmup
+     *
+     * Limits the number of objects indexed per warmup to prevent
+     * excessive resource usage and long execution times.
+     *
+     * @var int Maximum objects to index (default: 5000)
      */
     private const DEFAULT_MAX_OBJECTS = 5000;
 
     /**
      * Default warmup mode
+     *
+     * Serial mode processes objects one at a time, which is safer
+     * but slower than parallel or hyper modes.
+     *
+     * @var string Warmup mode: 'serial', 'parallel', or 'hyper' (default: 'serial')
      */
     private const DEFAULT_MODE = 'serial';
 
 
     /**
-     * Execute the SOLR warmup job.
+     * Execute the SOLR warmup job
      *
-     * @param array $argument Job arguments containing warmup parameters
-     *                        - maxObjects: Maximum number of objects to index (default: 5000)
-     *                        - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
-     *                        - collectErrors: Whether to collect detailed errors (default: false)
-     *                        - triggeredBy: What triggered this warmup (default: 'unknown')
+     * Runs SOLR index warmup in the background to optimize search performance.
+     * Processes schemas and indexes objects up to the specified maximum.
+     * Logs comprehensive metrics and handles errors gracefully.
+     *
+     * @param array<string, mixed> $argument Job arguments containing warmup parameters:
+     *                                       - maxObjects: Maximum number of objects to index (default: 5000)
+     *                                       - mode: Warmup mode - 'serial', 'parallel', or 'hyper' (default: 'serial')
+     *                                       - collectErrors: Whether to collect detailed errors (default: false)
+     *                                       - triggeredBy: What triggered this warmup (default: 'unknown')
      *
      * @return void
+     *
+     * @throws \Exception If warmup fails critically (job will be marked as failed)
      */
     protected function run($argument): void
     {
+        // Record start time for performance metrics.
         $startTime = microtime(true);
 
         // Parse job arguments with defaults.
+        // These parameters control warmup behavior and resource usage.
         $maxObjects    = $argument['maxObjects'] ?? self::DEFAULT_MAX_OBJECTS;
         $mode          = $argument['mode'] ?? self::DEFAULT_MODE;
         $collectErrors = $argument['collectErrors'] ?? false;
@@ -103,7 +121,7 @@ class SolrWarmupJob extends QueuedJob
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is available before proceeding.
-            if ($this->isSolrAvailable($solrService, $logger) === false) {
+            if ($this->isSolrAvailable(solrService: $solrService, logger: $logger) === false) {
                 $logger->warning(
                         message: 'SOLR Warmup Job skipped - SOLR not available',
                         context: [
@@ -148,7 +166,7 @@ class SolrWarmupJob extends QueuedJob
                             'triggered_by'           => $triggeredBy,
                             'performance_metrics'    => [
                                 'total_time_ms'      => $result['execution_time_ms'] ?? 0,
-                                'objects_per_second' => $this->calculateObjectsPerSecond($result, $executionTime),
+                                'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
                             ],
                         ]
                         );
@@ -187,24 +205,58 @@ class SolrWarmupJob extends QueuedJob
 
 
     /**
-     * Check if SOLR is available.
+     * Check if SOLR is available
      *
-     * @param GuzzleSolrService $solrService SOLR service instance
-     * @param LoggerInterface   $logger      Logger instance
+     * Verifies that SOLR service is configured and accessible before
+     * attempting warmup operations. Prevents errors from running warmup
+     * when SOLR is not configured or unavailable.
      *
-     * @return bool True if SOLR is available, false otherwise
+     * @param GuzzleSolrService $solrService SOLR service instance to check
+     * @param LoggerInterface   $logger      Logger instance for debug messages
+     *
+     * @return bool True if SOLR is available and ready, false otherwise
      */
     private function isSolrAvailable(GuzzleSolrService $solrService, LoggerInterface $logger): bool
     {
-        // Check if SOLR service is available.
+        // Check if SOLR service is available and configured.
+        // Returns false if SOLR is not configured or connection fails.
         if ($solrService->isAvailable() === false) {
             $logger->debug(message: 'SOLR Warmup Job skipped - SOLR service not available');
             return false;
         }
 
+        // SOLR is available and ready for warmup operations.
         return true;
 
     }//end isSolrAvailable()
+
+
+    /**
+     * Calculate objects indexed per second
+     *
+     * Calculates indexing throughput rate for performance metrics.
+     * Used to measure warmup efficiency and identify performance bottlenecks.
+     *
+     * @param array<string, mixed> $result        Warmup result containing operations data
+     * @param float                $executionTime Total execution time in seconds
+     *
+     * @return float Objects indexed per second (rounded to 2 decimal places), or 0.0 if calculation not possible
+     */
+    private function calculateObjectsPerSecond(array $result, float $executionTime): float
+    {
+        // Extract number of objects indexed from result.
+        $objectsIndexed = $result['operations']['objects_indexed'] ?? 0;
+
+        // Calculate throughput rate: objects indexed / execution time.
+        // Only calculate if both values are positive to avoid division by zero.
+        if ($executionTime > 0 && $objectsIndexed > 0) {
+            return round($objectsIndexed / $executionTime, 2);
+        }
+
+        // Return 0.0 if calculation not possible (no objects indexed or zero execution time).
+        return 0.0;
+
+    }//end calculateObjectsPerSecond()
 
 
 }//end class

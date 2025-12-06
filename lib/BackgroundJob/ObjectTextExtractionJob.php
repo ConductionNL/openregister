@@ -86,7 +86,7 @@ class ObjectTextExtractionJob extends QueuedJob
         }
 
         // Validate argument.
-        if (!isset($argument['object_id'])) {
+        if (isset($argument['object_id']) === false) {
             $this->logger->error(
                     '[ObjectTextExtractionJob] Missing object_id in job arguments',
                     [
@@ -110,7 +110,7 @@ class ObjectTextExtractionJob extends QueuedJob
 
         try {
             // Extract text using TextExtractionService.
-            $this->textExtractionService->extractObject($objectId, false);
+            $this->textExtractionService->extractObject(objectId: $objectId, forceReExtract: false);
 
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 

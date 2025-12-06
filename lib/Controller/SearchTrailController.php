@@ -70,7 +70,7 @@ class SearchTrailController extends Controller
         // Extract pagination parameters (prioritize underscore-prefixed versions).
         if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
-        } else if (($params['limit'] ?? null) !== null) {
+        } elseif (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
         } else {
             $limit = 20;
@@ -78,7 +78,7 @@ class SearchTrailController extends Controller
 
         if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
-        } else if (($params['offset'] ?? null) !== null) {
+        } elseif (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
         } else {
             $offset = null;
@@ -86,7 +86,7 @@ class SearchTrailController extends Controller
 
         if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
-        } else if (($params['page'] ?? null) !== null) {
+        } elseif (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
         } else {
             $page = null;

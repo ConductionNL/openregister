@@ -45,10 +45,10 @@ class Version1Date20251116000000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        $this->createObjectTextTable($output, $schema);
-        $this->createChunksTable($output, $schema);
-        $this->createEntitiesTable($output, $schema);
-        $this->createEntityRelationsTable($output, $schema);
+        $this->createObjectTextTable(output: $output, schema: $schema);
+        $this->createChunksTable(output: $output, schema: $schema);
+        $this->createEntitiesTable(output: $output, schema: $schema);
+        $this->createEntityRelationsTable(output: $output, schema: $schema);
 
         return $schema;
 

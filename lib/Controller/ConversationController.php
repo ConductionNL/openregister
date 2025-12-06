@@ -412,7 +412,7 @@ class ConversationController extends Controller
             $agentId = null;
             if (($data['agentId'] ?? null) !== null) {
                 $agentId = $data['agentId'];
-            } else if (($data['agentUuid'] ?? null) !== null) {
+            } elseif (($data['agentUuid'] ?? null) !== null) {
                 // Look up agent by UUID to get ID.
                 try {
                     $agent   = $this->agentMapper->findByUuid($data['agentUuid']);

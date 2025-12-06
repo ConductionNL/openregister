@@ -214,9 +214,9 @@ class MagicSearchHandler
             // Metadata columns are prefixed with _.
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -246,9 +246,9 @@ class MagicSearchHandler
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } else if ($value === 'IS NULL') {
+                } elseif ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value) === true) {
+                } elseif (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -334,7 +334,7 @@ class MagicSearchHandler
                 // Metadata field sorting.
                 $metadataField = '_'.str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
-            } else if (($properties[$field] ?? null) !== null) {
+            } elseif (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);

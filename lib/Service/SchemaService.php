@@ -110,17 +110,17 @@ class SchemaService
         }
 
         // Analyze all object data.
-        $propertyAnalysis = $this->analyzeObjectProperties($objects, $schema->getProperties());
+        $propertyAnalysis = $this->analyzeObjectProperties(objects: $objects, _existingProperties: $schema->getProperties());
 
         // Generate suggestions for both new and existing properties.
         $newPropertySuggestions      = $this->generateSuggestions(
-            $propertyAnalysis['discovered'],
-            $schema->getProperties()
+            discoveredProperties: $propertyAnalysis['discovered'],
+            existingProperties: $schema->getProperties()
         );
         $existingPropertySuggestions = $this->analyzeExistingProperties(
-            $schema->getProperties(),
-            $propertyAnalysis['discovered'],
-            $propertyAnalysis['usage_stats']
+            existingProperties: $schema->getProperties(),
+            discoveredProperties: $propertyAnalysis['discovered'],
+            _usageStats: $propertyAnalysis['usage_stats']
         );
 
         return [
@@ -201,7 +201,7 @@ class SchemaService
                 }
 
                 // Merge type analysis.
-                $this->mergePropertyAnalysis($discoveredProperties[$propertyName], $propertyAnalysis);
+                $this->mergePropertyAnalysis(existingAnalysis: $discoveredProperties[$propertyName], newAnalysis: $propertyAnalysis);
 
                 // Track total usage for percentage calculation.
                 $discoveredProperties[$propertyName]['usage_count']++;
@@ -479,8 +479,8 @@ class SchemaService
         // Merge detected formats (if consistent patterns emerge).
         if (($newAnalysis['detected_format'] ?? null) !== null && ($newAnalysis['detected_format'] !== null) === true) {
             $existingAnalysis['detected_format'] = $this->consolidateFormatDetection(
-                $existingAnalysis['detected_format'] ?? null,
-                $newAnalysis['detected_format']
+                existingFormat: $existingAnalysis['detected_format'] ?? null,
+                newFormat: $newAnalysis['detected_format']
             );
         }
 
@@ -494,8 +494,8 @@ class SchemaService
         // Merge numeric ranges.
         if (empty($newAnalysis['numeric_range']) === false) {
             $existingAnalysis['numeric_range'] = $this->mergeNumericRanges(
-                $existingAnalysis['numeric_range'] ?? null,
-                $newAnalysis['numeric_range']
+                existingRange: $existingAnalysis['numeric_range'] ?? null,
+                newRange: $newAnalysis['numeric_range']
             );
         }
 
@@ -504,7 +504,7 @@ class SchemaService
             if ($existingAnalysis['object_structure'] === null) {
                 $existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
             } else {
-                $this->mergeObjectStructures($existingAnalysis['object_structure'], $newAnalysis['object_structure']);
+                $this->mergeObjectStructures(existingStructure: $existingAnalysis['object_structure'], newStructure: $newAnalysis['object_structure']);
             }
         }
 
@@ -820,7 +820,7 @@ class SchemaService
 
             $analysis      = $discoveredProperties[$propertyName];
             $currentConfig = $propertyConfig;
-            $improvement   = $this->comparePropertyWithAnalysis($propertyName, $currentConfig, $analysis);
+            $improvement   = $this->comparePropertyWithAnalysis(propertyName: $propertyName, currentConfig: $currentConfig, analysis: $analysis);
 
             if (empty($improvement['issues']) === false) {
                 $usagePercentage = $analysis['usage_percentage'] ?? 0;
@@ -1226,7 +1226,7 @@ class SchemaService
         // If we have relatively few unique values compared to total examples.
         // and all examples are strings, likely enum-like.
         return $uniqueCount <= ($totalExamples / 2) &&
-               !empty($analysis['types']) === true &&
+               (empty($analysis['types']) === false) &&
                $analysis['types'][0] === 'string';
 
     }//end detectEnumLike()

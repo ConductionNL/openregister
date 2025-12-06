@@ -52,14 +52,54 @@ class MetricsService
      */
     private LoggerInterface $logger;
 
-    // Metric types.
-    public const METRIC_FILE_PROCESSED      = 'file_processed';
-    public const METRIC_OBJECT_VECTORIZED   = 'object_vectorized';
+    /**
+     * Metric type constant for file processing operations
+     *
+     * @var string
+     */
+    public const METRIC_FILE_PROCESSED = 'file_processed';
+
+    /**
+     * Metric type constant for object vectorization operations
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_VECTORIZED = 'object_vectorized';
+
+    /**
+     * Metric type constant for embedding generation operations
+     *
+     * @var string
+     */
     public const METRIC_EMBEDDING_GENERATED = 'embedding_generated';
-    public const METRIC_SEARCH_SEMANTIC     = 'search_semantic';
-    public const METRIC_SEARCH_HYBRID       = 'search_hybrid';
-    public const METRIC_SEARCH_KEYWORD      = 'search_keyword';
-    public const METRIC_CHAT_MESSAGE        = 'chat_message';
+
+    /**
+     * Metric type constant for semantic search operations
+     *
+     * @var string
+     */
+    public const METRIC_SEARCH_SEMANTIC = 'search_semantic';
+
+    /**
+     * Metric type constant for hybrid search operations
+     *
+     * @var string
+     */
+    public const METRIC_SEARCH_HYBRID = 'search_hybrid';
+
+    /**
+     * Metric type constant for keyword search operations
+     *
+     * @var string
+     */
+    public const METRIC_SEARCH_KEYWORD = 'search_keyword';
+
+    /**
+     * Metric type constant for chat message operations
+     *
+     * @var string
+     */
+    public const METRIC_CHAT_MESSAGE = 'chat_message';
 
 
     /**
@@ -81,7 +121,11 @@ class MetricsService
     /**
      * Record a metric
      *
-     * @param string      $metricType   Type of metric
+     * Records operational metrics to the database for tracking performance,
+     * success rates, and usage statistics. Metrics are stored with timestamps
+     * and can include optional metadata for detailed analysis.
+     *
+     * @param string      $metricType   Type of metric (use class constants)
      * @param string|null $entityType   Entity type (file, object, etc.)
      * @param string|null $entityId     Entity ID
      * @param string      $status       Status (success, failure)
@@ -91,6 +135,10 @@ class MetricsService
      * @param string|null $userId       User ID
      *
      * @return void
+     *
+     * @throws \Exception If database operation fails (logged but not rethrown)
+     *
+     * @psalm-suppress PossiblyNullArgument
      */
     public function recordMetric(
         string $metricType,
@@ -103,10 +151,13 @@ class MetricsService
         ?string $userId=null
     ): void {
         try {
+            // Get query builder instance for database operations.
             $qb = $this->db->getQueryBuilder();
 
+            // Build INSERT query for metrics table.
+            // Create named parameters for all values to prevent SQL injection.
             $qb->insert('openregister_metrics')
-                ->values(
+                ->values(values: [
                 [
                     'metric_type'   => $qb->createNamedParameter($metricType),
                     'entity_type'   => $qb->createNamedParameter($entityType),
@@ -118,10 +169,13 @@ class MetricsService
                     'error_message' => $qb->createNamedParameter($errorMessage),
                     'created_at'    => $qb->createNamedParameter(time()),
                 ]
-            );
+            ]);
 
+            // Execute the insert query.
             $qb->execute();
         } catch (\Exception $e) {
+            // Log errors but don't throw to prevent disrupting main operations.
+            // Metrics recording failures should not break application functionality.
             $this->logger->error(
                     message: '[MetricsService] Failed to record metric',
                     context: [
@@ -172,36 +226,60 @@ class MetricsService
     /**
      * Get embedding generation success rate
      *
-     * @param int $days Number of days to analyze
+     * Analyzes embedding generation metrics over specified period.
+     * Calculates success rate, failure count, and estimated costs based on
+     * OpenAI pricing for text-embedding-3-large model.
      *
-     * @return array Success rate and costs
+     * @param int $days Number of days to analyze (default: 30)
+     *
+     * @return array<string, int|float> Success rate and costs with keys:
+     *                                  - total: Total number of embedding operations
+     *                                  - successful: Number of successful operations
+     *                                  - failed: Number of failed operations
+     *                                  - success_rate: Success rate percentage (0-100)
+     *                                  - estimated_cost_usd: Estimated cost in USD
+     *                                  - period_days: Number of days analyzed
+     *
+     * @psalm-return array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}
      */
     public function getEmbeddingStats(int $days=30): array
     {
+        // Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Calculate start timestamp (N days ago).
         $startTime = time() - ($days * 86400);
 
-        // Get total embeddings.
+        // Build query to count total and successful embeddings.
+        // Uses CASE statement to count successful operations (status = 'success').
         $qb->select($qb->func()->count('*', 'total'))
             ->selectAlias($qb->createFunction('SUM(CASE WHEN status = \'success\' THEN 1 ELSE 0 END)'), 'successful')
             ->from('openregister_metrics')
             ->where($qb->expr()->eq('metric_type', $qb->createNamedParameter(self::METRIC_EMBEDDING_GENERATED)))
             ->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)));
 
+        // Execute query and fetch single row result.
         $result = $qb->execute();
         $row    = $result->fetch();
         $result->closeCursor();
 
+        // Extract and cast values from database result.
         $total       = (int) ($row['total'] ?? 0);
         $successful  = (int) ($row['successful'] ?? 0);
+        
+        // Calculate failed operations (total - successful).
         $failed      = $total - $successful;
+        
+        // Calculate success rate percentage.
         $successRate = $this->calculateSuccessRate($total, $successful);
 
-        // Calculate estimated costs (based on OpenAI pricing).
-        // text-embedding-3-large: $0.00013 per 1K tokens, avg 500 tokens per embedding.
+        // Calculate estimated costs based on OpenAI pricing.
+        // Pricing: text-embedding-3-large = $0.00013 per 1K tokens.
+        // Average: 500 tokens per embedding = 0.5K tokens.
+        // Cost per embedding: $0.00013 * 0.5 = $0.000065.
         $estimatedCost = $successful * 0.000065;
-        // $0.00013 * 0.5
+        
+        // Return comprehensive statistics array.
         return [
             'total'              => $total,
             'successful'         => $successful,
@@ -217,25 +295,42 @@ class MetricsService
     /**
      * Get search latency statistics
      *
-     * @param int $days Number of days to analyze
+     * Analyzes search performance metrics for keyword, semantic, and hybrid searches.
+     * Calculates count, average, minimum, and maximum latency for each search type.
      *
-     * @return array Latency stats by search type
+     * @param int $days Number of days to analyze (default: 7)
+     *
+     * @return array<string, array<string, int|float>> Latency stats by search type.
+     *                                                  Each search type contains:
+     *                                                  - count: Number of searches
+     *                                                  - avg_ms: Average latency in milliseconds
+     *                                                  - min_ms: Minimum latency in milliseconds
+     *                                                  - max_ms: Maximum latency in milliseconds
+     *
+     * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
      */
     public function getSearchLatencyStats(int $days=7): array
     {
+        // Calculate start timestamp (N days ago).
         $startTime = time() - ($days * 86400);
 
+        // Define search types to analyze.
         $searchTypes = [
             self::METRIC_SEARCH_KEYWORD,
             self::METRIC_SEARCH_SEMANTIC,
             self::METRIC_SEARCH_HYBRID,
         ];
 
+        // Initialize stats array to collect results.
         $stats = [];
 
+        // Process each search type separately.
         foreach ($searchTypes as $searchType) {
+            // Get query builder instance for this iteration.
             $qb = $this->db->getQueryBuilder();
 
+            // Build query to calculate latency statistics.
+            // Only includes metrics with non-null duration_ms values.
             $qb->select($qb->func()->count('*', 'count'))
                 ->selectAlias($qb->createFunction('AVG(duration_ms)'), 'avg_ms')
                 ->selectAlias($qb->func()->min('duration_ms'), 'min_ms')
@@ -245,11 +340,16 @@ class MetricsService
                 ->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)))
                 ->andWhere($qb->expr()->isNotNull('duration_ms'));
 
+            // Execute query and fetch single row result.
             $result = $qb->execute();
             $row    = $result->fetch();
             $result->closeCursor();
 
+            // Extract search type name (remove 'search_' prefix).
+            // Example: 'search_keyword' -> 'keyword'.
             $type         = str_replace('search_', '', $searchType);
+            
+            // Store statistics for this search type.
             $stats[$type] = [
                 'count'  => (int) ($row['count'] ?? 0),
                 'avg_ms' => $this->roundAverageMs($row['avg_ms']),
@@ -266,17 +366,31 @@ class MetricsService
     /**
      * Get vector database storage growth
      *
-     * @param int $days Number of days to analyze
+     * Analyzes vector database storage growth over specified period.
+     * Calculates daily vector additions, total storage size, and average
+     * vectors per day.
      *
-     * @return array Storage growth data
+     * @param int $days Number of days to analyze (default: 30)
+     *
+     * @return array<string, array<string, int>|int|float> Storage growth data with keys:
+     *                                                      - daily_vectors_added: Array of [date => count]
+     *                                                      - current_storage_bytes: Total storage in bytes
+     *                                                      - current_storage_mb: Total storage in megabytes
+     *                                                      - avg_vectors_per_day: Average vectors added per day
+     *                                                      - period_days: Number of days analyzed
+     *
+     * @psalm-return array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}
      */
     public function getStorageGrowth(int $days=30): array
     {
-        // Get daily vector counts.
+        // Get query builder instance for daily vector counts.
         $qb = $this->db->getQueryBuilder();
 
+        // Calculate start timestamp (N days ago).
         $startTime = time() - ($days * 86400);
 
+        // Build query to get daily vector counts grouped by date.
+        // FROM_UNIXTIME converts timestamp to date string for grouping.
         $qb->select($qb->func()->count('*', 'count'))
             ->selectAlias($qb->createFunction('FROM_UNIXTIME(created_at, \'%Y-%m-%d\')'), 'date')
             ->from('openregister_vectors')
@@ -284,11 +398,13 @@ class MetricsService
             ->groupBy('date')
             ->orderBy('date', 'ASC');
 
+        // Execute query and fetch all results.
         $result = $qb->execute();
         $rows   = $result->fetchAll();
         $result->closeCursor();
 
-        // Get current total size.
+        // Get current total storage size in bytes.
+        // Uses SUM(LENGTH(embedding)) to calculate total bytes used by all vectors.
         $qb2 = $this->db->getQueryBuilder();
         $qb2->select($qb2->createFunction('SUM(LENGTH(embedding))'), 'total_bytes')
             ->from('openregister_vectors');
@@ -297,14 +413,20 @@ class MetricsService
         $sizeRow = $result2->fetch();
         $result2->closeCursor();
 
+        // Extract and calculate storage metrics.
         $totalBytes = (int) ($sizeRow['total_bytes'] ?? 0);
+        
+        // Convert bytes to megabytes (1024 * 1024 = 1 MB).
         $totalMB    = $totalBytes / (1024 * 1024);
 
+        // Transform daily counts into associative array [date => count].
         $growthData = [];
         foreach ($rows as $row) {
+            // Cast count to integer for type safety.
             $growthData[$row['date']] = (int) $row['count'];
         }
 
+        // Return comprehensive storage growth statistics.
         return [
             'daily_vectors_added'   => $growthData,
             'current_storage_bytes' => $totalBytes,
@@ -336,20 +458,33 @@ class MetricsService
     /**
      * Clean old metrics (retention policy)
      *
-     * @param int $retentionDays Number of days to retain
+     * Deletes metrics older than specified retention period.
+     * Implements data retention policy to prevent unbounded database growth.
+     *
+     * @param int $retentionDays Number of days to retain (default: 90)
      *
      * @return int Number of deleted records
+     *
+     * @psalm-suppress PossiblyInvalidMethodCall
      */
     public function cleanOldMetrics(int $retentionDays=90): int
     {
+        // Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
+        // Calculate cutoff timestamp (metrics older than this will be deleted).
+        // 86400 seconds = 1 day.
         $cutoffTime = time() - ($retentionDays * 86400);
 
+        // Build DELETE query for old metrics.
         $qb->delete('openregister_metrics')
             ->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime)));
 
+        // Execute delete query.
         $result = $qb->execute();
+        
+        // Handle different return types from execute().
+        // Some database drivers return int, others return result object.
         return is_int($result) ? $result : (int) $result->rowCount();
 
     }//end cleanOldMetrics()
@@ -358,13 +493,26 @@ class MetricsService
     /**
      * Encode metadata array to JSON string.
      *
-     * @param array $metadata Metadata array to encode.
+     * Converts metadata array to JSON format for database storage.
+     * Returns empty JSON object if encoding fails.
      *
-     * @return string JSON-encoded metadata string.
+     * @param array|null $metadata Metadata array to encode (null allowed).
+     *
+     * @return string JSON-encoded metadata string (empty object '{}' if null or encoding fails).
+     *
+     * @psalm-suppress PossiblyNullArgument
      */
-    private function encodeMetadata(array $metadata): string
+    private function encodeMetadata(?array $metadata): string
     {
+        // Handle null metadata by returning empty JSON object.
+        if ($metadata === null) {
+            return '{}';
+        }
+
+        // Encode array to JSON string.
         $encoded = json_encode($metadata);
+        
+        // If encoding fails (e.g., due to invalid UTF-8), return empty object.
         if ($encoded === false) {
             return '{}';
         }
@@ -375,62 +523,91 @@ class MetricsService
 
 
     /**
-     * Calculate success rate percentage.
+     * Calculate success rate percentage
      *
-     * @param int $total      Total number of operations.
-     * @param int $successful Number of successful operations.
+     * Calculates success rate as percentage of successful operations
+     * out of total operations. Returns 0.0 if no operations occurred.
      *
-     * @return float Success rate as percentage (0-100).
+     * @param int $total      Total number of operations
+     * @param int $successful Number of successful operations
+     *
+     * @return float Success rate as percentage (0-100), rounded to 2 decimal places
      */
     private function calculateSuccessRate(int $total, int $successful): float
     {
+        // Handle division by zero case (no operations).
         if ($total === 0) {
             return 0.0;
         }
 
+        // Calculate percentage: (successful / total) * 100.
+        // Round to 2 decimal places for readability.
         return round(($successful / $total) * 100, 2);
 
     }//end calculateSuccessRate()
 
 
     /**
-     * Round average milliseconds value.
+     * Round average milliseconds value
      *
-     * @param mixed $avgMs Average milliseconds value (can be string or float).
+     * Converts and rounds average milliseconds value from database result.
+     * Database may return numeric values as strings, so this method handles
+     * type conversion and rounding.
      *
-     * @return float Rounded average milliseconds.
+     * @param mixed $avgMs Average milliseconds value (can be string, float, or null from database)
+     *
+     * @return float Rounded average milliseconds (0.0 if invalid or null)
+     *
+     * @psalm-suppress MixedArgument
      */
     private function roundAverageMs($avgMs): float
     {
+        // Check if value is numeric (handles both string and numeric types).
         if (is_numeric($avgMs) === true) {
+            // Cast to float and round to 2 decimal places.
             return round((float) $avgMs, 2);
         }
 
+        // Return 0.0 for invalid or null values.
         return 0.0;
 
     }//end roundAverageMs()
 
 
     /**
-     * Calculate average vectors per day from growth data.
+     * Calculate average vectors per day from growth data
      *
-     * @param array $growthData Growth data array.
+     * Calculates average number of vectors added per day from daily growth data.
+     * Handles empty data gracefully by returning 0.0.
      *
-     * @return float Average vectors per day.
+     * @param array<string, int> $growthData Growth data array with [date => count] format
+     *
+     * @return float Average vectors per day, rounded to 2 decimal places
+     *
+     * @psalm-suppress TypeDoesNotContainType
      */
     private function calculateAverageVectorsPerDay(array $growthData): float
     {
+        // Handle empty data case.
         if (empty($growthData) === true) {
             return 0.0;
         }
 
+        // Initialize total vectors counter.
         $totalVectors = 0;
+        
+        // Count number of days in dataset.
         $days         = count($growthData);
+        
+        // Sum all vector counts from growth data.
+        // Note: $growthData is [date => count], so $dayData is the count value.
         foreach ($growthData as $dayData) {
+            // Cast to int for type safety (handles null values).
             $totalVectors += (int) ($dayData['count'] ?? 0);
         }
 
-        // $days can never be 0 here because we check empty($growthData) === true above
+        // Safety check: prevent division by zero.
+        // This should never happen due to empty() check above, but included for safety.
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
@@ -438,6 +615,8 @@ class MetricsService
             return 0.0;
         }
 
+        // Calculate average: total vectors / number of days.
+        // Round to 2 decimal places for readability.
         /*
          * @psalm-suppress TypeDoesNotContainType
          */

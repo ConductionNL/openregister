@@ -576,7 +576,7 @@ class FileService
                 $registerUuid = $objectEntity->getRegister();
                 throw new Exception("Failed to create file, could not find register for objects register: {$registerUuid}");
             }
-        } else if ($registerId !== null) {
+        } elseif ($registerId !== null) {
             $register = $this->registerMapper->find($registerId);
             if ($register === null) {
                 throw new Exception("Failed to create file, could not find register with register id: $registerId");
@@ -1024,7 +1024,7 @@ class FileService
             // Try to read the file to trigger any potential access issues.
             if ($file instanceof File) {
                 $file->getContent();
-            } else if ($file instanceof Folder) {
+            } elseif ($file instanceof Folder) {
                 // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
@@ -1165,7 +1165,7 @@ class FileService
                 // If key already exists as array, append value.
                 if (($metadata[$key] ?? null) !== null && is_array($metadata[$key]) === true) {
                     $metadata[$key][] = $value;
-                } else if (($metadata[$key] ?? null) !== null) {
+                } elseif (($metadata[$key] ?? null) !== null) {
                     // If key exists but not as array, convert to array with both values.
                     $metadata[$key] = [$metadata[$key], $value];
                 } else {
@@ -1306,7 +1306,7 @@ class FileService
             $labels = $requestParams['labels'];
             if (is_string($labels) === true) {
                 $filters['labels'] = array_map('trim', explode(',', $labels));
-            } else if (is_array($labels) === true) {
+            } elseif (is_array($labels) === true) {
                 $filters['labels'] = $labels;
             }
         }
@@ -1320,7 +1320,7 @@ class FileService
             $extensions = $requestParams['extensions'];
             if (is_string($extensions) === true) {
                 $filters['extensions'] = array_map('trim', explode(',', $extensions));
-            } else if (is_array($extensions) === true) {
+            } elseif (is_array($extensions) === true) {
                 $filters['extensions'] = $extensions;
             }
         }
@@ -1947,7 +1947,7 @@ class FileService
 
             if ($object !== null) {
                 // Try to find the file in the object's folder by ID.
-                $file = $this->getFile($object, $filePath);
+                $file = $this->getFile(object: $object, file: $filePath);
                 if ($file !== null) {
                     $this->logger->info(message: "updateFile: Found file by ID in object folder: " . $file->getName() . " (ID: " . $file->getId() . ")");
                 }
@@ -2135,7 +2135,7 @@ class FileService
     {
         if ($file instanceof Node === false) {
             $fileName = (string) $file;
-            $file = $this->getFile($object, $file);
+            $file = $this->getFile(object: $object, file: $file);
         }
 
         if($file === null) {
@@ -2664,7 +2664,7 @@ class FileService
             $this->logger->info(message: "publishFile: File ID provided: $file");
 
             // Try to find the file in the object's folder by ID.
-            $fileNode = $this->getFile($object, $file);
+            $fileNode = $this->getFile(object: $object, file: $file);
             if ($fileNode !== null) {
                 $this->logger->info(message: "publishFile: Found file by ID: " . $fileNode->getName() . " (ID: " . $fileNode->getId() . ")");
             } else {
@@ -2785,7 +2785,7 @@ class FileService
             $this->logger->info(message: "unpublishFile: File ID provided: $filePath");
 
             // Try to find the file in the object's folder by ID.
-            $file = $this->getFile($object, $filePath);
+            $file = $this->getFile(object: $object, file: $filePath);
             if ($file !== null) {
                 $this->logger->info(message: "unpublishFile: Found file by ID: " . $file->getName() . " (ID: " . $file->getId() . ")");
             } else {

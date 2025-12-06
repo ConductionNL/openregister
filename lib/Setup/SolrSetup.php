@@ -1240,7 +1240,7 @@ class SolrSetup
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
                 $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false;
-            } else if (strpos($e->getMessage(), 'Connection refused') !== false
+            } elseif (strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
             ) {
@@ -2264,7 +2264,7 @@ class SolrSetup
                 } else if ($result['action'] === 'updated') {
                     $fieldResults['fields_updated']++;
                     $fieldResults['updated_fields'][] = $fieldName;
-                } else if ($result['action'] === 'skipped') {
+                } elseif ($result['action'] === 'skipped') {
                     $fieldResults['fields_skipped']++;
                     $fieldResults['skipped_fields'][] = $fieldName;
                 }

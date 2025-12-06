@@ -274,7 +274,7 @@ class ObjectsController extends Controller
         $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (($params['_offset'] ?? null) !== null) {
+        } elseif (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
@@ -282,7 +282,7 @@ class ObjectsController extends Controller
 
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (($params['_page'] ?? null) !== null) {
+        } elseif (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         } else {
             $page = null;
@@ -1253,7 +1253,7 @@ class ObjectsController extends Controller
         if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
             $objectSchemaId   = (string) $objectSchema['id'];
             $objectSchemaSlug = isset($objectSchema['slug']) === true ? strtolower($objectSchema['slug']) : null;
-        } else if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
+        } elseif (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
             $objectSchemaId   = (string) $objectSchema->id;
             $objectSchemaSlug = isset($objectSchema->slug) === true ? strtolower($objectSchema->slug) : null;
         } else {
@@ -1461,8 +1461,8 @@ class ObjectsController extends Controller
                 case 'xls':
 
                     // Get optional validation and events parameters.
-                    $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
-                    $events     = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
+                    $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
+                    $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
 
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
@@ -1497,11 +1497,11 @@ class ObjectsController extends Controller
                     $schema = $this->schemaMapper->find($schemaId);
 
                     // Get optional parameters with sensible defaults.
-                    $validation = filter_var($this->request->getParam('validation', false), FILTER_VALIDATE_BOOLEAN);
-                    $events     = filter_var($this->request->getParam('events', false), FILTER_VALIDATE_BOOLEAN);
-                    $rbac       = filter_var($this->request->getParam('rbac', true), FILTER_VALIDATE_BOOLEAN);
-                    $multi      = filter_var($this->request->getParam('multi', true), FILTER_VALIDATE_BOOLEAN);
-                    $chunkSize  = (int) $this->request->getParam('chunkSize', 5);
+                    $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
+                    $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
+                    $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
+                    $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
+                    $chunkSize  = (int) $this->request->getParam(key: 'chunkSize', default: 5);
 
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
@@ -1802,7 +1802,7 @@ class ObjectsController extends Controller
             $customFilename = $this->request->getParam(key: 'filename');
 
             // Create the ZIP archive.
-            $zipInfo = $fileService->createObjectFilesZip($object, register: $customFilename);
+            $zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
 
             // Read the ZIP file content.
             $zipContent = file_get_contents($zipInfo['path']);
@@ -1900,7 +1900,7 @@ class ObjectsController extends Controller
     {
         try {
             // Get views parameter if provided.
-            $views = $this->request->getParam('views');
+            $views = $this->request->getParam(key: 'views');
             if (is_string($views) === true) {
                 $views = json_decode($views, true);
             }

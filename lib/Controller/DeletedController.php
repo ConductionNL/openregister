@@ -84,14 +84,14 @@ class DeletedController extends Controller
         $offset = null;
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (($params['_offset'] ?? null) !== null) {
+        } elseif (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         }
 
         $page = null;
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (($params['_page'] ?? null) !== null) {
+        } elseif (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         }
 

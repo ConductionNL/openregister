@@ -43,8 +43,8 @@ class Version1Date20251118000000 extends SimpleMigrationStep
     {
         $schema = $schemaClosure();
 
-        $this->dropFileTextsTable($output, $schema);
-        $this->dropObjectTextsTable($output, $schema);
+        $this->dropFileTextsTable(output: $output, schema: $schema);
+        $this->dropObjectTextsTable(output: $output, schema: $schema);
 
         return $schema;
 

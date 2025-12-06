@@ -98,7 +98,7 @@ class OptimizedFacetHandler
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
-            } else if ($facetName !== '@self') {
+            } elseif ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
             }
         }

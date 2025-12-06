@@ -220,7 +220,7 @@ class ConfigurationController extends Controller
             $details = null;
             if ($source === 'github') {
                 $details = $this->githubService->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
-            } else if ($source === 'gitlab') {
+            } elseif ($source === 'gitlab') {
                 // GitLab enrichment can be added later if needed.
                 $this->logger->warning('GitLab enrichment not yet implemented');
             }

@@ -27,32 +27,51 @@ namespace OCA\OpenRegister\Service;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
- * Service class for handling MySQL JSON operations
+ * MySQLJsonService handles MySQL JSON operations
  *
- * This class provides methods for querying and filtering JSON data stored in MySQL,
- * including complex filtering, searching, ordering and aggregation functionality.
+ * Service class for handling MySQL JSON operations in the OpenRegister application.
+ * This service provides methods for ordering, searching, filtering, and aggregating
+ * JSON data stored in MySQL database columns.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class MySQLJsonService implements IDatabaseJsonService
 {
 
 
     /**
-     * Add ordering to a query based on JSON fields.
+     * Add ordering to a query based on JSON fields
      *
-     * @param IQueryBuilder $builder The query builder instance
-     * @param array         $order   Array of field => direction pairs for ordering
+     * Adds ORDER BY clauses to query builder for sorting by JSON field values.
+     * Uses MySQL JSON functions (JSON_EXTRACT and JSON_UNQUOTE) to extract and
+     * convert JSON values for sorting.
      *
-     * @return IQueryBuilder The modified query builder
+     * @param IQueryBuilder $builder The query builder instance to modify
+     * @param array<string, string> $order Array of field => direction pairs for ordering
+     *                                    (e.g., ['name' => 'ASC', 'created' => 'DESC'])
+     *
+     * @return IQueryBuilder The modified query builder with ORDER BY clauses added
      */
     public function orderJson(IQueryBuilder $builder, array $order=[]): IQueryBuilder
     {
         // Loop through each ordering field and direction.
         foreach ($order as $item => $direction) {
-            // Create parameters for the JSON path and sort direction.
+            // Step 1: Create named parameters for the JSON path and sort direction.
+            // JSON path format: "$.fieldName" (e.g., "$.name").
             $builder->createNamedParameter(value: "$.$item", placeHolder: ":path$item");
             $builder->createNamedParameter(value: $direction, placeHolder: ":direction$item");
 
-            // Add ORDER BY clause using JSON_UNQUOTE and JSON_EXTRACT.
+            // Step 2: Add ORDER BY clause using MySQL JSON functions.
+            // JSON_EXTRACT extracts value from JSON, JSON_UNQUOTE converts to string for sorting.
             $builder->orderBy($builder->createFunction("json_unquote(json_extract(object, :path$item))"), $direction);
         }
 
@@ -62,17 +81,22 @@ class MySQLJsonService implements IDatabaseJsonService
 
 
     /**
-     * Add ordering to a query based on JSON fields.
+     * Add ordering to a query based on root-level database columns
      *
-     * @param IQueryBuilder $builder The query builder instance
-     * @param array         $order   Array of field => direction pairs for ordering
+     * Adds ORDER BY clauses for sorting by root-level database columns (not JSON fields).
+     * Used when sorting by non-JSON columns like id, created_at, etc.
      *
-     * @return IQueryBuilder The modified query builder
+     * @param IQueryBuilder $builder The query builder instance to modify
+     * @param array<string, string> $order Array of column => direction pairs for ordering
+     *                                    (e.g., ['id' => 'ASC', 'created_at' => 'DESC'])
+     *
+     * @return IQueryBuilder The modified query builder with ORDER BY clauses added
      */
     public function orderInRoot(IQueryBuilder $builder, array $order=[]): IQueryBuilder
     {
-        // Loop through each ordering field and direction.
+        // Loop through each ordering column and direction.
         foreach ($order as $item => $direction) {
+            // Add ORDER BY clause for root-level column (not JSON field).
             $builder->orderBy($item, $direction);
         }
 
@@ -82,19 +106,27 @@ class MySQLJsonService implements IDatabaseJsonService
 
 
     /**
-     * Add full-text search functionality for JSON fields.
+     * Add full-text search functionality for JSON fields
      *
-     * @param IQueryBuilder $builder The query builder instance
-     * @param string|null   $search  The search term to look for
+     * Adds WHERE clause to search for a term within JSON data stored in the object column.
+     * Uses MySQL JSON_SEARCH function for case-insensitive searching across all JSON values.
+     * Supports partial matching with wildcards.
      *
-     * @return IQueryBuilder The modified query builder
+     * @param IQueryBuilder $builder The query builder instance to modify
+     * @param string|null   $search  The search term to look for (null = no search)
+     *
+     * @return IQueryBuilder The modified query builder with search WHERE clause added
      */
     public function searchJson(IQueryBuilder $builder, ?string $search=null): IQueryBuilder
     {
+        // Only add search clause if search term is provided.
         if ($search !== null) {
-            // Create parameter for the search term with wildcards.
+            // Step 1: Create named parameter for the search term with wildcards.
+            // Wildcards enable partial matching (e.g., "test" matches "testing").
             $builder->createNamedParameter(value: "%$search%", placeHolder: ':search');
-            // Add WHERE clause to search case-insensitive across all JSON fields.
+            
+            // Step 2: Add WHERE clause to search case-insensitive across all JSON fields.
+            // JSON_SEARCH searches for value in JSON, LOWER() makes it case-insensitive.
             $builder->andWhere("JSON_SEARCH(LOWER(object), 'one', LOWER(:search)) IS NOT NULL");
         }
 
@@ -280,7 +312,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     "json_unquote(json_extract(object, :path$filter)) = 'null' OR json_unquote(json_extract(object, :path$filter)) IS NULL"
                 );
                 continue;
-            } else if ($value === 'IS NOT NULL') {
+            } elseif ($value === 'IS NOT NULL') {
                 $builder->andWhere(
                     "json_unquote(json_extract(object, :path$filter)) != 'null' AND json_unquote(json_extract(object, :path$filter)) IS NOT NULL"
                 );
@@ -347,7 +379,7 @@ class MySQLJsonService implements IDatabaseJsonService
             // Handle @self.deleted filter (check if object is deleted or not).
             if ($value === 'IS NOT NULL') {
                 $builder->andWhere($builder->expr()->isNotNull('o.deleted'));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $builder->andWhere($builder->expr()->isNull('o.deleted'));
             }
 
@@ -370,7 +402,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     )
                 )
             );
-        } else if ($value === 'IS NULL') {
+        } elseif ($value === 'IS NULL') {
             // Check if the deleted property is null or doesn't exist.
             $builder->andWhere(
                 $builder->expr()->isNull(
@@ -379,7 +411,7 @@ class MySQLJsonService implements IDatabaseJsonService
                     )
                 )
             );
-        } else if (is_array($value) === true) {
+        } elseif (is_array($value) === true) {
             // Handle array filters for deleted properties.
             if (array_is_list($value) === false) {
                 // Handle complex filters (after/before) for deleted properties.
