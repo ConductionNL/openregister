@@ -120,15 +120,6 @@ class RegisterMapper extends QBMapper
      */
     protected OrganisationService $organisationService;
 
-    /**
-     * App configuration
-     *
-     * Used for reading multitenancy configuration settings.
-     *
-     * @var IAppConfig App configuration instance
-     */
-    protected IAppConfig $appConfig;
-
 
     /**
      * Constructor

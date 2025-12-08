@@ -692,22 +692,12 @@ class GuzzleSolrService
 
             // Test 3: Collection/Core availability (conditional)
             if ($includeCollectionTests) {
-            $collectionTest = $this->testSolrCollection();
-            $testResults['components']['collection'] = $collectionTest;
+                $collectionTest = $this->testSolrCollection();
+                $testResults['components']['collection'] = $collectionTest;
 
-            if (!$collectionTest['success']) {
-                $testResults['success'] = false;
-                $testResults['message'] = 'SOLR collection/core not available';
-            }
-
-            // Test 4: Collection query test (if collection exists)
-            if ($collectionTest['success']) {
-                $queryTest = $this->testSolrQuery();
-                $testResults['components']['query'] = $queryTest;
-
-                if (!$queryTest['success']) {
-                    // Don't fail overall test if query fails but collection exists
-                    $testResults['message'] = 'SOLR collection exists but query test failed';
+                if (!$collectionTest['success']) {
+                    $testResults['success'] = false;
+                    $testResults['message'] = 'SOLR collection/core not available';
                 }
 
                 // Test 4: Collection query test (if collection exists).
@@ -1470,14 +1460,6 @@ class GuzzleSolrService
                 $e
             );
         }
-    }
-
-            $objectId     = $object->getId();
-            $schemaId     = $object->getSchema();
-            $errorMessage = 'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId.'. '.'Original error: '.$e->getMessage();
-            throw new \RuntimeException(message: $errorMessage, code: 0, previous: $e);
-        }//end try
-
     }//end createSolrDocument()
 
 
@@ -1751,27 +1733,6 @@ class GuzzleSolrService
             }
             return $value !== null && $value !== '';
         }, ARRAY_FILTER_USE_BOTH);
-    }
-
-        // Remove null values, but keep published/depublished fields and empty arrays for multi-valued fields.
-        return array_filter(
-                $document,
-                function ($value, $key) {
-                    // Always keep published/depublished fields even if null for proper Solr filtering.
-                    if (in_array($key, ['self_published', 'self_depublished']) === true) {
-                        return true;
-                    }
-
-                    // Keep empty arrays for multi-valued fields like self_relations, self_files.
-                    if (is_array($value) === true && in_array($key, ['self_relations', 'self_files']) === true) {
-                        return true;
-                    }
-
-                    return $value !== null && $value !== '';
-                },
-                ARRAY_FILTER_USE_BOTH
-                );
-
     }//end createSchemaAwareDocument()
 
 
@@ -2010,14 +1971,6 @@ class GuzzleSolrService
         }
 
         return is_string($files) ? [$files] : [];
-    }
-
-        if (is_string($files) === true) {
-            return [$files];
-        }
-
-        return [];
-
     }//end flattenFilesForSolr()
 
 
@@ -2179,11 +2132,8 @@ class GuzzleSolrService
                         $document[$key . '_b'] = $value;  // Boolean field
                     }
                 }
-                return [$value];
-
-            default:
-                return (string) $value;
-        }//end switch
+            }
+        }
 
         // Add metadata fields with self_ prefix for easy identification and faceting
         $document['self_id'] = $uuid; // Always use UUID for consistency

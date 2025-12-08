@@ -597,7 +597,7 @@ class SchemaMapper extends QBMapper
     public function createFromArray(array $object): Schema
     {
         $schema = new Schema();
-        $schema->hydrate(data: $object, validator: $this->validator);
+        $schema->hydrate(object: $object, validator: $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);

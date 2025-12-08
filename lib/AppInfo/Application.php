@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
 use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
 use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
@@ -373,6 +374,30 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ObjectService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+        
+        // Register ConfigurationService with appDataPath parameter.
+        $context->registerService(ConfigurationService::class,
+                function ($container) {
+                    // Get the app data directory path.
+                    $dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+                    $appDataPath = $dataDir . '/appdata_openregister';
+                    
+                    return new ConfigurationService(
+                            schemaMapper: $container->get(SchemaMapper::class),
+                            registerMapper: $container->get(RegisterMapper::class),
+                            objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                            configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                            appManager: $container->get('OCP\App\IAppManager'),
+                            container: $container,
+                            appConfig: $container->get('OCP\IAppConfig'),
+                            logger: $container->get('Psr\Log\LoggerInterface'),
+                            client: new \GuzzleHttp\Client(),
+                            objectService: $container->get(ObjectService::class),
+                            appDataPath: $appDataPath
+                            );
+                }
+                );
+        
         // NOTE: ImportService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ExportService can be autowired (only type-hinted parameters).

@@ -523,7 +523,6 @@ class AuditTrailMapper extends QBMapper
                                                 )
                                         )
                                 );
-                        );
                     }
 
                     // Handle schema exclusion.
@@ -538,7 +537,6 @@ class AuditTrailMapper extends QBMapper
                                                 )
                                         )
                                 );
-                        );
                     }//end if
 
                     // Add the OR conditions to the main query.
