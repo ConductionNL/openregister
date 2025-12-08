@@ -1304,6 +1304,7 @@ class SolrSchemaService
                         !str_starts_with($fieldName, 'self_object') &&
             // JSON storage fields don't need docValues.
                         !str_starts_with($fieldName, 'self_schema') &&
+                        //end try
                         !str_starts_with($fieldName, 'self_register') &&
                         !str_ends_with($fieldName, '_json');
 

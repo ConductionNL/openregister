@@ -493,7 +493,7 @@ class ChatService
                 $results = $hybridResponse['results'] ?? [];
             } else {
                 // Keyword search.
-                $results = $this->searchKeywordOnly($query, $fetchLimit);
+                $results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
             }//end if
 
             // Ensure results is an array.
@@ -844,7 +844,7 @@ class ChatService
 
         // Get enabled tools for agent, filtered by selectedTools.
         $toolsStartTime = microtime(true);
-        $tools          = $this->getAgentTools($agent, $selectedTools);
+        $tools          = $this->getAgentTools(agent: $agent, selectedTools: $selectedTools);
         $toolsTime      = microtime(true) - $toolsStartTime;
         if (empty($tools) === false) {
             $this->logger->info(
@@ -990,7 +990,7 @@ class ChatService
                 // Add functions if available - Ollama supports tools via LLPhant!
                 if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
-                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
+                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo(functions: $functions, tools: $tools);
                     $chat->setTools($functionInfoObjects);
                 }
 
@@ -1005,7 +1005,7 @@ class ChatService
                 // Add functions if available.
                 if (empty($functions) === false) {
                     // Convert array-based function definitions to FunctionInfo objects.
-                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo($functions, $tools);
+                    $functionInfoObjects = $this->convertFunctionsToFunctionInfo(functions: $functions, tools: $tools);
                     $chat->setTools($functionInfoObjects);
                 }
 
@@ -1222,7 +1222,7 @@ class ChatService
         // Find all existing titles that match this pattern.
         // Using LIKE with % to catch both exact matches and numbered variants.
         $pattern        = $baseTitle.'%';
-        $existingTitles = $this->conversationMapper->findTitlesByUserAgent($userId, $agentId, $pattern);
+        $existingTitles = $this->conversationMapper->findTitlesByUserAgent(userId: $userId, agentId: $agentId, titlePattern: $pattern);
 
         // If no matches, the base title is unique.
         if (empty($existingTitles) === true) {

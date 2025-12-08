@@ -309,16 +309,16 @@ class SearchTrailService
         }
 
         // Get unique search terms count.
-        $uniqueSearchTermsCount           = $this->searchTrailMapper->getUniqueSearchTermsCount($from, $to);
+        $uniqueSearchTermsCount           = $this->searchTrailMapper->getUniqueSearchTermsCount(from: $from, to: $to);
         $baseStats['unique_search_terms'] = $uniqueSearchTermsCount;
 
         // Get unique users count.
-        $uniqueUsersCount          = $this->searchTrailMapper->getUniqueUsersCount($from, $to);
+        $uniqueUsersCount          = $this->searchTrailMapper->getUniqueUsersCount(from: $from, to: $to);
         $baseStats['unique_users'] = $uniqueUsersCount;
 
         // Get session-based statistics.
-        $baseStats['avg_searches_per_session']     = $this->searchTrailMapper->getAverageSearchesPerSession($from, $to);
-        $baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession($from, $to);
+        $baseStats['avg_searches_per_session']     = $this->searchTrailMapper->getAverageSearchesPerSession(from: $from, to: $to);
+        $baseStats['avg_object_views_per_session'] = $this->searchTrailMapper->getAverageObjectViewsPerSession(from: $from, to: $to);
 
         // Get unique organizations count (placeholder for now).
         $baseStats['unique_organizations'] = 0;
@@ -382,7 +382,7 @@ class SearchTrailService
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
-        $terms = $this->searchTrailMapper->getPopularSearchTerms($limit, $from, $to);
+        $terms = $this->searchTrailMapper->getPopularSearchTerms(limit: $limit, from: $from, to: $to);
 
         // Add enhanced analytics.
         $totalSearches = array_sum(array_column($terms, 'count'));
@@ -431,10 +431,10 @@ class SearchTrailService
      */
     public function getSearchActivity(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
-        $activity = $this->searchTrailMapper->getSearchActivityByTime($interval, $from, $to);
+        $activity = $this->searchTrailMapper->getSearchActivityByTime(interval: $interval, from: $from, to: $to);
 
         // Calculate trends and insights.
-        $insights = $this->calculateActivityInsights($activity, $interval);
+        $insights = $this->calculateActivityInsights(activity: $activity, _interval: $interval);
 
         return [
             'activity' => $activity,
@@ -466,7 +466,7 @@ class SearchTrailService
      */
     public function getRegisterSchemaStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
-        $stats = $this->searchTrailMapper->getSearchStatisticsByRegisterSchema($from, $to);
+        $stats = $this->searchTrailMapper->getSearchStatisticsByRegisterSchema(from: $from, to: $to);
 
         $totalSearches = array_sum(array_column($stats, 'count'));
         $enhancedStats = array_map(

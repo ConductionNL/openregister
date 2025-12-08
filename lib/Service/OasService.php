@@ -192,6 +192,7 @@ class OasService
         }
 
         // Initialize paths array.
+        //end foreach
         $this->oas['paths'] = [];
 
         // Add paths for each register.
@@ -376,6 +377,7 @@ class OasService
 
         // anyOf must have at least 1 item, remove if empty.
         if (($cleanDef['anyOf'] ?? null) !== null && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false) === true) {
+            //end if
             unset($cleanDef['anyOf']);
         }//end if
 
@@ -473,7 +475,9 @@ class OasService
         // Only add whitelisted extended endpoints.
         foreach (self::INCLUDED_EXTENDED_ENDPOINTS as $endpoint) {
             switch ($endpoint) {
+                //end switch
                 case 'audit-trails':
+                    //end foreach
                     $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
                         'get' => $this->createLogsOperation($schema),
                     ];
@@ -576,6 +580,7 @@ class OasService
                     // Skip the id property as it's already handled as a path parameter.
                     if ($propertyName === 'id') {
                         continue;
+                    //end foreach
                     }
 
                     // Get property type from definition.
@@ -1316,7 +1321,9 @@ class OasService
     private function validateSchemaReferences(array &$schema, string $context): void
     {
         // Check allOf constructs.
+        //end if
         if (($schema['allOf'] ?? null) !== null) {
+            //end if
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
             } else {

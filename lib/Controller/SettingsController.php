@@ -646,7 +646,7 @@ class SettingsController extends Controller
             if ($mode === 'parallel') {
                 $this->processJobsParallel(batchJobs: $batchJobs, objectMapper: $objectMapper, objectService: $objectService, results: $results, collectErrors: $collectErrors, parallelBatches: 4, logger: $logger);
             } else {
-                $this->processJobsSerial($batchJobs, $objectMapper, $objectService, $results, $collectErrors, $logger);
+                $this->processJobsSerial(batchJobs: $batchJobs, objectMapper: $objectMapper, objectService: $objectService, results: $results, collectErrors: $collectErrors, logger: $logger);
             }
 
             // Calculate final metrics.
@@ -2846,7 +2846,7 @@ class SettingsController extends Controller
 
             // Phase 1: Use GuzzleSolrService directly for SOLR operations.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $result            = $guzzleSolrService->warmupIndex([], $maxObjects, $mode, $collectErrors, $batchSize, $schemaIds);
+            $result            = $guzzleSolrService->warmupIndex(schemas: [], maxObjects: $maxObjects, mode: $mode, collectErrors: $collectErrors, batchSize: $batchSize, schemaIds: $schemaIds);
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details.
@@ -3445,7 +3445,7 @@ class SettingsController extends Controller
 
             // Delegate to VectorEmbeddingService for testing.
             $vectorService = $this->container->get('OCA\OpenRegister\Service\VectorEmbeddingService');
-            $result        = $vectorService->testEmbedding($provider, $config, $testText);
+            $result        = $vectorService->testEmbedding(provider: $provider, config: $config, testText: $testText);
 
             // Return appropriate status code.
             $statusCode = 400;
@@ -3514,7 +3514,7 @@ class SettingsController extends Controller
 
             // Delegate to ChatService for testing.
             $chatService = $this->container->get('OCA\OpenRegister\Service\ChatService');
-            $result      = $chatService->testChat($provider, $config, $testMessage);
+            $result      = $chatService->testChat(provider: $provider, config: $config, testMessage: $testMessage);
 
             // Return appropriate status code.
             $statusCode = 400;
@@ -4073,7 +4073,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Search documents in SOLR.
-            $result = $guzzleSolrService->inspectIndex($query, $start, $rows, $fields);
+            $result = $guzzleSolrService->inspectIndex(query: $query, start: $start, rows: $rows, fields: $fields);
 
             if ($result['success'] === true) {
                 return new JSONResponse(
@@ -4638,7 +4638,7 @@ class SettingsController extends Controller
     {
         try {
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $result            = $guzzleSolrService->copyCollection($sourceCollection, $targetCollection, $copyData);
+            $result            = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection, copyData: $copyData);
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
@@ -4737,7 +4737,7 @@ class SettingsController extends Controller
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
             // Perform semantic search.
-            $results = $vectorService->semanticSearch($query, $limit, $filters, $provider);
+            $results = $vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
 
             return new JSONResponse(
                     data: [
@@ -4800,7 +4800,7 @@ class SettingsController extends Controller
             $vectorService = $this->container->get(VectorEmbeddingService::class);
 
             // Perform hybrid search.
-            $result = $vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+            $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
             // Ensure result is an array for spread operator.
             $resultArray = is_array($result) === true ? $result : [];
