@@ -132,6 +132,11 @@ class WebhookMapper extends QBMapper
      */
     public function findAll(): array
     {
+        // Check if table exists before querying (migrations might not have run yet).
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
@@ -164,6 +169,11 @@ class WebhookMapper extends QBMapper
      */
     public function find(int $id): Webhook
     {
+        // Check if table exists before querying (migrations might not have run yet).
+        if ($this->tableExists() === false) {
+            throw new DoesNotExistException('Webhook table does not exist. Please run migrations.');
+        }
+
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
@@ -192,6 +202,11 @@ class WebhookMapper extends QBMapper
      */
     public function findEnabled(): array
     {
+        // Check if table exists before querying (migrations might not have run yet).
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
@@ -378,6 +393,26 @@ class WebhookMapper extends QBMapper
         return $this->update($webhook);
 
     }//end updateFromArray()
+
+
+    /**
+     * Check if the webhooks table exists
+     *
+     * Used to gracefully handle cases where migrations haven't run yet.
+     *
+     * @return bool True if table exists, false otherwise
+     */
+    private function tableExists(): bool
+    {
+        try {
+            $schema = $this->db->getSchema();
+            return $schema->hasTable($this->getTableName());
+        } catch (\Exception $e) {
+            // If we can't check, assume table doesn't exist to be safe.
+            return false;
+        }
+
+    }//end tableExists()
 
 
 }//end class
