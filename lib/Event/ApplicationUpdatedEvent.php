@@ -64,4 +64,28 @@ class ApplicationUpdatedEvent extends Event
     }//end __construct()
 
 
+    /**
+     * Get the updated application
+     *
+     * @return Application The application after update
+     */
+    public function getNewApplication(): Application
+    {
+        return $this->newApplication;
+
+    }//end getNewApplication()
+
+
+    /**
+     * Get the original application
+     *
+     * @return Application The application before update
+     */
+    public function getOldApplication(): Application
+    {
+        return $this->oldApplication;
+
+    }//end getOldApplication()
+
+
 }//end class

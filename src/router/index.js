@@ -24,6 +24,7 @@ import WebhooksIndex from '../views/webhooks/WebhooksIndex.vue'
 import WebhookLogsIndex from '../views/webhooks/WebhookLogsIndex.vue'
 import EndpointsIndex from '../views/Endpoint/EndpointsIndex.vue'
 import EntitiesIndex from '../views/entities/EntitiesIndex.vue'
+import TemplatesIndex from '../views/templates/TemplatesIndex.vue'
 
 Vue.use(Router)
 
@@ -73,6 +74,7 @@ const router = new Router({
 		{ path: '/webhooks/logs', component: WebhookLogsIndex },
 		{ path: '/endpoints', component: EndpointsIndex },
 		{ path: '/entities', component: EntitiesIndex },
+		{ path: '/templates', component: TemplatesIndex },
 		{ path: '*', redirect: '/' },
 	],
 })
