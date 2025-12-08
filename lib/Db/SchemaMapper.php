@@ -113,14 +113,8 @@ class SchemaMapper extends QBMapper
      */
     private readonly IGroupManager $groupManager;
 
-    /**
-     * App configuration
-     *
-     * Used for reading multitenancy configuration settings.
-     *
-     * @var IAppConfig App configuration instance
-     */
-    private readonly IAppConfig $appConfig;
+    // Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig = null)
+    // We assign it in the constructor to make it available to the trait methods.
 
 
     /**
@@ -157,6 +151,7 @@ class SchemaMapper extends QBMapper
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        // Assign appConfig to trait's protected property.
         $this->appConfig           = $appConfig;
     }//end __construct()
 

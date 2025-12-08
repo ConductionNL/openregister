@@ -378,9 +378,6 @@ class AuditTrailMapper extends QBMapper
                                         )
                                 )
                         );
-                        )
-                    )
-                );
             }//end if
         }//end if
 

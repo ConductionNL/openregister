@@ -47,18 +47,29 @@ class Version1Date20250125000000 extends SimpleMigrationStep
         // @var ISchemaWrapper $schema
         $schema = $schemaClosure();
 
+        // Check if table exists before trying to modify it.
+        // This migration might run before the table creation migration.
+        if ($schema->hasTable('openregister_webhooks') === false) {
+            $output->info('ℹ️  Webhooks table does not exist yet, skipping configuration column addition');
+            return null;
+        }
+
         $table = $schema->getTable('openregister_webhooks');
 
         if ($table->hasColumn('configuration') === false) {
+            $output->info('🔧 Adding configuration column to webhooks table...');
             $table->addColumn(
                     'configuration',
                     Types::TEXT,
                     [
                         'notnull' => false,
+                        'comment' => 'Additional webhook configuration (JSON object)',
                     ]
                     );
-
+            $output->info('✅ Added configuration column to webhooks table');
             return $schema;
+        } else {
+            $output->info('ℹ️  Configuration column already exists in webhooks table');
         }//end if
 
         return null;
