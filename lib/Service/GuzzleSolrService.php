@@ -2166,6 +2166,10 @@ class GuzzleSolrService
         $document['self_validation'] = $object->getValidation() ? json_encode($object->getValidation()) : null;
         $document['self_groups'] = $object->getGroups() ? json_encode($object->getGroups()) : null;
 
+        return $document;
+
+    }//end createLegacySolrDocument()
+
 
     /**
      * Search objects with pagination using OpenRegister query format
@@ -2877,6 +2881,9 @@ class GuzzleSolrService
             }
         }
 
+    }//end extractTextFromArray()
+
+
     /**
      * Extract dynamic fields from object data with app prefix
      *
@@ -3542,17 +3549,6 @@ class GuzzleSolrService
                     );
             return false;
         } catch (\Exception $e) {
-            if ($returnDetails === true) {
-                $this->logger->error(
-                        'Exception deleting by query from SOLR',
-                        [
-                            'query'          => $query,
-                            'error'          => $e->getMessage(),
-                            'exception_type' => get_class($e),
-                        ]
-                        );
-
-        } catch (\Exception $e) {
             if ($returnDetails) {
                 $this->logger->error('Exception deleting by query from SOLR', [
                     'query' => $query,
@@ -3915,12 +3911,6 @@ class GuzzleSolrService
         }
 
         // Handle facets - but skip traditional faceting if using JSON faceting (extend mode).
-        if (empty($query['_facets']) === false && $query['_facets'] !== 'extend') {
-            $solrQuery['facet']       = 'true';
-            $solrQuery['facet.field'] = [];
-
-
-        // Handle facets - but skip traditional faceting if using JSON faceting (extend mode)
         if (!empty($query['_facets']) && $query['_facets'] !== 'extend') {
             $solrQuery['facet'] = 'true';
             $solrQuery['facet.field'] = [];
@@ -5615,6 +5605,9 @@ class GuzzleSolrService
     {
         return $this->solrConfig;
 
+    }//end getSolrConfig()
+
+
     /**
      * Count objects that belong to searchable schemas
      *
@@ -5666,7 +5659,7 @@ class GuzzleSolrService
      * @param  array                                   $schemaIds    Optional array of schema IDs to filter by
      * @return array Array of ObjectEntity objects with searchable schemas
      */
-    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $_objectMapper, int $_limit, int $_offset, array $_schemaIds=[]): array
+    private function fetchSearchableObjects(\OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, int $limit, int $offset, array $schemaIds=[]): array
     {
         try {
             // Use direct database query to fetch objects with searchable schemas.
@@ -5724,6 +5717,9 @@ class GuzzleSolrService
                 multi: false
             );
         }//end try
+
+    }//end fetchSearchableObjects()
+
 
     /**
      * Bulk index objects from database to Solr in batches
@@ -6511,6 +6507,9 @@ class GuzzleSolrService
 
         return $results;
 
+    }//end testSchemaAwareMapping()
+
+
     /**
      * Get all current SOLR field types for validation
      *
@@ -7062,9 +7061,8 @@ class GuzzleSolrService
                 'error_message' => $e->getMessage()
             ];
         }
-    }
 
-    }//end clearCache()
+    }//end bulkIndexFromDatabaseOptimized()
 
 
     /**
@@ -7268,15 +7266,19 @@ class GuzzleSolrService
                 'errors' => [$e->getMessage()]
             ];
         }
-    }
 
-            return [
-                'success' => false,
-                'message' => 'Failed to fix mismatched fields: '.$e->getMessage(),
-                'errors'  => [$e->getMessage()],
-            ];
-        }//end try
+    }//end fixMismatchedFields()
 
+
+    /**
+     * Delete a field from SOLR schema
+     *
+     * @param string $fieldName Name of the field to delete
+     *
+     * @return array Result with success status and message
+     */
+    private function deleteFieldFromSolr(string $fieldName): array
+    {
         try {
             $collectionName = $this->getActiveCollectionName();
 
@@ -7289,12 +7291,41 @@ class GuzzleSolrService
 
             $schemaUrl = $this->buildSolrBaseUrl() . "/{$collectionName}/schema";
 
-            // Prepare delete field payload
+            // Prepare delete field payload.
             $payload = [
                 'delete-field' => [
                     'name' => $fieldName
                 ]
             ];
+
+            // Send request to delete the field.
+            $response = $this->httpClient->post($schemaUrl, [
+                'json' => $payload,
+                'headers' => ['Content-Type' => 'application/json']
+            ]);
+
+            $result = json_decode((string)$response->getBody(), true);
+
+            return [
+                'success' => true,
+                'message' => "Field '{$fieldName}' deleted successfully",
+                'response' => $result
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to delete field from SOLR', [
+                'field' => $fieldName,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => "Failed to delete field '{$fieldName}': " . $e->getMessage()
+            ];
+        }
+
+    }//end deleteFieldFromSolr()
+
 
     /**
      * Reindex all objects in SOLR
@@ -7466,16 +7497,6 @@ class GuzzleSolrService
                             'error' => $e->getMessage()
                         ]);
                     }
-                }
-
-                        $this->logger->warning(
-                                'Failed to reindex object',
-                                [
-                                    'object_id' => $object->getId(),
-                                    'error'     => $e->getMessage(),
-                                ]
-                                );
-                    }//end try
                 }//end foreach
 
                 // Commit batch.
@@ -7608,14 +7629,6 @@ class GuzzleSolrService
                 $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
                 $method->setAccessible(true);
                 $expectedFields = $method->invoke($solrSchemaService, $schemas);
-
-                // Debug: Log the structure of expected fields
-                $this->logger->debug('Expected fields from schema analysis', [
-                    'field_count' => count($expectedFields),
-                    'sample_fields' => array_slice($expectedFields, 0, 3, true),
-                    'field_keys_sample' => array_slice(array_keys($expectedFields), 0, 5)
-                ]);
-            }
 
                 // Debug: Log the structure of expected fields.
                 $this->logger->debug(
@@ -8123,7 +8136,7 @@ class GuzzleSolrService
      * @param  array $schemaIds  Optional array of schema IDs to filter by (empty = all schemas)
      * @return array Memory usage prediction
      */
-    private function predictWarmupMemoryUsage(int $_maxObjects, array $_schemaIds=[]): array
+    private function predictWarmupMemoryUsage(int $maxObjects, array $schemaIds=[]): array
     {
         try {
             // Get current memory info
@@ -8195,6 +8208,9 @@ class GuzzleSolrService
                 'prediction_safe' => false,
             ];
         }//end try
+
+    }//end predictWarmupMemoryUsage()
+
 
     /**
      * Generate memory usage report after warmup completion
@@ -8590,10 +8606,6 @@ class GuzzleSolrService
 
             throw new \Exception('SOLR field discovery failed: ' . $e->getMessage());
         }
-    }
-
-            throw new \Exception('SOLR field discovery failed: '.$e->getMessage());
-        }//end try
 
     }//end getRawSolrFieldsForFacetConfiguration()
 
@@ -8766,10 +8778,6 @@ class GuzzleSolrService
 
             throw new \Exception('SOLR contextual faceting failed: ' . $e->getMessage());
         }
-    }
-
-            throw new \Exception('SOLR contextual faceting failed: '.$e->getMessage());
-        }//end try
 
     }//end getContextualFacetsFromSameQuery()
 
@@ -9032,10 +9040,6 @@ class GuzzleSolrService
 
             throw new \Exception('SOLR contextual faceting failed: ' . $e->getMessage());
         }
-    }
-
-            throw new \Exception('SOLR contextual faceting failed: '.$e->getMessage());
-        }//end try
 
     }//end getOptimizedContextualFacets()
 
@@ -9314,108 +9318,6 @@ class GuzzleSolrService
 
     }//end getObjectFieldInfo()
 
-        // Build JSON faceting query
-        $facetQuery = $this->buildJsonFacetQuery($facetableFields);
-
-        $this->logger->debug('Built JSON facet query', [
-            'facetQueryKeys' => array_keys($facetQuery),
-            'objectFacetKeys' => array_filter(array_keys($facetQuery), function($key) { return str_starts_with($key, 'object_'); }),
-            'facetQuerySample' => array_slice($facetQuery, 0, 3, true)
-        ]);
-
-        if (empty($facetQuery)) {
-            return [
-                '@self' => [],
-                'object_fields' => []
-            ];
-        }
-
-        // Build base query with filters
-        $baseQuery = '*:*';
-        $filterQueries = [];
-
-        // Add any additional filters from the query
-        foreach ($filters as $filter) {
-            if (!empty($filter)) {
-                $filterQueries[] = $filter;
-            }
-        }
-
-        // Query SOLR with JSON faceting
-        $baseUrl = $this->buildSolrBaseUrl();
-        $queryUrl = $baseUrl . "/{$collectionName}/select";
-
-        $queryParams = [
-            'q' => $baseQuery,
-            'rows' => 0, // We only want facet data, not documents
-            'wt' => 'json',
-            'json.facet' => json_encode($facetQuery)
-        ];
-
-        // Add filter queries
-        if (!empty($filterQueries)) {
-            $queryParams['fq'] = $filterQueries;
-        }
-
-        try {
-            // DEBUG: Let's see what we're sending to SOLR
-            $this->logger->debug('SOLR JSON faceting request', [
-                'url' => $queryUrl,
-                'queryParams' => $queryParams,
-                'jsonFacet' => json_decode($queryParams['json.facet'], true)
-            ]);
-
-            // Use POST instead of GET to avoid 414 Request-URI Too Large errors
-            // when using complex JSON faceting queries
-            $response = $this->httpClient->post($queryUrl, [
-                'form_params' => $queryParams,
-                'headers' => [
-                    'Content-Type' => 'application/x-www-form-urlencoded'
-                ]
-            ]);
-
-            $responseBody = $response->getBody()->getContents();
-            $data = json_decode($responseBody, true);
-
-            if ($data === null) {
-                $this->logger->error('Failed to decode SOLR JSON response', [
-                    'response_body' => $responseBody,
-                    'json_error' => json_last_error_msg()
-                ]);
-                throw new \Exception('Failed to decode SOLR JSON response: ' . json_last_error_msg());
-            }
-
-
-            $this->logger->debug('SOLR JSON faceting response', [
-                'response_keys' => array_keys($data),
-                'facets_key_exists' => isset($data['facets']),
-                'facet_keys' => isset($data['facets']) ? array_keys($data['facets']) : [],
-                'object_facet_keys' => isset($data['facets']) ? array_filter(array_keys($data['facets']), function($key) { return str_starts_with($key, 'object_'); }) : [],
-                'response_sample' => array_slice($data, 0, 3, true)
-            ]);
-
-
-            if (!isset($data['facets'])) {
-                // Log the full response for debugging
-                $this->logger->error('SOLR response missing facets key', [
-                    'response' => $data
-                ]);
-                throw new \Exception('Invalid faceting response from SOLR - missing facets key');
-            }
-
-            // Process and format the facet data
-            return $this->processFacetResponse($data['facets'], $facetableFields);
-
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to get extended facet data from SOLR', [
-                'collection' => $collectionName,
-                'url' => $queryUrl,
-                'error' => $e->getMessage()
-            ]);
-
-            throw new \Exception('SOLR extended faceting failed: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Build JSON facet query for SOLR
@@ -10897,25 +10799,7 @@ class GuzzleSolrService
             throw new \Exception('Failed to copy collection: '.$e->getMessage());
         }//end try
 
-    /**
-     * Index file chunks in SOLR file collection
-     *
-     * @param int   $fileId   File ID
-     * @param array $chunks   Text chunks from the file
-     * @param array $metadata File metadata
-     *
-     * @return bool Success status
-     */
-    public function indexFileChunks(int $fileId, array $chunks, array $metadata): bool
-    {
-        try {
-            // Get file collection name
-            $settings = $this->settingsService->getSettings();
-            $fileCollection = $settings['solr']['fileCollection'] ?? null;
-            if (!$fileCollection) {
-                $this->logger->warning('[GuzzleSolrService] No file collection configured');
-                return false;
-            }
+    }//end copyCollection()
 
 
     /**

@@ -64,4 +64,28 @@ class RegisterUpdatedEvent extends Event
     }//end __construct()
 
 
+    /**
+     * Get the updated register
+     *
+     * @return Register The register after update
+     */
+    public function getNewRegister(): Register
+    {
+        return $this->newRegister;
+
+    }//end getNewRegister()
+
+
+    /**
+     * Get the original register
+     *
+     * @return Register The register before update
+     */
+    public function getOldRegister(): Register
+    {
+        return $this->oldRegister;
+
+    }//end getOldRegister()
+
+
 }//end class

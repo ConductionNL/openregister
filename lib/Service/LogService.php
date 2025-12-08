@@ -87,6 +87,33 @@ class LogService
 
 
     /**
+     * Constructor for LogService
+     *
+     * Initializes the LogService with required mapper dependencies for handling
+     * audit trail logs and related entities.
+     *
+     * @param AuditTrailMapper   $auditTrailMapper   Mapper for audit trail database operations
+     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity database operations
+     * @param RegisterMapper     $registerMapper     Mapper for register database operations
+     * @param SchemaMapper       $schemaMapper       Mapper for schema database operations
+     *
+     * @return void
+     */
+    public function __construct(
+        AuditTrailMapper $auditTrailMapper,
+        ObjectEntityMapper $objectEntityMapper,
+        RegisterMapper $registerMapper,
+        SchemaMapper $schemaMapper
+    ) {
+        $this->auditTrailMapper   = $auditTrailMapper;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->registerMapper     = $registerMapper;
+        $this->schemaMapper       = $schemaMapper;
+
+    }//end __construct()
+
+
+    /**
      * Get logs for an object
      *
      * Retrieves audit trail logs for a specific object with optional filtering,

@@ -234,8 +234,15 @@ class WebhookEventListener implements IEventListener
 
         // Register events.
         if ($event instanceof RegisterCreatedEvent || $event instanceof RegisterUpdatedEvent || $event instanceof RegisterDeletedEvent) {
-            $register = $event->getRegister();
-            $action   = match (true) {
+            // Get the register based on event type.
+            if ($event instanceof RegisterCreatedEvent || $event instanceof RegisterDeletedEvent) {
+                $register = $event->getRegister();
+            } else {
+                // RegisterUpdatedEvent has newRegister and oldRegister.
+                $register = $event->getNewRegister();
+            }
+            
+            $action = match (true) {
                 $event instanceof RegisterCreatedEvent => 'created',
                 $event instanceof RegisterUpdatedEvent => 'updated',
                 $event instanceof RegisterDeletedEvent => 'deleted',
@@ -250,7 +257,14 @@ class WebhookEventListener implements IEventListener
 
         // Schema events.
         if ($event instanceof SchemaCreatedEvent || $event instanceof SchemaUpdatedEvent || $event instanceof SchemaDeletedEvent) {
-            $schema = $event->getSchema();
+            // Get the schema based on event type.
+            if ($event instanceof SchemaCreatedEvent || $event instanceof SchemaDeletedEvent) {
+                $schema = $event->getSchema();
+            } else {
+                // SchemaUpdatedEvent has newSchema and oldSchema.
+                $schema = $event->getNewSchema();
+            }
+            
             $action = match (true) {
                 $event instanceof SchemaCreatedEvent => 'created',
                 $event instanceof SchemaUpdatedEvent => 'updated',
@@ -266,8 +280,15 @@ class WebhookEventListener implements IEventListener
 
         // Application events.
         if ($event instanceof ApplicationCreatedEvent || $event instanceof ApplicationUpdatedEvent || $event instanceof ApplicationDeletedEvent) {
-            $application = $event->getApplication();
-            $action      = match (true) {
+            // Get the application based on event type.
+            if ($event instanceof ApplicationCreatedEvent || $event instanceof ApplicationDeletedEvent) {
+                $application = $event->getApplication();
+            } else {
+                // ApplicationUpdatedEvent has newApplication and oldApplication.
+                $application = $event->getNewApplication();
+            }
+            
+            $action = match (true) {
                 $event instanceof ApplicationCreatedEvent => 'created',
                 $event instanceof ApplicationUpdatedEvent => 'updated',
                 $event instanceof ApplicationDeletedEvent => 'deleted',

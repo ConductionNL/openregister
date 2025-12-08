@@ -24,6 +24,16 @@
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
+				<template #icon>
+					<AccountOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/templates')" :name="t('openregister', 'Templates')" @click="handleNavigate('/templates')">
+				<template #icon>
+					<FileOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
 				<template #icon>
 					<Magnify :size="20" />
@@ -92,11 +102,6 @@
 				<Api :size="20" />
 			</template>
 		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
-			<template #icon>
-				<AccountOutline :size="20" />
-			</template>
-		</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
@@ -129,6 +134,7 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 
 // Store
 import { organisationStore } from '../store/store.js'
@@ -160,6 +166,7 @@ export default {
 		Webhook,
 		Api,
 		AccountOutline,
+		FileOutline,
 	},
 	computed: {
 		/**
