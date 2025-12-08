@@ -272,7 +272,7 @@ class LogService
         // Generate content based on format.
         switch (strtolower($format)) {
             case 'csv':
-                return $this->exportToCsv($exportData);
+                return $this->exportToCsv(data: $exportData);
             case 'json':
                 return $this->exportToJson($exportData);
             case 'xml':

@@ -225,20 +225,20 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                     );
 
             // Get applications via mapper (RBAC is enforced in mapper).
-            $applications = $this->applicationMapper->findAll($limit, $offset);
+            $applications = $this->applicationMapper->findAll(limit: $limit, offset: $offset);
             $total        = $this->applicationMapper->countAll();
 
             // Convert to array.
             $results = array_map(fn ($app) => $app->jsonSerialize(), $applications);
 
             return $this->formatSuccess(
-                    [
+                    data: [
                         'applications' => $results,
                         'total'        => $total,
                         'limit'        => $limit,
                         'offset'       => $offset,
                     ],
-                    "Found {$total} applications."
+                    message: "Found {$total} applications."
                     );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -247,7 +247,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to list applications: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to list applications: '.$e->getMessage());
         }//end try
 
     }//end listApplications()
@@ -266,14 +266,14 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->info('[ApplicationTool] Getting application', ['uuid' => $uuid]);
 
             // Find application (RBAC enforced in mapper).
-            $application = $this->applicationMapper->findByUuid($uuid);
+            $application = $this->applicationMapper->findByUuid(uuid: $uuid);
 
             return $this->formatSuccess(
-                $application->jsonSerialize(),
-                "Application '{$application->getName()}' retrieved successfully."
+                data: $application->jsonSerialize(),
+                message: "Application '{$application->getName()}' retrieved successfully."
             );
         } catch (DoesNotExistException $e) {
-            return $this->formatError("Application with UUID '{$uuid}' not found.");
+            return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ApplicationTool] Failed to get application',
@@ -282,7 +282,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to get application: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to get application: '.$e->getMessage());
         }//end try
 
     }//end getApplication()
@@ -316,8 +316,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $application = $this->applicationMapper->insert($application);
 
             return $this->formatSuccess(
-                $application->jsonSerialize(),
-                "Application '{$name}' created successfully with UUID {$application->getUuid()}."
+                data: $application->jsonSerialize(),
+                message: "Application '{$name}' created successfully with UUID {$application->getUuid()}."
             );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -327,7 +327,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to create application: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to create application: '.$e->getMessage());
         }//end try
 
     }//end createApplication()
@@ -353,7 +353,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->info('[ApplicationTool] Updating application', ['uuid' => $uuid]);
 
             // Find application (RBAC enforced in mapper).
-            $application = $this->applicationMapper->findByUuid($uuid);
+            $application = $this->applicationMapper->findByUuid(uuid: $uuid);
 
             // Update fields.
             if ($name !== null) {
@@ -368,11 +368,11 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $application = $this->applicationMapper->update($application);
 
             return $this->formatSuccess(
-                $application->jsonSerialize(),
-                "Application updated successfully."
+                data: $application->jsonSerialize(),
+                message: "Application updated successfully."
             );
         } catch (DoesNotExistException $e) {
-            return $this->formatError("Application with UUID '{$uuid}' not found.");
+            return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ApplicationTool] Failed to update application',
@@ -381,7 +381,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to update application: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to update application: '.$e->getMessage());
         }//end try
 
     }//end updateApplication()
@@ -400,18 +400,18 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->info('[ApplicationTool] Deleting application', ['uuid' => $uuid]);
 
             // Find application (RBAC enforced in mapper).
-            $application = $this->applicationMapper->findByUuid($uuid);
+            $application = $this->applicationMapper->findByUuid(uuid: $uuid);
             $name        = $application->getName();
 
             // Delete (RBAC enforced in mapper).
             $this->applicationMapper->delete($application);
 
             return $this->formatSuccess(
-                ['uuid' => $uuid],
-                "Application '{$name}' deleted successfully."
+                data: ['uuid' => $uuid],
+                message: "Application '{$name}' deleted successfully."
             );
         } catch (DoesNotExistException $e) {
-            return $this->formatError("Application with UUID '{$uuid}' not found.");
+            return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ApplicationTool] Failed to delete application',
@@ -420,7 +420,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
                         'error' => $e->getMessage(),
                     ]
                     );
-            return $this->formatError('Failed to delete application: '.$e->getMessage());
+            return $this->formatError(message: 'Failed to delete application: '.$e->getMessage());
         }//end try
 
     }//end deleteApplication()

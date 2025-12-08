@@ -284,10 +284,10 @@ class SchemaCacheService
         $schemaId   = $schema->getId();
         $schemaData = $this->serializeSchemaForCache($schema);
 
-        $this->setCachedData($schemaId, self::CACHE_KEY_SCHEMA, $schemaData, $ttl);
+        $this->setCachedData(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA, data: $schemaData, ttl: $ttl);
 
         // Store in memory cache.
-        $cacheKey = $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA);
+        $cacheKey = $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA);
         self::$memoryCache[$cacheKey] = $schema;
 
         // Also cache computed properties.
@@ -310,7 +310,7 @@ class SchemaCacheService
     public function cacheSchemaConfiguration(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
         $configuration = $schema->getConfiguration();
-        $this->setCachedData($schema->getId(), self::CACHE_KEY_CONFIGURATION, $configuration, $ttl);
+        $this->setCachedData(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_CONFIGURATION, data: $configuration, ttl: $ttl);
 
     }//end cacheSchemaConfiguration()
 
@@ -328,7 +328,7 @@ class SchemaCacheService
     public function cacheSchemaProperties(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
         $properties = $schema->getProperties();
-        $this->setCachedData($schema->getId(), self::CACHE_KEY_PROPERTIES, $properties, $ttl);
+        $this->setCachedData(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_PROPERTIES, data: $properties, ttl: $ttl);
 
     }//end cacheSchemaProperties()
 
@@ -371,10 +371,10 @@ class SchemaCacheService
 
         // Remove from memory cache (always safe to do).
         $cacheKeys = [
-            $this->buildCacheKey($schemaId, self::CACHE_KEY_SCHEMA),
-            $this->buildCacheKey($schemaId, self::CACHE_KEY_FACETABLE_FIELDS),
-            $this->buildCacheKey($schemaId, self::CACHE_KEY_CONFIGURATION),
-            $this->buildCacheKey($schemaId, self::CACHE_KEY_PROPERTIES),
+            $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_SCHEMA),
+            $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_FACETABLE_FIELDS),
+            $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_CONFIGURATION),
+            $this->buildCacheKey(schemaId: $schemaId, cacheKey: self::CACHE_KEY_PROPERTIES),
         ];
 
         foreach ($cacheKeys as $key) {

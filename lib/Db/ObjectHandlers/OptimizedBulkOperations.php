@@ -101,7 +101,7 @@ class OptimizedBulkOperations
         $processedUUIDs = [];
 
         // MEMORY OPTIMIZATION: Convert all objects to unified format in memory.
-        $allObjects = $this->unifyObjectFormats($insertObjects, $updateObjects);
+        $allObjects = $this->unifyObjectFormats(insertObjects: $insertObjects, updateObjects: $updateObjects);
 
         if (empty($allObjects) === true) {
             return [];
@@ -126,7 +126,7 @@ class OptimizedBulkOperations
             $chunkStartTime = microtime(true);
 
             // MEMORY-INTENSIVE: Build massive INSERT...ON DUPLICATE KEY UPDATE statement.
-            $chunkUUIDs     = $this->processUnifiedChunk($chunk, $chunkIndex + 1, $totalChunks);
+            $chunkUUIDs     = $this->processUnifiedChunk(objects: $chunk, chunkNumber: $chunkIndex + 1, _totalChunks: $totalChunks);
             $processedUUIDs = array_merge($processedUUIDs, $chunkUUIDs);
 
             $chunkTime = microtime(true) - $chunkStartTime;
@@ -194,7 +194,7 @@ class OptimizedBulkOperations
 
         // Map object columns to actual database columns.
         $dbColumns = $this->mapObjectColumnsToDatabase($columns);
-        $sql       = $this->buildMassiveInsertOnDuplicateKeyUpdateSQL($tableName, $dbColumns, count($objects));
+        $sql       = $this->buildMassiveInsertOnDuplicateKeyUpdateSQL(tableName: $tableName, columns: $dbColumns, objectCount: count($objects));
 
         // PARAMETER BINDING: Build parameters array in memory (can be very large).
         $parameters = [];
@@ -202,7 +202,7 @@ class OptimizedBulkOperations
 
         foreach ($objects as $index => $objectData) {
             foreach ($dbColumns as $dbColumn) {
-                $value = $this->extractColumnValue($objectData, $dbColumn);
+                $value = $this->extractColumnValue(objectData: $objectData, dbColumn: $dbColumn);
 
                 $parameters['param_'.$paramIndex] = $value;
                 $paramIndex++;

@@ -97,7 +97,7 @@ class GetObject
         bool $rbac=true,
         bool $multi=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
+        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $rbac, _multi: $multi);
 
         if ($files === true) {
             $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
@@ -141,7 +141,7 @@ class GetObject
         bool $rbac=true,
         bool $multi=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find($id, $register, $schema, false, $rbac, $multi);
+        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $rbac, _multi: $multi);
 
         if ($files === true) {
             $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));

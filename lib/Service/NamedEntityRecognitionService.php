@@ -142,7 +142,7 @@ class NamedEntityRecognitionService
         }
 
         // Extract entities using selected method.
-        $detectedEntities = $this->detectEntities($text, $method, $entityTypes, $confidenceThreshold);
+        $detectedEntities = $this->detectEntities(text: $text, method: $method, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
         if (empty($detectedEntities) === true) {
             return [
@@ -161,9 +161,9 @@ class NamedEntityRecognitionService
             try {
                 // Find or create entity.
                 $entity = $this->findOrCreateEntity(
-                    $detected['type'],
-                    $detected['value'],
-                    $detected['category'] ?? $this->getCategoryForType($detected['type'])
+                    type: $detected['type'],
+                    value: $detected['value'],
+                    category: $detected['category'] ?? $this->getCategoryForType(type: $detected['type'])
                 );
 
                 // Create entity relation.
@@ -174,7 +174,7 @@ class NamedEntityRecognitionService
                 $relation->setPositionEnd($detected['position_end']);
                 $relation->setConfidence($detected['confidence']);
                 $relation->setDetectionMethod($method);
-                $relation->setContext($this->extractContext($text, $detected['position_start'], $detected['position_end'], $contextWindow));
+                $relation->setContext($this->extractContext(text: $text, positionStart: $detected['position_start'], positionEnd: $detected['position_end'], contextWindow: $contextWindow));
                 $relation->setCreatedAt(new DateTime());
 
                 // Set source references based on chunk source type.
@@ -244,10 +244,10 @@ class NamedEntityRecognitionService
     private function detectEntities(string $text, string $method, ?array $entityTypes, float $confidenceThreshold): array
     {
         return match ($method) {
-            self::METHOD_REGEX => $this->detectWithRegex($text, $entityTypes, $confidenceThreshold),
-            self::METHOD_PRESIDIO => $this->detectWithPresidio($text, $entityTypes, $confidenceThreshold),
-            self::METHOD_LLM => $this->detectWithLLM($text, $entityTypes, $confidenceThreshold),
-            self::METHOD_HYBRID => $this->detectWithHybrid($text, $entityTypes, $confidenceThreshold),
+            self::METHOD_REGEX => $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
+            self::METHOD_PRESIDIO => $this->detectWithPresidio(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
+            self::METHOD_LLM => $this->detectWithLLM(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
+            self::METHOD_HYBRID => $this->detectWithHybrid(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
             default => throw new Exception("Unknown detection method: {$method}")
         };
 
@@ -341,7 +341,7 @@ class NamedEntityRecognitionService
         // For now, fall back to regex.
         $this->logger->debug(message: '[NamedEntityRecognitionService] Presidio not yet implemented, using regex fallback');
 
-        return $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
+        return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
     }//end detectWithPresidio()
 
@@ -361,7 +361,7 @@ class NamedEntityRecognitionService
         // For now, fall back to regex.
         $this->logger->debug(message: '[NamedEntityRecognitionService] LLM extraction not yet implemented, using regex fallback');
 
-        return $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
+        return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
     }//end detectWithLLM()
 
@@ -378,7 +378,7 @@ class NamedEntityRecognitionService
     private function detectWithHybrid(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
         // Start with regex for fast detection.
-        $regexEntities = $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
+        $regexEntities = $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
         // TODO: Add Presidio validation for higher confidence.
         // TODO: Add LLM validation for ambiguous cases.

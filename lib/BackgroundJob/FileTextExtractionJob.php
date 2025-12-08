@@ -122,9 +122,8 @@ class FileTextExtractionJob extends QueuedJob
         $startTime = microtime(true);
 
         try {
-            // Step 4: Extract text from file using TextExtractionService.
-            // forceReExtract is false to avoid re-extracting already processed files.
-            $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
+            // Extract text using TextExtractionService.
+            $this->textExtractionService->extractFile(fileId: $fileId, forceReextraction: false);
 
             // Calculate processing time in milliseconds.
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);

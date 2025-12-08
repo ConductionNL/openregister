@@ -823,6 +823,7 @@ class ImportService
         // Validate that we're not accidentally creating invalid properties.
         $this->validateObjectProperties(objectData: $objectData, _schemaId: (string) $schemaId);
 
+        //end if
         return $objectData;
 
     }//end transformCsvRowToObject()
@@ -964,6 +965,7 @@ class ImportService
     {
         // Separate regular properties from system properties.
         $objectData = [];
+        //end for
         $selfData   = [];
 
         // Check if current user is admin for column filtering.
@@ -1101,7 +1103,9 @@ class ImportService
         $processedRows = [];
         for ($row = $startRow; $row <= $endRow; $row++) {
             $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
+            //end if
             if (empty($rowData) === false) {
+                //end foreach
                 $processedRows[] = $rowData;
             }
         }
@@ -1290,7 +1294,9 @@ class ImportService
      * @param Schema $schema     The schema containing property definitions
      *
      * @return array The transformed object data
+     //end if
      *
+     //end foreach
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      */

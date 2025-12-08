@@ -214,10 +214,10 @@ class RegisterTool extends AbstractTool
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
-        $this->log($functionName, $parameters);
+        $this->log(functionName: $functionName, parameters: $parameters);
 
         if ($this->hasUserContext($userId) === false) {
-            return $this->formatError('No user context available. Tool cannot execute without user session.');
+            return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
         try {
@@ -227,8 +227,8 @@ class RegisterTool extends AbstractTool
             // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
-            $this->log($functionName, $parameters, 'error', $e->getMessage());
-            return $this->formatError($e->getMessage());
+            $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+            return $this->formatError(message: $e->getMessage());
         }
 
     }//end executeFunction()
@@ -250,7 +250,7 @@ class RegisterTool extends AbstractTool
         $filters = [];
         $filters = $this->applyViewFilters($filters);
 
-        $registers = $this->registerService->findAll($limit, $offset, $filters);
+        $registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
 
         $registerList = array_map(
                 function ($register) {
@@ -265,7 +265,7 @@ class RegisterTool extends AbstractTool
                 $registers
                 );
 
-        return $this->formatSuccess($registerList, sprintf('Found %d registers', count($registerList)));
+        return $this->formatSuccess(data: $registerList, message: sprintf('Found %d registers', count($registerList)));
 
     }//end listRegisters()
 
@@ -281,10 +281,10 @@ class RegisterTool extends AbstractTool
      */
     public function getRegister(string $id): array
     {
-        $register = $this->registerService->find($id);
+        $register = $this->registerService->find(id: $id);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'           => $register->getId(),
                 'uuid'         => $register->getUuid(),
                 'title'        => $register->getTitle(),
@@ -295,7 +295,7 @@ class RegisterTool extends AbstractTool
                 'created'      => $register->getCreated()?->format('Y-m-d H:i:s'),
                 'updated'      => $register->getUpdated()?->format('Y-m-d H:i:s'),
             ],
-            'Register retrieved successfully'
+            message: 'Register retrieved successfully'
         );
 
     }//end getRegister()
@@ -323,17 +323,17 @@ class RegisterTool extends AbstractTool
             $data['slug'] = $slug;
         }
 
-        $register = $this->registerService->createFromArray($data);
+        $register = $this->registerService->createFromArray(data: $data);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'          => $register->getId(),
                 'uuid'        => $register->getUuid(),
                 'title'       => $register->getTitle(),
                 'description' => $register->getDescription(),
                 'slug'        => $register->getSlug(),
             ],
-            'Register created successfully'
+            message: 'Register created successfully'
         );
 
     }//end createRegister()
@@ -365,17 +365,17 @@ class RegisterTool extends AbstractTool
             throw new \InvalidArgumentException('No update data provided');
         }
 
-        $register = $this->registerService->updateFromArray((int) $id, $data);
+        $register = $this->registerService->updateFromArray(id: (int) $id, data: $data);
 
         return $this->formatSuccess(
-            [
+            data: [
                 'id'          => $register->getId(),
                 'uuid'        => $register->getUuid(),
                 'title'       => $register->getTitle(),
                 'description' => $register->getDescription(),
                 'slug'        => $register->getSlug(),
             ],
-            'Register updated successfully'
+            message: 'Register updated successfully'
         );
 
     }//end updateRegister()
@@ -392,12 +392,12 @@ class RegisterTool extends AbstractTool
      */
     public function deleteRegister(string $id): array
     {
-        $register = $this->registerService->find($id);
-        $this->registerService->delete($register);
+        $register = $this->registerService->find(id: $id);
+        $this->registerService->delete(register: $register);
 
         return $this->formatSuccess(
-            ['id' => $id],
-            'Register deleted successfully'
+            data: ['id' => $id],
+            message: 'Register deleted successfully'
         );
 
     }//end deleteRegister()

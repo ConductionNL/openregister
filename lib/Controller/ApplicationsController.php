@@ -321,8 +321,7 @@ class ApplicationsController extends Controller
             unset($data['owner']);
             unset($data['created']);
 
-            // Update application using service layer.
-            $application = $this->applicationService->update($id, $data);
+            $application = $this->applicationService->update(id: $id, data: $data);
 
             // Return successful response with updated application.
             return new JSONResponse(

@@ -329,15 +329,15 @@ class SolrSetup
 
         try {
             // Step 1: Verify SOLR connectivity.
-            $this->trackStep(1, 'SOLR Connectivity', 'started', 'Verifying SOLR server connectivity and authentication');
+            $this->trackStep(stepNumber: 1, stepName: 'SOLR Connectivity', status: 'started', description: 'Verifying SOLR server connectivity and authentication');
 
             try {
                 if ($this->verifySolrConnectivity() === false) {
                     $this->trackStep(
-                            1,
-                            'SOLR Connectivity',
-                            'failed',
-                            'Cannot connect to SOLR server',
+                            stepNumber: 1,
+                            stepName: 'SOLR Connectivity',
+                            status: 'failed',
+                            description: 'Cannot connect to SOLR server',
                             [
                                 'error'      => 'SOLR connectivity test failed',
                                 'host'       => $this->solrConfig['host'] ?? 'unknown',
@@ -363,14 +363,14 @@ class SolrSetup
                     return false;
                 }//end if
 
-                $this->trackStep(1, 'SOLR Connectivity', 'completed', 'SOLR server connectivity verified');
+                $this->trackStep(stepNumber: 1, stepName: 'SOLR Connectivity', status: 'completed', description: 'SOLR server connectivity verified');
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
-                        1,
-                        'SOLR Connectivity',
-                        'failed',
-                        $e->getMessage(),
+                        stepNumber: 1,
+                        stepName: 'SOLR Connectivity',
+                        status: 'failed',
+                        description: $e->getMessage(),
                         [
                             'exception_type'    => get_class($e),
                             'exception_message' => $e->getMessage(),
@@ -391,7 +391,7 @@ class SolrSetup
 
             // Step 2: Ensure tenant configSet exists.
             $tenantConfigSetName = $this->getTenantConfigSetName();
-            $this->trackStep(2, 'EnsureTenantConfigSet', 'started', 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"');
+            $this->trackStep(stepNumber: 2, stepName: 'EnsureTenantConfigSet', status: 'started', description: 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"');
 
             try {
                 if ($this->ensureTenantConfigSet() === false) {
@@ -399,10 +399,10 @@ class SolrSetup
                     $errorDetails = $this->lastErrorDetails ?? [];
 
                     $this->trackStep(
-                            2,
-                            'EnsureTenantConfigSet',
-                            'failed',
-                            'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                            stepNumber: 2,
+                            stepName: 'EnsureTenantConfigSet',
+                            status: 'failed',
+                            description: 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
                             [
                                 'configSet'              => $tenantConfigSetName,
                                 'template'               => '_default',
@@ -439,14 +439,14 @@ class SolrSetup
                     return false;
                 }//end if
 
-                $this->trackStep(2, 'EnsureTenantConfigSet', 'completed', 'Tenant configSet "'.$tenantConfigSetName.'" is available');
+                $this->trackStep(stepNumber: 2, stepName: 'EnsureTenantConfigSet', status: 'completed', description: 'Tenant configSet "'.$tenantConfigSetName.'" is available');
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
-                    2,
-                    'EnsureTenantConfigSet',
-                    'failed',
-                    $e->getMessage(),
+                    stepNumber: 2,
+                    stepName: 'EnsureTenantConfigSet',
+                    status: 'failed',
+                    description: $e->getMessage(),
                     [
                         'exception_type' => get_class($e),
                         'configSet'      => $tenantConfigSetName,
@@ -466,17 +466,17 @@ class SolrSetup
             }//end try
 
             // Step 3: Force ConfigSet Propagation (always run for safety).
-            $this->trackStep(3, 'ConfigSet Propagation', 'started', 'Forcing configSet propagation across SOLR cluster nodes');
+            $this->trackStep(stepNumber: 3, stepName: 'ConfigSet Propagation', status: 'started', description: 'Forcing configSet propagation across SOLR cluster nodes');
 
             try {
                 $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
 
                 if ($propagationResult['success'] === true) {
                     $this->trackStep(
-                        3,
-                        'ConfigSet Propagation',
-                        'completed',
-                        'ConfigSet propagation completed successfully',
+                        stepNumber: 3,
+                        stepName: 'ConfigSet Propagation',
+                        status: 'completed',
+                        description: 'ConfigSet propagation completed successfully',
                         [
                             'configSet'           => $tenantConfigSetName,
                             'propagation_details' => [
@@ -496,10 +496,10 @@ class SolrSetup
                     $this->setupProgress['completed_steps']++;
                 } else {
                     $this->trackStep(
-                        3,
-                        'ConfigSet Propagation',
-                        'failed',
-                        'ConfigSet propagation failed',
+                        stepNumber: 3,
+                        stepName: 'ConfigSet Propagation',
+                        status: 'failed',
+                        description: 'ConfigSet propagation failed',
                         [
                             'configSet'           => $tenantConfigSetName,
                             'error'               => $propagationResult['error'] ?? 'Unknown error',
@@ -528,10 +528,10 @@ class SolrSetup
                 }//end if
             } catch (\Exception $e) {
                 $this->trackStep(
-                    3,
-                    'ConfigSet Propagation',
-                    'failed',
-                    'Exception during configSet propagation: '.$e->getMessage(),
+                    stepNumber: 3,
+                    stepName: 'ConfigSet Propagation',
+                    status: 'failed',
+                    description: 'Exception during configSet propagation: '.$e->getMessage(),
                     [
                         'exception_type' => get_class($e),
                         'configSet'      => $tenantConfigSetName,
@@ -551,17 +551,17 @@ class SolrSetup
 
             // Step 4: Ensure tenant collection exists.
             $tenantCollectionName = $this->getTenantCollectionName();
-            $this->trackStep(4, 'Collection Creation', 'started', 'Checking and creating tenant collection "'.$tenantCollectionName.'"');
+            $this->trackStep(stepNumber: 4, stepName: 'Collection Creation', status: 'started', description: 'Checking and creating tenant collection "'.$tenantCollectionName.'"');
 
             try {
                 // Ensure tenant collection exists (using tenant-specific configSet).
                 if ($this->ensureTenantCollectionExists() === false) {
                     $tenantConfigSetName = $this->getTenantConfigSetName();
                     $this->trackStep(
-                            4,
-                            'Collection Creation',
-                            'failed',
-                            'Failed to create tenant collection',
+                            stepNumber: 4,
+                            stepName: 'Collection Creation',
+                            status: 'failed',
+                            description: 'Failed to create tenant collection',
                             [
                                 'collection'    => $tenantCollectionName,
                                 'configSet'     => $tenantConfigSetName,
@@ -594,14 +594,14 @@ class SolrSetup
                     return false;
                 }//end if
 
-                $this->trackStep(4, 'Collection Creation', 'completed', 'Tenant collection "'.$tenantCollectionName.'" is available');
+                $this->trackStep(stepNumber: 4, stepName: 'Collection Creation', status: 'completed', description: 'Tenant collection "'.$tenantCollectionName.'" is available');
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
-                        4,
-                        'Collection Creation',
-                        'failed',
-                        $e->getMessage(),
+                        stepNumber: 4,
+                        stepName: 'Collection Creation',
+                        status: 'failed',
+                        description: $e->getMessage(),
                         [
                             'exception_type' => get_class($e),
                             'collection'     => $tenantCollectionName,
@@ -621,11 +621,11 @@ class SolrSetup
             }//end try
 
             // Step 5: Configure schema fields.
-            $this->trackStep(5, 'Schema Configuration', 'started', 'Configuring schema fields for ObjectEntity metadata');
+            $this->trackStep(stepNumber: 5, stepName: 'Schema Configuration', status: 'started', description: 'Configuring schema fields for ObjectEntity metadata');
 
             try {
                 if ($this->configureSchemaFields() === false) {
-                    $this->trackStep(5, 'Schema Configuration', 'failed', 'Failed to configure schema fields');
+                    $this->trackStep(stepNumber: 5, stepName: 'Schema Configuration', status: 'failed', description: 'Failed to configure schema fields');
 
                     $this->lastErrorDetails = [
                         'operation'       => 'configureSchemaFields',
@@ -643,7 +643,7 @@ class SolrSetup
                     return false;
                 }
 
-                $this->trackStep(5, 'Schema Configuration', 'completed', 'Schema fields configured successfully');
+                $this->trackStep(stepNumber: 5, stepName: 'Schema Configuration', status: 'completed', description: 'Schema fields configured successfully');
                 $this->infrastructureCreated['schema_fields_configured'] = true;
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
@@ -669,11 +669,11 @@ class SolrSetup
             }//end try
 
             // Step 6: Validate setup.
-            $this->trackStep(6, 'Setup Validation', 'started', 'Validating SOLR setup completion');
+            $this->trackStep(stepNumber: 6, stepName: 'Setup Validation', status: 'started', description: 'Validating SOLR setup completion');
 
             try {
                 if ($this->validateSetup() === false) {
-                    $this->trackStep(6, 'Setup Validation', 'failed', 'Setup validation failed');
+                    $this->trackStep(stepNumber: 6, stepName: 'Setup Validation', status: 'failed', description: 'Setup validation failed');
 
                     $this->lastErrorDetails = [
                         'operation'       => 'validateSetup',
@@ -691,7 +691,7 @@ class SolrSetup
                     return false;
                 }
 
-                $this->trackStep(6, 'Setup Validation', 'completed', 'Setup validation passed');
+                $this->trackStep(stepNumber: 6, stepName: 'Setup Validation', status: 'completed', description: 'Setup validation passed');
                 $this->infrastructureCreated['multi_tenant_ready'] = true;
                 $this->infrastructureCreated['cloud_mode']         = true;
                 $this->setupProgress['completed_steps']++;

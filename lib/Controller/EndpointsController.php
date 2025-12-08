@@ -468,7 +468,6 @@ class EndpointsController extends Controller
             // Test data is used to simulate endpoint execution with sample payload.
             $testData = $this->request->getParams()['data'] ?? [];
 
-            // Execute endpoint test using endpoint service.
             $result = $this->endpointService->testEndpoint(endpoint: $endpoint, testData: $testData);
 
             // Return success response if test executed successfully.
@@ -551,7 +550,6 @@ class EndpointsController extends Controller
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
 
-            // Retrieve logs for this endpoint with pagination.
             $logs = $this->endpointLogMapper->findByEndpoint(endpointId: $id, limit: $limit, offset: $offset);
 
             // Return successful response with logs and total count.
@@ -683,12 +681,9 @@ class EndpointsController extends Controller
             if ($endpointId !== null && $endpointId !== '' && $endpointId !== '0') {
                 // Convert endpoint ID to integer for database query.
                 $endpointIdInt = (int) $endpointId;
-                
-                // Retrieve paginated logs for this specific endpoint.
-                $logs = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: $limit, offset: $offset);
-                
-                // Get total count for this endpoint (without pagination).
-                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: null, offset: null);
+                $logs          = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: $limit, offset: $offset);
+                // Get total count for this endpoint.
+                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint($endpointIdInt, null, null);
                 $total = count($allLogsForEndpoint);
             } else {
                 // No endpoint filter - get all logs from all endpoints.

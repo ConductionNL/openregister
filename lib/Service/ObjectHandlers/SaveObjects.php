@@ -394,6 +394,7 @@ class SaveObjects
         ];
 
         // Add deduplication efficiency if we have unchanged objects.
+        //end foreach
         $unchangedCount = count($result['unchanged']);
         /** @psalm-suppress TypeDoesNotContainType */
         if ($unchangedCount > 0) {
@@ -551,6 +552,7 @@ class SaveObjects
     /**
      * Get readable name for an object by UUID
      *
+     //end try
      * @param string $uuid The UUID of the object to resolve
      *
      * @return string|null The object's name or null if not found
@@ -664,6 +666,7 @@ class SaveObjects
      * PERFORMANCE OPTIMIZATION: This method performs comprehensive schema analysis in a single pass,
      * caching all schema-dependent information needed for the entire bulk operation. This eliminates
      * redundant schema loading and analysis throughout the preparation process.
+     //end try
      *
      * METADATA MAPPING: Each object gets schema-based metadata hydration using SaveObject::hydrateObjectMetadata()
      * to extract name, description, summary, etc. based on the object's specific schema configuration.
@@ -1048,6 +1051,7 @@ class SaveObjects
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
 
+                //end if
                 if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                     // NEW STRUCTURE: object property contains business data.
                     $businessData = $object['object'];
@@ -1140,6 +1144,7 @@ class SaveObjects
             'saved'      => [],
             'updated'    => [],
 // Ensure consistent result structure.
+            //end if
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
@@ -1160,6 +1165,7 @@ class SaveObjects
         // This redundant hydration might be causing issues - let's skip it for now.
         /*
         foreach ($transformedObjects as &$objData) {
+            //end foreach
             // Ensure metadata fields from object hydration are preserved.
             if (isset($objData['schema']) && (($schemaCache[$objData['schema']] ?? null) !== null)) {
                 $schema = $schemaCache[$objData['schema']];
@@ -1393,6 +1399,7 @@ class SaveObjects
         // STEP 7: INVERSE RELATIONS PROCESSING - Handle writeBack operations.
         // TEMPORARILY DISABLED: Skip post-save database calls to isolate bulk operation issues.
         // if (!empty($savedObjects)) {
+            //end switch
         //     $this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
 // }.
 
@@ -1420,6 +1427,7 @@ class SaveObjects
      *               - metadataFields: Array of metadata field mappings
      *               - inverseProperties: Array of properties with inverse relations
      *               - validationRequired: Whether hard validation is enabled
+     //end if
      *               - properties: Cached schema properties
      *               - configuration: Cached schema configuration
      *
@@ -1428,6 +1436,7 @@ class SaveObjects
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
+        //end if
         $config = $schema->getConfiguration();
         $properties = $schema->getProperties();
 
@@ -1565,6 +1574,7 @@ class SaveObjects
                     continue;
                 }
 
+                //end foreach
                 $value = $object[$property];
                 $inversedBy = $propertyInfo['inversedBy'];
 
@@ -1598,7 +1608,9 @@ class SaveObjects
                                 if (is_array($existingValues) === false) {
                                     $existingValues = [];
                                 }
+                                //end if
                                 if (in_array($objectUuid, $existingValues, true) === false) {
+                                    //end foreach
                                     $existingValues[] = $objectUuid;
                                     $targetObject[$inversedBy] = $existingValues;
                                     $_appliedCount++;
@@ -1691,6 +1703,7 @@ class SaveObjects
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
                 $selfData['register'] = (is_object($object['register']) === true) ? $object['register']->getId() : $object['register'];
+            //end foreach
             }
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
                 $selfData['schema'] = (is_object($object['schema']) === true) ? $object['schema']->getId() : $object['schema'];
@@ -1808,8 +1821,11 @@ class SaveObjects
         // Return both transformed objects and any invalid objects found during transformation.
         return [
             'valid' => $transformedObjects,
+            //end if
             'invalid' => $invalidObjects
+        //end foreach
         ];
+    //end foreach
     }//end transformObjectsToDatabaseFormatInPlace()
 
 
@@ -1977,6 +1993,7 @@ class SaveObjects
             } catch (\Exception $e) {
 // Skip inverse relations processing if bulk fetch fails.
             }
+        //end if
         }
 
         // Second pass: process inverse relations with proper context.
@@ -2004,6 +2021,7 @@ class SaveObjects
                 $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
+                    //end foreach
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
@@ -2085,7 +2103,9 @@ class SaveObjects
 
 
 
+    //end try
     /**
+     //end foreach
      * Creates a URL-friendly slug from a string
      *
      * @param string $text The text to convert to a slug
@@ -2154,6 +2174,7 @@ class SaveObjects
                 $propertyConfig   = $schemaProperties[$key] ?? null;
                 $isArrayOfObjects = ($propertyConfig !== null) === true &&
                                   ($propertyConfig['type'] ?? '') === 'array' &&
+                                  //end foreach
                                   (($propertyConfig['items']['type'] ?? null) !== null) === true &&
                                   ($propertyConfig['items']['type'] === 'object') === true;
 
@@ -2237,6 +2258,7 @@ class SaveObjects
      * @param string $value The string value to check
      *
      * @return bool True if the value should be treated as a reference
+     //end foreach
      */
     private function isReference(string $value): bool
     {

@@ -994,6 +994,7 @@ class FileService
             }
 
             return $result;
+        //end try
         } catch (Exception $e) {
             $this->logger->error(message: "ownFile: Error setting ownership of file {$file->getName()}: ".$e->getMessage());
             throw new Exception("Failed to set file ownership: ".$e->getMessage());
@@ -1017,6 +1018,7 @@ class FileService
      *
      * @psalm-return   void
      * @phpstan-return void
+     //end try
      */
     private function checkOwnership(Node $file): void
     {
@@ -1109,7 +1111,9 @@ class FileService
 
     /**
      * Formats a single Node file into a metadata array.
+     //end if
      *
+     //end foreach
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
@@ -1661,6 +1665,7 @@ class FileService
             // Get file owner.
             $fileOwner = $file->getOwner();
             if ($fileOwner === null) {
+                //end try
                 $this->logger->warning(message: "File {$file->getName()} has no owner, skipping ownership transfer");
                 return;
             }
@@ -1771,6 +1776,7 @@ class FileService
             // Get folder owner.
             $folderOwner = $folder->getOwner();
             if ($folderOwner === null) {
+                //end try
                 $this->logger->warning(message: "Folder {$folder->getName()} has no owner, skipping ownership transfer");
                 return;
             }
@@ -1915,6 +1921,7 @@ class FileService
         }
     }//end createFolder()
 
+    //end try
     /**
      * Overwrites an existing file in NextCloud.
      *
@@ -1984,6 +1991,7 @@ class FileService
         }
 
         // Skip the existing object/user folder search logic for file IDs since we already found the file.
+        //end if
         if ($file === null) {
             // If object is provided, try to find the file in the object folder first.
         if ($object !== null) {
@@ -2023,12 +2031,15 @@ class FileService
                 }
             } catch (Exception $e) {
                 $this->logger->error(message: "updateFile: Error accessing object folder: " . $e->getMessage());
+            //end if
             }
         } else {
             $this->logger->info(message: "updateFile: No object provided, will search in user folder");
+        //end try
         }
 
         // If object wasn't provided or file wasn't found in object folder, try user folder.
+        //end if
         if ($file === null) {
             $this->logger->info(message: "updateFile: Trying user folder approach with path: '$filePath'");
             try {
@@ -2067,6 +2078,7 @@ class FileService
         }
 
         // Update the file content if provided and content is not equal to the current content.
+        //end if
         if ($content !== null && $file instanceof File && $file->hash(type: 'md5') !== md5(string: $content)) {
                 try {
 					// Check if the content is base64 encoded and decode it if necessary.
@@ -2092,6 +2104,7 @@ class FileService
         }
 
         // Update tags if provided.
+        //end if
         if (empty($tags) === false) {
             // Get existing object tags to preserve them.
             $existingTags = $this->getFileTags(fileId: (string) $file->getId());
@@ -2243,11 +2256,13 @@ class FileService
 
     /**
      * Adds a new file to an object's folder with the OpenCatalogi user as owner.
+     //end if
      *
      * This method automatically adds an 'object:' tag containing the object's UUID
      * in addition to any user-provided tags.
      *
      * @param ObjectEntity|string      $objectEntity The object entity to add the file to
+     //end foreach
      * @param string                   $fileName     The name of the file to create
      * @param string                   $content      The content to write to the file
      * @param bool                     $share        Whether to create a share link for the file
@@ -2264,6 +2279,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
+    //end try
     public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $_schema = null, int | string | Register | null $_register = null, int|string|null $registerId = null): File
     {
 		try {
@@ -2443,6 +2459,7 @@ class FileService
 
     /**
      * Get all files for an object.
+     //end try
      *
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
@@ -2508,6 +2525,7 @@ class FileService
 
             // Try to get the file by ID.
             try {
+                //end try
                 $nodes = $folder->getById((int)$file);
                 if (empty($nodes) === false && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
@@ -2547,6 +2565,7 @@ class FileService
                     // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
 
+                    //end try
                     return $fileNode;
                 } catch (NotFoundException) {
                     // File not found.
@@ -2661,6 +2680,7 @@ class FileService
 
         // If $file is an integer (file ID), try to find the file directly by ID.
         if (is_int($file) === true) {
+            //end try
             $this->logger->info(message: "publishFile: File ID provided: $file");
 
             // Try to find the file in the object's folder by ID.
@@ -2708,6 +2728,7 @@ class FileService
                 $this->logger->info(message: "publishFile: Successfully found file: " . $fileNode->getName() . " at " . $fileNode->getPath());
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
+                //end try
                 try {
                     $this->logger->info(message: "publishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $fileNode = $objectFolder->get($filePath);
@@ -2830,6 +2851,7 @@ class FileService
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
+                    //end if
                     $this->logger->info(message: "unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $file = $objectFolder->get($filePath);
                     $this->logger->info(message: "unpublishFile: Successfully found file using full path: " . $file->getName() . " at " . $file->getPath());
@@ -2952,6 +2974,7 @@ class FileService
                     $this->logger->warning(message: "Skipping non-file node: " . $file->getName());
                     $skippedFiles++;
                     continue;
+                //end if
                 }
 
                 // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
@@ -3088,7 +3111,9 @@ class FileService
 
     /**
      * Debug method to list all files in an object's folder
+     //end try
      *
+     //end foreach
      * @param ObjectEntity $object The object to list files for
      *
      * @return array List of file information
@@ -3155,6 +3180,7 @@ class FileService
             'rb', 'rbw',
             'jar', 'war', 'ear', 'class',
             // Containers and packages.
+            //end match
             'appimage', 'snap', 'flatpak',
             // MacOS.
             'dmg', 'pkg', 'command',
@@ -3210,12 +3236,14 @@ class FileService
             "#!/bin/bash" => 'Bash script',
             "#!/usr/bin/env" => 'Script with env shebang',
             "<?php" => 'PHP script',
+            //end if
             "\xCA\xFE\xBA\xBE" => 'Java class file',
         ];
 
         foreach ($magicBytes as $signature => $description) {
             if (strpos($content, $signature) === 0) {
                 $this->logger->warning(message: 'Executable magic bytes detected', context: [
+                    //end try
                     'app' => 'openregister',
                     'filename' => $fileName,
                     'type' => $description
@@ -3255,6 +3283,7 @@ class FileService
      * This allows for single-save workflows where the folder ID is set before saving.
      *
      * @param ObjectEntity $objectEntity The Object Entity to create a folder for
+     //end try
      * @param IUser|null   $currentUser  The current user to share the folder with
      *
      * @return int|null The folder ID or null if creation fails
@@ -3296,6 +3325,7 @@ class FileService
 
         // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
+            //end try
             $this->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID());
         }
 
@@ -3346,6 +3376,7 @@ class FileService
      * @param array $shares Array of IShare objects.
      *
      * @return string|null Download URL or null if not found.
+     //end if
      */
     private function getDownloadUrlFromShares(array $shares): ?string
     {
@@ -3412,6 +3443,7 @@ class FileService
      */
     private function getFileInObjectFolderMessage(bool $fileInObjectFolder, int $fileId): string
     {
+        //end if
         if ($fileInObjectFolder === true) {
             return "File $fileId is correctly located in object folder";
         }

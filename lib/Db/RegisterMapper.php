@@ -342,7 +342,7 @@ class RegisterMapper extends QBMapper
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id, [], $published, $rbac, $multi);
+                $result[] = $this->find(id: $id, extend: [], published: $published, rbac: $rbac, multi: $multi);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
@@ -681,7 +681,7 @@ class RegisterMapper extends QBMapper
      */
     public function getSchemasByRegisterId(int $registerId, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
-        $register  = $this->find($registerId, [], $published, $rbac, $multi);
+        $register  = $this->find(id: $registerId, extend: [], published: $published, rbac: $rbac, multi: $multi);
         $schemaIds = $register->getSchemas();
 
         $schemas = [];

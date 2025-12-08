@@ -487,7 +487,84 @@ class FilesController extends Controller
                         'share'    => $data['share'] === 'true',
                         'tags'     => $tags,
                     ];
-                }//end for
+                } else {
+                    // Multiple file upload.
+                    // Loop through each file using the count of 'name'.
+                    for ($i = 0; $i < count($fileName); $i++) {
+                        $tags = $data['tags'][$i] ?? '';
+                        if (is_array($tags) === false) {
+                            $tags = explode(',', $tags);
+                        }
+
+                        /*
+                         * @var array<int, string>|null $typeArray
+                         * @var array<int, string>|null $tmpNameArray
+                         * @var array<int, int>|null $errorArray
+                         * @var array<int, int>|null $sizeArray
+                         */
+                        if (is_array($files['type'] ?? null) === true) {
+                            $typeArray = $files['type'];
+                        } else {
+                            $typeArray = null;
+                        }
+
+                        if (is_array($files['tmp_name'] ?? null) === true) {
+                            $tmpNameArray = $files['tmp_name'];
+                        } else {
+                            $tmpNameArray = null;
+                        }
+                        /*
+                         * @var array<int, int>|null $errorArray
+                         */
+                        if (is_array($files['error'] ?? null) === true) {
+                            $errorArray = $files['error'];
+                        } else {
+                            $errorArray = null;
+                        }
+                        /*
+                         * @var array<int, int>|null $sizeArray
+                         */
+                        if (is_array($files['size'] ?? null) === true) {
+                            $sizeArray = $files['size'];
+                        } else {
+                            $sizeArray = null;
+                        }
+
+                        if ($typeArray !== null && isset($typeArray[$i]) === true) {
+                            $typeValue = $typeArray[$i];
+                        } else {
+                            $typeValue = '';
+                        }
+
+                        if ($tmpNameArray !== null && isset($tmpNameArray[$i]) === true) {
+                            $tmpNameValue = $tmpNameArray[$i];
+                        } else {
+                            $tmpNameValue = '';
+                        }
+
+                        if (is_array($errorArray) === true && isset($errorArray[$i]) === true) {
+                            $errorValue = $errorArray[$i];
+                        } else {
+                            $errorValue = UPLOAD_ERR_NO_FILE;
+                        }
+
+                        if (is_array($sizeArray) === true && isset($sizeArray[$i]) === true) {
+                            $sizeValue = $sizeArray[$i];
+                        } else {
+                            $sizeValue = 0;
+                        }
+
+                        $uploadedFiles[] = [
+                            'name'     => $fileName[$i] ?? '',
+                            'type'     => $typeValue,
+                            'tmp_name' => $tmpNameValue,
+                            'error'    => $errorValue,
+                            'size'     => $sizeValue,
+                            'share'    => $data['share'] === 'true',
+                            'tags'     => $tags,
+                        ];
+                    }//end for
+                }//end if
             }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.
