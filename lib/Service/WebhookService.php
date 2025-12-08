@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use GuzzleHttp\Client;
+use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use DateTime;
 use OCA\OpenRegister\Db\Webhook;
@@ -45,9 +45,9 @@ class WebhookService
     /**
      * HTTP client
      *
-     * @var Client
+     * @var GuzzleClient
      */
-    private Client $client;
+    private GuzzleClient $client;
 
     /**
      * Logger
@@ -64,6 +64,53 @@ class WebhookService
     private WebhookLogMapper $webhookLogMapper;
 
 
+    /**
+     * Constructor
+     *
+     * @param WebhookMapper     $webhookMapper     Webhook mapper
+     * @param LoggerInterface   $logger           Logger
+     * @param WebhookLogMapper  $webhookLogMapper Webhook log mapper
+     *
+     * @return void
+     */
+    public function __construct(
+        WebhookMapper $webhookMapper,
+        LoggerInterface $logger,
+        WebhookLogMapper $webhookLogMapper
+    ) {
+        $this->webhookMapper     = $webhookMapper;
+        $this->logger            = $logger;
+        $this->webhookLogMapper  = $webhookLogMapper;
+        $this->initializeHttpClient();
+
+    }//end __construct()
+
+
+    /**
+     * Initialize HTTP client with default configuration
+     *
+     * Creates a GuzzleHttp\Client instance with appropriate defaults for webhook delivery.
+     * Allows self-signed certificates and configures timeouts appropriately.
+     *
+     * @return void
+     */
+    private function initializeHttpClient(): void
+    {
+        // Prepare Guzzle client configuration.
+        // Allow self-signed certificates for webhook endpoints.
+        // Don't throw exceptions for 4xx/5xx responses (we handle them manually).
+        $clientConfig = [
+            'timeout'         => 30,
+            'connect_timeout' => 10,
+            'verify'          => false,
+            'allow_redirects' => true,
+            'http_errors'     => false,
+        ];
+
+        $this->client = new GuzzleClient($clientConfig);
+
+    }//end initializeHttpClient()
+
 
     /**
      * Dispatch event to all matching webhooks
@@ -76,8 +123,20 @@ class WebhookService
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
-        // Find all webhooks matching this event.
-        $webhooks = $this->webhookMapper->findForEvent($eventName);
+        try {
+            // Find all webhooks matching this event.
+            $webhooks = $this->webhookMapper->findForEvent($eventName);
+        } catch (\Exception $e) {
+            // If table doesn't exist yet (migrations haven't run), silently skip webhook delivery.
+            $this->logger->debug(
+                    'Webhook table does not exist yet, skipping webhook delivery',
+                    [
+                        'event' => $eventName,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            return;
+        }
 
         if (empty($webhooks) === true) {
             $this->logger->debug(

@@ -257,16 +257,174 @@ class Version1Date20251120210000 extends SimpleMigrationStep
                     ]
                     );
 
+            // Configuration (JSON object for additional webhook configuration).
+            $table->addColumn(
+                    'configuration',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                        'comment' => 'Additional webhook configuration (JSON object)',
+                    ]
+                    );
+
             // Indexes.
             $table->setPrimaryKey(['id']);
             $table->addUniqueIndex(['uuid'], 'openregister_webhooks_uuid');
             $table->addIndex(['organisation'], 'openregister_webhooks_org');
             $table->addIndex(['enabled'], 'openregister_webhooks_enabled');
 
-            return $schema;
+            $output->info('✅ Created webhooks table');
+        } else {
+            $output->info('ℹ️  Webhooks table already exists');
         }//end if
 
-        return null;
+        // Create webhook_logs table if it doesn't exist.
+        if ($schema->hasTable('openregister_webhook_logs') === false) {
+            $output->info('📝 Creating webhook_logs table...');
+
+            $logsTable = $schema->createTable('openregister_webhook_logs');
+
+            // Primary key.
+            $logsTable->addColumn(
+                    'id',
+                    Types::BIGINT,
+                    [
+                        'autoincrement' => true,
+                        'notnull'       => true,
+                        'unsigned'      => true,
+                    ]
+                    );
+            $logsTable->setPrimaryKey(['id']);
+
+            // Reference to webhook.
+            $logsTable->addColumn(
+                    'webhook_id',
+                    Types::BIGINT,
+                    [
+                        'notnull' => true,
+                        'unsigned' => true,
+                    ]
+                    );
+            $logsTable->addIndex(['webhook_id'], 'webhook_logs_webhook_id_idx');
+
+            // Event information.
+            $logsTable->addColumn(
+                    'event_class',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 255,
+                    ]
+                    );
+
+            // Payload data (JSON).
+            $logsTable->addColumn(
+                    'payload',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+
+            // Target URL and method.
+            $logsTable->addColumn(
+                    'url',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 1024,
+                    ]
+                    );
+
+            $logsTable->addColumn(
+                    'method',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 10,
+                        'default' => 'POST',
+                    ]
+                    );
+
+            // Delivery status.
+            $logsTable->addColumn(
+                    'success',
+                    Types::BOOLEAN,
+                    [
+                        'notnull' => true,
+                        'default' => false,
+                    ]
+                    );
+
+            $logsTable->addColumn(
+                    'status_code',
+                    Types::INTEGER,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+
+            // Request and response bodies (stored only on failure for debugging).
+            $logsTable->addColumn(
+                    'request_body',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+
+            $logsTable->addColumn(
+                    'response_body',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+
+            // Error information.
+            $logsTable->addColumn(
+                    'error_message',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+
+            // Retry information.
+            $logsTable->addColumn(
+                    'attempt',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                        'default' => 1,
+                    ]
+                    );
+
+            $logsTable->addColumn(
+                    'next_retry_at',
+                    Types::DATETIME,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+            $logsTable->addIndex(['next_retry_at'], 'webhook_logs_next_retry_at_idx');
+
+            // Timestamp.
+            $logsTable->addColumn(
+                    'created',
+                    Types::DATETIME,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
+            $logsTable->addIndex(['created'], 'webhook_logs_created_idx');
+
+            $output->info('✅ Created webhook_logs table');
+        } else {
+            $output->info('ℹ️  Webhook_logs table already exists');
+        }//end if
+
+        return $schema;
 
     }//end changeSchema()
 

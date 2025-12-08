@@ -221,6 +221,9 @@ class Application extends App implements IBootstrap
 
         // NOTE: WebhookLogMapper can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+        // NOTE: WebhookMapper can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+        // Table existence checks are handled in mapper methods to gracefully handle missing tables.
         // NOTE: OrganisationMapper can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register OrganisationMapper with required dependencies (needed by SchemaMapper).
@@ -491,6 +494,9 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ToolRegistry can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+        // NOTE: WebhookService can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+        // WebhookService creates GuzzleHttp\Client directly (similar to GuzzleSolrService).
         // Register GitHubService for GitHub API operations.
         $context->registerService(
                 serviceName: \OCA\OpenRegister\Service\GitHubService::class,
