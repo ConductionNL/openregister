@@ -60,6 +60,8 @@ class Version1Date20251120210000 extends SimpleMigrationStep
                         'unsigned'      => true,
                     ]
                     );
+            // Set primary key immediately to ensure it's available for foreign key references.
+            $table->setPrimaryKey(['id']);
 
             // UUID for external reference.
             $table->addColumn(
@@ -267,8 +269,7 @@ class Version1Date20251120210000 extends SimpleMigrationStep
                     ]
                     );
 
-            // Indexes.
-            $table->setPrimaryKey(['id']);
+            // Indexes (primary key already set above).
             $table->addUniqueIndex(['uuid'], 'openregister_webhooks_uuid');
             $table->addIndex(['organisation'], 'openregister_webhooks_org');
             $table->addIndex(['enabled'], 'openregister_webhooks_enabled');

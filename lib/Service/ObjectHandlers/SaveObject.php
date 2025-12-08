@@ -615,7 +615,7 @@ class SaveObject
                                 ]
                                 );
                     }//end try
-                } elseif (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null) {
+                } elseif (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null)) {
                     // Array of file objects - use first file's downloadUrl.
                     $entity->setImage($firstElement['downloadUrl']);
                 } elseif (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {

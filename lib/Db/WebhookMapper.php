@@ -405,10 +405,15 @@ class WebhookMapper extends QBMapper
     private function tableExists(): bool
     {
         try {
-            $schema = $this->db->getSchema();
-            return $schema->hasTable($this->getTableName());
+            // Try to execute a simple query to check if table exists.
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->createFunction('COUNT(*)'))
+                ->from($this->getTableName())
+                ->setMaxResults(1);
+            $qb->executeQuery();
+            return true;
         } catch (\Exception $e) {
-            // If we can't check, assume table doesn't exist to be safe.
+            // If query fails, table likely doesn't exist.
             return false;
         }
 
