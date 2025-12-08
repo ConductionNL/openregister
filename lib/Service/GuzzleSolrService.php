@@ -2749,64 +2749,6 @@ class GuzzleSolrService
      * Reconstruct ObjectEntity from Solr document
      *
      * @param array $doc Solr document
-     *
-     * @return ObjectEntity|null Reconstructed object or null if invalid
-     */
-    private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity
-    {
-        $results = [];
-
-        // Check if search was successful
-        if (!($solrResults['success'] ?? false)) {
-            $this->logger->warning('[GuzzleSolrService] Search failed', [
-                'error' => $solrResults['error'] ?? 'Unknown error'
-            ]);
-            return [
-                'results' => [],
-                'total' => 0,
-                'page' => 1,
-                'pages' => 1,
-                'limit' => 20,
-                'facets' => [],
-                'aggregations' => []
-            ];
-        }
-
-        $documents = $solrResults['data'] ?? [];
-
-        foreach ($documents as $doc) {
-            // Reconstruct object from Solr document
-            $objectEntity = $this->reconstructObjectFromSolrDocument($doc);
-            if ($objectEntity) {
-                $results[] = $objectEntity;
-            }
-        }
-
-        if (is_array($doc['self_uuid'] ?? null) === true) {
-            $uuid = $doc['self_uuid'][0] ?? null;
-        } else {
-            $uuid = $doc['self_uuid'] ?? null;
-        }
-
-        if (is_array($doc['self_register'] ?? null) === true) {
-            $register = $doc['self_register'][0] ?? null;
-        } else {
-            $register = $doc['self_register'] ?? null;
-        }
-
-        if (is_array($doc['self_schema'] ?? null) === true) {
-            $schema = $doc['self_schema'][0] ?? null;
-        } else {
-            $schema = $doc['self_schema'] ?? null;
-        }
-
-        return $response;
-    }
-
-    /**
-     * Reconstruct ObjectEntity from Solr document
-     *
-     * @param array $doc Solr document
      * @return ObjectEntity|null Reconstructed object or null if invalid
      */
     private function reconstructObjectFromSolrDocument(array $doc): ?ObjectEntity
