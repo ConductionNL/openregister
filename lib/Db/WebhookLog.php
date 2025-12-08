@@ -30,8 +30,8 @@ use OCP\AppFramework\Db\Entity;
  * Stores logs of webhook delivery attempts, including success/failure status,
  * response data, and retry information.
  *
- * @method int getWebhookId()
- * @method void setWebhookId(int $webhookId)
+ * @method int getWebhook()
+ * @method void setWebhook(int $webhook)
  * @method string getEventClass()
  * @method void setEventClass(string $eventClass)
  * @method string|null getPayload()
@@ -61,11 +61,11 @@ class WebhookLog extends Entity implements JsonSerializable
 {
 
     /**
-     * Webhook ID
+     * Webhook (ID of the webhook this log belongs to)
      *
      * @var integer
      */
-    protected int $webhookId = 0;
+    protected int $webhook = 0;
 
     /**
      * Event class name
@@ -159,7 +159,7 @@ class WebhookLog extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('webhookId', 'integer');
+        $this->addType('webhook', 'integer');
         $this->addType('eventClass', 'string');
         $this->addType('payload', 'string');
         $this->addType('url', 'string');
@@ -223,7 +223,7 @@ class WebhookLog extends Entity implements JsonSerializable
     {
         return [
             'id'           => $this->id,
-            'webhookId'    => $this->webhookId,
+            'webhook'      => $this->webhook,
             'eventClass'   => $this->eventClass,
             'payload'      => $this->getPayloadArray(),
             'url'          => $this->url,

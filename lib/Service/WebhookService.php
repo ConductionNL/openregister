@@ -202,7 +202,7 @@ class WebhookService
 
         // Create webhook log entry.
         $webhookLog = new WebhookLog();
-        $webhookLog->setWebhookId($webhook->getId());
+        $webhookLog->setWebhook($webhook->getId());
         $webhookLog->setEventClass($eventName);
         $webhookLog->setPayloadArray($webhookPayload);
         $webhookLog->setUrl($webhook->getUrl());

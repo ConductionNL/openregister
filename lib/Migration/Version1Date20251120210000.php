@@ -297,16 +297,17 @@ class Version1Date20251120210000 extends SimpleMigrationStep
                     );
             $logsTable->setPrimaryKey(['id']);
 
-            // Reference to webhook.
+            // Reference to webhook (using 'webhook' instead of 'webhook_id' to prevent Doctrine auto-foreign-key).
             $logsTable->addColumn(
-                    'webhook_id',
+                    'webhook',
                     Types::BIGINT,
                     [
                         'notnull' => true,
                         'unsigned' => true,
+                        'comment' => 'References openregister_webhooks.id',
                     ]
                     );
-            $logsTable->addIndex(['webhook_id'], 'webhook_logs_webhook_id_idx');
+            $logsTable->addIndex(['webhook'], 'webhook_logs_webhook_idx');
 
             // Event information.
             $logsTable->addColumn(
@@ -424,6 +425,10 @@ class Version1Date20251120210000 extends SimpleMigrationStep
         } else {
             $output->info('ℹ️  Webhook_logs table already exists');
         }//end if
+
+        // NOTE: No foreign key constraint added due to Nextcloud/Doctrine prefix handling issues.
+        // Referential integrity is maintained by the application code instead.
+        // When deleting a webhook, the application will also delete associated logs.
 
         return $schema;
 

@@ -96,7 +96,7 @@ class WebhookLogMapper extends QBMapper
 
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->eq('webhook_id', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)))
+            ->where($qb->expr()->eq('webhook', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)))
             ->orderBy('created', 'DESC');
 
         if ($limit !== null) {
@@ -201,9 +201,9 @@ class WebhookLogMapper extends QBMapper
             ->addSelect($qb->createFunction('SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed'))
             ->from($this->getTableName());
 
-        // Only filter by webhook_id if a specific webhook is requested.
+        // Only filter by webhook if a specific webhook is requested.
         if ($webhookId > 0) {
-            $qb->where($qb->expr()->eq('webhook_id', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)));
+            $qb->where($qb->expr()->eq('webhook', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)));
         }
 
         $result = $qb->executeQuery();
