@@ -422,15 +422,17 @@ class ObjectService
     public function setRegister(Register | string | int $register): self
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
+            // When deriving register from object context, bypass RBAC and multi-tenancy checks.
+            // If user has access to the object, they should be able to access its register.
             $registers = $this->getCachedEntities('register', [$register], function($ids) {
-                return [$this->registerMapper->find($ids[0])];
+                return [$this->registerMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
             });
             if (isset($registers[0]) && $registers[0] instanceof Register) {
                 $register = $registers[0];
             } else {
-                // Fallback to direct database lookup if cache fails
-                $register = $this->registerMapper->find($register);
+                // Fallback to direct database lookup if cache fails.
+                $register = $this->registerMapper->find(id: $register, extend: [], published: null, rbac: false, multi: false);
             }
         }
 
@@ -450,15 +452,17 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): self
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
+            // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
+            // If user has access to the object, they should be able to access its schema.
             $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
-                return [$this->schemaMapper->find($ids[0])];
+                return [$this->schemaMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
             });
             if (isset($schemas[0]) && $schemas[0] instanceof Schema) {
                 $schema = $schemas[0];
             } else {
-                // Fallback to direct database lookup if cache fails
-                $schema = $this->schemaMapper->find($schema);
+                // Fallback to direct database lookup if cache fails.
+                $schema = $this->schemaMapper->find(id: $schema, extend: [], published: null, rbac: false, multi: false);
             }
         }
 
@@ -564,7 +568,7 @@ class ObjectService
             return null;
         }
 
-        // If no schema was provided but we have an object, derive the schema from the object
+        // If no schema was provided but we have an object, derive the schema from the object.
         if ($this->currentSchema === null) {
             $this->setSchema($object->getSchema());
         }
@@ -572,7 +576,7 @@ class ObjectService
         // If the object is not published, check the permissions.
         $now = new \DateTime('now');
         if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
-            // Check user has permission to read this specific object (includes object owner check)
+            // Check user has permission to read this specific object (includes object owner check).
             $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
         }
 
@@ -3180,16 +3184,17 @@ class ObjectService
             // **CACHE WARMUP**: Preload register and schema if not already cached
             if (isset($query['@self']['register'])) {
                 $registerValue = $query['@self']['register'];
-                // Handle both single values and arrays
+                // Handle both single values and arrays.
                 $registerIds = is_array($registerValue) ? $registerValue : [$registerValue];
                 $this->getCachedEntities('register', $registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) || is_int($id)) {
                             try {
-                                $results[] = $this->registerMapper->find($id);
+                                // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
+                                $results[] = $this->registerMapper->find(id: $id, extend: [], published: null, rbac: false, multi: false);
                             } catch (\Exception $e) {
-                                // Log and skip invalid IDs
+                                // Log and skip invalid IDs.
                                 $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
@@ -3200,16 +3205,17 @@ class ObjectService
 
             if (isset($query['@self']['schema'])) {
                 $schemaValue = $query['@self']['schema'];
-                // Handle both single values and arrays
+                // Handle both single values and arrays.
                 $schemaIds = is_array($schemaValue) ? $schemaValue : [$schemaValue];
                 $this->getCachedEntities('schema', $schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) || is_int($id)) {
                             try {
-                                $results[] = $this->schemaMapper->find($id);
+                                // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
+                                $results[] = $this->schemaMapper->find(id: $id, extend: [], published: null, rbac: false, multi: false);
                             } catch (\Exception $e) {
-                                // Log and skip invalid IDs
+                                // Log and skip invalid IDs.
                                 $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
                             }
                         }
