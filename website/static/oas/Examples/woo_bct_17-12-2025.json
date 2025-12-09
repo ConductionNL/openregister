@@ -1,0 +1,3789 @@
+{
+  "components": {
+    "mappings": {
+      "cloudeventtobctcall": {
+        "name": "CloudEventToBCTCall",
+        "description": "",
+        "version": "0.0.3",
+        "reference": "",
+        "mapping": {
+          "QueryExecute2.ObjectType": "S",
+          "QueryExecute2.QueryItems.QueryItem.RubricType": "qrtDbField",
+          "QueryExecute2.QueryItems.QueryItem.RubricID": "poststuk_id",
+          "QueryExecute2.QueryItems.QueryItem.Condition": "qcAnd",
+          "QueryExecute2.QueryItems.QueryItem.Operator": "qoEqual",
+          "QueryExecute2.QueryItems.QueryItem.Value": "data.documentId",
+          "QueryExecute2.SkipEmptyConditions": true,
+          "QueryExecute2.SearchByQueryOrder": true,
+          "QueryExecute2.SearchSubFolders": false,
+          "QueryExecute2.SearchRelated": false,
+          "QueryExecute2.SearchRecursive": false,
+          "QueryExecute2.ReturnIDsOnly": false,
+          "QueryExecute2.SearchMostRecent": false,
+          "QueryExecute2.MaxResult": 0,
+          "QueryExecute2.ResultItems.TypeValue.0.Type": "V",
+          "QueryExecute2.ResultItems.TypeValue.0.Value": "poststuk_id",
+          "QueryExecute2.ResultItems.TypeValue.1.Type": "V",
+          "QueryExecute2.ResultItems.TypeValue.1.Value": "onderwerp",
+          "QueryExecute2.ResultItems.TypeValue.2.Type": "R",
+          "QueryExecute2.ResultItems.TypeValue.2.Value": "wooPubDat",
+          "QueryExecute2.ResultItems.TypeValue.3.Type": "D",
+          "QueryExecute2.ResultItems.TypeValue.3.Value": "Dispinfocatpub"
+        },
+        "unset": [],
+        "cast": [],
+        "passThrough": false,
+        "configurations": [],
+        "dateCreated": "2025-07-17T12:49:15+00:00",
+        "dateModified": "2025-07-17T12:49:15+00:00",
+        "slug": "cloudeventtobctcall"
+      },
+      "corsa-to-woo-verzoeken-en-besluiten": {
+        "name": "Corsa to WOO-verzoeken en -besluiten",
+        "description": "",
+        "version": "0.0.7",
+        "reference": "",
+        "mapping": {
+          "kenmerk": "poststuk_id",
+          "titel": "onderwerp",
+          "samenvatting": "inhoud1",
+          "@self.published": "RwooPubDat"
+        },
+        "unset": [],
+        "cast": {
+          "publicatieDatum": "unsetIfValue==wooPubDat"
+        },
+        "passThrough": false,
+        "configurations": [],
+        "dateCreated": "2025-07-02T13:14:51+00:00",
+        "dateModified": "2025-07-02T13:14:51+00:00",
+        "slug": "corsa-to-woo-verzoeken-en-besluiten"
+      },
+      "cloudevent-to-corsa-soap": {
+        "name": "CloudEvent to Corsa SOAP",
+        "description": "",
+        "version": "0.0.15",
+        "reference": "",
+        "mapping": {
+          "soap.QueryExecute2.ObjectType": "S",
+          "soap.QueryExecute2.QueryItems.QueryItem.0.RubricType": "qrtDbField",
+          "soap.QueryExecute2.QueryItems.QueryItem.0.RubricID": "poststuk_id",
+          "soap.QueryExecute2.QueryItems.QueryItem.0.Condition": "qcAnd",
+          "soap.QueryExecute2.QueryItems.QueryItem.0.Operator": "qoEqual",
+          "soap.QueryExecute2.QueryItems.QueryItem.0.Value": "data.documentId",
+          "soap.QueryExecute2.SkipEmptyConditions": "true",
+          "soap.QueryExecute2.SearchByQueryOrder": "true",
+          "soap.QueryExecute2.SearchSubFolders": "false",
+          "soap.QueryExecute2.SearchRelated": "false",
+          "soap.QueryExecute2.SearchRecursive": "false",
+          "soap.QueryExecute2.ReturnIDsOnly": "false",
+          "soap.QueryExecute2.SearchMostRecent": "false",
+          "soap.QueryExecute2.MaxResult": "0",
+          "soap.QueryExecute2.ResultItems.TypeValue.0.Type": "V",
+          "soap.QueryExecute2.ResultItems.TypeValue.0.Value": "poststuk_id",
+          "soap.QueryExecute2.ResultItems.TypeValue.1.Type": "V",
+          "soap.QueryExecute2.ResultItems.TypeValue.1.Value": "onderwerp",
+          "soap.QueryExecute2.ResultItems.TypeValue.2.Type": "R",
+          "soap.QueryExecute2.ResultItems.TypeValue.2.Value": "wooPubDat",
+          "soap.QueryExecute2.ResultItems.TypeValue.3.Type": "D",
+          "soap.QueryExecute2.ResultItems.TypeValue.3.Value": "Dispinfocatpub",
+          "soap.QueryExecute2.ResultItems.TypeValue.4.Type": "V",
+          "soap.QueryExecute2.ResultItems.TypeValue.4.Value": "inhoud"
+        },
+        "unset": [],
+        "cast": {
+          "soap.QueryExecute2.SkipEmptyConditions": "bool",
+          "soap.QueryExecute2.SearchByQueryOrder": "bool",
+          "soap.QueryExecute2.SearchSubFolders": "bool",
+          "soap.QueryExecute2.SearchRelated": "bool",
+          "soap.QueryExecute2.SearchRecursive": "bool",
+          "soap.QueryExecute2.ReturnIDsOnly": "bool",
+          "soap.QueryExecute2.SearchMostRecent": "bool",
+          "soap.QueryExecute2.MaxResult": "int"
+        },
+        "passThrough": true,
+        "configurations": [],
+        "dateCreated": "2025-07-01T08:01:11+00:00",
+        "dateModified": "2025-07-01T08:01:11+00:00",
+        "slug": "cloudevent-to-corsa-soap"
+      }
+    },
+        "sources": {
+            "bct-corsa-mockservice": {
+                "name": "BCT Corsa Mockservice",
+                "description": "https://nuovodemo.ota.bct.nl/corsaws/Corsa72WS.asmx",
+                "version": "0.0.1",
+                "reference": "http://nextcloud.local/",
+                "location": "!ChangeMe!",
+                "isEnabled": true,
+                "type": "soap",
+                "locale": "",
+                "accept": "",
+                "documentation": "",
+                "loggingConfig": [],
+                "oas": "Array",
+                "paths": [],
+                "headers": [],
+                "translationConfig": [],
+                "configuration": {
+                    "wsdl": "!ChangeMe!",
+                    "cert": "!ChangeMe!",
+                    "ssl_key": "!ChangeMe!",
+                    "preRequest.endpoint": "Connect",
+                    "preRequest.config.body": "{\"Connect\": { \"ApplicationID\": \"!ChangeMe!\", \"ConnectionID\": \"!ChangeMe!\", \"UserName\": \"!ChangeMe!\", \"Password\": \"!ChangeMe!\", \"EncodedPass\": false } }"
+                },
+                "endpointsConfig": [],
+                "status": "",
+                "logRetention": 0,
+                "errorRetention": 0,
+                "objectCount": 0,
+                "test": false,
+                "rateLimitLimit": null,
+                "rateLimitRemaining": null,
+                "rateLimitReset": null,
+                "rateLimitWindow": null,
+                "lastCall": "2025-12-16T12:27:15+00:00",
+                "lastSync": "2025-06-12T11:24:42+00:00",
+                "dateCreated": "2025-07-01T09:09:33+00:00",
+                "dateModified": "2025-07-01T09:09:33+00:00",
+                "configurations": [],
+                "slug": "bct-corsa-mockservice"
+            }
+        },
+    "rules": {
+      "fetch-anonymized-file-from-bct": {
+        "name": "Fetch anonimysed file from BCT",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/rules/5",
+        "version": "0.0.13",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "==": [
+            {
+              "var": "flowToken.requestAmended.parameters.data.anonymized"
+            },
+            true
+          ]
+        },
+        "type": "fetch_file",
+        "configuration": {
+          "fetch_file": {
+            "source": "bct-corsa-mockservice",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "POST",
+            "tags": [],
+            "sourceConfiguration": {
+              "body": {
+                "GetFileVersion": {
+                  "ObjectType": "S",
+                  "ObjectID": "{{ originId }}",
+                  "FileType": "ftAnonymised",
+                  "FileVersion": 0
+                }
+              }
+            },
+            "autoShare": true,
+            "endpoint": {
+              "endpoint": "GetFileVersion",
+              "published": true
+            },
+            "contentPath": "FileBytes",
+            "originIdPath": "kenmerk",
+            "filenamePath": "VersionInfo.DocumentName",
+            "fileExtension": ".pdf"
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-04-10T13:44:24+00:00",
+        "updated": "2025-11-04T13:11:50+00:00",
+        "slug": "fetch-anonymized-file-from-bct"
+      },
+      "fetch-archived-file-from-bct": {
+        "name": "Fetch archived file from BCT",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/rules/5",
+        "version": "0.0.10",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "==": [
+            {
+              "var": "flowToken.requestAmended.parameters.data.anonymized"
+            },
+            false
+          ]
+        },
+        "type": "fetch_file",
+        "configuration": {
+          "fetch_file": {
+            "source": "bct-corsa-mockservice",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "POST",
+            "tags": [],
+            "sourceConfiguration": {
+              "body": {
+                "GetFileVersion": {
+                  "ObjectType": "S",
+                  "ObjectID": "{{ originId }}",
+                  "FileType": "ftArchive",
+                  "FileVersion": 0
+                }
+              }
+            },
+            "autoShare": true,
+            "endpoint": {
+              "endpoint": "GetFileVersion",
+              "published": true
+            },
+            "contentPath": "FileBytes",
+            "originIdPath": "kenmerk",
+            "filenamePath": "VersionInfo.DocumentName",
+            "fileExtension": ".pdf"
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-04-10T13:44:24+00:00",
+        "updated": "2025-11-04T13:12:05+00:00",
+        "slug": "fetch-archived-file-from-bct"
+      },
+      "bct-auth": {
+        "name": "BCT Auth",
+        "description": "",
+        "reference": null,
+        "version": "0.0.1",
+        "action": "post",
+        "timing": "before",
+        "conditions": null,
+        "type": "authentication",
+        "configuration": {
+          "authentication": {
+            "type": "apikey",
+            "users": [
+              "bct"
+            ],
+            "groups": [],
+            "header": "X-Corsa-Secret",
+            "keys": {
+              "yWusci0XtY6zVKf$Ga-uG9bVoJ0NDcq@": "bct"
+            }
+          }
+        },
+        "order": 0,
+        "configurations": [],
+        "created": "2025-06-12T08:53:29+00:00",
+        "updated": "2025-06-12T08:53:29+00:00",
+        "slug": "bct-auth"
+      },
+      "cloudevent-to-corsa-soap": {
+        "name": "CloudEvent to Corsa SOAP",
+        "description": "",
+        "reference": null,
+        "version": "0.0.2",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "==": [
+            1,
+            1
+          ]
+        },
+        "type": "mapping",
+        "configuration": {
+          "mapping": "cloudevent-to-corsa-soap"
+        },
+        "order": 0,
+        "configurations": [],
+        "created": "2025-07-01T08:14:21+00:00",
+        "updated": "2025-07-18T08:23:31+00:00",
+        "slug": "cloudevent-to-corsa-soap"
+      },
+      "sync-corsa": {
+        "name": "Sync CORSA Woo-verzoeken en -besluiten",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/rules/3",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32i"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32I"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 1,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-07-01T08:19:08+00:00",
+        "updated": "2025-10-21T13:31:09+00:00",
+        "slug": "sync-corsa"
+      },
+      "sync-corsa-klachtoordelen": {
+        "name": "Sync CORSA Klachtoordelen",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32l"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32L"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 17,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:31:35+00:00",
+        "slug": "sync-corsa-klachtoordelen"
+      },
+      "sync-corsa-beschikkingen": {
+        "name": "Sync CORSA Beschikkingen",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32k"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32K"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 16,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:31:50+00:00",
+        "slug": "sync-corsa-beschikkingen"
+      },
+      "sync-corsa-onderzoeksrapporten": {
+        "name": "Sync CORSA Onderzoeksrapporten",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32j"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32J"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 15,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:32:04+00:00",
+        "slug": "sync-corsa-onderzoeksrapporten"
+      },
+      "sync-corsa-subsidieverplichtingen-anders-dan-met-beschikking": {
+        "name": "Sync CORSA Subsidieverplichtingen anders dan met beschikking",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32h"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32H"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 14,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:32:21+00:00",
+        "slug": "sync-corsa-subsidieverplichtingen-anders-dan-met-beschikking"
+      },
+      "sync-corsa-jaarplannen-en-jaarverslagen": {
+        "name": "Sync CORSA Jaarplannen en jaarverslagen",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32g"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32G"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 13,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:32:32+00:00",
+        "slug": "sync-corsa-jaarplannen-en-jaarverslagen"
+      },
+      "sync-corsa-agendas-en-besluitenlijsten-bestuurscolleges": {
+        "name": "Sync CORSA Agenda's en besluitenlijsten bestuurscolleges",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32d"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32D"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 10,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:32:40+00:00",
+        "slug": "sync-corsa-agendas-en-besluitenlijsten-bestuurscolleges"
+      },
+      "sync-corsa-adviezen": {
+        "name": "Sync CORSA Adviezen",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32e"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32E"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 11,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:32:49+00:00",
+        "slug": "sync-corsa-adviezen"
+      },
+      "sync-corsa-vergaderstukken-decentrale-overheden": {
+        "name": "Sync CORSA Vergaderstukken decentrale overheden",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32c"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32C"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 9,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:02+00:00",
+        "slug": "sync-corsa-vergaderstukken-decentrale-overheden"
+      },
+      "sync-corsa-vergaderstukken-staten-generaal": {
+        "name": "Sync CORSA Vergaderstukken Staten-Generaal",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32b"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32B"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 8,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:11+00:00",
+        "slug": "sync-corsa-vergaderstukken-staten-generaal"
+      },
+      "sync-corsa-bij-vertegenwoordigende-organen-ingekomen-stukken": {
+        "name": "Sync CORSA Bij vertegenwoordigende organen ingekomen stukken",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32a"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32A"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 7,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:19+00:00",
+        "slug": "sync-corsa-bij-vertegenwoordigende-organen-ingekomen-stukken"
+      },
+      "sync-corsa-bereikbaarheidsgegevens": {
+        "name": "Sync CORSA Bereikbaarheidsgegevens",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31e"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31E"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 6,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:28+00:00",
+        "slug": "sync-corsa-bereikbaarheidsgegevens"
+      },
+      "sync-corsa-organisatie-en-werkwijze": {
+        "name": "Sync CORSA Organisatie en werkwijze",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31d"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31D"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 5,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:36+00:00",
+        "slug": "sync-corsa-organisatie-en-werkwijze"
+      },
+      "sync-corsa-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag": {
+        "name": "Sync CORSA Ontwerpen van wet- en regelgeving met adviesaanvraag",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31c"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31C"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 4,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:44+00:00",
+        "slug": "sync-corsa-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag"
+      },
+      "sync-corsa-overige-besluiten-van-algemene-strekking": {
+        "name": "Sync CORSA Overige besluiten van algemene strekking",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31b"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31B"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 3,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:33:52+00:00",
+        "slug": "sync-corsa-overige-besluiten-van-algemene-strekking"
+      },
+      "sync-corsa-convenanten": {
+        "name": "Sync CORSA Convenanten",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32f"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.32F"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 12,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:34:02+00:00",
+        "slug": "sync-corsa-convenanten"
+      },
+      "sync-corsa-wetten-en-algemeen-verbindende-voorschriften": {
+        "name": "Sync CORSA Wetten en algemeen verbindende voorschriften",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/",
+        "version": "0.0.7",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31a"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "3.31A"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "parameters.data.informatieCategorie"
+                },
+                "<ALL>"
+              ]
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "force": true,
+          "synchronization": {
+            "synchronization": 2,
+            "retainResponse": true
+          },
+          "error": {
+            "code": 500,
+            "name": "Something went wrong",
+            "message": "We encountered an unexpected problem",
+            "includeJsonLogicResult": false
+          },
+          "authentication": {
+            "type": {
+              "label": "Basic Authentication",
+              "value": "basic"
+            },
+            "users": [],
+            "groups": [],
+            "keys": []
+          },
+          "download": {
+            "fileIdPosition": 0
+          },
+          "upload": {
+            "path": "",
+            "allowedTypes": "",
+            "maxSize": 10
+          },
+          "locking": {
+            "action": "lock",
+            "timeout": 30
+          },
+          "fetch_file": {
+            "source": "",
+            "filePath": "",
+            "subObjectFilepath": "",
+            "objectIdPath": "",
+            "method": "",
+            "tags": [],
+            "sourceConfiguration": "\"[]\"",
+            "autoShare": false,
+            "endpoint": "",
+            "contentPath": "",
+            "originIdPath": "",
+            "filenamePath": "",
+            "fileExtension": ""
+          },
+          "write_file": {
+            "filePath": "",
+            "fileNamePath": "",
+            "tags": [],
+            "autoShare": false
+          },
+          "fileparts_create": {
+            "sizeLocation": "",
+            "schemaId": "",
+            "filenameLocation": "",
+            "filePartLocation": "",
+            "mappingId": ""
+          },
+          "filepart_upload": {
+            "mappingId": ""
+          },
+          "save_object": {
+            "register": "",
+            "schema": "",
+            "mapping": ""
+          },
+          "extend_external_input": {
+            "validate": true,
+            "properties": [
+              {
+                "property": "",
+                "schema": ""
+              }
+            ]
+          },
+          "extend_input": {
+            "items": [
+              {
+                "property": "",
+                "extends": []
+              }
+            ]
+          }
+        },
+        "order": 1,
+        "configurations": [],
+        "created": "2025-09-11T07:55:02+00:00",
+        "updated": "2025-10-21T13:34:10+00:00",
+        "slug": "sync-corsa-wetten-en-algemeen-verbindende-voorschriften"
+      },
+      "delete-corsa-openwoo-app": {
+        "name": "Delete Corsa -> OpenWoo.app",
+        "description": "",
+        "reference": null,
+        "version": "0.0.4",
+        "action": "post",
+        "timing": "after",
+        "conditions": {
+          "or": [
+            {
+              "!!": {
+                "var": "parameters.data.deletedBy"
+              }
+            },
+            {
+              "!!": {
+                "var": "data.deletedBy"
+              }
+            }
+          ]
+        },
+        "type": "synchronization",
+        "configuration": {
+          "synchronization": {
+            "synchronization": 18,
+            "retainResponse": true
+          }
+        },
+        "order": 3,
+        "configurations": [],
+        "created": "2025-10-09T14:19:50+00:00",
+        "updated": "2025-11-11T10:26:43+00:00",
+        "slug": "delete-corsa-openwoo-app"
+      }
+    },
+    "endpoints": {
+      "create-cloudevent": {
+        "name": "Create CloudEvent",
+        "description": "",
+        "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/endpoints/2",
+        "version": "0.0.1",
+        "endpoint": "cloudevents/events",
+        "endpointArray": [
+          "cloudevents",
+          "events"
+        ],
+        "endpointRegex": "#^cloudevents/events$#",
+        "method": "POST",
+        "targetType": "register/schema",
+        "targetId": "cloudevents/cloudevent",
+        "conditions": [],
+        "inputMapping": null,
+        "outputMapping": null,
+        "rules": [
+          "cloudevent-to-corsa-soap",
+          "sync-corsa",
+          "bct-auth",
+          "sync-corsa-klachtoordelen",
+          "sync-corsa-beschikkingen",
+          "sync-corsa-onderzoeksrapporten",
+          "sync-corsa-subsidieverplichtingen-anders-dan-met-beschikking",
+          "sync-corsa-jaarplannen-en-jaarverslagen",
+          "sync-corsa-agendas-en-besluitenlijsten-bestuurscolleges",
+          "sync-corsa-adviezen",
+          "sync-corsa-vergaderstukken-decentrale-overheden",
+          "sync-corsa-vergaderstukken-staten-generaal",
+          "sync-corsa-bij-vertegenwoordigende-organen-ingekomen-stukken",
+          "sync-corsa-bereikbaarheidsgegevens",
+          "sync-corsa-organisatie-en-werkwijze",
+          "sync-corsa-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag",
+          "sync-corsa-overige-besluiten-van-algemene-strekking",
+          "sync-corsa-convenanten",
+          "sync-corsa-wetten-en-algemeen-verbindende-voorschriften"
+        ],
+        "configurations": [],
+        "slug": "create-cloudevent",
+        "created": "2025-06-12T08:35:16+00:00",
+        "updated": "2025-10-09T14:20:04+00:00"
+      }
+    },
+    "synchronizations": {
+            "sync-corsa": {
+                "name": "Sync Corsa Woo-verzoeken en -besluiten",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/1",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/woo_verzoeken_en_besluiten",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-09-09T07:57:47+00:00",
+                "created": "2025-07-01T08:17:11+00:00",
+                "updated": "2025-10-09T14:30:29+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa"
+            },
+            "sync-corsa-wetten-en-algemeen-verbindende-voorschriften": {
+                "name": "Sync Corsa Wetten en algemeen verbindende voorschriften",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/2",
+                "version": "0.0.17",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/wetten_en_algemeen_verbindende_voorschriften",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:47:20+00:00",
+                "updated": "2025-10-09T14:30:52+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-wetten-en-algemeen-verbindende-voorschriften"
+            },
+            "sync-corsa-overige-besluiten-van-algemene-strekking": {
+                "name": "Sync Corsa Overige besluiten van algemene strekking",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/3",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/overige_besluiten_van_algemene_strekking",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:48:23+00:00",
+                "updated": "2025-10-09T14:31:16+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-overige-besluiten-van-algemene-strekking"
+            },
+            "sync-corsa-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag": {
+                "name": "Sync Corsa Ontwerpen van wet- en regelgeving met adviesaanvraag",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/4",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:48:49+00:00",
+                "updated": "2025-10-09T14:31:34+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-ontwerpen-van-wet-en-regelgeving-met-adviesaanvraag"
+            },
+            "sync-corsa-organisatie-en-werkwijze": {
+                "name": "Sync Corsa Organisatie en werkwijze",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/5",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/organisatie_en_werkwijze",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:50:13+00:00",
+                "updated": "2025-10-09T14:31:45+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-organisatie-en-werkwijze"
+            },
+            "sync-corsa-bereikbaarheidsgegevens": {
+                "name": "Sync Corsa Bereikbaarheidsgegevens",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/6",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/bereikbaarheidsgegevens",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-10-13T14:08:36+00:00",
+                "created": "2025-08-26T11:50:36+00:00",
+                "updated": "2025-10-09T14:31:55+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-bereikbaarheidsgegevens"
+            },
+            "sync-corsa-bij-vertegenwoordigende-organen-ingekomen-stukken": {
+                "name": "Sync Corsa Bij vertegenwoordigende organen ingekomen stukken",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/7",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/bij-vertegenwoordigende-organen-ingekomen-stukken",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:50:51+00:00",
+                "updated": "2025-10-09T14:32:08+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-bij-vertegenwoordigende-organen-ingekomen-stukken"
+            },
+            "sync-corsa-vergaderstukken-staten-generaal": {
+                "name": "Sync Corsa Vergaderstukken Staten-Generaal",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/8",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/vergaderstukken_staten_generaal",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:51:13+00:00",
+                "updated": "2025-10-09T14:32:26+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-vergaderstukken-staten-generaal"
+            },
+            "sync-corsa-vergaderstukken-decentrale-overheden": {
+                "name": "Sync Corsa Vergaderstukken decentrale overheden",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/9",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/vergaderstukken_decentrale_overheden",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:51:33+00:00",
+                "updated": "2025-10-09T14:32:40+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-vergaderstukken-decentrale-overheden"
+            },
+            "sync-corsa-agenda-s-en-besluitenlijsten-bestuurscolleges": {
+                "name": "Sync Corsa Agenda's en besluitenlijsten bestuurscolleges",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/10",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/agendas_en_besluitenlijsten_bestuurscolleges",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:52:00+00:00",
+                "updated": "2025-10-09T14:32:50+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-agenda-s-en-besluitenlijsten-bestuurscolleges"
+            },
+            "sync-corsa-adviezen": {
+                "name": "Sync Corsa Adviezen",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/11",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/adviezen",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-10-13T15:05:17+00:00",
+                "created": "2025-08-26T11:52:21+00:00",
+                "updated": "2025-10-09T14:32:59+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-adviezen"
+            },
+            "sync-corsa-convenanten": {
+                "name": "Sync Corsa Convenanten",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/12",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/convenant",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-10-21T12:18:06+00:00",
+                "created": "2025-08-26T11:52:40+00:00",
+                "updated": "2025-10-09T14:33:07+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-convenanten"
+            },
+            "sync-corsa-jaarplannen-en-jaarverslagen": {
+                "name": "Sync Corsa Jaarplannen en jaarverslagen",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/13",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/jaarplan-of-jaarverslag",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:53:01+00:00",
+                "updated": "2025-10-09T14:33:18+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-jaarplannen-en-jaarverslagen"
+            },
+            "sync-corsa-subsidieverplichtingen-anders-dan-met-beschikking": {
+                "name": "Sync Corsa Subsidieverplichtingen anders dan met beschikking",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/14",
+                "version": "0.0.18",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/subsidieverplichtingen_anders_dan_met_beschikking",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:53:29+00:00",
+                "updated": "2025-10-09T14:33:26+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-subsidieverplichtingen-anders-dan-met-beschikking"
+            },
+            "sync-corsa-onderzoeksrapporten": {
+                "name": "Sync Corsa Onderzoeksrapporten",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/15",
+                "version": "0.0.17",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/onderzoeksrapporten",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-08-21T07:30:09+00:00",
+                "created": "2025-08-26T11:54:16+00:00",
+                "updated": "2025-10-09T14:33:36+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-onderzoeksrapporten"
+            },
+            "sync-corsa-beschikkingen": {
+                "name": "Sync Corsa Beschikkingen",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/16",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/beschikkingen",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-10-23T14:12:39+00:00",
+                "created": "2025-08-26T11:54:36+00:00",
+                "updated": "2025-10-09T14:33:46+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-beschikkingen"
+            },
+            "sync-corsa-klachtoordelen": {
+                "name": "Sync Corsa Klachtoordelen",
+                "description": "",
+                "reference": "https://bct.accept.commonground.nu/apps/openconnector/api/synchronizations/17",
+                "version": "0.0.16",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "corsa-to-woo-verzoeken-en-besluiten",
+                "sourceConfig": {
+                    "idPosition": "poststuk_id",
+                    "resultsPosition": "QueryExecute2Result",
+                    "endpoint": "QueryExecute2",
+                    "headers": [],
+                    "query": [],
+                    "useDataAsRequestBody": "soap",
+                    "usesPagination": "false",
+                    "restrictDeletion": "1"
+                },
+                "sourceLastChanged": "2025-07-01T08:17:11+00:00",
+                "sourceLastChecked": "2025-07-01T08:17:11+00:00",
+                "sourceLastSynced": "2025-07-01T08:17:11+00:00",
+                "currentPage": 1,
+                "targetId": "woo/klachtoordelen",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-07-01T08:17:11+00:00",
+                "targetLastChecked": "2025-07-01T08:17:11+00:00",
+                "targetLastSynced": "2025-09-11T09:57:54+00:00",
+                "created": "2025-08-26T11:54:58+00:00",
+                "updated": "2025-10-09T14:33:56+00:00",
+                "conditions": {
+                    "==": [
+                        1,
+                        1
+                    ]
+                },
+                "followUps": [],
+                "actions": [
+                    "fetch-anonymized-file-from-bct",
+                    "fetch-archived-file-from-bct"
+                ],
+                "configurations": [],
+                "status": null,
+                "slug": "sync-corsa-klachtoordelen"
+            },
+            "delete-corsa-openwoo-app": {
+                "name": "Delete Corsa -> OpenWoo.app",
+                "description": "This sync can delete objects from all woo schemas",
+                "reference": null,
+                "version": "0.0.3",
+                "sourceId": "bct-corsa-mockservice",
+                "sourceType": "api",
+                "sourceHash": "",
+                "sourceHashMapping": "",
+                "sourceTargetMapping": "1",
+                "sourceConfig": {
+                    "idPosition": "data.documentId",
+                    "resultsPosition": "",
+                    "endpoint": "",
+                    "headers": [],
+                    "query": [],
+                    "findContractByOriginIdOnly": "true",
+                    "synchronizationType": "delete"
+                },
+                "sourceLastChanged": "2025-10-09T13:03:31+00:00",
+                "sourceLastChecked": "2025-10-09T13:03:31+00:00",
+                "sourceLastSynced": "2025-10-09T13:03:31+00:00",
+                "currentPage": 1,
+                "targetId": "woo/woo_verzoeken_en_besluiten",
+                "targetType": "register/schema",
+                "targetHash": "",
+                "targetSourceMapping": "1",
+                "targetConfig": [],
+                "targetLastChanged": "2025-10-09T13:03:31+00:00",
+                "targetLastChecked": "2025-10-09T13:03:31+00:00",
+                "targetLastSynced": "2025-10-23T11:09:45+00:00",
+                "created": "2025-10-09T13:03:31+00:00",
+                "updated": "2025-10-09T14:20:43+00:00",
+                "conditions": {
+                    "!!": {
+                        "var": "data.deletedBy"
+                    }
+                },
+                "followUps": [],
+                "actions": [],
+                "configurations": [],
+                "status": null,
+                "slug": "delete-corsa-openwoo-app"
+            }
+        },
+    "jobs": [],
+    "registers": {
+      "cloudevents": {
+        "slug": "cloudevents",
+        "title": "CloudEvents",
+        "version": "0.0.1",
+        "description": "",
+        "schemas": [
+          "cloudevent"
+        ],
+        "source": "internal",
+        "tablePrefix": "",
+        "folder": "581",
+        "updated": "2025-06-12T08:33:53+00:00",
+        "created": "2025-06-12T08:33:53+00:00",
+        "owner": null,
+        "application": null,
+        "organisation": null,
+        "authorization": null,
+        "groups": null,
+        "deleted": null
+      }
+    },
+    "schemas": {
+      "cloudevent": {
+          "uri": null,
+          "slug": "cloudevent",
+          "title": "CloudEvent",
+          "description": "",
+          "version": "0.0.10",
+          "summary": "",
+          "icon": null,
+          "required": [
+            "specversion",
+            "source"
+          ],
+          "properties": {
+            "id": {
+              "description": "",
+              "type": "string",
+              "format": "",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": false,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": "nested-object",
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            },
+            "type": {
+              "description": "",
+              "type": "string",
+              "format": "",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": false,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": "nested-object",
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            },
+            "time": {
+              "description": "",
+              "type": "string",
+              "format": "date-time",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": false,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": "nested-object",
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            },
+            "datacontenttype": {
+              "description": "",
+              "type": "string",
+              "format": "",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": false,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": "nested-object",
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            },
+            "data": {
+              "description": "",
+              "type": "object",
+              "format": "",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": false,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": null,
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            },
+            "specversion": {
+              "description": "",
+              "type": "string",
+              "format": "",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": true,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": "nested-object",
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            },
+            "source": {
+              "description": "",
+              "type": "string",
+              "format": "",
+              "pattern": "",
+              "default": "",
+              "behavior": "",
+              "required": true,
+              "deprecated": false,
+              "visible": true,
+              "hideOnCollection": false,
+              "order": null,
+              "minLength": null,
+              "maxLength": null,
+              "example": "",
+              "immutable": false,
+              "minimum": null,
+              "maximum": null,
+              "multipleOf": null,
+              "exclusiveMin": false,
+              "exclusiveMax": false,
+              "minItems": null,
+              "maxItems": null,
+              "cascadeDelete": false,
+              "inversedBy": "",
+              "$ref": "",
+              "objectConfiguration": {
+                "handling": "nested-object",
+                "schema": ""
+              },
+              "fileConfiguration": {
+                "handling": "ignore",
+                "allowedMimeTypes": [],
+                "location": "",
+                "maxSize": 0
+              },
+              "oneOf": []
+            }
+          },
+          "archive": [],
+          "source": null,
+          "hardValidation": false,
+          "immutable": false,
+          "searchable": true,
+          "updated": "2025-06-12T08:47:56+00:00",
+          "created": "2025-06-12T08:24:42+00:00",
+          "maxDepth": 0,
+          "owner": null,
+          "application": null,
+          "organisation": null,
+          "groups": null,
+          "authorization": null,
+          "deleted": null,
+          "configuration": null
+      }
+    },
+    "objects": []
+  },
+  "openapi": "3.0.0",
+  "info": {
+    "id": 2,
+    "title": "CloudEvents",
+    "description": "",
+    "version": "0.0.1"
+  }
+}
