@@ -65,6 +65,18 @@ class ObjectUpdatedEvent extends Event
      *
      * @return ObjectEntity The object entity after update
      */
+    public function getObject(): ObjectEntity
+    {
+        return $this->newObject;
+
+    }//end getObject()
+
+
+    /**
+     * Get the updated object entity
+     *
+     * @return ObjectEntity The object entity after update
+     */
     public function getNewObject(): ObjectEntity
     {
         return $this->newObject;
