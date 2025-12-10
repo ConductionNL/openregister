@@ -67,32 +67,20 @@ class ValidateObject
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
     /**
-     * Configuration service
+     * Constructor for ValidateObject
      *
-     * @var IAppConfig
+     * @param IAppConfig         $config       Configuration service.
+     * @param ObjectEntityMapper $objectMapper Object mapper.
+     * @param SchemaMapper       $schemaMapper Schema mapper.
+     * @param IURLGenerator      $urlGenerator URL generator.
      */
-    private IAppConfig $config;
-
-    /**
-     * Object mapper
-     *
-     * @var ObjectEntityMapper
-     */
-    private ObjectEntityMapper $objectMapper;
-
-    /**
-     * Schema mapper
-     *
-     * @var SchemaMapper
-     */
-    private SchemaMapper $schemaMapper;
-
-    /**
-     * URL generator
-     *
-     * @var IURLGenerator
-     */
-    private IURLGenerator $urlGenerator;
+    public function __construct(
+        private IAppConfig $config,
+        private ObjectEntityMapper $objectMapper,
+        private SchemaMapper $schemaMapper,
+        private IURLGenerator $urlGenerator
+    ) {
+    }//end __construct()
 
 
     /**

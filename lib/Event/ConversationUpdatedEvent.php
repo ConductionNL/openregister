@@ -64,4 +64,40 @@ class ConversationUpdatedEvent extends Event
     }//end __construct()
 
 
+    /**
+     * Get the conversation (returns new conversation for compatibility)
+     *
+     * @return Conversation The updated conversation entity
+     */
+    public function getConversation(): Conversation
+    {
+        return $this->newConversation;
+
+    }//end getConversation()
+
+
+    /**
+     * Get the new conversation
+     *
+     * @return Conversation The conversation after update
+     */
+    public function getNewConversation(): Conversation
+    {
+        return $this->newConversation;
+
+    }//end getNewConversation()
+
+
+    /**
+     * Get the old conversation
+     *
+     * @return Conversation The conversation before update
+     */
+    public function getOldConversation(): Conversation
+    {
+        return $this->oldConversation;
+
+    }//end getOldConversation()
+
+
 }//end class

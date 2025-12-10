@@ -1671,6 +1671,10 @@ class ConfigurationService
                 // Schema doesn't exist in current organisation context, we'll create a new one.
                 // This is expected behavior when importing from another instance.
                 $this->logger->info(message: "Schema '{$data['slug']}' not found in current organisation context, will create new one");
+            } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+                // Schema not found (thrown by SchemaMapper::find when no row is returned).
+                // This is expected during import - we'll create a new one.
+                $this->logger->info(message: "Schema '{$data['slug']}' not found (ValidationException), will create new one");
             } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                 // Multiple schemas found with the same identifier.
                 $this->handleDuplicateSchemaError(slug: $data['slug'], appId: $appId ?? 'unknown', version: $version ?? 'unknown');
@@ -1736,8 +1740,16 @@ class ConfigurationService
     {
         try {
             // Resolve the file path relative to Nextcloud root.
+            // Try multiple resolution strategies.
             $fullPath = $this->appDataPath.'/../../../'.$filePath;
             $fullPath = realpath($fullPath);
+            
+            // If realpath fails, try direct path from Nextcloud root.
+            if ($fullPath === false) {
+                $fullPath = '/var/www/html/'.$filePath;
+                // Normalize the path.
+                $fullPath = str_replace('//', '/', $fullPath);
+            }
 
             if ($fullPath === false || file_exists($fullPath) === false) {
                 throw new Exception("Configuration file not found: {$filePath}");
@@ -2967,6 +2979,98 @@ class ConfigurationService
         return $result;
 
     }//end importConfigurationWithSelection()
+
+
+    /**
+     * Get the configured app version from appconfig
+     *
+     * This method retrieves the stored version of a given app from the appconfig,
+     * which is used to track which version of configuration was last imported.
+     *
+     * @param string $appId The app ID to get the version for.
+     *
+     * @return string|null The configured version or null if not set.
+     */
+    public function getConfiguredAppVersion(string $appId): ?string
+    {
+        // Get the stored version from appconfig.
+        // The key format is: <appId>_config_version.
+        $versionKey = $appId . '_config_version';
+        
+        try {
+            // Try to get the value from appconfig.
+            $version = $this->appConfig->getValueString(
+                app: 'openregister',
+                key: $versionKey,
+                default: ''
+            );
+            
+            // Return null if empty string.
+            if ($version === '' || $version === null) {
+                return null;
+            }
+            
+            return $version;
+        } catch (\Exception $e) {
+            // Log error and return null.
+            $this->logger->error(
+                message: 'Failed to get configured app version',
+                context: [
+                    'appId' => $appId,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            
+            return null;
+        }
+        
+    }//end getConfiguredAppVersion()
+
+
+    /**
+     * Set the configured app version in appconfig
+     *
+     * This method stores the version of a configuration that was imported,
+     * allowing version tracking and comparison for updates.
+     *
+     * @param string $appId   The app ID to set the version for.
+     * @param string $version The version to store.
+     *
+     * @return void
+     */
+    public function setConfiguredAppVersion(string $appId, string $version): void
+    {
+        // The key format is: <appId>_config_version.
+        $versionKey = $appId . '_config_version';
+        
+        try {
+            // Store the version in appconfig.
+            $this->appConfig->setValueString(
+                app: 'openregister',
+                key: $versionKey,
+                value: $version
+            );
+            
+            $this->logger->info(
+                message: 'Configured app version updated',
+                context: [
+                    'appId'   => $appId,
+                    'version' => $version,
+                ]
+            );
+        } catch (\Exception $e) {
+            // Log error but don't throw - version tracking is not critical.
+            $this->logger->error(
+                message: 'Failed to set configured app version',
+                context: [
+                    'appId'   => $appId,
+                    'version' => $version,
+                    'error'   => $e->getMessage(),
+                ]
+            );
+        }
+        
+    }//end setConfiguredAppVersion()
 
 
 }//end class
