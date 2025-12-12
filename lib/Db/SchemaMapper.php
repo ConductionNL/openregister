@@ -122,9 +122,9 @@ class SchemaMapper extends QBMapper
     /**
      * Finds a schema by id, with optional extension for statistics
      *
-     * This method automatically resolves schema extensions. If the schema has
-     * an 'extend' property set, it will load the parent schema and merge its
-     * properties with the current schema, providing the complete resolved schema.
+     * This method automatically resolves schema composition. If the schema has
+     * 'allOf', 'oneOf', or 'anyOf' properties set, it will load the referenced schemas
+     * and merge their properties with the current schema, providing the complete resolved schema.
      *
      * @param int|string $id        The id of the schema
      * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
@@ -133,7 +133,7 @@ class SchemaMapper extends QBMapper
      * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
      *                              Set to false to bypass organization filter (e.g., when expanding schemas for registers)
      *
-     * @return Schema The schema, possibly with stats and resolved extensions
+     * @return Schema The schema, possibly with stats and resolved composition
      * @throws \Exception If user doesn't have read permission
      */
     public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Schema
@@ -1031,13 +1031,12 @@ class SchemaMapper extends QBMapper
      * Resolve schema composition by merging referenced schemas
      *
      * This method implements JSON Schema composition patterns conforming to the specification:
-     * 1. Handles 'extend' (deprecated) for backward compatibility
-     * 2. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
-     * 3. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
-     * 4. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
+     * 1. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
+     * 2. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
+     * 3. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
      * 
      * The method enforces the Liskov Substitution Principle:
-     * - Extended schemas can ONLY ADD constraints, never relax them
+     * - Composed schemas can ONLY ADD constraints, never relax them
      * - Metadata (title, description, order) can be overridden
      * - Validation rules (type, format, enum, min/max, pattern) cannot be relaxed
      *
@@ -1931,18 +1930,31 @@ class SchemaMapper extends QBMapper
 
         $qb->where($qb->expr()->orX(...$orConditions));
 
-        $result = $qb->executeQuery();
-        $uuids = [];
-        
-        while ($row = $result->fetch()) {
-            if (isset($row['uuid'])) {
-                $uuids[] = $row['uuid'];
+        try {
+            $result = $qb->executeQuery();
+            $uuids = [];
+            
+            while ($row = $result->fetch()) {
+                if (isset($row['uuid'])) {
+                    $uuids[] = $row['uuid'];
+                }
             }
-        }
-        
-        $result->closeCursor();
+            
+            $result->closeCursor();
 
-        return $uuids;
+            return $uuids;
+        } catch (\OCP\DB\Exceptions\DbalException $e) {
+            // If columns don't exist yet (migration hasn't run), return empty array
+            // This handles the case where all_of, one_of, or any_of columns don't exist
+            if (strpos($e->getMessage(), 'Unknown column') !== false || strpos($e->getMessage(), 'Column not found') !== false) {
+                return [];
+            }
+            // Re-throw if it's a different database error
+            throw $e;
+        } catch (\Exception $e) {
+            // If query fails for any other reason, return empty array
+            return [];
+        }
 
     }//end findExtendedBy()
 

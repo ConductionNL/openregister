@@ -79,6 +79,15 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             return;
         }
 
+        // Check if all_of column exists (it should exist from Version1Date20251114120000)
+        // If it doesn't exist, skip migration - the extend column will be removed anyway
+        $table = $schema->getTable('openregister_schemas');
+        if (!$table->hasColumn('all_of')) {
+            $output->info('⚠️  all_of column does not exist - skipping extend migration');
+            $output->info('   ℹ️  The extend column will be removed, but values cannot be migrated');
+            return;
+        }
+
         $output->info('🔄 Migrating extend values to allOf...');
 
         // Find all schemas with extend field set
@@ -99,13 +108,18 @@ class Version1Date20251114130000 extends SimpleMigrationStep
             $allOf = json_encode([$extend]);
 
             // Update the schema
-            $updateQb = $this->connection->getQueryBuilder();
-            $updateQb->update('openregister_schemas')
-                ->set('all_of', $updateQb->createNamedParameter($allOf))
-                ->where($updateQb->expr()->eq('id', $updateQb->createNamedParameter($id)))
-                ->executeStatement();
+            try {
+                $updateQb = $this->connection->getQueryBuilder();
+                $updateQb->update('openregister_schemas')
+                    ->set('all_of', $updateQb->createNamedParameter($allOf))
+                    ->where($updateQb->expr()->eq('id', $updateQb->createNamedParameter($id)))
+                    ->executeStatement();
 
-            $migratedCount++;
+                $migratedCount++;
+            } catch (\Exception $e) {
+                // If update fails (e.g., column doesn't exist), skip this row
+                $output->warning("   ⚠️  Failed to migrate extend for schema ID {$id}: " . $e->getMessage());
+            }
         }//end while
 
         $result->closeCursor();
