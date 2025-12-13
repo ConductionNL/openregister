@@ -359,8 +359,8 @@ class SolrDebugCommand extends Command
 
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
 
-        $coresResponse = @file_get_contents($coresUrl);
-        if ($coresResponse !== false && $coresResponse !== '') {
+        $coresResponse = file_get_contents($coresUrl);
+        if ($coresResponse !== false && $coresResponse !== '' && $coresResponse !== null) {
             $coresData = json_decode($coresResponse, true);
             if (($coresData['status'] ?? null) !== null) {
                 $coreCount = count($coresData['status']);
@@ -385,8 +385,8 @@ class SolrDebugCommand extends Command
 
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
 
-        $collectionsResponse = @file_get_contents($collectionsUrl);
-        if ($collectionsResponse !== false && $collectionsResponse !== '') {
+        $collectionsResponse = file_get_contents($collectionsUrl);
+        if ($collectionsResponse !== false && $collectionsResponse !== '' && $collectionsResponse !== null) {
             $collectionsData = json_decode($collectionsResponse, true);
             if (($collectionsData['cluster']['collections'] ?? null) !== null) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
@@ -413,8 +413,8 @@ class SolrDebugCommand extends Command
 
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
 
-        $configSetsResponse = @file_get_contents($configSetsUrl);
-        if ($configSetsResponse !== false && $configSetsResponse !== '') {
+        $configSetsResponse = file_get_contents($configSetsUrl);
+        if ($configSetsResponse !== false && $configSetsResponse !== '' && $configSetsResponse !== null) {
             $configSetsData = json_decode($configSetsResponse, true);
             if (($configSetsData['configSets'] ?? null) !== null) {
                 $configSetCount = count($configSetsData['configSets']);

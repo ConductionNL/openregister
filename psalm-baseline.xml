@@ -16,12 +16,6 @@
     </InvalidArrayOffset>
   </file>
   <file src="lib/Controller/AgentsController.php">
-    <InvalidReturnStatement>
-      <code><![CDATA[new JSONResponse(
-                data: ['results' => $agents],
-                statusCode: Http::STATUS_OK
-            )]]></code>
-    </InvalidReturnStatement>
     <InvalidTemplateParam>
       <code><![CDATA[JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>]]></code>
     </InvalidTemplateParam>
@@ -100,7 +94,6 @@
       <code><![CDATA[$object]]></code>
       <code><![CDATA[$object]]></code>
       <code><![CDATA[$object]]></code>
-      <code><![CDATA[JSONResponse<200|500, array{error?: string, results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, total?: int, page?: int, pages?: 1|float, limit?: int|null, offset?: int|null}, array<never, never>>]]></code>
     </UndefinedDocblockClass>
   </file>
   <file src="lib/Controller/EndpointsController.php">
@@ -116,9 +109,6 @@
     <InvalidTemplateParam>
       <code><![CDATA[JSONResponse<int, array{error?: string, success?: bool, message?: string, statusCode?: int, response?: mixed}, array<never, never>>]]></code>
     </InvalidTemplateParam>
-    <UndefinedDocblockClass>
-      <code><![CDATA[JSONResponse<200|404|500, array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>}, array<never, never>>]]></code>
-    </UndefinedDocblockClass>
   </file>
   <file src="lib/Controller/FileExtractionController.php">
     <UndefinedDocblockClass>
@@ -129,11 +119,9 @@
     <InvalidArgument>
       <code><![CDATA[$files]]></code>
     </InvalidArgument>
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<int, array<string, mixed>>]]></code>
-    </InvalidTemplateParam>
     <NoValue>
       <code><![CDATA[$errorArray]]></code>
+      <code><![CDATA[$fileName]]></code>
       <code><![CDATA[$sizeArray]]></code>
       <code><![CDATA[$tmpNameArray]]></code>
       <code><![CDATA[$typeArray]]></code>
@@ -180,14 +168,6 @@
     </UndefinedDocblockClass>
   </file>
   <file src="lib/Controller/RegistersController.php">
-    <InvalidReturnStatement>
-      <code><![CDATA[new JSONResponse(
-                data: $this->objectEntityMapper->searchObjects(query: $query)
-        )]]></code>
-    </InvalidReturnStatement>
-    <InvalidReturnType>
-      <code><![CDATA[JSONResponse<200, array<int, \OCA\OpenRegister\Db\ObjectEntity>|int, array<never, never>>]]></code>
-    </InvalidReturnType>
     <InvalidTemplateParam>
       <code><![CDATA[JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
       <code><![CDATA[JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
@@ -275,7 +255,6 @@
       <code><![CDATA[$latestLog]]></code>
       <code><![CDATA[$log]]></code>
       <code><![CDATA[$log]]></code>
-      <code><![CDATA[JSONResponse<200|404|500, array{error?: 'Failed to retrieve webhook logs'|'Webhook not found', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\WebhookLog>, total?: int<0, max>}, array<never, never>>]]></code>
     </UndefinedDocblockClass>
   </file>
   <file src="lib/Cron/SyncConfigurationsJob.php">
@@ -313,8 +292,6 @@
     <UndefinedDocblockClass>
       <code><![CDATA[list<OCA\OpenRegister\Db\Agent>]]></code>
       <code><![CDATA[list<OCA\OpenRegister\Db\Agent>]]></code>
-      <code><![CDATA[list<OCA\OpenRegister\Db\Agent|OCA\OpenRegister\Db\OCA\OpenRegister\Db\Agent>]]></code>
-      <code><![CDATA[list<OCA\OpenRegister\Db\Agent|OCA\OpenRegister\Db\OCA\OpenRegister\Db\Agent>]]></code>
     </UndefinedDocblockClass>
   </file>
   <file src="lib/Db/ApplicationMapper.php">
@@ -388,8 +365,6 @@
     </TypeDoesNotContainType>
     <UndefinedDocblockClass>
       <code><![CDATA[array{large: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>, normal: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>}]]></code>
-      <code><![CDATA[int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>]]></code>
-      <code><![CDATA[int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>]]></code>
       <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
       <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
       <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
@@ -406,10 +381,6 @@
                 // Fallback to exact calculation.
                 $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);]]></code>
     </ParadoxicalCondition>
-    <UndefinedDocblockClass>
-      <code><![CDATA[Promise<T>]]></code>
-      <code><![CDATA[Promise<T>]]></code>
-    </UndefinedDocblockClass>
     <UndefinedVariable>
       <code><![CDATA[$results]]></code>
       <code><![CDATA[$results]]></code>
@@ -660,7 +631,6 @@
       <code><![CDATA[$file]]></code>
       <code><![CDATA[$file]]></code>
       <code><![CDATA[list<OCA\OpenRegister\Service\OCP\Files\Node>]]></code>
-      <code><![CDATA[list<OCP\Files\Node>]]></code>
     </UndefinedDocblockClass>
   </file>
   <file src="lib/Service/GuzzleSolrService.php">
@@ -692,9 +662,6 @@
     <TypeDoesNotContainType>
       <code><![CDATA[strpos($sampleValue, '.') !== false]]></code>
     </TypeDoesNotContainType>
-    <UndefinedDocblockClass>
-      <code><![CDATA[ObjectEntityMapper]]></code>
-    </UndefinedDocblockClass>
     <UndefinedVariable>
       <code><![CDATA[$autoAddReplicas]]></code>
       <code><![CDATA[$availability]]></code>
@@ -787,10 +754,6 @@
     <UndefinedDocblockClass>
       <code><![CDATA[$schema]]></code>
     </UndefinedDocblockClass>
-    <UndefinedVariable>
-      <code><![CDATA[$schemaName]]></code>
-      <code><![CDATA[$schemaName]]></code>
-    </UndefinedVariable>
   </file>
   <file src="lib/Service/ObjectCacheService.php">
     <InvalidPropertyAssignmentValue>
@@ -810,7 +773,6 @@
       <code><![CDATA[$organisation]]></code>
       <code><![CDATA[$organisation]]></code>
       <code><![CDATA[$organisation]]></code>
-      <code><![CDATA[array<ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>]]></code>
     </UndefinedDocblockClass>
     <UndefinedThisPropertyAssignment>
       <code><![CDATA[$this->relationshipCache]]></code>
@@ -832,11 +794,6 @@
     <TypeDoesNotContainNull>
       <code><![CDATA[$object === null]]></code>
     </TypeDoesNotContainNull>
-  </file>
-  <file src="lib/Service/ObjectHandlers/GetObject.php">
-    <UndefinedDocblockClass>
-      <code><![CDATA[list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>]]></code>
-    </UndefinedDocblockClass>
   </file>
   <file src="lib/Service/ObjectHandlers/PublishObject.php">
     <TypeDoesNotContainNull>
@@ -893,19 +850,13 @@
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[array_merge($objectsToCache, $this->objectsCache)]]></code>
     </InvalidPropertyAssignmentValue>
-    <UndefinedVariable>
-      <code><![CDATA[$modifiedDate]]></code>
-      <code><![CDATA[$modifiedDate]]></code>
-    </UndefinedVariable>
   </file>
   <file src="lib/Service/ObjectHandlers/SaveObject.php">
     <EmptyArrayAccess>
       <code><![CDATA[$imageValue['accessUrl']]]></code>
       <code><![CDATA[$imageValue['downloadUrl']]]></code>
     </EmptyArrayAccess>
-    <MismatchingDocblockReturnType>
-      <code><![CDATA[int|null]]></code>
-    </MismatchingDocblockReturnType>
+    <MismatchingDocblockReturnType/>
     <TypeDoesNotContainNull>
       <code><![CDATA[$targetObject === null]]></code>
     </TypeDoesNotContainNull>
@@ -919,13 +870,6 @@
     <InvalidArgument>
       <code><![CDATA['bsn']]></code>
       <code><![CDATA['semver']]></code>
-      <code><![CDATA[[
-                    [
-                        'name'   => is_array($uniqueFields) === true ? array_shift($uniqueFields) : $uniqueFields,
-                        'code'   => 'identificatie-niet-uniek',
-                        'reason' => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}",
-                    ],
-                ]]]></code>
     </InvalidArgument>
     <InvalidNamedArgument>
       <code><![CDATA[resolver]]></code>
@@ -943,17 +887,15 @@
   </file>
   <file src="lib/Service/ObjectService.php">
     <InvalidArgument>
-      <code><![CDATA[$object]]></code>
       <code><![CDATA[$sourceObject]]></code>
     </InvalidArgument>
     <InvalidArrayOffset>
       <code><![CDATA[$bulkResult['statistics']['objectsCreated']]]></code>
       <code><![CDATA[$bulkResult['statistics']['objectsUpdated']]]></code>
     </InvalidArrayOffset>
-    <InvalidReturnStatement>
-      <code><![CDATA[$objects]]></code>
-      <code><![CDATA[$result]]></code>
-    </InvalidReturnStatement>
+    <InvalidNamedArgument>
+      <code><![CDATA[activeOrganisationUuid]]></code>
+    </InvalidNamedArgument>
     <UndefinedClass>
       <code><![CDATA[$file]]></code>
       <code><![CDATA[$file]]></code>
@@ -1036,12 +978,6 @@
     </InvalidNamedArgument>
   </file>
   <file src="lib/Service/WebhookInterceptorService.php">
-    <InvalidArgument>
-      <code><![CDATA[$webhook]]></code>
-      <code><![CDATA[$webhook]]></code>
-      <code><![CDATA[$webhook]]></code>
-      <code><![CDATA[$webhook]]></code>
-    </InvalidArgument>
     <UndefinedDocblockClass>
       <code><![CDATA[$webhook]]></code>
       <code><![CDATA[$webhook]]></code>
@@ -1050,7 +986,6 @@
       <code><![CDATA[$webhook]]></code>
       <code><![CDATA[$webhook]]></code>
       <code><![CDATA[$webhook]]></code>
-      <code><![CDATA[list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\Webhook>]]></code>
     </UndefinedDocblockClass>
   </file>
   <file src="lib/Service/WebhookService.php">

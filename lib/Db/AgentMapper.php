@@ -184,7 +184,7 @@ class AgentMapper extends QBMapper
      * @param int         $limit            Maximum number of results
      * @param int         $offset           Offset for pagination
      *
-     * @return (Agent|OCA\OpenRegister\Db\Agent)[] Array of agent entities
+     * @return (Agent|OCA\OpenRegister\Db\Agent)[]
      *
      * @throws \Exception If user doesn't have read permission
      *

@@ -1480,6 +1480,13 @@ class SolrSetup
                     ]
                     );
 
+            // Determine SOLR response value.
+            if ($retryDetails === true) {
+                $solrResponseValue = $retryDetails;
+            } else {
+                $solrResponseValue = $solrResponse;
+            }
+
             $this->lastErrorDetails = [
                 'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
                 'error_type'         => 'collection_creation_failure',
@@ -1492,7 +1499,7 @@ class SolrSetup
                 'exception_type'     => get_class($e),
                 'exception_message'  => $e->getMessage(),
                 'error_category'     => $errorCategory,
-                'solr_response'      => ($retryDetails === true) ? $retryDetails : $solrResponse,
+                'solr_response'      => null,
                 'guzzle_details'     => [],
                 'configuration_used' => [
                     'host'   => $this->solrConfig['host'] ?? 'unknown',

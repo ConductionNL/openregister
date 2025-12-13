@@ -387,6 +387,13 @@ class SaveObjects
         $totalTime    = microtime(true) - $startTime;
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
+        // Calculate efficiency.
+        if (count($processedObjects) > 0) {
+            $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
+        } else {
+            $efficiency = 0;
+        }
+
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
         $result['performance'] = [
             'totalTime'        => round($totalTime, 3),
@@ -394,7 +401,7 @@ class SaveObjects
             'objectsPerSecond' => round($overallSpeed, 2),
             'totalProcessed'   => count($processedObjects),
             'totalRequested'   => $totalObjects,
-            'efficiency'       => count($processedObjects) > 0 ? round((count($processedObjects) / $totalObjects) * 100, 1) : 0,
+            'efficiency'       => $efficiency,
         ];
 
         // Add deduplication efficiency if we have unchanged objects.
@@ -1048,11 +1055,18 @@ class SaveObjects
 // TOP LEVEL for bulk SQL.
                 }
 
+                // Determine @self keys for debugging.
+                if ((($object['@self'] ?? null) !== null) === true) {
+                    $selfKeys = array_keys($object['@self']);
+                } else {
+                    $selfKeys = 'none';
+                }
+
                 // DEBUG: Log actual data structure to understand what we're receiving.
                 $this->logger->info("[SaveObjects] DEBUG - Single schema object structure", [
                     'available_keys' => array_keys($object),
                     'has_@self' => (($object['@self'] ?? null) !== null) === true,
-                    '@self_keys' => (($object['@self'] ?? null) !== null) === true ? array_keys($object['@self']) : 'none',
+                    '@self_keys' => $selfKeys,
                     'has_object_property' => (($object['object'] ?? null) !== null) === true,
 // First 3 key-value pairs for structure.
                 ]);
@@ -1272,7 +1286,11 @@ class SaveObjects
         // Update statistics for unchanged objects (skipped because content was unchanged).
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(function($obj) {
-            return is_array($obj) === true ? $obj : $obj->jsonSerialize();
+            if (is_array($obj) === true) {
+                return $obj;
+            } else {
+                return $obj->jsonSerialize();
+            }
         }, $unchangedObjects);
 
 
@@ -1378,13 +1396,27 @@ class SaveObjects
 
             // Objects are already classified, add to appropriate response arrays.
             foreach ($createdObjects as $createdObj) {
-                $result['saved'][] = is_array($createdObj) === true ? $createdObj : $createdObj;
+                if (is_array($createdObj) === true) {
+                    $result['saved'][] = $createdObj;
+                } else {
+                    $result['saved'][] = $createdObj;
+                }
             }
+
             foreach ($updatedObjects as $updatedObj) {
-                $result['updated'][] = is_array($updatedObj) === true ? $updatedObj : $updatedObj;
+                if (is_array($updatedObj) === true) {
+                    $result['updated'][] = $updatedObj;
+                } else {
+                    $result['updated'][] = $updatedObj;
+                }
             }
+
             foreach ($unchangedObjects as $unchangedObj) {
-                $result['unchanged'][] = is_array($unchangedObj) === true ? $unchangedObj : $unchangedObj;
+                if (is_array($unchangedObj) === true) {
+                    $result['unchanged'][] = $unchangedObj;
+                } else {
+                    $result['unchanged'][] = $unchangedObj;
+                }
             }
 
             $this->logger->info("[SaveObjects] Using database-computed pre-classified objects for response", [
@@ -1710,11 +1742,20 @@ class SaveObjects
             // CRITICAL FIX: Use register and schema from object data if available.
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
-                $selfData['register'] = (is_object($object['register']) === true) ? $object['register']->getId() : $object['register'];
+                if (is_object($object['register']) === true) {
+                    $selfData['register'] = $object['register']->getId();
+                } else {
+                    $selfData['register'] = $object['register'];
+                }
             //end foreach
             }
+
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
-                $selfData['schema'] = (is_object($object['schema']) === true) ? $object['schema']->getId() : $object['schema'];
+                if (is_object($object['schema']) === true) {
+                    $selfData['schema'] = $object['schema']->getId();
+                } else {
+                    $selfData['schema'] = $object['schema'];
+                }
             }
             // Note: Register and schema should be set in object data before calling this method.
             // VALIDATION FIX: Validate that required register and schema are properly set.
@@ -1753,7 +1794,11 @@ class SaveObjects
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
                 $currentUser = $this->userSession->getUser();
-                $selfData['owner'] = ($currentUser !== null) === true ? $currentUser->getUID() : null;
+                if (($currentUser !== null) === true) {
+                    $selfData['owner'] = $currentUser->getUID();
+                } else {
+                    $selfData['owner'] = null;
+                }
             }
 
         // Set organization using optimized OrganisationService method if not provided.
@@ -1979,7 +2024,11 @@ class SaveObjects
                     continue;
                 }
 
-                $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
 
                 foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
@@ -2028,7 +2077,11 @@ class SaveObjects
                     continue;
                 }
 
-                $relatedObjectIds = is_array($objectData[$propertyName]) === true ? $objectData[$propertyName] : [$objectData[$propertyName]];
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
 
                 foreach ($relatedObjectIds as $relatedId) {
                     //end foreach

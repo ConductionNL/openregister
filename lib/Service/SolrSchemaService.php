@@ -1664,8 +1664,8 @@ class SolrSchemaService
                 ]
                 );
 
-        $response = @file_get_contents($url, false, $context);
-        if ($response === false) {
+        $response = file_get_contents($url, false, $context);
+        if ($response === false || $response === null) {
             return false;
         }
 

@@ -302,6 +302,8 @@ class ObjectEntityMapper extends QBMapper
                 }
             }//end if
         } catch (\Exception $e) {
+            // Failed to query max_allowed_packet, will use default buffer.
+            $this->logger->debug('Failed to initialize max packet size from database', ['exception' => $e->getMessage()]);
         }//end try
 
     }//end initializeMaxPacketSize()
@@ -322,6 +324,8 @@ class ObjectEntityMapper extends QBMapper
                 return (int) $result['Value'];
             }
         } catch (\Exception $e) {
+            // Failed to query max_allowed_packet, using fallback value.
+            $this->logger->debug('Failed to get max_allowed_packet from database', ['exception' => $e->getMessage()]);
         }
 
         // Default fallback value (16MB).
@@ -1198,7 +1202,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return (OCA\OpenRegister\Db\ObjectEntity|ObjectEntity)[]|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     * @return (OCA\OpenRegister\Db\ObjectEntity|ObjectEntity)[]|int
      *
      * @psalm-return int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>
      */
@@ -3408,8 +3412,9 @@ class ObjectEntityMapper extends QBMapper
         // Calculate optimal batch size based on actual data size to prevent max_allowed_packet errors.
         $batchSize   = $this->calculateOptimalBatchSize($insertObjects, $columns);
         $insertedIds = [];
+        $objectCount = count($insertObjects);
 
-        for ($i = 0; $i < count($insertObjects); $i += $batchSize) {
+        for ($i = 0; $i < $objectCount; $i += $batchSize) {
             $batch       = array_slice($insertObjects, $i, $batchSize);
             $batchNumber = ($i / $batchSize) + 1;
             // Check database connection health before processing batch.
@@ -3521,6 +3526,8 @@ class ObjectEntityMapper extends QBMapper
                                 $this->db->close();
                                 $this->db->connect();
                             } catch (\Exception $reconnectException) {
+                                // Reconnection failed, will retry the insert in next iteration.
+                                $this->logger->warning('Database reconnection failed during bulk insert', ['exception' => $reconnectException->getMessage()]);
                             }
                         }
                     } else {

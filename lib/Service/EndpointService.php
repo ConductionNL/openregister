@@ -179,7 +179,7 @@ class EndpointService
                 return $this->executeViewEndpoint(_endpoint: $endpoint, _request: $request);
             case 'agent':
                 // Execute agent-based endpoint (uses AI agent).
-                return $this->executeAgentEndpoint(_endpoint: $endpoint, _request: $request);
+                return $this->executeAgentEndpoint(endpoint: $endpoint, request: $request);
             case 'webhook':
                 // Execute webhook-based endpoint (HTTP webhook call).
                 return $this->executeWebhookEndpoint(_endpoint: $endpoint, _request: $request);
@@ -235,6 +235,7 @@ class EndpointService
      * @return         array Execution result
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     * @psalm-suppress UnusedParam - False positive: both parameters are used within the method.
      */
     private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
     {

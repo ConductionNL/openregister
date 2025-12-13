@@ -1146,7 +1146,7 @@ class TextExtractionService
      *
      * @throws Exception If PDF parsing fails
      */
-    private function extractPdf(\OCP\Files\File $file): string|null|null
+    private function extractPdf(\OCP\Files\File $file): string|null
     {
         // Check if PdfParser library is available.
         if (class_exists('Smalot\PdfParser\Parser') === false) {

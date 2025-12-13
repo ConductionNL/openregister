@@ -135,7 +135,7 @@ class MagicOrganizationHandler
      *
      * @return null|string Default organization UUID or null if not found
      */
-    private function getSystemDefaultOrganizationUuid(): string|null|null
+    private function getSystemDefaultOrganizationUuid(): string|null
     {
         try {
             // Get default organisation UUID from configuration (not deprecated is_default column).

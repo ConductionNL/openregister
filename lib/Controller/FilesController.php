@@ -407,7 +407,8 @@ class FilesController extends Controller
             } elseif (is_array($fileName) === true) {
                 // Multiple file upload - $fileName is an array.
                 // Loop through each file using the count of 'name'.
-                for ($i = 0; $i < count($fileName); $i++) {
+                $fileCount = count($fileName);
+                for ($i = 0; $i < $fileCount; $i++) {
                     $tags = $data['tags'][$i] ?? '';
                     if (is_array($tags) === false) {
                         $tags = explode(',', $tags);
@@ -763,7 +764,7 @@ class FilesController extends Controller
      *
      * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
      *
-     * @psalm-return JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<int, array<string, mixed>>
+     * @psalm-return JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200, array<string, mixed>>
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {

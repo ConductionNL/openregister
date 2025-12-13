@@ -340,9 +340,9 @@ function makeHttpRequest($url, $payload): array
             ]
             );
 
-    $response = @file_get_contents($url, false, $context);
+    $response = file_get_contents($url, false, $context);
 
-    if ($response === false) {
+    if ($response === false || $response === null) {
         return ['success' => false, 'error' => 'HTTP request failed'];
     }
 

@@ -1332,7 +1332,7 @@ class OrganisationService
      *
      * @return null|string The UUID of the default organisation, or null if not set
      */
-    public function getDefaultOrganisationId(): string|null|null
+    public function getDefaultOrganisationId(): string|null
     {
         $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
         if ($defaultOrgId !== '') {

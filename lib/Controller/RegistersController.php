@@ -523,13 +523,11 @@ class RegistersController extends Controller
      * @param int $register The ID of the register
      * @param int $schema   The ID of the schema
      *
-     * @return JSONResponse A JSON response containing the objects
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array<int, \OCA\OpenRegister\Db\ObjectEntity>|int, array<never, never>>
+     * @psalm-return JSONResponse<200, int|list<\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -563,7 +561,7 @@ class RegistersController extends Controller
      *
      * @psalm-return DataDownloadResponse<200, 'application/json'|'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv', array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
-    public function export(int $id): JSONResponse|DataDownloadResponse | JSONResponse
+    public function export(int $id): JSONResponse|DataDownloadResponse
     {
         try {
             // Get export format from query parameter.

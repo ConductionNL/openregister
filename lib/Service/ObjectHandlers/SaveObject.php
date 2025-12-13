@@ -336,7 +336,11 @@ class SaveObject
                     continue;
                 }
 
-                $currentPath = (($prefix !== '') === true) ? $prefix.'.'.$key : $key;
+                if (($prefix !== '') === true) {
+                    $currentPath = $prefix.'.'.$key;
+                } else {
+                    $currentPath = $key;
+                }
 
                 if (is_array($value) === true && empty($value) === true) {
                     // Check if this is an array property in the schema.
@@ -867,7 +871,11 @@ class SaveObject
         $result = preg_replace('/\s+/', ' ', $result);
         $result = trim($result);
 
-        return $result !== '' ? $result : null;
+        if ($result !== '') {
+            return $result;
+        } else {
+            return null;
+        }
 
     }//end processTwigLikeTemplate()
 
@@ -1165,7 +1173,11 @@ class SaveObject
             }
 
             // Convert object to array if needed.
-            $objectData = is_object($data[$property]) === true ? (array) $data[$property] : $data[$property];
+            if (is_object($data[$property]) === true) {
+                $objectData = (array) $data[$property];
+            } else {
+                $objectData = $data[$property];
+            }
 
             // Skip if the object is effectively empty (only contains empty values).
             if ($this->isEffectivelyEmptyObject($objectData) === true) {
@@ -1864,11 +1876,32 @@ class SaveObject
         // Update the object with the modified data (file IDs instead of content).
         // $savedEntity->setObject($data);
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately.
+        // Determine operation type.
+        if ($uuid === true) {
+            $operation = 'update';
+        } else {
+            $operation = 'create';
+        }
+
+        // Determine register ID.
+        if ($savedEntity->getRegister() !== null) {
+            $registerId = (int) $savedEntity->getRegister();
+        } else {
+            $registerId = null;
+        }
+
+        // Determine schema ID.
+        if ($savedEntity->getSchema() !== null) {
+            $schemaId = (int) $savedEntity->getSchema();
+        } else {
+            $schemaId = null;
+        }
+
         $this->objectCacheService->invalidateForObjectChange(
             object: $savedEntity,
-            operation: $uuid === true ? 'update' : 'create',
-            registerId: $savedEntity->getRegister() !== null ? (int) $savedEntity->getRegister() : null,
-            schemaId: $savedEntity->getSchema() !== null ? (int) $savedEntity->getSchema() : null
+            operation: $operation,
+            registerId: $registerId,
+            schemaId: $schemaId
         );
 
         return $savedEntity;
@@ -2585,7 +2618,11 @@ class SaveObject
 
         // Determine if this is a direct file property or array[file].
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-        $fileConfig      = $isArrayProperty === true ? ($propertyConfig['items'] ?? []) : $propertyConfig;
+        if ($isArrayProperty === true) {
+            $fileConfig = ($propertyConfig['items'] ?? []);
+        } else {
+            $fileConfig = $propertyConfig;
+        }
 
         // Validate that the property is configured for files.
         if (($fileConfig['type'] ?? '') !== 'file') {
@@ -2624,7 +2661,12 @@ class SaveObject
             }//end if
 
             // Set property to null or empty array.
-            $object[$propertyName] = $isArrayProperty === true ? [] : null;
+            if ($isArrayProperty === true) {
+                $object[$propertyName] = [];
+            } else {
+                $object[$propertyName] = null;
+            }
+
             return;
         }//end if
 
@@ -2984,7 +3026,11 @@ class SaveObject
      */
     private function validateExistingFileAgainstConfig($file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
-        $errorPrefix = $index !== null ? "Existing file at $propertyName[$index]" : "Existing file at $propertyName";
+        if ($index !== null) {
+            $errorPrefix = "Existing file at $propertyName[$index]";
+        } else {
+            $errorPrefix = "Existing file at $propertyName";
+        }
 
         // Validate MIME type.
         if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {

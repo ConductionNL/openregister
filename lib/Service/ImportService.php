@@ -1157,7 +1157,8 @@ class ImportService
 
             // Process promises in batches to limit concurrency.
             $batchSize = self::MAX_CONCURRENT;
-            for ($i = 0; $i < count($promises); $i += $batchSize) {
+            $promiseCount = count($promises);
+            for ($i = 0; $i < $promiseCount; $i += $batchSize) {
                 $batch = array_slice($promises, $i, $batchSize);
                 /*
                  * @psalm-suppress UndefinedFunction - React\Async\await is from external library

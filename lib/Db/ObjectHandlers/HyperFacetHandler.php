@@ -592,7 +592,7 @@ class HyperFacetHandler
      *
      * @psalm-param array<string, mixed> $metadataFacets
      *
-     * @psalm-return Promise<T>
+     * @psalm-return PromiseInterface
      */
     private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): Promise
     {
@@ -1087,7 +1087,7 @@ class HyperFacetHandler
 
     // Placeholder methods that would need to be implemented based on specific requirements.
     /**
-     * @psalm-return Promise<T>
+     * @psalm-return PromiseInterface
      */
     private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): Promise
     {

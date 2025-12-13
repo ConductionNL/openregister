@@ -793,6 +793,13 @@ class OasService
      */
     private function createPutOperation(object $schema): array
     {
+        // Determine schema name.
+        if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
+            $schemaName = $schema->getTitle();
+        } else {
+            $schemaName = 'UnknownSchema';
+        }
+
         return [
             'summary'     => 'Update a '.$schema->getTitle().' object',
             'operationId' => 'update'.$this->pascalCase($schema->getTitle()),

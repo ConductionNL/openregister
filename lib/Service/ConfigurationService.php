@@ -620,7 +620,11 @@ class ConfigurationService
         $lastSegment = end($parts);
 
         // Return numeric segment if found, otherwise return original URL.
-        return is_numeric($lastSegment) === true ? $lastSegment : $url;
+        if (is_numeric($lastSegment) === true) {
+            return $lastSegment;
+        } else {
+            return $url;
+        }
 
     }//end getLastNumericSegment()
 
@@ -1111,8 +1115,12 @@ class ConfigurationService
                 $this->logger->debug(message: 'Import object search filter', context: ['filter' => $search]);
 
                 // Search for existing object.
-                $results        = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
-                $existingObject = (is_array($results) === true) && count($results) > 0 ? $results[0] : null;
+                $results = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
+                if ((is_array($results) === true) && count($results) > 0) {
+                    $existingObject = $results[0];
+                } else {
+                    $existingObject = null;
+                }
 
                 if ($existingObject === null) {
                     $this->logger->info(
@@ -1131,8 +1139,13 @@ class ConfigurationService
                 $objectData['@self']['schema']   = (int) $schemaId;
 
                 if ($existingObject !== null) {
-                    $existingObjectData = is_array($existingObject) === true ? $existingObject : $existingObject->jsonSerialize();
-                    $importedVersion    = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+                    if (is_array($existingObject) === true) {
+                        $existingObjectData = $existingObject;
+                    } else {
+                        $existingObjectData = $existingObject->jsonSerialize();
+                    }
+
+                    $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
                     $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
                     if (version_compare($importedVersion, $existingVersion, '>') > 0) {
                         $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
@@ -2157,12 +2170,19 @@ class ConfigurationService
 
             $info = [];
             foreach ($duplicates as $schema) {
+                // Format created date.
+                if (($schema->getCreated() !== null) === true) {
+                    $createdDate = $schema->getCreated()->format('Y-m-d H:i:s');
+                } else {
+                    $createdDate = 'unknown';
+                }
+
                 $info[] = sprintf(
                     "ID: %s, UUID: %s, Title: '%s', Created: %s",
                     $schema->getId(),
                     $schema->getUuid(),
                     $schema->getTitle(),
-                    (($schema->getCreated() !== null) === true) ? $schema->getCreated()->format('Y-m-d H:i:s') : 'unknown'
+                    $createdDate
                 );
             }
 
@@ -2232,12 +2252,19 @@ class ConfigurationService
 
             $info = [];
             foreach ($duplicates as $register) {
+                // Format created date.
+                if (($register->getCreated() !== null) === true) {
+                    $registerCreated = $register->getCreated()->format('Y-m-d H:i:s');
+                } else {
+                    $registerCreated = 'unknown';
+                }
+
                 $info[] = sprintf(
                     "ID: %s, UUID: %s, Title: '%s', Created: %s",
                     $register->getId(),
                     $register->getUuid(),
                     $register->getTitle(),
-                    (($register->getCreated() !== null) === true) ? $register->getCreated()->format('Y-m-d H:i:s') : 'unknown'
+                    $registerCreated
                 );
             }
 
@@ -2336,12 +2363,19 @@ class ConfigurationService
         $remoteVersion = $configuration->getRemoteVersion();
         $lastChecked   = $configuration->getLastChecked();
 
+        // Format last checked date.
+        if ($lastChecked) {
+            $lastCheckedFormatted = $lastChecked->format('c');
+        } else {
+            $lastCheckedFormatted = null;
+        }
+
         // Build result array.
         $result = [
             'hasUpdate'     => false,
             'localVersion'  => $localVersion,
             'remoteVersion' => $remoteVersion,
-            'lastChecked'   => $lastChecked ? $lastChecked->format('c') : null,
+            'lastChecked'   => $lastCheckedFormatted,
             'message'       => '',
         ];
 
@@ -2563,9 +2597,16 @@ class ConfigurationService
             // Register doesn't exist.
         }
 
+        // Determine action.
+        if ($existingRegister === null) {
+            $action = 'create';
+        } else {
+            $action = 'update';
+        }
+
         $preview = [
             'type'     => 'register',
-            'action'   => $existingRegister === null ? 'create' : 'update',
+            'action'   => $action,
             'slug'     => $slug,
             'title'    => $registerData['title'] ?? $slug,
             'current'  => null,
@@ -2626,9 +2667,16 @@ class ConfigurationService
             // Schema doesn't exist.
         }
 
+        // Determine action.
+        if ($existingSchema === null) {
+            $action = 'create';
+        } else {
+            $action = 'update';
+        }
+
         $preview = [
             'type'     => 'schema',
-            'action'   => $existingSchema === null ? 'create' : 'update',
+            'action'   => $action,
             'slug'     => $slug,
             'title'    => $schemaData['title'] ?? $slug,
             'current'  => null,
@@ -2725,14 +2773,23 @@ class ConfigurationService
             '_limit' => 1,
         ];
 
-        $results        = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
-        $existingObject = is_array($results) === true && count($results) > 0 ? $results[0] : null;
+        $results = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
+        if (is_array($results) === true && count($results) > 0) {
+            $existingObject = $results[0];
+        } else {
+            $existingObject = null;
+        }
 
         if ($existingObject === null) {
             $preview['action'] = 'create';
         } else {
             // Object exists, check version.
-            $existingObjectData = is_array($existingObject) === true ? $existingObject : $existingObject->jsonSerialize();
+            if (is_array($existingObject) === true) {
+                $existingObjectData = $existingObject;
+            } else {
+                $existingObjectData = $existingObject->jsonSerialize();
+            }
+
             $preview['current'] = $existingObjectData;
 
             $currentVersion  = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
@@ -2770,7 +2827,11 @@ class ConfigurationService
 
         // Check all keys in proposed data.
         foreach ($proposed as $key => $proposedValue) {
-            $fieldName = $prefix === '' ? $key : "{$prefix}.{$key}";
+            if ($prefix === '') {
+                $fieldName = $key;
+            } else {
+                $fieldName = "{$prefix}.{$key}";
+            }
 
             // Skip certain metadata fields.
             if (in_array($key, ['id', 'uuid', 'created', 'updated']) === true) {
