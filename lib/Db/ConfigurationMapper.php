@@ -170,7 +170,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
+     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
     public function findByApp(string $app, int $limit=50, int $offset=0): array
     {
@@ -247,7 +247,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @since 0.2.10
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
+     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
     public function findBySyncEnabled(int $limit=50, int $offset=0): array
     {
@@ -482,7 +482,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
+     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
     public function findAll(
         ?int $limit=null,

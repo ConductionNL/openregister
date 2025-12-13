@@ -162,7 +162,7 @@ class DeletedController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, total?: int, page?: int, pages?: 1|float, limit?: int|null, offset?: int|null}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: list<\OCA\OpenRegister\Db\ObjectEntity>, total?: int, page?: int, pages?: 1|float, limit?: int|null, offset?: int|null}, array<never, never>>
      */
     public function index(): JSONResponse
     {

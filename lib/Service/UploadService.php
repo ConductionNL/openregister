@@ -89,60 +89,138 @@ class UploadService
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {
-        // Step 1: Remove internal parameters (starting with '_') from data.
-        // Internal parameters are used for pagination, filtering, etc. and shouldn't be processed.
+        // Remove internal parameters (starting with '_').
+        $data = $this->removeInternalParameters($data);
+
+        // Validate upload source is provided.
+        $validationError = $this->validateUploadSource($data);
+        if ($validationError !== null) {
+            return $validationError;
+        }
+
+        // Process based on upload source type.
+        if (empty($data['file']) === false) {
+            return $this->processFileUpload($data['file']);
+        }
+
+        if (empty($data['url']) === false) {
+            return $this->processUrlUpload($data['url']);
+        }
+
+        // Process direct JSON input.
+        return $this->processJsonUpload($data['json']);
+
+    }//end getUploadedJson()
+
+
+    /**
+     * Remove internal parameters from data array
+     *
+     * Internal parameters start with '_' and are used for pagination, filtering, etc.
+     *
+     * @param array<string, mixed> $data Input data array.
+     *
+     * @return array<string, mixed> Data array with internal parameters removed.
+     */
+    private function removeInternalParameters(array $data): array
+    {
         foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Step 2: Define allowed keys for JSON upload sources.
-        $allowedKeys = ['file', 'url', 'json'];
+        return $data;
 
-        // Step 3: Find which of the allowed keys are present in the data array.
+    }//end removeInternalParameters()
+
+
+    /**
+     * Validate that an upload source is provided
+     *
+     * @param array<string, mixed> $data Input data array.
+     *
+     * @return JSONResponse|null Error response if validation fails, null if valid.
+     */
+    private function validateUploadSource(array $data): ?JSONResponse
+    {
+        $allowedKeys = ['file', 'url', 'json'];
         $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
 
-        // Step 4: Validate that exactly one source key is provided.
         if (count($matchingKeys) === 0) {
-            return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
+            return new JSONResponse(
+                data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'],
+                statusCode: 400
+            );
         }
 
-        // Step 5: Process uploaded file (if 'file' key is present).
-        if (empty($data['file']) === false) {
-            // @todo use .json file content from POST as $json.
-            // Method always throws, so this is unreachable but kept for API compatibility.
-            $this->getJSONfromFile();
-            // This line is never reached as getJSONfromFile() always throws.
-            return [];
+        return null;
+
+    }//end validateUploadSource()
+
+
+    /**
+     * Process file upload source
+     *
+     * @param mixed $file File upload data.
+     *
+     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     *
+     * @throws \Exception If file processing fails.
+     */
+    private function processFileUpload(mixed $file): array | JSONResponse
+    {
+        // @todo use .json file content from POST as $json.
+        // Method always throws, so this is unreachable but kept for API compatibility.
+        $this->getJSONfromFile();
+        // This line is never reached as getJSONfromFile() always throws.
+        return [];
+
+    }//end processFileUpload()
+
+
+    /**
+     * Process URL upload source
+     *
+     * @param string $url URL to fetch data from.
+     *
+     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     */
+    private function processUrlUpload(string $url): array | JSONResponse
+    {
+        $phpArray = $this->getJSONfromURL($url);
+
+        // Handle array response (direct array return).
+        if (is_array($phpArray) === true) {
+            $phpArray['source'] = $url;
+            return $phpArray;
         }
 
-        // Step 6: Process URL source (if 'url' key is present).
-        if (empty($data['url']) === false) {
-            // Fetch JSON data from URL.
-            $phpArray = $this->getJSONfromURL($data['url']);
-            
-            // Handle array response (direct array return).
-            if (is_array($phpArray)) {
-                $phpArray['source'] = $data['url'];
-                return $phpArray;
-            }
-
-            // Handle JSONResponse return type (extract data from response).
-            // @psalm-suppress RedundantCondition - JSONResponse always has getData method
-            $phpArrayData = $phpArray->getData();
-            if (is_array($phpArrayData)) {
-                $phpArrayData['source'] = $data['url'];
-                return $phpArrayData;
-            }
-
-            // Fallback: return error response if parsing failed.
-            return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
+        // Handle JSONResponse return type (extract data from response).
+        // @psalm-suppress RedundantCondition - JSONResponse always has getData method
+        $phpArrayData = $phpArray->getData();
+        if (is_array($phpArrayData) === true) {
+            $phpArrayData['source'] = $url;
+            return $phpArrayData;
         }
 
-        // Step 7: Process direct JSON input (if 'json' key is present).
-        $phpArray = $data['json'];
-        
+        // Fallback: return error response if parsing failed.
+        return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
+
+    }//end processUrlUpload()
+
+
+    /**
+     * Process direct JSON upload
+     *
+     * @param mixed $jsonInput JSON input (string or array).
+     *
+     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     */
+    private function processJsonUpload(mixed $jsonInput): array | JSONResponse
+    {
+        $phpArray = $jsonInput;
+
         // Decode JSON string if input is a string.
         if (is_string($phpArray) === true) {
             $phpArray = json_decode($phpArray, associative: true);
@@ -153,10 +231,9 @@ class UploadService
             return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
         }
 
-        // Return decoded JSON array.
         return $phpArray;
 
-    }//end getUploadedJson()
+    }//end processJsonUpload()
 
 
     /**

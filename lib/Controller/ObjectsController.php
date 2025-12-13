@@ -268,7 +268,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<never, never>|mixed, search: mixed|null, extend: mixed|null, fields: mixed|null, unset: mixed|null, ids: array|null}
      */
-    private function getConfig(?string $register=null, ?string $schema=null, ?array $ids=null): array
+    private function getConfig(?string $_register=null, ?string $_schema=null, ?array $ids=null): array
     {
         $params = $this->request->getParams();
 
@@ -670,11 +670,11 @@ class ObjectsController extends Controller
                  */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
-                $typeArray    = is_array($typeRaw) ? $typeRaw : [];
+                $typeArray = is_array($typeRaw) ? $typeRaw : [];
                 $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
-                $errorArray   = is_array($errorRaw) ? $errorRaw : [];
-                $sizeArray    = is_array($sizeRaw) ? $sizeRaw : [];
-                $fileCount    = count($nameArray);
+                $errorArray = is_array($errorRaw) ? $errorRaw : [];
+                $sizeArray = is_array($sizeRaw) ? $sizeRaw : [];
+                $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
@@ -699,6 +699,14 @@ class ObjectsController extends Controller
         $rbac    = !$isAdmin;
         // If admin, disable RBAC.
         // Note: multitenancy is disabled for admins via $rbac flag
+
+        // Determine uploaded files value.
+        if (!empty($uploadedFiles) === true) {
+            $uploadedFilesValue = $uploadedFiles;
+        } else {
+            $uploadedFilesValue = null;
+        }
+
         // Save the object.
         try {
             // Use the object service to validate and save the object.
@@ -710,7 +718,7 @@ class ObjectsController extends Controller
                     rbac: $rbac,
                     multi: true,
                     uuid: null,
-                    uploadedFiles: !empty($uploadedFiles) === true ? $uploadedFiles : null
+                    uploadedFiles: $uploadedFilesValue
             );
 
             // Unlock the object after saving.
@@ -814,11 +822,11 @@ class ObjectsController extends Controller
                  */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
-                $typeArray    = is_array($typeRaw) ? $typeRaw : [];
+                $typeArray = is_array($typeRaw) ? $typeRaw : [];
                 $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
-                $errorArray   = is_array($errorRaw) ? $errorRaw : [];
-                $sizeArray    = is_array($sizeRaw) ? $sizeRaw : [];
-                $fileCount    = count($nameArray);
+                $errorArray = is_array($errorRaw) ? $errorRaw : [];
+                $sizeArray = is_array($sizeRaw) ? $sizeRaw : [];
+                $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
@@ -884,6 +892,13 @@ class ObjectsController extends Controller
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
 
+        // Determine uploaded files value.
+        if (!empty($uploadedFiles) === true) {
+            $uploadedFilesValue = $uploadedFiles;
+        } else {
+            $uploadedFilesValue = null;
+        }
+
         // Update the object.
         try {
             // Use the object service to validate and update the object.
@@ -894,7 +909,7 @@ class ObjectsController extends Controller
                     rbac: $rbac,
                     multi: $multi,
                     uuid: $id,
-                    uploadedFiles: !empty($uploadedFiles) === true ? $uploadedFiles : null
+                    uploadedFiles: $uploadedFilesValue
             );
 
             // Unlock the object after saving.
@@ -992,7 +1007,7 @@ class ObjectsController extends Controller
 
             // Get the existing object data and merge with patch data.
             $existingData = $existingObject->getObject();
-            $mergedData   = array_merge($existingData, $patchData);
+            $mergedData   = array_merge($existingData ?? [], $patchData);
             $existingObject->setObject($mergedData);
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
@@ -1110,9 +1125,25 @@ class ObjectsController extends Controller
         $requestParams = $this->request->getParams();
 
         // Extract specific parameters.
-        $limit  = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
-        $offset = isset($requestParams['offset']) === true ? (int) $requestParams['offset'] : (isset($requestParams['_offset']) === true ? (int) $requestParams['_offset'] : null);
-        $page   = isset($requestParams['page']) === true ? (int) $requestParams['page'] : (isset($requestParams['_page']) === true ? (int) $requestParams['_page'] : null);
+        $limit = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
+
+        // Determine offset value.
+        if (isset($requestParams['offset']) === true) {
+            $offset = (int) $requestParams['offset'];
+        } else if (isset($requestParams['_offset']) === true) {
+            $offset = (int) $requestParams['_offset'];
+        } else {
+            $offset = null;
+        }
+
+        // Determine page value.
+        if (isset($requestParams['page']) === true) {
+            $page = (int) $requestParams['page'];
+        } else if (isset($requestParams['_page']) === true) {
+            $page = (int) $requestParams['_page'];
+        } else {
+            $page = null;
+        }
 
         // Return empty paginated response.
         return new JSONResponse(
@@ -1154,7 +1185,7 @@ class ObjectsController extends Controller
 
         // Get the relations for the object.
         $relationsArray = $objectService->find(id: $id)->getRelations();
-        $relations      = array_values($relationsArray);
+        $relations      = array_values($relationsArray ?? []);
 
         // Build search query using ObjectService searchObjectsPaginated directly.
         $queryParams = $this->request->getParams();
@@ -1275,11 +1306,19 @@ class ObjectsController extends Controller
         // If objectSchema is an array/object, files: get slug and id.
         $objectSchemaSlug = null;
         if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
-            $objectSchemaId   = (string) $objectSchema['id'];
-            $objectSchemaSlug = isset($objectSchema['slug']) === true ? strtolower($objectSchema['slug']) : null;
+            $objectSchemaId = (string) $objectSchema['id'];
+            if (isset($objectSchema['slug']) === true) {
+                $objectSchemaSlug = strtolower($objectSchema['slug']);
+            } else {
+                $objectSchemaSlug = null;
+            }
         } elseif (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
-            $objectSchemaId   = (string) $objectSchema->id;
-            $objectSchemaSlug = isset($objectSchema->slug) === true ? strtolower($objectSchema->slug) : null;
+            $objectSchemaId = (string) $objectSchema->id;
+            if (isset($objectSchema->slug) === true) {
+                $objectSchemaSlug = strtolower($objectSchema->slug);
+            } else {
+                $objectSchemaSlug = null;
+            }
         } else {
             $objectSchemaId = (string) $objectSchema;
         }
@@ -1832,7 +1871,7 @@ class ObjectsController extends Controller
         string $register,
         string $schema,
         ObjectService $objectService
-    ): JSONResponse|DataDownloadResponse | JSONResponse {
+    ): JSONResponse|DataDownloadResponse {
         try {
             // Set the context for the object service.
             $objectService->setRegister(register: $register);

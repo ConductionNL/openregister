@@ -513,6 +513,13 @@ class ChatService
                 $results = [];
             }
 
+            // Determine raw results count for logging.
+            if (is_array($results) === true) {
+                $rawResultsCount = count($results);
+            } else {
+                $rawResultsCount = gettype($results);
+            }
+
             // Filter and build context - track file and object counts separately.
             $fileSourceCount   = 0;
             $objectSourceCount = 0;
@@ -612,7 +619,7 @@ class ChatService
                         'includeFiles'      => $includeFiles,
                         'numSourcesFiles'   => $numSourcesFiles,
                         'numSourcesObjects' => $numSourcesObjects,
-                        'rawResultsCount'   => is_array($results) === true ? count($results) : gettype($results),
+                        'rawResultsCount'   => $rawResultsCount,
                     ]
                     );
 
@@ -706,7 +713,11 @@ class ChatService
 
         // Check metadata for object_title, file_name, etc.
         if (empty($result['metadata']) === false) {
-            $metadata = is_array($result['metadata']) === true ? $result['metadata'] : json_decode($result['metadata'], true);
+            if (is_array($result['metadata']) === true) {
+                $metadata = $result['metadata'];
+            } else {
+                $metadata = json_decode($result['metadata'], true);
+            }
 
             if (empty($metadata['object_title']) === false) {
                 return $metadata['object_title'];
@@ -896,8 +907,12 @@ class ChatService
                 $config      = new OllamaConfig();
                 $config->url = rtrim($ollamaConfig['url'], '/').'/api/';
                 // Use agent model if set and not empty, otherwise fallback to global config.
-                $agentModel    = $agent?->getModel();
-                $config->model = (empty($agentModel) === false) ? $agentModel : ($ollamaConfig['chatModel'] ?? 'llama2');
+                $agentModel = $agent?->getModel();
+                if (empty($agentModel) === false) {
+                    $config->model = $agentModel;
+                } else {
+                    $config->model = ($ollamaConfig['chatModel'] ?? 'llama2');
+                }
 
                 // Set temperature from agent or default.
                 if ($agent?->getTemperature() !== null) {
@@ -915,8 +930,12 @@ class ChatService
 
                     $config->apiKey = $openaiConfig['apiKey'];
                     // Use agent model if set and not empty, otherwise fallback to global config.
-                    $agentModel    = $agent?->getModel();
-                    $config->model = (empty($agentModel) === false) ? $agentModel : ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                    $agentModel = $agent?->getModel();
+                    if (empty($agentModel) === false) {
+                        $config->model = $agentModel;
+                    } else {
+                        $config->model = ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                    }
 
                     if (empty($openaiConfig['organizationId']) === false) {
                         /*
@@ -932,8 +951,12 @@ class ChatService
 
                     $config->apiKey = $fireworksConfig['apiKey'];
                     // Use agent model if set and not empty, otherwise fallback to global config.
-                    $agentModel    = $agent?->getModel();
-                    $config->model = (empty($agentModel) === false) ? $agentModel : ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                    $agentModel = $agent?->getModel();
+                    if (empty($agentModel) === false) {
+                        $config->model = $agentModel;
+                    } else {
+                        $config->model = ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                    }
 
                     // Fireworks AI uses OpenAI-compatible API.
                     $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
@@ -1428,7 +1451,7 @@ class ChatService
                     'testMessage'    => $testMessage,
                     'response'       => $response,
                     'responseLength' => strlen($response),
-                    'url'            => property_exists($llphantConfig, 'url') ? $llphantConfig->url : null,
+                    'url'            => $urlValue,
                 ],
             ];
         } catch (OpenAIErrorException $e) {
@@ -1562,9 +1585,20 @@ class ChatService
             }
         }
 
-        $data = is_string($response) === true ? json_decode($response, true) : [];
+        if (is_string($response) === true) {
+            $data = json_decode($response, true);
+        } else {
+            $data = [];
+        }
+
         if (isset($data['choices'][0]['message']['content']) === false) {
-            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) === true ? $response : 'Invalid response'));
+            if (is_string($response) === true) {
+                $responseStr = $response;
+            } else {
+                $responseStr = 'Invalid response';
+            }
+
+            throw new \Exception("Unexpected Fireworks API response format: ".$responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1677,9 +1711,20 @@ class ChatService
             }
         }
 
-        $data = is_string($response) === true ? json_decode($response, true) : [];
+        if (is_string($response) === true) {
+            $data = json_decode($response, true);
+        } else {
+            $data = [];
+        }
+
         if (isset($data['choices'][0]['message']['content']) === false) {
-            throw new \Exception("Unexpected Fireworks API response format: ".(is_string($response) === true ? $response : 'Invalid response'));
+            if (is_string($response) === true) {
+                $responseStr = $response;
+            } else {
+                $responseStr = 'Invalid response';
+            }
+
+            throw new \Exception("Unexpected Fireworks API response format: ".$responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1787,7 +1832,11 @@ class ChatService
         // Build conversation text.
         $conversationText = '';
         foreach ($messages as $message) {
-            $role = $message->getRole() === Message::ROLE_USER ? 'User' : 'Assistant';
+            if ($message->getRole() === Message::ROLE_USER) {
+                $role = 'User';
+            } else {
+                $role = 'Assistant';
+            }
             $conversationText .= "{$role}: {$message->getContent()}\n\n";
         }
 
@@ -1941,7 +1990,11 @@ class ChatService
 
         foreach ($enabledToolIds as $toolId) {
             // Support both old format (register, schema, objects) and new format (app.tool).
-            $fullToolId = strpos($toolId, '.') !== false ? $toolId : 'openregister.'.$toolId;
+            if (strpos($toolId, '.') !== false) {
+                $fullToolId = $toolId;
+            } else {
+                $fullToolId = 'openregister.'.$toolId;
+            }
 
             $tool = $this->toolRegistry->getTool($fullToolId);
             if ($tool !== null) {

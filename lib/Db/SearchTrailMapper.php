@@ -110,7 +110,7 @@ class SearchTrailMapper extends QBMapper
      *
      * @return SearchTrail[] Array of SearchTrail entities
      *
-     * @psalm-return list<OCA\OpenRegister\Db\SearchTrail>
+     * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
      */
     public function findAll(
         ?int $limit=null,

@@ -175,16 +175,15 @@ class SolrDebugCommand extends Command
         $instanceId    = $this->config->getSystemValue(key: 'instanceid', default: 'default');
         $overwriteHost = $this->config->getSystemValue(key: 'overwrite.cli.url', default: '');
 
-        if (empty($overwriteHost) === false) {
-            $tenantId = 'nc_'.hash('crc32', $overwriteHost);
-        } else {
-            $tenantId = 'nc_'.substr($instanceId, 0, 8);
-        }
+        // Use overwrite host for tenant ID if set, otherwise use instance ID.
+        $tenantId = empty($overwriteHost) === false
+            ? 'nc_'.hash('crc32', $overwriteHost)
+            : 'nc_'.substr($instanceId, 0, 8);
 
-        $overwriteHostDisplay = 'not set';
-        if ($overwriteHost !== '' && $overwriteHost !== null) {
-            $overwriteHostDisplay = $overwriteHost;
-        }
+        // Display overwrite host value or 'not set'.
+        $overwriteHostDisplay = ($overwriteHost !== '' && $overwriteHost !== null)
+            ? $overwriteHost
+            : 'not set';
 
         $output->writeln("  Instance ID: <comment>$instanceId</comment>");
         $output->writeln("  Overwrite Host: <comment>$overwriteHostDisplay</comment>");

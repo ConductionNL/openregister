@@ -120,7 +120,7 @@ class WebhookRetryJob extends TimedJob
      *
      * @return void
      */
-    protected function run($argument): void
+    protected function run($_argument): void
     {
         $now = new DateTime();
 

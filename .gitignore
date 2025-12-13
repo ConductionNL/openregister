@@ -22,6 +22,7 @@
 # Quality reports
 /quality-reports/
 quality-baseline.json
+/phpmetrics/
 
 # Data files
 *.csv

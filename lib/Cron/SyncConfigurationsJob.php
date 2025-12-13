@@ -131,7 +131,7 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return void
      */
-    protected function run($argument): void
+    protected function run($_argument): void
     {
         $this->logger->info('Starting configuration sync job');
 

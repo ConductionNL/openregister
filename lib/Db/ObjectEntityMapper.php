@@ -352,10 +352,10 @@ class ObjectEntityMapper extends QBMapper
      * @return null True if user should have access via exceptions, false if denied, null if no exceptions apply
      */
     private function applyAuthorizationExceptions(
-        IQueryBuilder $qb,
+        IQueryBuilder $_qb,
         string $userId,
-        string $objectTableAlias='o',
-        string $schemaTableAlias='s',
+        string $_objectTableAlias='o',
+        string $_schemaTableAlias='s',
         string $action='read'
     ) {
         // If authorization exception service is not available, skip exception handling.
@@ -770,7 +770,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findAll(
         ?int $limit=null,
@@ -1204,7 +1204,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return (OCA\OpenRegister\Db\ObjectEntity|ObjectEntity)[]|int
      *
-     * @psalm-return int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return int|list<\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>
      */
     public function searchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
@@ -1212,13 +1212,20 @@ class ObjectEntityMapper extends QBMapper
         $mapperStartTime = microtime(true);
         $perfTimings     = [];
 
+        // Determine active org status for logging.
+        if ($activeOrganisationUuid !== null) {
+            $activeOrgStatus = 'set';
+        } else {
+            $activeOrgStatus = 'null';
+        }
+
         $this->logger->info(
                 '🎯 MAPPER START - ObjectEntityMapper::searchObjects called',
                 [
                     'queryKeys' => array_keys($query),
                     'rbac'      => $rbac,
                     'multi'     => $multi,
-                    'activeOrg' => ($activeOrganisationUuid !== null) ? 'set' : 'null',
+                    'activeOrg' => $activeOrgStatus,
                 ]
                 );
 
@@ -1230,7 +1237,12 @@ class ObjectEntityMapper extends QBMapper
         $search         = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         // Convert _published to boolean if it exists (handles string "false" from HTTP requests)
-        $published = isset($query['_published']) ? filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false : false;
+        if (isset($query['_published'])) {
+            $published = filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        } else {
+            $published = false;
+        }
+
         // Check if _published is explicitly set to false to disable published bypass mechanism
         // When _published=false: published objects still visible but must respect multi-tenancy and RBAC
         // - Published objects from user's organization: visible (pass org filter)
@@ -1437,19 +1449,36 @@ class ObjectEntityMapper extends QBMapper
             );
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
 
+            // Determine if active org is set for logging.
+            if ($activeOrganisationUuid !== null) {
+                $hasActiveOrg = 'yes';
+            } else {
+                $hasActiveOrg = 'no';
+            }
+
             $this->logger->info(
                     '🏢 ORG FILTERING COMPLETED',
                     [
                         'orgTime'      => $perfTimings['org_filtering'].'ms',
                         'multiEnabled' => $multi,
-                        'hasActiveOrg' => $activeOrganisationUuid !== null ? 'yes' : 'no',
+                        'hasActiveOrg' => $hasActiveOrg,
                     ]
                     );
         }//end if
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        $basicRegister         = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema           = isset($metadataFilters['schema']) === true ? null : $schema;
+        if (isset($metadataFilters['register']) === true) {
+            $basicRegister = null;
+        } else {
+            $basicRegister = $register;
+        }
+
+        if (isset($metadataFilters['schema']) === true) {
+            $basicSchema = null;
+        } else {
+            $basicSchema = $schema;
+        }
+
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters(queryBuilder: $queryBuilder, includeDeleted: $includeDeleted, published: $published, register: $basicRegister, schema: $basicSchema, tableAlias: 'o', bypassPublishedFilter: $bypassPublishedFilter);
 
@@ -1663,8 +1692,18 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        $basicRegister         = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema           = isset($metadataFilters['schema']) === true ? null : $schema;
+        if (isset($metadataFilters['register']) === true) {
+            $basicRegister = null;
+        } else {
+            $basicRegister = $register;
+        }
+
+        if (isset($metadataFilters['schema']) === true) {
+            $basicSchema = null;
+        } else {
+            $basicSchema = $schema;
+        }
+
         $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
         $this->applyBasicFilters(queryBuilder: $queryBuilder, includeDeleted: $includeDeleted, published: $published, register: $basicRegister, schema: $basicSchema, tableAlias: 'o', bypassPublishedFilter: $bypassPublishedFilter);
 
@@ -1760,7 +1799,12 @@ class ObjectEntityMapper extends QBMapper
         bool $bypassPublishedFilter=false
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
-        $deletedColumn = $tableAlias !== '' ? $tableAlias.'.deleted' : 'deleted';
+        if ($tableAlias !== '') {
+            $deletedColumn = $tableAlias.'.deleted';
+        } else {
+            $deletedColumn = 'deleted';
+        }
+
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull($deletedColumn));
         }
@@ -1773,8 +1817,18 @@ class ObjectEntityMapper extends QBMapper
         // Published objects from other organizations won't be visible (they don't pass org filter)
         if ($published === true && !$bypassPublishedFilter) {
             $now = (new \DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn   = $tableAlias !== '' ? $tableAlias.'.published' : 'published';
-            $depublishedColumn = $tableAlias !== '' ? $tableAlias.'.depublished' : 'depublished';
+            if ($tableAlias !== '') {
+                $publishedColumn = $tableAlias.'.published';
+            } else {
+                $publishedColumn = 'published';
+            }
+
+            if ($tableAlias !== '') {
+                $depublishedColumn = $tableAlias.'.depublished';
+            } else {
+                $depublishedColumn = 'depublished';
+            }
+
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),
@@ -1789,7 +1843,12 @@ class ObjectEntityMapper extends QBMapper
 
         // Add register filter if provided.
         if ($register !== null) {
-            $registerColumn = (empty($tableAlias) === false) ? $tableAlias.'.register' : 'register';
+            if (empty($tableAlias) === false) {
+                $registerColumn = $tableAlias.'.register';
+            } else {
+                $registerColumn = 'register';
+            }
+
             if (is_array($register) === true) {
                 // Handle array of register IDs.
                 $queryBuilder->andWhere(
@@ -1810,7 +1869,12 @@ class ObjectEntityMapper extends QBMapper
 
         // Add schema filter if provided.
         if ($schema !== null) {
-            $schemaColumn = (empty($tableAlias) === false) ? $tableAlias.'.schema' : 'schema';
+            if (empty($tableAlias) === false) {
+                $schemaColumn = $tableAlias.'.schema';
+            } else {
+                $schemaColumn = 'schema';
+            }
+
             if (is_array($schema) === true) {
                 // Handle array of schema IDs.
                 $queryBuilder->andWhere(
@@ -1882,7 +1946,11 @@ class ObjectEntityMapper extends QBMapper
                 }
             }
 
-            return empty($processedValues) === false ? $processedValues : null;
+            if (empty($processedValues) === false) {
+                return $processedValues;
+            } else {
+                return null;
+            }
         }//end if
 
         // Handle single values.
@@ -2154,7 +2222,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findByRelation(string $search, bool $partialMatch=true): array
     {
@@ -2271,7 +2339,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findMultiple(array $ids): array
     {
@@ -2342,7 +2410,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findBySchema(int $schemaId): array
     {
@@ -3729,7 +3797,11 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle boolean values by converting them to integers for database storage.
         if (is_bool($value) === true) {
-            $value = $value === true ? 1 : 0;
+            if ($value === true) {
+                $value = 1;
+            } else {
+                $value = 0;
+            }
         }
 
         // Handle null values explicitly.
@@ -4752,12 +4824,12 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Apply optimizations for composite indexes
      *
-     * @param IQueryBuilder $qb      Query builder
+     * @param IQueryBuilder $_qb     Query builder (reserved for future optimization)
      * @param array         $filters Applied filters
      *
      * @return void
      */
-    private function applyCompositeIndexOptimizations(IQueryBuilder $qb, array $filters): void
+    private function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {
         // **INDEX OPTIMIZATION**: If we have schema + register + published filters,
         // ensure they're applied in the optimal order for the composite index

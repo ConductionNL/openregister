@@ -179,7 +179,7 @@ class RegisterMapper extends QBMapper
      *
      * @throws \Exception If RBAC permission check fails
      */
-    public function find(string | int $id, ?array $extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Register
+    public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Register
     {
         // Log search attempt for debugging
         if (isset($this->logger) === true) {
@@ -332,7 +332,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Register>
+     * @psalm-return list<\OCA\OpenRegister\Db\Register>
      */
     public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
@@ -403,7 +403,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Register[] Array of found registers, multi: possibly with stats
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Register>
+     * @psalm-return list<\OCA\OpenRegister\Db\Register>
      */
     public function findAll(
         ?int $limit=null,
@@ -411,7 +411,7 @@ class RegisterMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[],
+        ?array $_extend=[],
         ?bool $published=null,
         bool $rbac=true,
         bool $multi=true
@@ -684,7 +684,7 @@ class RegisterMapper extends QBMapper
      *
      * @return Schema[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
     public function getSchemasByRegisterId(int $registerId, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {

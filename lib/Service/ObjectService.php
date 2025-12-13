@@ -5488,7 +5488,7 @@ class ObjectService
      *
      * @psalm-param array<string> $relationshipIds
      *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      */
     private function loadRelationshipChunkOptimized(array $relationshipIds): array
     {

@@ -765,10 +765,8 @@ class HyperFacetHandler
                             $queryBuilder->expr()->orX(
                                     $queryBuilder->expr()->isNull('depublished'),
                                     $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                                    )
                             )
-                    );
-                )
+                    )
             );
         }
 
@@ -1165,7 +1163,7 @@ class HyperFacetHandler
      *
      * @psalm-return array{type: 'terms'|mixed, buckets: list{array{key: 'estimated', results: int, approximate: true}}}
      */
-    private function estimateJsonFieldFacet(string $field, array $config, array $baseQuery, array $stats): array
+    private function estimateJsonFieldFacet(string $_field, array $config, array $_baseQuery, array $stats): array
     {
         return [
             'type' => $config['type'] ?? 'terms',

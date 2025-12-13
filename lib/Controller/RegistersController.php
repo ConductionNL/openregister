@@ -573,7 +573,7 @@ class RegistersController extends Controller
                 case 'excel':
                     $spreadsheet = $this->exportService->exportToExcel(register: $register, schema: null, filters: [], currentUser: $this->userSession->getUser());
                     $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug() ?? 'register', (new \DateTime())->format('Y-m-d_His'));
                     ob_start();
                     $writer->save('php://output');
                     $content = ob_get_clean();

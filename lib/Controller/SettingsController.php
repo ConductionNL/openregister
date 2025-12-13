@@ -846,12 +846,12 @@ class SettingsController extends Controller
      * @param  array $batch           Array of objects to process
      * @param  mixed $objectService   The object service instance
      * @param  array &$results        Results array to update
-     * @param  bool  $collectErrors   Whether to collect all errors or stop on first
-     * @param  int   $parallelBatches Number of parallel batches (unused in current implementation)
-     * @param  mixed $logger          Optional logger instance
+     * @param  bool  $collectErrors      Whether to collect all errors or stop on first
+     * @param  int   $_parallelBatches Number of parallel batches (unused in current implementation)
+     * @param  mixed $logger             Optional logger instance
      * @return void
      */
-    private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors, int $parallelBatches=1, $logger=null): void
+    private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors, int $_parallelBatches=1, $logger=null): void
     {
             // Note: True parallel processing would require process forking or threading.
         // For now, we simulate parallel processing with optimized serial processing.

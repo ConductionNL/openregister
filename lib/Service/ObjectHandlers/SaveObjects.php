@@ -2230,7 +2230,11 @@ class SaveObjects
                 continue;
             }
 
-            $currentPath = ($prefix !== '') === true ? $prefix.'.'.$key : $key;
+            if (($prefix !== '') === true) {
+                $currentPath = $prefix.'.'.$key;
+            } else {
+                $currentPath = $key;
+            }
 
             if (is_array($value) === true && empty($value) === false) {
                 // Check if this is an array property in the schema.
