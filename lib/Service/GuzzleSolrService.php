@@ -20,7 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use APCUIterator;
 use DateTime;
+use Exception;
+use ReflectionClass;
+use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -180,7 +184,7 @@ class GuzzleSolrService
             // Get service from Nextcloud container.
             $this->objectCacheService = \OC::$server->get(ObjectCacheService::class);
             $this->logger->debug(message: '✅ ObjectCacheService loaded successfully for facet UUID resolution');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     '⚠️ Failed to load ObjectCacheService from container',
                     [
@@ -206,7 +210,7 @@ class GuzzleSolrService
         try {
             // @psalm-suppress InvalidPropertyAssignmentValue - getSolrSettings() returns array with compatible shape
             $this->solrConfig = $this->settingsService->getSolrSettings();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(message: 'Failed to load SOLR settings', context: ['error' => $e->getMessage()]);
             /*
              * @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type
@@ -479,7 +483,7 @@ class GuzzleSolrService
 
             return $isAvailable;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('SOLR availability check failed with exception', [
                 'error' => $e->getMessage(),
                 'host' => $this->solrConfig['host'] ?? 'unknown',
@@ -529,7 +533,7 @@ class GuzzleSolrService
             }
 
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->debug(
                     'Failed to read SOLR availability cache',
                     [
@@ -569,7 +573,7 @@ class GuzzleSolrService
                 'created'   => time(),
             ];
             file_put_contents($cacheFile, json_encode($data));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->debug(
                     'Failed to cache SOLR availability result',
                     [
@@ -611,7 +615,7 @@ class GuzzleSolrService
                     /*
                      * @var object $iterator
                      */
-                    $iterator = new \APCUIterator('/^solr_availability_/');
+                    $iterator = new APCUIterator('/^solr_availability_/');
                     apcu_delete($iterator);
                 }
 
@@ -622,7 +626,7 @@ class GuzzleSolrService
                     unlink($file);
                 }
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->debug(
                     'Failed to clear SOLR availability cache',
                     [
@@ -715,7 +719,7 @@ class GuzzleSolrService
             }
 
             return $testResults;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success'    => false,
                 'message'    => 'Connection test failed: '.$e->getMessage(),
@@ -774,7 +778,7 @@ class GuzzleSolrService
 
             return isset($data['cluster']['collections'][$collectionName]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to check collection existence',
                     [
@@ -937,7 +941,7 @@ class GuzzleSolrService
                 message: 'Cannot create collection: SOLR is not configured',
                 context: ['config_status' => $configStatus, 'collection' => $collectionName]
             );
-            throw new \Exception(
+            throw new Exception(
                 'SOLR is not configured. Please configure SOLR settings in the OpenRegister admin panel before creating collections.'
             );
         }
@@ -1001,7 +1005,7 @@ class GuzzleSolrService
                 );
 
         // Throw exception with SOLR response details.
-        throw new \Exception(
+        throw new Exception(
             message: "SOLR collection creation failed: {$errorMessage}",
             code: $errorCode
         );
@@ -1084,7 +1088,7 @@ class GuzzleSolrService
                 'solr_error' => $data['error'] ?? null
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Exception deleting SOLR collection', [
                 'collection' => $targetCollection ?? 'unknown',
                 'error' => $e->getMessage(),
@@ -1247,7 +1251,7 @@ class GuzzleSolrService
             }//end if
 
             return $success;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->stats['errors']++;
             $this->logger->error(
                     'Exception indexing object in SOLR',
@@ -1320,7 +1324,7 @@ class GuzzleSolrService
             }
 
             return $success;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->stats['errors']++;
             $this->logger->error(
                     'Exception deleting object from SOLR',
@@ -1366,7 +1370,7 @@ class GuzzleSolrService
             $data     = json_decode((string) $response->getBody(), true);
 
             return (int) ($data['response']['numFound'] ?? 0);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'Failed to get document count', context: ['error' => $e->getMessage()]);
             return 0;
         }//end try
@@ -1388,7 +1392,7 @@ class GuzzleSolrService
         if ($this->schemaMapper === null) {
             $objectId = $object->getId();
             $schemaId = $object->getSchema();
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Schema mapper is not available. Cannot create SOLR document without schema validation. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId
             );
         }
@@ -1397,7 +1401,7 @@ class GuzzleSolrService
         $schema = $this->schemaMapper->find($object->getSchema());
 
         if (!($schema instanceof Schema)) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Schema not found for object. Cannot create SOLR document without valid schema. ' .
                 'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema()
             );
@@ -1407,7 +1411,7 @@ class GuzzleSolrService
             $objectId     = $object->getId();
             $schemaId     = $object->getSchema();
             $errorMessage = 'Schema not found for object. Cannot create SOLR document without valid schema. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId;
-            throw new \RuntimeException($errorMessage);
+            throw new RuntimeException($errorMessage);
         }
 
         // Check if schema is searchable - skip indexing if not.
@@ -1430,7 +1434,7 @@ class GuzzleSolrService
             }//end if
 
             $errorMessage = 'Schema is not searchable. Objects of this schema are excluded from SOLR indexing. '.'Object ID: '.$objectId.', Schema: '.$schemaName;
-            throw new \RuntimeException($errorMessage);
+            throw new RuntimeException($errorMessage);
         }//end if
 
         // Get the register for this object (if registerMapper is available).
@@ -1438,7 +1442,7 @@ class GuzzleSolrService
         if ($this->registerMapper !== null) {
             try {
                 $register = $this->registerMapper->find($object->getRegister());
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(
                         'Failed to fetch register for object',
                         [
@@ -1464,7 +1468,7 @@ class GuzzleSolrService
 
             return $document;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // **NO FALLBACK**: Throw error to prevent schemaless documents
             $this->logger->error('Schema-aware mapping failed and no fallback allowed', [
                 'object_id' => $object->getId(),
@@ -1473,7 +1477,7 @@ class GuzzleSolrService
                 'trace' => $e->getTraceAsString()
             ]);
 
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. ' .
                 'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema() . '. ' .
                 'Original error: ' . $e->getMessage(),
@@ -2316,7 +2320,7 @@ class GuzzleSolrService
                 'core'    => $this->getCoreStatus(),
             ];
 
-            throw new \Exception(
+            throw new Exception(
                 'SOLR configuration validation failed. Current status: '.json_encode($configStatus).'. '.'Please check your SOLR settings in the OpenRegister admin panel.'
             );
         }
@@ -2332,7 +2336,7 @@ class GuzzleSolrService
                 $errorMessage = 'Unknown connection error';
             }
 
-            throw new \Exception(
+            throw new Exception(
                 'SOLR service is not available. Connection test failed: ' .
                 ($connectionTest['error'] ?? 'Unknown connection error') .
                 '. Please verify that SOLR is running and accessible at the configured URL.'
@@ -2343,7 +2347,7 @@ class GuzzleSolrService
             // Get active collection name - if null, SOLR is not properly set up.
             $collectionName = $this->getActiveCollectionName();
             if ($collectionName === null) {
-                throw new \Exception(
+                throw new Exception(
                     'No active SOLR collection available. Please ensure a SOLR collection is created and configured '.'in the OpenRegister settings, and that the collection exists in your SOLR instance.'
                 );
             }
@@ -2386,7 +2390,7 @@ class GuzzleSolrService
 
             return $paginatedResults;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('SOLR search failed', [
                 'error_message' => $e->getMessage(),
                 'error_class' => get_class($e),
@@ -2396,7 +2400,7 @@ class GuzzleSolrService
             ]);
 
             // Re-throw with more context for user
-            throw new \Exception(
+            throw new Exception(
                 'SOLR search failed: ' . $e->getMessage() .
                 '. This indicates an issue with the SOLR service or query. Check the logs for more details.',
                 $e->getCode(),
@@ -2499,7 +2503,7 @@ class GuzzleSolrService
             } else {
                 return null;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to get active organisation', ['error' => $e->getMessage()]);
             return null;
         }
@@ -2945,7 +2949,7 @@ class GuzzleSolrService
         }
 
         // Create ObjectEntity instance.
-        $entity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $entity = new ObjectEntity();
         $entity->hydrateObject(json_decode($object, true));
 
         return $entity;
@@ -3377,7 +3381,7 @@ class GuzzleSolrService
 
                 // Create enhanced exception with full SOLR response
                 if (!empty($fullResponseBody)) {
-                    throw new \RuntimeException(
+                    throw new RuntimeException(
                         'SOLR bulk index failed: ' . $httpException->getMessage() .
                         '. Full SOLR Response: ' . $fullResponseBody,
                         $httpException->getCode(),
@@ -3398,7 +3402,7 @@ class GuzzleSolrService
             // **ERROR HANDLING**: Throw exception for non-20X HTTP status codes
             if ($statusCode < 200 || $statusCode >= 300) {
                 $this->stats['errors']++;
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     "SOLR bulk index HTTP error: HTTP {$statusCode}. "."Full Response: ".$responseBody,
                     $statusCode
                 );
@@ -3422,7 +3426,7 @@ class GuzzleSolrService
             // **ERROR HANDLING**: Validate JSON response structure
             if ($data === null) {
                 $this->stats['errors']++;
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     "SOLR bulk index invalid JSON response. HTTP {$statusCode}. "."Full Raw Response: ".$responseBody
                 );
             }
@@ -3440,7 +3444,7 @@ class GuzzleSolrService
                     'response'    => $data,
                 ];
 
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     message: "SOLR bulk index failed: SOLR status {$solrStatus}. "."Error: {$errorDetails['error_msg']} (Code: {$errorDetails['error_code']}). "."HTTP Status: {$statusCode}",
                     code: $solrStatus
                 );
@@ -3466,7 +3470,7 @@ class GuzzleSolrService
                     );
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->stats['errors']++;
             $this->logger->error(
                     '🚨 EXCEPTION DURING BULK INDEXING',
@@ -3529,7 +3533,7 @@ class GuzzleSolrService
             }
 
             return $success;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'Exception committing to SOLR', context: ['error' => $e->getMessage()]);
             return false;
         }//end try
@@ -3675,7 +3679,7 @@ class GuzzleSolrService
                     ]
                     );
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if ($returnDetails) {
                 $this->logger->error('Exception deleting by query from SOLR', [
                     'query' => $query,
@@ -3758,7 +3762,7 @@ class GuzzleSolrService
                 'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('SOLR search failed in searchObjects', [
                 'error' => $e->getMessage(),
                 'searchParams' => $searchParams
@@ -4212,16 +4216,16 @@ class GuzzleSolrService
             // SOLR response received
 
             if ($statusCode !== 200) {
-                throw new \Exception("SOLR search failed with status code: $statusCode. Response: ".$responseBody);
+                throw new Exception("SOLR search failed with status code: $statusCode. Response: ".$responseBody);
             }
 
             $responseData = json_decode($responseBody, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Invalid JSON response from SOLR: '.json_last_error_msg());
+                throw new Exception('Invalid JSON response from SOLR: '.json_last_error_msg());
             }
 
             return $this->parseSolrResponse(responseData: $responseData, extend: $extend);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'SOLR search execution failed',
                     [
@@ -4387,7 +4391,7 @@ class GuzzleSolrService
                 $this->logger->debug('Added facetable fields to response', [
                     'facetableFieldCount' => count($combinedFacetableFields)
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                         'Failed to discover facetable fields from SOLR',
                         [
@@ -4439,7 +4443,7 @@ class GuzzleSolrService
                     'extendedFacetsCount' => count($contextualFacetData['extended'] ?? []),
                     'facetNames' => array_keys($contextualFacetData['extended'] ?? [])
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                         'Failed to get contextual faceting data from SOLR',
                         [
@@ -4553,7 +4557,7 @@ class GuzzleSolrService
                             if ($register !== null) {
                                 $self['register'] = $register->jsonSerialize();
                             }
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             $this->logger->warning(
                                     'Failed to load register for @self extension',
                                     [
@@ -4571,7 +4575,7 @@ class GuzzleSolrService
                             if ($schema !== null) {
                                 $self['schema'] = $schema->jsonSerialize();
                             }
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             $this->logger->warning(
                                     'Failed to load schema for @self extension',
                                     [
@@ -4586,7 +4590,7 @@ class GuzzleSolrService
                 }//end if
 
                 $openRegisterObjects[] = $objectData;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 if (($doc['id'] ?? null) !== null) {
                     $docId = $doc['id'];
                 } else {
@@ -4595,7 +4599,7 @@ class GuzzleSolrService
 
                 $openRegisterObjects[] = $objectData;
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning('[GuzzleSolrService] Failed to reconstruct object from Solr document', [
                     'doc_id' => $doc['id'] ?? 'unknown',
                     'error' => $e->getMessage()
@@ -4638,7 +4642,7 @@ class GuzzleSolrService
                     } else {
                         $failedHosts[] = $host;
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $failedHosts[] = $host;
                 }
             }
@@ -4667,7 +4671,7 @@ class GuzzleSolrService
                 ];
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'Zookeeper test failed: '.$e->getMessage(),
@@ -4721,7 +4725,7 @@ class GuzzleSolrService
                         $workingEndpoint = $endpoint;
                         break;
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $lastError = "Failed to connect to: ".$testUrl;
                     continue;
                 }
@@ -4785,7 +4789,7 @@ class GuzzleSolrService
                 ];
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'SOLR connectivity test failed: '.$e->getMessage(),
@@ -4912,7 +4916,7 @@ class GuzzleSolrService
                     ];
                 }//end if
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (($this->solrConfig['collection'] ?? null) !== null) {
                 $collection = $this->solrConfig['collection'];
             } elseif (($this->solrConfig['core'] ?? null) !== null) {
@@ -4921,7 +4925,7 @@ class GuzzleSolrService
                 $collection = 'openregister';
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'Collection/core test failed: '.$e->getMessage(),
@@ -4999,7 +5003,7 @@ class GuzzleSolrService
                     ],
                 ];
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (($this->solrConfig['collection'] ?? null) !== null) {
                 $collection = $this->solrConfig['collection'];
             } elseif (($this->solrConfig['core'] ?? null) !== null) {
@@ -5008,7 +5012,7 @@ class GuzzleSolrService
                 $collection = 'openregister';
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'Query test failed: '.$e->getMessage(),
@@ -5114,7 +5118,7 @@ class GuzzleSolrService
                 ];
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('SOLR index clear exception', [
                 'error' => $e->getMessage(),
             ]);
@@ -5244,7 +5248,7 @@ class GuzzleSolrService
                 'error'         => $errorMsg,
                 'error_details' => $errorDetails,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Exception inspecting SOLR index',
                     [
@@ -5254,7 +5258,7 @@ class GuzzleSolrService
                     ]
                     );
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Exception inspecting SOLR index', [
                 'query' => $query,
                 'error' => $e->getMessage(),
@@ -5325,7 +5329,7 @@ class GuzzleSolrService
             }
 
             return $success;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'Exception optimizing SOLR', context: ['error' => $e->getMessage()]);
             return false;
         }//end try
@@ -5358,7 +5362,7 @@ class GuzzleSolrService
                     'error' => 'SOLR not available: ' . ($connectionTest['message'] ?? 'Connection test failed')
                 ];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'available' => false,
                 'error' => 'SOLR not available: ' . $e->getMessage()
@@ -5387,7 +5391,7 @@ class GuzzleSolrService
                 try {
                     $objectStats    = $this->getCollectionStats($objectCollection);
                     $objectDocCount = $this->getDocumentCountForCollection($objectCollection);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             'Failed to get objectCollection stats',
                             [
@@ -5405,7 +5409,7 @@ class GuzzleSolrService
                 try {
                     $fileStats    = $this->getCollectionStats($fileCollection);
                     $fileDocCount = $this->getDocumentCountForCollection($fileCollection);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             'Failed to get fileCollection stats',
                             [
@@ -5423,7 +5427,7 @@ class GuzzleSolrService
                 try {
                     $legacyStats    = $this->getCollectionStats($legacyCollection);
                     $legacyDocCount = $this->getDocumentCountForCollection($legacyCollection);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             'Failed to get legacy collection stats',
                             [
@@ -5494,7 +5498,7 @@ class GuzzleSolrService
                     multi: false
                 // Skip multitenancy for performance.
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Failed to get object counts from database', context: ['error' => $e->getMessage()]);
             }//end try
 
@@ -5505,7 +5509,7 @@ class GuzzleSolrService
                     $indexSizeUrl = $this->buildSolrBaseUrl().'/'.$primaryCollection.'/admin/luke?wt=json&numTerms=0';
                     $sizeResponse = $this->httpClient->get($indexSizeUrl, ['timeout' => 10]);
                     $sizeData     = json_decode((string) $sizeResponse->getBody(), true);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(message: 'Failed to get index size', context: ['error' => $e->getMessage()]);
                 }
             }
@@ -5521,7 +5525,7 @@ class GuzzleSolrService
             try {
                 $memoryPrediction = $this->predictWarmupMemoryUsage(0);
                 // 0 = all published objects
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Failed to get memory prediction for dashboard stats', context: ['error' => $e->getMessage()]);
                 $memoryPrediction = [
                     'error'           => 'Unable to predict memory usage',
@@ -5537,7 +5541,7 @@ class GuzzleSolrService
             try {
                 $fileMapper = \OC::$server->get(\OCA\OpenRegister\Db\FileMapper::class);
                 $totalFiles = $fileMapper->countAllFiles();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Failed to get total file count from FileMapper', context: ['error' => $e->getMessage()]);
             }
 
@@ -5607,7 +5611,7 @@ class GuzzleSolrService
                     'file'   => $fileCollectionData,
                 ],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'Exception getting dashboard stats', context: ['error' => $e->getMessage()]);
             return [
                 'available' => false,
@@ -5675,7 +5679,7 @@ class GuzzleSolrService
             }
 
             return 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to get document count for collection',
                     [
@@ -5730,7 +5734,7 @@ class GuzzleSolrService
                 'timestamp'    => date('c'),
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'connection'   => [
                     'success' => false,
@@ -5767,7 +5771,7 @@ class GuzzleSolrService
             }
 
             return $baseUrl . '/' . $collectionName;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(message: 'Failed to build endpoint URL', context: ['error' => $e->getMessage()]);
             return 'N/A';
         }
@@ -5832,7 +5836,7 @@ class GuzzleSolrService
             ]);
 
             return $count;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to count searchable objects, falling back to all objects', [
                 'error' => $e->getMessage()
             ]);
@@ -5879,7 +5883,7 @@ class GuzzleSolrService
             // Convert rows to ObjectEntity objects
             $objects = [];
             foreach ($rows as $row) {
-                $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+                $objectEntity = new ObjectEntity();
                 $objectEntity->hydrate($row);
                 $objects[] = $objectEntity;
             }
@@ -5899,7 +5903,7 @@ class GuzzleSolrService
             ]);
 
             return $objects;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to fetch searchable objects, falling back to all objects',
                     [
@@ -6026,7 +6030,7 @@ class GuzzleSolrService
                             continue;
                         }
                         throw $e;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $this->logger->warning('Failed to create SOLR document', [
                             'error' => $e->getMessage(),
                             'objectId' => is_array($object) ? ($object['id'] ?? 'unknown') : ($object instanceof ObjectEntity ? $object->getId() : 'unknown')
@@ -6080,10 +6084,10 @@ class GuzzleSolrService
                 'skipped_non_searchable' => $results['skipped_non_searchable'] ?? 0
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Serial bulk indexing failed', ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Serial bulk indexing failed: ' . $e->getMessage() .
                 ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($batchCount ?? 0) . ')',
                 0,
@@ -6225,10 +6229,10 @@ class GuzzleSolrService
                 'total_time_ms' => $totalTime
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Parallel bulk indexing failed', ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Parallel bulk indexing failed: ' . $e->getMessage() .
                 ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($totalBatches ?? 0) . ')',
                 0,
@@ -6280,7 +6284,7 @@ class GuzzleSolrService
                         continue;
                     }
                     throw $e;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning('Failed to create SOLR document', [
                         'error' => $e->getMessage(),
                         'batch' => $job['batchNumber']
@@ -6337,7 +6341,7 @@ class GuzzleSolrService
                 'batchNumber' => $job['batchNumber']
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Batch processing failed', [
                 'batchNumber' => $job['batchNumber'],
                 'error' => $e->getMessage(),
@@ -6419,7 +6423,7 @@ class GuzzleSolrService
                         continue;
                     }
                     throw $e;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Log document creation errors
                 }
             }
@@ -6573,10 +6577,10 @@ class GuzzleSolrService
                 'total_time_ms' => $totalTime
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Hyper-fast bulk indexing failed', ['error' => $e->getMessage()]);
             // **ERROR VISIBILITY**: Re-throw exception to expose errors
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Hyper-fast bulk indexing failed: ' . $e->getMessage() .
                 ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($batchCount ?? 0) . ')',
                 0,
@@ -6677,7 +6681,7 @@ class GuzzleSolrService
                                 $schemaDetails['objects_indexed']++;
                                 $results['objects_indexed']++;
                             }
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             if (($objectData['id'] ?? null) !== null) {
                                 $objectId = $objectData['id'];
                             } else {
@@ -6694,7 +6698,7 @@ class GuzzleSolrService
 
                     $results['schema_details'][] = $schemaDetails;
                     $results['schemas_tested']++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $results['errors'][] = [
                         'schema_id' => $schemaId,
                         'error'     => 'Schema processing failed: '.$e->getMessage(),
@@ -6716,7 +6720,7 @@ class GuzzleSolrService
                         'duration_ms'     => $results['duration'],
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $results['success'] = false;
             $results['error']   = $e->getMessage();
             $this->logger->error(
@@ -6777,7 +6781,7 @@ class GuzzleSolrService
 
             return $fieldTypes;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to retrieve SOLR field types', [
                 'error' => $e->getMessage()
             ]);
@@ -6835,12 +6839,12 @@ class GuzzleSolrService
             $profiler = \OC::$server->get(\OCP\Profiler\IProfiler::class);
             if ($profiler->isEnabled() === true) {
                 $profilerWasEnabled = true;
-                $reflection         = new \ReflectionClass($profiler);
+                $reflection         = new ReflectionClass($profiler);
                 if ($reflection->hasMethod('setEnabled') === true) {
                     $profiler->setEnabled(false);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Profiler not available - continue.
         }
 
@@ -6964,7 +6968,7 @@ class GuzzleSolrService
                     } else {
                         $operations["warmup_query_$i"] = false;
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $operations["warmup_query_$i"] = false;
                     $this->logger->warning("Warmup query $i failed", ['error' => $e->getMessage()]);
                 }
@@ -6987,11 +6991,11 @@ class GuzzleSolrService
             if ($profilerWasEnabled) {
                 try {
                     $profiler   = \OC::$server->get(\OCP\Profiler\IProfiler::class);
-                    $reflection = new \ReflectionClass($profiler);
+                    $reflection = new ReflectionClass($profiler);
                     if ($reflection->hasMethod('setEnabled') === true) {
                         $profiler->setEnabled(true);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Ignore profiler restoration errors.
                 }
             }
@@ -7009,7 +7013,7 @@ class GuzzleSolrService
                 'memory_usage'        => $memoryReport,
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // **MEMORY TRACKING**: Calculate memory usage even on error.
             $finalMemoryUsage = (int) memory_get_usage(true);
             $finalMemoryPeak = (int) memory_get_peak_usage(true);
@@ -7022,7 +7026,7 @@ class GuzzleSolrService
             if ($profilerWasEnabled) {
                 try {
                     $profiler   = \OC::$server->get(\OCP\Profiler\IProfiler::class);
-                    $reflection = new \ReflectionClass($profiler);
+                    $reflection = new ReflectionClass($profiler);
                     if ($reflection->hasMethod('setEnabled') === true) {
                         $profiler->setEnabled(true);
                     }
@@ -7222,7 +7226,7 @@ class GuzzleSolrService
                             'object_id' => $object->getId(),
                             'error' => $e->getMessage()
                         ]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $totalErrors++;
                         $this->logger->warning('Failed to create document', [
                             'object_id' => $object->getId(),
@@ -7271,7 +7275,7 @@ class GuzzleSolrService
                 'actual_limit' => $actualLimit
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Optimized bulk indexing failed', [
                 'error' => $e->getMessage(),
                 'indexed_so_far' => $totalIndexed
@@ -7433,7 +7437,7 @@ class GuzzleSolrService
                                     );
                         }//end if
                     }//end if
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $error    = "Exception while fixing field '{$fieldName}': ".$e->getMessage();
                     $errors[] = $error;
                     $this->logger->error(
@@ -7480,7 +7484,7 @@ class GuzzleSolrService
                 'execution_time_ms' => round($executionTime, 2),
                 'dry_run'           => $dryRun,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Exception in fixMismatchedFields', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -7540,7 +7544,7 @@ class GuzzleSolrService
                 'response' => $result
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to delete field from SOLR', [
                 'field' => $fieldName,
                 'error' => $e->getMessage()
@@ -7712,7 +7716,7 @@ class GuzzleSolrService
                                 'error'       => 'Failed to index object',
                             ];
                         }
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $batchErrors++;
                         $stats['errors'][] = [
                             'object_id'   => $object->getId(),
@@ -7794,7 +7798,7 @@ class GuzzleSolrService
                 'message' => "Reindex completed successfully. Processed {$stats['processed_objects']} objects in {$stats['duration_seconds']}s",
                 'stats'   => $stats,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Exception during SOLR reindex',
                     [
@@ -7853,7 +7857,7 @@ class GuzzleSolrService
                 $schemas = $schemaMapper->findAll();
 
                 // Use the existing analyzeAndResolveFieldConflicts method via reflection
-                $reflection = new \ReflectionClass($solrSchemaService);
+                $reflection = new ReflectionClass($solrSchemaService);
                 $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
                 $method->setAccessible(true);
                 $expectedFields = $method->invoke($solrSchemaService, $schemas);
@@ -7992,7 +7996,7 @@ class GuzzleSolrService
                                 ]
                                 );
                     }//end if
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $errors[$fieldName] = $e->getMessage();
                     $this->logger->error(
                             'Exception creating SOLR field',
@@ -8030,7 +8034,7 @@ class GuzzleSolrService
                     );
 
             return $result;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to create missing SOLR fields',
                     [
@@ -8184,7 +8188,7 @@ class GuzzleSolrService
                     );
 
             return $result;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to retrieve SOLR field configuration',
                     [
@@ -8450,7 +8454,7 @@ class GuzzleSolrService
                     'available'            => $this->formatBytes($memoryLimit - $currentMemory),
                 ],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'error'           => 'Unable to predict memory usage: '.$e->getMessage(),
                 'prediction_safe' => false,
@@ -8670,7 +8674,7 @@ class GuzzleSolrService
     {
         $collectionName = $this->getActiveCollectionName();
         if ($collectionName === null) {
-            throw new \Exception('No active SOLR collection available for schema discovery');
+            throw new Exception('No active SOLR collection available for schema discovery');
         }
 
         // Query SOLR schema API for all fields
@@ -8687,7 +8691,7 @@ class GuzzleSolrService
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (!isset($schemaData['fields']) || !is_array($schemaData['fields'])) {
-                throw new \Exception('Invalid schema response from SOLR');
+                throw new Exception('Invalid schema response from SOLR');
             }
 
             $facetableFields = [
@@ -8758,14 +8762,14 @@ class GuzzleSolrService
 
             return $facetableFields;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to query SOLR schema for facetable fields', [
                 'collection' => $collectionName,
                 'url' => $schemaUrl,
                 'error' => $e->getMessage()
             ]);
 
-            throw new \Exception('SOLR schema discovery failed: ' . $e->getMessage());
+            throw new Exception('SOLR schema discovery failed: ' . $e->getMessage());
         }
     }
 
@@ -8783,7 +8787,7 @@ class GuzzleSolrService
     {
         $collectionName = $this->getActiveCollectionName();
         if ($collectionName === null) {
-            throw new \Exception('No active SOLR collection available for field discovery');
+            throw new Exception('No active SOLR collection available for field discovery');
         }
 
         // Query SOLR schema API for all fields
@@ -8800,7 +8804,7 @@ class GuzzleSolrService
             $schemaData = json_decode($response->getBody()->getContents(), true);
 
             if (!isset($schemaData['fields']) || !is_array($schemaData['fields'])) {
-                throw new \Exception('Invalid schema response from SOLR');
+                throw new Exception('Invalid schema response from SOLR');
             }
 
             $rawFields = [
@@ -8855,14 +8859,14 @@ class GuzzleSolrService
 
             return $rawFields;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to retrieve raw SOLR fields for facet configuration', [
                 'collection' => $collectionName,
                 'url' => $schemaUrl,
                 'error' => $e->getMessage()
             ]);
 
-            throw new \Exception('SOLR field discovery failed: ' . $e->getMessage());
+            throw new Exception('SOLR field discovery failed: ' . $e->getMessage());
         }
 
     }//end getRawSolrFieldsForFacetConfiguration()
@@ -8964,7 +8968,7 @@ class GuzzleSolrService
 
         $collectionName = $this->getActiveCollectionName();
         if ($collectionName === null) {
-            throw new \Exception('No active SOLR collection available for contextual faceting');
+            throw new Exception('No active SOLR collection available for contextual faceting');
         }
 
         // Build faceting query using the same parameters as the main query
@@ -9012,7 +9016,7 @@ class GuzzleSolrService
                             'json_error'    => json_last_error_msg(),
                         ]
                         );
-                throw new \Exception('Failed to decode SOLR JSON response: '.json_last_error_msg());
+                throw new Exception('Failed to decode SOLR JSON response: '.json_last_error_msg());
             }
 
             $this->logger->debug('Contextual faceting query completed', [
@@ -9033,14 +9037,14 @@ class GuzzleSolrService
                 return $this->discoverFieldsFromCurrentResults($data);
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to get contextual facets from same query', [
                 'collection' => $collectionName,
                 'url' => $queryUrl,
                 'error' => $e->getMessage()
             ]);
 
-            throw new \Exception('SOLR contextual faceting failed: ' . $e->getMessage());
+            throw new Exception('SOLR contextual faceting failed: ' . $e->getMessage());
         }
 
     }//end getContextualFacetsFromSameQuery()
@@ -9284,14 +9288,14 @@ class GuzzleSolrService
                             'json_error'    => json_last_error_msg(),
                         ]
                         );
-                throw new \Exception('Failed to decode SOLR JSON response: '.json_last_error_msg());
+                throw new Exception('Failed to decode SOLR JSON response: '.json_last_error_msg());
             }
 
             if (!isset($data['facets'])) {
                 $this->logger->error('SOLR response missing facets key for contextual facets', [
                     'response_keys' => array_keys($data)
                 ]);
-                throw new \Exception('Invalid contextual faceting response from SOLR - missing facets key');
+                throw new Exception('Invalid contextual faceting response from SOLR - missing facets key');
             }
 
             $this->logger->debug('Optimized contextual faceting completed', [
@@ -9302,14 +9306,14 @@ class GuzzleSolrService
             // Process and format the contextual facet data
             return $this->processOptimizedContextualFacets($data['facets']);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to get optimized contextual facet data from SOLR', [
                 'collection' => $collectionName,
                 'url' => $queryUrl,
                 'error' => $e->getMessage()
             ]);
 
-            throw new \Exception('SOLR contextual faceting failed: ' . $e->getMessage());
+            throw new Exception('SOLR contextual faceting failed: ' . $e->getMessage());
         }
 
     }//end getOptimizedContextualFacets()
@@ -9398,7 +9402,7 @@ class GuzzleSolrService
                     }
                 }//end foreach
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Fallback to commonly facetable fields if schema discovery fails
             $this->logger->warning('Failed to discover all facetable fields, using fallback list', [
                 'error' => $e->getMessage()
@@ -9803,7 +9807,7 @@ class GuzzleSolrService
                 }
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If configuration loading fails, use defaults.
             $this->logger->warning(
                     'Failed to load facet configuration',
@@ -9867,7 +9871,7 @@ class GuzzleSolrService
                 });
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If configuration loading fails, keep original order
             $this->logger->warning('Failed to load facet configuration for sorting', [
                 'error' => $e->getMessage()
@@ -10020,7 +10024,7 @@ class GuzzleSolrService
                     $labels = array_combine($ids, $ids);
                     break;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to resolve labels for metadata field',
                     [
@@ -10118,7 +10122,7 @@ class GuzzleSolrService
                                 'sample_resolved' => array_slice($resolvedNames, 0, 3, true),
                             ]
                             );
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             'FACET: Failed to resolve UUID labels',
                             [
@@ -10387,7 +10391,7 @@ class GuzzleSolrService
 
             return null; // Placeholder - would need schema context to implement fully
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->debug(
                     'Failed to get object field info from schema',
                     [
@@ -10428,7 +10432,7 @@ class GuzzleSolrService
             }
 
             return $labels;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to batch load register labels', [
                 'ids' => $ids,
                 'error' => $e->getMessage()
@@ -10468,7 +10472,7 @@ class GuzzleSolrService
             }
 
             return $labels;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to batch load schema labels', [
                 'ids' => $ids,
                 'error' => $e->getMessage()
@@ -10508,7 +10512,7 @@ class GuzzleSolrService
             }
 
             return $labels;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning('Failed to batch load organisation labels', [
                 'ids' => $ids,
                 'error' => $e->getMessage()
@@ -10551,7 +10555,7 @@ class GuzzleSolrService
             try {
                 $resolvedRegister = $this->registerMapper->find($registerValue);
                 return $resolvedRegister->getId() ?? 0;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(
                         'Failed to resolve register value to ID',
                         [
@@ -10605,7 +10609,7 @@ class GuzzleSolrService
             try {
                 $resolvedSchema = $this->schemaMapper->find($schemaValue);
                 return $resolvedSchema->getId() ?? 0;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(
                         'Failed to resolve schema value to ID',
                         [
@@ -10668,7 +10672,7 @@ class GuzzleSolrService
                     }
                     break;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to resolve metadata value to ID',
                     [
@@ -10743,7 +10747,7 @@ class GuzzleSolrService
                     $queryResponse = $this->httpClient->get($queryUrl, ['timeout' => 10]);
                     $queryData     = json_decode((string) $queryResponse->getBody(), true);
                     $docCount      = $queryData['response']['numFound'] ?? 0;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             'Failed to get document count for collection',
                             [
@@ -10790,7 +10794,7 @@ class GuzzleSolrService
 
             $this->logger->info(message: '✅ Successfully fetched collections', context: ['count' => count($collections)]);
             return $collections;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to list SOLR collections',
                     [
@@ -10798,7 +10802,7 @@ class GuzzleSolrService
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
-            throw new \Exception('Failed to fetch SOLR collections: '.$e->getMessage());
+            throw new Exception('Failed to fetch SOLR collections: '.$e->getMessage());
         }//end try
 
     }//end listCollections()
@@ -10866,7 +10870,7 @@ class GuzzleSolrService
 
             $this->logger->info(message: '✅ Successfully fetched ConfigSets', context: ['count' => count($configSets)]);
             return $configSets;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to list SOLR ConfigSets',
                     [
@@ -10874,7 +10878,7 @@ class GuzzleSolrService
                         'trace' => $e->getTraceAsString(),
                     ]
                     );
-            throw new \Exception('Failed to fetch SOLR ConfigSets: '.$e->getMessage());
+            throw new Exception('Failed to fetch SOLR ConfigSets: '.$e->getMessage());
         }//end try
 
     }//end listConfigSets()
@@ -10909,7 +10913,7 @@ class GuzzleSolrService
             $existingConfigSets = $this->listConfigSets();
             foreach ($existingConfigSets as $cs) {
                 if ($cs['name'] === $name) {
-                    throw new \Exception("ConfigSet '{$name}' already exists");
+                    throw new Exception("ConfigSet '{$name}' already exists");
                 }
             }
 
@@ -10923,7 +10927,7 @@ class GuzzleSolrService
             }
 
             if ($baseExists === false) {
-                throw new \Exception("Base ConfigSet '{$baseConfigSet}' not found");
+                throw new Exception("Base ConfigSet '{$baseConfigSet}' not found");
             }
 
             // Create the ConfigSet by copying the base.
@@ -10933,7 +10937,7 @@ class GuzzleSolrService
             $result   = json_decode((string) $response->getBody(), true);
 
             if (($result['failure'] ?? null) !== null) {
-                throw new \Exception('Failed to create ConfigSet: '.json_encode($result['failure']));
+                throw new Exception('Failed to create ConfigSet: '.json_encode($result['failure']));
             }
 
             $this->logger->info(message: '✅ Successfully created ConfigSet', context: ['name' => $name]);
@@ -10943,7 +10947,7 @@ class GuzzleSolrService
                 'configSet'     => $name,
                 'baseConfigSet' => $baseConfigSet,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to create SOLR ConfigSet',
                     [
@@ -10952,7 +10956,7 @@ class GuzzleSolrService
                         'baseConfigSet' => $baseConfigSet,
                     ]
                     );
-            throw new \Exception('Failed to create ConfigSet: '.$e->getMessage());
+            throw new Exception('Failed to create ConfigSet: '.$e->getMessage());
         }//end try
 
     }//end createConfigSet()
@@ -10976,7 +10980,7 @@ class GuzzleSolrService
 
             // Protect _default ConfigSet from deletion.
             if ($name === '_default') {
-                throw new \Exception('Cannot delete the _default ConfigSet - it is protected');
+                throw new Exception('Cannot delete the _default ConfigSet - it is protected');
             }
 
             // NO availability check - ConfigSet deletion is a management operation!
@@ -10988,7 +10992,7 @@ class GuzzleSolrService
                 if ($cs['name'] === $name) {
                     $configSetFound = true;
                     if ($cs['usedByCount'] > 0) {
-                        throw new \Exception("Cannot delete ConfigSet '{$name}' - it is used by {$cs['usedByCount']} collection(s): ".implode(', ', $cs['usedBy']));
+                        throw new Exception("Cannot delete ConfigSet '{$name}' - it is used by {$cs['usedByCount']} collection(s): ".implode(', ', $cs['usedBy']));
                     }
 
                     break;
@@ -10996,7 +11000,7 @@ class GuzzleSolrService
             }
 
             if ($configSetFound === false) {
-                throw new \Exception("ConfigSet '{$name}' not found");
+                throw new Exception("ConfigSet '{$name}' not found");
             }
 
             // Delete the ConfigSet.
@@ -11006,7 +11010,7 @@ class GuzzleSolrService
             $result   = json_decode((string) $response->getBody(), true);
 
             if (($result['failure'] ?? null) !== null) {
-                throw new \Exception('Failed to delete ConfigSet: '.json_encode($result['failure']));
+                throw new Exception('Failed to delete ConfigSet: '.json_encode($result['failure']));
             }
 
             $this->logger->info(message: '✅ Successfully deleted ConfigSet', context: ['name' => $name]);
@@ -11015,7 +11019,7 @@ class GuzzleSolrService
                 'message'   => 'ConfigSet deleted successfully',
                 'configSet' => $name,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to delete SOLR ConfigSet',
                     [
@@ -11023,7 +11027,7 @@ class GuzzleSolrService
                         'name'  => $name,
                     ]
                     );
-            throw new \Exception('Failed to delete ConfigSet: '.$e->getMessage());
+            throw new Exception('Failed to delete ConfigSet: '.$e->getMessage());
         }//end try
 
     }//end deleteConfigSet()
@@ -11067,13 +11071,13 @@ class GuzzleSolrService
             }
 
             if ($sourceInfo === null) {
-                throw new \Exception("Source collection '{$sourceCollection}' not found");
+                throw new Exception("Source collection '{$sourceCollection}' not found");
             }
 
             // Check if target collection already exists.
             foreach ($collections as $col) {
                 if ($col['name'] === $targetCollection) {
-                    throw new \Exception("Target collection '{$targetCollection}' already exists");
+                    throw new Exception("Target collection '{$targetCollection}' already exists");
                 }
             }
 
@@ -11084,7 +11088,7 @@ class GuzzleSolrService
             $result   = json_decode((string) $response->getBody(), true);
 
             if (($result['failure'] ?? null) !== null) {
-                throw new \Exception('Failed to create collection: '.json_encode($result['failure']));
+                throw new Exception('Failed to create collection: '.json_encode($result['failure']));
             }
 
             // If copyData is true, copy documents from source to target
@@ -11110,7 +11114,7 @@ class GuzzleSolrService
                 'dataCopied' => false,
             // Will be true when data copying is implemented.
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to copy SOLR collection',
                     [
@@ -11119,7 +11123,7 @@ class GuzzleSolrService
                         'target' => $targetCollection,
                     ]
                     );
-            throw new \Exception('Failed to copy collection: '.$e->getMessage());
+            throw new Exception('Failed to copy collection: '.$e->getMessage());
         }//end try
 
     }//end copyCollection()
@@ -11192,13 +11196,13 @@ class GuzzleSolrService
 
                     // Update file text record
                     $fileText->setIndexedInSolr(true);
-                    $fileText->setUpdatedAt(new \DateTime());
+                    $fileText->setUpdatedAt(new DateTime());
                     $fileTextMapper->update($fileText);
                 } else {
                     $errors[] = "File $fileId: Failed to index chunks in SOLR";
                     $failed++;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $errors[] = "File $fileId: ".$e->getMessage();
                 $failed++;
             }//end try
@@ -11318,7 +11322,7 @@ class GuzzleSolrService
                 'mime_types'   => $result['facet_counts']['facet_fields']['mime_type'] ?? [],
                 'collection'   => $fileCollection,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[GuzzleSolrService] Failed to get file index stats',
                     [
@@ -11327,7 +11331,7 @@ class GuzzleSolrService
                     ]
                     );
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('[GuzzleSolrService] Failed to get file index stats', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

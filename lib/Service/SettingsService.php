@@ -18,7 +18,10 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
+use InvalidArgumentException;
+use RuntimeException;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -460,7 +463,7 @@ class SettingsService
 
             return $data;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve settings: '.$e->getMessage());
         }//end try
 
     }//end getSettings()
@@ -628,7 +631,7 @@ class SettingsService
             // Return the updated settings.
             return $this->getSettings();
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update settings: '.$e->getMessage());
         }//end try
 
     }//end updateSettings()
@@ -677,7 +680,7 @@ class SettingsService
 
             return $updatedOptions;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update publishing options: '.$e->getMessage());
+            throw new RuntimeException('Failed to update publishing options: '.$e->getMessage());
         }//end try
 
     }//end updatePublishingOptions()
@@ -698,7 +701,7 @@ class SettingsService
     public function rebaseObjectsAndLogs(): array
     {
         try {
-            $startTime = new \DateTime();
+            $startTime = new DateTime();
             $results   = [
                 'startTime'        => $startTime,
                 'ownershipResults' => null,
@@ -753,13 +756,13 @@ class SettingsService
                 $results['errors'][] = $error;
             }//end try
 
-            $results['endTime']  = new \DateTime();
+            $results['endTime']  = new DateTime();
             $results['duration'] = $results['endTime']->diff($startTime)->format('%H:%I:%S');
             $results['success']  = empty($results['errors']);
 
             return $results;
         } catch (Exception $e) {
-            throw new \RuntimeException('Rebase operation failed: '.$e->getMessage());
+            throw new RuntimeException('Rebase operation failed: '.$e->getMessage());
         }//end try
 
     }//end rebaseObjectsAndLogs()
@@ -827,7 +830,7 @@ class SettingsService
                     'expiredSearchTrailsSize' => 0,
                     'expiredObjectsSize'      => 0,
                 ],
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new DateTime())->format('c'),
             ];
 
             // Get database connection for optimized queries.
@@ -929,7 +932,7 @@ class SettingsService
 
             return $stats;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve statistics: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve statistics: '.$e->getMessage());
         }//end try
 
     }//end getStats()
@@ -996,7 +999,7 @@ class SettingsService
                 ],
                 'distributed' => $distributedStats,
                 'performance' => $performanceStats,
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new DateTime())->format('c'),
             ];
 
             return $stats;
@@ -1025,7 +1028,7 @@ class SettingsService
                 ],
                 'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
                 'performance' => ['averageHitTime' => 0, 'averageMissTime' => 0, 'performanceGain' => 0, 'optimalHitRate' => 85.0],
-                'lastUpdated' => (new \DateTime())->format('c'),
+                'lastUpdated' => (new DateTime())->format('c'),
                 'error'       => 'Cache statistics unavailable: '.$e->getMessage(),
             ];
         }//end try
@@ -1051,13 +1054,13 @@ class SettingsService
                 if ($objectCacheService === null && $this->container !== null) {
                     try {
                         $objectCacheService = $this->container->get(ObjectCacheService::class);
-                    } catch (\Exception $e) {
-                        throw new \Exception('ObjectCacheService not available');
+                    } catch (Exception $e) {
+                        throw new Exception('ObjectCacheService not available');
                     }
                 }
 
                 if ($objectCacheService === null) {
-                    throw new \Exception('ObjectCacheService not available');
+                    throw new Exception('ObjectCacheService not available');
                 }
 
                 $cachedStats = $objectCacheService->getStats();
@@ -1181,7 +1184,7 @@ class SettingsService
             $results = [
                 'type'         => $type,
                 'userId'       => $userId,
-                'timestamp'    => (new \DateTime())->format('c'),
+                'timestamp'    => (new DateTime())->format('c'),
                 'results'      => [],
                 'errors'       => [],
                 'totalCleared' => 0,
@@ -1227,7 +1230,7 @@ class SettingsService
 
             return $results;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to clear cache: '.$e->getMessage());
+            throw new RuntimeException('Failed to clear cache: '.$e->getMessage());
         }//end try
 
     }//end clearCache()
@@ -1249,13 +1252,13 @@ class SettingsService
             if ($objectCacheService === null && $this->container !== null) {
                 try {
                     $objectCacheService = $this->container->get(ObjectCacheService::class);
-                } catch (\Exception $e) {
-                    throw new \Exception('ObjectCacheService not available');
+                } catch (Exception $e) {
+                    throw new Exception('ObjectCacheService not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new \Exception('ObjectCacheService not available');
+                throw new Exception('ObjectCacheService not available');
             }
 
             $beforeStats = $objectCacheService->getStats();
@@ -1295,13 +1298,13 @@ class SettingsService
             if ($objectCacheService === null && $this->container !== null) {
                 try {
                     $objectCacheService = $this->container->get(ObjectCacheService::class);
-                } catch (\Exception $e) {
-                    throw new \Exception('ObjectCacheService not available');
+                } catch (Exception $e) {
+                    throw new Exception('ObjectCacheService not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new \Exception('ObjectCacheService not available');
+                throw new Exception('ObjectCacheService not available');
             }
 
             $beforeStats         = $objectCacheService->getStats();
@@ -1354,15 +1357,15 @@ class SettingsService
             if ($objectCacheService === null && $this->container !== null) {
                 try {
                     $objectCacheService = $this->container->get(ObjectCacheService::class);
-                } catch (\Exception $e) {
-                    throw new \Exception('ObjectCacheService not available');
+                } catch (Exception $e) {
+                    throw new Exception('ObjectCacheService not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new \Exception('ObjectCacheService not available');
+                throw new Exception('ObjectCacheService not available');
             }
-            //end try
+            //end try.
 
             $beforeStats = $objectCacheService->getStats();
 
@@ -1545,7 +1548,7 @@ class SettingsService
 
             return json_decode($solrConfig, true);
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
         }//end try
 
     }//end getSolrSettings()
@@ -1588,7 +1591,7 @@ class SettingsService
         // NOTE: This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
         // This method is kept for backward compatibility but should not be used.
         // The controller now uses GuzzleSolrService directly to avoid circular dependencies.
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'SettingsService::warmupSolrIndex() is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.'
         );
 
@@ -1611,13 +1614,13 @@ class SettingsService
             if ($objectCacheService === null && $this->container !== null) {
                 try {
                     $objectCacheService = $this->container->get(ObjectCacheService::class);
-                } catch (\Exception $e) {
-                    throw new \Exception('ObjectCacheService not available');
+                } catch (Exception $e) {
+                    throw new Exception('ObjectCacheService not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new \Exception('ObjectCacheService not available');
+                throw new Exception('ObjectCacheService not available');
             }
 
             $rawStats = $objectCacheService->getSolrDashboardStats();
@@ -1785,7 +1788,7 @@ class SettingsService
                 'active_core'  => $rawStats['collection'] ?? 'unknown',
                 'core_status'  => $coreStatus,
                 'endpoint_url' => 'N/A',
-            // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly)
+            // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly).
             ],
             'performance'  => [
                 'total_searches'     => $serviceStats['searches'] ?? 0,
@@ -1904,7 +1907,7 @@ class SettingsService
                 'fileCollection'    => $solrData['fileCollection'] ?? null,
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
         }//end try
 
     }//end getSolrSettingsOnly()
@@ -1951,7 +1954,7 @@ class SettingsService
             $this->config->setAppValue($this->appName, 'solr', json_encode($solrConfig));
             return $solrConfig;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
         }//end try
 
     }//end updateSolrSettingsOnly()
@@ -1985,7 +1988,7 @@ class SettingsService
 
             return json_decode($facetConfig, true);
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve SOLR facet configuration: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve SOLR facet configuration: '.$e->getMessage());
         }
 
     }//end getSolrFacetConfiguration()
@@ -2032,7 +2035,7 @@ class SettingsService
             $this->config->setAppValue($this->appName, 'solr_facet_config', json_encode($validatedConfig));
             return $validatedConfig;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
+            throw new RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
         }
 
     }//end updateSolrFacetConfiguration()
@@ -2141,7 +2144,7 @@ class SettingsService
                 'availableUsers'  => $this->getAvailableUsers(),
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve RBAC settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve RBAC settings: '.$e->getMessage());
         }//end try
 
     }//end getRbacSettingsOnly()
@@ -2177,7 +2180,7 @@ class SettingsService
                 'availableUsers'  => $this->getAvailableUsers(),
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update RBAC settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update RBAC settings: '.$e->getMessage());
         }
 
     }//end updateRbacSettingsOnly()
@@ -2215,7 +2218,7 @@ class SettingsService
                 'organisation' => $organisationData,
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
         }//end try
 
     }//end getOrganisationSettingsOnly()
@@ -2246,7 +2249,7 @@ class SettingsService
                 'organisation' => $organisationConfig,
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update Organisation settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update Organisation settings: '.$e->getMessage());
         }
 
     }//end updateOrganisationSettingsOnly()
@@ -2364,7 +2367,7 @@ class SettingsService
                 'availableTenants' => $this->getAvailableOrganisations(),
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve Multitenancy settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve Multitenancy settings: '.$e->getMessage());
         }//end try
 
     }//end getMultitenancySettingsOnly()
@@ -2399,7 +2402,7 @@ class SettingsService
                 'availableTenants' => $this->getAvailableOrganisations(),
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update Multitenancy settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update Multitenancy settings: '.$e->getMessage());
         }
 
     }//end updateMultitenancySettingsOnly()
@@ -2475,7 +2478,7 @@ class SettingsService
 
             return $decoded;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
         }//end try
 
     }//end getLLMSettingsOnly()
@@ -2529,7 +2532,7 @@ class SettingsService
             $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update LLM settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update LLM settings: '.$e->getMessage());
         }//end try
 
     }//end updateLLMSettingsOnly()
@@ -2574,7 +2577,7 @@ class SettingsService
 
             return json_decode($fileConfig, true);
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve File Management settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve File Management settings: '.$e->getMessage());
         }//end try
 
     }//end getFileSettingsOnly()
@@ -2619,7 +2622,7 @@ class SettingsService
             $this->config->setAppValue($this->appName, 'fileManagement', json_encode($fileConfig));
             return $fileConfig;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update File Management settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());
         }//end try
 
     }//end updateFileSettingsOnly()
@@ -2677,7 +2680,7 @@ class SettingsService
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
         }//end try
 
     }//end getObjectSettingsOnly()
@@ -2713,7 +2716,7 @@ class SettingsService
             $this->config->setAppValue($this->appName, 'objectManagement', json_encode($objectConfig));
             return $objectConfig;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
         }
 
     }//end updateObjectSettingsOnly()
@@ -2769,7 +2772,7 @@ class SettingsService
                 'searchTrailsEnabled'    => $this->convertToBoolean($retentionData['searchTrailsEnabled'] ?? true),
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
         }//end try
 
     }//end getRetentionSettingsOnly()
@@ -2804,7 +2807,7 @@ class SettingsService
             $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
             return $retentionConfig;
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to update Retention settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update Retention settings: '.$e->getMessage());
         }
 
     }//end updateRetentionSettingsOnly()
@@ -2827,7 +2830,7 @@ class SettingsService
                 'appVersion' => '0.2.3',
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve version information: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve version information: '.$e->getMessage());
         }
 
     }//end getVersionInfoOnly()

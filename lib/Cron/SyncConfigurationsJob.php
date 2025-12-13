@@ -127,7 +127,7 @@ class SyncConfigurationsJob extends TimedJob
      *
      * Synchronizes all external configurations that have sync enabled and are due for sync.
      *
-     * @param array $argument Job arguments (not used)
+     * @param mixed $_argument Job arguments (not used)
      *
      * @return void
      */

@@ -65,7 +65,7 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Execute the nightly SOLR warmup job
      *
-     * @param array $argument Job arguments (unused for recurring jobs)
+     * @param mixed $_argument Job arguments (unused for recurring jobs)
      *
      * @return void
      */

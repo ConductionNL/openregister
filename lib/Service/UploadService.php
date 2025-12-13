@@ -197,7 +197,7 @@ class UploadService
         }
 
         // Handle JSONResponse return type (extract data from response).
-        // @psalm-suppress RedundantCondition - JSONResponse always has getData method
+        // @psalm-suppress RedundantCondition - JSONResponse always has getData method.
         $phpArrayData = $phpArray->getData();
         if (is_array($phpArrayData) === true) {
             $phpArrayData['source'] = $url;

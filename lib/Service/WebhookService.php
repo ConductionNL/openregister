@@ -298,9 +298,9 @@ class WebhookService
             $this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
 
             // Schedule retry if within retry limit.
-            //end if
+            //end if.
             if ($attempt < $webhook->getMaxRetries()) {
-                //end if
+                //end if.
                 $nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
                 $webhookLog->setNextRetryAt($nextRetryAt);
                 $this->scheduleRetry(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt + 1);

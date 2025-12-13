@@ -123,7 +123,7 @@ class ConfigurationCheckJob extends TimedJob
      * Checks all remote configurations for updates.
      * If auto-update is enabled for a configuration, automatically imports the updates.
      *
-     * @param array $argument Job arguments (not used)
+     * @param mixed $_argument Job arguments (not used)
      *
      * @return void
      */

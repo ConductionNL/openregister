@@ -615,7 +615,7 @@ class HyperFacetHandler
                 }
 
                 $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-                //end try
+                //end try.
                 $this->logger->debug('Metadata facets completed', [
                     'executionTime' => $executionTime . 'ms',
                     'facetCount' => count($results),
@@ -1138,8 +1138,8 @@ class HyperFacetHandler
     /**
      * Calculate metadata facets using hyper-fast index-optimized queries
      *
-     * @param array $config    Facet configuration
-     * @param array $baseQuery Base query parameters
+     * @param array $_config    Facet configuration
+     * @param array $_baseQuery Base query parameters
      *
      * @return array Facet results
      *

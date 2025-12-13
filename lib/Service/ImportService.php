@@ -799,7 +799,7 @@ class ImportService
                 continue;
             }
 
-            // Ensure $key is a string before accessing as array
+            // Ensure $key is a string before accessing as array.
             if (is_string($key)) {
                 $keyString = $key;
             } else {
@@ -848,7 +848,7 @@ class ImportService
         // Validate that we're not accidentally creating invalid properties.
         $this->validateObjectProperties(objectData: $objectData, _schemaId: (string) $schemaId);
 
-        //end if
+        //end if.
         return $objectData;
 
     }//end transformCsvRowToObject()
@@ -990,7 +990,7 @@ class ImportService
     {
         // Separate regular properties from system properties.
         $objectData = [];
-        //end for
+        //end for.
         $selfData   = [];
 
         // Check if current user is admin for column filtering.

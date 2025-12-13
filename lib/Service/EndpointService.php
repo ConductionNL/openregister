@@ -621,14 +621,14 @@ class EndpointService
             $log->setEndpointId($endpoint->getId());
 
             // Set user info.
-            //end if
+            //end if.
             $user = $this->userSession->getUser();
             if ($user !== null) {
                 $log->setUserId($user->getUID());
             }
 
             // Set request/response data.
-            //end foreach
+            //end foreach.
             $log->setRequest($request);
             $log->setResponse(response: [
                         'statusCode' => $result['statusCode'],
