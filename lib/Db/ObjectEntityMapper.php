@@ -636,7 +636,15 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
-        $bypassEnabled    = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+        $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+        
+        // Allow per-request override via _crossOrg query parameter.
+        // _crossOrg=false: Disable bypass for this request (only your org's objects).
+        // _crossOrg=true: Enable bypass for this request (include published from other orgs).
+        if (isset($_GET['_crossOrg'])) {
+            $bypassEnabled = filter_var($_GET['_crossOrg'], FILTER_VALIDATE_BOOLEAN);
+        }
+        
         return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
@@ -1481,14 +1489,13 @@ class ObjectEntityMapper extends QBMapper
             $basicRegister = $register;
         }
 
-        if (isset($metadataFilters['schema']) === true) {
-            $basicSchema = null;
-        } else {
-            $basicSchema = $schema;
-        }
-
-        $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
-        $this->applyBasicFilters(queryBuilder: $queryBuilder, includeDeleted: $includeDeleted, published: $published, register: $basicRegister, schema: $basicSchema, tableAlias: 'o', bypassPublishedFilter: $bypassPublishedFilter);
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        // Published filtering is controlled by the $published parameter (from _published query param).
+        // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
+        // The bypass adds published objects from other orgs; it doesn't skip the published filter.
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
 
         // Handle filtering by IDs/UUIDs if provided.
         if ($ids !== null && empty($ids) === false) {
@@ -1699,21 +1706,13 @@ class ObjectEntityMapper extends QBMapper
         $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count')
             ->from('openregister_objects', 'o');
 
-        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering).
-        if (isset($metadataFilters['register']) === true) {
-            $basicRegister = null;
-        } else {
-            $basicRegister = $register;
-        }
-
-        if (isset($metadataFilters['schema']) === true) {
-            $basicSchema = null;
-        } else {
-            $basicSchema = $schema;
-        }
-
-        $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
-        $this->applyBasicFilters(queryBuilder: $queryBuilder, includeDeleted: $includeDeleted, published: $published, register: $basicRegister, schema: $basicSchema, tableAlias: 'o', bypassPublishedFilter: $bypassPublishedFilter);
+        // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        // Published filtering is controlled by the $published parameter (from _published query param).
+        // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
+        // The bypass adds published objects from other orgs; it doesn't skip the published filter.
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
 
         // Apply organization filtering for multi-tenancy (no RBAC in count queries due to no schema join).
         $this->applyOrganisationFilter(
@@ -1770,6 +1769,133 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
+     * Sum the size of search objects based on query parameters
+     *
+     * @param array       $query                   Query parameters for filtering
+     * @param string|null $activeOrganisationUuid UUID of the active organisation
+     * @param bool        $rbac                    Whether to apply RBAC filters
+     * @param bool        $multi                   Whether to apply multi-tenancy filters
+     *
+     * @return int Total size of matching objects in bytes
+     */
+    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
+    {
+        // Extract options from query (prefixed with _) - same as countSearchObjects
+        $search = $this->processSearchParameter($query['_search'] ?? null);
+        $includeDeleted = $query['_includeDeleted'] ?? false;
+        $published = $query['_published'] ?? false;
+        // ids parameter is now passed as method parameter, not from query
+
+        // Extract metadata from @self
+        $metadataFilters = [];
+        $register = null;
+        $schema = null;
+
+        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
+            $metadataFilters = $query['@self'];
+
+            // Process register: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['register']) === true) {
+                $register = $this->processRegisterSchemaValue($metadataFilters['register'], 'register');
+                $metadataFilters['register'] = $register;
+            }
+
+            // Process schema: convert objects to IDs and handle arrays
+            if (isset($metadataFilters['schema']) === true) {
+                $schema = $this->processRegisterSchemaValue($metadataFilters['schema'], 'schema');
+                $metadataFilters['schema'] = $schema;
+            }
+        }
+
+        // Clean the query: remove @self and all properties prefixed with _
+        $cleanQuery = array_filter($query, function($key) {
+            return $key !== '@self' && str_starts_with($key, '_') === false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        // If search handler is not available, fall back to a basic size query
+        if ($this->searchHandler === null) {
+            $queryBuilder = $this->db->getQueryBuilder();
+            $queryBuilder->select($queryBuilder->func()->sum('size'))
+                ->from($this->getTableName());
+
+            $bypassPublishedFilter = $this->shouldPublishedObjectsBypassMultiTenancy();
+            $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $register, $schema, '', $bypassPublishedFilter);
+            // Apply organization filtering with empty table alias (no alias used in this query)
+            $this->applyOrganisationFilter(
+                qb: $queryBuilder,
+                columnName: 'organisation',
+                allowNullOrg: true,
+                tableAlias: '',          // No table alias in this query
+                enablePublished: true,
+                multiTenancyEnabled: $multi
+            );
+
+            $result = $queryBuilder->executeQuery();
+            $size = $result->fetchOne();
+            $result->closeCursor();
+            return (int) ($size ?? 0);
+        }
+
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Build base size query - use SUM(size) instead of COUNT(*)
+        $queryBuilder->select($queryBuilder->func()->sum('o.size'))
+            ->from('openregister_objects', 'o');
+
+        // Handle basic filters - skip register/schema if they're in metadata filters
+        $basicRegister = isset($metadataFilters['register']) ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        // Published filtering is controlled by the $published parameter (from _published query param).
+        // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
+        // The bypass adds published objects from other orgs; it doesn't skip the published filter.
+        $this->applyBasicFilters($queryBuilder, $includeDeleted, $published, $basicRegister, $basicSchema, 'o');
+
+        // Apply organization filtering for multi-tenancy
+        $this->applyOrganisationFilter(
+            qb: $queryBuilder,
+            columnName: 'organisation',
+            allowNullOrg: true,
+            tableAlias: 'o',
+            enablePublished: true,
+            multiTenancyEnabled: $multi
+        );
+
+        // Handle filtering by IDs/UUIDs if provided
+        if ($ids !== null && empty($ids) === false) {
+            $orX = $queryBuilder->expr()->orX();
+            $orX->add($queryBuilder->expr()->in('o.id', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $orX->add($queryBuilder->expr()->in('o.uuid', $queryBuilder->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+            $queryBuilder->andWhere($orX);
+        }
+
+        // Use cleaned query as object filters
+        $objectFilters = $cleanQuery;
+
+        // Apply metadata filters (register, schema, etc.)
+        if (empty($metadataFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyMetadataFilters($queryBuilder, $metadataFilters);
+        }
+
+        // Apply object field filters (JSON searches)
+        if (empty($objectFilters) === false) {
+            $queryBuilder = $this->searchHandler->applyObjectFilters($queryBuilder, $objectFilters);
+        }
+
+        // Apply full-text search if provided
+        if ($search !== null && trim($search) !== '') {
+            $queryBuilder = $this->searchHandler->applyFullTextSearch($queryBuilder, trim($search));
+        }
+
+        $result = $queryBuilder->executeQuery();
+        $size = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) ($size ?? 0);
+
+    }//end sizeSearchObjects()
+
+
+    /**
      * Apply basic filters to the query builder
      *
      * Handles common filters like deleted, published, register, and schema.
@@ -1803,8 +1929,7 @@ class ObjectEntityMapper extends QBMapper
         ?bool $published,
         mixed $register,
         mixed $schema,
-        string $tableAlias='',
-        bool $bypassPublishedFilter=false
+        string $tableAlias = ''
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($tableAlias !== '') {
@@ -1817,26 +1942,13 @@ class ObjectEntityMapper extends QBMapper
             $queryBuilder->andWhere($queryBuilder->expr()->isNull($deletedColumn));
         }
 
-        // If published filter is set, only include objects that are currently published
-        // However, if bypassPublishedFilter is true, we don't apply this filter as published objects
-        // will be included via the organization filter bypass logic
-        // NOTE: When _published=false is set, it disables the bypass mechanism but doesn't exclude published objects.
-        // Published objects from user's organization will still be visible (they pass org filter).
-        // Published objects from other organizations won't be visible (they don't pass org filter).
-        if ($published === true && !$bypassPublishedFilter) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            if ($tableAlias !== '') {
-                $publishedColumn = $tableAlias.'.published';
-            } else {
-                $publishedColumn = 'published';
-            }
-
-            if ($tableAlias !== '') {
-                $depublishedColumn = $tableAlias.'.depublished';
-            } else {
-                $depublishedColumn = 'depublished';
-            }
-
+        // If published filter is requested (via _published=true query param), filter to only published objects.
+        // This is independent of publishedObjectsBypassMultiTenancy (which affects organization filtering).
+        // Users can set _published=false to see all accessible objects (including unpublished from own org).
+        if ($published === true) {
+            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
+            $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),
