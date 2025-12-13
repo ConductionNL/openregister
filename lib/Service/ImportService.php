@@ -1129,9 +1129,9 @@ class ImportService
         $processedRows = [];
         for ($row = $startRow; $row <= $endRow; $row++) {
             $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
-            //end if
+            //end if.
             if (empty($rowData) === false) {
-                //end foreach
+                //end foreach.
                 $processedRows[] = $rowData;
             }
         }

@@ -23,6 +23,9 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
+use Exception;
+use RuntimeException;
+use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -175,7 +178,7 @@ class SchemaMapper extends QBMapper
      */
     public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Schema
     {
-        // Verify RBAC permission to read if RBAC is enabled
+        // Verify RBAC permission to read if RBAC is enabled.
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
@@ -194,9 +197,9 @@ class SchemaMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
-        // Set $multi=false to bypass organization filter (e.g., when expanding schemas for registers)
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
+        // Set $multi=false to bypass organization filter (e.g., when expanding schemas for registers).
+        // applyOrganisationFilter handles $multiTenancyEnabled=false internally.
+        // Use $published parameter if provided, otherwise check config.
         if ($published !== null) {
             $enablePublished = $published;
         } else {
@@ -350,7 +353,7 @@ class SchemaMapper extends QBMapper
         bool $rbac=true,
         bool $multi=true
     ): array {
-        // Verify RBAC permission to read if RBAC is enabled
+        // Verify RBAC permission to read if RBAC is enabled.
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
@@ -381,9 +384,9 @@ class SchemaMapper extends QBMapper
         }
 
         // Apply organisation filter with published entity bypass support
-        // Published schemas can bypass multi-tenancy restrictions if configured
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
+        // Published schemas can bypass multi-tenancy restrictions if configured.
+        // applyOrganisationFilter handles $multiTenancyEnabled=false internally.
+        // Use $published parameter if provided, otherwise check config.
         if ($published !== null) {
             $enablePublished = $published;
         } else {
@@ -398,7 +401,7 @@ class SchemaMapper extends QBMapper
             multiTenancyEnabled: $multi
         );
 
-        // Just return the entities; do not attach stats here
+        // Just return the entities; do not attach stats here.
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -423,7 +426,7 @@ class SchemaMapper extends QBMapper
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        // Auto-set owner from current user session
+        // Auto-set owner from current user session.
         $this->setOwnerOnCreate($entity);
 
         $entity = parent::insert($entity);
@@ -488,12 +491,12 @@ class SchemaMapper extends QBMapper
 
         // If an object name field is provided, it must exist in the properties.
         if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
-            throw new \Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
+            throw new Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
         }
 
         // If an object description field is provided, it must exist in the properties.
         if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
-            throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
+            throw new Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
         }
 
         // Establish the required fields based on the properties.
@@ -579,7 +582,7 @@ class SchemaMapper extends QBMapper
                     $property['$ref'] = $property['$ref']->id;
                 } elseif (is_int($property['$ref']) === true) {
                 } elseif (is_string($property['$ref']) === false && $property['$ref'] !== '') {
-                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
+                    throw new Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
                 }
             }
 
@@ -1170,7 +1173,7 @@ class SchemaMapper extends QBMapper
 
         // Check for circular references.
         if (in_array($currentId, $visited) === true) {
-            throw new \Exception("Circular schema composition detected: schema '{$currentId}' creates a loop");
+            throw new Exception("Circular schema composition detected: schema '{$currentId}' creates a loop");
         }
 
         // Add current schema to visited list.
@@ -1231,7 +1234,7 @@ class SchemaMapper extends QBMapper
             if ($parentRef === $currentId || $parentRef === $schema->getId()
                 || $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
             ) {
-                throw new \Exception("Schema '{$currentId}' cannot reference itself in allOf");
+                throw new Exception("Schema '{$currentId}' cannot reference itself in allOf");
             }
 
             // Load and resolve the parent schema.
@@ -1297,7 +1300,7 @@ class SchemaMapper extends QBMapper
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
-                throw new \Exception("Schema '{$currentId}' cannot reference itself in oneOf");
+                throw new Exception("Schema '{$currentId}' cannot reference itself in oneOf");
             }
 
             // Load and resolve referenced schema (validates it exists).
@@ -1336,7 +1339,7 @@ class SchemaMapper extends QBMapper
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
-                throw new \Exception("Schema '{$currentId}' cannot reference itself in anyOf");
+                throw new Exception("Schema '{$currentId}' cannot reference itself in anyOf");
             }
 
             // Load and resolve referenced schema (validates it exists).
@@ -1377,7 +1380,7 @@ class SchemaMapper extends QBMapper
 
             return $this->findEntity(query: $qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            throw new \Exception("Schema '{$identifier}' not found");
+            throw new Exception("Schema '{$identifier}' not found");
         }
 
     }//end loadSchema()
@@ -1705,16 +1708,16 @@ class SchemaMapper extends QBMapper
                 // Child must be subset of parent (more restrictive is ok).
                 $diff = array_diff($childValue, $parentValue);
                 if (count($diff) > 0) {
-                    throw new \Exception(
+                    throw new Exception(
                         "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from ".json_encode($parentValue)." to ".json_encode($childValue)." (adds types not in parent)"
                     );
                 }
             } elseif (is_array($parentValue) === false && is_array($childValue) === false) {
-                throw new \Exception(
+                throw new Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from "."'{$parentValue}' to '{$childValue}'"
                 );
             } else {
-                throw new \Exception(
+                throw new Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible"
                 );
             }
@@ -1722,7 +1725,7 @@ class SchemaMapper extends QBMapper
 
         // Format can only be added or made more restrictive.
         if ($constraint === 'format' && $parentValue !== null && $parentValue !== $childValue) {
-            throw new \Exception(
+            throw new Exception(
                 "Schema '{$schemaId}': Property '{$propertyName}' cannot change format from "."'{$parentValue}' to '{$childValue}'"
             );
         }
@@ -1731,7 +1734,7 @@ class SchemaMapper extends QBMapper
         if ($constraint === 'enum' && is_array($parentValue) === true && is_array($childValue) === true) {
             $diff = array_diff($childValue, $parentValue);
             if (count($diff) > 0) {
-                throw new \Exception(
+                throw new Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' enum cannot add values not in parent "."(added: ".json_encode($diff).")"
                 );
             }
@@ -1743,7 +1746,7 @@ class SchemaMapper extends QBMapper
             && is_numeric($parentValue) === true && is_numeric($childValue) === true
         ) {
             if ($childValue < $parentValue) {
-                throw new \Exception(
+                throw new Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be decreased from "."{$parentValue} to {$childValue} (relaxes constraint)"
                 );
             }
@@ -1755,7 +1758,7 @@ class SchemaMapper extends QBMapper
             && is_numeric($parentValue) === true && is_numeric($childValue) === true
         ) {
             if ($childValue > $parentValue) {
-                throw new \Exception(
+                throw new Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be increased from "."{$parentValue} to {$childValue} (relaxes constraint)"
                 );
             }
@@ -1763,7 +1766,7 @@ class SchemaMapper extends QBMapper
 
         // Pattern can only be added, not changed.
         if ($constraint === 'pattern' && $parentValue !== null && $parentValue !== $childValue) {
-            throw new \Exception(
+            throw new Exception(
                 "Schema '{$schemaId}': Property '{$propertyName}' pattern cannot be changed from "."'{$parentValue}' to '{$childValue}'"
             );
         }
@@ -1793,7 +1796,7 @@ class SchemaMapper extends QBMapper
     ): void {
         // If parent had validation and child removes it, that's relaxing.
         if (empty($parentProperty) === false && empty($childProperty) === true) {
-            throw new \Exception(
+            throw new Exception(
                 "Schema '{$schemaId}': Property '{$propertyName}' cannot remove constraints "."(parent had value, child is empty)"
             );
         }
@@ -1902,8 +1905,8 @@ class SchemaMapper extends QBMapper
             $schema->setRequired(array_values($deltaRequired));
             // Re-index array.
             return $schema;
-        } catch (\Exception $e) {
-            throw new \Exception("Cannot extract allOf delta: ".$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Cannot extract allOf delta: ".$e->getMessage());
         }//end try
 
     }//end extractAllOfDelta()
@@ -2025,7 +2028,7 @@ class SchemaMapper extends QBMapper
         // First, get the target schema to know all its identifiers.
         try {
             $targetSchema = $this->find(id: $schemaIdentifier);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If schema not found, register: return empty array.
             return [];
         }

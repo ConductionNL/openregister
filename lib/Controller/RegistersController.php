@@ -1042,7 +1042,7 @@ class RegistersController extends Controller
     public function publish(int $id): JSONResponse
     {
         try {
-            // Get the publication date from request if provided, otherwise use now
+            // Get the publication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
                 $date = new \DateTime($this->request->getParam('date'));
@@ -1050,14 +1050,14 @@ class RegistersController extends Controller
                 $date = new \DateTime();
             }
 
-            // Get the register
+            // Get the register.
             $register = $this->registerMapper->find($id);
 
-            // Set published date and clear depublished date if set
+            // Set published date and clear depublished date if set.
             $register->setPublished($date);
             $register->setDepublished(null);
 
-            // Update the register
+            // Update the register.
             $updatedRegister = $this->registerMapper->update($register);
 
             $this->logger->info(
@@ -1103,7 +1103,7 @@ class RegistersController extends Controller
     public function depublish(int $id): JSONResponse
     {
         try {
-            // Get the depublication date from request if provided, otherwise use now
+            // Get the depublication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
                 $date = new \DateTime($this->request->getParam('date'));
@@ -1111,13 +1111,13 @@ class RegistersController extends Controller
                 $date = new \DateTime();
             }
 
-            // Get the register
+            // Get the register.
             $register = $this->registerMapper->find($id);
 
-            // Set depublished date
+            // Set depublished date.
             $register->setDepublished($date);
 
-            // Update the register
+            // Update the register.
             $updatedRegister = $this->registerMapper->update($register);
 
             $this->logger->info(

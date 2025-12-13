@@ -1,0 +1,93 @@
+# PHPQA Configuration
+# This file configures the PHP Quality Analyzer tool
+# Run with: composer phpqa or composer qa:check
+
+# Directories to analyze
+analyzedDirs: lib
+
+# Build directory for reports
+buildDir: phpqa
+
+# Ignore patterns
+ignoredDirs:
+  - vendor
+  - node_modules
+  - tests
+  - build
+  - coverage
+  - phpmetrics
+
+ignoredFiles: []
+
+# Tools configuration
+tools:
+  # PHP CodeSniffer - Coding standards
+  phpcs:
+    standard: phpcs.xml
+    reports:
+      - full
+      - summary
+    ignoreWarnings: false
+    
+  # PHP Mess Detector - Code quality
+  phpmd:
+    ruleset: phpmd.xml
+    
+  # PHP Lines of Code - Code metrics
+  phploc:
+    enabled: true
+    
+  # PHP Metrics - Complexity and maintainability
+  phpmetrics:
+    enabled: true
+    config:
+      - '--report-html=phpqa/phpmetrics'
+      - '--report-json=phpqa/phpmetrics/metrics.json'
+      
+  # PHP Copy/Paste Detector - Duplicate code
+  phpcpd:
+    enabled: true
+    minLines: 5
+    minTokens: 70
+    
+  # Parallel Lint - Syntax checking
+  parallel-lint:
+    enabled: true
+    exclude:
+      - vendor
+      - node_modules
+      
+  # Security Checker - Check for known vulnerabilities
+  security-checker:
+    enabled: false # Requires composer.lock
+    
+# Report configuration
+report:
+  # Create HTML report
+  html: true
+  
+  # Create CLI output
+  cli: true
+  
+  # File formats
+  file:
+    # JSON report with all data
+    json: phpqa/phpqa.json
+    
+    # Offline HTML report
+    offline: phpqa/phpqa-offline.html
+    
+# Execution configuration
+execution:
+  # Number of parallel processes
+  parallel: 4
+  
+  # Timeout per tool in seconds
+  timeout: 300
+  
+# Thresholds - Set to 0 to report but not fail
+allowedErrorsCount: 0
+
+# Verbose output
+verbose: false
+
