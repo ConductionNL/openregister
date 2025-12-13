@@ -500,7 +500,7 @@ class ConfigurationMapper extends QBMapper
         $qb->select('*')
             ->from($this->tableName)
             ->setMaxResults($limit)
-            ->setFirstResult($offset)
+            ->setFirstResult($offset ?? 0)
             ->orderBy('created', 'DESC');
 
         // Apply filters.

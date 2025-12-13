@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
 use DateTime;
 use stdClass;
+use GuzzleHttp\Client;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -1229,7 +1230,7 @@ class ConfigurationController extends Controller
                     );
 
             // Step 1: Fetch content from URL.
-            $client   = new \GuzzleHttp\Client();
+            $client   = new Client();
             $response = $client->request('GET', $url);
             $content  = $response->getBody()->getContents();
 

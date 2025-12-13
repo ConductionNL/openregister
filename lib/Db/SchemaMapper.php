@@ -27,6 +27,7 @@ use Exception;
 use RuntimeException;
 use ReflectionClass;
 use stdClass;
+use OCA\OpenRegister\Exception\ValidationException;
 use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;

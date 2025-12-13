@@ -26,12 +26,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookInterceptorService;
 use RuntimeException;
 use DateTime;
+use DateInterval;
+use stdClass;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -341,7 +345,7 @@ class ObjectsController extends Controller
             $objectService->setRegister(register: $register);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // If register not found, throw custom exception.
-            throw new \OCA\OpenRegister\Exception\RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
+            throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
         }
 
         try {
@@ -548,6 +552,9 @@ class ObjectsController extends Controller
         // Find and validate the object.
         try {
             $objectEntity = $this->objectService->find(id: $id, extend: $extend, files: false, register: null, schema: null, rbac: $rbac, multi: $multi);
+            if ($objectEntity === null) {
+                return new JSONResponse(data: ['error' => "Object with id {$id} not found"], statusCode: Http::STATUS_NOT_FOUND);
+            }
 
             // Render the object with requested extensions, filters, fields, and unset parameters.
             $renderedObject = $this->objectService->renderEntity(
@@ -979,6 +986,9 @@ class ObjectsController extends Controller
         // @todo shouldn't this be part of the object service?
         try {
             $existingObject = $this->objectService->find(id: $id);
+            if ($existingObject === null) {
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            }
 
             // Get the resolved register and schema IDs from the ObjectService.
             // This ensures proper handling of both numeric IDs and slug identifiers.
@@ -1292,6 +1302,9 @@ class ObjectsController extends Controller
         // Try to fetch the object by ID/UUID only (no register/schema filter yet).
         try {
             $object = $objectService->find(id: $id);
+            if ($object === null) {
+                return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+            }
         } catch (Exception $e) {
             return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
         }
@@ -1476,7 +1489,7 @@ class ObjectsController extends Controller
                 $spreadsheet = $this->exportService->exportToExcel(register: $registerEntity, schema: $schemaEntity, filters: $filters, currentUser: $this->userSession->getUser());
 
                 // Create Excel writer.
-                $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+                $writer = new Xlsx($spreadsheet);
 
                 // Generate filename.
                 $filename = sprintf(

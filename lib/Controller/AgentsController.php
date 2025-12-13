@@ -501,6 +501,9 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check if user can modify (delete) this agent using mapper method.
+            if ($this->userId === null) {
+                return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: Http::STATUS_FORBIDDEN);
+            }
             if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId) === false) {
                 return new JSONResponse(data: ['error' => 'You do not have permission to delete this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }

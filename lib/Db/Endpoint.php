@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use DateInterval;
+use stdClass;
+use RuntimeException;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
@@ -346,7 +348,7 @@ class Endpoint extends Entity implements JsonSerializable
 
         // Ensure the generated slug is not empty.
         if (empty($generatedSlug) === true) {
-            throw new \RuntimeException('Unable to generate a valid slug from the name.');
+            throw new RuntimeException('Unable to generate a valid slug from the name.');
         }
 
         return $generatedSlug;

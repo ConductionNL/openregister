@@ -30,6 +30,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use Exception;
 use RuntimeException;
 use DateTime;
+use stdClass;
+use ReflectionClass;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -471,7 +473,7 @@ class AuditTrailMapper extends QBMapper
         foreach ($changes as $field => $change) {
             if (($change['old'] ?? null) !== null) {
                 // Use reflection to set the value if it's a protected property.
-                $reflection = new \ReflectionClass($object);
+                $reflection = new ReflectionClass($object);
                 $property   = $reflection->getProperty($field);
                 /** @psalm-suppress UnusedMethodCall */
                 $property->setAccessible(true);

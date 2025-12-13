@@ -1393,7 +1393,7 @@ class SettingsController extends Controller
 
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $setup = new \OCA\OpenRegister\Setup\SolrSetup(solrService: $guzzleSolrService, logger: $logger);
+            $setup = new SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
             $logger->info(message: '🏗️ SolrSetup instance created, starting setup process');
@@ -1624,7 +1624,7 @@ class SettingsController extends Controller
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $setup = new \OCA\OpenRegister\Setup\SolrSetup(solrService: $guzzleSolrService, logger: $logger);
+            $setup = new SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // Run setup.
             $result = $setup->setupSolr();

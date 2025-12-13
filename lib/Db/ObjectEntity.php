@@ -625,7 +625,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         // Default to an empty array if $this->object is null.
-        $object['@self'] = $this->getObjectArray($object);
+        $object['@self'] = $this->getObjectArray($object ?? []);
 
         // Check if name is empty and set uuid as fallback.
         if (empty($object['@self']['name']) === true) {
