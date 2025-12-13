@@ -178,7 +178,9 @@ class EndpointLog extends Entity implements JsonSerializable
     /**
      * Get array of field names that are JSON type
      *
-     * @return array List of field names that are JSON type
+     * @return string[] List of field names that are JSON type
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -199,9 +201,9 @@ class EndpointLog extends Entity implements JsonSerializable
      *
      * @param array $object Array of data to hydrate the entity with
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -289,12 +291,28 @@ class EndpointLog extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON format
      *
-     * @return         array Serialized endpoint log data
+     * @return (array|int|null|string)[]
+     *
      * @phpstan-return array<string,mixed>
-     * @psalm-return   array<string,mixed>
+     *
+     * @psalm-return array{id: int, uuid: null|string, statusCode: int|null, statusMessage: null|string, request: array|null, response: array|null, endpointId: int|null, userId: null|string, sessionId: null|string, expires: null|string, created: null|string, size: int}
      */
     public function jsonSerialize(): array
     {
+        // Format expires date.
+        if (isset($this->expires) === true) {
+            $expiresFormatted = $this->expires->format('c');
+        } else {
+            $expiresFormatted = null;
+        }
+
+        // Format created date.
+        if (isset($this->created) === true) {
+            $createdFormatted = $this->created->format('c');
+        } else {
+            $createdFormatted = null;
+        }
+
         return [
             'id'            => $this->id,
             'uuid'          => $this->uuid,
@@ -305,8 +323,8 @@ class EndpointLog extends Entity implements JsonSerializable
             'endpointId'    => $this->endpointId,
             'userId'        => $this->userId,
             'sessionId'     => $this->sessionId,
-            'expires'       => isset($this->expires) === true ? $this->expires->format('c') : null,
-            'created'       => isset($this->created) === true ? $this->created->format('c') : null,
+            'expires'       => $expiresFormatted,
+            'created'       => $createdFormatted,
             'size'          => $this->size,
         ];
 

@@ -61,7 +61,7 @@ class RegisterNotFoundException extends Exception
     {
         // Build error message with register identifier.
         $message = "Register not found: '".$registerSlugOrId."'";
-        
+
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message, $code, $previous);
 

@@ -168,7 +168,7 @@ class ToolRegistry
         // Validate required metadata.
         $required = ['name', 'description', 'icon', 'app'];
         foreach ($required as $field) {
-            if (!isset($metadata[$field])) {
+            if (isset($metadata[$field]) === false) {
                 throw new \InvalidArgumentException("Missing required metadata field: {$field}");
             }
         }
@@ -202,7 +202,7 @@ class ToolRegistry
     {
         $this->loadTools();
 
-        if (!isset($this->tools[$id])) {
+        if (isset($this->tools[$id]) === false) {
             return null;
         }
 

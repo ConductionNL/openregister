@@ -218,9 +218,11 @@ class ChatService
      * @param array  $selectedTools  Array of tool UUIDs to use (empty = use all agent tools)
      * @param array  $ragSettings    RAG configuration settings (includeObjects, includeFiles, numSources)
      *
-     * @return array Response data with 'message', 'sources', 'title'
+     * @return ((array|int|null|string)[]|null|string)[] Response data with 'message', 'sources', 'title'
      *
      * @throws \Exception If processing fails
+     *
+     * @psalm-return array{message: array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}, title: null|string}
      */
     public function processMessage(
         int $conversationId,
@@ -389,7 +391,9 @@ class ChatService
      * @param array      $selectedViews Array of view UUIDs to search (empty = all agent views)
      * @param array      $ragSettings   RAG configuration overrides
      *
-     * @return array Context data with 'text' and 'sources'
+     * @return ((float|mixed|null|string)[][]|string)[] Context data with 'text' and 'sources'
+     *
+     * @psalm-return array{text: string, sources: list<array{file_id?: mixed|null, file_path?: mixed|null, id: mixed|null, mime_type?: mixed|null, name: string, register?: mixed|null, schema?: mixed|null, similarity: float(1)|mixed, text: ''|mixed, type: 'unknown'|mixed, uri?: mixed|null, uuid?: mixed|null}>}
      */
     private function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
     {
@@ -649,7 +653,9 @@ class ChatService
      * @param string $query Query text
      * @param int    $limit Result limit
      *
-     * @return array Search results
+     * @return (false|float|mixed|null|string)[][] Search results
+     *
+     * @psalm-return list{0?: array{entity_id: mixed|null, entity_type: 'object', text: false|mixed|string, score: float|mixed},...}
      */
     private function searchKeywordOnly(string $query, int $_limit): array
     {
@@ -737,7 +743,9 @@ class ChatService
      *
      * @param int $conversationId Conversation ID
      *
-     * @return array Array of LLPhant Message objects
+     * @return LLPhantMessage[] Array of LLPhant Message objects
+     *
+     * @psalm-return list{0?: LLPhantMessage,...}
      */
     private function buildMessageHistory(int $conversationId): array
     {
@@ -1276,7 +1284,9 @@ class ChatService
      * @param array  $config      Provider-specific configuration
      * @param string $testMessage Optional test message to send
      *
-     * @return array Test results with success status and chat response
+     * @return ((int|null|string)[]|bool|string)[] Test results with success status and chat response
+     *
+     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: 'fireworks'|'ollama'|'openai', model: string, testMessage: string, response: string, responseLength: int<0, max>, url: null|string}, details?: array{provider: string, model: string, raw_error: string}}
      */
     public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
     {
@@ -1899,7 +1909,9 @@ class ChatService
      * @param Agent|null $agent         Agent with tools configuration
      * @param array      $selectedTools Array of tool UUIDs to filter by (empty = all agent tools)
      *
-     * @return array Array of ToolInterface instances
+     * @return ToolInterface[] Array of ToolInterface instances
+     *
+     * @psalm-return list{0?: ToolInterface,...}
      */
     private function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
@@ -1960,6 +1972,8 @@ class ChatService
      * @param array $tools Array of ToolInterface instances
      *
      * @return array Array of function definitions for OpenAI
+     *
+     * @psalm-return list{0?: mixed,...}
      */
     private function convertToolsToFunctions(array $tools): array
     {
@@ -1987,7 +2001,9 @@ class ChatService
      * @param array $functions Array of function definitions
      * @param array $tools     Tool instances that have the methods
      *
-     * @return array Array of FunctionInfo objects
+     * @return FunctionInfo[] Array of FunctionInfo objects
+     *
+     * @psalm-return list{0?: FunctionInfo,...}
      */
     private function convertFunctionsToFunctionInfo(array $functions, array $tools): array
     {

@@ -37,7 +37,7 @@ use OCP\IRequest;
  *
  * @link https://github.com/conductionnl/openregister
  *
- * @psalm-type TemplateName = 'index'
+ * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
  */
 class UiController extends Controller
@@ -70,10 +70,9 @@ class UiController extends Controller
      * configured to allow API connections. Used by all UI route methods to serve the SPA.
      * Returns error template if rendering fails.
      *
-     * @return TemplateResponse The template response (or error template on failure)
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     private function makeSpaResponse(): TemplateResponse
     {

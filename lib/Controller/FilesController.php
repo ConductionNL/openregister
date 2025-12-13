@@ -106,7 +106,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, results?: array<int, array<string, mixed>>, total?: int, page?: int, pages?: int, limit?: int, offset?: int}, array<never, never>>
      */
     public function index(
         string $register,
@@ -150,12 +153,11 @@ class FilesController extends Controller
      * @param string $id       The ID of the object to retrieve files for
      * @param int    $fileId   The ID of the file to retrieve
      *
-     * @return JSONResponse JSON response containing file data or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
+     * @psalm-return JSONResponse<200|400|404, array<string, mixed>, array<never, never>>
      */
     public function show(
         string $register,
@@ -197,7 +199,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
      */
     public function create(
         string $register,
@@ -259,7 +264,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
      */
     public function save(
         string $register,
@@ -336,7 +344,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<'error'|int, array<string, mixed>|string>, array<never, never>>
      */
     public function createMultipart(
         string $register,
@@ -567,7 +578,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
      */
     public function update(
         string $register,
@@ -615,7 +629,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array{error?: string, success?: bool}, array<never, never>>
      */
     public function delete(
         string $register,
@@ -656,7 +673,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
      */
     public function publish(
         string $register,
@@ -694,7 +714,10 @@ class FilesController extends Controller
      * @return JSONResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
      */
     public function depublish(
         string $register,
@@ -733,12 +756,16 @@ class FilesController extends Controller
      * @return JSONResponse|\OCP\AppFramework\Http\StreamResponse
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @phpstan-param  int $fileId
+     * @phpstan-param int $fileId
+     *
      * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
+     *
+     * @psalm-return JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<int, array<string, mixed>>
      */
-    public function downloadById(int $fileId): mixed
+    public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {
         try {
             // Get the file using the file service.
@@ -829,7 +856,9 @@ class FilesController extends Controller
      *
      * @param mixed $tags The tags input (string or array)
      *
-     * @return array The normalized tags array
+     * @return string[] The normalized tags array
+     *
+     * @psalm-return array<string>
      */
     private function normalizeTags(mixed $tags): array
     {
@@ -854,9 +883,12 @@ class FilesController extends Controller
      * Render the Files page
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
      */
     public function page(): TemplateResponse
     {

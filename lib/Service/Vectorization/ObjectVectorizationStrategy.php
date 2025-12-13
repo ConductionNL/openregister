@@ -83,7 +83,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @param array $options Options: views, batch_size
      *
-     * @return array Array of ObjectEntity objects
+     * @return \OCA\OpenRegister\Db\ObjectEntity[] Array of ObjectEntity objects
+     *
+     * @psalm-return array<int, \OCA\OpenRegister\Db\ObjectEntity>
      */
     public function fetchEntities(array $options): array
     {
@@ -357,7 +359,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @return false|string Serialized text
      */
-    private function serializeObject(array $object, array $config): string|false
+    private function serializeObject(array $object, array $config): string|false|false
     {
         // TODO: Implement configurable serialization.
         // For now, just JSON encode with pretty print for readability.

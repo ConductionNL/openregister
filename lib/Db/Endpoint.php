@@ -280,7 +280,9 @@ class Endpoint extends Entity implements JsonSerializable
     /**
      * Get the groups array
      *
-     * @return array The groups or empty array if null
+     * @return string[][] The groups or empty array if null
+     *
+     * @psalm-return array<string, list<string>>
      */
     public function getGroups(): array
     {
@@ -304,7 +306,9 @@ class Endpoint extends Entity implements JsonSerializable
     /**
      * Get array of field names that are JSON type
      *
-     * @return array List of field names that are JSON type
+     * @return string[] List of field names that are JSON type
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -324,14 +328,14 @@ class Endpoint extends Entity implements JsonSerializable
      * Get the slug for the endpoint.
      * If the slug is not set, generate one from the name.
      *
-     * @return         string The slug for the endpoint
      * @phpstan-return non-empty-string
-     * @psalm-return   non-empty-string
+     *
+     * @psalm-return non-empty-string
      */
     public function getSlug(): string
     {
         // Check if the slug is already set.
-        if (!empty($this->slug)) {
+        if (empty($this->slug) === false) {
             return $this->slug;
         }
 
@@ -354,9 +358,9 @@ class Endpoint extends Entity implements JsonSerializable
      *
      * @param array $object Array of data to hydrate the entity with
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -382,9 +386,11 @@ class Endpoint extends Entity implements JsonSerializable
     /**
      * Serialize the entity to JSON format
      *
-     * @return         array Serialized endpoint data
+     * @return (array|int|null|string)[]
+     *
      * @phpstan-return array<string,mixed>
-     * @psalm-return   array<string,mixed>
+     *
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, reference: null|string, version: null|string, endpoint: null|string, endpointArray: array, endpointRegex: null|string, method: null|string, targetType: null|string, targetId: null|string, conditions: array, inputMapping: null|string, outputMapping: null|string, rules: array, configurations: array, slug: string, groups: array, organisation: null|string, created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

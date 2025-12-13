@@ -375,17 +375,18 @@ class HyperFacetHandler
     /**
      * Select optimal faceting strategy based on dataset characteristics
      *
-     * **INTELLIGENT STRATEGY SELECTION**: Chooses the best approach based on
+     * INTELLIGENT STRATEGY SELECTION**: Chooses the best approach based on
      * dataset size, query complexity, and field characteristics.
      *
      * @param array $datasetStats Dataset analysis results
      *
-     * @return string Optimization strategy identifier
+     * @phpstan-param array<string, mixed> $datasetStats
      *
-     * @phpstan-param  array<string, mixed> $datasetStats
      * @phpstan-return string
-     * @psalm-param    array<string, mixed> $datasetStats
-     * @psalm-return   string
+     *
+     * @psalm-param array<string, mixed> $datasetStats
+     *
+     * @psalm-return 'exact_parallel'|'hyperloglog_estimation'|'smart_sampling'
      */
     private function selectOptimizationStrategy(array $datasetStats): string
     {
@@ -526,23 +527,26 @@ class HyperFacetHandler
     /**
      * Calculate approximate facets using HyperLogLog cardinality estimation
      *
-     * **HYPERLOGLOG ESTIMATION**: For very large datasets, use probabilistic
+     * HYPERLOGLOG ESTIMATION**: For very large datasets, use probabilistic
      * cardinality estimation to provide instant results with high accuracy.
      *
      * @param array $facetConfig  Facet configuration
      * @param array $baseQuery    Base query filters
      * @param array $datasetStats Dataset characteristics
      *
-     * @return array Approximate facet results with accuracy indicators
+     * @return array[]
      *
-     * @phpstan-param  array<string, mixed> $facetConfig
-     * @phpstan-param  array<string, mixed> $baseQuery
-     * @phpstan-param  array<string, mixed> $datasetStats
+     * @phpstan-param array<string, mixed> $facetConfig
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param array<string, mixed> $datasetStats
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-param    array<string, mixed> $facetConfig
-     * @psalm-param    array<string, mixed> $baseQuery
-     * @psalm-param    array<string, mixed> $datasetStats
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-param array<string, mixed> $facetConfig
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param array<string, mixed> $datasetStats
+     *
+     * @psalm-return array<string, array>
      */
     private function calculateApproximateFacetsHyperLogLog(array $facetConfig, array $baseQuery, array $datasetStats): array
     {
@@ -575,21 +579,22 @@ class HyperFacetHandler
     /**
      * Process metadata facets in parallel using optimized index queries
      *
-     * **INDEX-OPTIMIZED**: Leverage our composite indexes for lightning-fast
+     * INDEX-OPTIMIZED**: Leverage our composite indexes for lightning-fast
      * metadata facet calculation.
      *
      * @param array $metadataFacets Metadata facet configuration
      * @param array $baseQuery      Base query filters
      *
-     * @return PromiseInterface Promise resolving to metadata facet results
+     * @phpstan-param array<string, mixed> $metadataFacets
+     * @phpstan-param array<string, mixed> $baseQuery
      *
-     * @phpstan-param  array<string, mixed> $metadataFacets
-     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return PromiseInterface
-     * @psalm-param    array<string, mixed> $metadataFacets
-     * @psalm-return   PromiseInterface
+     *
+     * @psalm-param array<string, mixed> $metadataFacets
+     *
+     * @psalm-return Promise<T>
      */
-    private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): PromiseInterface
+    private function processMetadataFacetsParallel(array $metadataFacets, array $baseQuery): Promise
     {
         return new Promise(function ($resolve, $reject) use ($metadataFacets, $baseQuery) {
             try {
@@ -630,23 +635,26 @@ class HyperFacetHandler
     /**
      * Get multiple metadata facets in a single optimized batch query
      *
-     * **BATCH OPTIMIZATION**: Calculate multiple terms facets in one query
+     * BATCH OPTIMIZATION**: Calculate multiple terms facets in one query
      * by using GROUP BY with multiple fields and CASE statements.
      *
      * @param array $fields         Metadata fields to batch
      * @param array $facetConfig    Facet configuration
      * @param array $baseQuery      Base query filters
      *
-     * @return array Batched facet results
+     * @return ((int|mixed|string)[][]|string)[][]
      *
-     * @phpstan-param  array<string> $fields
-     * @phpstan-param  array<string, mixed> $facetConfig
-     * @phpstan-param  array<string, mixed> $baseQuery
+     * @phpstan-param array<string> $fields
+     * @phpstan-param array<string, mixed> $facetConfig
+     * @phpstan-param array<string, mixed> $baseQuery
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-param    array<string> $fields
-     * @psalm-param    array<string, mixed> $facetConfig
-     * @psalm-param    array<string, mixed> $baseQuery
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-param array<string> $fields
+     * @psalm-param array<string, mixed> $facetConfig
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @psalm-return array<string, array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string},...}}>
      */
     private function getBatchedMetadataFacets(array $fields, array $facetConfig, array $baseQuery): array
     {
@@ -822,20 +830,21 @@ class HyperFacetHandler
     /**
      * Generate intelligent cache key for facet results
      *
-     * **CACHE INTELLIGENCE**: Creates deterministic cache keys that account for
+     * CACHE INTELLIGENCE**: Creates deterministic cache keys that account for
      * user context, query parameters, and facet configuration.
      *
      * @param array $facetConfig Facet configuration
      * @param array $baseQuery   Base query filters
      *
-     * @return string Intelligent cache key
+     * @phpstan-param array<string, mixed> $facetConfig
+     * @phpstan-param array<string, mixed> $baseQuery
      *
-     * @phpstan-param  array<string, mixed> $facetConfig
-     * @phpstan-param  array<string, mixed> $baseQuery
      * @phpstan-return string
-     * @psalm-param    array<string, mixed> $facetConfig
-     * @psalm-param    array<string, mixed> $baseQuery
-     * @psalm-return   string
+     *
+     * @psalm-param array<string, mixed> $facetConfig
+     * @psalm-param array<string, mixed> $baseQuery
+     *
+     * @psalm-return string
      */
     private function generateIntelligentCacheKey(array $facetConfig, array $baseQuery): string
     {
@@ -869,7 +878,11 @@ class HyperFacetHandler
 
         try {
             $cached = $this->facetCache->get($cacheKey);
-            return is_array($cached) === true ? $cached : null;
+            if (is_array($cached) === true) {
+                return $cached;
+            } else {
+                return null;
+            }
         } catch (\Exception $e) {
             return null;
         }
@@ -1073,7 +1086,10 @@ class HyperFacetHandler
 
 
     // Placeholder methods that would need to be implemented based on specific requirements.
-    private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): PromiseInterface
+    /**
+     * @psalm-return Promise<T>
+     */
+    private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): Promise
     {
         return new Promise(function ($resolve) {
             // Simplified for now.
@@ -1088,7 +1104,9 @@ class HyperFacetHandler
      * @param array $baseQuery  Base query parameters
      * @param int   $sampleSize Sample size to limit results
      *
-     * @return array Query with sample size limit and random ordering
+     * @return (int|mixed|string[])[] Query with sample size limit and random ordering
+     *
+     * @psalm-return array{_limit: int, _order: array{'RAND()': 'ASC'},...}
      */
     private function buildSampleQuery(array $baseQuery, int $sampleSize): array
     {
@@ -1126,6 +1144,8 @@ class HyperFacetHandler
      * @param array $baseQuery Base query parameters
      *
      * @return array Facet results
+     *
+     * @psalm-return array<never, never>
      */
     private function calculateMetadataFacetsHyperFast(array $_config, array $_baseQuery): array
     {
@@ -1141,7 +1161,9 @@ class HyperFacetHandler
      * @param array  $baseQuery  Base query parameters
      * @param array  $stats      Statistics for estimation
      *
-     * @return array Estimated facet results
+     * @return ((int|string|true)[][]|mixed|string)[] Estimated facet results
+     *
+     * @psalm-return array{type: 'terms'|mixed, buckets: list{array{key: 'estimated', results: int, approximate: true}}}
      */
     private function estimateJsonFieldFacet(string $field, array $config, array $baseQuery, array $stats): array
     {
@@ -1161,6 +1183,8 @@ class HyperFacetHandler
      * @param array  $baseQuery Base query parameters
      *
      * @return array Facet results
+     *
+     * @psalm-return array<never, never>
      */
     private function calculateSingleMetadataFacet(string $_field, array $_config, array $_baseQuery): array
     {

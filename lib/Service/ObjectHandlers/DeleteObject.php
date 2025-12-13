@@ -147,11 +147,26 @@ class DeleteObject
              */
             $registerId = $objectEntity->getRegister();
             $schemaId   = $objectEntity->getSchema();
+
+            // Convert register ID to int if numeric.
+            if ($registerId !== null && is_numeric($registerId)) {
+                $registerIdInt = (int) $registerId;
+            } else {
+                $registerIdInt = null;
+            }
+
+            // Convert schema ID to int if numeric.
+            if ($schemaId !== null && is_numeric($schemaId)) {
+                $schemaIdInt = (int) $schemaId;
+            } else {
+                $schemaIdInt = null;
+            }
+
             $this->objectCacheService->invalidateForObjectChange(
                 object: $objectEntity,
                 operation: 'delete',
-                registerId: ($registerId !== null && is_numeric($registerId)) ? (int) $registerId : null,
-                schemaId: ($schemaId !== null && is_numeric($schemaId)) ? (int) $schemaId : null
+                registerId: $registerIdInt,
+                schemaId: $schemaIdInt
             );
         }
 

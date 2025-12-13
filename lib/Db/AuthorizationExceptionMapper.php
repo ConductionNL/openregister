@@ -148,7 +148,9 @@ class AuthorizationExceptionMapper extends QBMapper
      * @param string $subjectId   The subject ID
      * @param bool   $activeOnly  Whether to return only active exceptions
      *
-     * @return array<AuthorizationException> Array of authorization exceptions
+     * @return AuthorizationException[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\AuthorizationException>
      */
     public function findBySubject(string $subjectType, string $subjectId, bool $activeOnly=true): array
     {
@@ -182,7 +184,9 @@ class AuthorizationExceptionMapper extends QBMapper
      * @param string|null $organizationUuid Optional organization UUID
      * @param bool        $activeOnly       Whether to return only active exceptions
      *
-     * @return array<AuthorizationException> Array of matching authorization exceptions
+     * @return AuthorizationException[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\AuthorizationException>
      */
     public function findApplicableExceptions(
         string $subjectType,

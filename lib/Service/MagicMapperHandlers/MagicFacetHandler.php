@@ -76,7 +76,9 @@ class MagicFacetHandler
      * @param array  $baseQuery Base query filters
      * @param string $tableName Target table name
      *
-     * @return array Facet data for the metadata field
+     * @return ((int|mixed|null|string)[][]|int|string)[] Facet data for the metadata field
+     *
+     * @psalm-return array{type: 'date_histogram'|'range'|'terms', field: string, buckets: list<array{count: int, from?: mixed|null, key?: mixed|string, to?: mixed|null, value?: mixed}>, total_buckets: int<0, max>, error?: string, interval?: string}
      */
     private function getMetadataFieldFacet(string $field, array $config, array $baseQuery, string $tableName): array
     {
@@ -111,7 +113,9 @@ class MagicFacetHandler
      * @param Schema $schema    Schema context
      * @param string $tableName Target table name
      *
-     * @return array Facet data for the schema property field
+     * @return ((int|mixed|null|string)[][]|int|string)[] Facet data for the schema property field
+     *
+     * @psalm-return array{type?: 'date_histogram'|'range'|'terms', field?: string, buckets?: list<array{count: int, from?: mixed|null, key?: mixed|string, to?: mixed|null, value?: mixed}>, total_buckets?: int<0, max>, error?: string, interval?: string}
      */
     private function getSchemaPropertyFacet(string $field, array $config, array $baseQuery, Schema $schema, string $tableName): array
     {
@@ -546,9 +550,9 @@ class MagicFacetHandler
      *
      * @param Schema $schema Schema to analyze
      *
-     * @return (array|mixed|string)[][] Array of schema properties that can be faceted
+     * @return (mixed|string|string[])[][]
      *
-     * @psalm-return array<array{type: 'string'|mixed, format: ''|mixed, title: mixed, description: mixed|string, facet_types: array}>
+     * @psalm-return array<array{type: 'string'|mixed, format: ''|mixed, title: mixed, description: mixed|string, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}}>
      */
     private function getSchemaFacetableFields(Schema $schema): array
     {

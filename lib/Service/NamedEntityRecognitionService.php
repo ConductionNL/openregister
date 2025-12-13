@@ -107,13 +107,11 @@ class NamedEntityRecognitionService
      *                       - confidence_threshold: minimum confidence (default: 0.5)
      *                       - context_window: characters around entity (default: 50)
      *
-     * @return array{
-     *     entities_found: int,
-     *     relations_created: int,
-     *     entities: array<int, array{type: string, value: string, confidence: float}>
-     * }
+     * @return ((float|string)[][]|int)[]
      *
      * @throws Exception When extraction fails.
+     *
+     * @psalm-return array{entities_found: int<0, max>, relations_created: int<0, max>, entities: list<array{confidence: float, type: string, value: string}>}
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -261,7 +259,9 @@ class NamedEntityRecognitionService
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
+     * @return (float|int|string)[][]
+     *
+     * @psalm-return array<int<0, max>, array{type: 'EMAIL'|'IBAN'|'PHONE', value: string, category: 'personal_data'|'sensitive_pii', position_start: int, position_end: int<min, max>, confidence: float}>
      */
     private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {

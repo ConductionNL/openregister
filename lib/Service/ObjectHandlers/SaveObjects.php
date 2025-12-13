@@ -220,11 +220,15 @@ class SaveObjects
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
      *
-     * @return array Comprehensive bulk operation results with statistics and categorized objects
+     * @return array[]
      *
-     * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     *
+     * @psalm-param array<int, array<string, mixed>> $objects
+     *
      * @phpstan-return array<string, mixed>
+     *
+     * @psalm-return array{saved: array, updated: array, unchanged: array<never, never>, invalid: array, errors: array, statistics: array{totalProcessed: int<0, max>, saved: 0|mixed, updated: 0|mixed, unchanged: 0, invalid: 0|1|2|mixed, errors: 0|1|2|mixed, processingTimeMs: 0}, chunkStatistics?: list{0?: array{chunkIndex: int<0, max>, count: int<0, max>, saved: 0|mixed, updated: 0|mixed, invalid: 0|mixed},...}, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalRequested: int<0, max>, efficiency: 0|float, deduplicationEfficiency?: string}}
      */
     public function saveObjects(
         array $objects,
@@ -524,12 +528,12 @@ class SaveObjects
      *
      * @param mixed $referenceData The reference data from the object
      *
-     * @return string|null The extracted UUID or null if not found
+     * @return null|string
      *
-     * @psalm-return   string|null
+     * @psalm-return string|null
      * @phpstan-return string|null
      */
-    private function extractUuidFromReference($referenceData): ?string
+    private function extractUuidFromReference($referenceData): string|null
     {
         // Handle object format: {"value": "uuid"}.
         if (is_array($referenceData) === true && (($referenceData['value'] ?? null) !== null)) {
@@ -606,9 +610,7 @@ class SaveObjects
      * @param string $metadataType   The type of metadata
      * @param array  $propertyConfig The property configuration
      *
-     * @return string The fallback name
-     *
-     * @psalm-return   string
+     * @psalm-return string
      * @phpstan-return string
      */
     private function generateFallbackName(string $uuid, string $metadataType, array $propertyConfig): string
@@ -632,6 +634,8 @@ class SaveObjects
      * @param int $totalObjects Total number of objects to process
      *
      * @return int Optimal chunk size
+     *
+     * @psalm-return int<min, 10000>
      */
     private function calculateOptimalChunkSize(int $totalObjects): int
     {
@@ -666,17 +670,19 @@ class SaveObjects
      * PERFORMANCE OPTIMIZATION: This method performs comprehensive schema analysis in a single pass,
      * caching all schema-dependent information needed for the entire bulk operation. This eliminates
      * redundant schema loading and analysis throughout the preparation process.
-     //end try
+     * //end try
      *
      * METADATA MAPPING: Each object gets schema-based metadata hydration using SaveObject::hydrateObjectMetadata()
      * to extract name, description, summary, etc. based on the object's specific schema configuration.
      *
      * @param array $objects Array of objects in serialized format
      *
-     * @return array Array containing [prepared objects, schema cache]
+     * @return (Schema|mixed)[][] Array containing [prepared objects, schema cache]
      *
      * @see website/docs/developers/import-flow.md for complete import flow documentation
      * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
+     *
+     * @psalm-return list{0: list<mixed>, 1: array<int|string, Schema>, 2?: array<never, never>}
      */
     private function prepareObjectsForBulkSave(array $objects): array
     {
@@ -871,10 +877,12 @@ class SaveObjects
      * @param Register|string|int    $register Register context
      * @param Schema|string|int      $schema   Schema context
      *
-     * @return array Array containing [prepared objects, schema cache, invalid objects]
+     * @return (Schema|mixed)[][] Array containing [prepared objects, schema cache, invalid objects]
      *
      * @see website/docs/developers/import-flow.md for complete import flow documentation
      * @see SaveObject::hydrateObjectMetadata() for metadata extraction details
+     *
+     * @psalm-return list{array, array<int|string, Schema>, array<never, never>}
      */
     private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array
     {
@@ -1134,7 +1142,9 @@ class SaveObjects
      * @param bool  $validation  Apply schema validation
      * @param bool  $events      Dispatch events
      *
-     * @return array Processing result for this chunk with bulk operation statistics
+     * @return array[] Processing result for this chunk with bulk operation statistics
+     *
+     * @psalm-return array{saved: list{0?: array|mixed,...}, updated: list<array|mixed>, invalid: array, errors: array<never, never>, statistics: array{saved: int, updated: int, invalid: int<0, max>, errors?: mixed, unchanged?: int, processingTimeMs?: float}, unchanged?: array<int<0, max>, mixed>}
      */
     private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multi, bool $_validation, bool $_events): array
     {
@@ -1423,15 +1433,9 @@ class SaveObjects
      *
      * @param Schema $schema Schema to analyze
      *
-     * @return array Comprehensive analysis containing:
-     *               - metadataFields: Array of metadata field mappings
-     *               - inverseProperties: Array of properties with inverse relations
-     *               - validationRequired: Whether hard validation is enabled
-     //end if
-     *               - properties: Cached schema properties
-     *               - configuration: Cached schema configuration
+     * @return (((bool|mixed)[]|mixed)[]|bool|null)[]
      *
-     * @psalm-return   array<string, mixed>
+     * @psalm-return array{metadataFields: array<string, mixed>, inverseProperties: array<array{inversedBy: mixed, writeBack: bool, isArray: bool}>, validationRequired: bool, properties: array|null, configuration: array|null}
      * @phpstan-return array<string, mixed>
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
@@ -1640,9 +1644,11 @@ class SaveObjects
      * @param Schema      $schema The schema containing property definitions
      * @param string|null $uuid   The UUID of the parent object (will be generated if null)
      *
-     * @return array Array containing [processedObject, parentUuid]
+     * @return (array|string)[] Array containing [processedObject, parentUuid]
      *
      * @throws Exception If there's an error during object creation
+     *
+     * @psalm-return list{array, string}
      */
     private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
     {
@@ -1665,7 +1671,9 @@ class SaveObjects
      * @param array &$objects     Objects to transform (modified in-place)
      * @param array  $schemaCache Schema cache for metadata field resolution
      *
-     * @return array Transformed objects ready for database operations
+     * @return (((int|string)|mixed)[]|mixed)[][] Transformed objects ready for database operations
+     *
+     * @psalm-return array{valid: list<mixed>, invalid: list{0?: array{object: mixed, error: string, index: array-key, type: 'InvalidSchemaException'|'MissingRegisterException'|'MissingSchemaException'},...}}
      */
     private function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -1886,7 +1894,9 @@ class SaveObjects
      * @param array $savedObjectIds  Array of UUIDs that were saved
      * @param array $existingObjects Original existing objects cache
      *
-     * @return array Array of ObjectEntity objects representing saved objects
+     * @return (ObjectEntity|mixed)[] Array of ObjectEntity objects representing saved objects
+     *
+     * @psalm-return list{0?: ObjectEntity|mixed,...}
      */
     private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $_savedObjectIds, array $_existingObjects): array
     {
@@ -2105,7 +2115,7 @@ class SaveObjects
 
     //end try
     /**
-     //end foreach
+     * //end foreach
      * Creates a URL-friendly slug from a string
      *
      * @param string $text The text to convert to a slug

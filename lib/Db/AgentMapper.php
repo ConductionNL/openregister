@@ -184,8 +184,11 @@ class AgentMapper extends QBMapper
      * @param int         $limit            Maximum number of results
      * @param int         $offset           Offset for pagination
      *
-     * @return Agent[] Array of agent entities
+     * @return (Agent|OCA\OpenRegister\Db\Agent)[] Array of agent entities
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Agent|OCA\OpenRegister\Db\OCA\OpenRegister\Db\Agent>
      */
     public function findByOrganisation(string $organisationUuid, ?string $userId=null, int $limit=50, int $offset=0): array
     {
@@ -219,7 +222,9 @@ class AgentMapper extends QBMapper
      * @param Agent[] $agents Array of agents to filter
      * @param string  $userId User ID
      *
-     * @return Agent[] Filtered array of accessible agents
+     * @return Agent[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Agent>
      */
     private function filterByUserAccess(array $agents, string $userId): array
     {
@@ -297,7 +302,10 @@ class AgentMapper extends QBMapper
      * @param array|null $order   Order by criteria
      *
      * @return Agent[] Array of agent entities
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Agent>
      */
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {

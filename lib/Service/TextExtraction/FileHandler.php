@@ -54,6 +54,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * Get the source type this handler supports.
      *
      * @return string Source type identifier.
+     *
+     * @psalm-return 'file'
      */
     public function getSourceType(): string
     {
@@ -172,9 +174,11 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @param int $sourceId File ID.
      *
-     * @return array<string, mixed> File metadata.
+     * @return (int|null|string)[] File metadata.
      *
      * @throws DoesNotExistException If file not found.
+     *
+     * @psalm-return array{fileid: int, storage: int, path: string, path_hash: string, parent: int, name: string, mimetype: string, mimepart: string, size: int, mtime: int, storage_mtime: int, encrypted: int, unencrypted_size: int, etag: string, permissions: int, checksum: string, share_token: null|string, share_stime: int|null, storage_id: null|string, owner: null|string, accessUrl: null|string, downloadUrl: null|string, published: null|string}
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -254,9 +258,11 @@ class FileHandler implements TextExtractionHandlerInterface
     /**
      * Detect language from text.
      *
-     * @param string $text Text to analyze.
+     * @param string $_text Text to analyze.
      *
-     * @return array{language: string|null, level: string|null, confidence: float|null, method: string|null}
+     * @return null[]
+     *
+     * @psalm-return array{language: null, level: null, confidence: null, method: null}
      */
     private function detectLanguage(string $_text): array
     {

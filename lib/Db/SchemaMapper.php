@@ -197,7 +197,11 @@ class SchemaMapper extends QBMapper
         // Set $multi=false to bypass organization filter (e.g., when expanding schemas for registers)
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        } else {
+            $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        }
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -258,7 +262,9 @@ class SchemaMapper extends QBMapper
      *
      * @todo: refactor this into find all
      *
-     * @return array The schemas
+     * @return Schema[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Schema>
      */
     public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
@@ -281,8 +287,11 @@ class SchemaMapper extends QBMapper
      *
      * This method performs a single database query to fetch multiple schemas, register: * significantly improving performance compared to individual queries.
      *
-     * @param  array $ids Array of schema IDs to find
-     * @return array Associative array of ID => Schema entity
+     * @param array $ids Array of schema IDs to find
+     *
+     * @return Entity&Schema[] Associative array of ID => Schema entity
+     *
+     * @psalm-return array<Entity&Schema>
      */
     public function findMultipleOptimized(array $ids): array
     {
@@ -324,8 +333,11 @@ class SchemaMapper extends QBMapper
      * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return array The schemas, multi: possibly with stats
+     * @return Schema[] The schemas, multi: possibly with stats
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Schema>
      */
     public function findAll(
         ?int $limit=null,
@@ -372,7 +384,11 @@ class SchemaMapper extends QBMapper
         // Published schemas can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        } else {
+            $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        }
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -721,7 +737,11 @@ class SchemaMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         // Check for attached objects before deleting (using direct database query to avoid circular dependency).
-        $schemaId = method_exists($entity, 'getId') === true ? $entity->getId() : $entity->id;
+        if (method_exists($entity, 'getId') === true) {
+            $schemaId = $entity->getId();
+        } else {
+            $schemaId = $entity->id;
+        }
 
         // Count objects that reference this schema (excluding soft-deleted objects).
         $qb = $this->db->getQueryBuilder();
@@ -757,9 +777,9 @@ class SchemaMapper extends QBMapper
      * This method returns an associative array where the key is the schema ID and the value is the number of registers that reference that schema.
      *
      * @phpstan-return array<int,int>  Associative array of schema ID => register count
-     * @psalm-return   array<int,int>    Associative array of schema ID => register count
      *
-     * @return array<int,int> Associative array of schema ID => register count
+     * @psalm-return array<int, int>
+     * @return int[] Associative array of schema ID => register count
      */
     public function getRegisterCountPerSchema(): array
     {
@@ -772,7 +792,13 @@ class SchemaMapper extends QBMapper
         $counts = [];
         foreach ($result as $row) {
             // Decode the schemas JSON array for each register.
-            $schemas = json_decode($row['schemas'], true) ?: [];
+            $decoded = json_decode($row['schemas'], true);
+            if ($decoded !== null && $decoded !== false) {
+                $schemas = $decoded;
+            } else {
+                $schemas = [];
+            }
+
             foreach ($schemas as $schemaId) {
                 $counts[(int) $schemaId] = ($counts[(int) $schemaId] ?? 0) + 1;
             }
@@ -839,7 +865,9 @@ class SchemaMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array<Schema> Array of schemas that reference the target schema
+     * @return Schema[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Schema>
      */
     public function getRelated(Schema|int|string $schema): array
     {
@@ -1086,6 +1114,8 @@ class SchemaMapper extends QBMapper
      * @param array $property The property definition
      *
      * @return string The facet type ('terms' or 'date_histogram')
+     *
+     * @psalm-return 'date_histogram'|'terms'
      */
     private function determineFacetTypeFromProperty(array $property): string
     {
@@ -1987,6 +2017,8 @@ class SchemaMapper extends QBMapper
      * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema
      *
      * @return array Array of schema UUIDs that compose with this schema
+     *
+     * @psalm-return list{0?: mixed,...}
      */
     public function findExtendedBy(int|string $schemaIdentifier): array
     {

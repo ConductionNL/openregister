@@ -281,9 +281,9 @@ class ExportService
      * @param Schema|null   $schema      Optional schema to export
      * @param IUser|null    $currentUser Current user for permission checks
      *
-     * @return (mixed|string)[] Headers indexed by column letter with property key as value
+     * @return (int|string)[]
      *
-     * @psalm-return array<mixed|string>
+     * @psalm-return array<array-key>
      */
     private function getHeaders(?Register $register=null, ?Schema $schema=null, ?IUser $currentUser=null): array
     {

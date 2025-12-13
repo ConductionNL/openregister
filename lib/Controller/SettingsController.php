@@ -206,7 +206,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing the current settings.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -226,7 +229,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing the updated settings.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function update(): JSONResponse
     {
@@ -247,6 +253,8 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing the settings.
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function load(): JSONResponse
     {
@@ -266,6 +274,8 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing the updated publishing options.
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updatePublishingOptions(): JSONResponse
     {
@@ -289,7 +299,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing the rebase operation result.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function rebase(): JSONResponse
     {
@@ -312,7 +325,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing statistics data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|422, array, array<never, never>>
      */
     public function stats(): JSONResponse
     {
@@ -353,7 +369,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing cache statistics data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getCacheStats(): JSONResponse
     {
@@ -376,7 +395,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing cache clearing results.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function clearCache(): JSONResponse
     {
@@ -402,7 +424,10 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing warmup operation results.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|422, array, array<never, never>>
      */
     public function warmupNamesCache(): JSONResponse
     {
@@ -423,9 +448,12 @@ class SettingsController extends Controller
      * a summary of validation results including any errors found.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Validation results summary
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, total_objects: int<0, max>, valid_objects: 0|1|2, invalid_objects: int, validation_errors: list{0?: array{object_id: mixed, object_name: mixed, register: mixed, schema: mixed, errors: list{string}|mixed},...}, summary: array{has_errors: bool, error_count: int<0, max>, validation_success_rate?: 100|float}}, array<never, never>>
      */
     public function validateAllObjects(): JSONResponse
     {
@@ -1072,11 +1100,14 @@ class SettingsController extends Controller
     /**
      * Process a single batch directly (helper for parallel processing)
      *
-     * @param  mixed $objectMapper  The object entity mapper
-     * @param  mixed $objectService The object service instance
-     * @param  array $job           Batch job definition
-     * @param  bool  $collectErrors Whether to collect all errors
-     * @return array Batch processing results
+     * @param mixed $objectMapper  The object entity mapper
+     * @param mixed $objectService The object service instance
+     * @param array $job           Batch job definition
+     * @param bool  $collectErrors Whether to collect all errors
+     *
+     * @return ((mixed|string)[][]|float|int)[] Batch processing results
+     *
+     * @psalm-return array{processed: int<0, max>, successful: int<0, max>, failed: int<0, max>, errors: list{0?: array{object_id: mixed, object_name: mixed, register: mixed, schema: mixed, error: string, batch_mode: 'parallel_optimized'},...}, duration: float}
      */
     private function processBatchDirectly($objectMapper, $objectService, array $job, bool $collectErrors): array
     {
@@ -1154,8 +1185,9 @@ class SettingsController extends Controller
     /**
      * Format bytes into human readable format
      *
-     * @param  int $bytes     Number of bytes
-     * @param  int $precision Decimal precision
+     * @param int $bytes     Number of bytes
+     * @param int $precision Decimal precision
+     *
      * @return string Formatted string
      */
     private function formatBytes(int $bytes, int $precision=2): string
@@ -1177,9 +1209,12 @@ class SettingsController extends Controller
      * Predict memory usage for mass validation operation
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Memory prediction results
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, prediction_safe: bool, formatted: array{total_predicted: string, available: string, current_usage?: string, memory_limit?: string, memory_per_object?: string}, objects_to_process?: 10000|mixed, total_objects_available?: 'Unknown (fast mode)', memory_per_object_bytes?: 51200, total_predicted_bytes?: mixed, current_memory_bytes?: int, memory_limit_bytes?: int, available_memory_bytes?: int, safety_margin_percentage?: 80, recommendation?: 'Safe to process'|'Warning: Memory usage may exceed available memory', note?: 'Fast prediction mode - actual object count will be determined during processing'}, array<never, never>>
      */
     public function predictMassValidationMemory(): JSONResponse
     {
@@ -1431,7 +1466,6 @@ class SettingsController extends Controller
                                     'Verify SOLR configuration',
                                     'Check SOLR server logs',
                                 ],
-                                'steps'                 => $setupProgress['steps'] ?? [],
                             ],
                             statusCode: 422
                             );
@@ -1704,11 +1738,14 @@ class SettingsController extends Controller
      * Clear a specific SOLR collection by name
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $name The name of the collection to clear
      *
      * @return JSONResponse The clear result
+     *
+     * @psalm-return JSONResponse<200|422, array{success: bool, message: mixed|string, collection: string}, array<never, never>>
      */
     public function clearSpecificCollection(string $name): JSONResponse
     {
@@ -1755,11 +1792,14 @@ class SettingsController extends Controller
      * Reindex a specific SOLR collection by name
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $name The name of the collection to reindex
      *
      * @return JSONResponse The reindex result
+     *
+     * @psalm-return JSONResponse<200|400|422, array{success: bool, message: mixed|string, collection: string, stats?: array<never, never>|mixed}, array<never, never>>
      */
     public function reindexSpecificCollection(string $name): JSONResponse
     {
@@ -1834,9 +1874,12 @@ class SettingsController extends Controller
      * Test SOLR connection with provided settings (basic connectivity and authentication only)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The test results
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, message: string, details: array{exception: string}}, array<never, never>>
      */
     public function testSolrConnection(): JSONResponse
     {
@@ -1865,9 +1908,12 @@ class SettingsController extends Controller
      * Get SOLR field configuration and schema information
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse SOLR field configuration data
+     *
+     * @psalm-return JSONResponse<200|422, array{success: bool, message?: string, details?: array{error: string}, comparison?: array{total_differences: int<0, max>, missing_count: int<0, max>, extra_count: int<0, max>, missing: list{0?: array{name: mixed, type: mixed, config: mixed, collection: 'files'|'objects', collectionLabel: 'File Collection'|'Object Collection'},...}, extra: list{0?: array{name: mixed, collection: 'files'|'objects', collectionLabel: 'File Collection'|'Object Collection'},...}, object_collection: array{missing: int<0, max>, extra: int<0, max>}, file_collection: array{missing: int<0, max>, extra: int<0, max>}}, object_collection_status?: mixed, file_collection_status?: mixed}, array<never, never>>
      */
     public function getSolrFields(): JSONResponse
     {
@@ -1977,9 +2023,12 @@ class SettingsController extends Controller
      * Create missing SOLR fields based on schema analysis
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The field creation results
+     *
+     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, details?: array{error: string}, total_created?: 0|mixed, total_errors?: 0|mixed, results?: array{objects: array{success: false, message: string}|mixed|null, files: array{success: false, message: string}|mixed|null}, execution_time_ms?: float, dry_run?: bool}, array<never, never>>
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -2098,9 +2147,12 @@ class SettingsController extends Controller
      * Get object collection field status
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Field status for object collection
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'objects', status?: mixed}, array<never, never>>
      */
     public function getObjectCollectionFields(): JSONResponse
     {
@@ -2132,9 +2184,12 @@ class SettingsController extends Controller
      * Get file collection field status
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Field status for file collection
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'files', status?: mixed}, array<never, never>>
      */
     public function getFileCollectionFields(): JSONResponse
     {
@@ -2166,9 +2221,12 @@ class SettingsController extends Controller
      * Create missing fields in object collection
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Creation results
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message: string, collection?: 'objects', result?: mixed}, array<never, never>>
      */
     public function createMissingObjectFields(): JSONResponse
     {
@@ -2215,9 +2273,12 @@ class SettingsController extends Controller
      * Create missing fields in file collection
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Creation results
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: false|mixed, message: string, collection?: 'files'}, array<never, never>>
      */
     public function createMissingFileFields(): JSONResponse
     {
@@ -2273,9 +2334,12 @@ class SettingsController extends Controller
      * Fix mismatched SOLR field configurations
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The field fix results
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<200|422, array{success: bool, message: string, details?: array{error: mixed|string}, fixed?: array<never, never>, errors?: array<never, never>}, array<never, never>>
      */
     public function fixMismatchedSolrFields(): JSONResponse
     {
@@ -2403,9 +2467,12 @@ class SettingsController extends Controller
     /**
      * Compare actual SOLR fields with expected schema fields
      *
-     * @param  array $actualFields   Current SOLR fields
-     * @param  array $expectedFields Expected fields from schemas
-     * @return array Comparison results
+     * @param array $actualFields   Current SOLR fields
+     * @param array $expectedFields Expected fields from schemas
+     *
+     * @return (((int|string)|false|mixed|string[])[]|int)[][] Comparison results
+     *
+     * @psalm-return array{missing: list{0?: array{field: array-key, expected_type: 'unknown'|mixed, expected_config: mixed},...}, extra: list<array{actual_config: mixed, actual_type: 'unknown'|mixed, field: array-key}>, mismatched: list<array{actual_config: mixed, actual_docValues: false|mixed, actual_multiValued: false|mixed, actual_type: ''|mixed, differences: list{0?: 'docValues'|'multiValued'|'type', ...<'docValues'|'multiValued'|'type'>}, expected_config: mixed, expected_docValues: false|mixed, expected_multiValued: false|mixed, expected_type: ''|mixed, field: array-key}>, summary: array{missing_count: int<0, max>, extra_count: int<0, max>, mismatched_count: int<0, max>, total_differences: int<0, max>}}
      */
     private function compareFields(array $actualFields, array $expectedFields): array
     {
@@ -2500,9 +2567,12 @@ class SettingsController extends Controller
      * Get SOLR settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse SOLR configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getSolrSettings(): JSONResponse
     {
@@ -2520,9 +2590,12 @@ class SettingsController extends Controller
      * Update SOLR settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated SOLR configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updateSolrSettings(): JSONResponse
     {
@@ -2541,9 +2614,12 @@ class SettingsController extends Controller
      * Get SOLR facet configuration
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse SOLR facet configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getSolrFacetConfiguration(): JSONResponse
     {
@@ -2561,9 +2637,12 @@ class SettingsController extends Controller
      * Update SOLR facet configuration
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated SOLR facet configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updateSolrFacetConfiguration(): JSONResponse
     {
@@ -2582,9 +2661,12 @@ class SettingsController extends Controller
      * Discover available SOLR facets
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Available SOLR facets
+     *
+     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, facets: array<never, never>|mixed}, array<never, never>>
      */
     public function discoverSolrFacets(): JSONResponse
     {
@@ -2632,9 +2714,12 @@ class SettingsController extends Controller
      * Get SOLR facet configuration with discovery
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Discovered facets merged with current configuration
+     *
+     * @psalm-return JSONResponse<200|422|500, array{success: bool, message: string, error?: string, facets?: array{'@self'?: array<array>, object_fields?: array<array>}, global_settings?: array{show_count: true, show_empty: false, max_items: 10}|mixed}, array<never, never>>
      */
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {
@@ -2749,9 +2834,12 @@ class SettingsController extends Controller
      * Update SOLR facet configuration with discovery
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated facet configuration
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, message: string, error?: string, config?: array}, array<never, never>>
      */
     public function updateSolrFacetConfigWithDiscovery(): JSONResponse
     {
@@ -2869,9 +2957,12 @@ class SettingsController extends Controller
      * Get comprehensive SOLR dashboard statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse SOLR dashboard metrics and statistics
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
      */
     public function getSolrDashboardStats(): JSONResponse
     {
@@ -2895,7 +2986,10 @@ class SettingsController extends Controller
      * @return JSONResponse Operation results
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: mixed|null|string, success?: false|mixed, operation?: 'clear'|'commit'|'optimize', message?: string, timestamp?: string, error_details?: mixed|null}, array<never, never>>
      */
     public function manageSolr(string $operation): JSONResponse
     {
@@ -2960,9 +3054,12 @@ class SettingsController extends Controller
      * Get RBAC settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse RBAC configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getRbacSettings(): JSONResponse
     {
@@ -2980,9 +3077,12 @@ class SettingsController extends Controller
      * Update RBAC settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated RBAC configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updateRbacSettings(): JSONResponse
     {
@@ -3001,9 +3101,12 @@ class SettingsController extends Controller
      * Get Organisation settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Organisation configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getOrganisationSettings(): JSONResponse
     {
@@ -3021,9 +3124,12 @@ class SettingsController extends Controller
      * Update Organisation settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated Organisation configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updateOrganisationSettings(): JSONResponse
     {
@@ -3042,9 +3148,12 @@ class SettingsController extends Controller
      * Get Multitenancy settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Multitenancy configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getMultitenancySettings(): JSONResponse
     {
@@ -3062,9 +3171,12 @@ class SettingsController extends Controller
      * Update Multitenancy settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated Multitenancy configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updateMultitenancySettings(): JSONResponse
     {
@@ -3083,9 +3195,12 @@ class SettingsController extends Controller
      * Get LLM (Large Language Model) settings
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse LLM settings
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getLLMSettings(): JSONResponse
     {
@@ -3105,9 +3220,12 @@ class SettingsController extends Controller
      * Returns information about Solr availability, version, and vector search support.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Solr information
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, solr?: array{available: false|mixed, version: '9.x (detection pending)'|'Unknown', vectorSupport: false, collections: array<array{id: mixed, name: mixed, documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}>, error: null|string}}, array<never, never>>
      */
     public function getSolrInfo(): JSONResponse
     {
@@ -3202,9 +3320,12 @@ class SettingsController extends Controller
      * supports native vector operations for optimal semantic search performance.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Database information
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, database?: array{type: string, version: string, platform: string, vectorSupport: bool, recommendedPlugin: null|string, performanceNote: null|string}}, array<never, never>>
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -3325,9 +3446,12 @@ class SettingsController extends Controller
      * Update LLM (Large Language Model) settings
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated LLM settings
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'LLM settings updated successfully', data?: array}, array<never, never>>
      */
     public function updateLLMSettings(): JSONResponse
     {
@@ -3408,9 +3532,12 @@ class SettingsController extends Controller
      * before saving the configuration.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result with embedding info
+     *
+     * @psalm-return JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
      */
     public function testEmbedding(): JSONResponse
     {
@@ -3477,9 +3604,12 @@ class SettingsController extends Controller
      * before saving the configuration.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result with chat response
+     *
+     * @psalm-return JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
      */
     public function testChat(): JSONResponse
     {
@@ -3541,9 +3671,12 @@ class SettingsController extends Controller
      * Get File Management settings
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse File settings
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getFileSettings(): JSONResponse
     {
@@ -3561,11 +3694,15 @@ class SettingsController extends Controller
      * Test Dolphin API connection
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @param  string $apiEndpoint Dolphin API endpoint URL
-     * @param  string $apiKey      Dolphin API key
+     * @param string $apiEndpoint Dolphin API endpoint URL
+     * @param string $apiKey      Dolphin API key
+     *
      * @return JSONResponse
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, message?: 'Dolphin connection successful'}, array<never, never>>
      */
     public function testDolphinConnection(string $apiEndpoint, string $apiKey): JSONResponse
     {
@@ -3642,9 +3779,12 @@ class SettingsController extends Controller
      * Get available Ollama models from the configured Ollama instance
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of available models
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, models: list<array{description: mixed|string, id: 'unknown'|mixed, modified: mixed|null, name: 'unknown'|mixed, size: 0|mixed}>, count?: int<0, max>}, array<never, never>>
      */
     public function getOllamaModels(): JSONResponse
     {
@@ -3769,9 +3909,12 @@ class SettingsController extends Controller
      * Check if embedding model has changed and vectors need regeneration
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Mismatch status
+     *
+     * @psalm-return JSONResponse<200|500, array{has_vectors: bool, mismatch: bool, error?: string, message?: 'No embedding model configured'|'No vectors exist yet'|mixed, current_model?: mixed, existing_models?: list<mixed>, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}, array<never, never>>
      */
     public function checkEmbeddingModelMismatch(): JSONResponse
     {
@@ -3797,9 +3940,12 @@ class SettingsController extends Controller
      * Clear all embeddings from the database
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Result with deleted count
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: string, deleted?: int}, array<never, never>>
      */
     public function clearAllEmbeddings(): JSONResponse
     {
@@ -3828,9 +3974,12 @@ class SettingsController extends Controller
      * Update File Management settings
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated file settings
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'File settings updated successfully', data?: array}, array<never, never>>
      */
     public function updateFileSettings(): JSONResponse
     {
@@ -3871,9 +4020,12 @@ class SettingsController extends Controller
      * Get Object settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Object configuration
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array}, array<never, never>>
      */
     public function getObjectSettings(): JSONResponse
     {
@@ -3902,9 +4054,12 @@ class SettingsController extends Controller
      * Update Object Management settings
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated object settings
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'Object settings updated successfully', data?: array}, array<never, never>>
      */
     public function updateObjectSettings(): JSONResponse
     {
@@ -3956,9 +4111,12 @@ class SettingsController extends Controller
      * Get Retention settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Retention configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getRetentionSettings(): JSONResponse
     {
@@ -3976,9 +4134,12 @@ class SettingsController extends Controller
      * Update Retention settings only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated Retention configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function updateRetentionSettings(): JSONResponse
     {
@@ -3997,9 +4158,12 @@ class SettingsController extends Controller
      * Get version information only
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Version information
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getVersionInfo(): JSONResponse
     {
@@ -4017,9 +4181,12 @@ class SettingsController extends Controller
      * Test schema-aware SOLR mapping by indexing sample objects
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Test results
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, error: string}, array<never, never>>
      */
     public function testSchemaMapping(): JSONResponse
     {
@@ -4126,9 +4293,12 @@ class SettingsController extends Controller
      * Get memory usage prediction for SOLR warmup
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Memory usage prediction
+     *
+     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, prediction: array{error: string, prediction_safe: false}|mixed}, array<never, never>>
      */
     public function getSolrMemoryPrediction(): JSONResponse
     {
@@ -4296,7 +4466,10 @@ class SettingsController extends Controller
      * @return JSONResponse Debug information about type filtering
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, trace?: string, all_organizations?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_data: mixed}>}, type_samenwerking?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed}>}, type_community?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed}>}, type_both?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed}>}, direct_database_query?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}>}}, array<never, never>>
      */
     public function debugTypeFiltering(): JSONResponse
     {
@@ -4447,9 +4620,12 @@ class SettingsController extends Controller
      * List all SOLR collections with statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of collections with metadata
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, collections?: mixed, count?: int<0, max>, timestamp?: string}, array<never, never>>
      */
     public function listSolrCollections(): JSONResponse
     {
@@ -4483,9 +4659,12 @@ class SettingsController extends Controller
      * List all SOLR ConfigSets
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of ConfigSets with metadata
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, configSets?: mixed, count?: int<0, max>, timestamp?: string}, array<never, never>>
      */
     public function listSolrConfigSets(): JSONResponse
     {
@@ -4519,12 +4698,15 @@ class SettingsController extends Controller
      * Create a new SOLR ConfigSet by copying an existing one
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $name          Name for the new ConfigSet
      * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
      *
      * @return JSONResponse Creation result
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
     public function createSolrConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
@@ -4550,11 +4732,14 @@ class SettingsController extends Controller
      * Delete a SOLR ConfigSet
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $name Name of the ConfigSet to delete
      *
      * @return JSONResponse Deletion result
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
     public function deleteSolrConfigSet(string $name): JSONResponse
     {
@@ -4580,6 +4765,7 @@ class SettingsController extends Controller
      * Create a new SOLR collection from a ConfigSet
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $collectionName    Name for the new collection
@@ -4589,6 +4775,8 @@ class SettingsController extends Controller
      * @param int    $maxShardsPerNode  Maximum shards per node (default: 1)
      *
      * @return JSONResponse Creation result
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
     public function createSolrCollection(
         string $collectionName,
@@ -4626,6 +4814,7 @@ class SettingsController extends Controller
      * Copy a SOLR collection
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string $sourceCollection Source collection name
@@ -4633,6 +4822,8 @@ class SettingsController extends Controller
      * @param bool   $copyData         Whether to copy data (default: false)
      *
      * @return JSONResponse Copy operation result
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
     public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): JSONResponse
     {
@@ -4659,12 +4850,15 @@ class SettingsController extends Controller
      * Update SOLR collection assignments (Object Collection and File Collection)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string|null $objectCollection Collection name for objects
      * @param string|null $fileCollection   Collection name for files
      *
      * @return JSONResponse Update result
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, message?: 'Collection assignments updated successfully', objectCollection?: mixed|null, fileCollection?: mixed|null, timestamp?: string}, array<never, never>>
      */
     public function updateSolrCollectionAssignments(?string $objectCollection=null, ?string $fileCollection=null): JSONResponse
     {
@@ -4711,6 +4905,7 @@ class SettingsController extends Controller
      * Perform semantic search using vector embeddings
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string      $query    Search query text
@@ -4719,6 +4914,8 @@ class SettingsController extends Controller
      * @param string|null $provider Embedding provider override
      *
      * @return JSONResponse Search results
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: mixed, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
      */
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
@@ -4768,6 +4965,7 @@ class SettingsController extends Controller
      * Perform hybrid search combining SOLR keyword and vector semantic search
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param string      $query       Search query text
@@ -4777,6 +4975,8 @@ class SettingsController extends Controller
      * @param string|null $provider    Embedding provider override
      *
      * @return JSONResponse Combined search results
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool|mixed, error?: mixed|string, trace?: mixed|string, query?: mixed|string, timestamp?: string,...}, array<never, never>>
      */
     public function hybridSearch(
         string $query,
@@ -4831,9 +5031,12 @@ class SettingsController extends Controller
      * Get vector embedding statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Vector statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, stats?: mixed, timestamp?: string}, array<never, never>>
      */
     public function getVectorStats(): JSONResponse
     {
@@ -4869,9 +5072,12 @@ class SettingsController extends Controller
      * Warmup files - Extract text and index in SOLR file collection
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Warmup results
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, message: string, files_processed?: int<0, max>, indexed?: 0|mixed, failed?: 0|mixed, errors?: array, mode?: mixed}, array<never, never>>
      */
     public function warmupFiles(): JSONResponse
     {
@@ -4977,11 +5183,14 @@ class SettingsController extends Controller
      * Index a specific file in SOLR
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @param int $fileId File ID to index
      *
      * @return JSONResponse Indexing result
+     *
+     * @psalm-return JSONResponse<200|422|500, array{success: bool, message: mixed|string, file_id?: int}, array<never, never>>
      */
     public function indexFile(int $fileId): JSONResponse
     {
@@ -5033,9 +5242,12 @@ class SettingsController extends Controller
      * Reindex all files
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Reindex results
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, message: string, indexed?: 0|mixed, files_processed?: int<0, max>, failed?: mixed, errors?: array}, array<never, never>>
      */
     public function reindexFiles(): JSONResponse
     {
@@ -5107,9 +5319,12 @@ class SettingsController extends Controller
      * Get file index statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse File index statistics
+     *
+     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, message: string}, array<never, never>>
      */
     public function getFileIndexStats(): JSONResponse
     {
@@ -5149,15 +5364,12 @@ class SettingsController extends Controller
      * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse File extraction statistics including:
-     *                      - totalFiles: All files in Nextcloud (from oc_filecache)
-     *                      - processedFiles: Files tracked in extraction system (from oc_openregister_file_texts)
-     *                      - pendingFiles: Files discovered and waiting for extraction (status='pending')
-     *                      - untrackedFiles: Files in Nextcloud not yet discovered
-     *                      - totalChunks: Number of text chunks in SOLR (one file = multiple chunks)
-     *                      - completed, failed, indexed, processing, vectorized: Detailed processing status counts
+     * @return JSONResponse File extraction statistics including: - totalFiles: All files in Nextcloud (from oc_filecache) - processedFiles: Files tracked in extraction system (from oc_openregister_file_texts) - pendingFiles: Files discovered and waiting for extraction (status='pending') - untrackedFiles: Files in Nextcloud not yet discovered - totalChunks: Number of text chunks in SOLR (one file = multiple chunks) - completed, failed, indexed, processing, vectorized: Detailed processing status counts
+     *
+     * @psalm-return JSONResponse<200, array{success: true, totalFiles: 0|mixed, processedFiles: 0|mixed, pendingFiles: 0|mixed, untrackedFiles: 0|mixed, totalChunks: 0|mixed, extractedTextStorageMB: string, totalFilesStorageMB: string, completed: 0|mixed, failed: 0|mixed, indexed: 0|mixed, processing: 0|mixed, vectorized: 0|mixed, error?: string}, array<never, never>>
      */
     public function getFileExtractionStats(): JSONResponse
     {
@@ -5231,9 +5443,12 @@ class SettingsController extends Controller
      * Get API tokens for GitHub and GitLab
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The API tokens
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, github_token?: string, gitlab_token?: string, gitlab_url?: string}, array<never, never>>
      */
     public function getApiTokens(): JSONResponse
     {
@@ -5276,9 +5491,12 @@ class SettingsController extends Controller
      * Save API tokens for GitHub and GitLab
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Success or error message
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, message?: 'API tokens saved successfully'}, array<never, never>>
      */
     public function saveApiTokens(): JSONResponse
     {

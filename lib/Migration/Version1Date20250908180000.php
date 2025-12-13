@@ -44,7 +44,7 @@ class Version1Date20250908180000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
-     * @return ISchemaWrapper|null Updated schema
+     * @return null Updated schema
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -97,7 +97,7 @@ class Version1Date20250908180000 extends SimpleMigrationStep
             $output->info(
                 message: '💡 Manual SQL fix: See migration docs for ALTER TABLE command'
             );
-            // end try
+            // End try.
         }//end try
 
     }//end postSchemaChange()

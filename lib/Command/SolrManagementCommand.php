@@ -190,6 +190,8 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleSetup(OutputInterface $output): int
     {
@@ -265,6 +267,8 @@ class SolrManagementCommand extends Command
      * @param bool            $commit Whether to commit
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleOptimize(OutputInterface $output, bool $commit): int
     {
@@ -308,6 +312,8 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleWarm(OutputInterface $output): int
     {
@@ -358,6 +364,8 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleHealth(OutputInterface $output): int
     {
@@ -435,6 +443,8 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleSchemaCheck(OutputInterface $output): int
     {
@@ -512,6 +522,8 @@ class SolrManagementCommand extends Command
      * @param bool            $force  Force operation
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleClear(OutputInterface $output, bool $force): int
     {
@@ -550,6 +562,8 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     private function handleStats(OutputInterface $output): int
     {
@@ -597,6 +611,8 @@ class SolrManagementCommand extends Command
      * @param string          $action Invalid action
      *
      * @return int Exit code
+     *
+     * @psalm-return 1
      */
     private function handleInvalidAction(OutputInterface $output, string $action): int
     {

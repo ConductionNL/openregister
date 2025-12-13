@@ -171,9 +171,9 @@ class GetObject
      * @param bool          $rbac      Whether to apply RBAC checks (default: true).
      * @param bool          $multi     Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity[] The found objects.
+     * @return \OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity[]
      *
-     * @psalm-return array<ObjectEntity>
+     * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findAll(
         ?int $limit=null,

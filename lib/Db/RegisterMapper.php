@@ -244,7 +244,11 @@ class RegisterMapper extends QBMapper
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        } else {
+            $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        }
 
         // Log multitenancy configuration
         if (isset($this->logger) === true) {
@@ -326,7 +330,9 @@ class RegisterMapper extends QBMapper
      *
      * @todo: refactor this into find all
      *
-     * @return array The registers
+     * @return Register[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Register>
      */
     public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
@@ -351,7 +357,9 @@ class RegisterMapper extends QBMapper
      *
      * @param array $ids Array of register IDs to find.
      *
-     * @return array Associative array of ID => Register entity.
+     * @return Entity&Register[] Associative array of ID => Register entity.
+     *
+     * @psalm-return array<Entity&Register>
      */
     public function findMultipleOptimized(array $ids): array
     {
@@ -393,7 +401,9 @@ class RegisterMapper extends QBMapper
      * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return array Array of found registers, multi: possibly with stats
+     * @return Register[] Array of found registers, multi: possibly with stats
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Register>
      */
     public function findAll(
         ?int $limit=null,
@@ -439,7 +449,11 @@ class RegisterMapper extends QBMapper
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        } else {
+            $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        }
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -668,7 +682,9 @@ class RegisterMapper extends QBMapper
      * @param bool      $rbac       Whether to apply RBAC permission checks (default: true)
      * @param bool      $multi      Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return array Array of schemas
+     * @return Schema[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Schema>
      */
     public function getSchemasByRegisterId(int $registerId, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {

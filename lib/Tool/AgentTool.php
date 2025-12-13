@@ -99,9 +99,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      * Returns function definitions in OpenAI function calling format.
      * These are used by LLMs to understand what capabilities this tool provides.
      *
-     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list<array<string, mixed>>
+     * @psalm-return list{array{name: 'list_agents', description: 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of results to return (default: 50)'}, offset: array{type: 'integer', description: 'Number of results to skip for pagination (default: 0)'}}, required: array<never, never>}}, array{name: 'get_agent', description: 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the agent to retrieve'}}, required: list{'uuid'}}}, array{name: 'create_agent', description: 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.', parameters: array{type: 'object', properties: array{name: array{type: 'string', description: 'Name of the agent (required)'}, description: array{type: 'string', description: 'Description of what the agent does'}, type: array{type: 'string', description: 'Type of agent (e.g., "assistant", "support", "analyzer")'}, systemPrompt: array{type: 'string', description: 'System prompt that defines the agent's behavior and personality'}}, required: list{'name'}}}, array{name: 'update_agent', description: 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the agent to update'}, name: array{type: 'string', description: 'New name for the agent'}, description: array{type: 'string', description: 'New description'}, systemPrompt: array{type: 'string', description: 'New system prompt'}}, required: list{'uuid'}}}, array{name: 'delete_agent', description: 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.', parameters: array{type: 'object', properties: array{uuid: array{type: 'string', description: 'UUID of the agent to delete'}}, required: list{'uuid'}}}}
      */
     public function getFunctions(): array
     {
@@ -215,7 +215,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @param int $limit  Maximum number of results (default: 50)
      * @param int $offset Offset for pagination (default: 0)
      *
-     * @return array Response with agents list
+     * @return (bool|mixed|string)[] Response with agents list
+     *
+     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
     public function listAgents(int $limit=50, int $offset=0): array
     {
@@ -262,7 +264,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @param string $uuid Agent UUID
      *
-     * @return array Response with agent details
+     * @return (bool|mixed|string)[] Response with agent details
+     *
+     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
     public function getAgent(string $uuid): array
     {
@@ -300,7 +304,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @param string|null $type         Agent type
      * @param string|null $systemPrompt Agent system prompt
      *
-     * @return array Response with created agent
+     * @return (bool|mixed|string)[] Response with created agent
+     *
+     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
     public function createAgent(
         string $name,
@@ -361,7 +367,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      * @param string|null $description  New description
      * @param string|null $systemPrompt New system prompt
      *
-     * @return array Response with updated agent
+     * @return (bool|mixed|string)[] Response with updated agent
+     *
+     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
     public function updateAgent(
         string $uuid,
@@ -416,7 +424,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @param string $uuid Agent UUID
      *
-     * @return array Response confirming deletion
+     * @return (bool|mixed|string)[] Response confirming deletion
+     *
+     * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
     public function deleteAgent(string $uuid): array
     {

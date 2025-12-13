@@ -1,6 +1,8 @@
 <?php
+
 declare(strict_types=1);
-/*
+
+/**
  * Add authorization column to organisations and applications
  *
  * This migration adds the authorization column (JSON type) to both

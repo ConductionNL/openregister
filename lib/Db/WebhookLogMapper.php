@@ -89,6 +89,8 @@ class WebhookLogMapper extends QBMapper
      * @param int|null $offset    Offset results
      *
      * @return WebhookLog[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
      */
     public function findByWebhook(int $webhookId, ?int $limit=null, ?int $offset=null): array
     {
@@ -119,6 +121,8 @@ class WebhookLogMapper extends QBMapper
      * @param int|null $offset Offset results
      *
      * @return WebhookLog[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -147,6 +151,8 @@ class WebhookLogMapper extends QBMapper
      * @param DateTime $before Before timestamp
      *
      * @return WebhookLog[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
      */
     public function findFailedForRetry(DateTime $before): array
     {
@@ -190,7 +196,9 @@ class WebhookLogMapper extends QBMapper
      *
      * @param int $webhookId Webhook ID (0 for all webhooks)
      *
-     * @return array Statistics
+     * @return int[] Statistics
+     *
+     * @psalm-return array{total: int, successful: int, failed: int}
      */
     public function getStatistics(int $webhookId): array
     {

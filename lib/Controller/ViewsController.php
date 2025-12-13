@@ -33,11 +33,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
-
 class ViewsController extends Controller
 {
 
@@ -96,7 +94,10 @@ class ViewsController extends Controller
      * @return JSONResponse A JSON response containing the list of views
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to fetch views'|'User not authenticated', message?: string, results?: array<array>, total?: int<0, max>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -184,7 +185,10 @@ class ViewsController extends Controller
      * @return JSONResponse A JSON response containing the view
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array}, array<never, never>>
      */
     public function show(string $id): JSONResponse
     {
@@ -244,7 +248,10 @@ class ViewsController extends Controller
      * @return JSONResponse A JSON response containing the created view
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -342,7 +349,10 @@ class ViewsController extends Controller
      * @return JSONResponse A JSON response containing the updated view
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array}, array<never, never>>
      */
     public function update(string $id): JSONResponse
     {
@@ -451,7 +461,10 @@ class ViewsController extends Controller
      * @return JSONResponse Updated view data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array}, array<never, never>>
      */
     public function patch(string $id): JSONResponse
     {
@@ -559,7 +572,10 @@ class ViewsController extends Controller
      * @return JSONResponse A JSON response confirming deletion
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array{error?: 'Failed to delete view'|'User not authenticated'|'View not found', message?: string, success?: false}, array<never, never>>
      */
     public function destroy(string $id): JSONResponse
     {

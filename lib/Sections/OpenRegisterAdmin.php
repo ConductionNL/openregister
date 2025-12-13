@@ -68,7 +68,7 @@ class OpenRegisterAdmin implements IIconSection
      */
     public function getIcon(): string
     {
-        return $this->urlGenerator->imagePath('core', 'actions/settings-dark.svg');
+        return $this->urlGenerator->imagePath(appName: 'openregister', file: 'app-dark.svg');
 
     }//end getIcon()
 

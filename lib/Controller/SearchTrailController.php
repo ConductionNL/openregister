@@ -58,7 +58,7 @@ class SearchTrailController extends Controller
     /**
      * Extract pagination, filter, and search parameters from request
      *
-     * @return ((mixed|string)[]|DateTime|int|mixed|null)[] Array containing processed parameters: - limit: (int) Maximum number of items per page - offset: (int|null) Number of items to skip - page: (int|null) Current page number - filters: (array) Filter parameters - sort: (array) Sort parameters ['field' => 'ASC|DESC'] - search: (string|null) Search term - from: (DateTime|null) Start date filter - to: (DateTime|null) End date filter
+     * @return ((mixed|string)[]|DateTime|int|mixed|null)[]
      *
      * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null, from: DateTime|null, to: DateTime|null}
      */
@@ -284,13 +284,11 @@ class SearchTrailController extends Controller
     /**
      * Get all search trail logs
      *
-     * @return JSONResponse A JSON response containing the search logs
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -330,8 +328,6 @@ class SearchTrailController extends Controller
      *
      * @param int $id The search trail ID
      *
-     * @return JSONResponse A JSON response containing the search log
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -358,13 +354,11 @@ class SearchTrailController extends Controller
     /**
      * Get search statistics for a given period
      *
-     * @return JSONResponse A JSON response containing search statistics
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: mixed|string, searches_with_results?: mixed, searches_without_results?: mixed, success_rate?: 0|float, unique_search_terms?: int, unique_users?: int, avg_searches_per_session?: float, avg_object_views_per_session?: float, unique_organizations?: 0, query_complexity?: array{simple: 0|float, medium: 0|float, complex: 0|float}, period?: array{from: null|string, to: null|string, days: int|null}, daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,...}, array<never, never>>
      */
     public function statistics(): JSONResponse
     {
@@ -388,13 +382,11 @@ class SearchTrailController extends Controller
     /**
      * Get popular search terms
      *
-     * @return JSONResponse A JSON response containing popular search terms
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: mixed|string, total_searches?: 0|mixed, period?: mixed|null,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: float|int, period?: array{from: null|string, to: null|string}|null}, array<never, never>>
      */
     public function popularTerms(): JSONResponse
     {
@@ -436,13 +428,11 @@ class SearchTrailController extends Controller
     /**
      * Get search activity by time period
      *
-     * @return JSONResponse A JSON response containing search activity data
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, activity?: array, insights?: array, interval?: string, period?: array{from: null|string, to: null|string}}, array<never, never>>
      */
     public function activity(): JSONResponse
     {
@@ -468,13 +458,11 @@ class SearchTrailController extends Controller
     /**
      * Get search statistics by register and schema
      *
-     * @return JSONResponse A JSON response containing search statistics by register/schema
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: mixed|string, total_searches?: 0|mixed, period?: mixed|null,...}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: float|int, period?: array{from: null|string, to: null|string}|null}, array<never, never>>
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -516,13 +504,11 @@ class SearchTrailController extends Controller
     /**
      * Get user agent statistics
      *
-     * @return JSONResponse A JSON response containing user agent statistics
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: 0, period?: array{from: null|string, to: null|string}|null, browser_breakdown?: array}, array<never, never>>
      */
     public function userAgentStats(): JSONResponse
     {
@@ -544,7 +530,12 @@ class SearchTrailController extends Controller
                 // getUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period.
                 $userAgentsArray = $serviceResult['user_agents'];
                 // Ensure we have a proper indexed array for pagination.
-                $userAgents        = is_array($userAgentsArray) === true ? array_values($userAgentsArray) : [];
+                if (is_array($userAgentsArray) === true) {
+                    $userAgents = array_values($userAgentsArray);
+                } else {
+                    $userAgents = [];
+                }
+
                 $totalUniqueAgents = $serviceResult['total_user_agents'] ?? 0;
                 $totalSearches     = 0;
                 // Not returned by getUserAgentStatistics.
@@ -590,13 +581,11 @@ class SearchTrailController extends Controller
     /**
      * Clean up old search trail logs
      *
-     * @return JSONResponse A JSON response indicating cleanup results
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500, array, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: bool, deleted?: 0|1, message?: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries', cleanup_date?: string}, array<never, never>>
      */
     public function cleanup(): JSONResponse
     {
@@ -625,8 +614,6 @@ class SearchTrailController extends Controller
 
     /**
      * Export search trail logs in specified format
-     *
-     * @return JSONResponse A JSON response containing the export data
      *
      * @NoAdminRequired
      *
@@ -733,8 +720,6 @@ class SearchTrailController extends Controller
      *
      * @param int $id The search trail ID to delete
      *
-     * @return JSONResponse A JSON response indicating success or failure
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -776,8 +761,6 @@ class SearchTrailController extends Controller
 
     /**
      * Delete multiple search trail logs based on filters or specific IDs
-     *
-     * @return JSONResponse A JSON response with deletion results
      *
      * @NoAdminRequired
      *

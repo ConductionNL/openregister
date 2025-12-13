@@ -59,9 +59,12 @@ class ChunkMapper extends QBMapper
      * @param int    $sourceId   Source identifier.
      *
      * @phpstan-param non-empty-string $sourceType
-     * @psalm-param   non-empty-string   $sourceType
+     *
+     * @psalm-param non-empty-string   $sourceType
      *
      * @return Chunk[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Chunk>
      */
     public function findBySource(string $sourceType, int $sourceId): array
     {

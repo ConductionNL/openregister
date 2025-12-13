@@ -113,7 +113,7 @@ class WebhookMapper extends QBMapper
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_webhooks', Webhook::class);
-        
+
         // Store dependencies for use in mapper methods.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
@@ -129,6 +129,8 @@ class WebhookMapper extends QBMapper
      * Returns only webhooks belonging to the current organisation.
      *
      * @return Webhook[] Array of webhook entities
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
      */
     public function findAll(): array
     {
@@ -198,7 +200,9 @@ class WebhookMapper extends QBMapper
      * Retrieves all enabled webhooks with organisation filtering for multi-tenancy.
      * Only returns webhooks that are currently enabled and belong to current organisation.
      *
-     * @return Webhook[] Array of enabled webhook entities
+     * @return Webhook[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
      */
     public function findEnabled(): array
     {
@@ -227,7 +231,9 @@ class WebhookMapper extends QBMapper
      *
      * @param string $eventClass Event class name
      *
-     * @return Webhook[]
+     * @return OCA\OpenRegister\Db\Webhook[]
+     *
+     * @psalm-return array<int<0, max>, OCA\OpenRegister\Db\Webhook>
      */
     public function findForEvent(string $eventClass): array
     {

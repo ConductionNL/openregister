@@ -278,11 +278,11 @@ class LogService
      *                       metadata - search:
      *                       (string|null) Search term
      *
-     * @return array Array containing:
-     *               - content: (string) Exported content
-     *               - filename: (string) Suggested filename
-     *               - contentType: (string) MIME content type
+     * @return (bool|string)[] Array containing: - content: (string) Exported content - filename: (string) Suggested filename - contentType: (string) MIME content type
+     *
      * @throws \InvalidArgumentException If unsupported format is specified
+     *
+     * @psalm-return array{content: bool|string, filename: string, contentType: string}
      */
     public function exportLogs(string $format, array $config=[]): array
     {
@@ -470,7 +470,7 @@ class LogService
      *
      * @param array $data Prepared export data
      *
-     * @return (false|string)[] Export result
+     * @return (false|string)[]
      *
      * @psalm-return array{content: false|string, filename: string, contentType: 'text/csv'}
      */
@@ -512,7 +512,7 @@ class LogService
      *
      * @param array $data Prepared export data
      *
-     * @return (false|string)[] Export result
+     * @return (false|string)[]
      *
      * @psalm-return array{content: false|string, filename: string, contentType: 'application/json'}
      */
@@ -532,7 +532,7 @@ class LogService
      *
      * @param array $data Prepared export data
      *
-     * @return (bool|string)[] Export result
+     * @return (bool|string)[]
      *
      * @psalm-return array{content: bool|string, filename: string, contentType: 'application/xml'}
      */
@@ -563,7 +563,7 @@ class LogService
      *
      * @param array $data Prepared export data
      *
-     * @return string[] Export result
+     * @return string[]
      *
      * @psalm-return array{content: string, filename: string, contentType: 'text/plain'}
      */

@@ -541,28 +541,9 @@ class Application extends Entity implements JsonSerializable
     /**
      * JSON serialization for API responses
      *
-     * @return (array|bool|int|null|string)[] Serialized application data
+     * @return (array|bool|int|null|string)[]
      *
-     * @psalm-return array{
-     *     id: int,
-     *     uuid: null|string,
-     *     name: null|string,
-     *     description: null|string,
-     *     version: null|string,
-     *     organisation: null|string,
-     *     configurations: array|null,
-     *     registers: array|null,
-     *     schemas: array|null,
-     *     owner: null|string,
-     *     active: bool|null,
-     *     groups: array|null,
-     *     quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>},
-     *     authorization: array,
-     *     created: null|string,
-     *     updated: null|string,
-     *     managedByConfiguration: array|null
-     * }
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, version: null|string, organisation: null|string, configurations: array|null, registers: array|null, schemas: array|null, owner: null|string, active: bool|null, groups: array|null, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}
      */
     public function jsonSerialize(): array
     {

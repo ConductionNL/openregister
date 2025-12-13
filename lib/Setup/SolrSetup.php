@@ -228,7 +228,12 @@ class SolrSetup
     private function getTenantCollectionName(): string
     {
         // solrConfig may contain 'core' key even if not in type definition.
-        $baseCollectionName = (is_array($this->solrConfig) && array_key_exists('core', $this->solrConfig)) ? $this->solrConfig['core'] : 'openregister';
+        if (is_array($this->solrConfig) && array_key_exists('core', $this->solrConfig)) {
+            $baseCollectionName = $this->solrConfig['core'];
+        } else {
+            $baseCollectionName = 'openregister';
+        }
+
         return $this->solrService->getTenantSpecificCollectionName($baseCollectionName);
 
     }//end getTenantCollectionName()
@@ -264,7 +269,11 @@ class SolrSetup
     {
         // Use the configSet from configuration (defaults to '_default').
         // solrConfig may contain 'configSet' key even if not in type definition.
-        $configSetName = (is_array($this->solrConfig) && array_key_exists('configSet', $this->solrConfig)) ? $this->solrConfig['configSet'] : '_default';
+        if (is_array($this->solrConfig) && array_key_exists('configSet', $this->solrConfig)) {
+            $configSetName = $this->solrConfig['configSet'];
+        } else {
+            $configSetName = '_default';
+        }
 
         // If using _default, return it as-is (no tenant suffix needed).
         if ($configSetName === '_default') {
@@ -1483,7 +1492,7 @@ class SolrSetup
                 'exception_type'     => get_class($e),
                 'exception_message'  => $e->getMessage(),
                 'error_category'     => $errorCategory,
-                'solr_response'      => $retryDetails === true ?: $solrResponse,
+                'solr_response'      => ($retryDetails === true) ? $retryDetails : $solrResponse,
                 'guzzle_details'     => [],
                 'configuration_used' => [
                     'host'   => $this->solrConfig['host'] ?? 'unknown',
@@ -1687,8 +1696,11 @@ class SolrSetup
      * This attempts to trigger immediate configSet synchronization using
      * various SOLR admin API calls that can help speed up propagation.
      *
-     * @param  string $configSetName ConfigSet name to force propagation for
-     * @return array Result array with success status, operations performed, and details
+     * @param string $configSetName ConfigSet name to force propagation for
+     *
+     * @return (((int|null|string)[]|string)[]|bool|int|null|string)[] Result array with success status, operations performed, and details
+     *
+     * @psalm-return array{success: bool, operations: array{configset_list_refresh: array{name: 'configset_list_refresh', description: 'List ConfigSets API call to trigger cache refresh', url: null|string, status: 'failed'|'success', http_status: int|null, response_size: int<0, max>, error: null|string}, cluster_status_sync: array{name: 'cluster_status_sync', description: 'Cluster Status API call to trigger ZooKeeper sync', url: null|string, status: 'failed'|'success', http_status: int|null, response_size: int<0, max>, error: null|string}}, successful_operations: 0|1|2, total_operations: 2, cluster_sync: 'failed'|'triggered', cache_refresh: 'failed'|'triggered', error: 'All propagation methods failed'|null, summary: array{configset_list_refresh: 'failed'|'success', cluster_status_sync: 'failed'|'success'}}
      */
     private function forceConfigSetPropagation(string $configSetName): array
     {
@@ -1806,14 +1818,35 @@ class SolrSetup
             sleep(1);
         }
 
+        // Determine cluster sync status.
+        if ($successCount >= 2) {
+            $clusterSync = 'triggered';
+        } else {
+            $clusterSync = 'failed';
+        }
+
+        // Determine cache refresh status.
+        if ($successCount >= 1) {
+            $cacheRefresh = 'triggered';
+        } else {
+            $cacheRefresh = 'failed';
+        }
+
+        // Determine error message.
+        if ($successCount === 0) {
+            $error = 'All propagation methods failed';
+        } else {
+            $error = null;
+        }
+
         return [
             'success'               => $successCount > 0,
             'operations'            => $operationResults,
             'successful_operations' => $successCount,
             'total_operations'      => 2,
-            'cluster_sync'          => $successCount >= 2 ? 'triggered' : 'failed',
-            'cache_refresh'         => $successCount >= 1 ? 'triggered' : 'failed',
-            'error'                 => $successCount === 0 ? 'All propagation methods failed' : null,
+            'cluster_sync'          => $clusterSync,
+            'cache_refresh'         => $cacheRefresh,
+            'error'                 => $error,
             'summary'               => [
                 'configset_list_refresh' => $operationResults['configset_list_refresh']['status'],
                 'cluster_status_sync'    => $operationResults['cluster_status_sync']['status'],
@@ -2277,11 +2310,23 @@ class SolrSetup
         }//end foreach
 
         // Update the step tracking with detailed field information.
+        if ($success === true) {
+            $status = 'completed';
+        } else {
+            $status = 'failed';
+        }
+
+        if ($success === true) {
+            $message = 'Schema fields configured successfully';
+        } else {
+            $message = 'Schema field configuration failed';
+        }
+
         $this->trackStep(
                 4,
                 'Schema Configuration',
-                $success === true ? 'completed' : 'failed',
-            $success === true ? 'Schema fields configured successfully' : 'Schema field configuration failed',
+                $status,
+            $message,
             $fieldResults
         );
 
@@ -2297,9 +2342,12 @@ class SolrSetup
     /**
      * Add or update a schema field with detailed tracking
      *
-     * @param  string $fieldName   Name of the field
-     * @param  array  $fieldConfig Field configuration
-     * @return array Result with success status, action taken, and error details
+     * @param string $fieldName   Name of the field
+     * @param array  $fieldConfig Field configuration
+     *
+     * @return ((mixed|string|true)[]|bool|mixed|string)[] Result with success status, action taken, and error details
+     *
+     * @psalm-return array{success: bool, action: string, error?: 'Unknown error'|mixed, details?: array{success?: mixed|true, reason?: 'Field exists with compatible configuration'|mixed,...}}
      */
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
@@ -2349,9 +2397,12 @@ class SolrSetup
     /**
      * Add a schema field and return detailed result
      *
-     * @param  string $fieldName   Name of the field
-     * @param  array  $fieldConfig Field configuration
-     * @return array Result with success status and details
+     * @param string $fieldName   Name of the field
+     * @param array  $fieldConfig Field configuration
+     *
+     * @return (bool|mixed|string)[] Result with success status and details
+     *
+     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
      */
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2409,9 +2460,12 @@ class SolrSetup
     /**
      * Replace a schema field and return detailed result
      *
-     * @param  string $fieldName   Name of the field
-     * @param  array  $fieldConfig Field configuration
-     * @return array Result with success status and details
+     * @param string $fieldName   Name of the field
+     * @param array  $fieldConfig Field configuration
+     *
+     * @return (bool|mixed|string)[] Result with success status and details
+     *
+     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
      */
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2476,7 +2530,9 @@ class SolrSetup
      * This method can be used by both setup and warmup processes to ensure
      * consistent schema field configuration across all SOLR operations.
      *
-     * @return array Field definitions with SOLR type configuration
+     * @return (bool|string)[][] Field definitions with SOLR type configuration
+     *
+     * @psalm-return array{self_tenant: array{type: 'string', stored: true, indexed: true, multiValued: false, required: true, docValues: true}, self_object_id: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: false}, self_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false}, self_register: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true}, self_schema: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true}, self_schema_version: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true}, self_owner: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false}, self_organisation: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true}, self_application: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true}, self_name: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false}, self_description: array{type: 'text_general', stored: true, indexed: true, multiValued: false, docValues: false}, self_summary: array{type: 'text_general', stored: true, indexed: true, multiValued: false}, self_image: array{type: 'string', stored: true, indexed: false, multiValued: false}, self_slug: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_uri: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_version: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_size: array{type: 'string', stored: true, indexed: false, multiValued: false}, self_folder: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_created: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_updated: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_published: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_depublished: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_relations: array{type: 'string', stored: true, indexed: true, multiValued: true}, self_files: array{type: 'string', stored: true, indexed: true, multiValued: true}, self_parent_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false}}
      */
     public static function getObjectEntityFieldDefinitions(): array
     {

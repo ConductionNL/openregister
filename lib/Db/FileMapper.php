@@ -390,9 +390,8 @@ class FileMapper extends QBMapper
      *
      * @param string $token The share token
      *
-     * @return string The complete share URL
+     * @phpstan-param string $token
      *
-     * @phpstan-param  string $token
      * @phpstan-return string
      */
     private function generateShareUrl(string $token): string
@@ -411,9 +410,8 @@ class FileMapper extends QBMapper
      *
      * @param int $fileId The file ID
      *
-     * @return string The authenticated access URL
+     * @phpstan-param int $fileId
      *
-     * @phpstan-param  int $fileId
      * @phpstan-return string
      */
     private function generateAuthenticatedAccessUrl(int $fileId): string
@@ -432,9 +430,8 @@ class FileMapper extends QBMapper
      *
      * @param int $fileId The file ID
      *
-     * @return string The authenticated download URL
+     * @phpstan-param int $fileId
      *
-     * @phpstan-param  int $fileId
      * @phpstan-return string
      */
     private function generateAuthenticatedDownloadUrl(int $fileId): string
@@ -453,15 +450,18 @@ class FileMapper extends QBMapper
      * @param string $shareOwner  The owner of the file
      * @param int    $permissions The permissions for the share (default: 1 = read)
      *
-     * @return array The created share information
+     * @return (int|string)[]
      *
      * @throws \Exception If the share creation fails
      *
-     * @phpstan-param  int $fileId
-     * @phpstan-param  string $sharedBy
-     * @phpstan-param  string $shareOwner
-     * @phpstan-param  int $permissions
+     * @phpstan-param int $fileId
+     * @phpstan-param string $sharedBy
+     * @phpstan-param string $shareOwner
+     * @phpstan-param int $permissions
+     *
      * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+     *
+     * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
      */
     public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions=1): array
     {

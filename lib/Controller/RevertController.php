@@ -30,12 +30,11 @@ use OCA\OpenRegister\Exception\LockedException;
 
 /**
  * Class RevertController
- * Handles all object reversion operations
- */
-/**
+ *
+ * Handles all object reversion operations.
+ *
  * @psalm-suppress UnusedClass
  */
-
 class RevertController extends Controller
 {
 
@@ -86,9 +85,9 @@ class RevertController extends Controller
             $until = null;
             if (($data['datetime'] ?? null) !== null) {
                 $until = new \DateTime($data['datetime']);
-            } elseif (($data['auditTrailId'] ?? null) !== null) {
+            } else if (($data['auditTrailId'] ?? null) !== null) {
                 $until = $data['auditTrailId'];
-            } elseif (($data['version'] ?? null) !== null) {
+            } else if (($data['version'] ?? null) !== null) {
                 $until = $data['version'];
             }
 

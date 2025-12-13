@@ -8,7 +8,7 @@
 					<div class="header-title-row">
 						<h1>
 							<Robot :size="32" />
-							{{ activeConversation?.title || t('openregister', 'AI Assistant') }}
+							{{ currentAgent?.name || activeConversation?.title || t('openregister', 'AI Assistant') }}
 						</h1>
 						<NcButton
 							v-if="activeConversation"
@@ -21,8 +21,7 @@
 						</NcButton>
 					</div>
 					<p v-if="currentAgent" class="subtitle">
-						{{ t('openregister', 'Agent:') }} <strong>{{ currentAgent.name }}</strong>
-						<span v-if="currentAgent.model"> • {{ currentAgent.model }}</span>
+						{{ currentAgent.description || t('openregister', 'Ask questions about your data using natural language') }}
 					</p>
 					<p v-else class="subtitle">
 						{{ t('openregister', 'Ask questions about your data using natural language') }}
@@ -74,7 +73,7 @@
 					</div>
 					<div class="message-content">
 						<div class="message-header">
-							<span class="message-sender">{{ message.role === 'user' ? t('openregister', 'You') : t('openregister', 'AI Assistant') }}</span>
+							<span class="message-sender">{{ message.role === 'user' ? t('openregister', 'You') : (currentAgent?.name || t('openregister', 'AI Assistant')) }}</span>
 							<span class="message-time">{{ formatTime(message.created) }}</span>
 						</div>
 						<!-- TODO: Fix this eslint rule -->
@@ -865,7 +864,7 @@ export default {
 }
 
 .chat-header {
-	padding: 20px 24px;
+	padding: 20px 16px;
 	border-bottom: 1px solid var(--color-border);
 	background: var(--color-background-hover);
 
@@ -905,7 +904,7 @@ export default {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 48px 24px;
+	padding: 48px 16px;
 	text-align: center;
 
 	.empty-icon {
@@ -936,7 +935,7 @@ export default {
 .chat-messages {
 	flex: 1;
 	overflow-y: auto;
-	padding: 24px;
+	padding: 16px 12px;
 	display: flex;
 	flex-direction: column;
 	gap: 24px;
@@ -985,13 +984,13 @@ export default {
 
 		&.user {
 			.message-content {
-				background: var(--color-primary-element-light);
+				background: var(--color-background-hover);
 			}
 		}
 
 		&.assistant {
 			.message-content {
-				background: var(--color-background-hover);
+				background: transparent;
 			}
 		}
 
@@ -1213,7 +1212,7 @@ export default {
 }
 
 .chat-input-container {
-	padding: 16px 24px;
+	padding: 16px 12px;
 	border-top: 1px solid var(--color-border);
 	background: var(--color-main-background);
 

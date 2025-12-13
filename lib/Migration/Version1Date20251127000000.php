@@ -55,6 +55,7 @@ class Version1Date20251127000000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Add request_body column to webhook_logs table if it exists.

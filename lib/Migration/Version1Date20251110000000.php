@@ -1,6 +1,8 @@
 <?php
+
 declare(strict_types=1);
-/*
+
+/**
  * Organisation Hierarchy Migration
  *
  * This migration adds parent-child relationship support to organisations,

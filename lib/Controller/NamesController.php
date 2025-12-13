@@ -49,11 +49,9 @@ use Psr\Log\LoggerInterface;
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
-
 class NamesController extends Controller
 {
 
@@ -106,38 +104,9 @@ class NamesController extends Controller
      *
      * @PublicPage
      *
-     * @return JSONResponse Object names with performance metadata
-     *
      * @throws \Exception If name lookup fails
      *
-     * @psalm-return JSONResponse<
-     *     200|500,
-     *     array{
-     *         error?: 'Failed to retrieve object names',
-     *         message?: string,
-     *         names?: array<string, string>,
-     *         total?: int<0, max>,
-     *         cached?: true,
-     *         execution_time?: string,
-     *         cache_stats?: array{
-     *             hits: int,
-     *             misses: int,
-     *             preloads: int,
-     *             query_hits: int,
-     *             query_misses: int,
-     *             name_hits: int,
-     *             name_misses: int,
-     *             name_warmups: int,
-     *             hit_rate: float,
-     *             query_hit_rate: float,
-     *             name_hit_rate: float,
-     *             cache_size: int,
-     *             query_cache_size: int,
-     *             name_cache_size: int
-     *         }
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve object names', message?: string, names?: array<string, string>, total?: int<0, max>, cached?: true, execution_time?: string, cache_stats?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -160,7 +129,7 @@ class NamesController extends Controller
                     } else {
                         $requestedIds = array_map('trim', explode(',', $requestedIds));
                     }
-                } elseif (is_array($requestedIds) === false) {
+                } else if (is_array($requestedIds) === false) {
                     $requestedIds = [(string) $requestedIds];
                 }
 
@@ -252,40 +221,9 @@ class NamesController extends Controller
      *
      * @PublicPage
      *
-     * @return JSONResponse Object names with performance metadata
-     *
      * @throws \Exception If name lookup fails
      *
-     * @psalm-return JSONResponse<
-     *     200|400|500,
-     *     array{
-     *         error?: 'Failed to retrieve object names'|'Invalid request: ids array is required in request body'|'No valid IDs provided in request',
-     *         message?: string,
-     *         example?: array{ids: list{'uuid-1', 'uuid-2', 'uuid-3'}},
-     *         names?: array<string, string>,
-     *         total?: int<0, max>,
-     *         requested?: int<1, max>,
-     *         cached?: true,
-     *         execution_time?: string,
-     *         cache_stats?: array{
-     *             hits: int,
-     *             misses: int,
-     *             preloads: int,
-     *             query_hits: int,
-     *             query_misses: int,
-     *             name_hits: int,
-     *             name_misses: int,
-     *             name_warmups: int,
-     *             hit_rate: float,
-     *             query_hit_rate: float,
-     *             name_hit_rate: float,
-     *             cache_size: int,
-     *             query_cache_size: int,
-     *             name_cache_size: int
-     *         }
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|400|500, array{error?: 'Failed to retrieve object names'|'Invalid request: ids array is required in request body'|'No valid IDs provided in request', message?: string, example?: array{ids: list{'uuid-1', 'uuid-2', 'uuid-3'}}, names?: array<string, string>, total?: int<0, max>, requested?: int<1, max>, cached?: true, execution_time?: string, cache_stats?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -384,23 +322,9 @@ class NamesController extends Controller
      *
      * @param string $id Object ID or UUID to get name for
      *
-     * @return JSONResponse Object name with performance metadata
-     *
      * @throws \Exception If name lookup fails
      *
-     * @psalm-return JSONResponse<
-     *     200|404|500,
-     *     array{
-     *         id: string,
-     *         error?: 'Failed to retrieve object name',
-     *         message?: string,
-     *         name?: null|string,
-     *         found?: bool,
-     *         execution_time?: string,
-     *         cached?: true
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|404|500, array{id: string, error?: 'Failed to retrieve object name', message?: string, name?: null|string, found?: bool, execution_time?: string, cached?: true}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -556,35 +480,7 @@ class NamesController extends Controller
      * ADMINISTRATIVE ENDPOINT**: Triggers manual cache warmup
      * for improved performance after system maintenance.
      *
-     * @return JSONResponse Warmup results with performance data
-     *
-     * @psalm-return JSONResponse<
-     *     200|500,
-     *     array{
-     *         success: bool,
-     *         error?: 'Cache warmup failed',
-     *         message?: string,
-     *         loaded_names?: int,
-     *         execution_time?: string,
-     *         cache_stats?: array{
-     *             hits: int,
-     *             misses: int,
-     *             preloads: int,
-     *             query_hits: int,
-     *             query_misses: int,
-     *             name_hits: int,
-     *             name_misses: int,
-     *             name_warmups: int,
-     *             hit_rate: float,
-     *             query_hit_rate: float,
-     *             name_hit_rate: float,
-     *             cache_size: int,
-     *             query_cache_size: int,
-     *             name_cache_size: int
-     *         }
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Cache warmup failed', message?: string, loaded_names?: int, execution_time?: string, cache_stats?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

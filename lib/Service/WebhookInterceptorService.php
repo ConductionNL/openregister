@@ -204,7 +204,9 @@ class WebhookInterceptorService
      *
      * @param string $eventType Event type (e.g., 'object.creating')
      *
-     * @return Webhook[] Array of matching webhooks
+     * @return \OCA\OpenRegister\Db\OCA\OpenRegister\Db\Webhook[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\Webhook>
      */
     private function findWebhooksForEvent(string $eventType): array
     {

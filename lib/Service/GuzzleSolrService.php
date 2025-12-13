@@ -640,7 +640,9 @@ class GuzzleSolrService
      *
      * @param bool $includeCollectionTests Whether to include collection/query tests (default: true for full test)
      *
-     * @return array{success: bool, message: string, details: array, components: array} Connection test results
+     * @return ((array|string)[]|bool|string)[] Connection test results
+     *
+     * @psalm-return array{success: bool, message: string, details: array{error?: string}, components: array{zookeeper?: array, solr?: array, collection?: array, query?: array}}
      */
     public function testConnection(bool $includeCollectionTests=true): array
     {
@@ -900,10 +902,12 @@ class GuzzleSolrService
      * @param int    $replicationFactor Number of replicas per shard (default: 1)
      * @param int    $maxShardsPerNode  Maximum shards per node (default: 1)
      *
-     * @return array Result array with success status and details
+     * @return (int|string|true)[] Result array with success status and details
      *
      * @throws \GuzzleHttp\Exception\GuzzleException When HTTP request fails
      * @throws \Exception When SOLR returns error response
+     *
+     * @psalm-return array{success: true, message: 'Collection created successfully', collection: string, configSet: string, shards: int, replicas: int}
      */
     public function createCollection(
         string $collectionName,
@@ -1009,7 +1013,10 @@ class GuzzleSolrService
      * Delete SOLR collection
      *
      * @param string|null $collectionName Collection name (if null, uses active collection)
-     * @return array Result with success status and details
+     *
+     * @return (bool|mixed|null|string)[] Result with success status and details
+     *
+     * @psalm-return array{success: bool, message: string, error_code?: string, collection?: string, exception?: string, response_time_ms?: mixed|null, solr_error?: mixed|null}
      */
     public function deleteCollection(?string $collectionName = null): array
     {
@@ -1474,8 +1481,11 @@ class GuzzleSolrService
      * @param \OCA\OpenRegister\Db\Register|null $register       The register for metadata
      * @param array                              $solrFieldTypes Optional SOLR field types for validation
      *
-     * @return array SOLR document structure
+     * @return (array|false|int|mixed|null|string)[] SOLR document structure
+     *
      * @throws \RuntimeException If mapping fails
+     *
+     * @psalm-return array<string, array|false|int|mixed|null|string>
      */
     private function createSchemaAwareDocument(ObjectEntity $object, Schema $schema, $register=null, array $solrFieldTypes=[]): array
     {
@@ -1741,7 +1751,9 @@ class GuzzleSolrService
      *
      * @param mixed $relations Relations data from ObjectEntity (e.g., {"modules.0":"uuid", "other.1":"value"})
      *
-     * @return array Simple array of strings for SOLR multi-valued field (e.g., ["uuid", "value"])
+     * @return string[] Simple array of strings for SOLR multi-valued field (e.g., ["uuid", "value"])
+     *
+     * @psalm-return list{0?: string,...}
      */
     private function flattenRelationsForSolr($relations): array
     {
@@ -1803,7 +1815,7 @@ class GuzzleSolrService
     /**
      * Extract array fields from dot-notation relations
      *
-     * **WORKAROUND/HACK FOR MISSING DATA**: This method reconstructs arrays from relations
+     * WORKAROUND/HACK FOR MISSING DATA**: This method reconstructs arrays from relations
      * because some array fields (e.g., 'standaarden') are stored ONLY as dot-notation
      * relation entries ("standaarden.0", "standaarden.1") instead of in the object body.
      *
@@ -1817,9 +1829,11 @@ class GuzzleSolrService
      *
      * @param array $relations The relations array from ObjectEntity
      *
-     * @return array Associative array of field names to their array values
+     * @return array[] Associative array of field names to their array values
      *
      * @todo Fix root cause: Ensure all array fields are consistently stored in object body
+     *
+     * @psalm-return array<string, array<int, mixed>>
      */
     private function extractArraysFromRelations(array $relations): array
     {
@@ -1882,7 +1896,9 @@ class GuzzleSolrService
      * @param array  $arrayValue The array to extract values from
      * @param string $fieldName  Field name for logging
      *
-     * @return array Array of indexable string values
+     * @return string[] Array of indexable string values
+     *
+     * @psalm-return list<string>
      */
     private function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
     {
@@ -1947,7 +1963,9 @@ class GuzzleSolrService
      *
      * @param mixed $files Files data from ObjectEntity
      *
-     * @return array Simple array of strings for SOLR multi-valued field
+     * @return (mixed|string)[] Simple array of strings for SOLR multi-valued field
+     *
+     * @psalm-return list{0?: mixed|string,...}
      */
     private function flattenFilesForSolr($files): array
     {
@@ -1980,6 +1998,7 @@ class GuzzleSolrService
      * @param string $fieldName  Original field name
      * @param string $fieldType  Schema field type
      * @param mixed  $fieldValue Field value for context
+     * @param array|null|scalar $_fieldValue
      *
      * @return string|null SOLR field name (clean, no suffixes - field types defined in SOLR setup)
      */
@@ -2082,7 +2101,9 @@ class GuzzleSolrService
      *
      * @param ObjectEntity $object The object to convert
      *
-     * @return array SOLR document structure
+     * @return (array|mixed|null|scalar)[] SOLR document structure
+     *
+     * @psalm-return array{self_id: int|string, self_uuid: int|string, self_register: int, self_schema: int, self_organisation: null|string, self_name: null|string, self_description: null|string, self_summary: null|string, self_image: null|string, self_slug: null|string, self_uri: null|string, self_version: null|string, self_size: int|null, self_owner: null|string, self_locked: array|null, self_folder: null|string, self_application: null|string, self_created: null|string, self_updated: null|string, self_published: null|string, self_depublished: mixed|null, self_authorization: false|null|string, self_deleted: false|null|string, self_validation: false|null|string, self_groups: false|null|string,...}
      */
     private function createLegacySolrDocument(ObjectEntity $object): array
     {
@@ -2183,9 +2204,11 @@ class GuzzleSolrService
      * @param bool  $published Include only published objects (default: false)
      * @param bool  $deleted   Include deleted objects (default: false)
      *
-     * @return array Paginated results in OpenRegister format
+     * @return (float|mixed)[] Paginated results in OpenRegister format
      *
      * @throws \Exception When Solr is not available or query fails
+     *
+     * @psalm-return array{_execution_time_ms: float, results?: mixed, total?: mixed,...}
      */
     public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
     {
@@ -2385,7 +2408,10 @@ class GuzzleSolrService
      * Translate OpenRegister query parameters to Solr query format
      *
      * @param array $query OpenRegister query parameters
-     * @return array Solr query parameters
+     *
+     * @return (bool|int|mixed|null|string|string[])[] Solr query parameters
+     *
+     * @psalm-return array{q: string, offset: int<0, max>, limit: int<1, max>, sort: string, facets: list{0?: 'self_register', 1?: 'self_schema', 2?: 'self_organisation', 3?: 'self_owner', 4?: 'type_s', 5?: 'naam_s'}, filters: array<never, never>, _facetable: bool, _facets: mixed|null, fq?: list{string,...}}
      */
     private function translateOpenRegisterQuery(array $query): array
     {
@@ -2907,9 +2933,9 @@ class GuzzleSolrService
      *
      * @param ObjectEntity $object Object entity
      *
-     * @return string|null URI value or null
+     * @return null|string URI value or null
      */
-    private function getUriValue(ObjectEntity $object): ?string
+    private function getUriValue(ObjectEntity $object): string|null
     {
         $uri = $object->getUri();
         if ($uri !== null && $uri !== '') {
@@ -2926,9 +2952,9 @@ class GuzzleSolrService
      *
      * @param ObjectEntity $object Object entity
      *
-     * @return string|null Version value or null
+     * @return null|string Version value or null
      */
-    private function getVersionValue(ObjectEntity $object): ?string
+    private function getVersionValue(ObjectEntity $object): string|null
     {
         $version = $object->getVersion();
         if ($version !== null && $version !== '') {
@@ -2964,9 +2990,9 @@ class GuzzleSolrService
      *
      * @param ObjectEntity $object Object entity
      *
-     * @return string|null Folder value or null
+     * @return null|string Folder value or null
      */
-    private function getFolderValue(ObjectEntity $object): ?string
+    private function getFolderValue(ObjectEntity $object): string|null
     {
         $folder = $object->getFolder();
         if ($folder !== null && $folder !== '') {
@@ -2984,7 +3010,9 @@ class GuzzleSolrService
      * @param array $objects Array of ObjectEntity objects
      * @param bool  $commit  Whether to commit immediately
      *
-     * @return array Result array with success status and statistics
+     * @return (bool|float|int)[] Result array with success status and statistics
+     *
+     * @psalm-return array{success: bool, processed: int<0, max>, execution_time: float}
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -3358,12 +3386,15 @@ class GuzzleSolrService
     /**
      * Delete documents by query
      *
-     * @param  string $query         SOLR query
-     * @param  bool   $commit        Whether to commit immediately
-     * @param  bool   $returnDetails Whether to return detailed error information
-     * @return bool|array True if successful (when $returnDetails=false), or detailed result array (when $returnDetails=true)
+     * @param string $query         SOLR query
+     * @param bool   $commit        Whether to commit immediately
+     * @param bool   $returnDetails Whether to return detailed error information
+     *
+     * @return ((\ArrayAccess|array|int|mixed|string)[]|bool|int|mixed|string)[]|bool True if successful (when $returnDetails=false), or detailed result array (when $returnDetails=true)
+     *
+     * @psalm-return array{success: bool, error?: string, error_details?: 'No collection found for the current tenant'|'SOLR connection is not configured or unavailable'|array{solr_error?: 'Unknown SOLR error'|mixed, error_code?: -1|mixed, query: string, collection?: string, full_response?: mixed, exception_type?: string, message?: string, solr_response?: \ArrayAccess|array{error: mixed,...}, http_status?: int}, deleted_docs?: 0|mixed}|bool
      */
-    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): bool|array
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool|array
     {
         if ($this->isAvailable() === false) {
             if ($returnDetails === true) {
@@ -3525,8 +3556,11 @@ class GuzzleSolrService
     /**
      * Search objects in SOLR
      *
-     * @param  array $searchParams Search parameters
-     * @return array Search results
+     * @param array $searchParams Search parameters
+     *
+     * @return (array|bool|float|int|mixed|string)[] Search results
+     *
+     * @psalm-return array{success: bool, data: array<never, never>|mixed, total: 0|mixed, facets: array<never, never>|mixed, message?: string, execution_time_ms?: float}
      */
     public function searchObjects(array $searchParams): array
     {
@@ -3597,7 +3631,7 @@ class GuzzleSolrService
      * - Automatic wildcard expansion for partial matching
      * - Typo tolerance through fuzzy matching
      *
-     * **Field Weighting Strategy (NL API Strategy compliant):**
+     * Field Weighting Strategy (NL API Strategy compliant):**
      * - self_name (15.0x): OpenRegister standardized name field - highest relevance
      * - self_summary (10.0x): OpenRegister standardized summary field
      * - self_description (7.0x): OpenRegister standardized description field
@@ -3606,12 +3640,13 @@ class GuzzleSolrService
      * - beschrijving (2.0x): Legacy full description field
      * - _text_ (1.0x): Catch-all text field - lowest priority
      *
-     * **Matching Strategy per Field:**
+     * Matching Strategy per Field:**
      * - Exact match: field:"term" (3x field weight)
      * - Wildcard match: field:*term* (2x field weight)
      * - Fuzzy match: field:term~ (1x field weight)
      *
-     * @param  string $searchTerm The search term to query for
+     * @param string $searchTerm The search term to query for
+     *
      * @return string SOLR query string with weighted fields and multi-level matching
      */
     private function buildWeightedSearchQuery(string $searchTerm): string
@@ -3679,8 +3714,11 @@ class GuzzleSolrService
     /**
      * Build SOLR query from OpenRegister query parameters
      *
-     * @param  array $query OpenRegister query parameters
-     * @return array SOLR query parameters
+     * @param array $query OpenRegister query parameters
+     *
+     * @return ((int|string)[]|int|mixed|string|true)[] SOLR query parameters
+     *
+     * @psalm-return array{q: string, start: int, rows: int, wt: 'json', _facetable?: true, _facets?: mixed, _use_json_faceting?: true, hl?: 'true', 'hl.fl'?: 'self_name,self_summary,self_description', 'hl.simple.pre'?: '<mark>', 'hl.simple.post'?: '</mark>', sort?: string, fq?: list{string,...}, facet?: 'true', 'facet.field'?: list{0?: array-key,...}, 'facet.date'?: string, 'facet.date.start'?: 'NOW/YEAR-10YEARS', 'facet.date.end'?: 'NOW', 'facet.date.gap'?: '+1MONTH'}
      */
     private function buildSolrQuery(array $query): array
     {
@@ -4032,9 +4070,12 @@ class GuzzleSolrService
     /**
      * Parse SOLR response into standardized format
      *
-     * @param  array $responseData Raw SOLR response
-     * @param  array $extend       Extension parameters for @self properties
-     * @return array Parsed search results
+     * @param array $responseData Raw SOLR response
+     * @param array $extend       Extension parameters for @self properties
+     *
+     * @return (array[]|int|mixed)[] Parsed search results
+     *
+     * @psalm-return array{objects: array<array<string, mixed>>, total: int<0, max>|mixed, facets: array<list{0?: array{value: mixed, count: mixed},...}>}
      */
     private function parseSolrResponse(array $responseData, array $extend=[]): array
     {
@@ -4083,9 +4124,12 @@ class GuzzleSolrService
     /**
      * Convert SOLR search results to OpenRegister paginated format
      *
-     * @param  array $searchResults SOLR search results
-     * @param  array $originalQuery Original OpenRegister query
-     * @return array Paginated results in OpenRegister format matching database response structure
+     * @param array $searchResults SOLR search results
+     * @param array $originalQuery Original OpenRegister query
+     *
+     * @return (array|float|int|mixed|null|string)[] Paginated results in OpenRegister format matching database response structure
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, page: int, pages: 1|float, limit: int<min, max>, offset: int, facets: array{facets?: array{'@self'?: array<never, never>, object_fields?: array<never, never>}|mixed, facetable?: array{'@self': array<never, never>, object_fields: array<never, never>}}|mixed, facetable?: array, next?: null|string}
      */
     private function convertToOpenRegisterPaginatedFormat(array $searchResults, array $originalQuery, array $solrQuery=null): array
     {
@@ -4374,7 +4418,9 @@ class GuzzleSolrService
     /**
      * Test Zookeeper connectivity for SolrCloud
      *
-     * @return array Zookeeper test results
+     * @return ((mixed|string|string[])[]|bool|string)[] Zookeeper test results
+     *
+     * @psalm-return array{success: bool, message: string, details: array{error?: string, zookeeper_hosts: mixed|string, successful_hosts?: list<lowercase-string>, failed_hosts?: list{0?: string,...}, test_method?: 'SOLR Collections API'}}
      */
     private function testZookeeperConnection(): array
     {
@@ -4445,7 +4491,9 @@ class GuzzleSolrService
     /**
      * Test SOLR connectivity
      *
-     * @return array SOLR test results
+     * @return (((mixed|string)[]|\ArrayAccess|float|mixed|null|string)[]|bool|string)[] SOLR test results
+     *
+     * @psalm-return array{success: bool, message: string, details: array{error?: string, base_url?: string, tested_endpoints?: list{string, string, string}, last_error?: null|string, test_type?: 'admin_ping', response_time_ms?: float, working_endpoint?: '/admin/info/system?wt=json'|'/admin/ping?wt=json'|'/solr/admin/ping?wt=json'|null, server_info?: array{solr_version: 'unknown'|mixed, lucene_version: 'unknown'|mixed}, response_data?: \ArrayAccess|array{status: mixed,...}|mixed}}
      */
     private function testSolrConnectivity(): array
     {
@@ -4784,7 +4832,9 @@ class GuzzleSolrService
     /**
      * Clear entire index for tenant
      *
-     * @return array Result with success status and error details
+     * @return (bool|mixed|string)[] Result with success status and error details
+     *
+     * @psalm-return array{success: bool, error?: string, error_details?: mixed|string, message?: 'SOLR index cleared successfully', deleted_docs?: 'all', collection?: string}
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -5378,9 +5428,13 @@ class GuzzleSolrService
     /**
      * Get statistics for a specific collection
      *
-     * @param  string $collectionName Collection name
-     * @return array Collection statistics
+     * @param string $collectionName Collection name
+     *
+     * @return (mixed|string)[] Collection statistics
+     *
      * @throws \Exception If collection stats cannot be retrieved
+     *
+     * @psalm-return array{name: string, shards: mixed, configName: mixed, replicationFactor: mixed, maxShardsPerNode: mixed, autoAddReplicas: mixed}
      */
     private function getCollectionStats(string $collectionName): array
     {
@@ -5445,7 +5499,9 @@ class GuzzleSolrService
     /**
      * Get service statistics
      *
-     * @return array Service statistics
+     * @return (bool|float|int|string)[] Service statistics
+     *
+     * @psalm-return array{searches: int, indexes: int, deletes: int, search_time: float, index_time: float, errors: int, available: bool, service_type: 'GuzzleHttp', memory_usage: 'lightweight'}
      */
     public function getStats(): array
     {
@@ -5464,7 +5520,9 @@ class GuzzleSolrService
     /**
      * Test SOLR connection specifically for dashboard display
      *
-     * @return array Dashboard-specific connection test results
+     * @return (array|false|mixed|string)[] Dashboard-specific connection test results
+     *
+     * @psalm-return array{connection: array{success: bool, message: string, details: array, components?: array}, availability: false|mixed, stats: array, timestamp: string}
      */
     public function testConnectionForDashboard(): array
     {
@@ -5502,6 +5560,7 @@ class GuzzleSolrService
      * Get SOLR endpoint URL for dashboard display
      *
      * @param string|null $collection Optional collection name, defaults to active collection
+     *
      * @return string SOLR endpoint URL
      */
     public function getEndpointUrl(?string $collection=null): string
@@ -5528,10 +5587,8 @@ class GuzzleSolrService
      *
      * This allows other services like SolrSetup to use the same authenticated
      * HTTP client without duplicating authentication logic.
-     *
-     * @return GuzzleClient The configured and authenticated HTTP client
      */
-    public function getHttpClient(): \OCP\Http\Client\IClient
+    public function getHttpClient(): GuzzleClient
     {
         return $this->httpClient;
 
@@ -5976,7 +6033,10 @@ class GuzzleSolrService
      *
      * @param ObjectEntityMapper $objectMapper
      * @param array $job
-     * @return array
+     *
+     * @return (bool|int|mixed|string)[]
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, batchNumber: mixed, error?: string}
      */
     private function processBatchDirectly($objectMapper, array $job, array $schemaIds = []): array
     {
@@ -6089,7 +6149,10 @@ class GuzzleSolrService
      *
      * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper The ObjectEntityMapper instance
      * @param array $job Batch job configuration
+     *
      * @return \React\Promise\PromiseInterface
+     *
+     * @psalm-return \React\Promise\PromiseInterface<array{success: true, indexed: int<0, max>, batchNumber: mixed, time_ms?: float}>
      */
     private function processBatchAsync($objectMapper, array $job): \React\Promise\PromiseInterface
     {
@@ -6315,7 +6378,9 @@ class GuzzleSolrService
      * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper Object mapper for database operations
      * @param SchemaMapper                            $schemaMapper Schema mapper for database operations
      *
-     * @return array Test results with statistics
+     * @return ((int|mixed|null|string)[][]|bool|float|int|string)[] Test results with statistics
+     *
+     * @psalm-return array{success: bool, schemas_tested: 0|1|2, objects_indexed: int, schema_details?: list<array{mapping_type: 'legacy-fallback'|'schema-aware'|'unknown', objects_found: int<0, max>, objects_indexed: 0|1|2, properties_count: int<0, max>, schema_id: int, schema_title: null|string}>, errors?: list{0?: array{schema_id: int, object_id?: 'unknown'|mixed, error: string},...}, duration?: float, error?: string}
      */
     public function testSchemaAwareMapping($objectMapper, $schemaMapper): array
     {
@@ -7010,9 +7075,12 @@ class GuzzleSolrService
     /**
      * Fix mismatched SOLR fields by updating their configuration
      *
-     * @param  array $mismatchedFields Array of field configurations keyed by field name that need to be fixed
-     * @param  bool  $dryRun           If true, only simulate the updates without actually making changes
-     * @return array Result with success status, message, and fixed fields list
+     * @param array $mismatchedFields Array of field configurations keyed by field name that need to be fixed
+     * @param bool  $dryRun           If true, only simulate the updates without actually making changes
+     *
+     * @return ((int|string)[]|bool|float|string)[] Result with success status, message, and fixed fields list
+     *
+     * @psalm-return array{success: bool, message: string, errors?: list{0?: string,...}, fixed?: list<array-key>, warnings?: list<non-falsy-string>, execution_time_ms?: float, dry_run?: bool}
      */
     public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
     {
@@ -7217,7 +7285,9 @@ class GuzzleSolrService
      *
      * @param string $fieldName Name of the field to delete
      *
-     * @return array Result with success status and message
+     * @return (bool|mixed|string)[] Result with success status and message
+     *
+     * @psalm-return array{success: bool, message: string, response?: mixed}
      */
     private function deleteFieldFromSolr(string $fieldName): array
     {
@@ -7766,9 +7836,12 @@ class GuzzleSolrService
     /**
      * Prepare field configuration for SOLR Schema API
      *
-     * @param  string $fieldName   Field name
-     * @param  array  $fieldConfig Field configuration from schema analysis
-     * @return array SOLR-compatible field configuration
+     * @param string $fieldName   Field name
+     * @param array  $fieldConfig Field configuration from schema analysis
+     *
+     * @return (bool|mixed|string)[] SOLR-compatible field configuration
+     *
+     * @psalm-return array{name: string, type: string, indexed: mixed|true, stored: mixed|true, multiValued: false|mixed, docValues: mixed|true}
      */
     private function prepareSolrFieldConfig(string $fieldName, array $fieldConfig): array
     {
@@ -7805,7 +7878,9 @@ class GuzzleSolrService
      * Retrieves field definitions, dynamic fields, field types, and core information
      * from the active SOLR collection to help debug field configuration issues.
      *
-     * @return array{success: bool, message: string, fields?: array, dynamic_fields?: array, field_types?: array, core_info?: array, environment_notes?: array, execution_time_ms?: float, details?: array}
+     * @return (array|bool|float|string)[]
+     *
+     * @psalm-return array{success: bool, message: string, details?: array{error?: string, response?: mixed}, execution_time_ms?: float, fields?: array, dynamic_fields?: array, field_types?: array, core_info?: array, environment_notes?: array}
      */
     public function getFieldsConfiguration(): array
     {
@@ -7915,8 +7990,11 @@ class GuzzleSolrService
     /**
      * Extract field definitions from schema
      *
-     * @param  array $schema SOLR schema data
-     * @return array Field definitions
+     * @param array $schema SOLR schema data
+     *
+     * @return (bool|mixed|string)[][] Field definitions
+     *
+     * @psalm-return array<array-key|mixed, array{type: 'unknown'|mixed, indexed: mixed|true, stored: mixed|true, multiValued: false|mixed, required: false|mixed, docValues: false|mixed}>
      */
     private function extractFields(array $schema): array
     {
@@ -7947,8 +8025,11 @@ class GuzzleSolrService
     /**
      * Extract dynamic field patterns from schema
      *
-     * @param  array $schema SOLR schema data
-     * @return array Dynamic field patterns
+     * @param array $schema SOLR schema data
+     *
+     * @return (bool|mixed|string)[][] Dynamic field patterns
+     *
+     * @psalm-return array<array-key|mixed, array{type: 'unknown'|mixed, indexed: mixed|true, stored: mixed|true, multiValued: false|mixed}>
      */
     private function extractSchemaDynamicFields(array $schema): array
     {
@@ -7974,8 +8055,11 @@ class GuzzleSolrService
     /**
      * Extract field type definitions from schema
      *
-     * @param  array $schema SOLR schema data
-     * @return array Field type definitions
+     * @param array $schema SOLR schema data
+     *
+     * @return (array|mixed|null|string)[][] Field type definitions
+     *
+     * @psalm-return array<array-key|mixed, array{class: 'unknown'|mixed, analyzer: mixed|null, properties: array}>
      */
     private function extractFieldTypes(array $schema): array
     {
@@ -8000,9 +8084,12 @@ class GuzzleSolrService
     /**
      * Extract core information from schema
      *
-     * @param  array  $schema         SOLR schema data
-     * @param  string $collectionName Collection name
-     * @return array Core information
+     * @param array  $schema         SOLR schema data
+     * @param string $collectionName Collection name
+     *
+     * @return (mixed|null|string)[] Core information
+     *
+     * @psalm-return array{core_name: string, schema_name: 'unknown'|mixed, schema_version: 'unknown'|mixed, unique_key: 'id'|mixed, default_search_field: mixed|null, similarity: mixed|null}
      */
     private function extractCoreInfo(array $schema, string $collectionName): array
     {
@@ -8021,8 +8108,11 @@ class GuzzleSolrService
     /**
      * Generate environment analysis notes
      *
-     * @param  array $schema SOLR schema data
-     * @return array Environment notes and warnings
+     * @param array $schema SOLR schema data
+     *
+     * @return (((int|string)|mixed)[]|string)[][] Environment notes and warnings
+     *
+     * @psalm-return list{0?: array{type: 'info'|'warning', title: 'Multi-valued String Fields Detected'|'OpenRegister Dynamic Fields Found', message: string, details: list<array-key|mixed>}, 1?: array{type: 'info', title: 'OpenRegister Dynamic Fields Found', message: string, details: list<mixed>}}
      */
     private function generateEnvironmentNotes(array $schema): array
     {
@@ -8162,7 +8252,10 @@ class GuzzleSolrService
      * @param int $initialPeak Initial peak memory
      * @param int $finalPeak Final peak memory
      * @param array $prediction Original prediction data
-     * @return array Memory usage report
+     *
+     * @return ((float|int|mixed|string|string[])[]|float|int)[] Memory usage report
+     *
+     * @psalm-return array{initial_usage: int, final_usage: int, actual_used: int, initial_peak: int, final_peak: int, peak_used: int, memory_limit: int, peak_percentage: float, formatted: array{initial_usage: string, final_usage: string, actual_used: string, peak_usage: string, peak_used: string, memory_limit: string, peak_percentage: string}, prediction?: array{estimated: mixed, actual: int, accuracy_percentage: 0|100|float, difference: mixed, formatted: array{estimated: string, difference: string}}}
      */
     private function generateMemoryReport(int $initialUsage, int $finalUsage, int $initialPeak, int $finalPeak, array $prediction): array
     {
@@ -8245,7 +8338,8 @@ class GuzzleSolrService
     /**
      * Format bytes to human readable format
      *
-     * @param  int|float $bytes Number of bytes
+     * @param int|float $bytes Number of bytes
+     *
      * @return string Formatted string
      */
     private function formatBytes(int|float $bytes): string
@@ -8350,8 +8444,11 @@ class GuzzleSolrService
      * which makes them suitable for faceting. It returns the fields in the same format
      * as the database-based facetable field discovery.
      *
-     * @return array<string, mixed> Facetable fields configuration
+     * @return string[][][] Facetable fields configuration
+     *
      * @throws \Exception If SOLR schema query fails
+     *
+     * @psalm-return array{'@self': array<string, array{name: string, type: string, index_field: string, index_type: string, queryParameter: string, source: 'metadata'}>, object_fields: array<string, array{name: string, type: string, index_field: string, index_type: string, queryParameter: string, source: 'object'}>}
      */
     private function discoverFacetableFieldsFromSolr(): array
     {
@@ -8460,8 +8557,11 @@ class GuzzleSolrService
      * Get raw SOLR field information for facet configuration
      * Returns unprocessed field data suitable for configuration UI
      *
-     * @return array Raw SOLR field information grouped by category
+     * @return (array|false|mixed|string)[][][] Raw SOLR field information grouped by category
+     *
      * @throws \Exception If SOLR is not available or schema discovery fails
+     *
+     * @psalm-return array{'@self': array<string, array{name: 'unknown'|mixed, type: 'string'|mixed, stored: false|mixed, indexed: false|mixed, docValues: false|mixed, multiValued: false|mixed, required: false|mixed, suggestedFacetType: string, suggestedDisplayTypes: array, displayName: string, category: 'metadata'}>, object_fields: array<string, array{name: 'unknown'|mixed, type: 'string'|mixed, stored: false|mixed, indexed: false|mixed, docValues: false|mixed, multiValued: false|mixed, required: false|mixed, suggestedFacetType: string, suggestedDisplayTypes: array, displayName: string, category: 'object'}>}
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
     {
@@ -8555,8 +8655,11 @@ class GuzzleSolrService
     /**
      * Get suggested display types for a SOLR field based on its characteristics
      *
-     * @param  array $field SOLR field information
-     * @return array Suggested display types
+     * @param array $field SOLR field information
+     *
+     * @return string[] Suggested display types
+     *
+     * @psalm-return list{0: string, 1: 'checkbox'|'radio'|'select', 2?: 'checkbox'}
      */
     private function getSuggestedDisplayTypes(array $field): array
     {
@@ -8602,8 +8705,11 @@ class GuzzleSolrService
     /**
      * Map SOLR field type to OpenRegister facet type
      *
-     * @param  string $solrType SOLR field type
+     * @param string $solrType SOLR field type
+     *
      * @return string OpenRegister facet type
+     *
+     * @psalm-return 'date_histogram'|'range'|'terms'
      */
     private function mapSolrTypeToFacetType(string $solrType): string
     {
@@ -8728,8 +8834,11 @@ class GuzzleSolrService
      * Discover fields that have values from the current search results
      * This is a fallback when JSON faceting is not available
      *
-     * @param  array $solrResponse The SOLR response data
-     * @return array Contextual facet data
+     * @param array $solrResponse The SOLR response data
+     *
+     * @return ((int|mixed)[][]|(int|string))[][][][] Contextual facet data
+     *
+     * @psalm-return array{facetable: array{'@self': array{updated?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string'}, created?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string'}, application?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string'}, organisation?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string'}, schema?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string'}, register?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string'}}, object_fields: array<array{name: array-key, type: string, index_field: array-key, index_type: string}>}, extended: array{'@self': array{updated?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string', data: array<int<0, max>, array{value: mixed, count: 1}>}, created?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string', data: array<int<0, max>, array{value: mixed, count: 1}>}, application?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string', data: array<int<0, max>, array{value: mixed, count: 1}>}, organisation?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string', data: array<int<0, max>, array{value: mixed, count: 1}>}, schema?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string', data: array<int<0, max>, array{value: mixed, count: 1}>}, register?: array{name: string, type: 'date_histogram'|'terms', index_field: string, index_type: 'pdate'|'pint'|'string', data: array<int<0, max>, array{value: mixed, count: 1}>}}, object_fields: array<array{name: array-key, type: string, index_field: array-key, index_type: string, data: array<int<0, max>, array{value: mixed, count: 1}>}>}}
      */
     private function discoverFieldsFromCurrentResults(array $solrResponse): array
     {
@@ -8840,7 +8949,8 @@ class GuzzleSolrService
     /**
      * Infer field type from sample values
      *
-     * @param  array $values Sample values from the field
+     * @param array $values Sample values from the field
+     *
      * @return string Inferred SOLR field type
      */
     private function inferFieldType(array $values): string
@@ -8865,8 +8975,11 @@ class GuzzleSolrService
     /**
      * Process contextual facets from existing search results
      *
-     * @param  array $searchFacets Facets from current search results
-     * @return array Processed contextual facet data
+     * @param array $searchFacets Facets from current search results
+     *
+     * @return array[][] Processed contextual facet data
+     *
+     * @psalm-return array{facetable: array{'@self': array<never, never>, object_fields: array<never, never>}, extended: array{'@self': array<never, never>, object_fields: array<never, never>}}
      */
     private function processContextualFacetsFromSearchResults(array $_searchFacets): array
     {
@@ -8990,8 +9103,11 @@ class GuzzleSolrService
      * Build optimized contextual facet query that includes both metadata and object fields with actual values
      * This method now properly applies filter queries to facets using SOLR domains
      *
-     * @param  array $filterQueries Filter queries to apply to facets (e.g., ['self_register:3'])
-     * @return array Optimized JSON facet query with domain filtering
+     * @param array $filterQueries Filter queries to apply to facets (e.g., ['self_register:3'])
+     *
+     * @return (array[]|false|int|mixed|string)[][] Optimized JSON facet query with domain filtering
+     *
+     * @psalm-return array<string, array{type: 'terms', field: mixed|string, limit: 1000, mincount: 1, missing: false, domain?: array{filter: array}}>
      */
     private function buildOptimizedContextualFacetQuery(array $filterQueries=[]): array
     {
@@ -9117,8 +9233,11 @@ class GuzzleSolrService
     /**
      * Process optimized contextual facets from SOLR response
      *
-     * @param  array $facetData Raw facet data from SOLR
-     * @return array Processed contextual facet data
+     * @param array $facetData Raw facet data from SOLR
+     *
+     * @return array[][] Processed contextual facet data
+     *
+     * @psalm-return array{facetable: array<string, array>, extended: array<string, array>}
      */
     private function processOptimizedContextualFacets(array $facetData): array
     {
@@ -9229,7 +9348,8 @@ class GuzzleSolrService
     /**
      * Get object field information
      *
-     * @param  string $fieldName The field name
+     * @param string $fieldName The field name
+     *
      * @return array Field information
      */
     private function getObjectFieldInfo(string $fieldName): array
@@ -9264,8 +9384,11 @@ class GuzzleSolrService
     /**
      * Build JSON facet query for SOLR
      *
-     * @param  array $facetableFields The facetable fields to create facets for
-     * @return array JSON facet query structure
+     * @param array $facetableFields The facetable fields to create facets for
+     *
+     * @return array[] JSON facet query structure
+     *
+     * @psalm-return array<array>
      */
     private function buildJsonFacetQuery(array $facetableFields): array
     {
@@ -9307,9 +9430,12 @@ class GuzzleSolrService
     /**
      * Build terms facet for categorical fields
      *
-     * @param  string $fieldName SOLR field name
-     * @param  int    $limit     Maximum number of buckets to return (default: 1000, use -1 for unlimited)
-     * @return array Terms facet configuration
+     * @param string $fieldName SOLR field name
+     * @param int    $limit     Maximum number of buckets to return (default: 1000, use -1 for unlimited)
+     *
+     * @return (int|string)[] Terms facet configuration
+     *
+     * @psalm-return array{type: 'terms', field: string, limit: int, mincount: 1}
      */
     private function buildTermsFacet(string $fieldName, int $limit=1000): array
     {
@@ -9328,8 +9454,11 @@ class GuzzleSolrService
     /**
      * Build range facet for numeric fields
      *
-     * @param  string $fieldName SOLR field name
-     * @return array Range facet configuration
+     * @param string $fieldName SOLR field name
+     *
+     * @return (int|string)[] Range facet configuration
+     *
+     * @psalm-return array{type: 'range', field: string, start: 0, end: 1000000, gap: 100, mincount: 1}
      */
     private function buildRangeFacet(string $fieldName): array
     {
@@ -9348,8 +9477,11 @@ class GuzzleSolrService
     /**
      * Build date histogram facet with sensible time brackets
      *
-     * @param  string $fieldName SOLR field name
-     * @return array Date histogram facet configuration
+     * @param string $fieldName SOLR field name
+     *
+     * @return ((int|string)[][]|int|string)[] Date histogram facet configuration
+     *
+     * @psalm-return array{type: 'range', field: string, start: 'NOW-10YEARS', end: 'NOW+1DAY', gap: '+1YEAR', mincount: 1, facet: array{monthly: array{type: 'range', field: string, start: 'NOW-2YEARS', end: 'NOW+1DAY', gap: '+1MONTH', mincount: 1}, daily: array{type: 'range', field: string, start: 'NOW-90DAYS', end: 'NOW+1DAY', gap: '+1DAY', mincount: 1}}}
      */
     private function buildDateHistogramFacet(string $fieldName): array
     {
@@ -9534,9 +9666,12 @@ class GuzzleSolrService
     /**
      * Process SOLR facet response and format for frontend consumption
      *
-     * @param  array $facetData       Raw facet data from SOLR
-     * @param  array $facetableFields Original facetable fields structure
-     * @return array Formatted facet data
+     * @param array $facetData       Raw facet data from SOLR
+     * @param array $facetableFields Original facetable fields structure
+     *
+     * @return array[] Formatted facet data
+     *
+     * @psalm-return array{'@self': array, object_fields: array}
      */
     private function processFacetResponse(array $facetData, array $facetableFields): array
     {
@@ -9711,8 +9846,11 @@ class GuzzleSolrService
      *
      * Resolves UUID values to human-readable names using the object cache service.
      *
-     * @param  array $rawData Raw terms facet data
-     * @return array Formatted terms data
+     * @param array $rawData Raw terms facet data
+     *
+     * @return ((mixed|string)[][]|float|int|string)[] Formatted terms data
+     *
+     * @psalm-return array{type: 'terms', total_count: float|int, buckets: list<array{count: mixed, label: mixed|string, value: mixed}>}
      */
     private function formatTermsFacetData(array $rawData): array
     {
@@ -9813,8 +9951,11 @@ class GuzzleSolrService
     /**
      * Format range facet data
      *
-     * @param  array $rawData Raw range facet data
-     * @return array Formatted range data
+     * @param array $rawData Raw range facet data
+     *
+     * @return ((mixed|string)[][]|float|int|string)[] Formatted range data
+     *
+     * @psalm-return array{type: 'range', total_count: float|int, buckets: list{0?: array{from: mixed, to: mixed, count: mixed, label: string},...}}
      */
     private function formatRangeFacetData(array $rawData): array
     {
@@ -9842,8 +9983,11 @@ class GuzzleSolrService
     /**
      * Format date histogram facet data with multiple time brackets
      *
-     * @param  array $rawData Raw date histogram facet data
-     * @return array Formatted date histogram data with yearly, monthly, and daily brackets
+     * @param array $rawData Raw date histogram facet data
+     *
+     * @return (((mixed|string)[][]|string)[][]|string)[] Formatted date histogram data with yearly, monthly, and daily brackets
+     *
+     * @psalm-return array{type: 'date_histogram', brackets: array{yearly: array{interval: 'year', buckets: array<never, array{date: mixed, count: mixed, label: numeric-string}>}, monthly: array{interval: 'month', buckets: array<never, array{date: mixed, count: mixed, label: string}>}, daily: array{interval: 'day', buckets: array<never, array{date: mixed, count: mixed, label: string}>}}}
      */
     private function formatDateHistogramFacetData(array $rawData): array
     {
@@ -9902,9 +10046,11 @@ class GuzzleSolrService
     /**
      * Get metadata facetable fields (standard @self fields)
      *
-     * @return         array Standard metadata fields that can be faceted
+     * @return (int|string|string[]|true)[][][]
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-return array{'@self': array{_register: array{name: '_register', type: 'terms', title: 'Register', description: 'Register that contains the object', data_type: 'integer', index_field: 'self_register', index_type: 'pint', queryParameter: '@self[register]', source: 'metadata', show_count: true, enabled: true, order: 0}, _schema: array{name: '_schema', type: 'terms', title: 'Schema', description: 'Schema that defines the object structure', data_type: 'integer', index_field: 'self_schema', index_type: 'pint', queryParameter: '@self[schema]', source: 'metadata', show_count: true, enabled: true, order: 0}, _organisation: array{name: '_organisation', type: 'terms', title: 'Organisation', description: 'Organisation that owns the object', data_type: 'string', index_field: 'self_organisation', index_type: 'string', queryParameter: '@self[organisation]', source: 'metadata', show_count: true, enabled: true, order: 0}, _application: array{name: '_application', type: 'terms', title: 'Application', description: 'Application that created the object', data_type: 'string', index_field: 'self_application', index_type: 'string', queryParameter: '@self[application]', source: 'metadata', show_count: true, enabled: true, order: 0}, _created: array{name: '_created', type: 'date_histogram', title: 'Created Date', description: 'When the object was created', data_type: 'datetime', index_field: 'self_created', index_type: 'pdate', default_interval: 'month', supported_intervals: list{'day', 'week', 'month', 'year'}, queryParameter: '@self[created]', source: 'metadata', show_count: true, enabled: true, order: 0}, _updated: array{name: '_updated', type: 'date_histogram', title: 'Updated Date', description: 'When the object was last modified', data_type: 'datetime', index_field: 'self_updated', index_type: 'pdate', default_interval: 'month', supported_intervals: list{'day', 'week', 'month', 'year'}, queryParameter: '@self[updated]', source: 'metadata', show_count: true, enabled: true, order: 0}}}
      */
     private function getMetadataFacetableFields(): array
     {
@@ -10007,10 +10153,11 @@ class GuzzleSolrService
     /**
      * Get object field information from schema properties
      *
-     * @param  string $fieldName The object field name
-     * @return array|null Field information or null if not found
+     * @param string $fieldName The object field name
+     *
+     * @return null Field information or null if not found
      */
-    private function getObjectFieldInfoFromSchema(string $fieldName): ?array
+    private function getObjectFieldInfoFromSchema(string $fieldName)
     {
         try {
             // Try to get current schema from context if available.
@@ -10334,8 +10481,11 @@ class GuzzleSolrService
      * - Replica count
      * - Health status
      *
-     * @return array Array of collection information
+     * @return (false|int|mixed|string)[][] Array of collection information
+     *
      * @throws \Exception If unable to fetch collection list
+     *
+     * @psalm-return list{0?: array{name: mixed, configName: 'unknown'|mixed, documentCount: 0|mixed, shards: int<0, max>, replicas: int<0, max>, router: 'compositeId'|mixed, autoAddReplicas: false|mixed, replicationFactor: 1|mixed, maxShardsPerNode: 1|mixed, health: string, status: string},...}
      */
     public function listCollections(): array
     {
@@ -10443,8 +10593,11 @@ class GuzzleSolrService
      *
      * Returns an array of ConfigSets (configuration templates) available in SOLR
      *
-     * @return array Array of ConfigSet names and metadata
+     * @return (array|int|mixed)[][] Array of ConfigSet names and metadata
+     *
      * @throws \Exception If unable to fetch ConfigSet list
+     *
+     * @psalm-return list{0?: array{name: mixed, usedBy: list<mixed>, usedByCount: int<0, max>},...}
      */
     public function listConfigSets(): array
     {
@@ -10514,10 +10667,14 @@ class GuzzleSolrService
     /**
      * Create a new ConfigSet by copying an existing one (typically _default)
      *
-     * @param  string $name          Name for the new ConfigSet
-     * @param  string $baseConfigSet Base ConfigSet to copy from (default: _default)
-     * @return array Result of the creation operation
+     * @param string $name          Name for the new ConfigSet
+     * @param string $baseConfigSet Base ConfigSet to copy from (default: _default)
+     *
+     * @return (string|true)[] Result of the creation operation
+     *
      * @throws \Exception If creation fails
+     *
+     * @psalm-return array{success: true, message: 'ConfigSet created successfully', configSet: string, baseConfigSet: string}
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): array
     {
@@ -10588,9 +10745,13 @@ class GuzzleSolrService
     /**
      * Delete a SOLR ConfigSet
      *
-     * @param  string $name Name of the ConfigSet to delete
-     * @return array Result of the deletion operation
+     * @param string $name Name of the ConfigSet to delete
+     *
+     * @return (string|true)[] Result of the deletion operation
+     *
      * @throws \Exception If deletion fails or ConfigSet is protected
+     *
+     * @psalm-return array{success: true, message: 'ConfigSet deleted successfully', configSet: string}
      */
     public function deleteConfigSet(string $name): array
     {
@@ -10655,11 +10816,15 @@ class GuzzleSolrService
     /**
      * Copy a SOLR collection to create a new one
      *
-     * @param  string $sourceCollection Source collection name
-     * @param  string $targetCollection Target collection name
-     * @param  bool   $copyData         Whether to copy data (default: false, only schema/config)
-     * @return array Result of the copy operation
+     * @param string $sourceCollection Source collection name
+     * @param string $targetCollection Target collection name
+     * @param bool   $copyData         Whether to copy data (default: false, only schema/config)
+     *
+     * @return (bool|mixed|string)[] Result of the copy operation
+     *
      * @throws \Exception If copy operation fails
+     *
+     * @psalm-return array{success: true, message: 'Collection copied successfully', source: string, target: string, configSet: mixed, shards: mixed, replicas: mixed, dataCopied: false}
      */
     public function copyCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): array
     {
@@ -10750,7 +10915,9 @@ class GuzzleSolrService
      * @param array       $fileIds          File IDs to index
      * @param string|null $collectionName   Collection name (optional)
      *
-     * @return array{indexed: int, failed: int, errors: array}
+     * @return (array|int)[]
+     *
+     * @psalm-return array{indexed: 0, failed: 0, errors: array<never, never>}
      */
     public function indexFiles(array $fileIds, ?string $collectionName=null): array
     {
@@ -11004,9 +11171,9 @@ class GuzzleSolrService
      *
      * @param mixed $data Data to encode.
      *
-     * @return string|null JSON encoded string or null.
+     * @return false|null|string JSON encoded string or null.
      */
-    private function encodeJsonField($data): ?string
+    private function encodeJsonField($data): string|false|null
     {
         if ($data !== null && empty($data) === false) {
             return json_encode($data);
@@ -11104,6 +11271,8 @@ class GuzzleSolrService
      * @param array<string, mixed> $document Document array.
      *
      * @return int Count of self_relations.
+     *
+     * @psalm-return int<0, max>
      */
     private function getSelfRelationsCount(array $document): int
     {
@@ -11306,6 +11475,8 @@ class GuzzleSolrService
      * @param array<int, string> $allActive Array of active replica states.
      *
      * @return string Health status ('healthy', 'degraded', 'unhealthy').
+     *
+     * @psalm-return 'healthy'|'unhealthy'
      */
     private function getCollectionHealth(array $allActive): string
     {
@@ -11325,6 +11496,8 @@ class GuzzleSolrService
      * @param array<int, string> $allActive Array of active replica states.
      *
      * @return string Status ('active', 'inactive', 'unknown').
+     *
+     * @psalm-return 'active'|'inactive'
      */
     private function getCollectionStatus(array $allActive): string
     {

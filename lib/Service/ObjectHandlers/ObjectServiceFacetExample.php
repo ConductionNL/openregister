@@ -343,21 +343,9 @@ class ObjectServiceFacetExample
      *
      * Compares performance between new and legacy faceting approaches.
      *
-     * @return ((array|float|int)[]|mixed)[] Performance comparison results
+     * @return ((array|float|int)[]|float)[]
      *
-     * @psalm-return array{
-     *     new_approach: array{
-     *         execution_time: float,
-     *         facet_count: int<0, max>,
-     *         results: array
-     *     },
-     *     legacy_approach: array{
-     *         execution_time: float,
-     *         facet_count: int<0, max>,
-     *         results: array
-     *     },
-     *     performance_improvement: mixed
-     * }
+     * @psalm-return array{new_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, legacy_approach: array{execution_time: float, facet_count: int<0, max>, results: array}, performance_improvement: float}
      */
     public function performanceComparison(): array
     {
@@ -419,25 +407,9 @@ class ObjectServiceFacetExample
      *
      * Shows how to structure data for frontend consumption.
      *
-     * @return array[] Frontend-ready search results with facets
+     * @return ((array|bool|mixed|null|string)[]|mixed)[][]
      *
-     * @psalm-return array{
-     *     search: array{
-     *         results: mixed,
-     *         pagination: array{
-     *             current_page: mixed,
-     *             total_pages: mixed,
-     *             total_items: mixed,
-     *             items_per_page: mixed,
-     *             has_next: bool,
-     *             has_prev: bool,
-     *             next_url: mixed|null,
-     *             prev_url: mixed|null
-     *         }
-     *     },
-     *     facets: array,
-     *     applied_filters: array
-     * }
+     * @psalm-return array{search: array{results: mixed, pagination: array{current_page: mixed, total_pages: mixed, total_items: mixed, items_per_page: mixed, has_next: bool, has_prev: bool, next_url: mixed|null, prev_url: mixed|null}}, facets: array<string, array{field: mixed|string, type: mixed, label: string, options: array}>, applied_filters: array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>}
      */
     public function frontendIntegrationExample(): array
     {
@@ -493,9 +465,9 @@ class ObjectServiceFacetExample
      *
      * @psalm-param array<string, mixed> $facets
      *
-     * @return (array|mixed|string)[][] Frontend-friendly facet structure
+     * @return ((mixed|null)[][]|mixed|string)[][]
      *
-     * @psalm-return array<string, array{field: mixed|string, type: mixed, label: string, options: array}>
+     * @psalm-return array<string, array{field: mixed|string, type: mixed, label: string, options: array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>}>
      */
     private function transformFacetsForFrontend(array $facets): array
     {
@@ -606,7 +578,7 @@ class ObjectServiceFacetExample
     /**
      * Check if audit trails are enabled
      *
-     * @return bool True if audit trails are enabled, false otherwise
+     * @return false True if audit trails are enabled, false otherwise
      */
     private function isAuditTrailsEnabled(): bool
     {

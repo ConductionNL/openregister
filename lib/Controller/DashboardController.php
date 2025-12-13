@@ -106,6 +106,8 @@ class DashboardController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
      */
     public function page(): TemplateResponse
     {
@@ -145,13 +147,11 @@ class DashboardController extends Controller
      * Supports optional filtering by registerId and schemaId query parameters.
      * Removes pagination and routing parameters before processing.
      *
-     * @return JSONResponse JSON response containing dashboard data with registers array or error message
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{registers: array<int, mixed>}|array{error: string}>
+     * @psalm-return JSONResponse<200|500, array{error?: string, registers?: list{0: array{id: 'orphaned'|'totals'|mixed, title: 'Orphaned Items'|'System Totals'|mixed, description: 'Items that reference non-existent registers, schemas, or invalid register-schema combinations'|'Total statistics across all registers and schemas'|mixed, stats: array, schemas: list<mixed>,...}, 1?: array{stats: array, schemas: list<mixed>, id: 'orphaned'|'totals'|mixed, title: 'Orphaned Items'|'System Totals'|mixed, description: 'Items that reference non-existent registers, schemas, or invalid register-schema combinations'|'Total statistics across all registers and schemas'|mixed,...},...}}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -190,12 +190,11 @@ class DashboardController extends Controller
      * @param int|null $registerId Optional register ID to filter calculations by
      * @param int|null $schemaId   Optional schema ID to filter calculations by
      *
-     * @return JSONResponse JSON response containing calculation results or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array<string, mixed>|array{status: 'error', message: string, timestamp: string}>
+     * @psalm-return JSONResponse<200|500, array{status: 'error'|'success', message?: string, timestamp: string, scope?: array{register: mixed, schema: mixed}, results?: array, summary?: array{total_processed: mixed, total_failed: mixed, success_rate: mixed}}, array<never, never>>
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -232,7 +231,10 @@ class DashboardController extends Controller
      * @return JSONResponse The chart data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getAuditTrailActionChart(?string $from=null, ?string $till=null, ?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -267,7 +269,10 @@ class DashboardController extends Controller
      * @return JSONResponse The chart data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -290,7 +295,10 @@ class DashboardController extends Controller
      * @return JSONResponse The chart data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -313,7 +321,10 @@ class DashboardController extends Controller
      * @return JSONResponse The chart data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
@@ -337,7 +348,10 @@ class DashboardController extends Controller
      * @return JSONResponse The statistics data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
@@ -361,7 +375,10 @@ class DashboardController extends Controller
      * @return JSONResponse The action distribution data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
@@ -386,7 +403,10 @@ class DashboardController extends Controller
      * @return JSONResponse The most active objects data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): JSONResponse
     {

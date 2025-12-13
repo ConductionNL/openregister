@@ -144,7 +144,9 @@ class Feedback extends Entity implements JsonSerializable
     /**
      * JSON serialization.
      *
-     * @return array<string,mixed>
+     * @return (int|null|string)[]
+     *
+     * @psalm-return array{id: int, uuid: string, messageId: int, conversationId: int, agentId: int, userId: string, organisation: null|string, type: string, comment: null|string, created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {

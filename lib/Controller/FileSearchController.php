@@ -35,11 +35,9 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Controller
  * @author   OpenRegister Team
  * @license  AGPL-3.0-or-later
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
-
 class FileSearchController extends Controller
 {
 
@@ -149,7 +147,7 @@ class FileSearchController extends Controller
             $groupedResults = [];
             foreach ($results as $doc) {
                 $fileId = $doc['file_id'];
-                if (!isset($groupedResults[$fileId])) {
+                if (isset($groupedResults[$fileId]) === false) {
                     $groupedResults[$fileId] = [
                         'file_id'   => $fileId,
                         'file_name' => $doc['file_name'] ?? '',
@@ -203,20 +201,7 @@ class FileSearchController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Search results
-     *
-     * @psalm-return JSONResponse<
-     *     200|400|500,
-     *     array{
-     *         success: bool,
-     *         message?: string,
-     *         query?: string,
-     *         total?: int<0, max>,
-     *         results?: array<int, array<string, mixed>>,
-     *         search_type?: 'semantic'
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array<int, array<string, mixed>>, search_type?: 'semantic'}, array<never, never>>
      */
     public function semanticSearch(): JSONResponse
     {
@@ -277,21 +262,7 @@ class FileSearchController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Search results
-     *
-     * @psalm-return JSONResponse<
-     *     200|400|500,
-     *     array{
-     *         success: bool,
-     *         message?: string,
-     *         query?: string,
-     *         total?: int<0, max>,
-     *         results?: array,
-     *         search_type?: 'hybrid',
-     *         weights?: array{keyword: float, semantic: float}
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: 5, results?: array{results: array, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}, search_type?: 'hybrid', weights?: array{keyword: float, semantic: float}}, array<never, never>>
      */
     public function hybridSearch(): JSONResponse
     {

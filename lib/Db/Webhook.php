@@ -417,7 +417,9 @@ class Webhook extends Entity implements JsonSerializable
     /**
      * JSON serialize the entity
      *
-     * @return array
+     * @return (array|bool|int|null|string)[]
+     *
+     * @psalm-return array{id: int, uuid: string, name: string, url: string, method: string, events: array, headers: array, secret: '***'|null, enabled: bool, organisation: null|string, filters: array, retryPolicy: string, maxRetries: int, timeout: int, lastTriggeredAt: null|string, lastSuccessAt: null|string, lastFailureAt: null|string, totalDeliveries: int, successfulDeliveries: int, failedDeliveries: int, created: null|string, updated: null|string, configuration: array}
      */
     public function jsonSerialize(): array
     {
@@ -459,10 +461,8 @@ class Webhook extends Entity implements JsonSerializable
      * Hydrate entity from array
      *
      * @param array $object Object data
-     *
-     * @return self
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         if (($object['id'] ?? null) !== null) {
             $this->setId($object['id']);

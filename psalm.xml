@@ -7,6 +7,7 @@
     findUnusedBaselineEntry="true"
     findUnusedCode="true"
     findUnusedVariablesAndParams="true"
+    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="lib" />

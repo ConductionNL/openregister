@@ -177,7 +177,7 @@ class Source extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (!isset($object['metadata'])) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
@@ -232,21 +232,9 @@ class Source extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return (array|int|null|string)[] Array of serializable entity data
+     * @return ((int|null|string)[]|int|null|string)[]
      *
-     * @psalm-return array{
-     *     id: int,
-     *     uuid: null|string,
-     *     title: null|string,
-     *     version: null|string,
-     *     description: null|string,
-     *     databaseUrl: null|string,
-     *     type: null|string,
-     *     organisation: null|string,
-     *     updated: null|string,
-     *     created: null|string,
-     *     managedByConfiguration: array<string, mixed>|null
-     * }
+     * @psalm-return array{id: int, uuid: null|string, title: null|string, version: null|string, description: null|string, databaseUrl: null|string, type: null|string, organisation: null|string, updated: null|string, created: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}
      */
     public function jsonSerialize(): array
     {

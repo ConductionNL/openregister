@@ -1,6 +1,8 @@
 <?php
+
 declare(strict_types=1);
-/*
+
+/**
  * Migration to add individual indexes for search optimization
  *
  * This migration adds individual indexes on name, description, and summary columns

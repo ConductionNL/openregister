@@ -336,7 +336,11 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
-                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
+                    if ($folderIdValue !== null) {
+                        $entity->setFolder((string) $folderIdValue);
+                    } else {
+                        $entity->setFolder(null);
+                    }
 
                     // Save the entity with the new folder ID.
                     $this->objectEntityMapper->update($entity);
@@ -355,10 +359,8 @@ class ObjectService
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID
-     *
-     * @return self
      */
-    public function setRegister(Register | string | int $register): self
+    public function setRegister(Register | string | int $register): static
     {
         if (is_string($register) === true || is_int($register) === true) {
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
@@ -385,10 +387,8 @@ class ObjectService
      * Set the current schema context.
      *
      * @param Schema|string|int $schema The schema object or its ID/UUID
-     *
-     * @return self
      */
-    public function setSchema(Schema | string | int $schema): self
+    public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
@@ -415,10 +415,8 @@ class ObjectService
      * Set the current object context.
      *
      * @param ObjectEntity|string|int $object The object entity or its ID/UUID
-     *
-     * @return self
      */
-    public function setObject(ObjectEntity | string | int $object): self
+    public function setObject(ObjectEntity | string | int $object): static
     {
         if (is_string($object) === true || is_int($object) === true) {
             // Look up the object by ID or UUID.
@@ -781,7 +779,9 @@ class ObjectService
      * @param bool   $rbac    Whether to apply RBAC checks (default: true).
      * @param bool   $multi   Whether to apply multitenancy filtering (default: true).
      *
-     * @return array Array of log entries
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
     public function getLogs(string $uuid, array $filters=[], bool $rbac=true, bool $multi=true): array
     {
@@ -1050,12 +1050,13 @@ class ObjectService
      *
      * @param array $filters The set of filters to find the inversed relationships through.
      *
-     * @return array|null The list of ids that have an inversed relationship to an object that meets the filters.
-     *                    Returns NULL if no filters are found that are applicable.
+     * @return ((mixed|null|string)[]|mixed|string)[]|null
      *
      * @throws \OCP\DB\Exception
+     *
+     * @psalm-return array<array{name: mixed|null|string,...}|mixed|string>|null
      */
-    private function applyInversedByFilter(array &$filters): ?array
+    private function applyInversedByFilter(array &$filters): array|null|null
     {
         if ($filters['schema'] === false) {
             return [];
@@ -1270,7 +1271,7 @@ class ObjectService
 
         // Add register and schema to @self if provided.
         // Support both single values and arrays for multi-register/schema filtering.
-        if ($register !== null) { // phpcs:ignore
+        if ($register !== null) {
             /** @var int|string|array $registerValue */
             $registerValue = $register;
             if (is_array($registerValue) === true) {
@@ -1281,7 +1282,7 @@ class ObjectService
             }
         }
 
-        if ($schema !== null) { // phpcs:ignore
+        if ($schema !== null) {
             /** @var int|string|array $schemaValue */
             $schemaValue = $schema;
             if (is_array($schemaValue) === true) {
@@ -1405,9 +1406,11 @@ class ObjectService
 
                 // Apply search terms
                 if (empty($viewQuery['searchTerms']) === false) {
-                    $searchTerms = is_array($viewQuery['searchTerms'])
-                        ? implode(' ', $viewQuery['searchTerms'])
-                        : $viewQuery['searchTerms'];
+                    if (is_array($viewQuery['searchTerms'])) {
+                        $searchTerms = implode(' ', $viewQuery['searchTerms']);
+                    } else {
+                        $searchTerms = $viewQuery['searchTerms'];
+                    }
 
                     $existingSearch = $query['_search'] ?? '';
                     $query['_search'] = trim($existingSearch . ' ' . $searchTerms);
@@ -2388,12 +2391,15 @@ class ObjectService
     /**
      * Get performance recommendations based on timing metrics
      *
-     //end if
+     * //end if
+     *
      * @param float $totalTime    Total execution time in milliseconds
      * @param array $perfTimings  Performance timing breakdown
      * @param array $query        Query parameters
      *
-     * @return array Performance recommendations
+     * @return (string|string[])[][] Performance recommendations
+     *
+     * @psalm-return list{0?: array{type: string, issue: string, message: string, suggestions: list{0: string, 1: string, 2?: string, 3?: 'Implement pagination with smaller page sizes'|'Implement relationship pagination if applicable'}}, 1?: array{type: 'critical'|'info'|'warning', issue: string, message: string, suggestions: list{0: string, 1: string, 2: string, 3?: 'Implement relationship pagination if applicable'}}, 2?: array{type: 'critical'|'info'|'warning', issue: 'High _extend usage'|'JSON processing overhead'|'Very slow relationship loading', message: string, suggestions: list{0: 'Consider JSON field truncation for large objects'|'Consider reducing the number of _extend parameters'|'Reduce number of _extend relationships', 1: 'Implement selective JSON field loading'|'Use selective loading for only required relationships'|'Use selective relationship loading', 2: 'Consider relationship caching'|'Implement client-side lazy loading for secondary data'|'Use lightweight object serialization', 3?: 'Implement relationship pagination if applicable'}}, 3?: array{type: 'info'|'warning', issue: 'High _extend usage'|'JSON processing overhead', message: string, suggestions: list{'Consider JSON field truncation for large objects'|'Consider reducing the number of _extend parameters', 'Implement selective JSON field loading'|'Use selective loading for only required relationships', 'Implement client-side lazy loading for secondary data'|'Use lightweight object serialization'}}, 4?: array{type: 'info', issue: 'JSON processing overhead', message: string, suggestions: list{'Consider JSON field truncation for large objects', 'Implement selective JSON field loading', 'Use lightweight object serialization'}}}
      */
     private function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {
@@ -2607,7 +2613,9 @@ class ObjectService
      *
      * @param array|string $extend Original extend data (array or comma-separated string)
      *
-     * @return array Optimized extend array
+     * @return (mixed|string)[] Optimized extend array
+     *
+     * @psalm-return list<mixed|non-falsy-string>
      */
     private function optimizeExtendQueries($extend): array
     {
@@ -2792,14 +2800,14 @@ class ObjectService
      * @param bool                 $published Whether to filter by published status (default: false)
      * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
-     * @phpstan-param  array<string, mixed> $query
+     * @phpstan-param array<string, mixed> $query
+     *
      * @phpstan-return PromiseInterface<array<string, mixed>>
-     * @psalm-param    array<string, mixed> $query
-     * @psalm-return   PromiseInterface<array<string, mixed>>
      *
+     * @psalm-param array<string, mixed> $query
+     *
+     * @psalm-return PromiseInterface<array{results: mixed, total: mixed, page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>, offset: 0|mixed, facets: mixed, facetable?: mixed, next?: null|string, prev?: null|string}>
      * @throws \OCP\DB\Exception If a database error occurs
-     *
-     * @return PromiseInterface<array<string, mixed>> Promise that resolves to the same structure as searchObjectsPaginated
      */
     public function searchObjectsPaginatedAsync(
         array $query=[],
@@ -3365,9 +3373,9 @@ class ObjectService
      *
      * @param string $value The value to convert to a slug
      *
-     * @return string|null The generated slug or null if generation failed
+     * @return null|string The generated slug or null if generation failed
      */
-    private function generateSlugFromValue(string $value): ?string
+    private function generateSlugFromValue(string $value): string|null
     {
         try {
             if (empty($value) === true) {
@@ -3421,19 +3429,27 @@ class ObjectService
      * @param bool  $rbac    Whether to apply RBAC filtering
      * @param bool  $multi   Whether to apply multi-organization filtering
      *
-     * @return array Filtered array of objects
+     * @return array[]
      *
-     * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     *
+     * @psalm-param array<int, array<string, mixed>> $objects
+     *
      * @phpstan-return array<int, array<string, mixed>>
-     * @psalm-return   array<int, array<string, mixed>>
+     *
+     * @psalm-return list<array<string, mixed>>
      */
     private function filterObjectsForPermissions(array $objects, bool $rbac, bool $multi): array
     {
         //end try
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
-        $userId          = $currentUser ? $currentUser->getUID() : null;
+        if ($currentUser) {
+            $userId = $currentUser->getUID();
+        } else {
+            $userId = null;
+        }
+
         $activeOrganisation = $this->getActiveOrganisationForContext();
 
         foreach ($objects as $object) {
@@ -3561,16 +3577,19 @@ class ObjectService
      *                               Relation action ('transfer' or
      *                               'drop')
      *
-     * @return array The merge report containing results and statistics
+     * @return (array|mixed|true)[]
      *
      * @throws DoesNotExistException If either object doesn't exist
      * @throws \InvalidArgumentException If objects are not in the same register/schema or required data is missing
      * @throws \Exception If there's an error during the merge process
      *
-     * @phpstan-param  array<string, mixed> $mergeData
+     * @phpstan-param array<string, mixed> $mergeData
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-param    array<string, mixed> $mergeData
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-param array<string, mixed> $mergeData
+     *
+     * @psalm-return array{success: true, sourceObject: array, targetObject: array, mergedObject: mixed, actions: array{properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...}, files: array<never, never>|mixed, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list{0?: array{objectId: mixed, title: mixed},...}}, statistics: array{propertiesChanged: 0|1|2, filesTransferred: 0|mixed, filesDeleted: 0|mixed, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings: array, errors: array<never, never>}
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
     {
@@ -3776,10 +3795,11 @@ class ObjectService
      * @param ObjectEntity $sourceObject The source object
      * @param ObjectEntity $targetObject The target object
      *
-     * @return array Result of file transfer operation
+     * @return (((bool|string)[]|string)[]|int)[]
      *
      * @phpstan-return array<string, mixed>
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-return array{files: list{0?: array{name: string, action: 'transfer_failed'|'transferred', success: bool, error?: string},...}, transferred: 0|1|2, errors: list{0?: string,...}}
      */
     private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
     {
@@ -3849,10 +3869,11 @@ class ObjectService
      *
      * @param ObjectEntity $sourceObject The source object
      *
-     * @return array Result of file deletion operation
+     * @return (((bool|string)[]|string)[]|int)[]
      *
      * @phpstan-return array<string, mixed>
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-return array{files: list{0?: array{name: string, action: 'delete_failed'|'deleted', success: bool, error?: string},...}, deleted: 0|1|2, errors: list{0?: string,...}}
      */
     private function deleteObjectFiles(ObjectEntity $sourceObject): array
     {
@@ -3916,9 +3937,11 @@ class ObjectService
      * @param Schema      $schema The schema containing property definitions
      * @param string|null $uuid   The UUID of the parent object (will be generated if null)
      *
-     * @return array Array containing [processedObject, parentUuid]
+     * @return ((array|mixed|string)[]|null|string)[] Array containing [processedObject, parentUuid]
      *
      * @throws Exception If there's an error during object creation
+     *
+     * @psalm-return list{array<array|mixed|string>, null|string}
      */
     private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
     {
@@ -4098,7 +4121,9 @@ class ObjectService
      * @param bool  $includeRelated    Whether to include aggregated related IDs
      * @param bool  $includeRelatedNames Whether to include related ID => name mappings
      *
-     * @return array Related data to merge with paginated results
+     * @return string[][] Related data to merge with paginated results
+     *
+     * @psalm-return array{related?: list<string>, relatedNames?: array<string, string>}
      */
     private function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -4193,11 +4218,11 @@ class ObjectService
      * @param array      $objectIds      Array of object IDs to migrate
      * @param array      $mapping        Simple mapping where keys are target properties, values are source properties
      *
-     * @return array Migration result with statistics and details
+     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
      *
      * @phpstan-return array<string, mixed>
-     * @psalm-return   array<string, mixed>
      *
+     * @psalm-return array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
      * @throws DoesNotExistException If register or schema not found
      * @throws \InvalidArgumentException If invalid parameters provided
      */
@@ -4711,12 +4736,13 @@ class ObjectService
      * @param int  $schemaId   The ID of the schema whose objects should be published
      * @param bool $publishAll Whether to publish all objects (default: false)
      *
-     * @return array Array containing statistics about the publishing operation
+     * @return (int|string[])[]
      *
      * @throws \Exception If the publishing operation fails
      *
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
-     * @psalm-return   array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     *
+     * @psalm-return array{published_count: int<min, max>, published_uuids: array<int, string>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
@@ -4769,12 +4795,13 @@ class ObjectService
      * @param int  $schemaId   The ID of the schema whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
      *
-     * @return array Array containing statistics about the deletion operation
+     * @return (int|string[])[]
      *
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
-     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     *
+     * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
@@ -4826,12 +4853,13 @@ class ObjectService
      *
      * @param int $registerId The ID of the register whose objects should be deleted
      *
-     * @return array Array containing statistics about the deletion operation
+     * @return (int|string[])[]
      *
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
-     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     *
+     * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -4880,14 +4908,14 @@ class ObjectService
      *
      * @param int $schemaId The ID of the schema whose objects should be validated
      *
-     * @return array Array containing validation results
+     * @return ((array|int|null|string)[][]|int)[]
      *
      * @throws \Exception If the validation operation fails
      *
      * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
      *                      invalid_objects: array<int, array>, schema_id: int}
-     * @psalm-return   array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
-     *                      invalid_objects: array<int, array>, schema_id: int}
+     *
+     * @psalm-return array{valid_count: int<0, max>, invalid_count: int<0, max>, valid_objects: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects: list{0?: array{id: int, uuid: null|string, name: null|string, data: array, errors: list{array{path: 'general'|'unknown'|mixed, message: mixed|string, keyword: 'exception'|'validation'|mixed},...}},...}, schema_id: int}
      */
     public function validateObjectsBySchema(int $schemaId): array
     {
@@ -5082,12 +5110,13 @@ class ObjectService
      *
      * @param int $totalObjects Total number of objects to process
      *
-     * @return int Optimal batch size for parallel processing
+     * @phpstan-param int $totalObjects
      *
-     * @phpstan-param  int $totalObjects
      * @phpstan-return int
-     * @psalm-param    int $totalObjects
-     * @psalm-return   int
+     *
+     * @psalm-param int $totalObjects
+     *
+     * @psalm-return int
      */
     private function calculateOptimalBatchSize(int $totalObjects): int
     {
@@ -5132,14 +5161,17 @@ class ObjectService
      * @param array $objects Array of ObjectEntity objects to scan
      * @param array $extend  Array of properties to extend
      *
-     * @return array Array of unique relationship IDs found across all objects (limited)
+     * @return string[]
      *
-     * @phpstan-param  array<ObjectEntity> $objects
-     * @phpstan-param  array<string> $extend
+     * @phpstan-param array<ObjectEntity> $objects
+     * @phpstan-param array<string> $extend
+     *
      * @phpstan-return array<string>
-     * @psalm-param    array<ObjectEntity> $objects
-     * @psalm-param    array<string> $extend
-     * @psalm-return   array<string>
+     *
+     * @psalm-param array<ObjectEntity> $objects
+     * @psalm-param array<string> $extend
+     *
+     * @psalm-return array<int<0, max>, string>
      */
     private function extractAllRelationshipIds(array $objects, array $extend): array
     {
@@ -5447,12 +5479,15 @@ class ObjectService
      *
      * @param array $relationshipIds Array of relationship IDs to load in this chunk
      *
-     * @return array Array of ObjectEntity objects with optimized field loading
+     * @return ObjectEntity[]
      *
-     * @phpstan-param  array<string> $relationshipIds
+     * @phpstan-param array<string> $relationshipIds
+     *
      * @phpstan-return array<ObjectEntity>
-     * @psalm-param    array<string> $relationshipIds
-     * @psalm-return   array<ObjectEntity>
+     *
+     * @psalm-param array<string> $relationshipIds
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     private function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
@@ -5689,10 +5724,11 @@ class ObjectService
     /**
      * Get metadata facetable fields (standard @self fields)
      *
-     * @return array Standard metadata fields that can be faceted
+     * @return (string|string[])[][]
      *
      * @phpstan-return array<string, mixed>
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-return array{register: array{type: 'terms', title: 'Register', description: 'Register that contains the object', data_type: 'integer', queryParameter: '@self[register]', source: 'metadata'}, schema: array{type: 'terms', title: 'Schema', description: 'Schema that defines the object structure', data_type: 'integer', queryParameter: '@self[schema]', source: 'metadata'}, created: array{type: 'date_histogram', title: 'Created Date', description: 'When the object was created', data_type: 'datetime', default_interval: 'month', supported_intervals: list{'day', 'week', 'month', 'year'}, queryParameter: '@self[created]'}, updated: array{type: 'date_histogram', title: 'Updated Date', description: 'When the object was last modified', data_type: 'datetime', default_interval: 'month', supported_intervals: list{'day', 'week', 'month', 'year'}, queryParameter: '@self[updated]'}, owner: array{type: 'terms', title: 'Owner', description: 'User who owns the object', data_type: 'string', queryParameter: '@self[owner]'}, organisation: array{type: 'terms', title: 'Organisation', description: 'Organisation that owns the object', data_type: 'string', queryParameter: '@self[organisation]'}}
      */
     private function getMetadataFacetableFields(): array
     {
@@ -5792,6 +5828,8 @@ class ObjectService
      * @param array $query     Query array.
      *
      * @return int Facet count.
+     *
+     * @psalm-return int<0, max>
      */
     private function getFacetCount(bool $hasFacets, array $query): int
     {
@@ -5820,11 +5858,14 @@ class ObjectService
     /**
      * Calculate extend count.
      *
-     //end try
+     * //end try
+     *
      * @param mixed $extend Extend parameter.
      //end if
      *
      * @return int Extend count.
+     *
+     * @psalm-return int<0, max>
      */
     private function calculateExtendCount($extend): int
     {
@@ -5855,6 +5896,8 @@ class ObjectService
      * @param string $url URL to check.
      *
      * @return string Separator ('?' or '&').
+     *
+     * @psalm-return '&'|'?'
      */
     private function getUrlSeparator(string $url): string
     {

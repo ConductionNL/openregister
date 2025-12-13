@@ -337,14 +337,15 @@ class ObjectEntityMapper extends QBMapper
      * the standard RBAC system. It's called before normal RBAC filtering to apply
      * higher-priority exception rules.
      *
-     //end try
+     * //end try
+     *
      * @param IQueryBuilder $qb               The query builder to modify
      * @param string        $userId           The user ID to check exceptions for
      * @param string        $objectTableAlias Optional alias for the objects table (default: 'o')
      * @param string        $schemaTableAlias Optional alias for the schemas table (default: 's')
      * @param string        $action           The action being performed (default: 'read')
      *
-     * @return bool|null True if user should have access via exceptions, false if denied, null if no exceptions apply
+     * @return null True if user should have access via exceptions, false if denied, null if no exceptions apply
      */
     private function applyAuthorizationExceptions(
         IQueryBuilder $qb,
@@ -352,7 +353,7 @@ class ObjectEntityMapper extends QBMapper
         string $objectTableAlias='o',
         string $schemaTableAlias='s',
         string $action='read'
-    ): ?bool {
+    ) {
         // If authorization exception service is not available, skip exception handling.
         if ($this->authorizationExceptionService === null) {
             return null;
@@ -746,23 +747,26 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param Register|null $register
      * @phpstan-param Schema|null $schema
      * @phpstan-param bool|null $published
-     * @psalm-param   int|null $limit
-     * @psalm-param   int|null $offset
-     * @psalm-param   array|null $filters
-     * @psalm-param   array|null $searchConditions
-     * @psalm-param   array|null $searchParams
-     * @psalm-param   array $sort
-     * @psalm-param   string|null $search
-     * @psalm-param   array|null $ids
-     * @psalm-param   string|null $uses
-     * @psalm-param   bool $includeDeleted
-     * @psalm-param   Register|null $register
-     * @psalm-param   Schema|null $schema
-     * @psalm-param   bool|null $published
+     *
+     * @psalm-param int|null $limit
+     * @psalm-param int|null $offset
+     * @psalm-param array|null $filters
+     * @psalm-param array|null $searchConditions
+     * @psalm-param array|null $searchParams
+     * @psalm-param array $sort
+     * @psalm-param string|null $search
+     * @psalm-param array|null $ids
+     * @psalm-param string|null $uses
+     * @psalm-param bool $includeDeleted
+     * @psalm-param Register|null $register
+     * @psalm-param Schema|null $schema
+     * @psalm-param bool|null $published
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array<int, ObjectEntity> An array of ObjectEntity objects.
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findAll(
         ?int $limit=null,
@@ -926,9 +930,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param mixed $search The search parameter (string or array)
      *
-     * @return string|null The processed search string ready for the search handler
+     * @return null|string The processed search string ready for the search handler
      */
-    private function processSearchParameter(mixed $search): ?string
+    private function processSearchParameter(mixed $search): string|null
     {
         if ($search === null) {
             return null;
@@ -1001,7 +1005,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * Metadata filters target database table columns and are specified under the `@self` key:
      *
-     * **Supported metadata fields:**
+     * Supported metadata fields:**
      * - `register` - Filter by register ID(s), objects, or mixed arrays
      * - `schema` - Filter by schema ID(s), objects, or mixed arrays
      * - `uuid` - Filter by UUID(s)
@@ -1011,20 +1015,20 @@ class ObjectEntityMapper extends QBMapper
      * - `created` - Filter by creation date(s)
      * - `updated` - Filter by update date(s)
      *
-     * **Value types supported:**
+     * Value types supported:**
      * - Single values: `'register' => 1` or `'register' => $registerObject`
      * - Arrays: `'register' => [1, 2, 3]` or `'register' => [$reg1, $reg2]`
      * - Mixed arrays: `'register' => [1, '2', $registerObject]`
      * - Objects: Automatically converted using `getId()` method
      * - Null checks: `'owner' => 'IS NULL'` or `'owner' => 'IS NOT NULL'`
      *
-     * **Examples:**
+     * Examples:**
      * ```php
      * '@self' => [
-     *     'register' => 1,                    // Single register ID
-     *     'schema' => [2, 3],                 // Multiple schema IDs
-     *     'owner' => 'IS NOT NULL',           // Has an owner
-     *     'organisation' => ['org1', 'org2']  // Multiple organisations
+     * 'register' => 1,                    // Single register ID
+     * 'schema' => [2, 3],                 // Multiple schema IDs
+     * 'owner' => 'IS NOT NULL',           // Has an owner
+     * 'organisation' => ['org1', 'org2']  // Multiple organisations
      * ]
      * ```
      *
@@ -1033,13 +1037,13 @@ class ObjectEntityMapper extends QBMapper
      * Object field filters search within the JSON `object` column data.
      * These are specified as direct keys in the query array (not under `@self`).
      *
-     * **Supported patterns:**
+     * Supported patterns:**
      * - Simple fields: `'name' => 'John Doe'`
      * - Nested fields: `'address.city' => 'Amsterdam'` (dot notation)
      * - Array values: `'status' => ['active', 'pending']` (one-of search)
      * - Null checks: `'description' => 'IS NULL'`
      *
-     * **Examples:**
+     * Examples:**
      * ```php
      * 'name' => 'John Doe',               // Exact match
      * 'age' => 25,                        // Numeric value
@@ -1053,7 +1057,7 @@ class ObjectEntityMapper extends QBMapper
      * Search options control pagination, sorting, and special behaviors.
      * All options are prefixed with underscore (`_`) to distinguish them from filters.
      *
-     * **Available options:*
+     * Available options:*
      * ### `_limit` (int|null)
      * Maximum number of results to return
      * ```php
@@ -1073,9 +1077,9 @@ class ObjectEntityMapper extends QBMapper
      * - Direction: 'ASC' or 'DESC' (case-insensitive)
      * ```php
      * '_order' => [
-     *     '@self.created' => 'DESC',   // Sort by creation date
-     *     'name' => 'ASC',             // Then by object name
-     *     'priority' => 'DESC'         // Then by priority
+     * '@self.created' => 'DESC',   // Sort by creation date
+     * 'name' => 'ASC',             // Then by object name
+     * 'priority' => 'DESC'         // Then by priority
      * ]
      * ```
      *
@@ -1101,7 +1105,7 @@ class ObjectEntityMapper extends QBMapper
      * Filter for currently published objects only
      * Checks: published <= now AND (depublished IS NULL OR depublished > now)
      *
-     * **Special behavior:** Setting `_published=false` disables published object bypass for multi-tenancy.
+     * Special behavior:** Setting `_published=false` disables published object bypass for multi-tenancy.
      * This means users will only see objects from their own organization, even if published objects
      * normally bypass organization filtering. Useful for dashboard views where users want to see
      * only their organization's objects.
@@ -1130,51 +1134,51 @@ class ObjectEntityMapper extends QBMapper
      *
      * ## Complete Query Examples
      *
-     * **Basic metadata search:**
+     * Basic metadata search:**
      * ```php
      * $query = [
-     *     '@self' => [
-     *         'register' => 1,
-     *         'owner' => 'user123'
-     *     ]
+     * '@self' => [
+     * 'register' => 1,
+     * 'owner' => 'user123'
+     * ]
      * ];
      * ```
      *
-     * **Complex mixed search:**
+     * Complex mixed search:**
      * ```php
      * $query = [
-     *     '@self' => [
-     *         'register' => [1, 2, 3],        // Multiple registers
-     *         'schema' => $schemaObject,       // Schema object
-     *         'organisation' => 'IS NOT NULL' // Has organisation
-     *     ],
-     *     'name' => 'John',                    // Object field search
-     *     'status' => ['active', 'pending'],   // Multiple statuses
-     *     'address.city' => 'Amsterdam',       // Nested field
-     *     '_search' => 'important customer',   // Full-text search
-     *     '_ids' => [1, 'uuid-123', 5],        // Specific IDs/UUIDs
-     *     '_order' => [
-     *         '@self.created' => 'DESC',       // Newest first
-     *         'priority' => 'ASC'              // Then by priority
-     *     ],
-     *     '_limit' => 25,                      // Pagination
-     *     '_offset' => 50,
-     *     '_published' => true                 // Only published
+     * '@self' => [
+     * 'register' => [1, 2, 3],        // Multiple registers
+     * 'schema' => $schemaObject,       // Schema object
+     * 'organisation' => 'IS NOT NULL' // Has organisation
+     * ],
+     * 'name' => 'John',                    // Object field search
+     * 'status' => ['active', 'pending'],   // Multiple statuses
+     * 'address.city' => 'Amsterdam',       // Nested field
+     * '_search' => 'important customer',   // Full-text search
+     * '_ids' => [1, 'uuid-123', 5],        // Specific IDs/UUIDs
+     * '_order' => [
+     * '@self.created' => 'DESC',       // Newest first
+     * 'priority' => 'ASC'              // Then by priority
+     * ],
+     * '_limit' => 25,                      // Pagination
+     * '_offset' => 50,
+     * '_published' => true                 // Only published
      * ];
      * ```
      *
-     * **Count query (same filters, optimized for counting):**
+     * Count query (same filters, optimized for counting):**
      * ```php
      * $countQuery = [
-     *     '@self' => [
-     *         'register' => [1, 2, 3],        // Same filters as above
-     *         'organisation' => 'IS NOT NULL'
-     *     ],
-     *     'name' => 'John',
-     *     'status' => ['active', 'pending'],
-     *     '_search' => 'important customer',
-     *     '_published' => true,
-     *     '_count' => true                     // Returns integer count instead of objects
+     * '@self' => [
+     * 'register' => [1, 2, 3],        // Same filters as above
+     * 'organisation' => 'IS NOT NULL'
+     * ],
+     * 'name' => 'John',
+     * 'status' => ['active', 'pending'],
+     * '_search' => 'important customer',
+     * '_published' => true,
+     * '_count' => true                     // Returns integer count instead of objects
      * ];
      * // Note: _limit, _offset, _order are ignored for count queries
      * ```
@@ -1189,11 +1193,14 @@ class ObjectEntityMapper extends QBMapper
      * @param array $query The search query array containing filters and options
      *
      * @phpstan-param array<string, mixed> $query
-     * @psalm-param   array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     * @return (OCA\OpenRegister\Db\ObjectEntity|ObjectEntity)[]|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
+     *
+     * @psalm-return int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>
      */
     public function searchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
     {
@@ -2038,7 +2045,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return Entity The inserted entity.
+     * @return ObjectEntity The inserted entity.
      *
      * @psalm-suppress LessSpecificImplementedReturnType - ObjectEntity is more specific than Entity
      */
@@ -2070,7 +2077,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the entity does not exist
      *
-     * @return Entity The updated entity
+     * @return ObjectEntity The updated entity
      *
      * @psalm-suppress LessSpecificImplementedReturnType - ObjectEntity is more specific than Entity
      */
@@ -2141,7 +2148,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array An array of ObjectEntities that have the specified URI/UUID
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findByRelation(string $search, bool $partialMatch=true): array
     {
@@ -2256,7 +2265,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array An array of ObjectEntity objects
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findMultiple(array $ids): array
     {
@@ -2325,7 +2336,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array<int, ObjectEntity> Array of ObjectEntity objects for the schema
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findBySchema(int $schemaId): array
     {
@@ -2352,17 +2365,14 @@ class ObjectEntityMapper extends QBMapper
      * @phpstan-param int|array|null $registerId
      * @phpstan-param int|array|null $schemaId
      * @phpstan-param array $exclude
-     * @psalm-param   int|array|null $registerId
-     * @psalm-param   int|array|null $schemaId
-     * @psalm-param   array $exclude
      *
-     * @return array<string, int> Array containing statistics about objects:
-     *               - total: Total number of objects.
-     *               - size: Total size of all objects in bytes.
-     *               - invalid: Number of objects with validation errors.
-     *               - deleted: Number of deleted objects.
-     *               - locked: Number of locked objects.
-     *               - published: Number of published objects.
+     * @psalm-param int|array|null $registerId
+     * @psalm-param int|array|null $schemaId
+     * @psalm-param array $exclude
+     *
+     * @return int[] Array containing statistics about objects: - total: Total number of objects. - size: Total size of all objects in bytes. - invalid: Number of objects with validation errors. - deleted: Number of deleted objects. - locked: Number of locked objects. - published: Number of published objects.
+     *
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
     public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
@@ -2454,9 +2464,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $registerId The register ID (null for all registers).
      * @param int|null $schemaId   The schema ID (null for all schemas).
      *
-     * @return array Array containing chart data:
-     *               - labels: Array of register names.
-     *               - series: Array of object counts per register.
+     * @return (int|mixed|string)[][] Array containing chart data: - labels: Array of register names. - series: Array of object counts per register.
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -2515,9 +2525,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $registerId The register ID (null for all registers).
      * @param int|null $schemaId   The schema ID (null for all schemas).
      *
-     * @return array Array containing chart data:
-     *               - labels: Array of schema names.
-     *               - series: Array of object counts per schema.
+     * @return (int|mixed|string)[][] Array containing chart data: - labels: Array of schema names. - series: Array of object counts per schema.
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -2576,9 +2586,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $registerId The register ID (null for all registers).
      * @param int|null $schemaId   The schema ID (null for all schemas).
      *
-     * @return array Array containing chart data:
-     *               - labels: Array of size range labels.
-     *               - series: Array of object counts per size range.
+     * @return (int|string)[][] Array containing chart data: - labels: Array of size range labels. - series: Array of object counts per size range.
+     *
+     * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
      */
     public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -2660,11 +2670,14 @@ class ObjectEntityMapper extends QBMapper
      *                     - Direct keys: Object field facets
      *
      * @phpstan-param array<string, mixed> $query
-     * @psalm-param   array<string, mixed> $query
+     *
+     * @psalm-param array<string, mixed> $query
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Simple facet data using the new handlers
+     * @return (array|mixed)[][] Simple facet data using the new handlers
+     *
+     * @psalm-return array<array<array|mixed>>
      */
     public function getSimpleFacets(array $query=[]): array
     {
@@ -2742,11 +2755,14 @@ class ObjectEntityMapper extends QBMapper
      * @param array $baseQuery Base query filters to apply for context
      *
      * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Facetable fields with their configuration based on schema definitions
+     * @return array[] Facetable fields with their configuration based on schema definitions
+     *
+     * @psalm-return array<string, array>
      */
     public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
@@ -2859,12 +2875,15 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param string $propertyKey
      * @phpstan-param array<string, mixed> $property
-     * @psalm-param   string $propertyKey
-     * @psalm-param   array<string, mixed> $property
      *
-     * @return array|null Field configuration or null if not suitable for faceting
+     * @psalm-param string $propertyKey
+     * @psalm-param array<string, mixed> $property
+     *
+     * @return (array|mixed|string)[]|null Field configuration or null if not suitable for faceting
+     *
+     * @psalm-return array{type: string, format: string, title: mixed|string, description: mixed|string, facet_types: array, source: 'schema', example?: mixed, cardinality?: string, minimum?: mixed, maximum?: mixed, intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
-    private function generateFieldConfigFromProperty(string $propertyKey, array $property): ?array
+    private function generateFieldConfigFromProperty(string $propertyKey, array $property): array|null
     {
         $type        = $property['type'] ?? 'string';
         $format      = $property['format'] ?? '';
@@ -2941,7 +2960,9 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-param string $type
      * @psalm-param string $format
      *
-     * @return array Array of suitable facet types
+     * @return string[] Array of suitable facet types
+     *
+     * @psalm-return list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}
      */
     private function determineFacetTypesFromProperty(string $type, string $format): array
     {
@@ -2980,10 +3001,13 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param array<string, mixed> $existing
      * @phpstan-param array<string, mixed> $new
-     * @psalm-param   array<string, mixed> $existing
-     * @psalm-param   array<string, mixed> $new
      *
-     * @return array Merged field configuration
+     * @psalm-param array<string, mixed> $existing
+     * @psalm-param array<string, mixed> $new
+     *
+     * @return (array|mixed)[] Merged field configuration
+     *
+     * @psalm-return array{facet_types: array, title?: mixed, description?: mixed, example?: mixed,...}
      */
     private function mergeFieldConfigs(array $existing, array $new): array
     {
@@ -3023,6 +3047,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @phpstan-param array<int, array<string, mixed>> $insertObjects
      * @phpstan-param array<int, ObjectEntity> $updateObjects
+     *
+     * @psalm-return int<5, 100>
      */
     private function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
@@ -3101,6 +3127,8 @@ class ObjectEntityMapper extends QBMapper
      * @param mixed $object The object to estimate size for
      *
      * @return int Estimated size in bytes
+     *
+     * @psalm-return int<0, max>
      */
     private function estimateObjectSize(mixed $object): int
     {
@@ -3164,7 +3192,10 @@ class ObjectEntityMapper extends QBMapper
      * @return int Optimal batch size in number of objects
      *
      * @phpstan-param array<int, array<string, mixed>> $insertObjects
-     * @psalm-param   array<int, array<string, mixed>> $insertObjects
+     *
+     * @psalm-param array<int, array<string, mixed>> $insertObjects
+     *
+     * @psalm-return int<5, 100>
      */
     private function calculateOptimalBatchSize(array $insertObjects, array $_columns): int
     {
@@ -3289,14 +3320,17 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $updateChunk Array of ObjectEntity instances to update
      *
-     * @return array Array of updated object UUIDs
+     * @return string[]
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @phpstan-param  array<int, ObjectEntity> $updateChunk
-     * @psalm-param    array<int, ObjectEntity> $updateChunk
+     * @phpstan-param array<int, ObjectEntity> $updateChunk
+     *
+     * @psalm-param array<int, ObjectEntity> $updateChunk
+     *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     private function processUpdateChunk(array $updateChunk): array
     {
@@ -3617,11 +3651,11 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param ObjectEntity $entity The entity to extract columns from
      *
-     * @return array Array of column names
+     * @return string[] //end switch
      *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
-     //end switch
+     *
+     * @psalm-return list<string>
      */
     private function getEntityColumns(ObjectEntity $entity): array
     {
@@ -4009,12 +4043,15 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array $uuids Array of object UUIDs to delete
      *
-     * @return array Array of UUIDs of deleted objects
+     * @return string[]
      *
-     * @phpstan-param  array<int, string> $uuids
-     * @psalm-param    array<int, string> $uuids
+     * @phpstan-param array<int, string> $uuids
+     *
+     * @psalm-param array<int, string> $uuids
+     *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
@@ -4117,19 +4154,20 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Delete all objects belonging to a specific schema
      *
-     //end try
+     * //end try
      * This method efficiently deletes all objects that belong to the specified schema.
      * It uses bulk operations for optimal performance and maintains data integrity.
      *
      * @param int  $schemaId   The ID of the schema whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
      *
-     * @return array Array containing statistics about the deletion operation
+     * @return (int|string[])[]
      *
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
-     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     *
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array<int, string>, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -4181,12 +4219,13 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param int $registerId The ID of the register whose objects should be deleted
      *
-     * @return array Array containing statistics about the deletion operation
+     * @return (int|string[])[]
      *
      * @throws \Exception If the deletion operation fails
      *
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
-     * @psalm-return   array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     *
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array<int, string>, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -4235,12 +4274,15 @@ class ObjectEntityMapper extends QBMapper
      * @param array          $uuids    Array of object UUIDs to publish
      * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset)
      *
-     * @return array Array of UUIDs of published objects
+     * @return string[]
      *
-     * @phpstan-param  array<int, string> $uuids
-     * @psalm-param    array<int, string> $uuids
+     * @phpstan-param array<int, string> $uuids
+     *
+     * @psalm-param array<int, string> $uuids
+     *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
@@ -4294,13 +4336,16 @@ class ObjectEntityMapper extends QBMapper
      * @param array          $uuids    Array of object UUIDs to depublish
      * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset)
      *
-     * @return array Array of UUIDs of depublished objects
+     * @return string[]
      *
-     * @phpstan-param  array<int, string> $uuids
+     * @phpstan-param array<int, string> $uuids
      //end for
-     * @psalm-param    array<int, string> $uuids
+     *
+     * @psalm-param array<int, string> $uuids
+     *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
@@ -4348,11 +4393,14 @@ class ObjectEntityMapper extends QBMapper
      * @param array $objects     Array of objects to check
      * @param int   $maxSafeSize Maximum safe size in bytes for batch processing
      *
-     * @return array Array with 'large' and 'normal' object arrays
+     * @return (ObjectEntity|array)[][]
      *
-     * @phpstan-param  array<int, array<string, mixed>|ObjectEntity> $objects
-     * @phpstan-param  int $maxSafeSize
+     * @phpstan-param array<int, array<string, mixed>|ObjectEntity> $objects
+     * @phpstan-param int $maxSafeSize
+     *
      * @phpstan-return array{large: array<int, array<string, mixed>|ObjectEntity>, normal: array<int, array<string, mixed>|ObjectEntity>}
+     *
+     * @psalm-return array{large: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>, normal: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>}
      */
     private function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
@@ -4472,8 +4520,11 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $defaultOrganisation Default organization UUID to assign to objects without an organization
      * @param int         $batchSize           Number of objects to process in each batch (default: 1000)
      *
-     * @return array Array containing statistics about the bulk operation
+     * @return (\DateTime|array|int|mixed|string)[] Array containing statistics about the bulk operation
+     *
      * @throws \Exception If the bulk operation fails
+     *
+     * @psalm-return array{endTime: \DateTime, duration: string,...}
      */
     public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
@@ -4564,7 +4615,9 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $defaultOwner        Default owner to assign
      * @param string|null $defaultOrganisation Default organization UUID to assign
      *
-     * @return array Batch processing results
+     * @return (int|string[])[] Batch processing results
+     *
+     * @psalm-return array{ownersAssigned: 0|1|2, organisationsAssigned: 0|1|2, errors: list{0?: string,...}}
      */
     private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
     {

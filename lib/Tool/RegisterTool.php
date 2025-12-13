@@ -99,9 +99,9 @@ class RegisterTool extends AbstractTool
     /**
      * Get function definitions for LLphant
      *
-     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list<array<string, mixed>>
+     * @psalm-return list{array{name: 'list_registers', description: 'Get a list of all accessible registers', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of registers to return (default: 100)'}, offset: array{type: 'integer', description: 'Number of registers to skip for pagination (default: 0)'}}, required: array<never, never>}}, array{name: 'get_register', description: 'Get details about a specific register by ID or slug', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The register ID or slug to retrieve'}}, required: list{'id'}}}, array{name: 'create_register', description: 'Create a new register', parameters: array{type: 'object', properties: array{title: array{type: 'string', description: 'The title of the register'}, description: array{type: 'string', description: 'A description of what this register is for'}, slug: array{type: 'string', description: 'URL-friendly identifier (optional, generated from title if not provided)'}}, required: list{'title'}}}, array{name: 'update_register', description: 'Update an existing register', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The register ID to update'}, title: array{type: 'string', description: 'New title for the register'}, description: array{type: 'string', description: 'New description for the register'}}, required: list{'id'}}}, array{name: 'delete_register', description: 'Delete a register (only if it has no objects)', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The register ID to delete'}}, required: list{'id'}}}}
      */
     public function getFunctions(): array
     {
@@ -242,7 +242,9 @@ class RegisterTool extends AbstractTool
      * @param int $limit  Maximum number of registers to return
      * @param int $offset Offset for pagination
      *
-     * @return array Result with list of registers
+     * @return (mixed|string|true)[] Result with list of registers
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function listRegisters(int $limit=100, int $offset=0): array
     {
@@ -275,9 +277,11 @@ class RegisterTool extends AbstractTool
      *
      * @param string $id Register ID
      *
-     * @return array Result with register details
+     * @return (mixed|string|true)[] Result with register details
      *
      * @throws \Exception If register not found
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function getRegister(string $id): array
     {
@@ -308,9 +312,11 @@ class RegisterTool extends AbstractTool
      * @param string      $description Register description
      * @param string|null $slug        Register slug
      *
-     * @return array Result with created register
+     * @return (mixed|string|true)[] Result with created register
      *
      * @throws \Exception If creation fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function createRegister(string $title, string $description='', ?string $slug=null): array
     {
@@ -346,9 +352,11 @@ class RegisterTool extends AbstractTool
      * @param string|null $title       Register title
      * @param string|null $description Register description
      *
-     * @return array Result with updated register
+     * @return (mixed|string|true)[] Result with updated register
      *
      * @throws \Exception If update fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function updateRegister(string $id, ?string $title=null, ?string $description=null): array
     {
@@ -386,9 +394,11 @@ class RegisterTool extends AbstractTool
      *
      * @param string $id Register ID
      *
-     * @return array Result of deletion
+     * @return (mixed|string|true)[] Result of deletion
      *
      * @throws \Exception If deletion fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function deleteRegister(string $id): array
     {

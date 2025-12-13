@@ -80,7 +80,7 @@ class FileTextExtractionJob extends QueuedJob
      * and handles errors gracefully.
      *
      * @param array<string, mixed> $argument Job arguments containing:
-     *                                     - file_id: The ID of the file to extract text from (required)
+     *                                       - file_id: The ID of the file to extract text from (required)
      *
      * @return void
      */

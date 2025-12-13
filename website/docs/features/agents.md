@@ -55,13 +55,26 @@ Access the Agents page from the main navigation and click **Add Agent**.
 
 **LLM Provider**
 Select the Large Language Model provider for your agent:
-- `openai`: OpenAI GPT-4, GPT-3.5 Turbo
-- `ollama`: Local LLM execution
-- `fireworks`: Fast, optimized inference
+- `openai`: OpenAI GPT-4, GPT-3.5 Turbo (excellent function calling)
+- `ollama`: Local LLM execution (free, private, requires compatible models)
+- `fireworks`: Fast, optimized inference (function calling not yet supported)
 - `azure`: Azure OpenAI (Enterprise-grade)
 
 **Model**
-Specify the model to use (e.g., `gpt-4o-mini`, `llama3`, `claude-3-sonnet`)
+Specify the model to use. **For tool-oriented agents, model selection is critical:**
+
+**Recommended for Tools (Function Calling):**
+- `mistral-nemo` (Ollama) - ⭐ **BEST for function calling**
+- `gpt-4o-mini` (OpenAI) - Excellent but requires API key
+- `llama3.1:8b` (Ollama) - Good alternative
+- `llama3.2:3b` (Ollama) - Lightweight option
+
+**NOT Recommended for Tools:**
+- `mistral:7b` - Unreliable function calling
+- `qwen2:0.5b` - Minimal function support  
+- `phi3:mini` - Limited tool support
+
+See [Function Calling Documentation](./function-calling.md) for detailed model comparison.
 
 **System Prompt**
 Define the agent's behavior and persona. Example:

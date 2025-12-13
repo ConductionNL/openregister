@@ -399,7 +399,9 @@ class WebhookService
      * @param array   $payload   Event payload
      * @param int     $attempt   Delivery attempt number
      *
-     * @return array
+     * @return (array|int|string)[]
+     *
+     * @psalm-return array{event: string, webhook: array{id: string, name: string}, data: array, timestamp: string, attempt: int}
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
@@ -423,8 +425,11 @@ class WebhookService
      * @param Webhook $webhook Webhook configuration
      * @param array   $payload Payload to send
      *
-     * @return array Response data
+     * @return (int|string)[] Response data
+     *
      * @throws RequestException
+     *
+     * @psalm-return array{status_code: int, body: string}
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {

@@ -195,9 +195,12 @@ class ChatController extends Controller
      * All routing is handled client-side by the SPA.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse Template response for chat SPA
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
      */
     public function page(): TemplateResponse
     {
@@ -214,9 +217,12 @@ class ChatController extends Controller
      * Send a chat message in a conversation and get AI response
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Response with message and sources
+     *
+     * @psalm-return JSONResponse<int, array{error?: mixed|string, message?: mixed|string, conversation?: null|string,...}, array<never, never>>
      */
     public function sendMessage(): JSONResponse
     {
@@ -386,9 +392,12 @@ class ChatController extends Controller
      * Get conversation history (messages)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Message history
+     *
+     * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: array<array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}>, total?: int, conversationId?: int}, array<never, never>>
      */
     public function getHistory(): JSONResponse
     {
@@ -470,9 +479,12 @@ class ChatController extends Controller
      * Clear conversation history (soft delete)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Success message
+     *
+     * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>
      */
     public function clearHistory(): JSONResponse
     {
@@ -554,7 +566,10 @@ class ChatController extends Controller
      * @return JSONResponse Feedback data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array<string, mixed>, array<never, never>>
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
@@ -676,9 +691,12 @@ class ChatController extends Controller
      * Get chat statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Chat statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to get chat statistics', message?: string, total_agents?: int, total_conversations?: int, total_messages?: int}, array<never, never>>
      */
     public function getChatStats(): JSONResponse
     {

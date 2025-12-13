@@ -120,6 +120,7 @@ class OrganisationMapper extends QBMapper
         /*
          * @var Organisation $oldEntity
          */
+
         // QBMapper doesn't have a find() method, use findByUuid instead.
         $oldEntity = $this->findByUuid((string) $entity->getId());
 
@@ -182,11 +183,14 @@ class OrganisationMapper extends QBMapper
     /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple organisations, extend: * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple organisations,
+     * significantly improving performance compared to individual queries.
      *
      * @param array $uuids Array of organisation UUIDs to find
      *
-     * @return array Associative array of UUID => Organisation entity
+     * @return Entity&Organisation[] Associative array of UUID => Organisation entity
+     *
+     * @psalm-return array<Entity&Organisation>
      */
     public function findMultipleByUuid(array $uuids): array
     {
@@ -221,7 +225,9 @@ class OrganisationMapper extends QBMapper
      *
      * @param string $userId The Nextcloud user ID
      *
-     * @return array Array of Organisation entities
+     * @return Organisation[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function findByUserId(string $userId): array
     {
@@ -239,7 +245,9 @@ class OrganisationMapper extends QBMapper
     /**
      * Get all organisations with user count
      *
-     * @return array Array of organisations with additional user count information
+     * @return Organisation[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function findAllWithUserCount(): array
     {
@@ -434,7 +442,9 @@ class OrganisationMapper extends QBMapper
      * @param int $limit  Maximum number of results to return (default 50)
      * @param int $offset Number of results to skip (default 0)
      *
-     * @return array List of organisation entities
+     * @return Organisation[] List of organisation entities
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function findAll(int $limit=50, int $offset=0): array
     {
@@ -458,7 +468,9 @@ class OrganisationMapper extends QBMapper
      * @param int    $limit  Maximum number of results to return
      * @param int    $offset Number of results to skip
      *
-     * @return array List of organisation entities
+     * @return Organisation[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function findByName(string $name, int $limit=50, int $offset=0): array
     {
@@ -479,7 +491,9 @@ class OrganisationMapper extends QBMapper
     /**
      * Get organisation statistics
      *
-     * @return array Statistics about organisations
+     * @return int[] Statistics about organisations
+     *
+     * @psalm-return array{total: int}
      */
     public function getStatistics(): array
     {
@@ -558,6 +572,8 @@ class OrganisationMapper extends QBMapper
      * @param string $organisationUuid The starting organisation UUID
      *
      * @return array Array of parent organisation UUIDs ordered by level (direct parent first)
+     *
+     * @psalm-return list{0?: mixed,...}
      */
     public function findParentChain(string $organisationUuid): array
     {
@@ -641,6 +657,8 @@ class OrganisationMapper extends QBMapper
      * @param string $organisationUuid The parent organisation UUID
      *
      * @return array Array of child organisation UUIDs
+     *
+     * @psalm-return list{0?: mixed,...}
      */
     public function findChildrenChain(string $organisationUuid): array
     {
@@ -784,6 +802,8 @@ class OrganisationMapper extends QBMapper
      * @param string $rootUuid      The root organisation UUID
      *
      * @return int Maximum depth from root
+     *
+     * @psalm-return int<0, max>
      */
     private function getMaxDepthInChain(array $childrenUuids, string $rootUuid): int
     {
@@ -825,6 +845,8 @@ class OrganisationMapper extends QBMapper
      * @param array  $parentMap Parent mapping array
      *
      * @return int Depth from root
+     *
+     * @psalm-return int<0, 20>
      */
     private function calculateDepthFromRoot(string $nodeUuid, string $rootUuid, array $parentMap): int
     {

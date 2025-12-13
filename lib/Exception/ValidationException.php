@@ -75,7 +75,7 @@ class ValidationException extends Exception
     ) {
         // Store validation errors for detailed error reporting.
         $this->errors = $errors;
-        
+
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message, $code, $previous);
 

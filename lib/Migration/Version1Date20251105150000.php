@@ -278,10 +278,10 @@ class Version1Date20251105150000 extends SimpleMigrationStep
 
             // Foreign key to conversations.
             $table->addForeignKeyConstraint(
-                $schema->getTable('openregister_conversations'),
-                ['conversation_id'],
-                ['id'],
-                ['onDelete' => 'CASCADE'],
+                foreignTable: $schema->getTable('openregister_conversations'),
+                localColumnNames: ['conversation_id'],
+                foreignColumnNames: ['id'],
+                options: ['onDelete' => 'CASCADE'],
                 'messages_conversation_fk'
             );
 

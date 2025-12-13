@@ -27,11 +27,11 @@ use OCP\IRequest;
 
 /**
  * Class SourcesController
- */
-/**
+ *
+ * Controller for managing source operations.
+ *
  * @psalm-suppress UnusedClass
  */
-
 class SourcesController extends Controller
 {
 
@@ -215,7 +215,10 @@ class SourcesController extends Controller
      * @return JSONResponse The updated source data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Source, array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {

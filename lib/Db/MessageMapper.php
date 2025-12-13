@@ -112,9 +112,9 @@ class MessageMapper extends QBMapper
      * @param int $limit          Maximum number of results to return (default: 100)
      * @param int $offset         Offset for pagination (default: 0)
      *
-     * @return Message[] Array of message entities ordered chronologically
+     * @return Message[]
      *
-     * @psalm-return array<Message>
+     * @psalm-return list<OCA\OpenRegister\Db\Message>
      */
     public function findByConversation(
         int $conversationId,
@@ -147,9 +147,9 @@ class MessageMapper extends QBMapper
      * @param int $conversationId Conversation ID to filter messages by
      * @param int $limit          Number of recent messages to get (default: 10)
      *
-     * @return Message[] Array of message entities ordered chronologically (oldest first)
+     * @return Message[]
      *
-     * @psalm-return array<Message>
+     * @psalm-return list<OCA\OpenRegister\Db\Message>
      */
     public function findRecentByConversation(int $conversationId, int $limit=10): array
     {

@@ -165,7 +165,11 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             }//end if
         }//end if
 
-        return $updated === true ? $schema : null;
+        if ($updated === true) {
+            return $schema;
+        } else {
+            return null;
+        }
 
     }//end changeSchema()
 

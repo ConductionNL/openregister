@@ -193,7 +193,9 @@ class MetricsService
      *
      * @param int $days Number of days to retrieve
      *
-     * @return array Array of [date => count]
+     * @return int[] Array of [date => count]
+     *
+     * @psalm-return array<int>
      */
     public function getFilesProcessedPerDay(int $days=30): array
     {
@@ -300,12 +302,7 @@ class MetricsService
      *
      * @param int $days Number of days to analyze (default: 7)
      *
-     * @return array<string, array<string, int|float>> Latency stats by search type.
-     *                                                  Each search type contains:
-     *                                                  - count: Number of searches
-     *                                                  - avg_ms: Average latency in milliseconds
-     *                                                  - min_ms: Minimum latency in milliseconds
-     *                                                  - max_ms: Maximum latency in milliseconds
+     * @return (float|int)[][]
      *
      * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
      */
@@ -441,7 +438,9 @@ class MetricsService
     /**
      * Get comprehensive metrics dashboard data
      *
-     * @return array All metrics for dashboard
+     * @return ((float|int)[]|float|int|mixed)[][] All metrics for dashboard
+     *
+     * @psalm-return array{files_processed: array, embedding_stats: array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}, search_latency: array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>, storage_growth: array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}}
      */
     public function getDashboardMetrics(): array
     {
@@ -485,7 +484,11 @@ class MetricsService
         
         // Handle different return types from execute().
         // Some database drivers return int, others return result object.
-        return is_int($result) ? $result : (int) $result->rowCount();
+        if (is_int($result)) {
+            return $result;
+        } else {
+            return (int) $result->rowCount();
+        }
 
     }//end cleanOldMetrics()
 

@@ -477,7 +477,9 @@ class MagicMapper
      *
      * @throws Exception If save operation fails
      *
-     * @return array Array of saved object UUIDs
+     * @return string[] Array of saved object UUIDs
+     *
+     * @psalm-return list{0?: string,...}
      */
     public function saveObjectsToRegisterSchemaTable(array $objects, Register $register, Schema $schema): array
     {
@@ -644,7 +646,7 @@ class MagicMapper
      *
      * @throws Exception If table creation fails
      *
-     * @return bool True if table created successfully
+     * @return true True if table created successfully
      */
     private function createTableForRegisterSchema(Register $register, Schema $schema): bool
     {
@@ -700,7 +702,7 @@ class MagicMapper
      *
      * @throws Exception If table update fails
      *
-     * @return bool True if table updated successfully
+     * @return true True if table updated successfully
      */
     private function updateTableForRegisterSchema(Register $register, Schema $schema): bool
     {
@@ -810,9 +812,9 @@ class MagicMapper
     /**
      * Get metadata columns from ObjectEntity
      *
-     * @return array Array of metadata column definitions
+     * @return (bool|int|string)[][]
      *
-     * @psalm-return array<string, array{autoincrement?: bool, default?: mixed, index?: bool, length?: int, name: string, nullable: bool, precision?: int, primary?: bool, scale?: int, type: string, unique?: bool}>
+     * @psalm-return array{_id: array{name: '_id', type: 'bigint', nullable: false, autoincrement: true, primary: true}, _uuid: array{name: '_uuid', type: 'string', length: 36, nullable: false, unique: true, index: true}, _slug: array{name: '_slug', type: 'string', length: 255, nullable: true, index: true}, _uri: array{name: '_uri', type: 'text', nullable: true}, _version: array{name: '_version', type: 'string', length: 50, nullable: true}, _register: array{name: '_register', type: 'string', length: 255, nullable: false, index: true}, _schema: array{name: '_schema', type: 'string', length: 255, nullable: false, index: true}, _owner: array{name: '_owner', type: 'string', length: 64, nullable: true, index: true}, _organisation: array{name: '_organisation', type: 'string', length: 36, nullable: true, index: true}, _application: array{name: '_application', type: 'string', length: 255, nullable: true}, _folder: array{name: '_folder', type: 'string', length: 255, nullable: true}, _name: array{name: '_name', type: 'string', length: 255, nullable: true, index: true}, _description: array{name: '_description', type: 'text', nullable: true}, _summary: array{name: '_summary', type: 'text', nullable: true}, _image: array{name: '_image', type: 'text', nullable: true}, _size: array{name: '_size', type: 'string', length: 50, nullable: true}, _schema_version: array{name: '_schema_version', type: 'string', length: 50, nullable: true}, _created: array{name: '_created', type: 'datetime', nullable: true, index: true}, _updated: array{name: '_updated', type: 'datetime', nullable: true, index: true}, _published: array{name: '_published', type: 'datetime', nullable: true, index: true}, _depublished: array{name: '_depublished', type: 'datetime', nullable: true, index: true}, _expires: array{name: '_expires', type: 'datetime', nullable: true, index: true}, _files: array{name: '_files', type: 'json', nullable: true}, _relations: array{name: '_relations', type: 'json', nullable: true}, _locked: array{name: '_locked', type: 'json', nullable: true}, _authorization: array{name: '_authorization', type: 'json', nullable: true}, _validation: array{name: '_validation', type: 'json', nullable: true}, _deleted: array{name: '_deleted', type: 'json', nullable: true}, _geo: array{name: '_geo', type: 'json', nullable: true}, _retention: array{name: '_retention', type: 'json', nullable: true}, _groups: array{name: '_groups', type: 'json', nullable: true}}
      */
     private function getMetadataColumns(): array
     {
@@ -1011,12 +1013,13 @@ class MagicMapper
      * @param string $propertyName   The property name
      * @param array  $propertyConfig The property configuration from JSON schema
      *
-     * @return array|null Column definition or null if property should be skipped
+     * @return (bool|int|mixed|null|string)[]
      *
-     * @psalm-param  SchemaPropertyConfig $propertyConfig
-     * @psalm-return array{default?: mixed|null, index?: bool, length?: int, name: string, nullable: bool, precision?: 10, scale?: 2, type: string, unique?: bool}|null
+     * @psalm-param SchemaPropertyConfig $propertyConfig
+     *
+     * @psalm-return array{name: string, type: string, nullable: bool, length?: int, default?: mixed|null, index?: bool, unique?: bool, precision?: 10, scale?: 2}
      */
-    private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): ?array
+    private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array
     {
         $type   = $propertyConfig['type'] ?? 'string';
         $format = $propertyConfig['format'] ?? null;
@@ -1035,12 +1038,19 @@ class MagicMapper
                 return $this->mapNumberProperty($columnName, $propertyConfig);
 
             case 'boolean':
+                // Determine default value.
+                if (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) {
+                    $defaultValue = $propertyConfig['default'];
+                } else {
+                    $defaultValue = null;
+                }
+
                 return [
                     'name'     => $columnName,
                     'type'     => 'boolean',
                     'nullable' => !in_array($propertyName, $propertyConfig['required'] ?? []),
                     // propertyConfig may contain 'default' key even if not in type definition.
-                    'default'  => (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) ? $propertyConfig['default'] : null,
+                    'default'  => $defaultValue,
                 ];
 
             case 'array':
@@ -1079,10 +1089,11 @@ class MagicMapper
      * @param array       $propertyConfig The property configuration
      * @param string|null $format         The format specification
      *
-     * @return array Column definition
+     * @return (bool|int|string)[]
      *
-     * @psalm-param  SchemaPropertyConfig $propertyConfig
-     * @psalm-return TableColumnConfig
+     * @psalm-param SchemaPropertyConfig $propertyConfig
+     *
+     * @psalm-return array{name: string, type: 'datetime'|'string'|'text', nullable: bool, index?: bool, length?: int<min, 320>}
      */
     private function mapStringProperty(string $columnName, array $propertyConfig, ?string $format): array
     {
@@ -1142,7 +1153,7 @@ class MagicMapper
                 } else {
                     return [
                         'name'     => $columnName,
-                        'type'     => (($maxLength !== null) === true && $maxLength > 65535) === true ? 'text' : 'text',
+                        'type'     => 'text',
                         'nullable' => ($isRequired === false),
                     ];
                 }
@@ -1157,10 +1168,11 @@ class MagicMapper
      * @param string $columnName     The column name
      * @param array  $propertyConfig The property configuration
      *
-     * @return array Column definition
+     * @return (bool|mixed|null|string)[]
      *
-     * @psalm-param  SchemaPropertyConfig $propertyConfig
-     * @psalm-return TableColumnConfig
+     * @psalm-param SchemaPropertyConfig $propertyConfig
+     *
+     * @psalm-return array{name: string, type: 'bigint'|'integer'|'smallint', nullable: bool, default: mixed|null, index: true}
      */
     private function mapIntegerProperty(string $columnName, array $propertyConfig): array
     {
@@ -1176,12 +1188,19 @@ class MagicMapper
             $intType = 'bigint';
         }
 
+        // Determine default value.
+        if (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) {
+            $defaultValue = $propertyConfig['default'];
+        } else {
+            $defaultValue = null;
+        }
+
         return [
             'name'     => $columnName,
             'type'     => $intType,
             'nullable' => !$isRequired,
             // propertyConfig may contain 'default' key even if not in type definition.
-            'default'  => (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) ? $propertyConfig['default'] : null,
+            'default'  => $defaultValue,
             'index'    => true,
         // Integer fields are often used for filtering.
         ];
@@ -1204,6 +1223,13 @@ class MagicMapper
     {
         $isRequired = in_array($columnName, $propertyConfig['required'] ?? []);
 
+        // Determine default value.
+        if (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) {
+            $defaultValue = $propertyConfig['default'];
+        } else {
+            $defaultValue = null;
+        }
+
         return [
             'name'      => $columnName,
             'type'      => 'decimal',
@@ -1211,7 +1237,7 @@ class MagicMapper
             'scale'     => 2,
             'nullable'  => !$isRequired,
             // propertyConfig may contain 'default' key even if not in type definition.
-            'default'   => (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) ? $propertyConfig['default'] : null,
+            'default'   => $defaultValue,
             'index'     => true,
         // Numeric fields are often used for filtering.
         ];
@@ -1439,7 +1465,9 @@ class MagicMapper
      * @param Register $register   The register context
      * @param Schema   $schema     The schema for validation
      *
-     * @return array Prepared data with metadata and schema fields
+     * @return (false|mixed|null|string)[] Prepared data with metadata and schema fields
+     *
+     * @psalm-return array<string, false|mixed|null|string>
      */
     private function prepareObjectDataForTable(array $objectData, Register $register, Schema $schema): array
     {
@@ -1558,7 +1586,9 @@ class MagicMapper
      *
      * @throws Exception If search fails
      *
-     * @return array Array of ObjectEntity objects
+     * @return ObjectEntity[] Array of ObjectEntity objects
+     *
+     * @psalm-return list{0?: ObjectEntity,...}
      */
     private function executeRegisterSchemaTableSearch(array $query, Register $register, Schema $schema, string $tableName): array
     {
@@ -1580,7 +1610,11 @@ class MagicMapper
         // Apply ordering.
         if (($query['_order'] ?? null) !== null && is_array($query['_order']) === true) {
             foreach ($query['_order'] as $field => $direction) {
-                $columnName = str_starts_with($field, '@self.') === true ? self::METADATA_PREFIX.substr($field, 6) : $this->sanitizeColumnName($field);
+                if (str_starts_with($field, '@self.') === true) {
+                    $columnName = self::METADATA_PREFIX.substr($field, 6);
+                } else {
+                    $columnName = $this->sanitizeColumnName($field);
+                }
 
                 $qb->addOrderBy($columnName, strtoupper($direction));
             }
@@ -1662,8 +1696,12 @@ class MagicMapper
                     // This is a schema property.
                     // Decode JSON values if they're JSON strings.
                     if (is_string($value) === true && $this->isJsonString($value) === true) {
-                        $decodedValue            = json_decode($value, true);
-                        $objectData[$columnName] = $decodedValue !== null ? $decodedValue : $value;
+                        $decodedValue = json_decode($value, true);
+                        if ($decodedValue !== null) {
+                            $objectData[$columnName] = $decodedValue;
+                        } else {
+                            $objectData[$columnName] = $value;
+                        }
                     } else {
                         $objectData[$columnName] = $value;
                     }
@@ -1825,15 +1863,19 @@ class MagicMapper
      * @param int $registerId The register ID
      * @param int $schemaId   The schema ID
      *
-     * @return string|null The stored version or null if not found
+     * @return null|string The stored version or null if not found
      */
-    private function getStoredRegisterSchemaVersion(int $registerId, int $schemaId): ?string
+    private function getStoredRegisterSchemaVersion(int $registerId, int $schemaId): string|null
     {
         $cacheKey  = $this->getCacheKey($registerId, $schemaId);
         $configKey = 'table_version_'.$cacheKey;
 
         $version = $this->config->getAppValue('openregister', $configKey, '');
-        return $version === '' ? null : $version;
+        if ($version === '') {
+            return null;
+        } else {
+            return $version;
+        }
 
     }//end getStoredRegisterSchemaVersion()
 
@@ -1946,7 +1988,11 @@ class MagicMapper
             $result = $qb->executeQuery();
             $row    = $result->fetch();
 
-            return is_array($row) ? $row : null;
+            if (is_array($row)) {
+                return $row;
+            } else {
+                return null;
+            }
         } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to find object in register+schema table',
@@ -2023,7 +2069,9 @@ class MagicMapper
      *
      * @throws Exception If unable to get table columns
      *
-     * @return array Array of existing column definitions
+     * @return (bool|mixed)[][] Array of existing column definitions
+     *
+     * @psalm-return array<array{name: mixed, type: mixed, length: mixed, nullable: bool, default: mixed}>
      */
     private function getExistingTableColumns(string $tableName): array
     {
@@ -2235,7 +2283,9 @@ class MagicMapper
      * This method scans the database for all tables matching our naming pattern
      * and returns them as an array of register+schema combinations.
      *
-     * @return array Array of ['registerId' => int, 'schemaId' => int, 'tableName' => string]
+     * @return (int|string)[][] Array of ['registerId' => int, 'schemaId' => int, 'tableName' => string]
+     *
+     * @psalm-return list<array{registerId: int, schemaId: int, tableName: non-empty-string}>
      */
     public function getExistingRegisterSchemaTables(): array
     {

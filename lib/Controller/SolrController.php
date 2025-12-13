@@ -81,7 +81,10 @@ class SolrController extends Controller
      * @return JSONResponse Search results with similarity scores
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, query?: null|string, results?: mixed, total?: int<0, max>, limit?: int<1, 100>, filters?: array, search_type?: 'semantic', timestamp?: string}, array<never, never>>
      */
     public function semanticSearch(
         string $query,
@@ -167,7 +170,10 @@ class SolrController extends Controller
      * @return JSONResponse Combined search results with source breakdown
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool|mixed, error?: mixed|string, query?: mixed|null|string, search_type?: 'hybrid'|mixed, timestamp?: string,...}, array<never, never>>
      */
     public function hybridSearch(
         string $query,
@@ -219,7 +225,11 @@ class SolrController extends Controller
             $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) === true ? $result : [];
+            if (is_array($result) === true) {
+                $resultArray = $result;
+            } else {
+                $resultArray = [];
+            }
 
             return new JSONResponse(
                     data: [
@@ -262,9 +272,12 @@ class SolrController extends Controller
      * - Storage metrics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Vector statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed, timestamp?: string}, array<never, never>>
      */
     public function getVectorStats(): JSONResponse
     {
@@ -310,9 +323,12 @@ class SolrController extends Controller
      * an embedding for the provided test text and returns metadata about the result.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Test results including embedding metadata
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, message?: 'Embedding generated successfully', metadata?: array{provider: mixed, model: mixed|string, dimensions: int<0, max>, textLength: int<1, max>, duration_ms: float, firstValues: array}, timestamp?: string}, array<never, never>>
      */
     public function testVectorEmbedding(): JSONResponse
     {
@@ -458,9 +474,12 @@ class SolrController extends Controller
      * List all SOLR collections with their metadata
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Collection list
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, collections?: mixed, total?: int<0, max>, timestamp?: string}, array<never, never>>
      */
     public function listCollections(): JSONResponse
     {
@@ -500,9 +519,12 @@ class SolrController extends Controller
      * List all SOLR ConfigSets
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse ConfigSet list
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, configSets?: mixed, total?: int<0, max>, timestamp?: string}, array<never, never>>
      */
     public function listConfigSets(): JSONResponse
     {
@@ -550,7 +572,10 @@ class SolrController extends Controller
      * @return JSONResponse Creation result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'Collection created successfully', collection?: string, result?: mixed, timestamp?: string}, array<never, never>>
      */
     public function createCollection(
         string $collectionName,
@@ -609,7 +634,10 @@ class SolrController extends Controller
      * @return JSONResponse Creation result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'ConfigSet created successfully', configSet?: string, result?: mixed, timestamp?: string}, array<never, never>>
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
@@ -656,7 +684,10 @@ class SolrController extends Controller
      * @return JSONResponse Deletion result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'ConfigSet deleted successfully', configSet?: string, result?: mixed, timestamp?: string}, array<never, never>>
      */
     public function deleteConfigSet(string $name): JSONResponse
     {
@@ -704,7 +735,10 @@ class SolrController extends Controller
      * @return JSONResponse Copy result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'Collection copied successfully', source?: string, target?: string, result?: mixed, timestamp?: string}, array<never, never>>
      */
     public function copyCollection(string $sourceCollection, string $targetCollection): JSONResponse
     {
@@ -757,7 +791,10 @@ class SolrController extends Controller
      * @return JSONResponse Vectorization result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool|mixed, error?: mixed|string, object_id?: int|mixed|null, message?: 'Object vectorized successfully'|mixed, timestamp?: string,...}, array<never, never>>
      */
     public function vectorizeObject(int $objectId, ?string $provider=null): JSONResponse
     {
@@ -773,7 +810,11 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObject(object: $object, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) === true ? $result : [];
+            if (is_array($result) === true) {
+                $resultArray = $result;
+            } else {
+                $resultArray = [];
+            }
 
             return new JSONResponse(
                     data: [
@@ -820,7 +861,10 @@ class SolrController extends Controller
      * @return JSONResponse Bulk vectorization results with progress
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{success: bool|mixed, error?: mixed|string, message?: mixed|string, total?: 0|mixed, successful?: 0|mixed, failed?: 0|mixed, results?: array<never, never>|mixed, timestamp?: string, pagination?: array{limit: int<1, 1000>, offset: int<0, max>, has_more: bool}, filters?: array{schema_id: int|null, register_id: int|null},...}, array<never, never>>
      */
     public function bulkVectorizeObjects(
         ?int $schemaId=null,
@@ -878,7 +922,11 @@ class SolrController extends Controller
             $result = $solrObjectService->vectorizeObjects(objects: $objects, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) === true ? $result : [];
+            if (is_array($result) === true) {
+                $resultArray = $result;
+            } else {
+                $resultArray = [];
+            }
 
             return new JSONResponse(
                     data: [
@@ -928,9 +976,12 @@ class SolrController extends Controller
      * broken down by schema, register, and embedding model.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Vectorization statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: array{total_objects: mixed, vectorized_objects: 0|mixed, progress_percentage: 0|float, remaining_objects: mixed, vector_breakdown: mixed}, timestamp?: string}, array<never, never>>
      */
     public function getVectorizationStats(): JSONResponse
     {

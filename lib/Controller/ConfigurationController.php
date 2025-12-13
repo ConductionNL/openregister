@@ -38,11 +38,9 @@ use Psr\Log\LoggerInterface;
  * Controller for managing configurations (CRUD and management operations).
  *
  * @package OCA\OpenRegister\Controller
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
-
 class ConfigurationController extends Controller
 {
 
@@ -137,9 +135,12 @@ class ConfigurationController extends Controller
      * Get all configurations.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of configurations
+     *
+     * @psalm-return JSONResponse<200|500, array<'Failed to fetch configurations'|Configuration>, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -162,9 +163,12 @@ class ConfigurationController extends Controller
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The configuration details
+     *
+     * @psalm-return JSONResponse<200, Configuration, array<never, never>>|JSONResponse<404|500, array{error: 'Configuration not found'|'Failed to fetch configuration'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -187,9 +191,12 @@ class ConfigurationController extends Controller
      * Enrich configuration details by fetching actual file contents
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Enriched configuration details
+     *
+     * @psalm-return JSONResponse<int, array, array<never, never>>
      */
     public function enrichDetails(): JSONResponse
     {
@@ -220,7 +227,7 @@ class ConfigurationController extends Controller
             $details = null;
             if ($source === 'github') {
                 $details = $this->githubService->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
-            } elseif ($source === 'gitlab') {
+            } else if ($source === 'gitlab') {
                 // GitLab enrichment can be added later if needed.
                 $this->logger->warning('GitLab enrichment not yet implemented');
             }
@@ -249,9 +256,12 @@ class ConfigurationController extends Controller
      * Create a new configuration.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The created configuration
+     *
+     * @psalm-return JSONResponse<201, Configuration, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -303,9 +313,12 @@ class ConfigurationController extends Controller
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse The updated configuration
+     *
+     * @psalm-return JSONResponse<200, Configuration, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -404,9 +417,12 @@ class ConfigurationController extends Controller
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Success response
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: 'Configuration not found'|'Failed to delete configuration', success?: true}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -434,9 +450,12 @@ class ConfigurationController extends Controller
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Version information
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, hasUpdate?: bool, localVersion?: null|string, remoteVersion?: null|string, lastChecked?: null|string, message?: string}, array<never, never>>
      */
     public function checkVersion(int $id): JSONResponse
     {
@@ -508,9 +527,12 @@ class ConfigurationController extends Controller
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Import results
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, registersCount?: int<0, max>, schemasCount?: int<0, max>, objectsCount?: int<0, max>}, array<never, never>>
      */
     public function import(int $id): JSONResponse
     {
@@ -563,9 +585,12 @@ class ConfigurationController extends Controller
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Export result with download URL or success message
+     *
+     * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
      */
     public function export(int $id): JSONResponse
     {
@@ -597,11 +622,14 @@ class ConfigurationController extends Controller
      * Discover OpenRegister configurations on GitHub or GitLab
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Search results
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<200|400|500, array, array<never, never>>
      */
     public function discover(): JSONResponse
     {
@@ -657,11 +685,14 @@ class ConfigurationController extends Controller
      * Get branches from a GitHub repository
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of branches
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array}, array<never, never>>
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -698,9 +729,12 @@ class ConfigurationController extends Controller
      * Get repositories that the authenticated user has access to
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of repositories
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, repositories?: array}, array<never, never>>
      */
     public function getGitHubRepositories(): JSONResponse
     {
@@ -742,11 +776,14 @@ class ConfigurationController extends Controller
      * Get configuration files from a GitHub repository
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of configuration files
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: array}, array<never, never>>
      */
     public function getGitHubConfigurations(): JSONResponse
     {
@@ -785,11 +822,14 @@ class ConfigurationController extends Controller
      * Get branches from a GitLab project
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of branches
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array}, array<never, never>>
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -831,11 +871,14 @@ class ConfigurationController extends Controller
      * Get configuration files from a GitLab project
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of configuration files
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: array}, array<never, never>>
      */
     public function getGitLabConfigurations(): JSONResponse
     {
@@ -881,11 +924,14 @@ class ConfigurationController extends Controller
      * This method creates a Configuration entity and then imports it using the standard import flow.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Import result
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromGitHub(): JSONResponse
     {
@@ -1013,11 +1059,14 @@ class ConfigurationController extends Controller
      * This method creates a Configuration entity and then imports it using the standard import flow.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Import result
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitLab', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromGitLab(): JSONResponse
     {
@@ -1152,11 +1201,14 @@ class ConfigurationController extends Controller
      * This method creates a Configuration entity and then imports it using the standard import flow.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Import result
      *
      * @since 0.2.10
+     *
+     * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from URL', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromUrl(): JSONResponse
     {
@@ -1287,9 +1339,12 @@ class ConfigurationController extends Controller
      * @param int $id Configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Publish result
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: string, configurationId?: int, commit_sha?: mixed, commit_url?: mixed, file_url?: mixed, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -1343,7 +1398,7 @@ class ConfigurationController extends Controller
             // Instead, we set the openregister version and GitHub info.
             $githubRepo = "{$owner}/{$repo}";
 
-            if (!isset($configData['x-openregister'])) {
+            if (isset($configData['x-openregister']) === false) {
                 $configData['x-openregister'] = [];
             }
 

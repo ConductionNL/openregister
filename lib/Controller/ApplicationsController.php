@@ -116,9 +116,12 @@ class ApplicationsController extends Controller
      * All routing is handled client-side by the SPA.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse Template response for applications SPA
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
      */
     public function page(): TemplateResponse
     {
@@ -138,11 +141,10 @@ class ApplicationsController extends Controller
      * Supports limit/offset pagination or page-based pagination.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing applications list or error message
-     *
-     * @psalm-return JSONResponse<array{results: array<int, mixed>}|array{error: string}>
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve applications', results?: array<\OCA\OpenRegister\Db\Application>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -209,12 +211,11 @@ class ApplicationsController extends Controller
      *
      * @param int $id Application database ID
      *
-     * @return JSONResponse JSON response containing application data or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<mixed|array{error: string}>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<404, array{error: 'Application not found'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -253,11 +254,10 @@ class ApplicationsController extends Controller
      * Validates input and returns created application or error.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing created application or error message
-     *
-     * @psalm-return JSONResponse<mixed|array{error: string}>
+     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -301,12 +301,11 @@ class ApplicationsController extends Controller
      *
      * @param int $id Application database ID
      *
-     * @return JSONResponse JSON response containing updated application or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<mixed|array{error: string}>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -377,12 +376,11 @@ class ApplicationsController extends Controller
      *
      * @param int $id Application database ID
      *
-     * @return JSONResponse JSON response containing success message or error
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{message: string}|array{error: string}>
+     * @psalm-return JSONResponse<200|400, array{error?: 'Failed to delete application', message?: 'Application deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {

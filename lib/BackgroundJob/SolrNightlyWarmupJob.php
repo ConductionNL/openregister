@@ -226,6 +226,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @return int Number of successful warmup queries
      *
      * @psalm-suppress UnusedMethod
+     *
+     * @psalm-return int<0, max>
      */
     private function countSuccessfulWarmupQueries(array $operations): int
     {
@@ -323,6 +325,7 @@ class SolrNightlyWarmupJob extends TimedJob
         /*
          * @var \OCP\IConfig $config
          */
+
         $config = \OC::$server->get(\OCP\IConfig::class);
 
         $maxObjects    = $config->getAppValue('openregister', 'solr_nightly_max_objects', (string) self::DEFAULT_NIGHTLY_MAX_OBJECTS);
@@ -343,7 +346,9 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @param array $operations Operations array
      *
-     * @return array Summary array
+     * @return (float|int)[] Summary array
+     *
+     * @psalm-return array{total: int<0, max>, successful: int, efficiency: float}
      */
     private function summarizeOperations(array $operations): array
     {
