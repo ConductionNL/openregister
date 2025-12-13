@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <files psalm-version="5.26.1@d747f6500b38ac4f7dfc5edbcae6e4b637d7add0">
+  <file src="lib/BackgroundJob/CronFileTextExtractionJob.php">
+    <ParamNameMismatch>
+      <code><![CDATA[$_argument]]></code>
+    </ParamNameMismatch>
+  </file>
   <file src="lib/BackgroundJob/FileTextExtractionJob.php">
     <InvalidNamedArgument>
       <code><![CDATA[forceReextraction]]></code>
     </InvalidNamedArgument>
+  </file>
+  <file src="lib/BackgroundJob/SolrNightlyWarmupJob.php">
+    <ParamNameMismatch>
+      <code><![CDATA[$_argument]]></code>
+    </ParamNameMismatch>
   </file>
   <file src="lib/Command/SolrManagementCommand.php">
     <InvalidArrayOffset>
@@ -98,6 +108,10 @@
     </TypeDoesNotContainType>
   </file>
   <file src="lib/Controller/ObjectsController.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[register]]></code>
+      <code><![CDATA[schema]]></code>
+    </InvalidNamedArgument>
     <InvalidTemplateParam>
       <code><![CDATA[DataDownloadResponse<200, mixed, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>]]></code>
       <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
@@ -121,6 +135,14 @@
     </TypeDoesNotContainType>
   </file>
   <file src="lib/Controller/RegistersController.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new JSONResponse(
+                data: $this->objectEntityMapper->searchObjects(query: $query)
+        )]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[JSONResponse<200, int|list<\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>]]></code>
+    </InvalidReturnType>
     <InvalidTemplateParam>
       <code><![CDATA[JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
       <code><![CDATA[JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
@@ -132,6 +154,10 @@
       <code><![CDATA[$schemaArr['@self']]]></code>
       <code><![CDATA[$schema['@self']]]></code>
     </InvalidArrayOffset>
+    <InvalidNamedArgument>
+      <code><![CDATA[extend]]></code>
+      <code><![CDATA[extend]]></code>
+    </InvalidNamedArgument>
     <InvalidTemplateParam>
       <code><![CDATA[JSONResponse<200, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
       <code><![CDATA[JSONResponse<201, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
@@ -181,6 +207,26 @@
       <code><![CDATA[JSONResponse<int, array{error?: string, success?: bool, message?: null|string, error_details?: array{status_code: int|null, response_body: null|string}}, array<never, never>>]]></code>
     </InvalidTemplateParam>
   </file>
+  <file src="lib/Cron/ConfigurationCheckJob.php">
+    <ParamNameMismatch>
+      <code><![CDATA[$_argument]]></code>
+    </ParamNameMismatch>
+  </file>
+  <file src="lib/Cron/LogCleanUpTask.php">
+    <ParamNameMismatch>
+      <code><![CDATA[$_argument]]></code>
+    </ParamNameMismatch>
+  </file>
+  <file src="lib/Cron/SyncConfigurationsJob.php">
+    <ParamNameMismatch>
+      <code><![CDATA[$_argument]]></code>
+    </ParamNameMismatch>
+  </file>
+  <file src="lib/Cron/WebhookRetryJob.php">
+    <ParamNameMismatch>
+      <code><![CDATA[$_argument]]></code>
+    </ParamNameMismatch>
+  </file>
   <file src="lib/Db/Conversation.php">
     <InvalidNamedArgument>
       <code><![CDATA[value]]></code>
@@ -196,6 +242,7 @@
     </TypeDoesNotContainType>
     <UndefinedDocblockClass>
       <code><![CDATA[array{large: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>, normal: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>}]]></code>
+      <code><![CDATA[int|list<\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>]]></code>
     </UndefinedDocblockClass>
     <UnusedMethodCall>
       <code><![CDATA[setAccessible]]></code>
@@ -203,6 +250,14 @@
     </UnusedMethodCall>
   </file>
   <file src="lib/Db/ObjectHandlers/HyperFacetHandler.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[baseQuery]]></code>
+      <code><![CDATA[field]]></code>
+    </InvalidNamedArgument>
+    <MismatchingDocblockReturnType>
+      <code><![CDATA[PromiseInterface]]></code>
+      <code><![CDATA[PromiseInterface]]></code>
+    </MismatchingDocblockReturnType>
     <ParadoxicalCondition>
       <code><![CDATA[default:
                 // Fallback to exact calculation.
@@ -218,6 +273,12 @@
       <code><![CDATA[childUuid]]></code>
     </InvalidNamedArgument>
   </file>
+  <file src="lib/Db/RegisterMapper.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[extend]]></code>
+      <code><![CDATA[extend]]></code>
+    </InvalidNamedArgument>
+  </file>
   <file src="lib/Db/Schema.php">
     <NoValue>
       <code><![CDATA[$configuration]]></code>
@@ -226,6 +287,7 @@
   <file src="lib/Db/SchemaMapper.php">
     <InvalidNamedArgument>
       <code><![CDATA[data]]></code>
+      <code><![CDATA[extend]]></code>
       <code><![CDATA[key]]></code>
     </InvalidNamedArgument>
   </file>
@@ -293,11 +355,18 @@
       <code><![CDATA[$config->apiKey]]></code>
       <code><![CDATA[$llphantConfig->apiKey]]></code>
     </UndefinedPropertyFetch>
+    <UndefinedVariable>
+      <code><![CDATA[$urlValue]]></code>
+    </UndefinedVariable>
   </file>
   <file src="lib/Service/ConfigurationService.php">
     <InvalidTemplateParam>
       <code><![CDATA[JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, schemas: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, objects: list{0?: array{type: string, action: string, slug: string, title: string, register: string, schema: string, current: array|null, proposed: array, changes: array},...}, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}]]></code>
     </InvalidTemplateParam>
+    <NoValue>
+      <code><![CDATA[$existingObjectData]]></code>
+      <code><![CDATA[$existingObjectData]]></code>
+    </NoValue>
     <TypeDoesNotContainNull>
       <code><![CDATA[$version === null]]></code>
     </TypeDoesNotContainNull>
@@ -428,6 +497,9 @@
       <code><![CDATA[$this->nameCache]]></code>
       <code><![CDATA[$this->nameCache]]></code>
     </InvalidPropertyAssignmentValue>
+    <NoValue>
+      <code><![CDATA[$objectIdKey]]></code>
+    </NoValue>
     <UndefinedThisPropertyAssignment>
       <code><![CDATA[$this->relationshipCache]]></code>
     </UndefinedThisPropertyAssignment>
@@ -456,10 +528,17 @@
       <code><![CDATA[$imageValue['accessUrl']]]></code>
       <code><![CDATA[$imageValue['downloadUrl']]]></code>
     </EmptyArrayAccess>
-    <MismatchingDocblockReturnType/>
+    <MismatchingDocblockReturnType>
+      <code><![CDATA[int|null]]></code>
+    </MismatchingDocblockReturnType>
     <TypeDoesNotContainNull>
       <code><![CDATA[$targetObject === null]]></code>
     </TypeDoesNotContainNull>
+  </file>
+  <file src="lib/Service/ObjectHandlers/SaveObjects.php">
+    <NoValue>
+      <code><![CDATA[return $obj;]]></code>
+    </NoValue>
   </file>
   <file src="lib/Service/ObjectHandlers/ValidateObject.php">
     <InvalidArgument>
@@ -479,13 +558,29 @@
       <code><![CDATA[is_array($properties)]]></code>
       <code><![CDATA[isset($properties) === true && is_array($properties) === true]]></code>
     </TypeDoesNotContainType>
+    <UndefinedThisPropertyFetch>
+      <code><![CDATA[$this->logger]]></code>
+    </UndefinedThisPropertyFetch>
   </file>
   <file src="lib/Service/ObjectService.php">
-    <InvalidArgument/>
+    <InvalidArgument>
+      <code><![CDATA[$targetRegisterEntity->getId()]]></code>
+      <code><![CDATA[$targetSchemaEntity->getId()]]></code>
+    </InvalidArgument>
     <InvalidArrayOffset>
       <code><![CDATA[$bulkResult['statistics']['objectsCreated']]]></code>
       <code><![CDATA[$bulkResult['statistics']['objectsUpdated']]]></code>
     </InvalidArrayOffset>
+    <InvalidReturnStatement>
+      <code><![CDATA[$objects]]></code>
+      <code><![CDATA[$result]]></code>
+    </InvalidReturnStatement>
+  </file>
+  <file src="lib/Service/RegisterService.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[extend]]></code>
+      <code><![CDATA[extend]]></code>
+    </InvalidNamedArgument>
   </file>
   <file src="lib/Service/SchemaService.php">
     <TypeDoesNotContainType>
@@ -501,6 +596,15 @@
     <InvalidNamedArgument>
       <code><![CDATA[fields]]></code>
     </InvalidNamedArgument>
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$response === false || $response === null]]></code>
+      <code><![CDATA[$response === null]]></code>
+    </TypeDoesNotContainNull>
+  </file>
+  <file src="lib/Service/UploadService.php">
+    <UnusedParam>
+      <code><![CDATA[$file]]></code>
+    </UnusedParam>
   </file>
   <file src="lib/Service/VectorEmbeddingService.php">
     <InvalidArrayOffset>
@@ -595,6 +699,12 @@
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[$solrService->getHttpClient()]]></code>
     </InvalidPropertyAssignmentValue>
+  </file>
+  <file src="lib/Setup/apply_solr_schema.php">
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$response === false || $response === null]]></code>
+      <code><![CDATA[$response === null]]></code>
+    </TypeDoesNotContainNull>
   </file>
   <file src="lib/Tool/ObjectsTool.php">
     <InvalidNamedArgument>

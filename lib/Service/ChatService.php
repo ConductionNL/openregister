@@ -19,6 +19,8 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
+use RuntimeException;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Message;
@@ -250,7 +252,7 @@ class ChatService
 
             // Verify ownership.
             if ($conversation->getUserId() !== $userId) {
-                throw new \Exception('Access denied to conversation');
+                throw new Exception('Access denied to conversation');
             }
 
             // Get agent if configured.
@@ -369,7 +371,7 @@ class ChatService
                 // Note: sources are already included in message->sources.
                 'title'   => $conversation->getTitle(),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[ChatService] Failed to process message',
                     context: [
@@ -637,7 +639,7 @@ class ChatService
                 'text'    => $contextText,
                 'sources' => $sources,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[ChatService] Failed to retrieve context',
                     context: [
@@ -882,7 +884,7 @@ class ChatService
         $chatProvider = $llmConfig['chatProvider'] ?? null;
 
         if (empty($chatProvider) === true) {
-            throw new \Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.');
+            throw new Exception('Chat provider is not configured. Please configure OpenAI, Fireworks AI, or Ollama in settings.');
         }
 
         $this->logger->info(
@@ -900,7 +902,7 @@ class ChatService
             if ($chatProvider === 'ollama') {
                 $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
                 if (empty($ollamaConfig['url']) === true) {
-                    throw new \Exception('Ollama URL is not configured');
+                    throw new Exception('Ollama URL is not configured');
                 }
 
                 // Use native Ollama configuration.
@@ -925,7 +927,7 @@ class ChatService
                 if ($chatProvider === 'openai') {
                     $openaiConfig = $llmConfig['openaiConfig'] ?? [];
                     if (empty($openaiConfig['apiKey']) === true) {
-                        throw new \Exception('OpenAI API key is not configured');
+                        throw new Exception('OpenAI API key is not configured');
                     }
 
                     $config->apiKey = $openaiConfig['apiKey'];
@@ -946,7 +948,7 @@ class ChatService
                 } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
-                        throw new \Exception('Fireworks AI API key is not configured');
+                        throw new Exception('Fireworks AI API key is not configured');
                     }
 
                     $config->apiKey = $fireworksConfig['apiKey'];
@@ -966,7 +968,7 @@ class ChatService
 
                     $config->url = $baseUrl;
                 } else {
-                    throw new \Exception("Unsupported chat provider: {$chatProvider}");
+                    throw new Exception("Unsupported chat provider: {$chatProvider}");
                 }//end if
 
                 // Set temperature from agent or default (OpenAI/Fireworks).
@@ -1064,7 +1066,7 @@ class ChatService
                     );
 
             return $response;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[ChatService] Failed to generate response',
                     context: [
@@ -1072,7 +1074,7 @@ class ChatService
                         'error'    => $e->getMessage(),
                     ]
                     );
-            throw new \Exception('Failed to generate response: '.$e->getMessage());
+            throw new Exception('Failed to generate response: '.$e->getMessage());
         }//end try
 
     }//end generateResponse()
@@ -1186,7 +1188,7 @@ class ChatService
             }
 
             return $title;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     message: '[ChatService] Failed to generate title, using fallback',
                     context: [
@@ -1325,14 +1327,14 @@ class ChatService
         try {
             // Validate provider.
             if (in_array($provider, ['openai', 'fireworks', 'ollama'], true) === false) {
-                throw new \Exception("Unsupported provider: {$provider}");
+                throw new Exception("Unsupported provider: {$provider}");
             }
 
             // Configure LLM client based on provider.
             // Ollama uses its own native config.
             if ($provider === 'ollama') {
                 if (empty($config['url']) === true) {
-                    throw new \Exception('Ollama URL is required');
+                    throw new Exception('Ollama URL is required');
                 }
 
                 // Use native Ollama configuration.
@@ -1350,7 +1352,7 @@ class ChatService
 
                 if ($provider === 'openai') {
                     if (empty($config['apiKey']) === true) {
-                        throw new \Exception('OpenAI API key is required');
+                        throw new Exception('OpenAI API key is required');
                     }
 
                     $llphantConfig->apiKey = $config['apiKey'];
@@ -1364,7 +1366,7 @@ class ChatService
                     }
                 } else if ($provider === 'fireworks') {
                     if (empty($config['apiKey']) === true) {
-                        throw new \Exception('Fireworks AI API key is required');
+                        throw new Exception('Fireworks AI API key is required');
                     }
 
                     $llphantConfig->apiKey = $config['apiKey'];
@@ -1488,7 +1490,7 @@ class ChatService
                     'raw_error' => $e->getMessage(),
                 ],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[ChatService] Chat test failed',
                     context: [
@@ -1565,7 +1567,7 @@ class ChatService
         curl_close($ch);
 
         if ($curlError !== '') {
-            throw new \Exception("Fireworks API request failed: {$curlError}");
+            throw new Exception("Fireworks API request failed: {$curlError}");
         }
 
         if ($httpCode !== 200) {
@@ -1575,13 +1577,13 @@ class ChatService
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
-                throw new \Exception('Authentication failed. Please check your Fireworks API key.');
+                throw new Exception('Authentication failed. Please check your Fireworks API key.');
             } else if ($httpCode === 404) {
-                throw new \Exception("Model not found: {$model}. Please check the model name.");
+                throw new Exception("Model not found: {$model}. Please check the model name.");
             } else if ($httpCode === 429) {
-                throw new \Exception('Rate limit exceeded. Please try again later.');
+                throw new Exception('Rate limit exceeded. Please try again later.');
             } else {
-                throw new \Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
+                throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
             }
         }
 
@@ -1598,7 +1600,7 @@ class ChatService
                 $responseStr = 'Invalid response';
             }
 
-            throw new \Exception("Unexpected Fireworks API response format: ".$responseStr);
+            throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1691,7 +1693,7 @@ class ChatService
         curl_close($ch);
 
         if ($curlError !== '') {
-            throw new \Exception("Fireworks API request failed: {$curlError}");
+            throw new Exception("Fireworks API request failed: {$curlError}");
         }
 
         if ($httpCode !== 200) {
@@ -1701,13 +1703,13 @@ class ChatService
 
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
-                throw new \Exception('Authentication failed. Please check your Fireworks API key.');
+                throw new Exception('Authentication failed. Please check your Fireworks API key.');
             } else if ($httpCode === 404) {
-                throw new \Exception("Model not found: {$model}. Please check the model name.");
+                throw new Exception("Model not found: {$model}. Please check the model name.");
             } else if ($httpCode === 429) {
-                throw new \Exception('Rate limit exceeded. Please try again later.');
+                throw new Exception('Rate limit exceeded. Please try again later.');
             } else {
-                throw new \Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
+                throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
             }
         }
 
@@ -1724,7 +1726,7 @@ class ChatService
                 $responseStr = 'Invalid response';
             }
 
-            throw new \Exception("Unexpected Fireworks API response format: ".$responseStr);
+            throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
@@ -1753,7 +1755,7 @@ class ChatService
         // Check if we recently summarized.
         $lastSummary = $metadata['last_summary_at'] ?? null;
         if ($lastSummary !== null) {
-            $lastSummaryTime       = new \DateTime($lastSummary);
+            $lastSummaryTime       = new DateTime($lastSummary);
             $hoursSinceLastSummary = (time() - $lastSummaryTime->getTimestamp()) / 3600;
 
             // Don't summarize more than once per hour.
@@ -1798,7 +1800,7 @@ class ChatService
                         'summaryLength'  => strlen($summary),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[ChatService] Failed to summarize conversation',
                     context: [
@@ -1826,7 +1828,7 @@ class ChatService
         $chatProvider = $llmConfig['chatProvider'] ?? null;
 
         if (empty($chatProvider) === true) {
-            throw new \Exception('Chat provider not configured');
+            throw new Exception('Chat provider not configured');
         }
 
         // Build conversation text.
@@ -1845,7 +1847,7 @@ class ChatService
         if ($chatProvider === 'ollama') {
             $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
             if (empty($ollamaConfig['url']) === true) {
-                throw new \Exception('Ollama URL not configured');
+                throw new Exception('Ollama URL not configured');
             }
 
             // Use native Ollama configuration.
@@ -1859,7 +1861,7 @@ class ChatService
             if ($chatProvider === 'openai') {
                 $openaiConfig = $llmConfig['openaiConfig'] ?? [];
                 if (empty($openaiConfig['apiKey']) === true) {
-                    throw new \Exception('OpenAI API key not configured');
+                    throw new Exception('OpenAI API key not configured');
                 }
 
                 $config->apiKey = $openaiConfig['apiKey'];
@@ -1867,7 +1869,7 @@ class ChatService
             } else if ($chatProvider === 'fireworks') {
                 $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                 if (empty($fireworksConfig['apiKey']) === true) {
-                    throw new \Exception('Fireworks AI API key not configured');
+                    throw new Exception('Fireworks AI API key not configured');
                 }
 
                 $config->apiKey = $fireworksConfig['apiKey'];

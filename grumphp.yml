@@ -1,0 +1,125 @@
+grumphp:
+  # Process runs mode (linux/windows)
+  process_timeout: 300
+  
+  # Stop on first failure
+  stop_on_failure: true
+  
+  # Ignore unstaged changes
+  ignore_unstaged_changes: false
+  
+  # Hide circumvention tip
+  hide_circumvention_tip: false
+  
+  # Git hooks configuration
+  git_hook_variables:
+    EXEC_GRUMPHP_COMMAND: 'docker exec -u 33 master-nextcloud-1 bash -c "cd /var/www/html/apps-extra/openregister && php vendor/bin/grumphp"'
+  
+  # Environment configuration
+  environment:
+    files: []
+    variables: {}
+    paths: []
+  
+  # Fixer configuration - automatically fix issues when possible
+  fixer:
+    enabled: true
+    fix_by_default: false
+  
+  # Tasks to run
+  tasks:
+    # PHP Lint - Check for syntax errors
+    phplint:
+      exclude: ['vendor', 'node_modules']
+      jobs: ~
+      short_open_tag: false
+      ignore_patterns: []
+      triggered_by: ['php']
+      
+    # PHP CodeSniffer - Check coding standards
+    phpcs:
+      standard: phpcs.xml
+      triggered_by: [php]
+      whitelist_patterns: []
+      encoding: UTF-8
+      ignore_patterns:
+        - vendor/
+        - node_modules/
+      sniffs: []
+      severity: ~
+      error_severity: ~
+      warning_severity: ~
+      tab_width: ~
+      report: full
+      report_width: ~
+      
+    # PHP Mess Detector - Check for code smells
+    phpmd:
+      ruleset: ['phpmd.xml']
+      triggered_by: ['php']
+      exclude:
+        - vendor
+        - node_modules
+        - tests
+      
+    # PHPUnit - Run unit tests
+    phpunit:
+      config_file: phpunit.xml
+      testsuite: ~
+      group: []
+      always_execute: false
+      order: ~
+      
+    # Composer validation
+    composer:
+      file: composer.json
+      no_check_all: false
+      no_check_lock: false
+      no_check_publish: false
+      with_dependencies: false
+      strict: false
+      
+    # YAML Lint - Check YAML files
+    yamllint:
+      whitelist_patterns: []
+      ignore_patterns:
+        - vendor/
+        - node_modules/
+      object_support: false
+      exception_on_invalid_type: false
+      parse_constant: false
+      parse_custom_tags: false
+      
+    # JSON Lint - Check JSON files
+    jsonlint:
+      detect_key_conflicts: true
+      ignore_patterns:
+        - vendor/
+        - node_modules/
+        
+  # Test suites - Group tasks together
+  testsuites:
+    # Quick checks for pre-commit
+    git_commit_msg:
+      tasks: []
+      
+    git_pre_commit:
+      tasks:
+        - phplint
+        - phpcs
+        - jsonlint
+        - yamllint
+        - composer
+        
+    # Full checks for pre-push
+    git_pre_push:
+      tasks:
+        - phplint
+        - phpcs
+        - phpmd
+        - phpunit
+        - composer
+        
+  # Extensions configuration
+  extensions: []
+

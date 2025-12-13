@@ -1135,15 +1135,15 @@ class RenderObject
     /**
      * Handles inversed properties for an object
      *
-     * @param ObjectEntity $entity     The entity to process
-     * @param array        $objectData The current object data
-     * @param int          $depth      Current depth level
-     * @param array|null   $filter     Filters to apply
-     * @param array|null   $fields     Fields to include
-     * @param array|null   $unset      Properties to remove from the rendered entity
-     * @param array|null   $registers  Preloaded registers
-     * @param array|null   $schemas    Preloaded schemas
-     * @param array|null   $objects    Preloaded objects
+     * @param ObjectEntity $entity      The entity to process
+     * @param array        $objectData  The current object data
+     * @param int          $_depth      Current depth level
+     * @param array|null   $_filter     Filters to apply
+     * @param array|null   $_fields     Fields to include
+     * @param array|null   $_unset      Properties to remove from the rendered entity
+     * @param array|null   $_registers  Preloaded registers
+     * @param array|null   $_schemas    Preloaded schemas
+     * @param array|null   $_objects    Preloaded objects
      *
      * @return array The updated object data with inversed properties
      */

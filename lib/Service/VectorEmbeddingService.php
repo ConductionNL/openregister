@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
+use RuntimeException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\OpenAIConfig;
@@ -115,7 +117,7 @@ class VectorEmbeddingService
         try {
             $llmSettings = $this->settingsService->getLLMSettingsOnly();
             return $llmSettings['vectorConfig']['backend'] ?? 'php';
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     message: '[VectorEmbeddingService] Failed to get vector search backend, defaulting to PHP',
                     context: [
@@ -163,7 +165,7 @@ class VectorEmbeddingService
             }
 
             return $collection;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     message: '[VectorEmbeddingService] Failed to get Solr collection for entity type',
                     context: [
@@ -187,7 +189,7 @@ class VectorEmbeddingService
         try {
             $settings = $this->settingsService->getSettings();
             return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     message: '[VectorEmbeddingService] Failed to get Solr vector field, using default',
                     context: [
@@ -246,7 +248,7 @@ class VectorEmbeddingService
                 'model'      => $config['model'],
                 'dimensions' => $dimensions,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to generate embedding',
                     context: [
@@ -255,7 +257,7 @@ class VectorEmbeddingService
                         'text_length' => strlen($text),
                     ]
                     );
-            throw new \Exception('Embedding generation failed: '.$e->getMessage());
+            throw new Exception('Embedding generation failed: '.$e->getMessage());
         }//end try
 
     }//end generateEmbedding()
@@ -304,16 +306,16 @@ class VectorEmbeddingService
 
             // Validate required fields.
             if (empty($normalizedConfig['provider']) === true) {
-                throw new \Exception('Provider is required');
+                throw new Exception('Provider is required');
             }
 
             if (empty($normalizedConfig['model']) === true) {
-                throw new \Exception('Model is required');
+                throw new Exception('Model is required');
             }
 
             // Validate API keys for providers that need them.
             if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true && empty($normalizedConfig['api_key']) === true) {
-                throw new \Exception("API key is required for {$normalizedConfig['provider']}");
+                throw new Exception("API key is required for {$normalizedConfig['provider']}");
             }
 
             // Create embedding generator.
@@ -331,7 +333,7 @@ class VectorEmbeddingService
                     );
 
             return $embedding;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to generate embedding with custom config',
                     context: [
@@ -340,7 +342,7 @@ class VectorEmbeddingService
                         'text_length' => strlen($text),
                     ]
                     );
-            throw new \Exception('Embedding generation failed: '.$e->getMessage());
+            throw new Exception('Embedding generation failed: '.$e->getMessage());
         }//end try
 
     }//end generateEmbeddingWithCustomConfig()
@@ -403,7 +405,7 @@ class VectorEmbeddingService
                     'testText'     => $testText,
                 ],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[VectorEmbeddingService] Embedding test failed',
                     context: [
@@ -461,7 +463,7 @@ class VectorEmbeddingService
                         'model'      => $config['model'],
                         'dimensions' => count($embedding),
                     ];
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             message: 'Failed to generate embedding for text',
                             context: [
@@ -491,7 +493,7 @@ class VectorEmbeddingService
                     );
 
             return $results;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to generate batch embeddings',
                     context: [
@@ -499,7 +501,7 @@ class VectorEmbeddingService
                         'count' => count($texts),
                     ]
                     );
-            throw new \Exception('Batch embedding generation failed: '.$e->getMessage());
+            throw new Exception('Batch embedding generation failed: '.$e->getMessage());
         }//end try
 
     }//end generateBatchEmbeddings()
@@ -552,12 +554,12 @@ class VectorEmbeddingService
             $vectorField = $this->getSolrVectorField();
 
             if ($collection === null || $collection === '') {
-                throw new \Exception("Solr collection not configured for entity type: {$entityType}");
+                throw new Exception("Solr collection not configured for entity type: {$entityType}");
             }
 
             // Check if Solr is available.
             if ($this->solrService->isAvailable() === false) {
-                throw new \Exception('Solr service is not available');
+                throw new Exception('Solr service is not available');
             }
 
             // Determine document ID based on entity type.
@@ -608,7 +610,7 @@ class VectorEmbeddingService
             $responseData = json_decode((string) $response->getBody(), true);
 
             if (!isset($responseData['responseHeader']['status']) === false || $responseData['responseHeader']['status'] !== 0) {
-                throw new \Exception('Solr atomic update failed: '.json_encode($responseData));
+                throw new Exception('Solr atomic update failed: '.json_encode($responseData));
             }
 
             $this->logger->info(
@@ -623,7 +625,7 @@ class VectorEmbeddingService
                     );
 
             return $documentId;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[VectorEmbeddingService] Failed to store vector in Solr',
                     context: [
@@ -633,7 +635,7 @@ class VectorEmbeddingService
                         'chunk_index' => $chunkIndex,
                     ]
                     );
-            throw new \Exception('Solr vector storage failed: '.$e->getMessage());
+            throw new Exception('Solr vector storage failed: '.$e->getMessage());
         }//end try
 
     }//end storeVectorInSolr()
@@ -671,7 +673,7 @@ class VectorEmbeddingService
         try {
             // Check if Solr is available.
             if ($this->solrService->isAvailable() === false) {
-                throw new \Exception('Solr service is not available');
+                throw new Exception('Solr service is not available');
             }
 
             $vectorField = $this->getSolrVectorField();
@@ -711,7 +713,7 @@ class VectorEmbeddingService
             }//end if
 
             if ($collectionsToSearch === []) {
-                throw new \Exception('No Solr collections configured for vector search');
+                throw new Exception('No Solr collections configured for vector search');
             }
 
             // Build Solr KNN query.
@@ -779,7 +781,7 @@ class VectorEmbeddingService
                             'dimensions'   => $doc['_embedding_dim_'] ?? $doc['embedding_dimensions_i'] ?? 0,
                         ];
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             message: '[VectorEmbeddingService] Failed to search collection',
                             context: [
@@ -804,14 +806,14 @@ class VectorEmbeddingService
                     );
 
             return $allResults;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[VectorEmbeddingService] Solr vector search failed',
                     context: [
                         'error' => $e->getMessage(),
                     ]
                     );
-            throw new \Exception('Solr vector search failed: '.$e->getMessage());
+            throw new Exception('Solr vector search failed: '.$e->getMessage());
         }//end try
 
     }//end searchVectorsInSolr()
@@ -913,7 +915,7 @@ class VectorEmbeddingService
                 $chunkText,
                 $metadata
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[VectorEmbeddingService] Failed to store vector',
                     context: [
@@ -923,7 +925,7 @@ class VectorEmbeddingService
                         'entity_id'   => $entityId,
                     ]
                     );
-            throw new \Exception('Vector storage failed: '.$e->getMessage());
+            throw new Exception('Vector storage failed: '.$e->getMessage());
         }//end try
 
     }//end storeVector()
@@ -1016,7 +1018,7 @@ class VectorEmbeddingService
                     );
 
             return $vectorId;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to store vector',
                     context: [
@@ -1025,7 +1027,7 @@ class VectorEmbeddingService
                         'entity_id'   => $entityId,
                     ]
                     );
-            throw new \Exception('Vector storage failed: '.$e->getMessage());
+            throw new Exception('Vector storage failed: '.$e->getMessage());
         }//end try
 
     }//end storeVectorInDatabase()
@@ -1131,7 +1133,7 @@ class VectorEmbeddingService
                             'model'        => $vector['embedding_model'],
                             'dimensions'   => $vector['embedding_dimensions'],
                         ];
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $this->logger->warning(
                         message: 'Failed to process vector',
                         context: [
@@ -1163,7 +1165,7 @@ class VectorEmbeddingService
                     );
 
             return $results;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
@@ -1173,7 +1175,7 @@ class VectorEmbeddingService
                         'search_time_ms' => $searchTime,
                     ]
                     );
-            throw new \Exception('Semantic search failed: '.$e->getMessage());
+            throw new Exception('Semantic search failed: '.$e->getMessage());
         }//end try
 
     }//end semanticSearch()
@@ -1263,14 +1265,14 @@ class VectorEmbeddingService
                     );
 
             return $vectors;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to fetch vectors',
                     context: [
                         'error' => $e->getMessage(),
                     ]
                     );
-            throw new \Exception('Failed to fetch vectors: '.$e->getMessage());
+            throw new Exception('Failed to fetch vectors: '.$e->getMessage());
         }//end try
 
     }//end fetchVectors()
@@ -1337,7 +1339,7 @@ class VectorEmbeddingService
                         $solrFilters['vector_filters'] ?? [],
                         $provider
                     );
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             message: 'Vector search failed, continuing with SOLR only',
                             context: [
@@ -1414,7 +1416,7 @@ class VectorEmbeddingService
                     'vector' => $vectorWeight,
                 ],
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $searchTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->error(
@@ -1424,7 +1426,7 @@ class VectorEmbeddingService
                         'search_time_ms' => $searchTime,
                     ]
                     );
-            throw new \Exception('Hybrid search failed: '.$e->getMessage());
+            throw new Exception('Hybrid search failed: '.$e->getMessage());
         }//end try
 
     }//end hybridSearch()
@@ -1577,7 +1579,7 @@ class VectorEmbeddingService
                 'object_vectors' => $byType['object'] ?? 0,
                 'file_vectors'   => $byType['file'] ?? 0,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to get vector stats',
                     context: [
@@ -1642,7 +1644,7 @@ class VectorEmbeddingService
                     $objectStats = $this->countVectorsInCollection($objectCollection, $vectorField);
                     $objectCount = $objectStats['count'];
                     $byModel     = array_merge($byModel, $objectStats['by_model']);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             message: '[VectorEmbeddingService] Failed to get object vector stats from Solr',
                             context: [
@@ -1661,7 +1663,7 @@ class VectorEmbeddingService
                     foreach ($fileStats['by_model'] as $model => $count) {
                         $byModel[$model] = ($byModel[$model] ?? 0) + $count;
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->warning(
                             message: '[VectorEmbeddingService] Failed to get file vector stats from Solr',
                             context: [
@@ -1693,7 +1695,7 @@ class VectorEmbeddingService
                 'file_vectors'   => $fileCount,
                 'source'         => 'solr',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: '[VectorEmbeddingService] Failed to get vector stats from Solr',
                     context: [
@@ -1850,7 +1852,7 @@ class VectorEmbeddingService
                 'openai' => $this->createOpenAIGenerator($config['model'], $config),
                 'fireworks' => $this->createFireworksGenerator($config['model'], $config),
                 'ollama' => $this->createOllamaGenerator($config['model'], $config),
-                default => throw new \Exception("Unsupported embedding provider: {$config['provider']}")
+                default => throw new Exception("Unsupported embedding provider: {$config['provider']}")
             };
 
             $this->generatorCache[$cacheKey] = $generator;
@@ -1898,7 +1900,7 @@ class VectorEmbeddingService
             'text-embedding-ada-002' => new OpenAIADA002EmbeddingGenerator($llphantConfig),
             'text-embedding-3-small' => new OpenAI3SmallEmbeddingGenerator($llphantConfig),
             'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($llphantConfig),
-            default => throw new \Exception("Unsupported OpenAI model: {$model}")
+            default => throw new Exception("Unsupported OpenAI model: {$model}")
         };
 
     }//end createOpenAIGenerator()
@@ -2012,21 +2014,21 @@ class VectorEmbeddingService
                 curl_close($ch);
 
                 if ($error !== null && $error !== '') {
-                    throw new \Exception("Fireworks API request failed: {$error}");
+                    throw new Exception("Fireworks API request failed: {$error}");
                 }
 
                 if ($httpCode !== 200) {
-                    throw new \Exception("Fireworks API returned HTTP {$httpCode}: {$response}");
+                    throw new Exception("Fireworks API returned HTTP {$httpCode}: {$response}");
                 }
 
                 // Ensure $response is a string (curl_exec can return bool on failure).
                 if (is_string($response) === false) {
-                    throw new \Exception("Fireworks API request failed: Invalid response type");
+                    throw new Exception("Fireworks API request failed: Invalid response type");
                 }
 
                 $data = json_decode($response, true);
                 if (!isset($data['data'][0]['embedding'])) {
-                    throw new \Exception("Unexpected Fireworks API response format: {$response}");
+                    throw new Exception("Unexpected Fireworks API response format: {$response}");
                 }
 
                 return $data['data'][0]['embedding'];
@@ -2278,7 +2280,7 @@ class VectorEmbeddingService
 
                 'message'           => $this->formatModelMismatchMessage($hasMismatch, $nullModelCount),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to check embedding model mismatch',
                     context: [
@@ -2365,7 +2367,7 @@ class VectorEmbeddingService
                 'deleted' => $deletedCount,
                 'message' => "Deleted {$deletedCount} vectors successfully",
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to clear embeddings',
                     context: [

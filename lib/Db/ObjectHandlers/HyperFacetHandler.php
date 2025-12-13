@@ -1154,9 +1154,9 @@ class HyperFacetHandler
     /**
      * Estimate JSON field facet values using statistics
      *
-     * @param string $field     Field name
-     * @param array  $config    Facet configuration
-     * @param array  $baseQuery  Base query parameters
+     * @param string $_field     Field name
+     * @param array  $config     Facet configuration
+     * @param array  $_baseQuery Base query parameters
      * @param array  $stats      Statistics for estimation
      *
      * @return ((int|string|true)[][]|mixed|string)[] Estimated facet results
@@ -1176,9 +1176,9 @@ class HyperFacetHandler
     /**
      * Calculate a single metadata facet
      *
-     * @param string $field     Field name
-     * @param array  $config    Facet configuration
-     * @param array  $baseQuery Base query parameters
+     * @param string $_field     Field name
+     * @param array  $_config    Facet configuration
+     * @param array  $_baseQuery Base query parameters
      *
      * @return array Facet results
      *

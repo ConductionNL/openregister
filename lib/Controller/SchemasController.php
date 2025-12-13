@@ -878,7 +878,7 @@ class SchemasController extends Controller
     public function publish(int $id): JSONResponse
     {
         try {
-            // Get the publication date from request if provided, otherwise use now
+            // Get the publication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
                 $date = new \DateTime($this->request->getParam('date'));
@@ -886,14 +886,14 @@ class SchemasController extends Controller
                 $date = new \DateTime();
             }
 
-            // Get the schema
+            // Get the schema.
             $schema = $this->schemaMapper->find($id);
 
-            // Set published date and clear depublished date if set
+            // Set published date and clear depublished date if set.
             $schema->setPublished($date);
             $schema->setDepublished(null);
 
-            // Update the schema
+            // Update the schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes
@@ -943,7 +943,7 @@ class SchemasController extends Controller
     public function depublish(int $id): JSONResponse
     {
         try {
-            // Get the depublication date from request if provided, otherwise use now
+            // Get the depublication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
                 $date = new \DateTime($this->request->getParam('date'));
@@ -951,13 +951,13 @@ class SchemasController extends Controller
                 $date = new \DateTime();
             }
 
-            // Get the schema
+            // Get the schema.
             $schema = $this->schemaMapper->find($id);
 
-            // Set depublished date
+            // Set depublished date.
             $schema->setDepublished($date);
 
-            // Update the schema
+            // Update the schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
             // **CACHE INVALIDATION**: Clear schema cache when publication status changes

@@ -36,6 +36,9 @@ use OCA\OpenRegister\Service\IDatabaseJsonService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\AuthorizationExceptionService;
 use OCA\OpenRegister\Service\OrganisationService;
+use Exception;
+use RuntimeException;
+use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -301,7 +304,7 @@ class ObjectEntityMapper extends QBMapper
                     // 30% buffer for smaller packet sizes
                 }
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Failed to query max_allowed_packet, will use default buffer.
             $this->logger->debug('Failed to initialize max packet size from database', ['exception' => $e->getMessage()]);
         }//end try
@@ -323,7 +326,7 @@ class ObjectEntityMapper extends QBMapper
             if (($result !== null) === true && ($result['Value'] ?? null) !== null) {
                 return (int) $result['Value'];
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Failed to query max_allowed_packet, using fallback value.
             $this->logger->debug('Failed to get max_allowed_packet from database', ['exception' => $e->getMessage()]);
         }
@@ -385,7 +388,7 @@ class ObjectEntityMapper extends QBMapper
             // @todo: Implement complex query building for exceptions
             // For now, return null to fall back to normal RBAC with post-processing
             return null;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Error applying authorization exceptions',
                     [
@@ -483,7 +486,7 @@ class ObjectEntityMapper extends QBMapper
             $user = $this->userSession->getUser();
             if ($user === null) {
                 // For unauthenticated requests, show objects that allow public access OR are published.
-                $now = (new \DateTime())->format('Y-m-d H:i:s');
+                $now = (new DateTime())->format('Y-m-d H:i:s');
                 $qb->andWhere(
                     $qb->expr()->orX(
                 // Schemas with no authorization (open access).
@@ -514,7 +517,7 @@ class ObjectEntityMapper extends QBMapper
         $userObj = $this->userManager->get($userId);
         if ($userObj === null) {
             // User doesn't exist, handle as unauthenticated with publication-based access.
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->orX(
                     //end if
@@ -588,7 +591,7 @@ class ObjectEntityMapper extends QBMapper
         // EXCEPTION: If disablePublishedBypass=true (e.g., when _published=false is set), skip published bypass
         // This allows dashboard users to filter to only their organization's objects
         if ($disablePublishedBypass === false && $this->shouldPublishedObjectsBypassMultiTenancy()) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $readConditions->add(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull("{$objectTableAlias}.published"),
@@ -835,7 +838,7 @@ class ObjectEntityMapper extends QBMapper
 
         // If published filter is set, only include objects that are currently published.
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             // published <= now AND (depublished IS NULL OR depublished > now).
             $qb->andWhere(
                 $qb->expr()->andX(
@@ -1816,7 +1819,7 @@ class ObjectEntityMapper extends QBMapper
         // Published objects from user's organization will still be visible (they pass org filter)
         // Published objects from other organizations won't be visible (they don't pass org filter)
         if ($published === true && !$bypassPublishedFilter) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             if ($tableAlias !== '') {
                 $publishedColumn = $tableAlias.'.published';
             } else {
@@ -2048,7 +2051,7 @@ class ObjectEntityMapper extends QBMapper
 
         // If published filter is set, only include objects that are currently published.
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             // published <= now AND (depublished IS NULL OR depublished > now).
             $qb->andWhere(
                 $qb->expr()->andX(
@@ -2280,7 +2283,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Check if user has permission to lock.
         if ($this->userSession->isLoggedIn() === false) {
-            throw new \Exception('Must be logged in to lock objects');
+            throw new Exception('Must be logged in to lock objects');
         }
 
         // Attempt to lock the object.
@@ -2313,7 +2316,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Check if user has permission to unlock.
         if ($this->userSession->isLoggedIn() === false) {
-            throw new \Exception('Must be logged in to unlock objects');
+            throw new Exception('Must be logged in to unlock objects');
         }
 
         // Attempt to unlock the object.
@@ -2450,7 +2453,7 @@ class ObjectEntityMapper extends QBMapper
     {
         try {
             $qb  = $this->db->getQueryBuilder();
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->select(
                 $qb->createFunction('COUNT(id) as total'),
                 $qb->createFunction('COALESCE(SUM(size), 0) as size'),
@@ -2516,7 +2519,7 @@ class ObjectEntityMapper extends QBMapper
                 'locked'    => (int) ($result['locked'] ?? 0),
                 'published' => (int) ($result['published'] ?? 0),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'total'     => 0,
                 'size'      => 0,
@@ -2581,7 +2584,7 @@ class ObjectEntityMapper extends QBMapper
                         $results
                         ),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'labels' => [],
                 'series' => [],
@@ -2642,7 +2645,7 @@ class ObjectEntityMapper extends QBMapper
                         $results
                         ),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'labels' => [],
                 'series' => [],
@@ -2720,7 +2723,7 @@ class ObjectEntityMapper extends QBMapper
                         $results
                         ),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'labels' => [],
                 'series' => [],
@@ -3371,7 +3374,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
             return $insertedIds;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Rollback transaction if we started it.
             if ($transactionStarted === true) {
                 try {
@@ -3424,7 +3427,7 @@ class ObjectEntityMapper extends QBMapper
             }
 
             return $updatedIds;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Rollback transaction if we started it.
             if ($transactionStarted === true) {
                 try {
@@ -3488,7 +3491,7 @@ class ObjectEntityMapper extends QBMapper
             // Check database connection health before processing batch.
             try {
                 $this->db->executeQuery('SELECT 1');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk insert', 0, $e);
             }
 
@@ -3537,9 +3540,9 @@ class ObjectEntityMapper extends QBMapper
                     if ($result !== false) {
                         $batchSuccess = true;
                     } else {
-                        throw new \Exception('Statement execution returned false');
+                        throw new Exception('Statement execution returned false');
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     //end foreach
                     $batchRetryCount++;
                     $errorMessage = $e->getMessage();
@@ -3859,7 +3862,7 @@ class ObjectEntityMapper extends QBMapper
             // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk delete', 0, $e);
             }
 
@@ -3892,7 +3895,7 @@ class ObjectEntityMapper extends QBMapper
 
             // Perform soft deletes (set deleted timestamp).
             if (empty($softDeleteIds) === false) {
-                $currentTime = (new \DateTime())->format('Y-m-d H:i:s');
+                $currentTime = (new DateTime())->format('Y-m-d H:i:s');
                 $qb          = $this->db->getQueryBuilder();
                 $qb->update($tableName)
                     ->set(
@@ -3967,7 +3970,7 @@ class ObjectEntityMapper extends QBMapper
             $publishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
             // Use current datetime.
-            $publishedValue = (new \DateTime())->format('Y-m-d H:i:s');
+            $publishedValue = (new DateTime())->format('Y-m-d H:i:s');
         }
 
         // Process publishes in smaller chunks to prevent connection issues.
@@ -3979,7 +3982,7 @@ class ObjectEntityMapper extends QBMapper
             // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk publish', 0, $e);
             }
 
@@ -4057,7 +4060,7 @@ class ObjectEntityMapper extends QBMapper
             $depublishedValue = $datetime->format('Y-m-d H:i:s');
         } else {
             // Use current datetime.
-            $depublishedValue = (new \DateTime())->format('Y-m-d H:i:s');
+            $depublishedValue = (new DateTime())->format('Y-m-d H:i:s');
         }
 
         // Process depublishes in smaller chunks to prevent connection issues.
@@ -4069,7 +4072,7 @@ class ObjectEntityMapper extends QBMapper
             // Check database connection health before processing chunk.
             try {
                 $this->db->executeQuery('SELECT 1');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new \OCP\DB\Exception('Database connection lost during bulk depublish', 0, $e);
             }
 
@@ -4158,7 +4161,7 @@ class ObjectEntityMapper extends QBMapper
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Rollback transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->rollBack();
@@ -4390,7 +4393,7 @@ class ObjectEntityMapper extends QBMapper
                 //end if
                 $this->db->commit();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Rollback transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->rollBack();
@@ -4452,7 +4455,7 @@ class ObjectEntityMapper extends QBMapper
             if ($transactionStarted === true) {
                 $this->db->commit();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Rollback transaction only if we started it.
             if ($transactionStarted === true) {
                 $this->db->rollBack();
@@ -4567,7 +4570,7 @@ class ObjectEntityMapper extends QBMapper
                 // Clear memory after each large object.
                 unset($parameters, $sql);
                 gc_collect_cycles();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error('Error processing large object', ['index' => $index + 1, 'exception' => $e->getMessage()]);
 
                 // If it's still a packet size error, log it but continue.
@@ -4616,7 +4619,7 @@ class ObjectEntityMapper extends QBMapper
             'ownersAssigned'        => 0,
             'organisationsAssigned' => 0,
             'errors'                => [],
-            'startTime'             => new \DateTime(),
+            'startTime'             => new DateTime(),
         ];
 
         try {
@@ -4675,13 +4678,13 @@ class ObjectEntityMapper extends QBMapper
                 }
             }//end while
 
-            $results['endTime']  = new \DateTime();
+            $results['endTime']  = new DateTime();
             $results['duration'] = $results['endTime']->diff($results['startTime'])->format('%H:%I:%S');
 
             return $results;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Error during bulk owner declaration', ['exception' => $e->getMessage()]);
-            throw new \RuntimeException('Bulk owner declaration failed: '.$e->getMessage());
+            throw new RuntimeException('Bulk owner declaration failed: '.$e->getMessage());
         }//end try
 
     }//end bulkOwnerDeclaration()
@@ -4729,7 +4732,7 @@ class ObjectEntityMapper extends QBMapper
                 if ($needsUpdate === true) {
                     $this->updateObjectOwnership((int) $objectData['id'], $updateData);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $error = 'Error updating object '.$objectData['uuid'].': '.$e->getMessage();
                 $batchResults['errors'][] = $error;
             }//end try
@@ -4760,7 +4763,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Update the modified timestamp.
-        $qb->set('modified', $qb->createNamedParameter(new \DateTime(), IQueryBuilder::PARAM_DATE));
+        $qb->set('modified', $qb->createNamedParameter(new DateTime(), IQueryBuilder::PARAM_DATE));
 
         $qb->executeStatement();
 
@@ -4804,7 +4807,7 @@ class ObjectEntityMapper extends QBMapper
 
             // Execute the update and return number of affected rows.
             return $qb->executeStatement();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
                     'Failed to set expiry dates for objects: '.$e->getMessage(),
