@@ -246,7 +246,7 @@ class DeletedController extends Controller
             );
 
             // Get deleted today count.
-            $today        = (new \DateTime())->format('Y-m-d');
+            $today        = (new DateTime())->format('Y-m-d');
             $deletedToday = $this->objectEntityMapper->countAll(
                 filters: [
                     '@self.deleted'         => 'IS NOT NULL',
@@ -256,7 +256,7 @@ class DeletedController extends Controller
             );
 
             // Get deleted this week count.
-            $weekAgo         = (new \DateTime())->modify('-7 days')->format('Y-m-d');
+            $weekAgo         = (new DateTime())->modify('-7 days')->format('Y-m-d');
             $deletedThisWeek = $this->objectEntityMapper->countAll(
                 filters: [
                     '@self.deleted'         => 'IS NOT NULL',

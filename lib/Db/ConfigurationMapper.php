@@ -295,7 +295,7 @@ class ConfigurationMapper extends QBMapper
         $configuration = $this->find($id);
         $configuration->setSyncStatus($status);
         $configuration->setLastSyncDate($syncDate);
-        $configuration->setUpdated(new \DateTime());
+        $configuration->setUpdated(new DateTime());
 
         return $this->update($configuration);
 
@@ -457,7 +457,7 @@ class ConfigurationMapper extends QBMapper
 
         // Set or update the version.
         if (isset($data['version']) === false) {
-            $version    = explode('.', $object->getVersion());
+            $version    = explode('.', $object->getVersion() ?? '1.0.0');
             $version[2] = ((int) $version[2] + 1);
             $object->setVersion(implode('.', $version));
         }

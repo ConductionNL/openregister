@@ -264,7 +264,7 @@ class SolrNightlyWarmupJob extends TimedJob
 
         $successfulOperations = array_sum(
             array_map(
-                function ($op) {
+                function (bool $op): int {
                     if ($op === true) {
                         return 1;
                     }

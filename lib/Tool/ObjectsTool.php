@@ -318,6 +318,9 @@ class ObjectsTool extends AbstractTool
     public function getObject(string $id): array
     {
         $object = $this->objectService->find(id: $id);
+        if ($object === null) {
+            throw new \RuntimeException("Object with id {$id} not found.");
+        }
 
         return $this->formatSuccess(
             data: [
@@ -441,6 +444,9 @@ class ObjectsTool extends AbstractTool
     public function deleteObject(string $id): array
     {
         $object = $this->objectService->find(id: $id);
+        if ($object === null) {
+            throw new \RuntimeException("Object with id {$id} not found.");
+        }
         $uuid   = $object->getUuid() ?? (string) $object->getId();
         $this->objectService->deleteObject(uuid: $uuid);
 

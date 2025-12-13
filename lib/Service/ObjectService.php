@@ -27,6 +27,9 @@ namespace OCA\OpenRegister\Service;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use RuntimeException;
+use ReflectionClass;
+use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -52,7 +55,7 @@ use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
 use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use React\Promise\Promise;
 use React\Promise\PromiseInterface;
 use React\Async;
@@ -303,7 +306,7 @@ class ObjectService
                 $userName = $user->getDisplayName();
             }
 
-            throw new \Exception("User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'");
+            throw new Exception("User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'");
         }
 
     }//end checkPermission()
@@ -345,7 +348,7 @@ class ObjectService
                     // Save the entity with the new folder ID.
                     $this->objectEntityMapper->update($entity);
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log the error but don't fail the object creation/update.
                 // The object can still function without a folder.
             }
@@ -499,7 +502,7 @@ class ObjectService
         }
 
         // If the object is not published, check the permissions.
-        $now = new \DateTime('now');
+        $now = new DateTime('now');
         $published = $object->getPublished();
         $depublished = $object->getDepublished();
         $isNotPublished = $published === null || $now < $published;
@@ -522,6 +525,9 @@ class ObjectService
         }
 
         // Always use the current schema (either provided or derived from object).
+        if ($this->currentSchema === null) {
+            throw new \RuntimeException('Schema must be set before rendering entity.');
+        }
         $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
         return $this->renderHandler->renderEntity(
@@ -733,7 +739,7 @@ class ObjectService
     ): int {
         // Add register and schema IDs to filters// Ensure we have both register and schema set.
         if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
-            // $filters is intentionally unused here as we're modifying $config directly
+            // $filters is intentionally unused here as we're modifying $config directly.
             $_filters = ['register' => $this->currentRegister->getId()];
         }
 
@@ -953,14 +959,14 @@ class ObjectService
                 if ($folder === null || $folder === '' || $isString === true) {
                     try {
                         $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Log error but continue - object can function without folder.
                     }
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, will create new one with the specified UUID.
                 // Let SaveObject handle the creation with the provided UUID.
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Other errors - let SaveObject handle the creation.
             }
         }
@@ -1328,8 +1334,8 @@ class ObjectService
             unset($specialParams['ids']);
         }
 
-        // Add all special parameters (they'll be handled by searchObjectsPaginated)
-        // Convert boolean-like parameters to actual booleans for consistency
+        // Add all special parameters (they'll be handled by searchObjectsPaginated).
+        // Convert boolean-like parameters to actual booleans for consistency.
         if (isset($specialParams['_published'])) {
             $specialParams['_published'] = filter_var($specialParams['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
         }
@@ -1404,7 +1410,7 @@ class ObjectService
                     ));
                 }
 
-                // Apply search terms
+                // Apply search terms.
                 if (empty($viewQuery['searchTerms']) === false) {
                     if (is_array($viewQuery['searchTerms'])) {
                         $searchTerms = implode(' ', $viewQuery['searchTerms']);
@@ -1453,7 +1459,7 @@ class ObjectService
                     ],
                 ]);
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: '[ObjectService] Failed to apply view', context: [
                     'viewId' => $viewId,
                     'error' => $e->getMessage(),
@@ -1662,10 +1668,10 @@ class ObjectService
                 if (is_array($register) === true) {
                     // Hydrate array back to Register object.
                     try {
-                        $registerObj = new \OCA\OpenRegister\Db\Register();
+                        $registerObj = new Register();
                         $registerObj->hydrate($register);
                         $validRegisters[] = $registerObj;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Skip invalid register data.
                         continue;
                     }
@@ -1686,10 +1692,10 @@ class ObjectService
                 if (is_array($schema) === true) {
                     // Hydrate array back to Schema object.
                     try {
-                        $schemaObj = new \OCA\OpenRegister\Db\Schema();
+                        $schemaObj = new Schema();
                         $schemaObj->hydrate($schema);
                         $validSchemas[] = $schemaObj;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Skip invalid schema data.
                         continue;
                     }
@@ -1846,7 +1852,7 @@ class ObjectService
             'ultraCacheEnabled' => empty($this->renderHandler->getUltraCacheSize()) === false
         ]);
 
-        //end foreach
+        //end foreach.
         return $objects;
 
     }//end searchObjects()
@@ -2151,7 +2157,7 @@ class ObjectService
         try {
             $solrSettings = $this->settingsService->getSolrSettings();
             return $solrSettings['enabled'] ?? false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -2223,7 +2229,7 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
         if ($isComplexRequest === true) {
-            //end foreach
+            //end foreach..
             $this->logger->debug(message: 'Complex request detected, using async processing', context: [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
@@ -2235,7 +2241,7 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
-        //end if
+        //end if.
         $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
             'hasExtend' => empty($query['_extend']) === false,
@@ -2277,7 +2283,7 @@ class ObjectService
         unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call.
-        //end if
+        //end if.
         $searchStartTime = microtime(true);
         $results = $this->searchObjects(query: $paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
@@ -2373,7 +2379,7 @@ class ObjectService
                     'extendCount' => count($extend ?? []),
                 ],
                 'recommendations' => $this->getPerformanceRecommendations(totalTime: $totalTime, perfTimings: $perfTimings, query: $query),
-                'timestamp' => (new \DateTime('now'))->format('c'),
+                'timestamp' => (new DateTime('now'))->format('c'),
             ];
 
             $this->logger->info(message: '📊 PERFORMANCE METRICS INCLUDED', context: [
@@ -2442,7 +2448,7 @@ class ObjectService
                     'Optimize WHERE clauses',
                     'Consider selective field loading'
                 ]
-            //end foreach
+            //end foreach..
             ];
         }
 
@@ -2675,7 +2681,7 @@ class ObjectService
                         if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 $results[] = $this->registerMapper->find($id);
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 // Log and skip invalid IDs.
                                 $this->logger->warning(message: 'Failed to preload register', context: ['id' => $id, 'error' => $e->getMessage()]);
                             }
@@ -2695,7 +2701,7 @@ class ObjectService
                         if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 $results[] = $this->schemaMapper->find($id);
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 // Log and skip invalid IDs.
                                 $this->logger->warning(message: 'Failed to preload schema', context: ['id' => $id, 'error' => $e->getMessage()]);
                             }
@@ -2712,7 +2718,7 @@ class ObjectService
                     'benefit' => 'faster_main_query'
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Preloading failed, continue without cache warmup.
             $this->logger->debug(message: 'Cache warmup failed, continuing', context: ['error' => $e->getMessage()]);
         }
@@ -3040,6 +3046,9 @@ class ObjectService
      */
     public function getSchema(): int
     {
+        if ($this->currentSchema === null) {
+            throw new \RuntimeException('Schema not set in ObjectService.');
+        }
         return $this->currentSchema->getId();
 
     }//end getSchema()
@@ -3054,6 +3063,9 @@ class ObjectService
      */
     public function getRegister(): int
     {
+        if ($this->currentRegister === null) {
+            throw new \RuntimeException('Register not set in ObjectService.');
+        }
         return $this->currentRegister->getId();
 
     }//end getRegister()
@@ -3281,7 +3293,7 @@ class ObjectService
         // Bulk imports can create/update hundreds of objects, requiring cache invalidation.
         // to ensure collection queries immediately reflect the new/updated data.
         try {
-            //end if
+            //end if..
             $createdCount = $bulkResult['statistics']['objectsCreated'] ?? 0;
             $updatedCount = $bulkResult['statistics']['objectsUpdated'] ?? 0;
             $totalAffected = $createdCount + $updatedCount;
@@ -3309,7 +3321,7 @@ class ObjectService
                     'cacheInvalidation' => 'success'
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log cache invalidation errors but don't fail the bulk operation.
             $this->logger->warning(message: 'Bulk operation cache invalidation failed', context: [
                 'error' => $e->getMessage(),
@@ -3390,7 +3402,7 @@ class ObjectService
             $uniqueSlug = $slug . '-' . $timestamp;
 
             return $uniqueSlug;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }//end generateSlugFromValue()
@@ -3441,7 +3453,7 @@ class ObjectService
      */
     private function filterObjectsForPermissions(array $objects, bool $rbac, bool $multi): array
     {
-        //end try
+        //end try.
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
         if ($currentUser) {
@@ -3455,7 +3467,7 @@ class ObjectService
         foreach ($objects as $object) {
             $self = $object['@self'] ?? [];
 
-            // Check RBAC permissions if enabled
+            // Check RBAC permissions if enabled.
             if ($rbac && $userId !== null) {
                 $objectOwner  = $self['owner'] ?? null;
                 $objectSchema = $self['schema'] ?? null;
@@ -3463,25 +3475,25 @@ class ObjectService
                 if ($objectSchema !== null) {
                     try {
                         $schema = $this->schemaMapper->find($objectSchema);
-                        // TODO: Add property-level RBAC check for 'create' action here
-                        // Check individual property permissions before allowing property values to be set
+                        // TODO: Add property-level RBAC check for 'create' action here.
+                        // Check individual property permissions before allowing property values to be set.
                         if ($this->hasPermission(schema: $schema, action: 'create', userId: $userId, objectOwner: $objectOwner, rbac: $rbac) === false) {
                             continue;
-                            // Skip this object if user doesn't have permission
+                            // Skip this object if user doesn't have permission.
                         }
-                    } catch (\Exception $e) {
-                        // Skip objects with invalid schemas
+                    } catch (Exception $e) {
+                        // Skip objects with invalid schemas.
                         continue;
                     }
                 }
             }
 
-            // Check multi-organization filtering if enabled
+            // Check multi-organization filtering if enabled.
             if ($multi && $activeOrganisation !== null) {
                 $objectOrganisation = $self['organisation'] ?? null;
                 if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
                     continue;
-                    // Skip objects from different organizations
+                    // Skip objects from different organizations.
                 }
             }
 
@@ -3510,19 +3522,19 @@ class ObjectService
         $requiredFields = ['register', 'schema'];
 
         foreach ($objects as $index => $object) {
-            // Check if object has @self section
+            // Check if object has @self section.
             if (isset($object['@self']) === false || is_array($object['@self']) === false) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     "Object at index {$index} is missing required '@self' section"
                 );
             }
 
             $self = $object['@self'];
 
-            // Check each required field
+            // Check each required field.
             foreach ($requiredFields as $field) {
                 if (isset($self[$field]) === false || empty($self[$field]) === true) {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         "Object at index {$index} is missing required field '{$field}' in @self section"
                     );
                 }
@@ -3600,7 +3612,7 @@ class ObjectService
         $relationAction = $mergeData['relationAction'] ?? 'transfer';
 
         if ($targetObjectId === null || $targetObjectId === '') {
-            throw new \InvalidArgumentException('Target object ID is required');
+            throw new InvalidArgumentException('Target object ID is required');
         }
 
         // Initialize merge report.
@@ -3631,22 +3643,22 @@ class ObjectService
             // Fetch both objects directly from mapper for updating (not rendered).
             try {
                 $sourceObject = $this->objectEntityMapper->find($sourceObjectId);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $sourceObject = null;
             }
 
             try {
                 $targetObject = $this->objectEntityMapper->find($targetObjectId);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $targetObject = null;
             }
 
             if ($sourceObject === null) {
-                throw new \OCP\AppFramework\Db\DoesNotExistException('Source object not found');
+                throw new OcpDoesNotExistException('Source object not found');
             }
 
             if ($targetObject === null) {
-                throw new \OCP\AppFramework\Db\DoesNotExistException('Target object not found');
+                throw new OcpDoesNotExistException('Target object not found');
             }
 
             // Store original objects in report.
@@ -3655,11 +3667,11 @@ class ObjectService
 
             // Validate objects are in same register and schema.
             if ($sourceObject->getRegister() !== $targetObject->getRegister()) {
-                throw new \InvalidArgumentException('Objects must be in the same register');
+                throw new InvalidArgumentException('Objects must be in the same register');
             }
 
             if ($sourceObject->getSchema() !== $targetObject->getSchema()) {
-                throw new \InvalidArgumentException('Objects must conform to the same schema');
+                throw new InvalidArgumentException('Objects must conform to the same schema');
             }
 
             // Merge properties.
@@ -3692,7 +3704,7 @@ class ObjectService
                     if (empty($fileResult['errors']) === false) {
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $mergeReport['warnings'][] = 'Failed to transfer files: '.$e->getMessage();
                 }
             } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
@@ -3704,7 +3716,7 @@ class ObjectService
                     if (empty($deleteResult['errors']) === false) {
                         $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $mergeReport['warnings'][] = 'Failed to delete files: '.$e->getMessage();
                 }
             }//end if
@@ -3778,7 +3790,7 @@ class ObjectService
             $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
 
             // Merge completed successfully.
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Handle merge error.
             $mergeReport['errors'][] = "Merge failed: ".$e->getMessage();
             $mergeReport['errors'][] = $e->getMessage();
@@ -3846,7 +3858,7 @@ class ObjectService
                         'success' => true,
                     ];
                     $result['transferred']++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $result['files'][]  = [
                         'name'    => $file->getName(),
                         'action'  => 'transfer_failed',
@@ -3856,7 +3868,7 @@ class ObjectService
                     $result['errors'][] = 'Failed to transfer file '.$file->getName().': '.$e->getMessage();
                 }//end try
             }//end foreach
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $result['errors'][] = 'Failed to access source files: '.$e->getMessage();
         }//end try
 
@@ -3906,7 +3918,7 @@ class ObjectService
                         'success' => true,
                     ];
                     $result['deleted']++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $result['files'][]  = [
                         'name'    => $file->getName(),
                         'action'  => 'delete_failed',
@@ -3916,7 +3928,7 @@ class ObjectService
                     $result['errors'][] = 'Failed to delete file '.$file->getName().': '.$e->getMessage();
                 }//end try
             }//end foreach
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $result['errors'][] = 'Failed to access source files: '.$e->getMessage();
         }//end try
 
@@ -3949,7 +3961,7 @@ class ObjectService
         // Pre-validation cascading to handle nested objects.
         try {
             // Get the URL generator from the SaveObject handler.
-            $urlGenerator         = new \ReflectionClass($this->saveHandler);
+            $urlGenerator         = new ReflectionClass($this->saveHandler);
             $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
             /** @psalm-suppress UnusedMethodCall */
             $urlGeneratorProperty->setAccessible(true);
@@ -4235,11 +4247,11 @@ class ObjectService
         array $objectIds,
         array $mapping
     ): array {
-        //end if
+        //end if.
         // Initialize migration report.
-        //end if
+        //end if.
         $migrationReport = [
-            //end foreach
+            //end foreach..
             'success'    => false,
             'statistics' => [
                 'objectsMigrated'     => 0,
@@ -4261,7 +4273,7 @@ class ObjectService
 
             // Validate entities exist.
             if ($sourceRegisterEntity === null || $sourceSchemaEntity === null || $targetRegisterEntity === null || $targetSchemaEntity === null) {
-                throw new \OCP\AppFramework\Db\DoesNotExistException('One or more registers/schemas not found');
+                throw new OcpDoesNotExistException('One or more registers/schemas not found');
             }
 
             // Get all source objects at once using ObjectEntityMapper.
@@ -4301,7 +4313,7 @@ class ObjectService
                     ) {
                         $actualRegister = $sourceObject->getRegister();
                         $actualSchema   = $sourceObject->getSchema();
-                        throw new \InvalidArgumentException(
+                        throw new InvalidArgumentException(
                             "Object {$objectId} does not belong to the specified source register/schema. "
                             ."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "
                             ."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
@@ -4352,7 +4364,7 @@ class ObjectService
                     $objectDetail['newObjectId'] = $savedObject->getUuid();
                     // Same UUID, but migrated.
                     $migrationReport['statistics']['objectsMigrated']++;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $objectDetail['error'] = $e->getMessage();
                     $migrationReport['statistics']['objectsFailed']++;
                     $migrationReport['errors'][] = "Failed to migrate object {$objectId}: ".$e->getMessage();
@@ -4382,7 +4394,7 @@ class ObjectService
             if ($migrationReport['statistics']['objectsFailed'] > 0) {
                 $migrationReport['warnings'][] = "Some objects failed to migrate. Check details for specific errors.";
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $migrationReport['errors'][] = $e->getMessage();
 
             throw $e;
@@ -4459,7 +4471,7 @@ class ObjectService
             executionType: $executionType
         );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log the error but don't fail the request.
         }
 
@@ -4581,7 +4593,7 @@ class ObjectService
                     'deletedCount' => count($deletedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Bulk delete cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'deletedCount' => count($deletedObjectIds)
@@ -4648,7 +4660,7 @@ class ObjectService
                     'publishedCount' => count($publishedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Bulk publish cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'publishedCount' => count($publishedObjectIds)
@@ -4715,7 +4727,7 @@ class ObjectService
                     'depublishedCount' => count($depublishedObjectIds),
                     'cacheInvalidation' => 'success'
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Bulk depublish cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'depublishedCount' => count($depublishedObjectIds)
@@ -4772,7 +4784,7 @@ class ObjectService
                     'schemaId' => $schemaId,
                     'publishAll' => $publishAll
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Schema objects publishing cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
@@ -4831,7 +4843,7 @@ class ObjectService
                     'schemaId' => $schemaId,
                     'hardDelete' => $hardDelete
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Schema objects deletion cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'schemaId' => $schemaId,
@@ -4887,7 +4899,7 @@ class ObjectService
                     'deletedCount' => $result['deleted_count'],
                     'registerId' => $registerId
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(message: 'Register objects deletion cache invalidation failed', context: [
                     'error' => $e->getMessage(),
                     'registerId' => $registerId,
@@ -4952,7 +4964,7 @@ class ObjectService
                     'data' => $objectData,
                 ];
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Extract validation errors from the exception.
                 $errors = [];
 
@@ -5196,7 +5208,7 @@ class ObjectService
             $objectData = $object->getObject();
 
             foreach ($extend as $extendProperty) {
-                //end foreach
+                //end foreach...
                 if (isset($objectData[$extendProperty]) === true) {
                     $value = $objectData[$extendProperty];
 
@@ -5278,7 +5290,7 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: Batch processing to prevent massive queries that cause 30s+ timeouts.
         // Small batches for consistent performance.
-        $batchSize = 100; // Process 100 relationships per batch
+        $batchSize = 100; // Process 100 relationships per batch.
         $maxTime = 2000; // 2 second timeout per batch
         $lookupMap = [];
         $startTime = microtime(true);
@@ -5343,7 +5355,7 @@ class ObjectService
                     ]);
                 }
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(message: '❌ BATCH ERROR: Failed to load relationship batch', context: [
                     'batchIndex' => $batchIndex,
                     'error' => $e->getMessage(),
@@ -5388,9 +5400,9 @@ class ObjectService
 
         $startTime = microtime(true);
         // Optimal chunk size for parallel processing.
-        $chunkSize = 50; // Process 50 relationships per chunk
+        $chunkSize = 50; // Process 50 relationships per chunk.
         // Limit parallel connections to avoid overwhelming DB.
-        $maxParallelChunks = 5; // Process up to 5 chunks in parallel
+        $maxParallelChunks = 5; // Process up to 5 chunks in parallel.
 
         $chunks = array_chunk(array: $relationshipIds, length: $chunkSize);
         $lookupMap = [];
@@ -5417,7 +5429,7 @@ class ObjectService
                     $chunkResults = $this->loadRelationshipChunkOptimized($chunk);
                     $results[$chunkIndex] = $chunkResults;
 
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->error(message: '❌ PARALLEL ERROR: Chunk failed', context: [
                         'groupIndex' => $groupIndex,
                         'chunkIndex' => $chunkIndex,
@@ -5536,7 +5548,7 @@ class ObjectService
         ->orWhere($qb->expr()->in('o.slug', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)));
 
         $results = [];
-        $stmt = $qb->execute();
+        $stmt = $qb->executeQuery();
 
         while (($row = $stmt->fetch()) !== false) {
             try {
@@ -5546,7 +5558,7 @@ class ObjectService
                     $results[] = $object;
                 }
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->debug(message: 'Skipped invalid relationship object', context: [
                     'id' => $row['id'] ?? 'unknown',
                     'error' => $e->getMessage()
@@ -5639,7 +5651,7 @@ class ObjectService
 
             return $object;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Return null for failed lightweight creation.
             return null;
         }
@@ -5706,7 +5718,7 @@ class ObjectService
                     return $this->getCachedEntities(entityType: 'schema', ids: [$schemaFilter], fallbackFunc: function($ids) {
                         return [$this->schemaMapper->find($ids[0])];
                     });
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     return [];
                 }
             }
@@ -5799,7 +5811,7 @@ class ObjectService
         try {
             $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
             return $retentionSettings['searchTrailsEnabled'] ?? true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If we can't get settings, default to enabled for safety.
             $this->logger->warning(message: 'Failed to check search trails setting, defaulting to enabled', context: ['error' => $e->getMessage()]);
             return true;
@@ -5924,7 +5936,7 @@ class ObjectService
             }
             return $this->schemaMapper->find($entity);
         }
-        //end try
+        //end try.
         return $entity;
     //end if
     }

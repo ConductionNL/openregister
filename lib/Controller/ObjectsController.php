@@ -30,6 +30,8 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookInterceptorService;
+use RuntimeException;
+use DateTime;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -607,7 +609,7 @@ class ObjectsController extends Controller
                     request: $this->request,
                     eventType: 'object.creating'
                 );
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Log error but continue with original request if webhook fails.
                 // This ensures webhook failures don't break the API.
                 if ($this->logger !== null) {
@@ -724,7 +726,7 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectEntityMapper->unlockObject($objectEntity->getId());
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Ignore unlock errors since the save was successful.
             }
         } catch (ValidationException | CustomValidationException $exception) {
@@ -915,7 +917,7 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectEntityMapper->unlockObject($objectEntity->getId());
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Ignore unlock errors since the update was successful.
             }
 
@@ -1023,7 +1025,7 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectEntityMapper->unlockObject($objectEntity->getId());
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Ignore unlock errors since the update was successful.
             }
 
@@ -1290,7 +1292,7 @@ class ObjectsController extends Controller
         // Try to fetch the object by ID/UUID only (no register/schema filter yet).
         try {
             $object = $objectService->find(id: $id);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
         }
 
@@ -1458,9 +1460,9 @@ class ObjectsController extends Controller
                 // Generate filename.
                 $filename = sprintf(
                     '%s_%s_%s.csv',
-                        $registerEntity->getSlug(),
-                    $schemaEntity->getSlug(),
-                    (new \DateTime())->format('Y-m-d_His')
+                        $registerEntity->getSlug() ?? 'register',
+                    $schemaEntity->getSlug() ?? 'schema',
+                    (new DateTime())->format('Y-m-d_His')
                 );
 
                 return new DataDownloadResponse(
@@ -1479,9 +1481,9 @@ class ObjectsController extends Controller
                 // Generate filename.
                 $filename = sprintf(
                     '%s_%s_%s.xlsx',
-                        $registerEntity->getSlug(),
-                    $schemaEntity->getSlug(),
-                    (new \DateTime())->format('Y-m-d_His')
+                        $registerEntity->getSlug() ?? 'register',
+                    $schemaEntity->getSlug() ?? 'schema',
+                    (new DateTime())->format('Y-m-d_His')
                 );
 
                 // Get Excel content.
@@ -1599,7 +1601,7 @@ class ObjectsController extends Controller
                         'summary' => $summary,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
 
@@ -1644,14 +1646,14 @@ class ObjectsController extends Controller
             // Get the publication date from request if provided.
             $date = null;
             if ($this->request->getParam(key: 'date') !== null) {
-                $date = new \DateTime($this->request->getParam(key: 'date'));
+                $date = new DateTime($this->request->getParam(key: 'date'));
             }
 
             // Publish the object.
             $object = $objectService->publish(uuid: $id, date: $date, rbac: $rbac, multi: $multi);
 
             return new JSONResponse(data: $object->jsonSerialize());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }
 
@@ -1696,14 +1698,14 @@ class ObjectsController extends Controller
             // Get the depublication date from request if provided.
             $date = null;
             if ($this->request->getParam(key: 'date') !== null) {
-                $date = new \DateTime($this->request->getParam(key: 'date'));
+                $date = new DateTime($this->request->getParam(key: 'date'));
             }
 
             // Depublish the object.
             $object = $objectService->depublish(uuid: $id, date: $date, rbac: $rbac, multi: $multi);
 
             return new JSONResponse(data: $object->jsonSerialize());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }
 
@@ -1721,13 +1723,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the merge result
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, success?: true, sourceObject?: array, targetObject?: array, mergedObject?: mixed, actions?: array{properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...}, files: array<never, never>|mixed, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list{0?: array{objectId: mixed, title: mixed},...}}, statistics?: array{propertiesChanged: 0|1|2, filesTransferred: 0|mixed, filesDeleted: 0|mixed, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings?: array, errors?: array<never, never>}, array<never, never>>
      */
     public function merge(
         string $id,
@@ -1779,13 +1779,11 @@ class ObjectsController extends Controller
      *
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the migration result
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, success?: bool, statistics?: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int}, details?: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings?: list<'Some objects failed to migrate. Check details for specific errors.'>, errors?: list{0?: string,...}}, array<never, never>>
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -1864,7 +1862,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return DataDownloadResponse<200, mixed, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
+     * @psalm-return DataDownloadResponse<200, string, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     public function downloadFiles(
         string $id,
@@ -1900,7 +1898,7 @@ class ObjectsController extends Controller
                     unlink($zipInfo['path']);
                 }
 
-                throw new \Exception('Failed to read ZIP file content');
+                throw new Exception('Failed to read ZIP file content');
             }
 
             // Clean up temporary file after reading.
@@ -1966,7 +1964,7 @@ class ObjectsController extends Controller
                         'data'    => $result,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2022,7 +2020,7 @@ class ObjectsController extends Controller
                         'views'         => $views,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2063,7 +2061,7 @@ class ObjectsController extends Controller
                         'count'   => $count,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,

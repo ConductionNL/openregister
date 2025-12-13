@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\GitHubService;
 use OCA\OpenRegister\Service\GitLabService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
+use DateTime;
+use stdClass;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -194,9 +196,7 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Enriched configuration details
-     *
-     * @psalm-return JSONResponse<int, array, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, title?: mixed|string, description?: ''|mixed, version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed, openregister?: mixed|null}, array<never, never>>
      */
     public function enrichDetails(): JSONResponse
     {
@@ -927,8 +927,6 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Import result
-     *
      * @since 0.2.10
      *
      * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
@@ -1023,7 +1021,7 @@ class ConfigurationController extends Controller
             // Step 4: Update configuration with sync status and imported entity IDs.
             $configuration->setLocalVersion($version);
             $configuration->setSyncStatus('success');
-            $configuration->setLastSyncDate(new \DateTime());
+            $configuration->setLastSyncDate(new DateTime());
 
             // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
             // but we need to save the sync status.
@@ -1061,8 +1059,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Import result
      *
      * @since 0.2.10
      *
@@ -1165,7 +1161,7 @@ class ConfigurationController extends Controller
             // Step 4: Update configuration with sync status and imported entity IDs.
             $configuration->setLocalVersion($version);
             $configuration->setSyncStatus('success');
-            $configuration->setLastSyncDate(new \DateTime());
+            $configuration->setLastSyncDate(new DateTime());
 
             // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
             // but we need to save the sync status.
@@ -1203,8 +1199,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Import result
      *
      * @since 0.2.10
      *
@@ -1300,7 +1294,7 @@ class ConfigurationController extends Controller
             // Step 4: Update configuration with sync status and imported entity IDs.
             $configuration->setLocalVersion($version);
             $configuration->setSyncStatus('success');
-            $configuration->setLastSyncDate(new \DateTime());
+            $configuration->setLastSyncDate(new DateTime());
 
             // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
             // but we need to save the sync status.
@@ -1375,7 +1369,7 @@ class ConfigurationController extends Controller
             // Generate filename from configuration title in snake_case format.
             if (empty($path) === true) {
                 $title          = $configuration->getTitle();
-                $snakeCaseTitle = $this->toSnakeCase($title);
+                $snakeCaseTitle = $this->toSnakeCase($title ?? 'configuration');
                 $path           = $snakeCaseTitle.'_openregister.json';
             }
 
@@ -1423,7 +1417,7 @@ class ConfigurationController extends Controller
             $fileSha = null;
             try {
                 $fileSha = $this->githubService->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // File doesn't exist, which is fine for new files.
                 $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
             }
@@ -1464,7 +1458,7 @@ class ConfigurationController extends Controller
             try {
                 $repoInfo      = $this->githubService->getRepositoryInfo(owner: $owner, repo: $repo);
                 $defaultBranch = $repoInfo['default_branch'] ?? 'main';
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(
                         'Could not fetch repository default branch',
                         [

@@ -25,6 +25,10 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use Exception;
+use RuntimeException;
+use DateTime;
+use DateInterval;
 use OCP\IDBConnection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -256,7 +260,7 @@ class SchemaCacheService
         try {
             $this->db->executeQuery($sql, [(string) $schemaId]);
             $this->logger->debug('Cleared schema cache', ['schemaId' => $schemaId]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to clear schema cache',
                     [
@@ -357,7 +361,7 @@ class SchemaCacheService
             $qb->delete(self::CACHE_TABLE)
                 ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)));
             $deletedEntries = $qb->executeStatement();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If the cache table doesn't exist yet, just log a debug message and continue.
             // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
@@ -450,7 +454,7 @@ class SchemaCacheService
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::CACHE_TABLE)
             ->where($qb->expr()->isNotNull('expires'))
-            ->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new \DateTime(), 'datetime')));
+            ->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new DateTime(), 'datetime')));
 
         $deletedCount = $qb->executeStatement();
 
@@ -545,8 +549,8 @@ class SchemaCacheService
 
         // Check if expired.
         if ($result['expires'] !== null) {
-            $expires = new \DateTime($result['expires']);
-            if ($expires <= new \DateTime()) {
+            $expires = new DateTime($result['expires']);
+            if ($expires <= new DateTime()) {
                 // Cache expired, remove it.
                 $this->removeCachedData($schemaId, $cacheKey);
                 return null;
@@ -575,9 +579,9 @@ class SchemaCacheService
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now = new \DateTime();
+        $now = new DateTime();
         if ($ttl > 0) {
-            $expires = (clone $now)->add(new \DateInterval("PT{$ttl}S"));
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
         } else {
             $expires = null;
         }
@@ -714,15 +718,15 @@ class SchemaCacheService
             $schema->setOwner($cachedData['owner']);
 
             if (($cachedData['created'] ?? null) !== null && ($cachedData['created'] !== null) === true && ($cachedData['created'] !== '') === true) {
-                $schema->setCreated(new \DateTime($cachedData['created']));
+                $schema->setCreated(new DateTime($cachedData['created']));
             }
 
             if (($cachedData['updated'] ?? null) !== null && ($cachedData['updated'] !== null) === true && ($cachedData['updated'] !== '') === true) {
-                $schema->setUpdated(new \DateTime($cachedData['updated']));
+                $schema->setUpdated(new DateTime($cachedData['updated']));
             }
 
             return $schema;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to reconstruct schema from cache',
                     [

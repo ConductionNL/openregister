@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateInterval;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 

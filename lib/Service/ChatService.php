@@ -1453,7 +1453,7 @@ class ChatService
                     'testMessage'    => $testMessage,
                     'response'       => $response,
                     'responseLength' => strlen($response),
-                    'url'            => $urlValue,
+                    'url'            => $this->getLlphantUrl($llphantConfig),
                 ],
             ];
         } catch (OpenAIErrorException $e) {

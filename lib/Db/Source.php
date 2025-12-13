@@ -343,7 +343,7 @@ class Source extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $sources = $configuration->getSources();
-            if (in_array($this->id, $sources, true) === true) {
+            if (in_array($this->id, $sources ?? [], true) === true) {
                 return true;
             }
         }
@@ -374,7 +374,7 @@ class Source extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $sources = $configuration->getSources();
-            if (in_array($this->id, $sources, true) === true) {
+            if (in_array($this->id, $sources ?? [], true) === true) {
                 return $configuration;
             }
         }

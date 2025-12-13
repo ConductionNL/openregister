@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -258,8 +259,6 @@ class SchemasController extends Controller
      *
      * This method creates a new schema based on POST data.
      *
-     * @return JSONResponse A JSON response containing the created schema
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -346,8 +345,6 @@ class SchemasController extends Controller
      * This method updates an existing schema based on its ID.
      *
      * @param int $id The ID of the schema to update
-     *
-     * @return JSONResponse A JSON response containing the updated schema details
      *
      * @NoAdminRequired
      *
@@ -881,9 +878,9 @@ class SchemasController extends Controller
             // Get the publication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+                $date = new DateTime($this->request->getParam('date'));
             } else {
-                $date = new \DateTime();
+                $date = new DateTime();
             }
 
             // Get the schema.
@@ -946,9 +943,9 @@ class SchemasController extends Controller
             // Get the depublication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+                $date = new DateTime($this->request->getParam('date'));
             } else {
-                $date = new \DateTime();
+                $date = new DateTime();
             }
 
             // Get the schema.

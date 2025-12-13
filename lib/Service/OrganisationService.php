@@ -252,7 +252,7 @@ class OrganisationService
                 'organisation' => $organisationData,
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
         }//end try
 
     }//end getOrganisationSettingsOnly()
@@ -365,7 +365,7 @@ class OrganisationService
             }
 
             return $defaultOrg;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to fetch or create default organisation',
                     [
@@ -1167,7 +1167,7 @@ class OrganisationService
             );
             
             return $defaultOrg;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 'Failed to set default organisation for user',
                 [
@@ -1261,7 +1261,7 @@ class OrganisationService
         if (($cachedData['created'] ?? null) !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['created']) === true) {
-                $organisation->setCreated(new \DateTime($cachedData['created']));
+                $organisation->setCreated(new DateTime($cachedData['created']));
             } elseif ($cachedData['created'] instanceof \DateTime) {
                 $organisation->setCreated($cachedData['created']);
             }
@@ -1270,7 +1270,7 @@ class OrganisationService
         if (($cachedData['updated'] ?? null) !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['updated']) === true) {
-                $organisation->setUpdated(new \DateTime($cachedData['updated']));
+                $organisation->setUpdated(new DateTime($cachedData['updated']));
             } elseif ($cachedData['updated'] instanceof \DateTime) {
                 $organisation->setUpdated($cachedData['updated']);
             }

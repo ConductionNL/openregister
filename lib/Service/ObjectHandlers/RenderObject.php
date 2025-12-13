@@ -1316,7 +1316,7 @@ class RenderObject
             try {
                 $schemas = $this->schemaMapper->findAll();
                 foreach ($schemas as $schema) {
-                    if (strtolower($schema->getSlug()) === strtolower($lastSegment)) {
+                    if (strtolower($schema->getSlug() ?? '') === strtolower($lastSegment)) {
                         return (string) $schema->getId();
                     }
                 }

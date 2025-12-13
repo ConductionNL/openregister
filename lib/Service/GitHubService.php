@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
+use RuntimeException;
 use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
@@ -292,7 +294,7 @@ class GitHubService
 
             // Provide user-friendly error messages based on status code.
             $userMessage = $this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage);
-            throw new \Exception($userMessage);
+            throw new Exception($userMessage);
         }//end try
 
     }//end searchConfigurations()
@@ -468,7 +470,7 @@ class GitHubService
                 'type'         => $data['x-openregister']['type'] ?? 'unknown',
                 'openregister' => $data['x-openregister']['openregister'] ?? null,
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to enrich configuration details',
                     [
@@ -520,7 +522,7 @@ class GitHubService
             $branches = json_decode($response->getBody(), true);
 
             return array_map(
-                    function ($branch) {
+                    function (array $branch): array {
                         return [
                             'name'      => $branch['name'],
                             'commit'    => $branch['commit']['sha'] ?? null,
@@ -538,7 +540,7 @@ class GitHubService
                         'repo'  => $repo,
                     ]
                     );
-            throw new \Exception('Failed to fetch branches: '.$e->getMessage());
+            throw new Exception('Failed to fetch branches: '.$e->getMessage());
         }//end try
 
     }//end getBranches()
@@ -587,13 +589,13 @@ class GitHubService
                 $json    = json_decode($content, true);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new \Exception('Invalid JSON in file: '.json_last_error_msg());
+                    throw new Exception('Invalid JSON in file: '.json_last_error_msg());
                 }
 
                 return $json;
             }
 
-            throw new \Exception('No content found in file');
+            throw new Exception('No content found in file');
         } catch (GuzzleException $e) {
             $this->logger->error(
                     'GitHub API get file content failed',
@@ -605,7 +607,7 @@ class GitHubService
                         'branch' => $branch,
                     ]
                     );
-            throw new \Exception('Failed to fetch file: '.$e->getMessage());
+            throw new Exception('Failed to fetch file: '.$e->getMessage());
         }//end try
 
     }//end getFileContent()
@@ -692,7 +694,7 @@ class GitHubService
                         'branch' => $branch,
                     ]
                     );
-            throw new \Exception('Failed to list configuration files: '.$e->getMessage());
+            throw new Exception('Failed to list configuration files: '.$e->getMessage());
         }//end try
 
     }//end listConfigurationFiles()
@@ -729,7 +731,7 @@ class GitHubService
             }
 
             return $content;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->debug(
                     'Failed to parse configuration file',
                     [
@@ -793,7 +795,7 @@ class GitHubService
             $repos = json_decode($response->getBody(), true);
 
             return array_map(
-                    function ($repo) {
+                    function (array $repo): array {
                         return [
                             'id'             => $repo['id'],
                             'name'           => $repo['name'],
@@ -835,7 +837,7 @@ class GitHubService
                         'status_code' => $statusCode,
                     ]
                     );
-            throw new \Exception('Failed to fetch repositories: '.$e->getMessage());
+            throw new Exception('Failed to fetch repositories: '.$e->getMessage());
         }//end try
 
     }//end getRepositories()
@@ -887,7 +889,7 @@ class GitHubService
                         'repo'  => $repo,
                     ]
                     );
-            throw new \Exception('Failed to fetch repository info: '.$e->getMessage());
+            throw new Exception('Failed to fetch repository info: '.$e->getMessage());
         }//end try
 
     }//end getRepositoryInfo()
@@ -1028,7 +1030,7 @@ class GitHubService
                     ]
                     );
 
-            throw new \Exception('Failed to publish configuration: '.$errorMessage);
+            throw new Exception('Failed to publish configuration: '.$errorMessage);
         }//end try
 
     }//end publishConfiguration()
@@ -1082,7 +1084,7 @@ class GitHubService
                         'path'  => $path,
                     ]
                     );
-            throw new \Exception('Failed to get file SHA: '.$e->getMessage());
+            throw new Exception('Failed to get file SHA: '.$e->getMessage());
         }//end try
 
     }//end getFileSha()
@@ -1161,7 +1163,7 @@ class GitHubService
             );
 
             return $response->getStatusCode() === 200;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'GitHub token validation failed', context: ['error' => $e->getMessage()]);
             return false;
         }//end try

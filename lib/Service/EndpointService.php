@@ -204,8 +204,8 @@ class EndpointService
     /**
      * Execute a view endpoint
      *
-     * @param Endpoint $endpoint The endpoint to execute
-     * @param array    $request  Request data
+     * @param Endpoint $_endpoint The endpoint to execute
+     * @param array    $_request  Request data
      *
      * @return (int|string[]|true)[]
      *
@@ -483,8 +483,8 @@ class EndpointService
     /**
      * Execute a webhook endpoint
      *
-     * @param Endpoint $endpoint The endpoint to execute
-     * @param array    $request  Request data
+     * @param Endpoint $_endpoint The endpoint to execute
+     * @param array    $_request  Request data
      *
      * @return (int|string[]|true)[]
      *
@@ -508,8 +508,8 @@ class EndpointService
     /**
      * Execute a register endpoint
      *
-     * @param Endpoint $endpoint The endpoint to execute
-     * @param array    $request  Request data
+     * @param Endpoint $_endpoint The endpoint to execute
+     * @param array    $_request  Request data
      *
      * @return (int|string[]|true)[]
      *
@@ -533,8 +533,8 @@ class EndpointService
     /**
      * Execute a schema endpoint
      *
-     * @param Endpoint $endpoint The endpoint to execute
-     * @param array    $request  Request data
+     * @param Endpoint $_endpoint The endpoint to execute
+     * @param array    $_request  Request data
      *
      * @return (int|string[]|true)[]
      *

@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use RuntimeException;
+use stdClass;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use LLPhant\OpenAIConfig;
@@ -518,10 +519,10 @@ class VectorEmbeddingService
      * @param array       $embedding   Vector embedding (array of floats)
      * @param string      $model       Model used to generate embedding
      * @param int         $dimensions  Number of dimensions
-     * @param int         $chunkIndex  Chunk index (0 for objects, N for file chunks)
-     * @param int         $totalChunks Total number of chunks
-     * @param string|null $chunkText   The text that was embedded
-     * @param array       $metadata    Additional metadata as associative array
+     * @param int         $chunkIndex    Chunk index (0 for objects, N for file chunks)
+     * @param int         $_totalChunks  Total number of chunks
+     * @param string|null $_chunkText    The text that was embedded
+     * @param array       $_metadata     Additional metadata as associative array
      *
      * @return string The Solr document ID
      *

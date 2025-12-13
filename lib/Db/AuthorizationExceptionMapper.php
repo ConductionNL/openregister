@@ -90,8 +90,8 @@ class AuthorizationExceptionMapper extends QBMapper
 
         // Set creation metadata.
         $exception->setCreatedBy($userId);
-        $exception->setCreatedAt(new \DateTime());
-        $exception->setUpdatedAt(new \DateTime());
+        $exception->setCreatedAt(new DateTime());
+        $exception->setUpdatedAt(new DateTime());
 
         return $this->insert($exception);
 
@@ -111,7 +111,7 @@ class AuthorizationExceptionMapper extends QBMapper
     public function updateException(AuthorizationException $exception): AuthorizationException
     {
         // Update the timestamp.
-        $exception->setUpdatedAt(new \DateTime());
+        $exception->setUpdatedAt(new DateTime());
 
         return $this->update($exception);
 

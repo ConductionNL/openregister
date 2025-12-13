@@ -192,7 +192,7 @@ class MessageMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
@@ -219,7 +219,7 @@ class MessageMapper extends QBMapper
         $qb->delete($this->tableName)
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
-        return $qb->execute();
+        return $qb->executeStatement();
 
     }//end deleteByConversation()
 

@@ -1108,9 +1108,9 @@ class ValidateObject
     {
         // Local schema resolution.
         if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
-            && str_contains($uri->path(), '/api/schemas') === true
+            && str_contains($uri->path() ?? '', '/api/schemas') === true
         ) {
-            $exploded = explode('/', $uri->path());
+            $exploded = explode('/', $uri->path() ?? '');
             $schema   = $this->schemaMapper->find(end($exploded));
 
             return json_encode($schema->getSchemaObject($this->urlGenerator));

@@ -24,6 +24,8 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
+use DateTime;
+use DateInterval;
 use Symfony\Component\HttpFoundation\Response;
 use OCP\AppFramework\Http\JSONResponse;
 
@@ -118,13 +120,13 @@ trait MultiTenancyTrait
     {
         if (isset($this->appConfig) === false) {
             return false;
-            // Default to false if appConfig not available
+            // Default to false if appConfig not available.
         }
 
         $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
         if (empty($multitenancyConfig) === true) {
             return false;
-            // Default to false for security
+            // Default to false for security.
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
@@ -217,13 +219,13 @@ trait MultiTenancyTrait
         bool $enablePublished=false,
         bool $multiTenancyEnabled=true
     ): void {
-        // If multitenancy is explicitly disabled via parameter, skip all filtering immediately
+        // If multitenancy is explicitly disabled via parameter, skip all filtering immediately.
         if ($multiTenancyEnabled === false) {
             return;
         }
 
-        // Check if multitenancy is enabled (if appConfig is available)
-        // Only check app config if parameter was not explicitly set to false
+        // Check if multitenancy is enabled (if appConfig is available).
+        // Only check app config if parameter was not explicitly set to false.
         if (isset($this->appConfig) === true) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
             if (empty($multitenancyConfig) === false) {
@@ -231,7 +233,7 @@ trait MultiTenancyTrait
                 $configMultitenancyEnabled = $multitenancyData['enabled'] ?? true;
 
                 if ($configMultitenancyEnabled === false) {
-                    // Multitenancy is disabled in config, no filtering
+                    // Multitenancy is disabled in config, no filtering.
                     return;
                 }
             }
@@ -267,14 +269,14 @@ trait MultiTenancyTrait
         // Get active organisation UUIDs (active + all parents).
         $activeOrganisationUuids = $this->getActiveOrganisationUuids();
 
-        // Build fully qualified column name
+        // Build fully qualified column name.
         if ($tableAlias) {
             $organisationColumn = $tableAlias.'.'.$columnName;
         } else {
             $organisationColumn = $columnName;
         }
 
-        // Check if published entities should bypass multi-tenancy (works for objects, schemas, registers)
+        // Check if published entities should bypass multi-tenancy (works for objects, schemas, registers).
         $publishedBypassEnabled = false;
         if ($enablePublished === true && isset($this->appConfig) === true) {
             $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
@@ -284,19 +286,19 @@ trait MultiTenancyTrait
             }
         }
 
-        // CASE 1: No active organisation set
+        // CASE 1: No active organisation set.
         if (empty($activeOrganisationUuids) === true) {
-            // Build conditions for users without active organisation
+            // Build conditions for users without active organisation.
             $orgConditions = $qb->expr()->orX();
 
-            // Check if user is admin - only if user exists
+            // Check if user is admin - only if user exists.
             $isAdmin = false;
             if ($user !== null && isset($this->groupManager) === true) {
                 $userGroups = $this->groupManager->getUserGroupIds($user);
                 $isAdmin    = in_array('admin', $userGroups);
             }
 
-            // Admins can see NULL organisation entities (legacy data)
+            // Admins can see NULL organisation entities (legacy data).
             if ($isAdmin === true && $allowNullOrg === true) {
                 $orgConditions->add($qb->expr()->isNull($organisationColumn));
             }
@@ -305,7 +307,7 @@ trait MultiTenancyTrait
             // Note: Organizations can see their own depublished items via the organization filter above.
             // The depublished check here only applies to the published bypass (entities from OTHER organizations).
             if ($publishedBypassEnabled === true && $enablePublished === true) {
-                $now = (new \DateTime())->format('Y-m-d H:i:s');
+                $now = (new DateTime())->format('Y-m-d H:i:s');
                 if ($tableAlias) {
                     $publishedColumn = $tableAlias.'.published';
                 } else {
@@ -318,13 +320,13 @@ trait MultiTenancyTrait
                     $depublishedColumn = 'depublished';
                 }
 
-                // Published bypass condition: entity must be published AND not depublished
-                // This ensures depublished entities from OTHER organizations are never visible via published bypass
+                // Published bypass condition: entity must be published AND not depublished.
+                // This ensures depublished entities from OTHER organizations are never visible via published bypass.
                 $orgConditions->add(
                     $qb->expr()->andX(
                         $qb->expr()->isNotNull($publishedColumn),
                         $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
-                        // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)
+                        // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished).
                         $qb->expr()->orX(
                             $qb->expr()->isNull($depublishedColumn),
                             $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
@@ -345,8 +347,8 @@ trait MultiTenancyTrait
             return;
         }//end if
 
-        // CASE 2: Active organisation(s) set
-        // Check admin status and admin override setting - only if user exists
+        // CASE 2: Active organisation(s) set.
+        // Check admin status and admin override setting - only if user exists.
         $isAdmin = false;
         if ($user !== null && isset($this->groupManager) === true) {
             $userGroups = $this->groupManager->getUserGroupIds($user);
@@ -362,16 +364,16 @@ trait MultiTenancyTrait
             }
         }
 
-        // Apply admin override logic
+        // Apply admin override logic.
         if ($isAdmin === true && $adminOverrideEnabled === true) {
-            // Admin override enabled - admins see everything
+            // Admin override enabled - admins see everything.
             return;
         }
 
         // Build organisation filter conditions.
         $orgConditions = $qb->expr()->orX();
 
-        // Prepare published/depublished column names for checks
+        // Prepare published/depublished column names for checks.
         if ($tableAlias) {
             $publishedColumn = $tableAlias.'.published';
         } else {
@@ -384,26 +386,26 @@ trait MultiTenancyTrait
             $depublishedColumn = 'depublished';
         }
 
-        $now = (new \DateTime())->format('Y-m-d H:i:s');
+        $now = (new DateTime())->format('Y-m-d H:i:s');
 
-        // Get the direct active organization (not parents) to allow depublished items from own org
+        // Get the direct active organization (not parents) to allow depublished items from own org.
         $directActiveOrgUuid = $this->getActiveOrganisationUuid();
 
-        // Include entities from active organisation(s) and parents
-        // IMPORTANT: Users can see their own organization's depublished items
-        // Children can see ALL parent organization items (including depublished)
+        // Include entities from active organisation(s) and parents.
+        // IMPORTANT: Users can see their own organization's depublished items.
+        // Children can see ALL parent organization items (including depublished).
         // Logic:
-        // 1. Entity is from direct active organization - includes ALL items (including depublished)
-        // 2. Entity is from parent organization(s) - includes ALL items (including depublished)
-        // 3. Entity is published and not depublished from ANY organization (via published bypass)
+        // 1. Entity is from direct active organization - includes ALL items (including depublished).
+        // 2. Entity is from parent organization(s) - includes ALL items (including depublished).
+        // 3. Entity is published and not depublished from ANY organization (via published bypass).
         if ($directActiveOrgUuid !== null) {
-            // Condition 1: Entity from direct active organization (allows depublished from own org)
+            // Condition 1: Entity from direct active organization (allows depublished from own org).
             $orgConditions->add(
                 $qb->expr()->eq($organisationColumn, $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR))
             );
 
-            // Condition 2: Entity from parent organizations (children can see all parent objects, including depublished)
-            // Only add this if there are parent organizations
+            // Condition 2: Entity from parent organizations (children can see all parent objects, including depublished).
+            // Only add this if there are parent organizations.
             $parentOrgs = array_filter(
                     $activeOrganisationUuids,
                     function ($uuid) use ($directActiveOrgUuid) {
@@ -416,35 +418,35 @@ trait MultiTenancyTrait
                 );
             }
         } else {
-            // No direct active org, just match active orgs (children can see all parent items)
+            // No direct active org, just match active orgs (children can see all parent items).
             $orgConditions->add(
                 $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
         }//end if
 
-        // Include published entities if bypass is enabled (works for objects, schemas, registers)
+        // Include published entities if bypass is enabled (works for objects, schemas, registers).
         //
         // BEHAVIOR WHEN ENABLED:
-        // - Published objects bypass RBAC read permissions (anyone can read published objects)
-        // - Published objects bypass organization filtering (visible from ANY organization)
-        // - Published objects do NOT bypass RBAC create/update/delete (still require permissions)
+        // - Published objects bypass RBAC read permissions (anyone can read published objects).
+        // - Published objects bypass organization filtering (visible from ANY organization).
+        // - Published objects do NOT bypass RBAC create/update/delete (still require permissions).
         //
         // IMPORTANT: Depublished entities from OTHER organizations are excluded from published bypass.
         // Organizations can still see their own depublished items via the organization filter above.
         // The depublished check here only applies to entities accessed via published bypass (from other organizations).
         //
         // RESULT: Users see:
-        // - ALL published (but not depublished) objects from ALL organizations (via published bypass)
-        // - ALL objects (including depublished) from their own organization (via organization filter)
-        // This is intentional when publishedObjectsBypassMultiTenancy is enabled in config
+        // - ALL published (but not depublished) objects from ALL organizations (via published bypass).
+        // - ALL objects (including depublished) from their own organization (via organization filter).
+        // This is intentional when publishedObjectsBypassMultiTenancy is enabled in config.
         //
         // If users report seeing too many objects from other organizations, check:
-        // 1. Is publishedObjectsBypassMultiTenancy enabled in config? (should be false for strict multi-tenancy)
+        // 1. Is publishedObjectsBypassMultiTenancy enabled in config? (should be false for strict multi-tenancy).
         // 2. How many objects are currently published?
         // 3. Are objects being published unintentionally?
         if ($publishedBypassEnabled === true && $enablePublished === true) {
-            // Published bypass condition: entity must be published AND not depublished
-            // This ensures depublished entities from OTHER organizations are never visible via published bypass
+            // Published bypass condition: entity must be published AND not depublished.
+            // This ensures depublished entities from OTHER organizations are never visible via published bypass.
             $orgConditions->add(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull($publishedColumn),

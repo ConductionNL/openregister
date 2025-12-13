@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use stdClass;
 use RuntimeException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -920,7 +921,7 @@ class SettingsService
                 try {
                     $countQuery = "SELECT COUNT(*) as total FROM {$tableName}";
                     $result     = $db->executeQuery($countQuery);
-                    $count      = $result->fetchColumn();
+                    $count      = $result->fetchOne();
                     $result->closeCursor();
 
                     $stats['totals']['total'.ucfirst($key)] = (int) ($count ?? 0);
@@ -1168,9 +1169,9 @@ class SettingsService
     /**
      * Clear cache with granular control
      *
-     * @param string      $type    Cache type: 'all', 'object', 'schema', 'facet', 'distributed', 'names'
-     * @param string|null $userId  Specific user ID to clear cache for (if supported)
-     * @param array       $options Additional options for cache clearing
+     * @param string      $type     Cache type: 'all', 'object', 'schema', 'facet', 'distributed', 'names'
+     * @param string|null $userId   Specific user ID to clear cache for (if supported)
+     * @param array       $_options Additional options for cache clearing
      *
      * @return (array[]|int|mixed|null|string)[] Results of cache clearing operations
      *

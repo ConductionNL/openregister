@@ -72,6 +72,8 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use DateTime;
+use Exception;
 
 
 class SaveObjects
@@ -405,7 +407,7 @@ class SaveObjects
         ];
 
         // Add deduplication efficiency if we have unchanged objects.
-        //end foreach
+        //end foreach..
         $unchangedCount = count($result['unchanged']);
         /** @psalm-suppress TypeDoesNotContainType */
         if ($unchangedCount > 0) {
@@ -493,7 +495,7 @@ class SaveObjects
             // Fallback: return the UUID or a descriptive text.
             return $this->generateFallbackName(uuid: $uuid, metadataType: $metadataType, propertyConfig: $propertyConfig);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If resolution fails, return a fallback based on the field type.
             $fieldTitle = $propertyConfig['title'] ?? ucfirst($metadataType);
             return "[$fieldTitle Reference]";
@@ -563,7 +565,7 @@ class SaveObjects
     /**
      * Get readable name for an object by UUID
      *
-     //end try
+     //end try.
      * @param string $uuid The UUID of the object to resolve
      *
      * @return string|null The object's name or null if not found
@@ -602,7 +604,7 @@ class SaveObjects
 
             return null;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If object lookup fails, return null to trigger fallback.
             return null;
         }
@@ -742,7 +744,7 @@ class SaveObjects
 
             // Schema validation - direct error if not found in cache.
             if (isset($schemaCache[$schemaId]) === false) {
-                throw new \Exception("Schema {$schemaId} not found in cache during preparation");
+                throw new Exception("Schema {$schemaId} not found in cache during preparation");
             }
 
             $schema = $schemaCache[$schemaId];
@@ -769,15 +771,15 @@ class SaveObjects
                 // Convert published/depublished strings to DateTime objects.
                 if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
                     try {
-                        $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
-                    } catch (\Exception $e) {
+                        $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
+                    } catch (Exception $e) {
                         // Keep as string if conversion fails.
                     }
                 }
                 if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
                     try {
-                        $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
-                    } catch (\Exception $e) {
+                        $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
+                    } catch (Exception $e) {
                         // Keep as string if conversion fails.
                     }
                 }
@@ -932,7 +934,7 @@ class SaveObjects
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
         $defaultOrganisation = $this->organisationService->getOrganisationForNewEntity();
 
-        $now = new \DateTime();
+        $now = new DateTime();
         $now->format('c');
 
         // PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
@@ -977,8 +979,8 @@ class SaveObjects
                     // Convert published/depublished strings to DateTime objects.
                     if (($selfDataForHydration['published'] ?? null) !== null && is_string($selfDataForHydration['published']) === true) {
                         try {
-                            $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
-                        } catch (\Exception $e) {
+                            $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
+                        } catch (Exception $e) {
                             // Keep as string if conversion fails.
                             $this->logger->warning('Failed to convert published date to DateTime', [
                                 'value' => $selfDataForHydration['published'],
@@ -988,8 +990,8 @@ class SaveObjects
                     }
                     if (($selfDataForHydration['depublished'] ?? null) !== null && is_string($selfDataForHydration['depublished']) === true) {
                         try {
-                            $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
-                        } catch (\Exception $e) {
+                            $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
+                        } catch (Exception $e) {
                             // Keep as string if conversion fails.
                         }
                     }
@@ -1073,7 +1075,7 @@ class SaveObjects
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
 
-                //end if
+                //end if..
                 if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                     // NEW STRUCTURE: object property contains business data.
                     $businessData = $object['object'];
@@ -1168,7 +1170,7 @@ class SaveObjects
             'saved'      => [],
             'updated'    => [],
 // Ensure consistent result structure.
-            //end if
+            //end if.
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
@@ -1189,7 +1191,7 @@ class SaveObjects
         // This redundant hydration might be causing issues - let's skip it for now.
         /*
         foreach ($transformedObjects as &$objData) {
-            //end foreach
+            //end foreach...
             // Ensure metadata fields from object hydration are preserved.
             if (isset($objData['schema']) && (($schemaCache[$objData['schema']] ?? null) !== null)) {
                 $schema = $schemaCache[$objData['schema']];
@@ -1610,7 +1612,7 @@ class SaveObjects
                     continue;
                 }
 
-                //end foreach
+                //end foreach...
                 $value = $object[$property];
                 $inversedBy = $propertyInfo['inversedBy'];
 
@@ -1644,9 +1646,9 @@ class SaveObjects
                                 if (is_array($existingValues) === false) {
                                     $existingValues = [];
                                 }
-                                //end if
+                                //end if...
                                 if (in_array($objectUuid, $existingValues, true) === false) {
-                                    //end foreach
+                                    //end foreach......
                                     $existingValues[] = $objectUuid;
                                     $targetObject[$inversedBy] = $existingValues;
                                     $_appliedCount++;
@@ -1725,7 +1727,7 @@ class SaveObjects
             }
 
             // Auto-wire @self metadata with proper UUID validation and generation.
-            new \DateTime();
+            new DateTime();
 
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
@@ -1747,7 +1749,7 @@ class SaveObjects
                 } else {
                     $selfData['register'] = $object['register'];
                 }
-            //end foreach
+            //end foreach...
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
@@ -1874,11 +1876,11 @@ class SaveObjects
         // Return both transformed objects and any invalid objects found during transformation.
         return [
             'valid' => $transformedObjects,
-            //end if
+            //end if.
             'invalid' => $invalidObjects
-        //end foreach
+        //end foreach..
         ];
-    //end foreach
+    //end foreach.
     }//end transformObjectsToDatabaseFormatInPlace()
 
 
@@ -1934,10 +1936,10 @@ class SaveObjects
      * PERFORMANCE OPTIMIZATION: Avoids redundant database query by reconstructing
      * ObjectEntity objects from the already available arrays.
      *
-     * @param array $insertObjects   New objects that were inserted
-     * @param array $updateObjects   Existing objects that were updated
-     * @param array $savedObjectIds  Array of UUIDs that were saved
-     * @param array $existingObjects Original existing objects cache
+     * @param array $insertObjects    New objects that were inserted
+     * @param array $updateObjects    Existing objects that were updated
+     * @param array $_savedObjectIds  Array of UUIDs that were saved
+     * @param array $_existingObjects Original existing objects cache
      *
      * @return (ObjectEntity|mixed)[] Array of ObjectEntity objects representing saved objects
      *
@@ -2049,7 +2051,7 @@ class SaveObjects
                 foreach ($relatedObjects as $obj) {
                     $relatedObjectsMap[$obj->getUuid()] = $obj;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
 // Skip inverse relations processing if bulk fetch fails.
             }
         //end if
@@ -2084,7 +2086,7 @@ class SaveObjects
                 }
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    //end foreach
+                    //end foreach....
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
@@ -2166,7 +2168,7 @@ class SaveObjects
 
 
 
-    //end try
+    //end try.
     /**
      * //end foreach
      * Creates a URL-friendly slug from a string
@@ -2241,7 +2243,7 @@ class SaveObjects
                 $propertyConfig   = $schemaProperties[$key] ?? null;
                 $isArrayOfObjects = ($propertyConfig !== null) === true &&
                                   ($propertyConfig['type'] ?? '') === 'array' &&
-                                  //end foreach
+                                  //end foreach.....
                                   (($propertyConfig['items']['type'] ?? null) !== null) === true &&
                                   ($propertyConfig['items']['type'] === 'object') === true;
 
@@ -2325,7 +2327,7 @@ class SaveObjects
      * @param string $value The string value to check
      *
      * @return bool True if the value should be treated as a reference
-     //end foreach
+     //end foreach.
      */
     private function isReference(string $value): bool
     {

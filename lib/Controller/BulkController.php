@@ -28,6 +28,7 @@ use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Exception;
+use DateTime;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -86,8 +87,6 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
-     * @return JSONResponse Response with the result of the bulk delete operation
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk delete operation completed successfully', deleted_count?: int<0, max>, deleted_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>}, array<never, never>>
@@ -139,8 +138,6 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
-     * @return JSONResponse Response with the result of the bulk publish operation
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk publish operation completed successfully', published_count?: int<0, max>, published_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|string}, array<never, never>>
@@ -166,7 +163,7 @@ class BulkController extends Controller
             // Parse datetime if provided.
             if ($datetime !== true && $datetime !== false && $datetime !== null) {
                 try {
-                    $datetime = new \DateTime($datetime);
+                    $datetime = new DateTime($datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
                             data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
@@ -180,7 +177,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform bulk publish operation.
-            $publishedUuids = $this->objectService->publishObjects(uuids: $uuids, datetime: $datetime);
+            $publishedUuids = $this->objectService->publishObjects(uuids: $uuids, datetime: $datetime ?? true);
 
             // Format datetime for response.
             if ($datetime instanceof \DateTime) {
@@ -213,8 +210,6 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
-     * @return JSONResponse Response with the result of the bulk depublish operation
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk depublish operation completed successfully', depublished_count?: int<0, max>, depublished_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|string}, array<never, never>>
@@ -240,7 +235,7 @@ class BulkController extends Controller
             // Parse datetime if provided.
             if ($datetime !== true && $datetime !== false && $datetime !== null) {
                 try {
-                    $datetime = new \DateTime($datetime);
+                    $datetime = new DateTime($datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
                             data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
@@ -254,7 +249,7 @@ class BulkController extends Controller
             $this->objectService->setSchema($schema);
 
             // Perform bulk depublish operation.
-            $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime);
+            $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime ?? true);
 
             // Format datetime for response.
             if ($datetime instanceof \DateTime) {
@@ -286,8 +281,6 @@ class BulkController extends Controller
      *
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
-     *
-     * @return JSONResponse Response with the result of the bulk save operation
      *
      * @NoCSRFRequired
      *
@@ -366,8 +359,6 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
-     * @return JSONResponse Response with the result of the schema publishing operation
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects publishing completed successfully', published_count?: int, published_uuids?: array<int, string>, schema_id?: int, publish_all?: bool}, array<never, never>>
@@ -419,8 +410,6 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
-     * @return JSONResponse Response with the result of the schema deletion operation
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, schema_id?: int, hard_delete?: bool}, array<never, never>>
@@ -471,8 +460,6 @@ class BulkController extends Controller
      *
      * @param string $register The register identifier
      *
-     * @return JSONResponse Response with the result of the register deletion operation
-     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Register objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, register_id?: int}, array<never, never>>
@@ -517,11 +504,9 @@ class BulkController extends Controller
      *
      * @param string $schema The schema identifier
      *
-     * @return JSONResponse Response with the validation results
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array{error?: string, valid_count?: int, invalid_count?: int, valid_objects?: array<int, array>, invalid_objects?: array<int, array>, schema_id?: int}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, valid_count?: int<0, max>, invalid_count?: int<0, max>, valid_objects?: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects?: list{0?: array{id: int, uuid: null|string, name: null|string, data: array, errors: list{array{path: 'general'|'unknown'|mixed, message: mixed|string, keyword: 'exception'|'validation'|mixed},...}},...}, schema_id?: int}, array<never, never>>
      */
     public function validateSchema(string $schema): JSONResponse
     {

@@ -15,6 +15,10 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\FileMapper;
+use Exception;
+use RuntimeException;
+use stdClass;
+use DateTime;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 
@@ -157,7 +161,7 @@ class SolrFileService
     public function extractTextFromFile(string $filePath): string
     {
         if (file_exists($filePath) === false) {
-            throw new \Exception("File not found: {$filePath}");
+            throw new Exception("File not found: {$filePath}");
         }
 
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
@@ -199,7 +203,7 @@ class SolrFileService
                 // XML.
                 'xml' => $this->extractFromXml($filePath),
 
-                default => throw new \Exception("Unsupported file format: {$extension}")
+                default => throw new Exception("Unsupported file format: {$extension}")
             };//end match
 
             $extractionTime = round((microtime(true) - $startTime) * 1000, 2);
@@ -214,7 +218,7 @@ class SolrFileService
                     );
 
             return $text;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Text extraction failed',
                     [
@@ -223,7 +227,7 @@ class SolrFileService
                         'error'     => $e->getMessage(),
                     ]
                     );
-            throw new \Exception("Failed to extract text from {$extension} file: ".$e->getMessage());
+            throw new Exception("Failed to extract text from {$extension} file: ".$e->getMessage());
         }//end try
 
     }//end extractTextFromFile()
@@ -240,7 +244,7 @@ class SolrFileService
     {
         $content = file_get_contents($filePath);
         if ($content === false) {
-            throw new \Exception('Failed to read file');
+            throw new Exception('Failed to read file');
         }
 
         return $content;
@@ -259,7 +263,7 @@ class SolrFileService
     {
         $html = file_get_contents($filePath);
         if ($html === false) {
-            throw new \Exception('Failed to read HTML file');
+            throw new Exception('Failed to read HTML file');
         }
 
         // Strip HTML tags and decode entities.
@@ -289,7 +293,7 @@ class SolrFileService
                 $parser = new \Smalot\PdfParser\Parser();
                 $pdf    = $parser->parseFile($filePath);
                 return $pdf->getText();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(
                         'Smalot PDF parser failed, trying pdftotext',
                         [
@@ -316,7 +320,7 @@ class SolrFileService
             }
         }
 
-        throw new \Exception('PDF extraction requires Smalot PdfParser or pdftotext command');
+        throw new Exception('PDF extraction requires Smalot PdfParser or pdftotext command');
 
     }//end extractFromPdf()
 
@@ -331,7 +335,7 @@ class SolrFileService
     private function extractFromDocx(string $filePath): string
     {
         if (class_exists('\PhpOffice\PhpWord\IOFactory') === false) {
-            throw new \Exception('PhpOffice\PhpWord is required for DOCX extraction');
+            throw new Exception('PhpOffice\PhpWord is required for DOCX extraction');
         }
 
         try {
@@ -353,8 +357,8 @@ class SolrFileService
             }
 
             return trim($text);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to extract text from DOCX: '.$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception('Failed to extract text from DOCX: '.$e->getMessage());
         }//end try
 
     }//end extractFromDocx()
@@ -370,7 +374,7 @@ class SolrFileService
     private function extractFromXlsx(string $filePath): string
     {
         if (class_exists('\PhpOffice\PhpSpreadsheet\IOFactory') === false) {
-            throw new \Exception('PhpOffice\PhpSpreadsheet is required for XLSX extraction');
+            throw new Exception('PhpOffice\PhpSpreadsheet is required for XLSX extraction');
         }
 
         try {
@@ -396,8 +400,8 @@ class SolrFileService
             }
 
             return trim($text);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to extract text from XLSX: '.$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception('Failed to extract text from XLSX: '.$e->getMessage());
         }//end try
 
     }//end extractFromXlsx()
@@ -414,12 +418,12 @@ class SolrFileService
     {
         // PhpPresentation is not as widely used, so we'll use a simple ZIP extraction.
         if (class_exists('\ZipArchive') === false) {
-            throw new \Exception('ZipArchive extension is required for PPTX extraction');
+            throw new Exception('ZipArchive extension is required for PPTX extraction');
         }
 
         $zip = new \ZipArchive();
         if ($zip->open($filePath) !== true) {
-            throw new \Exception('Failed to open PPTX file as ZIP');
+            throw new Exception('Failed to open PPTX file as ZIP');
         }
 
         $text = '';
@@ -462,7 +466,7 @@ class SolrFileService
     {
         // Check if Tesseract OCR is available.
         if ($this->commandExists('tesseract') === false) {
-            throw new \Exception('Tesseract OCR is required for image text extraction. Install with: sudo apt-get install tesseract-ocr');
+            throw new Exception('Tesseract OCR is required for image text extraction. Install with: sudo apt-get install tesseract-ocr');
         }
 
         $outputFile = tempnam(sys_get_temp_dir(), 'ocr_');
@@ -484,7 +488,7 @@ class SolrFileService
             return '';
         }
 
-        throw new \Exception('OCR extraction failed. Tesseract returned code: '.$returnCode);
+        throw new Exception('OCR extraction failed. Tesseract returned code: '.$returnCode);
 
     }//end extractFromImage()
 
@@ -500,12 +504,12 @@ class SolrFileService
     {
         $json = file_get_contents($filePath);
         if ($json === false) {
-            throw new \Exception('Failed to read JSON file');
+            throw new Exception('Failed to read JSON file');
         }
 
         $data = json_decode($json, true);
         if ($data === null) {
-            throw new \Exception('Invalid JSON format');
+            throw new Exception('Invalid JSON format');
         }
 
         // Convert JSON to readable text format.
@@ -525,7 +529,7 @@ class SolrFileService
     {
         $xml = file_get_contents($filePath);
         if ($xml === false) {
-            throw new \Exception('Failed to read XML file');
+            throw new Exception('Failed to read XML file');
         }
 
         // Strip XML tags.
@@ -899,7 +903,7 @@ class SolrFileService
         $collection = $this->getFileCollection();
 
         if ($collection === null) {
-            throw new \Exception('fileCollection not configured in SOLR settings');
+            throw new Exception('fileCollection not configured in SOLR settings');
         }
 
         $this->logger->info(
@@ -1018,7 +1022,7 @@ class SolrFileService
         $collection = $this->getFileCollection();
 
         if ($collection === null) {
-            throw new \Exception('fileCollection not configured in SOLR settings');
+            throw new Exception('fileCollection not configured in SOLR settings');
         }
 
         $this->logger->info(
@@ -1121,7 +1125,7 @@ class SolrFileService
 
                     $stats['errors'][$fileText->getFileId()] = $errorMsg;
                 }//end if
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $stats['failed']++;
                 $stats['errors'][$fileText->getFileId()] = $e->getMessage();
 
@@ -1169,7 +1173,7 @@ class SolrFileService
         $collection = $this->getFileCollection();
 
         if ($collection === null) {
-            throw new \Exception('fileCollection not configured in SOLR settings');
+            throw new Exception('fileCollection not configured in SOLR settings');
         }
 
         // Extract chunking options if provided.
@@ -1190,7 +1194,7 @@ class SolrFileService
         // This will create chunks automatically.
         try {
             $this->getTextExtractionService()->extractFile($fileId, false);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'Failed to extract file: '.$e->getMessage(),

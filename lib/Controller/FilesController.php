@@ -202,7 +202,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      */
     public function create(
         string $register,
@@ -214,6 +214,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
+
+        if ($object === null) {
+            return new JSONResponse(
+                data: ['error' => 'Object not found'],
+                statusCode: 404
+            );
+        }
 
         try {
             $data = $this->request->getParams();
@@ -267,7 +274,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      */
     public function save(
         string $register,
@@ -279,6 +286,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
+
+        if ($object === null) {
+            return new JSONResponse(
+                data: ['error' => 'Object not found'],
+                statusCode: 404
+            );
+        }
 
         try {
             $data = $this->request->getParams();
@@ -347,7 +361,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array<'error'|int, array<string, mixed>|string>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array<'error'|int, array<string, mixed>|string>, array<never, never>>
      */
     public function createMultipart(
         string $register,
@@ -359,6 +373,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
         $object = $this->objectService->getObject();
+
+        if ($object === null) {
+            return new JSONResponse(
+                data: ['error' => 'Object not found'],
+                statusCode: 404
+            );
+        }
 
         $data = $this->request->getParams();
         try {
@@ -677,7 +698,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      */
     public function publish(
         string $register,
@@ -689,10 +710,18 @@ class FilesController extends Controller
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
+        $object = $this->objectService->getObject();
+
+        if ($object === null) {
+            return new JSONResponse(
+                data: ['error' => 'Object not found'],
+                statusCode: 404
+            );
+        }
 
         try {
             $result = $this->fileService->publishFile(
-                object: $this->objectService->getObject(),
+                object: $object,
                 file: $fileId
             );
 
@@ -718,7 +747,7 @@ class FilesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      */
     public function depublish(
         string $register,
@@ -730,10 +759,18 @@ class FilesController extends Controller
         $this->objectService->setSchema($schema);
         $this->objectService->setRegister($register);
         $this->objectService->setObject($id);
+        $object = $this->objectService->getObject();
+
+        if ($object === null) {
+            return new JSONResponse(
+                data: ['error' => 'Object not found'],
+                statusCode: 404
+            );
+        }
 
         try {
             $result = $this->fileService->unpublishFile(
-                object: $this->objectService->getObject(),
+                object: $object,
                 filePath: $fileId
             );
 

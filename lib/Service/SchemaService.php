@@ -20,6 +20,9 @@
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use Exception;
+use DateInterval;
+use stdClass;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -90,7 +93,7 @@ class SchemaService
         try {
             $schema = $this->schemaMapper->find($schemaId);
         } catch (\Exception $e) {
-            throw new \Exception('Schema not found with ID: '.$schemaId);
+            throw new Exception('Schema not found with ID: '.$schemaId);
         }
 
         // Get all objects for this schema.
@@ -151,8 +154,8 @@ class SchemaService
      * Iterates through all objects and analyzes their JSON data to discover
      * properties, data types, and usage patterns.
      *
-     * @param array $objects            Array of ObjectEntity objects
-     * @param array $existingProperties Current schema properties for comparison
+     * @param array $objects               Array of ObjectEntity objects
+     * @param array $_existingProperties   Current schema properties for comparison
      *
      * @return (array|float|int|mixed|null|true)[][][] Analysis results with discovered properties and statistics
      *
@@ -843,7 +846,7 @@ class SchemaService
      *
      * @param array $existingProperties   Current schema properties
      * @param array $discoveredProperties Properties found in object analysis
-     * @param array $usageStats           Usage statistics for all properties
+     * @param array $_usageStats          Usage statistics for all properties
      *
      * @return ((int|string)|array|mixed|null)[][] Array of improvement suggestions for existing properties
      *
@@ -1437,7 +1440,7 @@ class SchemaService
             return $updatedSchema;
         } catch (\Exception $e) {
             $this->logger->error(message: 'Failed to update schema '.$schemaId.': '.$e->getMessage());
-            throw new \Exception('Failed to update schema properties: '.$e->getMessage());
+            throw new Exception('Failed to update schema properties: '.$e->getMessage());
         }//end try
 
     }//end updateSchemaFromExploration()

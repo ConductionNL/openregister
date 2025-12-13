@@ -32,6 +32,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use RuntimeException;
+use DateTime;
+use stdClass;
 use OCA\OpenRegister\Service\Handler\ViewHandler;
 use OCA\OpenRegister\Service\Handler\AgentHandler;
 use OCA\OpenRegister\Service\Handler\OrganisationHandler;
@@ -1004,7 +1007,7 @@ class ConfigurationService
                                 ]
                                 );
                     }//end if
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->logger->error(
                             'Failed to import schema',
                             [
@@ -1240,7 +1243,7 @@ class ConfigurationService
                     $existingConfiguration = $configurations[0];
                     // Get the first (most recent) configuration.
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // No existing configuration found, we'll create a new one.
             }
 
@@ -1367,7 +1370,7 @@ class ConfigurationService
             }//end if
 
             return $configuration;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: "Failed to create or update configuration for app {$appId}: ".$e->getMessage());
             throw new Exception("Failed to create or update configuration: ".$e->getMessage());
         }//end try
@@ -1487,13 +1490,13 @@ class ConfigurationService
                     // objectConfiguration and fileConfiguration should always be objects, not arrays.
                     if (($property['objectConfiguration'] ?? null) !== null) {
                         if (is_array($property['objectConfiguration']) === true && $property['objectConfiguration'] === []) {
-                            $property['objectConfiguration'] = new \stdClass();
+                            $property['objectConfiguration'] = new stdClass();
                         }
                     }
 
                     if (($property['fileConfiguration'] ?? null) !== null) {
                         if (is_array($property['fileConfiguration']) === true && $property['fileConfiguration'] === []) {
-                            $property['fileConfiguration'] = new \stdClass();
+                            $property['fileConfiguration'] = new stdClass();
                         }
                     }
 
@@ -1506,13 +1509,13 @@ class ConfigurationService
 
                         if (($property['items']['objectConfiguration'] ?? null) !== null) {
                             if (is_array($property['items']['objectConfiguration']) === true && $property['items']['objectConfiguration'] === []) {
-                                $property['items']['objectConfiguration'] = new \stdClass();
+                                $property['items']['objectConfiguration'] = new stdClass();
                             }
                         }
 
                         if (($property['items']['fileConfiguration'] ?? null) !== null) {
                             if (is_array($property['items']['fileConfiguration']) === true && $property['items']['fileConfiguration'] === []) {
-                                $property['items']['fileConfiguration'] = new \stdClass();
+                                $property['items']['fileConfiguration'] = new stdClass();
                             }
                         }
                     }
@@ -1813,7 +1816,7 @@ class ConfigurationService
                 version: $version,
                 force: $force
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to import configuration from file: '.$e->getMessage(),
                     [
@@ -1882,7 +1885,7 @@ class ConfigurationService
                                 ]
                                 );
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // No configuration found by sourceUrl.
                 }
             }
@@ -1902,7 +1905,7 @@ class ConfigurationService
                                 ]
                                 );
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // No existing configuration found, we'll create a new one.
                     $this->logger->info(message: "No existing configuration found for app {$appId}, will create new one");
                 }
@@ -2104,7 +2107,7 @@ class ConfigurationService
             }//end if
 
             return $result;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: "Failed to import configuration for app {$appId}: ".$e->getMessage());
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
@@ -2140,7 +2143,7 @@ class ConfigurationService
         );
 
         $this->logger->error(message: $errorMessage);
-        throw new \Exception($errorMessage);
+        throw new Exception($errorMessage);
 
     }//end handleDuplicateSchemaError()
 
@@ -2160,7 +2163,7 @@ class ConfigurationService
             $duplicates = array_filter(
                     $schemas,
                     function ($schema) use ($slug) {
-                        return strtolower($schema->getSlug()) === strtolower($slug);
+                        return strtolower($schema->getSlug() ?? '') === strtolower($slug);
                     }
                     );
 
@@ -2187,7 +2190,7 @@ class ConfigurationService
             }
 
             return implode('; ', $info);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return "Unable to retrieve duplicate information: ".$e->getMessage();
         }//end try
 
@@ -2222,7 +2225,7 @@ class ConfigurationService
         );
 
         $this->logger->error(message: $errorMessage);
-        throw new \Exception($errorMessage);
+        throw new Exception($errorMessage);
 
     }//end handleDuplicateRegisterError()
 
@@ -2242,7 +2245,7 @@ class ConfigurationService
             $duplicates = array_filter(
                     $registers,
                     function ($register) use ($slug) {
-                        return strtolower($register->getSlug()) === strtolower($slug);
+                        return strtolower($register->getSlug() ?? '') === strtolower($slug);
                     }
                     );
 
@@ -2269,7 +2272,7 @@ class ConfigurationService
             }
 
             return implode('; ', $info);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return "Unable to retrieve duplicate information: ".$e->getMessage();
         }//end try
 
@@ -2320,7 +2323,7 @@ class ConfigurationService
 
             // Update the configuration with remote version and last checked time.
             $configuration->setRemoteVersion($remoteVersion);
-            $configuration->setLastChecked(new \DateTime());
+            $configuration->setLastChecked(new DateTime());
             $this->configurationMapper->update($configuration);
 
             $this->logger->info(message: "Checked remote version for configuration {$configuration->getId()}: {$remoteVersion}");
@@ -2489,9 +2492,9 @@ class ConfigurationService
      *     metadata?: array
      * }|JSONResponse
      *
-     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, schemas: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, objects: list{0?: array{type: string, action: string, slug: string, title: string, register: string, schema: string, current: array|null, proposed: array, changes: array},...}, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
+     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects: list<array{action: string, changes: array, current: array|null, proposed: array, register: string, schema: string, slug: string, title: string, type: string}>, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
      */
-    public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse | JSONResponse
+    public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse|JSONResponse | JSONResponse
     {
         // Fetch the remote configuration.
         $remoteData = $this->fetchRemoteConfiguration($configuration);
@@ -2536,12 +2539,12 @@ class ConfigurationService
             // Get existing registers and schemas to build maps.
             $allRegisters = $this->registerMapper->findAll();
             foreach ($allRegisters as $register) {
-                $registerSlugToId[strtolower($register->getSlug())] = $register->getId();
+                $registerSlugToId[strtolower($register->getSlug() ?? '')] = $register->getId();
             }
 
             $allSchemas = $this->schemaMapper->findAll();
             foreach ($allSchemas as $schema) {
-                $schemaSlugToId[strtolower($schema->getSlug())] = $schema->getId();
+                $schemaSlugToId[strtolower($schema->getSlug() ?? '')] = $schema->getId();
             }
 
             foreach ($remoteData['components']['objects'] as $objectData) {
@@ -2556,7 +2559,7 @@ class ConfigurationService
             'sourceUrl'          => $configuration->getSourceUrl(),
             'remoteVersion'      => $remoteData['version'] ?? $remoteData['info']['version'] ?? null,
             'localVersion'       => $configuration->getLocalVersion(),
-            'previewedAt'        => (new \DateTime())->format('c'),
+            'previewedAt'        => (new DateTime())->format('c'),
             'totalChanges'       => (
                 count($preview['registers']) + count($preview['schemas']) + count($preview['objects'])
             ),
@@ -2593,7 +2596,7 @@ class ConfigurationService
         $existingRegister = null;
         try {
             $existingRegister = $this->registerMapper->find($slug);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Register doesn't exist.
         }
 
@@ -2663,7 +2666,7 @@ class ConfigurationService
         $existingSchema = null;
         try {
             $existingSchema = $this->schemaMapper->find($slug);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Schema doesn't exist.
         }
 
@@ -3096,7 +3099,7 @@ class ConfigurationService
             }
             
             return $version;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log error and return null.
             $this->logger->error(
                 message: 'Failed to get configured app version',
@@ -3143,7 +3146,7 @@ class ConfigurationService
                     'version' => $version,
                 ]
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log error but don't throw - version tracking is not critical.
             $this->logger->error(
                 message: 'Failed to set configured app version',

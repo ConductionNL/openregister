@@ -25,6 +25,8 @@ use OCP\Http\Client\IClient;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
+use Exception;
+use RuntimeException;
 
 /**
  * Service for GitLab API operations
@@ -208,7 +210,7 @@ class GitLabService
                         'query'   => $searchQuery ?? '',
                     ]
                     );
-            throw new \Exception('Failed to search GitLab: '.$e->getMessage());
+            throw new Exception('Failed to search GitLab: '.$e->getMessage());
         }//end try
 
     }//end searchConfigurations()
@@ -248,7 +250,7 @@ class GitLabService
             $branches = json_decode($response->getBody(), true);
 
             return array_map(
-                    function ($branch) {
+                    function (array $branch): array {
                         return [
                             'name'      => $branch['name'],
                             'commit'    => $branch['commit']['id'] ?? null,
@@ -266,7 +268,7 @@ class GitLabService
                         'project_id' => $projectId,
                     ]
                     );
-            throw new \Exception('Failed to fetch branches: '.$e->getMessage());
+            throw new Exception('Failed to fetch branches: '.$e->getMessage());
         }//end try
 
     }//end getBranches()
@@ -312,7 +314,7 @@ class GitLabService
             $json    = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Invalid JSON in file: '.json_last_error_msg());
+                throw new Exception('Invalid JSON in file: '.json_last_error_msg());
             }
 
             return $json;
@@ -326,7 +328,7 @@ class GitLabService
                         'ref'        => $ref,
                     ]
                     );
-            throw new \Exception('Failed to fetch file: '.$e->getMessage());
+            throw new Exception('Failed to fetch file: '.$e->getMessage());
         }//end try
 
     }//end getFileContent()
@@ -412,7 +414,7 @@ class GitLabService
                         'ref'        => $ref,
                     ]
                     );
-            throw new \Exception('Failed to list configuration files: '.$e->getMessage());
+            throw new Exception('Failed to list configuration files: '.$e->getMessage());
         }//end try
 
     }//end listConfigurationFiles()
@@ -462,7 +464,7 @@ class GitLabService
                         'project'   => $project,
                     ]
                     );
-            throw new \Exception('Failed to fetch project: '.$e->getMessage());
+            throw new Exception('Failed to fetch project: '.$e->getMessage());
         }//end try
 
     }//end getProjectByPath()
@@ -500,7 +502,7 @@ class GitLabService
             }
 
             return $content;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->debug(
                     message: 'Failed to parse configuration file',
                     context: [

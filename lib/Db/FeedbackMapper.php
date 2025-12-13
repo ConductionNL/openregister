@@ -77,7 +77,7 @@ class FeedbackMapper extends QBMapper
         }
 
         // Set timestamps.
-        $now = new \DateTime();
+        $now = new DateTime();
         if ($entity->getCreated() === null) {
             $entity->setCreated($now);
         }
@@ -99,7 +99,7 @@ class FeedbackMapper extends QBMapper
      */
     public function update(Entity $entity): Feedback
     {
-        $entity->setUpdated(new \DateTime());
+        $entity->setUpdated(new DateTime());
         return parent::update($entity);
 
     }//end update()
@@ -145,7 +145,7 @@ class FeedbackMapper extends QBMapper
         $qb->delete($this->tableName)
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
-        $qb->execute();
+        $qb->executeStatement();
 
     }//end deleteByConversation()
 
