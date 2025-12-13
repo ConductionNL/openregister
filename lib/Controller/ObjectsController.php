@@ -698,7 +698,7 @@ class ObjectsController extends Controller
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = !$isAdmin;
         // If admin, disable RBAC.
-        // Note: multitenancy is disabled for admins via $rbac flag
+        // Note: multitenancy is disabled for admins via $rbac flag.
 
         // Determine uploaded files value.
         if (!empty($uploadedFiles) === true) {

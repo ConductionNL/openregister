@@ -116,7 +116,7 @@ class WebhookRetryJob extends TimedJob
      *
      * Finds failed webhook logs that are ready for retry and processes them.
      *
-     * @param array $argument Job arguments (unused)
+     * @param mixed $_argument Job arguments (unused)
      *
      * @return void
      */

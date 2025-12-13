@@ -45,8 +45,8 @@ echo "Collection: {$collectionName}\n";
 echo "SOLR URL: {$solrBaseUrl}\n";
 echo "==========================================\n\n";
 
-// ObjectEntity field definitions for SOLR schema
-// Based on ObjectEntity.php metadata properties
+// ObjectEntity field definitions for SOLR schema.
+// Based on ObjectEntity.php metadata properties.
 $fieldDefinitions = [
     // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).
     'self_tenant'         => [
@@ -395,4 +395,4 @@ if ($successCount === $totalFields) {
     exit(1);
 }
 
-// End of deprecated code
+// End of deprecated code.

@@ -127,6 +127,9 @@ use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 
+use Twig\Loader\ArrayLoader;
+use GuzzleHttp\Client;
+use OCA\OpenRegister\Service\GitHubService;
 /**
  * Class Application
  *
@@ -434,7 +437,7 @@ class Application extends App implements IBootstrap
                             userManager: $container->get('OCP\IUserManager'),
                             db: $container->get('OCP\IDBConnection'),
                             objectCacheService: null,
-                            // ObjectCacheService - lazy-loaded via container
+                            // ObjectCacheService - lazy-loaded via container.
                             container: $container,
                             appName: 'openregister'
                             );

@@ -93,7 +93,7 @@ class SolrEventListener implements IEventListener
                 $this->handleSchemaDeleted($event);
             } else {
                 // Log unhandled events for debugging.
-                //end if
+                //end if.
                 $this->logger->debug(
                         'SolrEventListener: Received unhandled event',
                         [
@@ -102,10 +102,10 @@ class SolrEventListener implements IEventListener
                     ]
                 );
             }
-        //end try
+        //end try.
         } catch (\Exception $e) {
             // Log errors but don't break the application flow.
-            //end try
+            //end try.
             $this->logger->error(
                     'SolrEventListener: Error handling event',
                     [

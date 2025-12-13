@@ -122,11 +122,11 @@ class Version1Date20250801000000 extends SimpleMigrationStep
                     [
                         'notnull' => false,
                         'length'  => 255,
-                    //end if
+                    //end if.
                     ]
                 );
                 $output->info(message: 'Added slug column to organisations table');
-                //end if
+                //end if.
             }
 
             // Add unique constraints for uuid and slug.
