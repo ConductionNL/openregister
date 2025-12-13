@@ -439,8 +439,6 @@ class SchemaCacheService
      * This method removes expired cache entries from the database.
      * Should be called periodically via cron job.
      *
-     * @return int Number of expired entries removed
-     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return int<min, max>
@@ -476,18 +474,11 @@ class SchemaCacheService
     /**
      * Get comprehensive cache statistics
      *
-     * @return (int|string)[] Cache statistics including performance metrics
+     * @return (int|string)[]
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{
-     *     total_entries: int,
-     *     entries_with_ttl: int,
-     *     memory_cache_size: int<0, max>,
-     *     cache_table: 'openregister_schema_cache',
-     *     query_time: string,
-     *     timestamp: int<1, max>
-     * }
+     * @psalm-return array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>}
      */
     public function getCacheStatistics(): array
     {

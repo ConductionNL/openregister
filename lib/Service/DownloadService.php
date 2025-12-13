@@ -121,7 +121,7 @@ class DownloadService
      * Used to route download requests to the appropriate data source.
      *
      * @param string $objectType The type of object to retrieve the mapper for
-     *                          (e.g., 'schema', 'register')
+     *                           (e.g., 'schema', 'register')
      *
      * @return RegisterMapper|SchemaMapper The appropriate mapper instance
      *

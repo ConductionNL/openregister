@@ -435,7 +435,9 @@ class Schema extends Entity implements JsonSerializable
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -458,7 +460,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @throws \Exception If the properties are invalid
      *
-     * @return bool True if the properties are valid
+     * @return true True if the properties are valid
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
@@ -492,7 +494,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @throws \InvalidArgumentException If the authorization structure is invalid
      *
-     * @return bool True if the authorization structure is valid
+     * @return true True if the authorization structure is valid
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
@@ -652,9 +654,10 @@ class Schema extends Entity implements JsonSerializable
      * @param SchemaPropertyValidatorService $validator Optional validator for properties
      *
      * @throws \Exception If property validation fails
-     * @return self Returns $this for method chaining
+     *
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object, ?SchemaPropertyValidatorService $validator=null): self
+    public function hydrate(array $object, ?SchemaPropertyValidatorService $validator=null): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -721,7 +724,9 @@ class Schema extends Entity implements JsonSerializable
      *
      * Converts entity data to a JSON serializable array
      *
-     * @return array<string, mixed> The serialized schema data
+     * @return ((mixed|string[])[]|bool|int|null|string)[] The serialized schema data
+     *
+     * @psalm-return array{id: int, uuid: null|string, uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, organisation: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}
      */
     public function jsonSerialize(): array
     {
@@ -811,9 +816,9 @@ class Schema extends Entity implements JsonSerializable
      *
      * @param IURLGenerator $urlGenerator The URL generator for URLs in the schema
      *
-     * @return object A standard object representation of the schema
+     * @return stdClass A standard object representation of the schema
      */
-    public function getSchemaObject(IURLGenerator $urlGenerator): object
+    public function getSchemaObject(IURLGenerator $urlGenerator): stdClass
     {
         $schema        = new stdClass();
         $schema->title = $this->title;
@@ -1271,14 +1276,15 @@ class Schema extends Entity implements JsonSerializable
      *
      * @param array $property The property configuration
      *
-     * @return string|null The facet type ('terms', 'date_histogram', 'range') or null
+     * @phpstan-param array<string, mixed> $property
      *
-     * @phpstan-param  array<string, mixed> $property
-     * @psalm-param    array<string, mixed> $property
+     * @psalm-param array<string, mixed> $property
+     *
      * @phpstan-return string|null
-     * @psalm-return   string|null
+     *
+     * @psalm-return 'date_histogram'|'range'|'terms'
      */
-    private function determineFacetType(array $property): ?string
+    private function determineFacetType(array $property): string
     {
         $type   = $property['type'] ?? 'string';
         $format = $property['format'] ?? null;
@@ -1383,6 +1389,8 @@ class Schema extends Entity implements JsonSerializable
      * @param array $property The property definition
      *
      * @return string The facet type ('terms' or 'date_histogram')
+     *
+     * @psalm-return 'date_histogram'|'terms'
      */
     private function determineFacetTypeFromPropertyType(array $property): string
     {

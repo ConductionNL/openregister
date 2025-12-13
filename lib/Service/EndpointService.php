@@ -207,9 +207,11 @@ class EndpointService
      * @param Endpoint $endpoint The endpoint to execute
      * @param array    $request  Request data
      *
-     * @return         array Execution result
+     * @return (int|string[]|true)[]
+     *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-     * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     *
+     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'View endpoint executed (placeholder)'}}
      */
     private function executeViewEndpoint(Endpoint $_endpoint, array $_request): array
     {
@@ -234,7 +236,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      */
-    private function executeAgentEndpoint(Endpoint $_endpoint, array $_request): array
+    private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
     {
         try {
             // Get required services.
@@ -483,9 +485,11 @@ class EndpointService
      * @param Endpoint $endpoint The endpoint to execute
      * @param array    $request  Request data
      *
-     * @return         array Execution result
+     * @return (int|string[]|true)[]
+     *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-     * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     *
+     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Webhook endpoint executed (placeholder)'}}
      */
     private function executeWebhookEndpoint(Endpoint $_endpoint, array $_request): array
     {
@@ -506,9 +510,11 @@ class EndpointService
      * @param Endpoint $endpoint The endpoint to execute
      * @param array    $request  Request data
      *
-     * @return         array Execution result
+     * @return (int|string[]|true)[]
+     *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-     * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     *
+     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Register endpoint executed (placeholder)'}}
      */
     private function executeRegisterEndpoint(Endpoint $_endpoint, array $_request): array
     {
@@ -529,10 +535,11 @@ class EndpointService
      * @param Endpoint $endpoint The endpoint to execute
      * @param array    $request  Request data
      *
-     * @return         array Execution result
-     //end foreach
+     * @return (int|string[]|true)[]
+     *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-     * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     *
+     * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Schema endpoint executed (placeholder)'}}
      */
     private function executeSchemaEndpoint(Endpoint $_endpoint, array $_request): array
     {

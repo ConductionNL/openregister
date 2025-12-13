@@ -204,7 +204,9 @@ class View extends Entity implements JsonSerializable
      *
      * Converts the entity to an array representation
      *
-     * @return array Array representation of the entity
+     * @return (array|bool|int|null|string)[] Array representation of the entity
+     *
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}
      */
     public function jsonSerialize(): array
     {
@@ -288,9 +290,11 @@ class View extends Entity implements JsonSerializable
     /**
      * Get managed by configuration formatted.
      *
-     * @return array<string,mixed>|null
+     * @return (int|null|string)[]|null
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
      */
-    private function getManagedByConfigurationFormatted(): ?array
+    private function getManagedByConfigurationFormatted(): array|null
     {
         if ($this->managedByConfiguration !== null) {
             return [
@@ -312,9 +316,9 @@ class View extends Entity implements JsonSerializable
      *
      * @param array $object Array containing entity data
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         if (($object['uuid'] ?? null) !== null) {
             $this->setUuid($object['uuid']);

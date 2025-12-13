@@ -356,20 +356,9 @@ class VectorEmbeddingService
      * @param array  $config   Provider-specific configuration
      * @param string $testText Optional test text to embed
      *
-     * @return ((array|int|mixed|string)[]|bool|string)[] Test results with success status and embedding info
+     * @return ((float[]|int|mixed|string)[]|bool|string)[]
      *
-     * @psalm-return array{
-     *     success: bool,
-     *     error?: string,
-     *     message: string,
-     *     data?: array{
-     *         provider: string,
-     *         model: 'unknown'|mixed,
-     *         vectorLength: int<0, max>,
-     *         sampleValues: array,
-     *         testText: string
-     *     }
-     * }
+     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -660,22 +649,11 @@ class VectorEmbeddingService
      * @param int   $limit          Maximum number of results
      * @param array $filters        Additional filters (entity_type, etc.)
      *
-     * @return array<int, array<int|float|string|array|null>> Search results
+     * @return (array|float|int|mixed|null|string)[][]
      *
      * @throws \Exception If search fails or Solr is not configured
      *
-     * @psalm-return list<array{
-     *     chunk_index: 0|mixed,
-     *     chunk_text: mixed|null,
-     *     dimensions: 0|mixed,
-     *     entity_id: string,
-     *     entity_type: string,
-     *     metadata: array,
-     *     model: ''|mixed,
-     *     similarity: float(0)|mixed,
-     *     total_chunks: 1|mixed,
-     *     vector_id: mixed
-     * }>
+     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, dimensions: 0|mixed, entity_id: string, entity_type: string, metadata: array, model: ''|mixed, similarity: float(0)|mixed, total_chunks: 1|mixed, vector_id: mixed}>
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
@@ -1309,21 +1287,11 @@ class VectorEmbeddingService
      * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider
      *
-     * @return (array|float|int)[] Combined and ranked results
+     * @return (((array|bool|float|int|mixed|null)[]|float|int)[]|float|int)[]
      *
      * @throws \Exception If hybrid search fails
      *
-     * @psalm-return array{
-     *     results: array,
-     *     total: int<0, max>,
-     *     search_time_ms: float,
-     *     source_breakdown: array{
-     *         vector_only: int<0, max>,
-     *         solr_only: int<0, max>,
-     *         both: int<0, max>
-     *     },
-     *     weights: array{solr: float, vector: float}
-     * }
+     * @psalm-return array{results: list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: float|int|null, solr_score: mixed|null, vector_rank: float|int|null, vector_similarity: mixed|null}>, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
      */
     public function hybridSearch(
         string $query,
@@ -1473,22 +1441,9 @@ class VectorEmbeddingService
      * @param float $vectorWeight  Weight for vector results (0-1)
      * @param float $solrWeight    Weight for SOLR results (0-1)
      *
-     * @return (array|bool|float|int|mixed|null)[][] Combined and ranked results
+     * @return (array|bool|float|int|mixed|null)[][]
      *
-     * @psalm-return list<array{
-     *     chunk_index: 0|mixed,
-     *     chunk_text: mixed|null,
-     *     combined_score: 0|float,
-     *     entity_id: mixed,
-     *     entity_type: mixed,
-     *     in_solr: bool,
-     *     in_vector: bool,
-     *     metadata: array<never, never>|mixed,
-     *     solr_rank: float|int|null,
-     *     solr_score: mixed|null,
-     *     vector_rank: float|int|null,
-     *     vector_similarity: mixed|null
-     * }>
+     * @psalm-return list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: int|null, solr_score: mixed|null, vector_rank: int|null, vector_similarity: mixed|null}>
      */
     private function reciprocalRankFusion(
         array $vectorResults,
@@ -1567,7 +1522,9 @@ class VectorEmbeddingService
     /**
      * Get vector statistics
      *
-     * @return array Statistics about stored vectors
+     * @return ((int|mixed)[]|int|string)[] Statistics about stored vectors
+     *
+     * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int, source?: 'solr'|'solr_error'|'solr_unavailable'}
      */
     public function getVectorStats(): array
     {
@@ -2227,19 +2184,9 @@ class VectorEmbeddingService
      * Compares the configured embedding model with models used in existing vectors.
      * If they don't match, vectors need to be regenerated.
      *
-     * @return (array|bool|int|mixed|string)[] Status information with mismatch details
+     * @return (array|bool|int|mixed|string)[]
      *
-     * @psalm-return array{
-     *     has_vectors: bool,
-     *     mismatch: bool,
-     *     error?: string,
-     *     message?: 'No embedding model configured'|'No vectors exist yet'|mixed,
-     *     current_model?: mixed,
-     *     existing_models?: list<mixed>,
-     *     total_vectors?: int,
-     *     null_model_count?: int,
-     *     mismatched_models?: list<mixed>
-     * }
+     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: string, current_model?: mixed, existing_models?: list{0?: mixed,...}, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -2375,7 +2322,7 @@ class VectorEmbeddingService
      *
      * Deletes all vectors. This should be done when changing embedding models.
      *
-     * @return (bool|int|string)[] Result with count of deleted vectors
+     * @return (bool|int|string)[]
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
      */

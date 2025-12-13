@@ -115,12 +115,11 @@ class SchemasController extends Controller
      * Returns a JSON response containing an array of all schemas in the system.
      * Supports pagination, filtering, and extended properties (stats, extendedBy).
      *
-     * @return JSONResponse JSON response containing the list of schemas
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{results: array<int, mixed>}>
+     * @psalm-return JSONResponse<200, array{results: array<array<string, mixed>>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -128,9 +127,23 @@ class SchemasController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
-        $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
-        $page   = isset($params['_page']) === true ? (int) $params['_page'] : null;
+        if (isset($params['_limit']) === true) {
+            $limit = (int) $params['_limit'];
+        } else {
+            $limit = null;
+        }
+
+        if (isset($params['_offset']) === true) {
+            $offset = (int) $params['_offset'];
+        } else {
+            $offset = null;
+        }
+
+        if (isset($params['_page']) === true) {
+            $page = (int) $params['_page'];
+        } else {
+            $page = null;
+        }
 
         // Note: search parameter not currently used in this endpoint.
         // Extract extend parameter for additional properties.
@@ -205,6 +218,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{'@self': array{extendedBy: array}|mixed, stats?: array{objects: array<string, int>, logs: array, files: array{total: 0, size: 0}, registers: int}|mixed,...}, array<never, never>>
      */
     public function show($id): JSONResponse
     {
@@ -248,6 +263,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<201, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -335,6 +352,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -440,6 +459,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -615,6 +636,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Schema, array<never, never>>|JSONResponse<404, array{error: 'Schema not found'}, array<never, never>>
      */
     public function download(int $id): JSONResponse
     {
@@ -646,6 +669,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, incoming?: array<array<string, mixed>>, outgoing?: list<array<string, mixed>>, total?: int<0, max>}, array<never, never>>
      */
     public function related(int|string $id): JSONResponse
     {
@@ -701,7 +726,10 @@ class SchemasController extends Controller
      * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema is not found
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, objectCount?: int, objects_count?: int, objects?: array{total: int, invalid: int, deleted: int, published: int, locked: int, size: int}, logs?: array, files?: array{total: 0, size: 0}, registers?: int}, array<never, never>>
      */
     public function stats(int $id): JSONResponse
     {
@@ -759,7 +787,10 @@ class SchemasController extends Controller
      * @return JSONResponse Analysis results with discovered properties and suggestions
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function explore(int $id): JSONResponse
     {
@@ -790,7 +821,10 @@ class SchemasController extends Controller
      * @return JSONResponse Success confirmation with updated schema
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, schema?: array<string, mixed>, message?: string}, array<never, never>>
      */
     public function updateFromExploration(int $id): JSONResponse
     {
@@ -836,7 +870,10 @@ class SchemasController extends Controller
      * @return JSONResponse A JSON response containing the published schema
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404, array<string, mixed>, array<never, never>>
      */
     public function publish(int $id): JSONResponse
     {
@@ -898,7 +935,10 @@ class SchemasController extends Controller
      * @return JSONResponse A JSON response containing the depublished schema
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404, array<string, mixed>, array<never, never>>
      */
     public function depublish(int $id): JSONResponse
     {

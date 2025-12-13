@@ -108,7 +108,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from    Start date filter
      * @param DateTime|null $to      End date filter
      *
-     * @return array Array of SearchTrail entities
+     * @return SearchTrail[] Array of SearchTrail entities
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\SearchTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -273,7 +275,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from Start date filter
      * @param DateTime|null $to   End date filter
      *
-     * @return array Array of search statistics
+     * @return (float|int)[] Array of search statistics
+     *
+     * @psalm-return array{total_searches: int, total_results: int, avg_results_per_search: float, avg_response_time: float, non_empty_searches: int}
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -322,7 +326,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return array Array of popular search terms with counts
+     * @return (float|int|mixed)[][] Array of popular search terms with counts
+     *
+     * @psalm-return array<array{term: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -378,7 +384,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from     Start date filter
      * @param DateTime|null $to       End date filter
      *
-     * @return array Array of search activity by time period
+     * @return (float|int|mixed)[][] Array of search activity by time period
+     *
+     * @psalm-return array<array{period: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
     public function getSearchActivityByTime(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -456,7 +464,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from Start date filter
      * @param DateTime|null $to   End date filter
      *
-     * @return array Array of search statistics by register and schema
+     * @return (float|int|mixed)[][] Array of search statistics by register and schema
+     *
+     * @psalm-return array<array{register: mixed, schema: mixed, register_uuid: mixed, schema_uuid: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
     public function getSearchStatisticsByRegisterSchema(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -515,7 +525,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return array Array of user agent statistics
+     * @return (float|int|mixed)[][] Array of user agent statistics
+     *
+     * @psalm-return array<array{user_agent: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -570,6 +582,8 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $to   End date filter
      *
      * @return int Number of unique search terms
+     *
+     * @psalm-return int<0, max>
      */
     public function getUniqueSearchTermsCount(?DateTime $from=null, ?DateTime $to=null): int
     {
@@ -605,6 +619,8 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $to   End date filter
      *
      * @return int Number of unique users
+     *
+     * @psalm-return int<0, max>
      */
     public function getUniqueUsersCount(?DateTime $from=null, ?DateTime $to=null): int
     {
@@ -669,7 +685,11 @@ class SearchTrailMapper extends QBMapper
         $totalSearches  = (int) ($data['total_searches'] ?? 0);
         $uniqueSessions = (int) ($data['unique_sessions'] ?? 0);
 
-        return $uniqueSessions > 0 ? round($totalSearches / $uniqueSessions, 2) : 0.0;
+        if ($uniqueSessions > 0) {
+            return round($totalSearches / $uniqueSessions, 2);
+        } else {
+            return 0.0;
+        }
 
     }//end getAverageSearchesPerSession()
 
@@ -713,7 +733,11 @@ class SearchTrailMapper extends QBMapper
         $totalViews     = (int) ($data['total_views'] ?? 0);
         $uniqueSessions = (int) ($data['unique_sessions'] ?? 0);
 
-        return $uniqueSessions > 0 ? round($totalViews / $uniqueSessions, 2) : 0.0;
+        if ($uniqueSessions > 0) {
+            return round($totalViews / $uniqueSessions, 2);
+        } else {
+            return 0.0;
+        }
 
     }//end getAverageObjectViewsPerSession()
 
@@ -871,19 +895,41 @@ class SearchTrailMapper extends QBMapper
         // Extract metadata filters.
         $metadataFilters = $query['@self'] ?? [];
         if (($metadataFilters['register'] ?? null) !== null) {
-            $searchTrail->setRegister(is_numeric($metadataFilters['register']) === true ? (int) $metadataFilters['register'] : null);
-            $searchTrail->setRegisterUuid(is_string($metadataFilters['register']) === true ? $metadataFilters['register'] : null);
+            if (is_numeric($metadataFilters['register']) === true) {
+                $searchTrail->setRegister((int) $metadataFilters['register']);
+            } else {
+                $searchTrail->setRegister(null);
+            }
+
+            if (is_string($metadataFilters['register']) === true) {
+                $searchTrail->setRegisterUuid($metadataFilters['register']);
+            } else {
+                $searchTrail->setRegisterUuid(null);
+            }
         }
 
         if (($metadataFilters['schema'] ?? null) !== null) {
-            $searchTrail->setSchema(is_numeric($metadataFilters['schema']) === true ? (int) $metadataFilters['schema'] : null);
-            $searchTrail->setSchemaUuid(is_string($metadataFilters['schema']) === true ? $metadataFilters['schema'] : null);
+            if (is_numeric($metadataFilters['schema']) === true) {
+                $searchTrail->setSchema((int) $metadataFilters['schema']);
+            } else {
+                $searchTrail->setSchema(null);
+            }
+
+            if (is_string($metadataFilters['schema']) === true) {
+                $searchTrail->setSchemaUuid($metadataFilters['schema']);
+            } else {
+                $searchTrail->setSchemaUuid(null);
+            }
         }
 
         // Extract sort parameters.
         $sortParams = [];
         if (($query['_order'] ?? null) !== null) {
-            $sortParams = is_array($query['_order']) === true ? $query['_order'] : [$query['_order']];
+            if (is_array($query['_order']) === true) {
+                $sortParams = $query['_order'];
+            } else {
+                $sortParams = [$query['_order']];
+            }
         }
 
         $searchTrail->setSortParameters($sortParams);

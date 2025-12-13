@@ -405,12 +405,9 @@ class TextExtractionService
      *
      * @param string $text Input text.
      *
-     * @return array{
-     *     language: string|null,
-     *     language_level: string|null,
-     *     language_confidence: float|null,
-     *     detection_method: string|null
-     * }
+     * @return (float|null|string)[]
+     *
+     * @psalm-return array{language: 'en'|'nl'|null, language_level: null, language_confidence: float|null, detection_method: string}
      */
     private function detectLanguageSignals(string $text): array
     {
@@ -1149,7 +1146,7 @@ class TextExtractionService
      *
      * @throws Exception If PDF parsing fails
      */
-    private function extractPdf(\OCP\Files\File $file): string|null
+    private function extractPdf(\OCP\Files\File $file): string|null|null
     {
         // Check if PdfParser library is available.
         if (class_exists('Smalot\PdfParser\Parser') === false) {
@@ -1647,7 +1644,9 @@ class TextExtractionService
      * @param int    $chunkSize    Target chunk size
      * @param int    $chunkOverlap Overlap size
      *
-     * @return array Array of chunk objects with text, start_offset, end_offset
+     * @return (int|mixed|string)[][] Array of chunk objects with text, start_offset, end_offset
+     *
+     * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
      */
     private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array
     {
@@ -1796,6 +1795,8 @@ class TextExtractionService
      * @param string|null $language Detected language code
      *
      * @return string Detection method name
+     *
+     * @psalm-return 'heuristic'|'none'
      */
     private function getDetectionMethod(?string $language): string
     {
@@ -1823,7 +1824,15 @@ class TextExtractionService
 
         $totalSize = 0;
         foreach ($chunks as $chunk) {
-            $text       = is_array($chunk) === true && (($chunk['text'] ?? null) !== null) ? $chunk['text'] : (is_string($chunk) === true ? $chunk : '');
+            // Extract text from chunk.
+            if (is_array($chunk) === true && (($chunk['text'] ?? null) !== null)) {
+                $text = $chunk['text'];
+            } else if (is_string($chunk) === true) {
+                $text = $chunk;
+            } else {
+                $text = '';
+            }
+
             $totalSize += strlen($text);
         }
 

@@ -114,20 +114,11 @@ class VectorizationService
      * @param string $entityType Entity type ('object', 'file', etc)
      * @param array  $options    Strategy-specific options
      *
-     * @return (array|int|mixed|string|true)[] Vectorization results
+     * @return ((int|string)[][]|int|string|true)[]
      *
      * @throws \Exception If strategy not found or vectorization fails
      *
-     * @psalm-return array{
-     *     success: true,
-     *     message: string,
-     *     entity_type: string,
-     *     total_entities: int<0, max>,
-     *     total_items: 0|mixed,
-     *     vectorized: 0|mixed,
-     *     failed: 0|mixed,
-     *     errors?: array
-     * }
+     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}}
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -301,7 +292,12 @@ class VectorizationService
                             $failed++;
                             //
                             // embeddingData may contain 'error' key even if not in type definition.
-                            $errorMsg = (is_array($embeddingData) && array_key_exists('error', $embeddingData)) ? $embeddingData['error'] : 'Embedding generation failed';
+                            if (is_array($embeddingData) && array_key_exists('error', $embeddingData)) {
+                                $errorMsg = $embeddingData['error'];
+                            } else {
+                                $errorMsg = 'Embedding generation failed';
+                            }
+
                             $errors[] = [
                                 'entity_id'  => $entityId,
                                 'item_index' => $index,

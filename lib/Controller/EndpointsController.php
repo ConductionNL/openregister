@@ -132,12 +132,11 @@ class EndpointsController extends Controller
      * Retrieves all configured endpoints from the database and returns them
      * as a JSON response with total count. Used for endpoint management UI.
      *
-     * @return JSONResponse JSON response containing endpoints array and total count
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{results: array<int, mixed>, total: int}>
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to list endpoints', results?: array<\OCA\OpenRegister\Db\Endpoint>, total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -184,12 +183,11 @@ class EndpointsController extends Controller
      *
      * @param int $id Endpoint ID to retrieve
      *
-     * @return JSONResponse JSON response containing endpoint data or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint, array<never, never>>|JSONResponse<404|500, array{error: 'Endpoint not found'|'Failed to retrieve endpoint'}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -238,12 +236,11 @@ class EndpointsController extends Controller
      * Validates required fields (name and endpoint path) before creation.
      * Returns 201 Created on success, 400 Bad Request on validation failure.
      *
-     * @return JSONResponse JSON response containing created endpoint or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
+     * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint, array<never, never>>|JSONResponse<400|500, array{error: string}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -309,12 +306,11 @@ class EndpointsController extends Controller
      *
      * @param int $id Endpoint ID to update
      *
-     * @return JSONResponse JSON response containing updated endpoint or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -381,12 +377,11 @@ class EndpointsController extends Controller
      *
      * @param int $id Endpoint ID to delete
      *
-     * @return JSONResponse JSON response with null data (204) or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<null|array{error: string}>
+     * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<404|500, array{error: 'Endpoint not found'|'Failed to delete endpoint'}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -449,12 +444,11 @@ class EndpointsController extends Controller
      *
      * @param int $id Endpoint ID to test
      *
-     * @return JSONResponse JSON response containing test execution results or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{success: bool, message: string, statusCode?: int, response?: mixed, error?: string}>
+     * @psalm-return JSONResponse<int, array{error?: string, success?: bool, message?: string, statusCode?: int, response?: mixed}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -530,12 +524,11 @@ class EndpointsController extends Controller
      *
      * @param int $id Endpoint ID to retrieve logs for
      *
-     * @return JSONResponse JSON response containing logs array and total count or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{results: array<int, mixed>, total: int}|array{error: string}>
+     * @psalm-return JSONResponse<200|404|500, array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -599,12 +592,11 @@ class EndpointsController extends Controller
      *
      * @param int $id Endpoint ID to retrieve statistics for
      *
-     * @return JSONResponse JSON response containing statistics data or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array<string, mixed>|array{error: string}>
+     * @psalm-return JSONResponse<200|404|500, array<string, 'Endpoint not found'|'Failed to retrieve endpoint log statistics'|int>, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -658,12 +650,11 @@ class EndpointsController extends Controller
      * Supports pagination via limit and offset parameters.
      * Returns logs for specific endpoint if endpoint_id provided, otherwise all logs.
      *
-     * @return JSONResponse JSON response containing logs array and total count or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<array{results: array<int, mixed>, total: int}|array{error: string}>
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

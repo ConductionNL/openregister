@@ -158,9 +158,9 @@ class SaveObject
      *
      * @param string $reference The schema reference to resolve
      *
-     * @return string|null The resolved schema ID or null if not found
+     * @return null|numeric-string The resolved schema ID or null if not found
      */
-    private function resolveSchemaReference(string $reference): ?string
+    private function resolveSchemaReference(string $reference): string|null
     {
         if (empty($reference) === true) {
             return null;
@@ -244,9 +244,9 @@ class SaveObject
      *
      * @param string $reference The register reference to resolve
      *
-     * @return string|null The resolved register ID or null if not found
+     * @return null|numeric-string The resolved register ID or null if not found
      */
-    private function resolveRegisterReference(string $reference): ?string
+    private function resolveRegisterReference(string $reference): string|null
     {
         if (empty($reference) === true) {
             return null;
@@ -828,12 +828,12 @@ class SaveObject
      * @param array  $data     The object data
      * @param string $template The twig-like template string
      *
-     * @return string|null The processed template result, or null if no values found
+     * @return null|string
      *
-     * @psalm-return   string|null
+     * @psalm-return string|null
      * @phpstan-return string|null
      */
-    private function processTwigLikeTemplate(array $data, string $template): ?string
+    private function processTwigLikeTemplate(array $data, string $template): string|null
     {
         // Extract all {{ fieldName }} patterns.
         preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
@@ -1018,9 +1018,9 @@ class SaveObject
      * @param array  $data   The object data
      * @param Schema $schema The schema containing the configuration
      *
-     * @return string|null The generated slug or null if no slug could be generated
+     * @return null|string The generated slug or null if no slug could be generated
      */
-    private function generateSlug(array $data, Schema $schema): ?string
+    private function generateSlug(array $data, Schema $schema): string|null
     {
         try {
             $config    = $schema->getConfiguration();
@@ -1238,8 +1238,11 @@ class SaveObject
      * @param array        $property     The property to add the objects to.
      * @param array        $propData     The data in the property.
      *
-     * @return array Array of UUIDs of created objects
+     * @return string[] Array of UUIDs of created objects
+     *
      * @throws Exception
+     *
+     * @psalm-return list<string>
      */
     private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -2683,21 +2686,21 @@ class SaveObject
      * @param array        $fileConfig   The file property configuration from schema.
      * @param int|null     $index        Optional index for array properties.
      *
-     * @return int|null The ID of the created/existing file, or null if processing fails.
-     *
      * @throws Exception If file validation fails or file operations fail.
      *
-     * @psalm-param    ObjectEntity $objectEntity
-     * @phpstan-param  ObjectEntity $objectEntity
-     * @psalm-param    mixed $fileInput
-     * @phpstan-param  mixed $fileInput
-     * @psalm-param    string $propertyName
-     * @phpstan-param  string $propertyName
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @psalm-param    int|null $index
-     * @phpstan-param  int|null $index
-     * @psalm-return   int|null
+     * @psalm-param ObjectEntity $objectEntity
+     * @psalm-param mixed $fileInput
+     * @psalm-param string $propertyName
+     * @psalm-param array<string, mixed> $fileConfig
+     * @psalm-param int|null $index
+     *
+     * @phpstan-param ObjectEntity $objectEntity
+     * @phpstan-param mixed $fileInput
+     * @phpstan-param string $propertyName
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param int|null $index
+     *
+     * @psalm-return int|null
      * @phpstan-return int|null
      */
     private function processSingleFileProperty(
@@ -2706,7 +2709,7 @@ class SaveObject
         string $propertyName,
         array $fileConfig,
         ?int $index=null
-    ): ?int {
+    ): int {
         try {
             // Determine input type and process accordingly.
             if (is_string($fileInput) === true) {
@@ -2913,15 +2916,17 @@ class SaveObject
      * @param string $url     The original URL.
      * @param string $content The fetched content.
      *
-     * @return array File data with content, mimeType, extension, and size.
+     * @return (int|string)[]
      *
      * @throws Exception If the file data cannot be parsed.
      *
-     * @psalm-param    string $url
-     * @phpstan-param  string $url
-     * @psalm-param    string $content
-     * @phpstan-param  string $content
-     * @psalm-return   array{content: string, mimeType: string, extension: string, size: int}
+     * @psalm-param string $url
+     * @psalm-param string $content
+     *
+     * @phpstan-param string $url
+     * @phpstan-param string $content
+     *
+     * @psalm-return array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      */
     private function parseFileDataFromUrl(string $url, string $content): array
@@ -3056,13 +3061,15 @@ class SaveObject
      *
      * @param string $fileContent The file content to parse.
      *
-     * @return array File data with content, mimeType, extension, and size.
+     * @return (int|string)[]
      *
      * @throws Exception If the file data format is invalid.
      *
-     * @psalm-param    string $fileContent
-     * @phpstan-param  string $fileContent
-     * @psalm-return   array{content: string, mimeType: string, extension: string, size: int}
+     * @psalm-param string $fileContent
+     *
+     * @phpstan-param string $fileContent
+     *
+     * @psalm-return array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      */
     private function parseFileData(string $fileContent): array
@@ -3381,15 +3388,15 @@ class SaveObject
      * @param string   $extension    The file extension.
      * @param int|null $index        Optional array index.
      *
-     * @return string The generated filename.
+     * @psalm-param string $propertyName
+     * @psalm-param string $extension
+     * @psalm-param int|null $index
      *
-     * @psalm-param    string $propertyName
-     * @phpstan-param  string $propertyName
-     * @psalm-param    string $extension
-     * @phpstan-param  string $extension
-     * @psalm-param    int|null $index
-     * @phpstan-param  int|null $index
-     * @psalm-return   string
+     * @phpstan-param string $propertyName
+     * @phpstan-param string $extension
+     * @phpstan-param int|null $index
+     *
+     * @psalm-return string
      * @phpstan-return string
      */
     private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
@@ -3459,11 +3466,11 @@ class SaveObject
      *
      * @param string $mimeType The MIME type.
      *
-     * @return string The file extension.
+     * @psalm-param string $mimeType
      *
-     * @psalm-param    string $mimeType
-     * @phpstan-param  string $mimeType
-     * @psalm-return   string
+     * @phpstan-param string $mimeType
+     *
+     * @psalm-return string
      * @phpstan-return string
      */
     private function getExtensionFromMimeType(string $mimeType): string

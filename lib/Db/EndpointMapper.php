@@ -132,6 +132,8 @@ class EndpointMapper extends QBMapper
      * @param int|null $offset Starting offset for pagination (null = no offset)
      *
      * @return Endpoint[] Array of endpoint entities
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {

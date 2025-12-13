@@ -152,7 +152,11 @@ class MariaDbSearchHandler
                                 break;
                             case 'or':
                                 // OR logic: field matches ANY of the values.
-                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                } else {
+                                    $values = $operatorValue;
+                                }
                                 if (!empty($values)) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
@@ -175,7 +179,11 @@ class MariaDbSearchHandler
                                 break 2;
                             case 'and':
                                 // AND logic: field must match ALL values (multiple andWhere calls).
-                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                } else {
+                                    $values = $operatorValue;
+                                }
                                 foreach ($values as $val) {
                                     if (in_array($field, $textFields) === true) {
                                         $queryBuilder->andWhere(
@@ -308,7 +316,11 @@ class MariaDbSearchHandler
                                 break;
                             case 'or':
                                 // OR logic for date/numeric fields: field matches ANY of the values.
-                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                } else {
+                                    $values = $operatorValue;
+                                }
                                 if (!empty($values)) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
@@ -322,7 +334,11 @@ class MariaDbSearchHandler
                                 break 2;
                             case 'and':
                                 // AND logic for date/numeric fields: field must match ALL values.
-                                $values = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                } else {
+                                    $values = $operatorValue;
+                                }
                                 foreach ($values as $val) {
                                     $queryBuilder->andWhere(
                                         $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
@@ -353,7 +369,11 @@ class MariaDbSearchHandler
                 if (is_array($value) === true && ((($value['or'] ?? null) !== null) === true || (($value['and'] ?? null) !== null) === true) === true) {
                     if (($value['or'] ?? null) !== null) {
                         // OR logic: (field=val1 OR field=val2).
-                        $values       = is_string($value['or']) === true ? array_map('trim', explode(',', $value['or'])) : $value['or'];
+                        if (is_string($value['or']) === true) {
+                            $values = array_map('trim', explode(',', $value['or']));
+                        } else {
+                            $values = $value['or'];
+                        }
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
@@ -364,7 +384,11 @@ class MariaDbSearchHandler
                         $queryBuilder->andWhere($orConditions);
                     } elseif (($value['and'] ?? null) !== null) {
                         // AND logic: multiple andWhere clauses.
-                        $values = is_string($value['and']) === true ? array_map('trim', explode(',', $value['and'])) : $value['and'];
+                        if (is_string($value['and']) === true) {
+                            $values = array_map('trim', explode(',', $value['and']));
+                        } else {
+                            $values = $value['and'];
+                        }
                         foreach ($values as $val) {
                             $queryBuilder->andWhere(
                                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))

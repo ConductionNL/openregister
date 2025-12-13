@@ -137,7 +137,13 @@ class AuthorizationExceptionService
         if ($this->cache !== null) {
             $cached = $this->cache->get($cacheKey);
             if ($cached !== null) {
-                return $cached === 'true' ? true : ($cached === 'false' ? false : null);
+                if ($cached === 'true') {
+                    return true;
+                } else if ($cached === 'false') {
+                    return false;
+                } else {
+                    return null;
+                }
             }
         }
 
@@ -146,7 +152,14 @@ class AuthorizationExceptionService
 
         // Cache the result for future requests (5 minutes TTL).
         if ($this->cache !== null) {
-            $cacheValue = $result === true ? 'true' : ($result === false ? 'false' : 'null');
+            if ($result === true) {
+                $cacheValue = 'true';
+            } else if ($result === false) {
+                $cacheValue = 'false';
+            } else {
+                $cacheValue = 'null';
+            }
+
             $this->cache->set($cacheKey, $cacheValue, 300);
         }
 
@@ -205,7 +218,13 @@ class AuthorizationExceptionService
         $hasExceptions = $this->userHasExceptions($userId);
 
         if ($this->cache !== null) {
-            $this->cache->set($cacheKey, $hasExceptions === true ? 'true' : 'false', 300);
+            if ($hasExceptions === true) {
+                $cacheValue = 'true';
+            } else {
+                $cacheValue = 'false';
+            }
+
+            $this->cache->set($cacheKey, $cacheValue, 300);
         }
 
         return $hasExceptions;

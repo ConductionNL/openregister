@@ -102,7 +102,9 @@ class AuditTrailMapper extends QBMapper
      * @param array|null  $sort    The sort to apply
      * @param string|null $search  Optional search term to filter by ext fields
      *
-     * @return array The audit trails
+     * @return AuditTrail[] The audit trails
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -327,7 +329,9 @@ class AuditTrailMapper extends QBMapper
      * @param string               $objectUuid The object UUID
      * @param DateTime|string|null $until      DateTime, AuditTrail ID, or semantic version to get trails until
      *
-     * @return array Array of AuditTrail objects
+     * @return AuditTrail[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
      */
     public function findByObjectUntil(int $objectId, string $objectUuid, $until=null): array
     {
@@ -482,9 +486,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $schemaId   The schema ID (null for all schemas)
      * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
      *
-     * @return array Array containing total count and size of audit trails:
-     *               - total: Total number of audit trails
-     *               - size: Total size of all audit trails in bytes
+     * @return int[] Array containing total count and size of audit trails: - total: Total number of audit trails - size: Total size of all audit trails in bytes
+     *
+     * @psalm-return array{total: int, size: int}
      */
     public function getStatistics(?int $registerId=null, ?int $schemaId=null, array $exclude=[]): array
     {
@@ -593,11 +597,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null      $registerId Optional register ID to filter by
      * @param int|null      $schemaId   Optional schema ID to filter by
      *
-     * @return array Array containing chart data:
-     *               - labels: Array of dates
-     *               - series: Array of series data, each containing:
-     *                 - name: Action name (create, update, delete)
-     *                 - data: Array of counts for each date
+     * @return ((int[]|string)[]|(int|string))[][] Array containing chart data: - labels: Array of dates - series: Array of series data, each containing: - name: Action name (create, update, delete) - data: Array of counts for each date
+     *
+     * @psalm-return array{labels: list<array-key>, series: list{0?: array{name: string, data: list<int>},...}}
      */
     public function getActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
@@ -689,12 +691,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
      *
-     * @return array Array containing detailed statistics:
-     *               - total: Total number of audit trails
-     *               - creates: Number of create actions in timeframe
-     *               - updates: Number of update actions in timeframe
-     *               - deletes: Number of delete actions in timeframe
-     *               - reads: Number of read actions in timeframe
+     * @return (int|mixed)[] Array containing detailed statistics: - total: Total number of audit trails - creates: Number of create actions in timeframe - updates: Number of update actions in timeframe - deletes: Number of delete actions in timeframe - reads: Number of read actions in timeframe
+     *
+     * @psalm-return array{total: 0|mixed, creates: int, updates: int, deletes: int, reads: int}
      */
     public function getDetailedStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -789,8 +788,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return array Array containing action distribution data:
-     *               - actions: Array of action data with name, count, and percentage
+     * @return (int|mixed)[][][] Array containing action distribution data: - actions: Array of action data with name, count, and percentage
+     *
+     * @psalm-return array{actions: list{0?: array{name: mixed, count: int},...}}
      */
     public function getActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -866,8 +866,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $limit      Optional limit for number of results (default: 10)
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return array Array containing most active objects:
-     *               - objects: Array of object data with name, id, and count
+     * @return (int|mixed|string)[][][] Array containing most active objects: - objects: Array of object data with name, id, and count
+     *
+     * @psalm-return array{objects: list{0?: array{id: mixed, name: string, count: int},...}}
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {

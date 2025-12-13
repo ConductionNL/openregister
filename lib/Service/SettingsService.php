@@ -300,8 +300,11 @@ class SettingsService
     /**
      * Retrieve the current settings including RBAC and Multitenancy.
      *
-     * @return array The current settings configuration.
+     * @return array[] The current settings configuration.
+     *
      * @throws \RuntimeException If settings retrieval fails.
+     *
+     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array, availableTenants: array, availableUsers: array, retention: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
      */
     public function getSettings(): array
     {
@@ -466,7 +469,9 @@ class SettingsService
     /**
      * Get available Nextcloud groups.
      *
-     * @return array Array of group_id => group_name
+     * @return string[] Array of group_id => group_name
+     *
+     * @psalm-return array<string, string>
      */
     private function getAvailableGroups(): array
     {
@@ -513,7 +518,9 @@ class SettingsService
     /**
      * Get available users.
      *
-     * @return array Array of user_id => user_display_name
+     * @return string[] Array of user_id => user_display_name
+     *
+     * @psalm-return array<string, string>
      */
     private function getAvailableUsers(): array
     {
@@ -628,8 +635,11 @@ class SettingsService
      *
      * @param array $options The publishing options data to update.
      *
-     * @return array The updated publishing options configuration.
+     * @return bool[] The updated publishing options configuration.
+     *
      * @throws \RuntimeException If publishing options update fails.
+     *
+     * @psalm-return array{use_old_style_publishing_view?: bool, auto_publish_objects?: bool, auto_publish_attachments?: bool}
      */
     public function updatePublishingOptions(array $options): array
     {
@@ -670,8 +680,11 @@ class SettingsService
      * This method assigns default owners and organizations to objects that don't have them assigned
      * and can be extended in the future to handle retention time recalculation.
      *
-     * @return array Array containing the rebase operation results
+     * @return (\DateTime|array|bool|null|string)[] Array containing the rebase operation results
+     *
      * @throws \RuntimeException If the rebase operation fails
+     *
+     * @psalm-return array{startTime: \DateTime, ownershipResults: array|null, errors: list{0?: string,...}, retentionResults: array{auditTrailsUpdated?: int, searchTrailsUpdated?: int, objectsExpired?: int}, endTime: \DateTime, duration: string, success: bool}
      */
     public function rebaseObjectsAndLogs(): array
     {
@@ -765,8 +778,11 @@ class SettingsService
      * This method provides warning counts for objects and logs that need attention,
      * as well as total counts for all tables using optimized SQL queries.
      *
-     * @return array Array containing warning counts and total counts for all tables
+     * @return (int[]|string)[] Array containing warning counts and total counts for all tables
+     *
      * @throws \RuntimeException If statistics retrieval fails
+     *
+     * @psalm-return array{warnings: array{objectsWithoutOwner: int, objectsWithoutOrganisation: int, auditTrailsWithoutExpiry: int, searchTrailsWithoutExpiry: int, expiredAuditTrails: int, expiredSearchTrails: int, expiredObjects: int}, totals: array<string, int>, sizes: array{totalObjectsSize: int, totalAuditTrailsSize: int, totalSearchTrailsSize: int, deletedObjectsSize: int, expiredAuditTrailsSize: int, expiredSearchTrailsSize: int, expiredObjectsSize: int}, lastUpdated: string}
      */
     public function getStats(): array
     {
@@ -916,7 +932,9 @@ class SettingsService
      * Provides detailed insights into cache usage and performance by querying
      * the actual cache backends rather than database tables for better performance.
      *
-     * @return array Comprehensive cache statistics from cache systems
+     * @return (array|string)[] Comprehensive cache statistics from cache systems
+     *
+     * @psalm-return array{overview: array{totalCacheSize: 0|mixed, totalCacheEntries: 0|mixed, overallHitRate: float, averageResponseTime: float|mixed, cacheEfficiency: float}, services: array{object: array{entries: 0|mixed, hits: 0|mixed, requests: 0|mixed, memoryUsage: 0|mixed}, schema: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}, facet: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}}, names: array{cache_size: 0|mixed, hit_rate: float|mixed, hits: 0|mixed, misses: 0|mixed, warmups: 0|mixed, enabled: bool}, distributed: array, performance: array, lastUpdated: string, error?: string}
      */
     public function getCacheStats(): array
     {
@@ -1076,7 +1094,9 @@ class SettingsService
     /**
      * Get distributed cache statistics from Nextcloud's cache factory
      *
-     * @return array Distributed cache statistics
+     * @return (bool|string)[] Distributed cache statistics
+     *
+     * @psalm-return array{type: 'distributed'|'none', backend: string, available: bool, error?: string, keyCount?: 'Unknown', size?: 'Unknown'}
      */
     private function getDistributedCacheStats(): array
     {
@@ -1106,7 +1126,9 @@ class SettingsService
     /**
      * Get cache performance metrics for the last period
      *
-     * @return array Performance metrics
+     * @return (float|string)[] Performance metrics
+     *
+     * @psalm-return array{averageHitTime: float, averageMissTime: float, performanceGain: float, optimalHitRate: float, currentTrend: 'improving'}
      */
     private function getCachePerformanceMetrics(): array
     {
@@ -1134,8 +1156,11 @@ class SettingsService
      * @param string|null $userId  Specific user ID to clear cache for (if supported)
      * @param array       $options Additional options for cache clearing
      *
-     * @return array Results of cache clearing operations
+     * @return (array[]|int|mixed|null|string)[] Results of cache clearing operations
+     *
      * @throws \RuntimeException If cache clearing fails
+     *
+     * @psalm-return array{type: string, userId: null|string, timestamp: string, results: array{names?: array, distributed?: array, facet?: array, schema?: array, object?: array}, errors: array<never, never>, totalCleared: 0|mixed}
      */
     public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
@@ -1200,7 +1225,9 @@ class SettingsService
      *
      * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
-     * @return array Clear operation results
+     * @return ((float|int)[]|bool|int|mixed|string)[] Clear operation results
+     *
+     * @psalm-return array{service: 'object', cleared: 0|mixed, success: bool, error?: string, before?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed, after?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed}
      */
     private function clearObjectCache(?string $_userId=null): array
     {
@@ -1244,7 +1271,9 @@ class SettingsService
     /**
      * Clear object names cache specifically
      *
-     * @return array Clear operation results
+     * @return ((int|mixed)[]|bool|int|mixed|string)[] Clear operation results
+     *
+     * @psalm-return array{service: 'names', cleared: 0|mixed, success: bool, error?: string, before?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}, after?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}}
      */
     private function clearNamesCache(): array
     {
@@ -1300,7 +1329,9 @@ class SettingsService
     /**
      * Warmup object names cache manually
      *
-     * @return array Warmup operation results
+     * @return ((int|mixed)[]|bool|int|mixed|string)[] Warmup operation results
+     *
+     * @psalm-return array{success: bool, error?: string, loaded_names: int|mixed, execution_time?: string, before?: array{name_cache_size: int|mixed, name_warmups: int|mixed}, after?: array{name_cache_size: int|mixed, name_warmups: int|mixed}}
      */
     public function warmupNamesCache(): array
     {
@@ -1356,7 +1387,9 @@ class SettingsService
      *
      * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
-     * @return array Clear operation results
+     * @return ((int|mixed|string)[]|bool|int|mixed|string)[] Clear operation results
+     *
+     * @psalm-return array{service: 'schema', cleared: 0|mixed, success: bool, error?: string, before?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}, after?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}}
      */
     private function clearSchemaCache(?string $_userId=null): array
     {
@@ -1392,7 +1425,9 @@ class SettingsService
      *
      * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
-     * @return array Clear operation results
+     * @return ((int|int[]|string)[]|bool|int|string)[] Clear operation results
+     *
+     * @psalm-return array{service: 'facet', cleared: int, success: bool, error?: string, before?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}, after?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}}
      */
     private function clearFacetCache(?string $_userId=null): array
     {
@@ -1425,7 +1460,9 @@ class SettingsService
      *
      * @param string|null $_userId Specific user ID (unused, kept for API compatibility)
      *
-     * @return array Clear operation results
+     * @return (bool|int|string)[] Clear operation results
+     *
+     * @psalm-return array{service: 'distributed', cleared: 'all'|0, success: bool, error?: string}
      */
     private function clearDistributedCache(?string $_userId=null): array
     {
@@ -1514,14 +1551,16 @@ class SettingsService
      * This method is kept for backward compatibility but should not be used.
      * The controller now uses GuzzleSolrService directly to avoid circular dependencies.
      *
-     * @param  int    $_batchSize    Number of objects to process per batch (unused, kept for API compatibility)
-     * @param  int    $maxObjects    Maximum number of objects to index (unused, kept for API compatibility)
-     * @param  string $mode          Processing mode (unused, kept for API compatibility)
-     * @param  bool   $collectErrors Whether to collect errors (unused, kept for API compatibility)
-     * @return array Warmup operation results with statistics and status
+     * @param int    $_batchSize    Number of objects to process per batch (unused, kept for API compatibility)
+     * @param int    $maxObjects    Maximum number of objects to index (unused, kept for API compatibility)
+     * @param string $mode          Processing mode (unused, kept for API compatibility)
+     * @param bool   $collectErrors Whether to collect errors (unused, kept for API compatibility)
+     *
+     * @return never Warmup operation results with statistics and status
+     *
      * @throws \RuntimeException Always throws exception indicating method is deprecated
      */
-    public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false): array
+    public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false)
     {
         // NOTE: This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
         // This method is kept for backward compatibility but should not be used.
@@ -1614,8 +1653,11 @@ class SettingsService
     /**
      * Transform raw SOLR stats into dashboard structure
      *
-     * @param  array $rawStats Raw statistics from SOLR service
-     * @return array Transformed dashboard statistics
+     * @param array $rawStats Raw statistics from SOLR service
+     *
+     * @return (((bool|int|mixed|null|string)[]|bool|float|int|mixed|null|string)[]|mixed|string)[] Transformed dashboard statistics
+     *
+     * @psalm-return array{overview: array{available: bool, connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0, total_documents: 0|mixed, index_size: string, last_commit: mixed|null}, cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive', endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed, total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float, avg_index_time_ms: 0|float, total_search_time: 0|mixed, total_index_time: 0|mixed, operations_per_sec: 0|float, error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed, uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A', percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A', percentage: 0}, warnings: list{0?: 'SOLR service is not available or not configured'|mixed}, last_optimization: null}, operations: array{recent_activity: array<never, never>, queue_status: array{pending_operations: 0, processing: false, last_processed: null}, commit_frequency: array{auto_commit: bool, commit_within: 0|1000, last_commit: mixed|null}, optimization_needed: false}, generated_at: string, error?: 'SOLR service unavailable'|mixed}
      */
     private function transformSolrStatsToDashboard(array $rawStats): array
     {
@@ -1724,7 +1766,8 @@ class SettingsService
     /**
      * Format bytes to human readable format for dashboard
      *
-     * @param  int $bytes Number of bytes
+     * @param int $bytes Number of bytes
+     *
      * @return string Formatted byte string
      */
     private function formatBytesForDashboard(int $bytes): string
@@ -1745,8 +1788,11 @@ class SettingsService
     /**
      * Get focused SOLR settings only
      *
-     * @return array SOLR configuration with tenant information
+     * @return (bool|int|mixed|null|string)[] SOLR configuration with tenant information
+     *
      * @throws \RuntimeException If SOLR settings retrieval fails
+     *
+     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}
      */
     public function getSolrSettingsOnly(): array
     {
@@ -1811,9 +1857,13 @@ class SettingsService
     /**
      * Update SOLR settings only
      *
-     * @param  array $solrData SOLR configuration data
-     * @return array Updated SOLR configuration
+     * @param array $solrData SOLR configuration data
+     *
+     * @return (bool|int|mixed|null|string)[] Updated SOLR configuration
+     *
      * @throws \RuntimeException If SOLR settings update fails
+     *
+     * @psalm-return array{enabled: false|mixed, host: 'solr'|mixed, port: int, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: int, autoCommit: mixed|true, commitWithin: int, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}
      */
     public function updateSolrSettingsOnly(array $solrData): array
     {
@@ -1937,9 +1987,11 @@ class SettingsService
      *
      * @param array $config Configuration to validate
      *
-     * @return array Validated and normalized configuration
+     * @return ((bool|int|mixed|string)[]|bool|int|string)[][] Validated and normalized configuration
      *
      * @throws \InvalidArgumentException If configuration is invalid
+     *
+     * @psalm-return array{facets: array<string, array{title: mixed|string, description: ''|mixed, order: int, enabled: bool, show_count: bool, max_items: int}>, global_order: array<string>, default_settings: array{show_count: bool, show_empty: bool, max_items: int}}
      */
     private function validateFacetConfiguration(array $config): array
     {
@@ -1996,8 +2048,11 @@ class SettingsService
     /**
      * Get focused RBAC settings only
      *
-     * @return array RBAC configuration with available groups and users
+     * @return array[] RBAC configuration with available groups and users
+     *
      * @throws \RuntimeException If RBAC settings retrieval fails
+     *
+     * @psalm-return array{rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array, availableUsers: array}
      */
     public function getRbacSettingsOnly(): array
     {
@@ -2039,9 +2094,13 @@ class SettingsService
     /**
      * Update RBAC settings only
      *
-     * @param  array $rbacData RBAC configuration data
-     * @return array Updated RBAC configuration
+     * @param array $rbacData RBAC configuration data
+     *
+     * @return array[] Updated RBAC configuration
+     *
      * @throws \RuntimeException If RBAC settings update fails
+     *
+     * @psalm-return array{rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array, availableUsers: array}
      */
     public function updateRbacSettingsOnly(array $rbacData): array
     {
@@ -2071,8 +2130,11 @@ class SettingsService
     /**
      * Get Organisation settings only
      *
-     * @return array Organisation configuration
+     * @return (mixed|null|true)[][] Organisation configuration
+     *
      * @throws \RuntimeException If Organisation settings retrieval fails
+     *
+     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -2106,9 +2168,13 @@ class SettingsService
     /**
      * Update Organisation settings only
      *
-     * @param  array $organisationData Organisation configuration data
-     * @return array Updated Organisation configuration
+     * @param array $organisationData Organisation configuration data
+     *
+     * @return (mixed|null|true)[][] Updated Organisation configuration
+     *
      * @throws \RuntimeException If Organisation settings update fails
+     *
+     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -2208,7 +2274,9 @@ class SettingsService
     /**
      * Get multitenancy settings only (detailed implementation)
      *
-     * @return array Multitenancy configuration settings
+     * @return array[] Multitenancy configuration settings
+     *
+     * @psalm-return array{multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableTenants: array}
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -2249,9 +2317,13 @@ class SettingsService
     /**
      * Update Multitenancy settings only
      *
-     * @param  array $multitenancyData Multitenancy configuration data
-     * @return array Updated Multitenancy configuration
+     * @param array $multitenancyData Multitenancy configuration data
+     *
+     * @return array[] Updated Multitenancy configuration
+     *
      * @throws \RuntimeException If Multitenancy settings update fails
+     *
+     * @psalm-return array{multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableTenants: array}
      */
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
@@ -2356,9 +2428,13 @@ class SettingsService
     /**
      * Update LLM settings only
      *
-     * @param  array $llmData LLM configuration data
-     * @return array Updated LLM configuration
+     * @param array $llmData LLM configuration data
+     *
+     * @return ((mixed|null|string)[]|false|mixed|null)[] Updated LLM configuration
+     *
      * @throws \RuntimeException
+     *
+     * @psalm-return array{enabled: false|mixed, embeddingProvider: mixed|null, chatProvider: mixed|null, openaiConfig: array{apiKey: ''|mixed, model: mixed|null, chatModel: mixed|null, organizationId: ''|mixed}, ollamaConfig: array{url: 'http://localhost:11434'|mixed, model: mixed|null, chatModel: mixed|null}, fireworksConfig: array{apiKey: ''|mixed, embeddingModel: mixed|null, chatModel: mixed|null, baseUrl: 'https://api.fireworks.ai/inference/v1'|mixed}, vectorConfig: array{backend: 'php'|mixed, solrField: '_embedding_'|mixed}}
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -2451,9 +2527,13 @@ class SettingsService
     /**
      * Update File Management settings only
      *
-     * @param  array $fileData File management configuration data
-     * @return array Updated file management configuration
+     * @param array $fileData File management configuration data
+     *
+     * @return (false|int|mixed|null|string|string[])[] Updated file management configuration
+     *
      * @throws \RuntimeException
+     *
+     * @psalm-return array{vectorizationEnabled: false|mixed, provider: mixed|null, chunkingStrategy: 'RECURSIVE_CHARACTER'|mixed, chunkSize: 1000|mixed, chunkOverlap: 200|mixed, enabledFileTypes: list{'txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'}|mixed, ocrEnabled: false|mixed, maxFileSizeMB: 100|mixed, extractionScope: 'objects'|mixed, textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed, maxFileSize: 100|mixed, batchSize: 10|mixed, dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -2501,8 +2581,11 @@ class SettingsService
     /**
      * Get focused Object settings only (vectorization config)
      *
-     * @return array Object vectorization configuration
+     * @return (array|bool|int|mixed)[] Object vectorization configuration
+     *
      * @throws \RuntimeException If Object settings retrieval fails
+     *
+     * @psalm-return array{vectorizationEnabled: false|mixed, vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed, vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed, includeMetadata: mixed|true, includeRelations: mixed|true, maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      */
     public function getObjectSettingsOnly(): array
     {
@@ -2549,9 +2632,11 @@ class SettingsService
      *
      * @param array $objectData Object data containing settings to update
      *
-     * @return array Updated object configuration
+     * @return (array|bool|int|mixed)[] Updated object configuration
      *
      * @throws \RuntimeException If update fails
+     *
+     * @psalm-return array{vectorizationEnabled: false|mixed, vectorizeOnCreate: mixed|true, vectorizeOnUpdate: false|mixed, vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed, includeMetadata: mixed|true, includeRelations: mixed|true, maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      */
     public function updateObjectSettingsOnly(array $objectData): array
     {
@@ -2581,8 +2666,11 @@ class SettingsService
     /**
      * Get focused Retention settings only
      *
-     * @return array Retention configuration
+     * @return (bool|int|mixed)[] Retention configuration
+     *
      * @throws \RuntimeException If Retention settings retrieval fails
+     *
+     * @psalm-return array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool, searchTrailsEnabled: bool}
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -2634,9 +2722,13 @@ class SettingsService
     /**
      * Update Retention settings only
      *
-     * @param  array $retentionData Retention configuration data
-     * @return array Updated Retention configuration
+     * @param array $retentionData Retention configuration data
+     *
+     * @return (int|mixed|true)[] Updated Retention configuration
+     *
      * @throws \RuntimeException If Retention settings update fails
+     *
+     * @psalm-return array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}
      */
     public function updateRetentionSettingsOnly(array $retentionData): array
     {
@@ -2665,8 +2757,11 @@ class SettingsService
     /**
      * Get version information only
      *
-     * @return array Version information
+     * @return string[] Version information
+     *
      * @throws \RuntimeException If version information retrieval fails
+     *
+     * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
      */
     public function getVersionInfoOnly(): array
     {

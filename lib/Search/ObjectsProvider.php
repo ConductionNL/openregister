@@ -98,6 +98,8 @@ class ObjectsProvider implements IFilteringProvider
      * Returns the unique identifier for this search provider
      *
      * @return string Unique identifier for the search provider
+     *
+     * @psalm-return 'openregister_objects'
      */
     public function getId(): string
     {
@@ -126,7 +128,9 @@ class ObjectsProvider implements IFilteringProvider
      * @param string $route           The route/context for which to get the order
      * @param array  $routeParameters Parameters for the route
      *
-     * @return int|null Order priority (0-100, lower = higher priority) or null for default
+     * @return int Order priority (0-100, lower = higher priority) or null for default
+     *
+     * @psalm-return 10
      */
     public function getOrder(string $route, array $routeParameters): ?int
     {
@@ -138,10 +142,9 @@ class ObjectsProvider implements IFilteringProvider
     /**
      * Returns the list of supported filters for the search provider
      *
-     * @return string[] List of supported filter names
+     * @return string[]
      *
-     * @psalm-return array<string>
-     *
+     * @psalm-return list{'term', 'since', 'until', 'person', 'register', 'schema'}
      * @phpstan-return array<string>
      */
     public function getSupportedFilters(): array
@@ -163,10 +166,9 @@ class ObjectsProvider implements IFilteringProvider
     /**
      * Returns the list of alternate IDs for the search provider
      *
-     * @return string[] List of alternate IDs
+     * @return array
      *
-     * @psalm-return array<string>
-     *
+     * @psalm-return array<never, never>
      * @phpstan-return array<string>
      */
     public function getAlternateIds(): array
@@ -179,10 +181,9 @@ class ObjectsProvider implements IFilteringProvider
     /**
      * Returns the list of custom filters for the search provider
      *
-     * @return FilterDefinition[] List of custom filter definitions
+     * @return FilterDefinition[]
      *
-     * @psalm-return list<\OCP\Search\FilterDefinition>
-     *
+     * @psalm-return list{FilterDefinition, FilterDefinition}
      * @phpstan-return list<\OCP\Search\FilterDefinition>
      */
     public function getCustomFilters(): array
@@ -211,6 +212,9 @@ class ObjectsProvider implements IFilteringProvider
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
+        // Initialize filters array.
+        $filters = [];
+        
         /*
          * @var string|null $register
          */
@@ -285,12 +289,23 @@ class ObjectsProvider implements IFilteringProvider
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
-        $searchQuery['_limit'] = ($limit !== null) ? $limit : 25;
+
+        if ($limit !== null) {
+            $searchQuery['_limit'] = $limit;
+        } else {
+            $searchQuery['_limit'] = 25;
+        }
+
         // Default limit for search interface.
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
-        $searchQuery['_offset'] = ($offset !== null) ? $offset : 0;
+
+        if ($offset !== null) {
+            $searchQuery['_offset'] = $offset;
+        } else {
+            $searchQuery['_offset'] = 0;
+        }
 
         $this->logger->debug(
                 'OpenRegister search requested',
@@ -367,7 +382,12 @@ class ObjectsProvider implements IFilteringProvider
         if (!empty($object['summary'])) {
             $parts[] = $object['summary'];
         } elseif (empty($object['description']) === false) {
-            $parts[] = substr($object['description'], 0, 100).(strlen($object['description']) > 100 ? '...' : '');
+            $descriptionPart = substr($object['description'], 0, 100);
+            if (strlen($object['description']) > 100) {
+                $descriptionPart .= '...';
+            }
+
+            $parts[] = $descriptionPart;
         }
 
         // Add last updated info if available.
@@ -376,7 +396,11 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         $description = implode(' • ', $parts);
-        return $description !== '' ? $description : $this->l10n->t(text: 'Open Register Object');
+        if ($description !== '') {
+            return $description;
+        } else {
+            return $this->l10n->t(text: 'Open Register Object');
+        }
 
     }//end buildDescription()
 

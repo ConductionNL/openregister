@@ -55,6 +55,7 @@ class Version1Date20251128120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Create endpoints table.

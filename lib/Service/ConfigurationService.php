@@ -407,7 +407,9 @@ class ConfigurationService
      *
      * @param Register $register The register to export
      *
-     * @return array The OpenAPI register specification
+     * @return ((int|mixed|null|string|string[])[]|null|string)[] The OpenAPI register specification
+     *
+     * @psalm-return array{slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}
      */
     private function exportRegister(Register $register): array
     {
@@ -435,6 +437,8 @@ class ConfigurationService
      * @param array  $registerIdsAndSlugsMap Map of register IDs to slugs
      *
      * @return array The OpenAPI schema specification with IDs converted to slugs
+     *
+     * @psalm-return array<string, mixed>
      */
     private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $registerIdsAndSlugsMap): array
     {
@@ -748,9 +752,11 @@ class ConfigurationService
 
 
     /**
-     * @return array<array-key, mixed>|JSONResponse
+     * @return JSONResponse|array
+     *
+     * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array | JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse | JSONResponse
     {
         // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
@@ -780,9 +786,11 @@ class ConfigurationService
      *
      * @throws GuzzleException
      *
-     * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
+     * @return JSONResponse|array The response from the call converted to PHP array or JSONResponse in case of an error.
+     *
+     * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
-    private function getJSONfromURL(string $url): array | JSONResponse
+    private function getJSONfromURL(string $url): array|JSONResponse | JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
@@ -819,9 +827,11 @@ class ConfigurationService
 
 
     /**
-     * @return array<array-key, mixed>|JSONResponse
+     * @return JSONResponse|array
+     *
+     * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      */
-    private function getJSONfromBody(array | string $phpArray): array | JSONResponse
+    private function getJSONfromBody(array | string $phpArray): array|JSONResponse | JSONResponse
     {
         if (is_string($phpArray) === true) {
             $phpArray = json_decode($phpArray, associative: true);
@@ -1358,9 +1368,9 @@ class ConfigurationService
      * @param array       $data  The register data.
      * @param string|null $owner The owner of the register.
      *
-     * @return Register|null The imported register or null if skipped.
+     * @return Register The imported register or null if skipped.
      */
-    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): ?Register
+    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -1434,9 +1444,9 @@ class ConfigurationService
      * @param string|null $version        The version of the import
      * @param bool        $force          Force import even if version is not newer
      *
-     * @return Schema|null The imported schema or null if skipped
+     * @return Schema The imported schema or null if skipped
      */
-    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): ?Schema
+    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Schema
     {
         try {
             // Remove id, uuid, and organisation from the data.
@@ -1728,13 +1738,15 @@ class ConfigurationService
      * @param string $version  The version of the configuration
      * @param bool   $force    Whether to force import regardless of version checks
      *
-     * @return array Import result with counts and IDs
+     * @return (ObjectEntity|Register|Schema|mixed)[][] Import result with counts and IDs
      *
      * @throws Exception If file cannot be read or import fails
      *
      * @since 0.2.10
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @psalm-return array{registers: array<Register>, schemas: array<Schema>, objects: array<ObjectEntity>, endpoints: array, sources: array, mappings: array, jobs: array, synchronizations: array, rules: array}
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -2098,8 +2110,10 @@ class ConfigurationService
      * @param string $version The version of the import that encountered the duplicate
      *
      * @throws \Exception Always throws an exception with detailed duplicate information
+     *
+     * @return never
      */
-    private function handleDuplicateSchemaError(string $slug, string $appId, string $version): void
+    private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate schemas.
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
@@ -2171,8 +2185,10 @@ class ConfigurationService
      * @param string $version The version of the import that encountered the duplicate
      *
      * @throws \Exception Always throws an exception with detailed duplicate information
+     *
+     * @return never
      */
-    private function handleDuplicateRegisterError(string $slug, string $appId, string $version): void
+    private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate registers.
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
@@ -2302,7 +2318,8 @@ class ConfigurationService
      *
      * @param Configuration $configuration The configuration to compare versions for
      *
-     * @return         array Version comparison details
+     * @return (bool|null|string)[]
+     *
      * @phpstan-return array{
      *     hasUpdate: bool,
      *     localVersion: string|null,
@@ -2310,6 +2327,8 @@ class ConfigurationService
      *     lastChecked: string|null,
      *     message: string
      * }
+     *
+     * @psalm-return array{hasUpdate: bool, localVersion: null|string, remoteVersion: null|string, lastChecked: null|string, message: string}
      */
     public function compareVersions(Configuration $configuration): array
     {
@@ -2419,7 +2438,8 @@ class ConfigurationService
      *
      * @param Configuration $configuration The configuration to preview
      *
-     * @return array|JSONResponse Preview of changes or error response
+     * @return ((array|null|string)[]|int|mixed|null|string)[][]|JSONResponse
+     *
      * @throws GuzzleException If fetching remote configuration fails
      *
      * @phpstan-return array{
@@ -2434,8 +2454,10 @@ class ConfigurationService
      *     rules: array,
      *     metadata?: array
      * }|JSONResponse
+     *
+     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, schemas: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, objects: list{0?: array{type: string, action: string, slug: string, title: string, register: string, schema: string, current: array|null, proposed: array, changes: array},...}, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
      */
-    public function previewConfigurationChanges(Configuration $configuration): array | JSONResponse
+    public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse | JSONResponse
     {
         // Fetch the remote configuration.
         $remoteData = $this->fetchRemoteConfiguration($configuration);
@@ -2846,7 +2868,9 @@ class ConfigurationService
 
 
     /**
-     * @return array{objects: array<array-key, ObjectEntity>, registers: array<array-key, Register>, schemas: array<array-key, Schema>, endpoints?: array<array-key, mixed>, sources?: array<array-key, mixed>, mappings?: array<array-key, mixed>, jobs?: array<array-key, mixed>, synchronizations?: array<array-key, mixed>, rules?: array<array-key, mixed>}
+     * @return (ObjectEntity|Register|Schema|mixed)[][]
+     *
+     * @psalm-return array{registers: array<Register>, schemas: array<Schema>, objects: array<ObjectEntity>, endpoints: array, sources: array, mappings: array, jobs: array, synchronizations: array, rules: array}
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
@@ -2989,9 +3013,9 @@ class ConfigurationService
      *
      * @param string $appId The app ID to get the version for.
      *
-     * @return string|null The configured version or null if not set.
+     * @return null|string The configured version or null if not set.
      */
-    public function getConfiguredAppVersion(string $appId): ?string
+    public function getConfiguredAppVersion(string $appId): string|null
     {
         // Get the stored version from appconfig.
         // The key format is: <appId>_config_version.

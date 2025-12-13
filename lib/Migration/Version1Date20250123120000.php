@@ -66,7 +66,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-
     }//end preSchemaChange()
 
 
@@ -77,7 +76,7 @@ class Version1Date20250123120000 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -119,7 +118,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No post-schema changes required.
-
     }//end postSchemaChange()
 
 

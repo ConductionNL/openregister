@@ -445,12 +445,15 @@ class SolrSchemaService
     /**
      * Mirror all OpenRegister schemas to SOLR for current tenant with intelligent conflict resolution
      *
-     * **SMART CONFLICT RESOLUTION**: Analyzes all schemas first to detect field type conflicts
+     * SMART CONFLICT RESOLUTION**: Analyzes all schemas first to detect field type conflicts
      * and chooses the most permissive type (string > text > float > integer > boolean).
      * This prevents errors like "versie" being integer in one schema and string in another.
      *
-     * @param  bool $force Force recreation of existing fields
-     * @return array Result with success status and statistics
+     * @param bool $force Force recreation of existing fields
+     *
+     * @return ((int|mixed)[]|bool|float|mixed|string)[] Result with success status and statistics
+     *
+     * @psalm-return array{success: bool, error?: string, stats: array{schemas_processed: int<0, max>, fields_created: int<0, max>, fields_updated: 0, conflicts_resolved: 0|mixed, errors: 0, core_fields_created?: 52}, execution_time_ms?: float, resolved_conflicts?: array<never, never>|mixed}
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -542,24 +545,27 @@ class SolrSchemaService
     /**
      * Analyze all schemas and resolve field type conflicts with intelligent type selection
      *
-     * **CONFLICT RESOLUTION STRATEGY**:
+     * CONFLICT RESOLUTION STRATEGY**:
      * When the same field exists in multiple schemas with different types, we choose the
      * most permissive type that can accommodate all values:
      *
-     * **Type Priority (Most → Least Permissive)**:
+     * Type Priority (Most → Least Permissive)**:
      * 1. `string` - Can store any value (numbers, text, booleans as strings)
      * 2. `text` - Can store any text content with full-text search
      * 3. `float` - Can store integers and decimals
      * 4. `integer` - Can only store whole numbers
      * 5. `boolean` - Can only store true/false
      *
-     * **Example**: Field `versie` appears as:
+     * Example**: Field `versie` appears as:
      * - Schema 132: `versie` = "string" (values: "onbekend", "v2.0")
      * - Schema 67: `versie` = "integer" (values: 123, 456)
      * - **Resolution**: `versie` = "string" (can store both text and numbers)
      *
-     * @param  array $schemas Array of Schema entities to analyze
-     * @return array Resolved field definitions with conflict details
+     * @param array $schemas Array of Schema entities to analyze
+     *
+     * @return (((array|int)[]|(int|string)|bool)[][]|int)[] Resolved field definitions with conflict details
+     *
+     * @psalm-return array{fields: array<string, array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool, facetable: bool}>, conflicts_resolved: int<0, max>, conflict_details: list{0?: array{field: array-key, conflicting_types: array<array-key|mixed, int>, resolved_type: string, schemas: non-empty-list<array{id: mixed, title: mixed}>},...}}
      */
     private function analyzeAndResolveFieldConflicts(array $schemas): array
     {
@@ -820,18 +826,19 @@ class SolrSchemaService
     /**
      * Determine SOLR field type from OpenRegister field definition
      *
-     * **Field Type Mapping Rules**:
+     * Field Type Mapping Rules**:
      * - `text` type → always `text_general` (for full-text search)
      * - `string` type → always `string` (for exact matching, IDs, codes)
      * - `facetable` property → controls `docValues` only, NOT field type
      * - `docValues` → `true` if facetable, `false` if not facetable
      *
-     * **Why this matters**:
+     * Why this matters**:
      * - `text_general`: Analyzed for full-text search (descriptions, content)
      * - `string`: Exact matching for IDs, codes, names, faceting
      * - `docValues`: Enables fast sorting/faceting but uses more storage
      *
-     * @param  array $fieldDefinition OpenRegister field definition
+     * @param array $fieldDefinition OpenRegister field definition
+     *
      * @return string SOLR field type
      */
     private function determineSolrFieldType(array $fieldDefinition): string
@@ -1265,7 +1272,9 @@ class SolrSchemaService
     /**
      * Get missing and extra fields in object collection
      *
-     * @return array{missing: array<string, array>, extra: array<string>, expected: array<string>, current: array<string>, status: 'complete'|'incomplete', collection: string}
+     * @return (((bool|string)[]|string)[]|string)[]
+     *
+     * @psalm-return array{missing: array{id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_object_id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_uuid?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_tenant?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_register?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_register_id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_register_uuid?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_register_slug?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_schema?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_schema_id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_schema_uuid?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_schema_slug?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_organisation?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_owner?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_application?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_name?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_description?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_summary?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_image?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_slug?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_uri?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_version?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_size?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_folder?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_locked?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_schema_version?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_name_s?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_description_s?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_summary_s?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_slug_s?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_created?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_updated?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_published?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_depublished?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_object?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_relations?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_files?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_authorization?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_deleted?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_indexed?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_model?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_dimensions?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_chunk_count?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_updated?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_validation?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, self_groups?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _text_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _embedding_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _embedding_model_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _embedding_dim_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _confidence_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _classification_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}}, extra: list<string>, expected: non-empty-list<'_classification_'|'_confidence_'|'_embedding_'|'_embedding_dim_'|'_embedding_model_'|'_text_'|'id'|'self_application'|'self_authorization'|'self_created'|'self_deleted'|'self_depublished'|'self_description'|'self_description_s'|'self_files'|'self_folder'|'self_groups'|'self_image'|'self_locked'|'self_name'|'self_name_s'|'self_object'|'self_object_id'|'self_organisation'|'self_owner'|'self_published'|'self_register'|'self_register_id'|'self_register_slug'|'self_register_uuid'|'self_relations'|'self_schema'|'self_schema_id'|'self_schema_slug'|'self_schema_uuid'|'self_schema_version'|'self_size'|'self_slug'|'self_slug_s'|'self_summary'|'self_summary_s'|'self_tenant'|'self_updated'|'self_uri'|'self_uuid'|'self_validation'|'self_version'|'vector_chunk_count'|'vector_dimensions'|'vector_indexed'|'vector_model'|'vector_updated'>, current: array<string>, status: 'complete'|'incomplete', collection: string}
      */
     public function getObjectCollectionFieldStatus(): array
     {
@@ -1320,12 +1329,19 @@ class SolrSchemaService
         // Find extra fields (in SOLR but not expected).
         $extra = array_diff($current, $expectedNames);
 
+        // Determine status.
+        if (empty($missing) === true) {
+            $status = 'complete';
+        } else {
+            $status = 'incomplete';
+        }
+
         return [
             'missing'    => $missing,
             'extra'      => array_values($extra),
             'expected'   => $expectedNames,
             'current'    => $current,
-            'status'     => empty($missing) === true ? 'complete' : 'incomplete',
+            'status'     => $status,
             'collection' => $objectCollection,
         ];
 
@@ -1335,7 +1351,9 @@ class SolrSchemaService
     /**
      * Get missing and extra fields in file collection
      *
-     * @return array{missing: array<string, array>, extra: array<string>, expected: array<string>, current: array<string>, status: 'complete'|'incomplete', collection: string}
+     * @return (((bool|string)[]|string)[]|string)[]
+     *
+     * @psalm-return array{missing: array{id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_path?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_name?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_basename?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_extension?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_mime_type?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_size?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_owner?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_created?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_modified?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_storage?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_parent?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_checksum?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_labels?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_tags?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_categories?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, file_language?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_index?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_total?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_text?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_length?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_start_offset?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_end_offset?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, chunk_page_number?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, text_content?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, text_preview?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, text_title?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, text_author?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, text_subject?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, ocr_performed?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, ocr_confidence?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, extraction_method?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, extraction_date?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_indexed?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_model?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_dimensions?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, vector_updated?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, related_object_id?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, related_object_type?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, shared_with?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, access_level?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, processing_status?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, processing_error?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, processing_date?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _text_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _embedding_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _embedding_model_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _embedding_dim_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _confidence_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}, _classification_?: array{type: string, stored: true, indexed: true, multiValued: bool, docValues: bool}}, extra: list<string>, expected: non-empty-list<'_classification_'|'_confidence_'|'_embedding_'|'_embedding_dim_'|'_embedding_model_'|'_text_'|'access_level'|'chunk_end_offset'|'chunk_index'|'chunk_length'|'chunk_page_number'|'chunk_start_offset'|'chunk_text'|'chunk_total'|'extraction_date'|'extraction_method'|'file_basename'|'file_categories'|'file_checksum'|'file_created'|'file_extension'|'file_id'|'file_labels'|'file_language'|'file_mime_type'|'file_modified'|'file_name'|'file_owner'|'file_parent'|'file_path'|'file_size'|'file_storage'|'file_tags'|'id'|'ocr_confidence'|'ocr_performed'|'processing_date'|'processing_error'|'processing_status'|'related_object_id'|'related_object_type'|'shared_with'|'text_author'|'text_content'|'text_preview'|'text_subject'|'text_title'|'vector_dimensions'|'vector_indexed'|'vector_model'|'vector_updated'>, current: array<string>, status: 'complete'|'incomplete', collection: string}
      */
     public function getFileCollectionFieldStatus(): array
     {
@@ -1388,12 +1406,19 @@ class SolrSchemaService
         // Find extra fields (in SOLR but not expected).
         $extra = array_diff($current, $expectedNames);
 
+        // Determine status.
+        if (empty($missing) === true) {
+            $status = 'complete';
+        } else {
+            $status = 'incomplete';
+        }
+
         return [
             'missing'    => $missing,
             'extra'      => array_values($extra),
             'expected'   => $expectedNames,
             'current'    => $current,
-            'status'     => empty($missing) === true ? 'complete' : 'incomplete',
+            'status'     => $status,
             'collection' => $fileCollection,
         ];
 
@@ -1657,7 +1682,9 @@ class SolrSchemaService
      * @param array  $missingFields  Array of missing field configurations
      * @param bool   $dryRun         If true, only simulate field creation
      *
-     * @return array Creation result with statistics
+     * @return ((int|string)[]|mixed|scalar)[] Creation result with statistics
+     *
+     * @psalm-return array{success: bool, message: string, collection?: mixed|string, collection_type?: string, created?: list<array-key>, created_count: int<0, max>, errors?: array<string>, error_count: int<0, max>, execution_time_ms?: float, dry_run?: bool}
      */
     public function createMissingFields(string $collectionType, array $missingFields, bool $dryRun=false): array
     {
@@ -1675,8 +1702,12 @@ class SolrSchemaService
         $errors    = [];
 
         // Get the appropriate collection name.
-        $settings   = $this->settingsService->getSettings();
-        $collection = $collectionType === 'files' ? ($settings['solr']['fileCollection'] ?? null) : ($settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister');
+        $settings = $this->settingsService->getSettings();
+        if ($collectionType === 'files') {
+            $collection = $settings['solr']['fileCollection'] ?? null;
+        } else {
+            $collection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? 'openregister';
+        }
 
         if (($collection === null) || ($collection === false)) {
             return [
@@ -1728,11 +1759,18 @@ class SolrSchemaService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
+        // Determine action message.
+        if ($dryRun === true) {
+            $actionMessage = 'Dry run';
+        } else {
+            $actionMessage = 'Created fields';
+        }
+
         return [
             'success'           => empty($errors),
             'message'           => sprintf(
                 '%s: %d created, %d errors',
-                $dryRun === true ? 'Dry run' : 'Created fields',
+                $actionMessage,
                 count($created),
                 count($errors)
             ),

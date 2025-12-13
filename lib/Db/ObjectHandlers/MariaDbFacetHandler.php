@@ -188,7 +188,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet data with buckets containing key and results
+     * @return ((int|string)[][]|string)[] Terms facet data with buckets containing key and results
+     *
+     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: string, results: int},...}}
      */
     private function getTermsFacetForArrayField(string $field, array $baseQuery): array
     {
@@ -283,7 +285,11 @@ class MariaDbFacetHandler
         }
 
         if (is_bool($value) === true) {
-            return $value === true ? 'true' : 'false';
+            if ($value === true) {
+                return 'true';
+            } else {
+                return 'false';
+            }
         }
 
         if (is_scalar($value) === true) {
@@ -315,7 +321,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Date histogram facet data
+     * @return ((int|mixed)[][]|string)[] Date histogram facet data
+     *
+     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list{0?: array{key: mixed, results: int},...}}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
@@ -383,7 +391,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Range facet data
+     * @return ((int|mixed|string)[][]|string)[] Range facet data
+     *
+     * @psalm-return array{type: 'range', buckets: list{0?: array{key: string, results: int, from?: mixed, to?: mixed},...}}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -1087,7 +1097,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Array of object data for analysis
+     * @return array[] Array of object data for analysis
+     *
+     * @psalm-return list{0?: array,...}
      */
     private function getSampleObjects(array $baseQuery, int $sampleSize): array
     {
@@ -1144,7 +1156,11 @@ class MariaDbFacetHandler
         }
 
         foreach ($objectData as $key => $value) {
-            $fieldPath = $prefix === '' ? $key : $prefix.'.'.$key;
+            if ($prefix === '') {
+                $fieldPath = $key;
+            } else {
+                $fieldPath = $prefix.'.'.$key;
+            }
 
             // Skip system fields.
             if (str_starts_with($key, '@') === true || str_starts_with($key, '_') === true) {
@@ -1358,7 +1374,11 @@ class MariaDbFacetHandler
         }
 
         if (is_bool($value) === true) {
-            return $value === true ? 'true' : 'false';
+            if ($value === true) {
+                return 'true';
+            } else {
+                return 'false';
+            }
         }
 
         if (is_array($value) === true || is_object($value) === true) {
@@ -1382,9 +1402,11 @@ class MariaDbFacetHandler
      * @psalm-param string $fieldPath
      * @psalm-param array<string, mixed> $analysis
      *
-     * @return array|null Field configuration or null if not suitable for faceting
+     * @return (array|false|mixed|string)[]|null Field configuration or null if not suitable for faceting
+     *
+     * @psalm-return array{type: string, description: string, sample_values: array, appearance_rate: mixed, is_array: false|mixed, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}, cardinality?: 'binary'|'low'|'numeric', intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
-    private function determineFieldConfiguration(string $fieldPath, array $analysis): ?array
+    private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
     {
         // Skip nested objects and arrays of objects, but allow arrays of simple values.
         if (($analysis['is_nested'] === true) && $this->isArrayOfSimpleValues($analysis) === false) {

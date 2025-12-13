@@ -229,9 +229,11 @@ class ImportService
      * @param bool          $validation Whether to validate objects against schema definitions (default: false).
      * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
      *
-     * @return         array<string, array> Summary of import with sheet-based results.
+     * @return (array|int|null|string)[][]
+     *
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, debug?: array, schema?: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string}>
-     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged?: array<array-key, mixed>, updated: array<array-key, mixed>, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, deduplication_efficiency?: non-empty-lowercase-string, schema?: array{id: int, slug: null|string, title: null|string}>
+     *
+     * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged?: array, updated: array, deduplication_efficiency?: string, schema?: array{id: int, title: null|string, slug: null|string}|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}}>
      */
     public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -284,9 +286,11 @@ class ImportService
      * @param bool          $publish     Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser Current user for RBAC checks (default: null).
      *
-     * @return         array<string, array> Summary of import with sheet-based results.
+     * @return (array|int|string)[][]
+     *
      * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, found?: int, schema?: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string, performance?: array}>
-     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, schema: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: non-empty-lowercase-string, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}}>
+     *
+     * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged: array, updated: array, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: string, schema: array{id: int, title: null|string, slug: null|string}}>
      */
     public function importFromCsv(
         string $filePath,
@@ -450,9 +454,11 @@ class ImportService
      * @param bool          $validation  Whether to validate objects against schema definitions
      * @param bool          $events      Whether to dispatch object lifecycle events
      *
-     * @return         array Sheet processing summary
+     * @return (((array|int|mixed|string)[]|mixed|null)[]|int|string)[]
+     *
      * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, deduplication_efficiency?: string}
-     * @psalm-return   array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, deduplication_efficiency?: non-empty-lowercase-string}
+     *
+     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{sheet: string, object: array<never, never>|mixed, error: 'No data rows found in sheet'|'No valid headers found in sheet'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string}
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -587,9 +593,11 @@ class ImportService
      * @param bool                                          $validation Whether to validate objects against schema definitions
      * @param bool                                          $events     Whether to dispatch object lifecycle events
      *
-     * @return         array Sheet processing summary
+     * @return (((array|int|mixed|string)[]|float|int|mixed|null)[]|int|string)[]
+     *
      * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, performance?: array{efficiency: float, objectsPerSecond: float, totalFound: int, totalProcessed: int, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: string}
-     * @psalm-return   array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged: array<array-key, mixed>, updated: array<array-key, mixed>, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: non-empty-lowercase-string}
+     *
+     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{object: array<never, never>|mixed, error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}}
      */
     private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
     {
@@ -721,6 +729,13 @@ class ImportService
         $totalImportTime      = microtime(true) - $startTime;
         $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
 
+        // Calculate efficiency.
+        if ($summary['found'] > 0) {
+            $efficiency = round((count($allObjects) / $summary['found']) * 100, 1);
+        } else {
+            $efficiency = 0;
+        }
+
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like SaveObjects does.
         $summary['performance'] = [
             'totalTime'        => round($totalImportTime, 3),
@@ -728,7 +743,7 @@ class ImportService
             'objectsPerSecond' => round($overallRowsPerSecond, 2),
             'totalProcessed'   => count($allObjects),
             'totalFound'       => $summary['found'],
-            'efficiency'       => $summary['found'] > 0 ? round((count($allObjects) / $summary['found']) * 100, 1) : 0,
+            'efficiency'       => $efficiency,
         ];
 
         return $summary;
@@ -744,15 +759,20 @@ class ImportService
      * @param Schema   $schema   The schema
      * @param int      $rowIndex Row index for error reporting
      *
-     * @return       array<string, mixed> Object data (always returns array)
-     * @psalm-return array{'@self': non-empty-array<string, int|non-empty-mixed|string>, ...<int|string, mixed>}
+     * @return ((int|mixed|string)[]|mixed)[]
+     *
+     * @psalm-return array{'@self': array<string, int|mixed|string>,...}
      */
     private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, int $rowIndex, ?IUser $currentUser=null): array
     {
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
         // Ensure schemaId is string for array key.
-        $schemaIdKey = is_string($schemaId) ? $schemaId : (string) $schemaId;
+        if (is_string($schemaId)) {
+            $schemaIdKey = $schemaId;
+        } else {
+            $schemaIdKey = (string) $schemaId;
+        }
 
         if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
             /*
@@ -780,7 +800,12 @@ class ImportService
             }
 
             // Ensure $key is a string before accessing as array
-            $keyString = is_string($key) ? $key : (string) $key;
+            if (is_string($key)) {
+                $keyString = $key;
+            } else {
+                $keyString = (string) $key;
+            }
+
             $firstChar = $keyString[0] ?? '';
 
             if ($firstChar === '_') {
@@ -1079,8 +1104,9 @@ class ImportService
      * @param Schema|null                                   $schema           Optional schema
      * @param array                                         $schemaProperties Schema properties
      *
-     * @return       array Chunk processing summary
-     * @psalm-return array{created: list<mixed>, errors: list<mixed>, found: int, unchanged: array<never, never>, updated: list<mixed>}
+     * @return (array|int)[]
+     *
+     * @psalm-return array{found: int<0, max>, created: list<mixed>, updated: list<mixed>, unchanged: array<never, never>, errors: list{0?: mixed,...}}
      */
     private function processChunk(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1164,7 +1190,9 @@ class ImportService
      * @param array<string, string>                         $columnMapping Column mapping
      * @param int                                           $row           Row number
      *
-     * @return array<string, string> Row data
+     * @return string[] Row data
+     *
+     * @psalm-return array<string, string>
      */
     private function extractRowData(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $columnMapping, int $row): array
     {
@@ -1206,7 +1234,9 @@ class ImportService
      * @param Schema   $schema   Schema
      * @param int      $rowIndex Row index for error reporting
      *
-     * @return array<string, mixed> Processing result
+     * @return (bool|null|string)[] Processing result
+     *
+     * @psalm-return array{uuid: null|string, wasExisting: bool}
      */
     private function processRow(array $rowData, Register $register, Schema $schema, int $_rowIndex): array
     {
@@ -1273,9 +1303,9 @@ class ImportService
      *
      * @param string $slug The schema slug
      *
-     * @return Schema|null The schema or null if not found
+     * @return Schema The schema or null if not found
      */
-    private function getSchemaBySlug(string $slug): ?Schema
+    private function getSchemaBySlug(string $slug): Schema
     {
         // NO ERROR SUPPRESSION: Let schema lookup errors bubble up immediately!
         $schema = $this->schemaMapper->find($slug);
@@ -1640,6 +1670,8 @@ class ImportService
      * @param array $importSummary Import summary from Excel/CSV import
      *
      * @return int Total number of objects imported
+     *
+     * @psalm-return int<0, max>
      */
     private function calculateTotalImported(array $importSummary): int
     {
@@ -1664,6 +1696,8 @@ class ImportService
      * @param int $totalImported Total objects imported
      *
      * @return string Recommended warmup mode
+     *
+     * @psalm-return 'balanced'|'fast'|'safe'
      */
     public function getRecommendedWarmupMode(int $totalImported): string
     {
@@ -1706,7 +1740,12 @@ class ImportService
         $mode = $this->getRecommendedWarmupMode($totalImported);
         // Index up to 2x imported objects, max 15k.
         $maxObjects = min($totalImported * 2, 15000);
-        $delay      = $immediate === true ? 0 : 30;
+        if ($immediate === true) {
+            $delay = 0;
+        } else {
+            $delay = 30;
+        }
+
         // 30 second delay by default
         $this->logger->info(
                 message: 'Scheduling smart SOLR warmup',

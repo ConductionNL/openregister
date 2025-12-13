@@ -179,14 +179,16 @@ class FacetService
     /**
      * Calculate Facets with Intelligent Fallback Strategy
      *
-     * **CORE BREAKTHROUGH**: Implements the smart fallback logic that ensures users
+     * CORE BREAKTHROUGH**: Implements the smart fallback logic that ensures users
      * always see meaningful facet options, even when their current search/filters
      * return zero results.
      *
      * @param array $facetQuery  Query for facet calculation (without pagination)
      * @param array $facetConfig Facet configuration
      *
-     * @return array Facet results with fallback metadata
+     * @return array[] Facet results with fallback metadata
+     *
+     * @psalm-return array{facets: array, performance_metadata: array{strategy: 'collection_fallback'|'filtered', fallback_used: bool, total_facet_results: int, has_restrictive_filters: bool}}
      */
     private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig): array
     {
@@ -486,11 +488,13 @@ class FacetService
     /**
      * Get facetable fields from schema configurations
      *
-     * **PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets instead of runtime analysis
+     * PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets instead of runtime analysis
      *
      * @param array $schemas Array of Schema objects
      *
-     * @return array Facetable field configuration
+     * @return array[] Facetable field configuration
+     *
+     * @psalm-return array{'@self': array, object_fields: array}
      */
     private function getFacetableFieldsFromSchemas(array $schemas): array
     {

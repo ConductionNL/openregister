@@ -24,11 +24,11 @@ use OCP\IRequest;
 
 /**
  * TablesController class.
- */
-/**
+ *
+ * Controller for managing table operations.
+ *
  * @psalm-suppress UnusedClass
  */
-
 class TablesController extends Controller
 {
 

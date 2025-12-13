@@ -61,7 +61,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet data with buckets containing key, results, and label
+     * @return ((int|mixed|string)[][]|string)[] Terms facet data with buckets containing key, results, and label
+     *
+     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string},...}}
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
@@ -151,7 +153,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Date histogram facet data
+     * @return ((int|mixed)[][]|string)[] Date histogram facet data
+     *
+     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list{0?: array{key: mixed, results: int},...}}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
@@ -211,7 +215,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Range facet data
+     * @return ((int|mixed|string)[][]|string)[] Range facet data
+     *
+     * @psalm-return array{type: 'range', buckets: list{0?: array{key: string, results: int, from?: mixed, to?: mixed},...}}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -576,7 +582,12 @@ class MetaDataFacetHandler
                         break;
 
                     case 'or':
-                        $values       = is_string($operatorValue) === true ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                        if (is_string($operatorValue) === true) {
+                            $values = array_map('trim', explode(',', $operatorValue));
+                        } else {
+                            $values = $operatorValue;
+                        }
+
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
@@ -925,7 +936,11 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                return $title === true ? (string) $title : "Register $value";
+                if ($title !== false) {
+                    return (string) $title;
+                } else {
+                    return "Register $value";
+                }
             } catch (\Exception $e) {
                 return "Register $value";
             }
@@ -939,7 +954,11 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                return $title === true ? (string) $title : "Schema $value";
+                if ($title !== false) {
+                    return (string) $title;
+                } else {
+                    return "Schema $value";
+                }
             } catch (\Exception $e) {
                 return "Schema $value";
             }
@@ -965,7 +984,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Facetable metadata fields with their configuration
+     * @return (array|bool|string)[][] Facetable metadata fields with their configuration
+     *
+     * @psalm-return array{register?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, schema?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, organisation?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, application?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, created?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, updated?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, published?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, depublished?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}}
      */
     public function getFacetableFields(array $baseQuery=[]): array
     {
@@ -1106,7 +1127,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Sample values with their counts
+     * @return (int|mixed|string)[][] Sample values with their counts
+     *
+     * @psalm-return list{0?: array{value: mixed, label: string, count: int},...}
      */
     private function getSampleValues(string $field, array $baseQuery, int $limit): array
     {
@@ -1157,8 +1180,10 @@ class MetaDataFacetHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array|null Date range with min and max values, or null if no data
+     *
+     * @psalm-return array{min: mixed, max: mixed}|null
      */
-    private function getDateRange(string $field, array $baseQuery): ?array
+    private function getDateRange(string $field, array $baseQuery): array|null
     {
         $queryBuilder = $this->db->getQueryBuilder();
 

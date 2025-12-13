@@ -140,7 +140,7 @@ class Notifier implements INotifier
         );
 
         $notification->setIcon(
-            \OC::$server->getURLGenerator()->imagePath(app: 'openregister', file: 'app.svg')
+            \OC::$server->getURLGenerator()->imagePath(appName: 'openregister', file: 'app.svg')
         );
 
         // Add action to view the configuration.

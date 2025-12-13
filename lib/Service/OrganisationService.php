@@ -223,8 +223,11 @@ class OrganisationService
     /**
      * Get Organisation settings only
      *
-     * @return array Organisation configuration
+     * @return (mixed|null|true)[][] Organisation configuration
+     *
      * @throws \RuntimeException If Organisation settings retrieval fails
+     *
+     * @psalm-return array{organisation: array{default_organisation: mixed|null, auto_create_default_organisation: mixed|true}}
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -799,9 +802,9 @@ class OrganisationService
     /**
      * Get user organisation statistics
      *
-     * @return (array|int|null)[] Statistics about user's organisations
+     * @return (array|int|null)[]
      *
-     * @psalm-return array{total: int<0, max>, active: array|null, results: array}
+     * @psalm-return array{total: int<0, max>, active: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|null, results: array}
      */
     public function getUserOrganisationStats(): array
     {
@@ -1124,7 +1127,56 @@ class OrganisationService
             return $oldestOrg;
         }//end if
 
-        return null;
+        // Fallback: User has no organisations, use default organisation.
+        // This ensures all users always have at least one organisation.
+        try {
+            $defaultOrg = $this->ensureDefaultOrganisation();
+            
+            // Add user to default organisation.
+            if ($defaultOrg->hasUser($userId) === false) {
+                $users = $defaultOrg->getUsers() ?? [];
+                $users[] = $userId;
+                $defaultOrg->setUsers($users);
+                $this->organisationMapper->update($defaultOrg);
+                
+                $this->logger->info(
+                    'Added user to default organisation',
+                    [
+                        'userId'           => $userId,
+                        'organisationUuid' => $defaultOrg->getUuid(),
+                        'organisationName' => $defaultOrg->getName(),
+                    ]
+                );
+            }
+            
+            // Set as active organisation.
+            $this->config->setUserValue(
+                $userId,
+                self::APP_NAME,
+                self::CONFIG_ACTIVE_ORGANISATION,
+                $defaultOrg->getUuid()
+            );
+            
+            $this->logger->info(
+                'Auto-set active organisation to default',
+                [
+                    'userId'           => $userId,
+                    'organisationUuid' => $defaultOrg->getUuid(),
+                    'organisationName' => $defaultOrg->getName(),
+                ]
+            );
+            
+            return $defaultOrg;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'Failed to set default organisation for user',
+                [
+                    'userId' => $userId,
+                    'error'  => $e->getMessage(),
+                ]
+            );
+            return null;
+        }//end try
 
     }//end fetchActiveOrganisationFromDatabase()
 
@@ -1280,7 +1332,7 @@ class OrganisationService
      *
      * @return null|string The UUID of the default organisation, or null if not set
      */
-    public function getDefaultOrganisationId(): string|null
+    public function getDefaultOrganisationId(): string|null|null
     {
         $defaultOrgId = $this->config->getAppValue('openregister', 'defaultOrganisation', '');
         if ($defaultOrgId !== '') {

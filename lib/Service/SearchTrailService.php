@@ -211,9 +211,9 @@ class SearchTrailService
      *                      - from: Start date filter
      *                      - to: End date filter
      *
-     * @return (array|int|mixed)[] Array containing search trails and pagination information
+     * @return (array|float|int)[]
      *
-     * @psalm-return array{results: array, total: int, page: mixed, pages: mixed, limit: mixed, offset: mixed}
+     * @psalm-return array{results: array, total: int, page: float|int<1, max>, pages: int, limit: int<1, max>, offset: int}
      */
     public function getSearchTrails(array $config=[]): array
     {
@@ -278,22 +278,9 @@ class SearchTrailService
      * @param DateTime|null $from Start date for statistics
      * @param DateTime|null $to   End date for statistics
      *
-     * @return ((float|int|null|string)[]|float|int|mixed)[] Comprehensive search statistics including trends and insights
+     * @return ((float|int|null|string)[]|float|int|mixed)[]
      *
-     * @psalm-return array{
-     *     searches_with_results: mixed,
-     *     searches_without_results: mixed,
-     *     success_rate: 0|float,
-     *     unique_search_terms: int,
-     *     unique_users: int,
-     *     avg_searches_per_session: float,
-     *     avg_object_views_per_session: float,
-     *     unique_organizations: 0,
-     *     query_complexity: array{simple: 0|float, medium: 0|float, complex: 0|float},
-     *     period: array{from: null|string, to: null|string, days: int<min, max>|null},
-     *     daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,
-     *     ...
-     * }
+     * @psalm-return array{searches_with_results: mixed, searches_without_results: mixed, success_rate: 0|float, unique_search_terms: int, unique_users: int, avg_searches_per_session: float, avg_object_views_per_session: float, unique_organizations: 0, query_complexity: array{simple: 0|float, medium: 0|float, complex: 0|float}, period: array{from: null|string, to: null|string, days: int<min, max>|null}, daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,...}
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -425,9 +412,9 @@ class SearchTrailService
      * @param DateTime|null $from     Start date filter
      * @param DateTime|null $to       End date filter
      *
-     * @return (array|string)[] Search activity data with trends and insights
+     * @return (array|string)[]
      *
-     * @psalm-return array{activity: array, insights: array, interval: string, period: array{from: null|string, to: null|string}}
+     * @psalm-return array{activity: array, insights: array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}, interval: string, period: array{from: null|string, to: null|string}}
      */
     public function getSearchActivity(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -512,14 +499,9 @@ class SearchTrailService
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return (array|int)[] Enhanced user agent statistics
+     * @return (array|int)[]
      *
-     * @psalm-return array{
-     *     user_agents: array,
-     *     browser_distribution: array,
-     *     total_user_agents: int<0, max>,
-     *     period: array{from: null|string, to: null|string}
-     * }
+     * @psalm-return array{user_agents: array, browser_distribution: list<array{browser: array-key, count: 0|mixed, percentage: 0|float}>, total_user_agents: int<0, max>, period: array{from: null|string, to: null|string}}
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -603,18 +585,9 @@ class SearchTrailService
      *
      * @param array $config Raw configuration parameters
      *
-     * @return ((mixed|string)[]|DateTime|float|int|mixed|null)[] Processed configuration parameters
+     * @return ((mixed|string)[]|DateTime|float|int|mixed|null)[]
      *
-     * @psalm-return array{
-     *     limit: int<1, max>,
-     *     offset: int,
-     *     page: float|int<1, max>,
-     *     filters: array<int|string, mixed>,
-     *     sort: array<'DESC'|mixed>,
-     *     search: mixed|null,
-     *     from: DateTime|null,
-     *     to: DateTime|null
-     * }
+     * @psalm-return array{limit: int<1, max>, offset: int, page: float|int<1, max>, filters: array<int|string, mixed>, sort: array<'DESC'|mixed>, search: mixed|null, from: DateTime|null, to: DateTime|null}
      */
     private function processConfig(array $config): array
     {
@@ -730,17 +703,9 @@ class SearchTrailService
      * @param array  $activity  Search activity data
      * @param string $_interval Time interval used (unused, kept for API compatibility)
      *
-     * @return (float|int|mixed|null|string)[] Activity insights and trends
+     * @return (float|int|mixed|null|string)[]
      *
-     * @psalm-return array{
-     *     peak_period: mixed|null,
-     *     peak_count?: mixed,
-     *     low_period: mixed|null,
-     *     low_count?: mixed,
-     *     trend: string,
-     *     average_searches_per_period: 0|float,
-     *     total_periods?: int<1, max>
-     * }
+     * @psalm-return array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}
      */
     private function calculateActivityInsights(array $activity, string $_interval): array
     {
@@ -847,7 +812,7 @@ class SearchTrailService
      *
      * @param string $userAgent User agent string
      *
-     * @return string[] Browser information
+     * @return string[]
      *
      * @psalm-return array{browser: string, version: string, full_string: string}
      */

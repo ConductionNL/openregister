@@ -339,7 +339,7 @@ class Register extends Entity implements JsonSerializable
     {
         $jsonFields = $this->getJsonFields();
 
-        if (!isset($object['metadata'])) {
+        if (isset($object['metadata']) === false) {
             $object['metadata'] = [];
         }
 
@@ -433,7 +433,7 @@ class Register extends Entity implements JsonSerializable
             $depublished = $this->depublished->format('c');
         }
 
-        // Always return schemas as array of IDs (int/string)
+        // Always return schemas as array of IDs (int/string).
         $schemas = array_filter(
                 $this->schemas ?? [],
                 function ($item) {

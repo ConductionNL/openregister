@@ -75,7 +75,7 @@ class SearchController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-        
+
         // Store SOLR service for search operations.
         $this->solrService = $solrService;
 
@@ -93,9 +93,7 @@ class SearchController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing search results, total count, and facets
-     *
-     * @psalm-return JSONResponse<200, array{facets: array<never, never>|mixed, results: array<array{id: mixed|null, name: mixed|'Unknown', source: 'openregister', type: 'object', url: mixed|null}>, total: int|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed, type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed, facets: array<never, never>|mixed}, array<never, never>>
      */
     public function search(): JSONResponse
     {

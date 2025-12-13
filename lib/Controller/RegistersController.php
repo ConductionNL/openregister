@@ -201,6 +201,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{results: array<array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -208,9 +210,24 @@ class RegistersController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination and search parameters.
-        $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
-        $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
-        $page   = isset($params['_page']) === true ? (int) $params['_page'] : null;
+        if (isset($params['_limit']) === true) {
+            $limit = (int) $params['_limit'];
+        } else {
+            $limit = null;
+        }
+
+        if (isset($params['_offset']) === true) {
+            $offset = (int) $params['_offset'];
+        } else {
+            $offset = null;
+        }
+
+        if (isset($params['_page']) === true) {
+            $page = (int) $params['_page'];
+        } else {
+            $page = null;
+        }
+
         // Note: search parameter not currently used in this endpoint.
         $extend = $params['_extend'] ?? [];
         if (is_string($extend) === true) {
@@ -274,6 +291,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats?: array{objects: array<string, int>, logs: array, files: array{total: 0, size: 0}}}, array<never, never>>
      */
     public function show($id): JSONResponse
     {
@@ -308,6 +327,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -353,6 +374,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -424,6 +447,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -457,6 +482,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, results?: array, total?: int<0, max>}, array<never, never>>
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -501,6 +528,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array<int, \OCA\OpenRegister\Db\ObjectEntity>|int, array<never, never>>
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -529,9 +558,12 @@ class RegistersController extends Controller
      * @return DataDownloadResponse|JSONResponse The exported register data as a downloadable file or error response
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return DataDownloadResponse<200, 'application/json'|'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv', array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
-    public function export(int $id): DataDownloadResponse | JSONResponse
+    public function export(int $id): JSONResponse|DataDownloadResponse | JSONResponse
     {
         try {
             // Get export format from query parameter.
@@ -589,7 +621,10 @@ class RegistersController extends Controller
      * @return JSONResponse Publish result with commit info
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed, commit_url?: mixed, file_url?: mixed, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -688,6 +723,13 @@ class RegistersController extends Controller
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
 
+            // Determine indexing note.
+            if (($defaultBranch !== null) === true && $branch !== $defaultBranch) {
+                $indexingNote = "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
+            } else {
+                $indexingNote = "File published successfully. GitHub Code Search indexing may take a few minutes.";
+            }
+
             return new JSONResponse(
                 data: [
                     'success'        => true,
@@ -698,7 +740,7 @@ class RegistersController extends Controller
                     'file_url'       => $result['file_url'],
                     'branch'         => $branch,
                     'default_branch' => $defaultBranch,
-                    'indexing_note'  => (($defaultBranch !== null) === true && $branch !== $defaultBranch) === true ? "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch." : "File published successfully. GitHub Code Search indexing may take a few minutes.",
+                    'indexing_note'  => $indexingNote,
                 ],
                     statusCode: 200
                 );
@@ -917,7 +959,10 @@ class RegistersController extends Controller
      * @throws DoesNotExistException When the register is not found
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, register?: array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}, message?: 'Stats calculation not yet implemented'}, array<never, never>>
      */
     public function stats(int $id): JSONResponse
     {
@@ -991,7 +1036,10 @@ class RegistersController extends Controller
      * @return JSONResponse A JSON response containing the published register
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, title?: null|string, version?: null|string, description?: null|string, schemas?: array<int|string>, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, array<never, never>>
      */
     public function publish(int $id): JSONResponse
     {
@@ -1049,7 +1097,10 @@ class RegistersController extends Controller
      * @return JSONResponse A JSON response containing the depublished register
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, title?: null|string, version?: null|string, description?: null|string, schemas?: array<int|string>, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, array<never, never>>
      */
     public function depublish(int $id): JSONResponse
     {

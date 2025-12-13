@@ -519,12 +519,15 @@ class ObjectCacheService
      *
      * @param array $identifiers Array of object IDs/UUIDs to preload
      *
-     * @return array<ObjectEntity> Array of loaded objects
+     * @return (ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity)[]
      *
-     * @phpstan-param  array<int|string> $identifiers
+     * @phpstan-param array<int|string> $identifiers
+     *
      * @phpstan-return array<ObjectEntity>
-     * @psalm-param    array<int|string> $identifiers
-     * @psalm-return   array<ObjectEntity>
+     *
+     * @psalm-param array<int|string> $identifiers
+     *
+     * @psalm-return array<ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function preloadObjects(array $identifiers): array
     {
@@ -610,10 +613,11 @@ class ObjectCacheService
      *
      * Returns information about cache performance for monitoring and optimization.
      *
-     * @return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
+     * @return (float|int)[]
      *
      * @phpstan-return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
-     * @psalm-return   array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}
+     *
+     * @psalm-return array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int<0, max>, query_cache_size: int<0, max>, name_cache_size: int<0, max>}
      */
     public function getStats(): array
     {
@@ -1303,6 +1307,8 @@ class ObjectCacheService
      * optimal performance for name lookup operations.
      *
      * @return int Number of names loaded into cache
+     *
+     * @psalm-return int<0, max>
      */
     public function warmupNameCache(): int
     {
@@ -1420,7 +1426,9 @@ class ObjectCacheService
     /**
      * Commit SOLR index
      *
-     * @return array Commit operation results
+     * @return (bool|string)[] Commit operation results
+     *
+     * @psalm-return array{success: bool, error?: string, timestamp?: string, message?: 'Commit failed'|'Commit successful'}
      */
     public function commitSolr(): array
     {
@@ -1450,7 +1458,9 @@ class ObjectCacheService
     /**
      * Optimize SOLR index
      *
-     * @return array Optimize operation results
+     * @return (bool|string)[] Optimize operation results
+     *
+     * @psalm-return array{success: bool, error?: string, timestamp?: string, message?: 'Optimization failed'|'Optimization successful'}
      */
     public function optimizeSolr(): array
     {
@@ -1480,7 +1490,9 @@ class ObjectCacheService
     /**
      * Clear SOLR index completely for dashboard
      *
-     * @return array Clear operation results
+     * @return (false|mixed|null|string)[] Clear operation results
+     *
+     * @psalm-return array{success: false|mixed, error: mixed|null|string, timestamp?: string, error_details?: mixed|null, message?: 'Index clear failed'|'Index cleared successfully'}
      */
     public function clearSolrIndexForDashboard(): array
     {

@@ -810,7 +810,9 @@ class SolrFileService
      * @param int    $chunkSize    Target chunk size
      * @param int    $chunkOverlap Overlap size
      *
-     * @return array<int, string> Chunks
+     * @return string[] Chunks
+     *
+     * @psalm-return array<int<0, max>, string>
      */
     private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array
     {
@@ -1109,7 +1111,14 @@ class SolrFileService
                 } else {
                     $stats['failed']++;
                     // Result array may contain 'error' or 'message' keys even if not in type definition.
-                    $errorMsg = array_key_exists('error', $result) ? $result['error'] : (array_key_exists('message', $result) ? $result['message'] : 'Unknown error');
+                    if (array_key_exists('error', $result)) {
+                        $errorMsg = $result['error'];
+                    } else if (array_key_exists('message', $result)) {
+                        $errorMsg = $result['message'];
+                    } else {
+                        $errorMsg = 'Unknown error';
+                    }
+
                     $stats['errors'][$fileText->getFileId()] = $errorMsg;
                 }//end if
             } catch (\Exception $e) {
@@ -1149,9 +1158,11 @@ class SolrFileService
      * @param int   $fileId  The file ID from the file_texts table
      * @param array $options Chunking options
      *
-     * @return array Processing result
+     * @return (bool|int|string)[] Processing result
      *
      * @throws \Exception If fileCollection is not configured or file not found
+     *
+     * @psalm-return array{success: bool, indexed?: int<0, max>, collection?: string, message?: string}
      */
     public function processExtractedFile(int $fileId, array $options=[]): array
     {
@@ -1235,17 +1246,9 @@ class SolrFileService
      *
      * Returns statistics about how many files have been chunked and indexed
      *
-     * @return (bool|int|mixed|string)[] Statistics
+     * @return (bool|int|mixed|string)[]
      *
-     * @psalm-return array{
-     *     available: bool,
-     *     collection?: string,
-     *     total_extracted?: 0|mixed,
-     *     total_chunks_indexed?: 0|mixed,
-     *     unique_files_indexed?: 0|mixed,
-     *     pending_indexing?: 0|mixed,
-     *     error?: 'fileCollection not configured'
-     * }
+     * @psalm-return array{available: bool, collection?: string, total_extracted?: int, total_chunks_indexed?: 0|mixed, unique_files_indexed?: 0|mixed, pending_indexing?: 0|mixed, error?: 'fileCollection not configured'}
      */
     public function getChunkingStats(): array
     {

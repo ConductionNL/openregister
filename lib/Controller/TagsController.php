@@ -97,7 +97,7 @@ class TagsController extends Controller
         // Retrieve all tags from file service.
         // FileService manages tags used across objects and files.
         $tags = $this->fileService->getAllTags();
-        
+
         // Return tags as JSON response.
         return new JSONResponse(data: $tags);
 

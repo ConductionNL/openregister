@@ -316,8 +316,6 @@ class SchemaFacetCacheService
     /**
      * Clean expired facet cache entries
      *
-     * @return int Number of expired entries removed
-     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return int<min, max>
@@ -353,18 +351,11 @@ class SchemaFacetCacheService
     /**
      * Get comprehensive facet cache statistics
      *
-     * @return (int|int[]|string)[] Cache statistics including performance metrics
+     * @return (int|int[]|string)[]
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{
-     *     total_entries: int,
-     *     by_type: array<int>,
-     *     memory_cache_size: int<0, max>,
-     *     cache_table: 'openregister_schema_facet_cache',
-     *     query_time: string,
-     *     timestamp: int<1, max>
-     * }
+     * @psalm-return array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}
      */
     public function getCacheStatistics(): array
     {
@@ -405,11 +396,11 @@ class SchemaFacetCacheService
      *
      * @param int $schemaId The schema ID
      *
-     * @return (array|mixed)[][] Facetable fields configuration
+     * @return ((mixed|string)[]|mixed|string)[][][]
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{'@self'?: array<string, mixed>, object_fields?: array<array>}
+     * @psalm-return array{'@self'?: array{register: array{type: 'integer', facet_types: list{'terms'}, description: 'Register ID'}, schema: array{type: 'integer', facet_types: list{'terms'}, description: 'Schema ID'}, organisation: array{type: 'string', facet_types: list{'terms'}, description: 'Organisation UUID'}, owner: array{type: 'string', facet_types: list{'terms'}, description: 'Owner user ID'}, created: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Creation date'}, updated: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Last update date'}, published: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Publication date'}, depublished: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Depublication date'}}, object_fields?: array<array{type: 'string'|mixed, facet_types: array<string>, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}>}
      */
     private function generateFacetableFieldsFromSchema(int $schemaId): array
     {
@@ -593,16 +584,9 @@ class SchemaFacetCacheService
      * @param string $propertyKey Property name
      * @param array  $property    Property definition
      *
-     * @return ((mixed|string)[]|mixed|string)[] Field configuration or null if not facetable
+     * @return (array|mixed|string)[]
      *
-     * @psalm-return array{
-     *     type: 'string'|mixed,
-     *     facet_types: array<string>,
-     *     description: mixed|string,
-     *     enum_values?: array,
-     *     minimum?: mixed,
-     *     maximum?: mixed
-     * }
+     * @psalm-return array{type: 'string'|mixed, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array
     {

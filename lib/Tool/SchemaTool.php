@@ -99,9 +99,9 @@ class SchemaTool extends AbstractTool
     /**
      * Get function definitions for LLphant
      *
-     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list<array<string, mixed>>
+     * @psalm-return list{array{name: 'list_schemas', description: 'Get a list of all accessible schemas', parameters: array{type: 'object', properties: array{limit: array{type: 'integer', description: 'Maximum number of schemas to return (default: 100)'}, offset: array{type: 'integer', description: 'Number of schemas to skip for pagination (default: 0)'}, register: array{type: 'string', description: 'Filter schemas by register ID (optional)'}}, required: array<never, never>}}, array{name: 'get_schema', description: 'Get details about a specific schema by ID', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The schema ID to retrieve'}}, required: list{'id'}}}, array{name: 'create_schema', description: 'Create a new schema with properties definition', parameters: array{type: 'object', properties: array{title: array{type: 'string', description: 'The title of the schema'}, description: array{type: 'string', description: 'A description of what this schema represents'}, properties: array{type: 'object', description: 'JSON Schema properties definition'}, required: array{type: 'array', description: 'Array of required property names'}}, required: list{'title', 'properties'}}}, array{name: 'update_schema', description: 'Update an existing schema', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The schema ID to update'}, title: array{type: 'string', description: 'New title for the schema'}, description: array{type: 'string', description: 'New description for the schema'}, properties: array{type: 'object', description: 'Updated JSON Schema properties definition'}}, required: list{'id'}}}, array{name: 'delete_schema', description: 'Delete a schema (only if it has no objects)', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The schema ID to delete'}}, required: list{'id'}}}}
      */
     public function getFunctions(): array
     {
@@ -253,7 +253,9 @@ class SchemaTool extends AbstractTool
      * @param int         $offset   Result offset
      * @param string|null $register Register filter
      *
-     * @return array Result with list of schemas
+     * @return (mixed|string|true)[] Result with list of schemas
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
     {
@@ -289,9 +291,11 @@ class SchemaTool extends AbstractTool
      *
      * @param string $id Schema ID
      *
-     * @return array Result with schema details
+     * @return (mixed|string|true)[] Result with schema details
      *
      * @throws \Exception If schema not found
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function getSchema(string $id): array
     {
@@ -327,9 +331,11 @@ class SchemaTool extends AbstractTool
      * @param string     $description Schema description
      * @param array|null $required    Required properties
      *
-     * @return array Result with created schema
+     * @return (mixed|string|true)[] Result with created schema
      *
      * @throws \Exception If creation fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function createSchema(string $title, array $properties, string $description='', ?array $required=null): array
     {
@@ -369,9 +375,11 @@ class SchemaTool extends AbstractTool
      * @param array|null  $properties  Schema properties
      * @param array|null  $required    Required properties
      *
-     * @return array Result with updated schema
+     * @return (mixed|string|true)[] Result with updated schema
      *
      * @throws \Exception If update fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function updateSchema(string $id, ?string $title=null, ?string $description=null, ?array $properties=null, ?array $required=null): array
     {
@@ -415,9 +423,11 @@ class SchemaTool extends AbstractTool
      *
      * @param string $id Schema ID
      *
-     * @return array Result of deletion
+     * @return (mixed|string|true)[] Result of deletion
      *
      * @throws \Exception If deletion fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function deleteSchema(string $id): array
     {

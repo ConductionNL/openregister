@@ -97,7 +97,9 @@ class GitLabService
     /**
      * Get authentication headers for GitLab API
      *
-     * @return array Headers array
+     * @return string[] Headers array
+     *
+     * @psalm-return array{'PRIVATE-TOKEN'?: string}
      */
     private function getHeaders(): array
     {
@@ -123,10 +125,13 @@ class GitLabService
      * @param int    $page    Page number for pagination
      * @param int    $perPage Results per page (max 100)
      *
-     * @return array Search results with project info and file details
+     * @return (((null|string)[]|mixed|string)[][]|int)[] Search results with project info and file details
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return array{total_count: int<0, max>, results: list{0?: array{project_id: mixed, path: mixed, ref: 'main'|mixed, url: ''|mixed, name: string, config: array{title: string, description: '', version: 'unknown', app: null, type: 'unknown'}},...}, page: int, per_page: int}
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -214,10 +219,13 @@ class GitLabService
      *
      * @param int $projectId GitLab project ID
      *
-     * @return array List of branches with name and commit info
+     * @return (false|mixed|null)[][] List of branches with name and commit info
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return array<array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}>
      */
     public function getBranches(int $projectId): array
     {
@@ -333,10 +341,13 @@ class GitLabService
      * @param string $ref       Branch or tag name (default: main)
      * @param string $path      Directory path to search (default: root)
      *
-     * @return array List of configuration files with metadata
+     * @return ((mixed|null|string)[]|mixed|null)[][] List of configuration files with metadata
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
      */
     public function listConfigurationFiles(int $projectId, string $ref='main', string $path=''): array
     {
@@ -467,8 +478,10 @@ class GitLabService
      * @return array|null Parsed configuration or null if invalid
      *
      * @since 0.2.10
+     *
+     * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      */
-    private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): ?array
+    private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): array|null
     {
         try {
             $content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);

@@ -62,7 +62,9 @@ class CloudEventService
      * @param string   $eventType The event type (e.g., 'object.creating', 'object.updating')
      * @param array    $data      Additional event data
      *
-     * @return array CloudEvent-formatted payload
+     * @return ((array|false|mixed|string)[]|null|string)[] CloudEvent-formatted payload
+     *
+     * @psalm-return array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: string, subject: null|string, dataschema: null, data: array{method: mixed|string, path: false|mixed|string, queryParams: array|mixed, headers: array|mixed, body: array|mixed,...}, openregister: array{app: 'openregister', version: string}}
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -139,7 +141,12 @@ class CloudEventService
     {
         // Build source URI from request protocol and host.
         // Protocol is determined from server protocol (https or http).
-        $host  = $request->getServerProtocol() === 'https' ? 'https://' : 'http://';
+        if ($request->getServerProtocol() === 'https') {
+            $host = 'https://';
+        } else {
+            $host = 'http://';
+        }
+
         $host .= $request->getServerHost();
 
         // Append OpenRegister app path to source.
@@ -156,9 +163,9 @@ class CloudEventService
      *
      * @param IRequest $request The HTTP request
      *
-     * @return string|null Event subject identifier or null
+     * @return null|string Event subject identifier or null
      */
-    private function getSubject(IRequest $request): ?string
+    private function getSubject(IRequest $request): string|null
     {
         $path = $request->getPathInfo();
 
@@ -184,7 +191,9 @@ class CloudEventService
      *
      * @param IRequest $request The HTTP request
      *
-     * @return array Request headers
+     * @return string[] Request headers
+     *
+     * @psalm-return array{'X-Requested-With'?: string, 'User-Agent'?: string, Authorization?: string, Accept?: string, 'Content-Type'?: string}
      */
     private function getRequestHeaders(IRequest $request): array
     {
@@ -235,6 +244,8 @@ class CloudEventService
      * Get application version
      *
      * @return string Application version
+     *
+     * @psalm-return '1.0.0'
      */
     private function getAppVersion(): string
     {

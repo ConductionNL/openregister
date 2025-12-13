@@ -331,29 +331,11 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by
      * @param int|null $schemaId   The schema ID to filter by
      *
-     * @return (array|mixed|string)[][] Array of registers with their schemas and statistics
+     * @return ((int|mixed|null|string[])[]|int|null|string)[][]
      *
      * @throws \Exception If there is an error getting the registers with schemas
      *
-     * @psalm-return list{
-     *     0: array{
-     *         id: 'orphaned'|'totals'|mixed,
-     *         title: 'Orphaned Items'|'System Totals'|mixed,
-     *         description: ('Items that reference non-existent registers, schemas, or invalid register-schema combinations')|('Total statistics across all registers and schemas')|mixed,
-     *         stats: array,
-     *         schemas: list<mixed>,
-     *         ...
-     *     },
-     *     1?: array{
-     *         stats: array,
-     *         schemas: list<mixed>,
-     *         id: 'orphaned'|'totals'|mixed,
-     *         title: 'Orphaned Items'|'System Totals'|mixed,
-     *         description: ('Items that reference non-existent registers, schemas, or invalid register-schema combinations')|('Total statistics across all registers and schemas')|mixed,
-     *         ...
-     *     },
-     *     ...
-     * }
+     * @psalm-return list{0: array{id: 'orphaned'|'totals'|int, title: null|string, description: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs?: array{total: int, size: int}}, schemas: list{0?: mixed,...}, uuid?: null|string, slug?: null|string, version?: null|string, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, 1?: array{id: 'orphaned'|'totals'|int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: list{0?: mixed,...}, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs: array{total: int, size: int}}},...}
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -540,9 +522,9 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return array[] Array containing counts of processed and failed items for both objects and logs
+     * @return int[][]
      *
-     * @psalm-return array{objects: array, logs: array, total: array{processed: mixed, failed: mixed}}
+     * @psalm-return array{objects: array{processed: 0|1|2, failed: 0|1|2}, logs: array{processed: 0|1|2, failed: 0|1|2}, total: array{processed: int, failed: int}}
      */
     public function recalculateAllSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -573,22 +555,9 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return (array|string)[] Array containing detailed statistics about the calculation process
+     * @return ((array|float|mixed|null)[]|string)[]
      *
-     * @psalm-return array{
-     *     status: 'success',
-     *     timestamp: string,
-     *     scope: array{
-     *         register: mixed,
-     *         schema: mixed
-     *     },
-     *     results: array,
-     *     summary: array{
-     *         total_processed: mixed,
-     *         total_failed: mixed,
-     *         success_rate: mixed
-     *     }
-     * }
+     * @psalm-return array{status: 'success', timestamp: string, scope: array{register: array{id: int, title: null|string}|null, schema: array{id: int, title: null|string}|null}, results: array{objects: array, logs: array, total: array{processed: mixed, failed: mixed}}, summary: array{total_processed: mixed, total_failed: mixed, success_rate: float}}
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -621,15 +590,29 @@ class DashboardService
             $results = $this->recalculateAllSizes(registerId: $registerId, schemaId: $schemaId);
 
             // Build the response.
-            $registerScope = $register !== null ? [
-                'id'    => $register->getId(),
-                'title' => $register->getTitle(),
-            ] : null;
-            $schemaScope   = $schema !== null ? [
-                'id'    => $schema->getId(),
-                'title' => $schema->getTitle(),
-            ] : null;
-            $successRate   = $results['total']['processed'] > 0 ? round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2) : 0.0;
+            if ($register !== null) {
+                $registerScope = [
+                    'id'    => $register->getId(),
+                    'title' => $register->getTitle(),
+                ];
+            } else {
+                $registerScope = null;
+            }
+
+            if ($schema !== null) {
+                $schemaScope = [
+                    'id'    => $schema->getId(),
+                    'title' => $schema->getTitle(),
+                ];
+            } else {
+                $schemaScope = null;
+            }
+
+            if ($results['total']['processed'] > 0) {
+                $successRate = round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2);
+            } else {
+                $successRate = 0.0;
+            }
 
             $response = [
                 'status'    => 'success',

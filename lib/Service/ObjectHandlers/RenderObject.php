@@ -149,6 +149,8 @@ class RenderObject
      * Get the size of the ultra preload cache for monitoring
      *
      * @return int Number of objects in the ultra preload cache
+     *
+     * @psalm-return int<0, max>
      */
     public function getUltraCacheSize(): int
     {
@@ -303,7 +305,7 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => isset($fileRecord['mtime']) === true ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'modified'    => $fileRecord['modified'] ?? null,
                 'labels'      => $labels,
             ];
 
@@ -326,10 +328,11 @@ class RenderObject
      *
      * @param string $fileId The ID of the file
      *
-     * @return array<int, string> The list of tags associated with the file (excluding object: tags)
+     * @return string[]
      *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     private function getFileTags(string $fileId): array
     {
@@ -613,14 +616,16 @@ class RenderObject
      *
      * @param mixed $fileId The file ID to retrieve.
      *
-     * @return array|null The formatted file object or null if not found.
+     * @return (int|mixed|null|string|string[])[]|null
      *
-     * @psalm-param    mixed $fileId
-     * @phpstan-param  mixed $fileId
-     * @psalm-return   array<string, mixed>|null
+     * @psalm-param mixed $fileId
+     *
+     * @phpstan-param mixed $fileId
+     *
+     * @psalm-return array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: mixed, labels: array<int, string>}|null
      * @phpstan-return array<string, mixed>|null
      */
-    private function getFileObject($fileId): ?array
+    private function getFileObject($fileId): array|null
     {
         try {
             // Convert to string/int as needed.
@@ -652,7 +657,7 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => isset($fileRecord['mtime']) === true ? (new \DateTime())->setTimestamp($fileRecord['mtime'])->format('c') : null,
+                'modified'    => $fileRecord['modified'] ?? null,
                 'labels'      => $labels,
             ];
         } catch (Exception $e) {

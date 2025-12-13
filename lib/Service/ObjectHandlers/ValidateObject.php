@@ -532,7 +532,9 @@ class ValidateObject
      * @param array  $object            The object data to transform
      * @param string $currentSchemaSlug The current schema slug to detect self-references
      *
-     * @return array Array containing [transformedSchema, transformedObject]
+     * @return (array|object)[] Array containing [transformedSchema, transformedObject]
+     *
+     * @psalm-return list{object, array}
      */
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
@@ -1351,6 +1353,8 @@ class ValidateObject
      * @param ValidationException|CustomValidationException $exception The validation exception.
      *
      * @return JSONResponse The formatted error response.
+     *
+     * @psalm-return JSONResponse<400, array{status: 'error', message: 'Validation failed', errors: list{0?: array<array|mixed|null|string>|string,...}}, array<never, never>>
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {

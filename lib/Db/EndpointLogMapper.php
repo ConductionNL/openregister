@@ -88,6 +88,8 @@ class EndpointLogMapper extends QBMapper
      * @param int|null $offset Starting offset for pagination (null = no offset)
      *
      * @return EndpointLog[] Array of endpoint log entities
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -125,7 +127,9 @@ class EndpointLogMapper extends QBMapper
      * @param int|null $limit      Maximum number of results to return (null = no limit)
      * @param int|null $offset     Starting offset for pagination (null = no offset)
      *
-     * @return EndpointLog[] Array of endpoint log entities for the specified endpoint
+     * @return EndpointLog[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
      */
     public function findByEndpoint(int $endpointId, ?int $limit=null, ?int $offset=null): array
     {
@@ -187,9 +191,11 @@ class EndpointLogMapper extends QBMapper
      *
      * @param int|null $endpointId Optional endpoint ID to filter statistics
      *
-     * @return         array Statistics array with counts
+     * @return int[]
+     *
      * @phpstan-return array<string, int>
-     * @psalm-return   array<string, int>
+     *
+     * @psalm-return array{total: int, success: int, failed: int}
      */
     public function getStatistics(?int $endpointId=null): array
     {

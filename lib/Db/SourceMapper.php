@@ -146,8 +146,11 @@ class SourceMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      *
-     * @return array The sources
+     * @return Source[] The sources
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Source>
      */
     public function findAll(
         ?int $limit=null,

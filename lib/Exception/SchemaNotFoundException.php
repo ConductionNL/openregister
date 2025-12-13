@@ -61,7 +61,7 @@ class SchemaNotFoundException extends Exception
     {
         // Build error message with schema identifier.
         $message = "Schema not found: '".$schemaSlugOrId."'";
-        
+
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message, $code, $previous);
 

@@ -32,10 +32,6 @@ use Exception;
  *
  * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
-/**
- * @psalm-suppress UnusedClass
- */
-
 class OasController extends Controller
 {
 
@@ -76,7 +72,7 @@ class OasController extends Controller
      *
      * @return JSONResponse
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
      */
     public function generateAll(): JSONResponse
     {
@@ -96,15 +92,13 @@ class OasController extends Controller
      *
      * @param string $id The register slug or identifier
      *
-     * @return JSONResponse OAS data for the register
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @PublicPage
      *
-     * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
      */
     public function generate(string $id): JSONResponse
     {

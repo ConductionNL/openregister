@@ -157,12 +157,15 @@ class ObjectsController extends Controller
      * @param int|null $offset  The offset of items. Defaults to 0.
      * @param int|null $page    The current page number. Defaults to 1.
      *
-     * @return array The paginated results with metadata.
+     * @return (array|float|int|string)[]
      *
-     * @phpstan-param  array<int, mixed> $results
+     * @phpstan-param array<int, mixed> $results
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-param    array<int, mixed> $results
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-param array<int, mixed> $results
+     *
+     * @psalm-return array{results: array<int, mixed>, total: int<0, max>, page: float|int<1, max>, pages: 1|float, limit: int<1, max>, offset: int<0, max>, next?: string, prev?: string}
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -247,7 +250,7 @@ class ObjectsController extends Controller
      * @param string|null $schema   Optional schema identifier
      * @param array|null  $ids      Optional array of specific IDs to filter
      *
-     * @return array Configuration array containing:
+     * @return (array|int|mixed|null)[] Configuration array containing:
      *
      * @deprecated Use buildSearchQuery() instead for faceting-enabled endpoints
      *               - limit: (int) Maximum number of items per page
@@ -262,6 +265,8 @@ class ObjectsController extends Controller
      *               - register: (string|null) Register identifier
      *               - schema: (string|null) Schema identifier
      *               - ids: (array|null) Specific IDs to filter
+     *
+     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<never, never>|mixed, search: mixed|null, extend: mixed|null, fields: mixed|null, unset: mixed|null, ids: array|null}
      */
     private function getConfig(?string $register=null, ?string $schema=null, ?array $ids=null): array
     {
@@ -385,6 +390,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -453,6 +460,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -482,6 +491,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404, array, array<never, never>>
      */
     public function show(
         string $id,
@@ -571,6 +582,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<201|403|404, array, array<never, never>>|JSONResponse<400, string, array<never, never>>
      */
     public function create(
         string $register,
@@ -1017,8 +1030,9 @@ class ObjectsController extends Controller
      *
      * This method deletes an object based on its ID.
      *
-     * @param  string        $id            The ID/UUID of the object to delete
-     * @param  ObjectService $objectService The object service
+     * @param string        $id            The ID/UUID of the object to delete
+     * @param ObjectService $objectService The object service
+     *
      * @throws Exception
      *
      * @return JSONResponse An empty JSON response
@@ -1026,6 +1040,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<403|500, array{error: string}, array<never, never>>
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1075,6 +1091,8 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @todo Implement contract functionality to handle object contracts and their relationships
+     *
+     * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1125,6 +1143,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{relations: list<mixed>,...}, array<never, never>>
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1177,6 +1197,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{uses: string,...}, array<never, never>>
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1225,6 +1247,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1304,6 +1328,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\ObjectEntity, array<never, never>>
      */
     public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1342,6 +1368,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{message: 'Object unlocked successfully'}, array<never, never>>
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
@@ -1363,7 +1391,10 @@ class ObjectsController extends Controller
      * @return DataDownloadResponse The exported file as a download response
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return DataDownloadResponse<200, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv', array<never, never>>
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
     {
@@ -1437,7 +1468,10 @@ class ObjectsController extends Controller
      * @return JSONResponse The result of the import operation
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, message?: 'Import successful', summary?: array<array{created: array, errors: array, found: int, unchanged: array, updated: array, schema: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}}|mixed>}, array<never, never>>
      */
     public function import(int $register): JSONResponse
     {
@@ -1546,7 +1580,10 @@ class ObjectsController extends Controller
      * @return JSONResponse A JSON response containing the published object
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array, array<never, never>>
      */
     public function publish(
         string $id,
@@ -1595,7 +1632,10 @@ class ObjectsController extends Controller
      * @return JSONResponse A JSON response containing the depublished object
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array, array<never, never>>
      */
     public function depublish(
         string $id,
@@ -1645,7 +1685,10 @@ class ObjectsController extends Controller
      * @return JSONResponse A JSON response containing the merge result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array<string, mixed>, array<never, never>>
      */
     public function merge(
         string $id,
@@ -1700,7 +1743,10 @@ class ObjectsController extends Controller
      * @return JSONResponse A JSON response containing the migration result
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<int, array<string, mixed>, array<never, never>>
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -1776,14 +1822,17 @@ class ObjectsController extends Controller
      * @throws NotFoundExceptionInterface If the FileService dependency is not found
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return DataDownloadResponse<200, mixed, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     public function downloadFiles(
         string $id,
         string $register,
         string $schema,
         ObjectService $objectService
-    ): DataDownloadResponse | JSONResponse {
+    ): JSONResponse|DataDownloadResponse | JSONResponse {
         try {
             // Set the context for the object service.
             $objectService->setRegister(register: $register);
@@ -1844,9 +1893,12 @@ class ObjectsController extends Controller
      * Start batch vectorization of objects
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Batch vectorization status
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -1892,9 +1944,12 @@ class ObjectsController extends Controller
      * Get object vectorization statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Vectorization statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, total_objects?: mixed, views?: mixed}, array<never, never>>
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -1945,9 +2000,12 @@ class ObjectsController extends Controller
      * Get count of objects for vectorization
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Object count
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: 0}, array<never, never>>
      */
     public function getObjectVectorizationCount(): JSONResponse
     {

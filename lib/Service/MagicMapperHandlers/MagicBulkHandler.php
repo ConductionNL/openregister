@@ -196,6 +196,8 @@ class MagicBulkHandler
      * @return array Array of inserted UUIDs
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @psalm-return list<mixed>
      */
     private function bulkInsertToDynamicTable(array $objects, string $tableName): array
     {
@@ -422,11 +424,11 @@ class MagicBulkHandler
                 // > 64MB.
                 $this->maxPacketSizeBuffer = 0.6;
                 // 60% buffer.
-            } elseif ($maxPacketSize > 33554432) {
+            } else if ($maxPacketSize > 33554432) {
                 // > 32MB.
                 $this->maxPacketSizeBuffer = 0.5;
                 // 50% buffer.
-            } elseif ($maxPacketSize > 16777216) {
+            } else if ($maxPacketSize > 16777216) {
                 // > 16MB.
                 $this->maxPacketSizeBuffer = 0.4;
                 // 40% buffer.

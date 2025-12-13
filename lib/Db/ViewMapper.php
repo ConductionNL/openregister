@@ -199,8 +199,11 @@ class ViewMapper extends QBMapper
      *
      * @param string $owner The owner user ID
      *
-     * @return array Array of View entities
+     * @return View[] Array of View entities
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\View>
      */
     public function findAll(?string $owner=null): array
     {

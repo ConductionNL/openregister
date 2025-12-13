@@ -120,7 +120,7 @@ class DocumentService
      * @param array  $replacements Array of replacement mappings
      * @param string $outputName   Name for the output file
      *
-     * @return Node The new file node with replaced content
+     * @return File The new file node with replaced content
      *
      * @throws Exception If replacement fails
      */
@@ -128,7 +128,7 @@ class DocumentService
         Node $node,
         array $replacements,
         string $outputName
-    ): Node {
+    ): File {
         // Get the file content as a stream and save to a temp file.
         $stream   = $node->fopen('r');
         $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
@@ -151,7 +151,7 @@ class DocumentService
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($tempFile);
 
             // Helper: Replace text in all elements recursively.
-            $replaceInElements = function (array $elements, array $replacements) use (&$replaceInElements) {
+            $replaceInElements = function (array $elements, array $replacements) use (&$replaceInElements): void {
                 foreach ($elements as $element) {
                     // Replace in text runs.
                     if (method_exists($element, 'getText') === true && method_exists($element, 'setText') === true) {
@@ -257,7 +257,7 @@ class DocumentService
      * @param array  $replacements Array of replacement mappings
      * @param string $outputName   Name for the output file
      *
-     * @return Node The new file node with replaced content
+     * @return File The new file node with replaced content
      *
      * @throws Exception If replacement fails
      */
@@ -265,7 +265,7 @@ class DocumentService
         Node $node,
         array $replacements,
         string $outputName
-    ): Node {
+    ): File {
         // Get file content.
         $content = $node->getContent();
         if ($content === false) {

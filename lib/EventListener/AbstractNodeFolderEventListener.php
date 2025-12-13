@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile.
 /**
  * OpenRegister AbstractNodeFolderEventListener
  *
@@ -32,7 +31,6 @@ use OCP\Files\Events\Node\NodeTouchedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\Files\FileInfo;
 
-// phpcs:disable.
 /**
  * @template-implements IEventListener<Event>
  */

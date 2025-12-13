@@ -88,7 +88,7 @@ class ConversationMapper extends QBMapper
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_conversations', Conversation::class);
-        
+
         // Store event dispatcher for use in CRUD operations.
         $this->eventDispatcher = $eventDispatcher;
 
@@ -249,9 +249,9 @@ class ConversationMapper extends QBMapper
      * @param int         $limit          Maximum number of results
      * @param int         $offset         Offset for pagination
      *
-     * @return Conversation[] Array of Conversation entities
+     * @return Conversation[]
      *
-     * @psalm-return array<Conversation>
+     * @psalm-return list<OCA\OpenRegister\Db\Conversation>
      */
     public function findByUser(
         string $userId,
@@ -293,9 +293,9 @@ class ConversationMapper extends QBMapper
      * @param int         $limit        Maximum number of results
      * @param int         $offset       Offset for pagination
      *
-     * @return Conversation[] Array of Conversation entities
+     * @return Conversation[]
      *
-     * @psalm-return array<Conversation>
+     * @psalm-return list<OCA\OpenRegister\Db\Conversation>
      */
     public function findDeletedByUser(
         string $userId,

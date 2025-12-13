@@ -59,6 +59,7 @@ class Version1Date20251201120000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Add organisation column to openregister_views table.

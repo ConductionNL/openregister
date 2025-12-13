@@ -99,9 +99,9 @@ class ObjectsTool extends AbstractTool
     /**
      * Get function definitions for LLphant
      *
-     * @return (((string|string[])[]|string)[]|string)[][] Array of function definitions
+     * @return (((string|string[])[]|string)[]|string)[][]
      *
-     * @psalm-return list<array<string, mixed>>
+     * @psalm-return list{array{name: 'search_objects', description: 'Search for objects with optional filters', parameters: array{type: 'object', properties: array{query: array{type: 'string', description: 'Search query text (optional)'}, register: array{type: 'string', description: 'Filter by register ID (optional)'}, schema: array{type: 'string', description: 'Filter by schema ID (optional)'}, limit: array{type: 'integer', description: 'Maximum number of results (default: 20)'}, offset: array{type: 'integer', description: 'Number of results to skip (default: 0)'}}, required: array<never, never>}}, array{name: 'get_object', description: 'Get details about a specific object by ID or UUID', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The object ID or UUID to retrieve'}}, required: list{'id'}}}, array{name: 'create_object', description: 'Create a new object with data', parameters: array{type: 'object', properties: array{register: array{type: 'string', description: 'The register ID where the object should be created'}, schema: array{type: 'string', description: 'The schema ID that defines the object structure'}, data: array{type: 'object', description: 'The object data conforming to the schema'}}, required: list{'register', 'schema', 'data'}}}, array{name: 'update_object', description: 'Update an existing object', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The object ID to update'}, data: array{type: 'object', description: 'The updated object data (partial updates supported)'}}, required: list{'id', 'data'}}}, array{name: 'delete_object', description: 'Delete an object by ID', parameters: array{type: 'object', properties: array{id: array{type: 'string', description: 'The object ID to delete'}}, required: list{'id'}}}}
      */
     public function getFunctions(): array
     {
@@ -251,7 +251,9 @@ class ObjectsTool extends AbstractTool
      * @param string|null $schema   Schema filter
      * @param string|null $query    Search query
      *
-     * @return array Result with list of objects
+     * @return (mixed|string|true)[] Result with list of objects
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function searchObjects(int $limit=20, int $offset=0, ?string $register=null, ?string $schema=null, ?string $query=null): array
     {
@@ -307,9 +309,11 @@ class ObjectsTool extends AbstractTool
      *
      * @param string $id Object ID
      *
-     * @return array Result with object details
+     * @return (mixed|string|true)[] Result with object details
      *
      * @throws \Exception If object not found
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function getObject(string $id): array
     {
@@ -340,9 +344,11 @@ class ObjectsTool extends AbstractTool
      * @param string $schema   Schema identifier
      * @param array  $data     Object data
      *
-     * @return array Result with created object
+     * @return (mixed|string|true)[] Result with created object
      *
      * @throws \Exception If creation fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function createObject(string $register, string $schema, array $data): array
     {
@@ -382,9 +388,11 @@ class ObjectsTool extends AbstractTool
      * @param string $id   Object ID
      * @param array  $data Object data
      *
-     * @return array Result with updated object
+     * @return (mixed|string|true)[] Result with updated object
      *
      * @throws \Exception If update fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function updateObject(string $id, array $data): array
     {
@@ -424,9 +432,11 @@ class ObjectsTool extends AbstractTool
      *
      * @param string $id Object ID
      *
-     * @return array Result of deletion
+     * @return (mixed|string|true)[] Result of deletion
      *
      * @throws \Exception If deletion fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function deleteObject(string $id): array
     {

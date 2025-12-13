@@ -509,7 +509,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * This getter has special logic to inject the UUID as 'id' field,
      * so it must remain explicit rather than using the magic method.
      *
-     * @return array The object data with 'id' set to 'uuid', or empty array if null
+     * @return (mixed|null|string)[] The object data with 'id' set to 'uuid', or empty array if null
+     *
+     * @psalm-return array{id: mixed|null|string,...}
      */
     public function getObject(): array
     {
@@ -527,7 +529,9 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Get array of field names that are JSON type
      *
-     * @return array List of field names that are JSON type
+     * @return string[] List of field names that are JSON type
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -548,9 +552,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @param array $object Array of data to hydrate the entity with
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -582,9 +586,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @param array $object Array of data to hydrate the entity with
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrateObject(array $object): self
+    public function hydrateObject(array $object): static
     {
         // Lets grap the metadata fields and remove them from the object.
         $metaDataFields = $object['@self'];
@@ -606,7 +610,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Merges the object's own data with a '@self' key containing metadata.
      * Ensures that if a name is not set, the UUID is used as a fallback.
      *
-     * @return array Serialized object data
+     * @return ((mixed|null|string)[]|mixed)[] Serialized object data
+     *
+     * @psalm-return array{'@self': array{name: mixed|null|string,...},...}
      */
     public function jsonSerialize(): array
     {
@@ -636,7 +642,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @param array $object Object array parameter
      *
-     * @return array Array containing all object properties
+     * @return (array|int|mixed|null|string)[] Array containing all object properties
+     *
+     * @psalm-return array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null}
      */
     public function getObjectArray(array $object=[]): array
     {
@@ -732,7 +740,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If object is already locked by another user
      *
-     * @return bool True if lock was successful
+     * @return true True if lock was successful
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
@@ -792,7 +800,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If object is locked by another user
      *
-     * @return bool True if unlock was successful
+     * @return true True if unlock was successful
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
@@ -865,9 +873,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If no user is logged in
      *
-     * @return self Returns the entity
+     * @return static Returns the entity
      */
-    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): self
+    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): static
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {

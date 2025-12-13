@@ -153,7 +153,9 @@ class GdprEntity extends Entity implements JsonSerializable
     /**
      * JSON serialization.
      *
-     * @return array<string,mixed>
+     * @return (array|int|null|string)[]
+     *
+     * @psalm-return array{id: int, uuid: null|string, type: null|string, value: null|string, category: null|string, belongsToEntityId: int|null, metadata: array|null, owner: null|string, organisation: null|string, detectedAt: null|string, updatedAt: null|string}
      */
     public function jsonSerialize(): array
     {

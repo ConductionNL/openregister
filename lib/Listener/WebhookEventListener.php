@@ -140,9 +140,11 @@ class WebhookEventListener implements IEventListener
      *
      * @param Event $event The event
      *
-     * @return array|null Payload data or null if not supported
+     * @return (\DateTime|array|mixed|null|string)[]|null Payload data or null if not supported
+     *
+     * @psalm-return array{objectType: string, action: string, object?: array, register?: array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}|null|string, schema?: array<string, mixed>|null|string, newObject?: array, oldObject?: array, revertPoint?: \DateTime|null|string, application?: array{id: int, uuid: null|string, name: null|string, description: null|string, version: null|string, organisation: null|string, configurations: array|null, registers: array|null, schemas: array|null, owner: null|string, active: bool|null, groups: array|null, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string, managedByConfiguration: array|null}, agent?: mixed, source?: mixed, configuration?: mixed, view?: mixed, conversation?: array{id: int, uuid: null|string, title: null|string, userId: null|string, organisation: null|string, agentId: int|null, metadata: array|null, deletedAt: null|string, created: null|string, updated: null|string}, organisation?: mixed}|null
      */
-    private function extractPayload(Event $event): ?array
+    private function extractPayload(Event $event): array|null
     {
         // Object events - Before events (ing).
         if ($event instanceof ObjectCreatingEvent) {

@@ -104,7 +104,8 @@ class SchemaPropertyValidatorService
      * @param string $path     The current path in the schema (for error messages)
      *
      * @throws Exception If the property definition is invalid
-     * @return bool True if the property is valid
+     *
+     * @return true True if the property is valid
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */

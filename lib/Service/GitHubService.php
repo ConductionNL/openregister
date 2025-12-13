@@ -104,7 +104,9 @@ class GitHubService
     /**
      * Get authentication headers for GitHub API
      *
-     * @return array Headers array
+     * @return string[] Headers array
+     *
+     * @psalm-return array{Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization?: string}
      */
     private function getHeaders(): array
     {
@@ -142,10 +144,13 @@ class GitHubService
      * @param int    $page    Page number for pagination
      * @param int    $perPage Results per page (max 100)
      *
-     * @return array Search results with repository info and file details
+     * @return ((array|int|mixed|null|string)[][]|int|mixed)[] Search results with repository info and file details
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return array{total_count: 0|mixed, results: list{0?: array{repository: mixed, owner: string, repo: string, path: string, url: mixed, stars: 0|mixed, description: ''|mixed, name: string, branch: string, raw_url: string, sha: null|string, organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array},...}, page: int, per_page: int}
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -411,11 +416,13 @@ class GitHubService
      * @param string $path   File path
      * @param string $branch Branch name
      *
-     * @return array|null Configuration details from file, or null if failed
+     * @return (mixed|null|string)[]|null Configuration details from file, or null if failed
      *
      * @since 0.2.10
+     *
+     * @psalm-return array{title: mixed|string, description: ''|mixed, version: 'v.unknown'|mixed, app: mixed|null, type: 'unknown'|mixed, openregister: mixed|null}|null
      */
-    public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): ?array
+    public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
         try {
             // Use raw.githubusercontent.com - doesn't count against API rate limit.
@@ -483,10 +490,13 @@ class GitHubService
      * @param string $owner Repository owner
      * @param string $repo  Repository name
      *
-     * @return array List of branches with name and commit info
+     * @return (false|mixed|null)[][] List of branches with name and commit info
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return array<array{name: mixed, commit: mixed|null, protected: false|mixed}>
      */
     public function getBranches(string $owner, string $repo): array
     {
@@ -614,10 +624,13 @@ class GitHubService
      * @param string $branch Branch name (default: main)
      * @param string $path   Directory path to search (default: root)
      *
-     * @return array List of configuration files with metadata
+     * @return ((mixed|null|string)[]|mixed|null)[][] List of configuration files with metadata
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return list{0?: array{path: mixed, sha: mixed|null, url: mixed|null, config: array{title: mixed|string, description: ''|mixed, version: '1.0.0'|mixed, app: mixed|null, type: 'manual'|mixed}},...}
      */
     public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
     {
@@ -696,8 +709,10 @@ class GitHubService
      * @return array|null Parsed configuration or null if invalid
      *
      * @since 0.2.10
+     *
+     * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      */
-    private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): ?array
+    private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
         try {
             $content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
@@ -734,8 +749,11 @@ class GitHubService
      * @param int $page    Page number (default: 1)
      * @param int $perPage Items per page (default: 100, max: 100)
      *
-     * @return array List of repositories with name, full_name, owner, etc.
+     * @return (mixed|string)[][] List of repositories with name, full_name, owner, etc.
+     *
      * @throws \Exception If API request fails
+     *
+     * @psalm-return array<array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}>
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
@@ -829,10 +847,13 @@ class GitHubService
      * @param string $owner Repository owner
      * @param string $repo  Repository name
      *
-     * @return array Repository info with default_branch
+     * @return (false|mixed|null|string)[] Repository info with default_branch
+     *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
+     *
+     * @psalm-return array{id: mixed|null, name: mixed|string, full_name: mixed|string, owner: mixed|string, private: false|mixed, description: ''|mixed, default_branch: 'main'|mixed, url: ''|mixed}
      */
     public function getRepositoryInfo(string $owner, string $repo): array
     {
@@ -886,8 +907,11 @@ class GitHubService
      * @param string      $commitMessage Commit message
      * @param string|null $fileSha       SHA of existing file (required for updates, null for new files)
      *
-     * @return array Response with commit SHA, file SHA, and commit info
+     * @return (mixed|null|true)[] Response with commit SHA, file SHA, and commit info
+     *
      * @throws \Exception If publish fails
+     *
+     * @psalm-return array{success: true, commit_sha: mixed|null, file_sha: mixed|null, commit_url: mixed|null, file_url: mixed|null}
      */
     public function publishConfiguration(
         string $owner,
@@ -1069,12 +1093,16 @@ class GitHubService
      *
      * @param string $userId The user ID
      *
-     * @return string|null The token or null if not set
+     * @return null|string The token or null if not set
      */
-    public function getUserToken(string $userId): ?string
+    public function getUserToken(string $userId): string|null
     {
         $token = $this->config->getUserValue($userId, 'openregister', 'github_token', '');
-        return $token !== '' ? $token : null;
+        if ($token !== '') {
+            return $token;
+        } else {
+            return null;
+        }
 
     }//end getUserToken()
 

@@ -138,12 +138,15 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, array> $metadataConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   array<string, array> $metadataConfig
-     * @psalm-param   array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, array> $metadataConfig
+     * @psalm-param array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Metadata facet results
+     * @return array[] Metadata facet results
+     *
+     * @psalm-return array<string, array>
      */
     private function getBatchedMetadataFacets(array $metadataConfig, array $baseQuery): array
     {
@@ -175,12 +178,15 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   string $field
-     * @psalm-param   array<string, mixed> $baseQuery
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet results
+     * @return ((int|mixed|string)[][]|string)[] Terms facet results
+     *
+     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string},...}}
      */
     private function getOptimizedMetadataTermsFacet(string $field, array $baseQuery): array
     {
@@ -231,12 +237,15 @@ class OptimizedFacetHandler
      *
      * @phpstan-param string $field
      * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   string $field
-     * @psalm-param   array<string, mixed> $baseQuery
+     *
+     * @psalm-param string $field
+     * @psalm-param array<string, mixed> $baseQuery
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet results
+     * @return ((int|mixed)[][]|string)[] Terms facet results
+     *
+     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed, results: int},...}, note?: 'Skipped due to large dataset size for performance'}
      */
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
@@ -408,8 +417,9 @@ class OptimizedFacetHandler
      *
      * @phpstan-param array<string, mixed> $facetConfig
      * @phpstan-param array<string, mixed> $baseQuery
-     * @psalm-param   array<string, mixed> $facetConfig
-     * @psalm-param   array<string, mixed> $baseQuery
+     *
+     * @psalm-param array<string, mixed> $facetConfig
+     * @psalm-param array<string, mixed> $baseQuery
      *
      * @return string Cache key
      */
@@ -444,7 +454,11 @@ class OptimizedFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title = $result->fetchOne();
-                return $title === true ? (string) $title : "Register $value";
+                if ($title !== false) {
+                    return (string) $title;
+                } else {
+                    return "Register $value";
+                }
             } catch (\Exception $e) {
                 return "Register $value";
             }
@@ -458,7 +472,11 @@ class OptimizedFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title = $result->fetchOne();
-                return $title === true ? (string) $title : "Schema $value";
+                if ($title !== false) {
+                    return (string) $title;
+                } else {
+                    return "Schema $value";
+                }
             } catch (\Exception $e) {
                 return "Schema $value";
             }

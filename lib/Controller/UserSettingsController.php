@@ -30,11 +30,9 @@ use Psr\Log\LoggerInterface;
  * Controller for managing user-specific settings (GitHub tokens, etc.).
  *
  * @package OCA\OpenRegister\Controller
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
-
 class UserSettingsController extends Controller
 {
 
@@ -92,18 +90,7 @@ class UserSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Token status
-     *
-     * @psalm-return JSONResponse<
-     *     200|401|500,
-     *     array{
-     *         error?: 'Failed to get token status'|'User not authenticated',
-     *         hasToken?: bool,
-     *         isValid?: false|mixed,
-     *         message?: string
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to get token status'|'User not authenticated', hasToken?: bool, isValid?: bool, message?: 'No GitHub token configured'|'Token is invalid or expired'|'Token is valid'}, array<never, never>>
      */
     public function getGitHubTokenStatus(): JSONResponse
     {
@@ -154,17 +141,7 @@ class UserSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Success or error message
-     *
-     * @psalm-return JSONResponse<
-     *     200|400|401|500,
-     *     array{
-     *         error?: string,
-     *         success?: true,
-     *         message?: 'GitHub token saved successfully'
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>
      */
     public function setGitHubToken(): JSONResponse
     {

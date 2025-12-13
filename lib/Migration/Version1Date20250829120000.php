@@ -131,7 +131,12 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
             // Skip the first record (keep original), update the rest.
             foreach (array_slice($duplicates, 1) as $index => $duplicate) {
-                $newSlug = $this->generateUniqueSlug(tableName: $tableName, organisation: $organisation, baseSlug: $originalSlug, startNumber: ((int) $index + 2));
+                $newSlug = $this->generateUniqueSlug(
+                    tableName: $tableName,
+                    organisation: $organisation,
+                    baseSlug: $originalSlug,
+                    startNumber: ((int) $index + 2)
+                );
 
                 // Update the slug.
                 $updateQb = $this->connection->getQueryBuilder();

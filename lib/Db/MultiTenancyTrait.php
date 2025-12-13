@@ -75,7 +75,11 @@ trait MultiTenancyTrait
         }
 
         $activeOrg = $this->organisationService->getActiveOrganisation();
-        return $activeOrg !== null ? $activeOrg->getUuid() : null;
+        if ($activeOrg !== null) {
+            return $activeOrg->getUuid();
+        } else {
+            return null;
+        }
 
     }//end getActiveOrganisationUuid()
 
@@ -87,7 +91,9 @@ trait MultiTenancyTrait
      * Includes the active organisation and all parent organisations in the hierarchy.
      * Used for filtering queries to allow access to parent resources.
      *
-     * @return array Array of organisation UUIDs
+     * @return (mixed|null|string)[] Array of organisation UUIDs
+     *
+     * @psalm-return array{0?: mixed|null|string,...}
      */
     protected function getActiveOrganisationUuids(): array
     {
@@ -140,7 +146,11 @@ trait MultiTenancyTrait
         }
 
         $user = $this->userSession->getUser();
-        return ($user !== null) === true ? $user->getUID() : null;
+        if (($user !== null) === true) {
+            return $user->getUID();
+        } else {
+            return null;
+        }
 
     }//end getCurrentUserId()
 
@@ -237,8 +247,12 @@ trait MultiTenancyTrait
             return;
         }
 
-        $user   = $this->userSession->getUser();
-        $userId = ($user !== null) === true ? $user->getUID() : null;
+        $user = $this->userSession->getUser();
+        if (($user !== null) === true) {
+            $userId = $user->getUID();
+        } else {
+            $userId = null;
+        }
 
         // For unauthenticated requests, no automatic access.
         if ($userId === null) {
@@ -254,7 +268,11 @@ trait MultiTenancyTrait
         $activeOrganisationUuids = $this->getActiveOrganisationUuids();
 
         // Build fully qualified column name
-        $organisationColumn = $tableAlias ? $tableAlias.'.'.$columnName : $columnName;
+        if ($tableAlias) {
+            $organisationColumn = $tableAlias.'.'.$columnName;
+        } else {
+            $organisationColumn = $columnName;
+        }
 
         // Check if published entities should bypass multi-tenancy (works for objects, schemas, registers)
         $publishedBypassEnabled = false;
@@ -288,8 +306,17 @@ trait MultiTenancyTrait
             // The depublished check here only applies to the published bypass (entities from OTHER organizations).
             if ($publishedBypassEnabled === true && $enablePublished === true) {
                 $now = (new \DateTime())->format('Y-m-d H:i:s');
-                $publishedColumn   = $tableAlias ? $tableAlias.'.published' : 'published';
-                $depublishedColumn = $tableAlias ? $tableAlias.'.depublished' : 'depublished';
+                if ($tableAlias) {
+                    $publishedColumn = $tableAlias.'.published';
+                } else {
+                    $publishedColumn = 'published';
+                }
+
+                if ($tableAlias) {
+                    $depublishedColumn = $tableAlias.'.depublished';
+                } else {
+                    $depublishedColumn = 'depublished';
+                }
 
                 // Published bypass condition: entity must be published AND not depublished
                 // This ensures depublished entities from OTHER organizations are never visible via published bypass
@@ -345,8 +372,18 @@ trait MultiTenancyTrait
         $orgConditions = $qb->expr()->orX();
 
         // Prepare published/depublished column names for checks
-        $publishedColumn   = $tableAlias ? $tableAlias.'.published' : 'published';
-        $depublishedColumn = $tableAlias ? $tableAlias.'.depublished' : 'depublished';
+        if ($tableAlias) {
+            $publishedColumn = $tableAlias.'.published';
+        } else {
+            $publishedColumn = 'published';
+        }
+
+        if ($tableAlias) {
+            $depublishedColumn = $tableAlias.'.depublished';
+        } else {
+            $depublishedColumn = 'depublished';
+        }
+
         $now = (new \DateTime())->format('Y-m-d H:i:s');
 
         // Get the direct active organization (not parents) to allow depublished items from own org

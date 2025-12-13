@@ -1,0 +1,1140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="5.26.1@d747f6500b38ac4f7dfc5edbcae6e4b637d7add0">
+  <file src="lib/BackgroundJob/FileTextExtractionJob.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[forceReextraction]]></code>
+    </InvalidNamedArgument>
+  </file>
+  <file src="lib/Command/SolrManagementCommand.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$connectionResult['details']['mode']]]></code>
+      <code><![CDATA[$connectionResult['details']['mode']]]></code>
+      <code><![CDATA[$connectionResult['details']['response_time_ms']]]></code>
+      <code><![CDATA[$connectionResult['details']['solr_version']]]></code>
+      <code><![CDATA[$connectionResult['details']['solr_version']]]></code>
+      <code><![CDATA[$searchResult['error']]]></code>
+    </InvalidArrayOffset>
+  </file>
+  <file src="lib/Controller/AgentsController.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new JSONResponse(
+                data: ['results' => $agents],
+                statusCode: Http::STATUS_OK
+            )]]></code>
+    </InvalidReturnStatement>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>]]></code>
+    </InvalidTemplateParam>
+  </file>
+  <file src="lib/Controller/ApplicationsController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<mixed|array{error: string}>]]></code>
+    </InvalidTemplateParam>
+    <MissingTemplateParam>
+      <code><![CDATA[JSONResponse<mixed|array{error: string}>]]></code>
+    </MissingTemplateParam>
+  </file>
+  <file src="lib/Controller/AuditTrailController.php">
+    <InvalidScalarArgument>
+      <code><![CDATA[$exportResult['content']]]></code>
+    </InvalidScalarArgument>
+  </file>
+  <file src="lib/Controller/BulkController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk delete operation completed successfully', deleted_count?: int<0, max>, deleted_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk depublish operation completed successfully', depublished_count?: int<0, max>, depublished_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk publish operation completed successfully', published_count?: int<0, max>, published_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk save operation completed successfully', saved_count?: mixed, saved_objects?: array<string, mixed>, requested_count?: int<0, max>}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Register objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, register_id?: int}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, schema_id?: int, hard_delete?: bool}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects publishing completed successfully', published_count?: int, published_uuids?: array<int, string>, schema_id?: int, publish_all?: bool}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, valid_count?: int, invalid_count?: int, valid_objects?: array<int, array>, invalid_objects?: array<int, array>, schema_id?: int}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+  </file>
+  <file src="lib/Controller/ChatController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: array<array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}>, total?: int, conversationId?: int}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: mixed|string, message?: mixed|string, conversation?: null|string,...}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$msg]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/ConfigurationController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitLab', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from URL', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$existingConfigurations[0]]]></code>
+      <code><![CDATA[$existingConfigurations[0]]]></code>
+      <code><![CDATA[$existingConfigurations[0]]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/ConversationController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to delete conversation', message: string, uuid?: string, archived?: true}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string, messageCount?: int}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch messages', message?: string, results?: array<array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}>, total?: int, limit?: int, offset?: int}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to permanently delete conversation', message: string, uuid?: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to restore conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to update conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$conv]]></code>
+      <code><![CDATA[$msg]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/DeletedController.php">
+    <InvalidArgument>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[JSONResponse<200|500, array{error?: string, results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, total?: int, page?: int, pages?: 1|float, limit?: int|null, offset?: int|null}, array<never, never>>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/EndpointsController.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new JSONResponse(
+                data: [
+                    'results' => $logs,
+                    'total'   => $total,
+                ],
+                statusCode: 200
+            )]]></code>
+    </InvalidReturnStatement>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: bool, message?: string, statusCode?: int, response?: mixed}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[JSONResponse<200|404|500, array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>}, array<never, never>>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/FileExtractionController.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[$chunk]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/FilesController.php">
+    <InvalidArgument>
+      <code><![CDATA[$files]]></code>
+    </InvalidArgument>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<int, array<string, mixed>>]]></code>
+    </InvalidTemplateParam>
+    <NoValue>
+      <code><![CDATA[$errorArray]]></code>
+      <code><![CDATA[$sizeArray]]></code>
+      <code><![CDATA[$tmpNameArray]]></code>
+      <code><![CDATA[$typeArray]]></code>
+    </NoValue>
+    <TypeDoesNotContainType>
+      <code><![CDATA[$errorArray !== null]]></code>
+      <code><![CDATA[$sizeArray !== null]]></code>
+      <code><![CDATA[$tmpNameArray !== null]]></code>
+      <code><![CDATA[$typeArray !== null]]></code>
+      <code><![CDATA[is_array($errorValue)]]></code>
+      <code><![CDATA[is_array($fileName)]]></code>
+      <code><![CDATA[is_array($fileName)]]></code>
+      <code><![CDATA[is_array($filesTmpName)]]></code>
+      <code><![CDATA[is_array($filesType)]]></code>
+      <code><![CDATA[is_array($sizeValue)]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="lib/Controller/ObjectsController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[DataDownloadResponse<200, mixed, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <NoValue>
+      <code><![CDATA[$nameArray]]></code>
+      <code><![CDATA[$nameArray]]></code>
+    </NoValue>
+    <TypeDoesNotContainType>
+      <code><![CDATA[is_array($errorRaw)]]></code>
+      <code><![CDATA[is_array($errorRaw)]]></code>
+      <code><![CDATA[is_array($nameValue)]]></code>
+      <code><![CDATA[is_array($nameValue)]]></code>
+      <code><![CDATA[is_array($sizeRaw)]]></code>
+      <code><![CDATA[is_array($sizeRaw)]]></code>
+      <code><![CDATA[is_array($tmpNameRaw)]]></code>
+      <code><![CDATA[is_array($tmpNameRaw)]]></code>
+      <code><![CDATA[is_array($typeRaw)]]></code>
+      <code><![CDATA[is_array($typeRaw)]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="lib/Controller/OrganisationController.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[$org]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/RegistersController.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new JSONResponse(
+                data: $this->objectEntityMapper->searchObjects(query: $query)
+        )]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[JSONResponse<200, array<int, \OCA\OpenRegister\Db\ObjectEntity>|int, array<never, never>>]]></code>
+    </InvalidReturnType>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed, commit_url?: mixed, file_url?: mixed, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$schema]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/SchemasController.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$schemaArr['@self']]]></code>
+      <code><![CDATA[$schema['@self']]]></code>
+    </InvalidArrayOffset>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<200, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<201, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$schema]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Controller/SearchController.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$results['objects']]]></code>
+    </InvalidArrayOffset>
+  </file>
+  <file src="lib/Controller/SearchTrailController.php">
+    <InvalidScalarArgument>
+      <code><![CDATA[$page]]></code>
+    </InvalidScalarArgument>
+  </file>
+  <file src="lib/Controller/SettingsController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<200|422, array{success: bool, message: string, details?: array{error: mixed|string}, fixed?: array<never, never>, errors?: array<never, never>}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, message: string, details: array{exception: string}}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, message: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+  </file>
+  <file src="lib/Controller/UserSettingsController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+  </file>
+  <file src="lib/Controller/ViewsController.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Failed to delete view'|'User not authenticated'|'View not found', message?: string, success?: false}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, message?: string, view?: array}, array<never, never>>]]></code>
+      <code><![CDATA[JSONResponse<int, array{error?: string, message?: string, view?: array}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+  </file>
+  <file src="lib/Controller/WebhooksController.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new JSONResponse(
+                data: [
+                    'results' => $logs,
+                    'total'   => $total,
+                ],
+                statusCode: 200
+            )]]></code>
+    </InvalidReturnStatement>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, array{error?: string, success?: bool, message?: null|string, error_details?: array{status_code: int|null, response_body: null|string}}, array<never, never>>]]></code>
+    </InvalidTemplateParam>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$latestLog]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[JSONResponse<200|404|500, array{error?: 'Failed to retrieve webhook logs'|'Webhook not found', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\WebhookLog>, total?: int<0, max>}, array<never, never>>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Cron/SyncConfigurationsJob.php">
+    <InvalidArgument>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Cron/WebhookRetryJob.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+      <code><![CDATA[$log]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/AgentMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Agent>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Agent>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Agent|OCA\OpenRegister\Db\OCA\OpenRegister\Db\Agent>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Agent|OCA\OpenRegister\Db\OCA\OpenRegister\Db\Agent>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/ApplicationMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Application>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Application>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/AuditTrailMapper.php">
+    <InvalidArgument>
+      <code><![CDATA[$audit]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\AuditTrail>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\AuditTrail>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/AuthorizationExceptionMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\AuthorizationException>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\AuthorizationException>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/ChunkMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Chunk>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/ConfigurationMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Configuration>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Configuration>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Configuration>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/Conversation.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[value]]></code>
+      <code><![CDATA[value]]></code>
+    </InvalidNamedArgument>
+  </file>
+  <file src="lib/Db/ConversationMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Conversation>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Conversation>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/EndpointLogMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\EndpointLog>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\EndpointLog>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/EndpointMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Endpoint>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/MessageMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Message>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Message>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/ObjectEntityMapper.php">
+    <TypeDoesNotContainType>
+      <code><![CDATA[$objectCount === 0]]></code>
+      <code><![CDATA[$objectCount === 0]]></code>
+      <code><![CDATA[empty($facetTypes) === true]]></code>
+      <code><![CDATA[empty($facetTypes) === true]]></code>
+    </TypeDoesNotContainType>
+    <UndefinedDocblockClass>
+      <code><![CDATA[array{large: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>, normal: list<OCA\OpenRegister\Db\ObjectEntity|array<string, mixed>>}]]></code>
+      <code><![CDATA[int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>]]></code>
+      <code><![CDATA[int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
+    </UndefinedDocblockClass>
+    <UnusedMethodCall>
+      <code><![CDATA[setAccessible]]></code>
+      <code><![CDATA[setAccessible]]></code>
+    </UnusedMethodCall>
+  </file>
+  <file src="lib/Db/ObjectHandlers/HyperFacetHandler.php">
+    <ParadoxicalCondition>
+      <code><![CDATA[default:
+                // Fallback to exact calculation.
+                $results = $this->calculateExactFacetsParallel(facetConfig: $facetConfig, baseQuery: $baseQuery, _datasetStats: $datasetStats);]]></code>
+    </ParadoxicalCondition>
+    <UndefinedDocblockClass>
+      <code><![CDATA[Promise<T>]]></code>
+      <code><![CDATA[Promise<T>]]></code>
+    </UndefinedDocblockClass>
+    <UndefinedVariable>
+      <code><![CDATA[$results]]></code>
+      <code><![CDATA[$results]]></code>
+    </UndefinedVariable>
+  </file>
+  <file src="lib/Db/ObjectHandlers/OptimizedFacetHandler.php">
+    <UndefinedFunction>
+      <code><![CDATA[groupBy('field_value')]]></code>
+    </UndefinedFunction>
+  </file>
+  <file src="lib/Db/OrganisationMapper.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[childUuid]]></code>
+    </InvalidNamedArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Organisation>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Organisation>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Organisation>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Organisation>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/RegisterMapper.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[$schema]]></code>
+    </InvalidReturnStatement>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Register>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Register>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Schema>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/Schema.php">
+    <NoValue>
+      <code><![CDATA[$configuration]]></code>
+    </NoValue>
+  </file>
+  <file src="lib/Db/SchemaMapper.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[data]]></code>
+      <code><![CDATA[key]]></code>
+    </InvalidNamedArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Schema>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Schema>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Schema>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/SearchTrailMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\SearchTrail>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/SourceMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Source>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/ViewMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\View>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/WebhookLogMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\WebhookLog>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\WebhookLog>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\WebhookLog>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Db/WebhookMapper.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[array<int<0, max>, OCA\OpenRegister\Db\Webhook>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Webhook>]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\Webhook>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Listener/ObjectChangeListener.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$objectSettings['objectExtractionMode']]]></code>
+    </InvalidArrayOffset>
+    <InvalidNamedArgument>
+      <code><![CDATA[forceReprocess]]></code>
+    </InvalidNamedArgument>
+  </file>
+  <file src="lib/Search/ObjectsProvider.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[args]]></code>
+      <code><![CDATA[args]]></code>
+      <code><![CDATA[args]]></code>
+      <code><![CDATA[link]]></code>
+      <code><![CDATA[text]]></code>
+      <code><![CDATA[url]]></code>
+    </InvalidNamedArgument>
+    <TooFewArguments>
+      <code><![CDATA[new SearchResultEntry(
+                    url: $objectUrl,
+                    title: $title,
+                    text: $description,
+                    link: $objectUrl,
+                    icon: 'icon-openregister'
+                )]]></code>
+      <code><![CDATA[new SearchResultEntry(
+                    url: $objectUrl,
+                    title: $title,
+                    text: $description,
+                    link: $objectUrl,
+                    icon: 'icon-openregister'
+                )]]></code>
+      <code><![CDATA[new SearchResultEntry(
+                    url: $objectUrl,
+                    title: $title,
+                    text: $description,
+                    link: $objectUrl,
+                    icon: 'icon-openregister'
+                )]]></code>
+    </TooFewArguments>
+    <TypeDoesNotContainType>
+      <code><![CDATA[$limit !== null]]></code>
+      <code><![CDATA[$offset !== null]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="lib/Service/AuthorizationExceptionService.php">
+    <InvalidArgument>
+      <code><![CDATA[usort(
+                $allExceptions,
+                function (AuthorizationException $a, AuthorizationException $b): int {
+                    return $b->getPriority() <=> $a->getPriority();
+                    // Sort by priority descending.
+                }
+                )]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+      <code><![CDATA[$exception]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/ChatService.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[$message]]></code>
+      <code><![CDATA[$message]]></code>
+    </UndefinedDocblockClass>
+    <UndefinedPropertyAssignment>
+      <code><![CDATA[$config->organizationId]]></code>
+      <code><![CDATA[$config->temperature]]></code>
+      <code><![CDATA[$config->temperature]]></code>
+      <code><![CDATA[$llphantConfig->organizationId]]></code>
+      <code><![CDATA[$llphantConfig->temperature]]></code>
+    </UndefinedPropertyAssignment>
+    <UndefinedPropertyFetch>
+      <code><![CDATA[$config->apiKey]]></code>
+      <code><![CDATA[$config->apiKey]]></code>
+      <code><![CDATA[$config->apiKey]]></code>
+      <code><![CDATA[$llphantConfig->apiKey]]></code>
+    </UndefinedPropertyFetch>
+  </file>
+  <file src="lib/Service/ConfigurationService.php">
+    <InvalidArgument>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$schema]]></code>
+    </InvalidArgument>
+    <InvalidMethodCall>
+      <code><![CDATA[getSlug]]></code>
+    </InvalidMethodCall>
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[$this->schemasMap]]></code>
+    </InvalidPropertyAssignmentValue>
+    <InvalidTemplateParam>
+      <code><![CDATA[JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, schemas: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, objects: list{0?: array{type: string, action: string, slug: string, title: string, register: string, schema: string, current: array|null, proposed: array, changes: array},...}, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}]]></code>
+    </InvalidTemplateParam>
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$version === null]]></code>
+    </TypeDoesNotContainNull>
+    <UndefinedClass>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+    </UndefinedClass>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$configuration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$existingConfiguration]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/DashboardService.php">
+    <InvalidArgument>
+      <code><![CDATA[$object]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/DocumentService.php">
+    <UndefinedInterfaceMethod>
+      <code><![CDATA[fopen]]></code>
+      <code><![CDATA[getContent]]></code>
+    </UndefinedInterfaceMethod>
+  </file>
+  <file src="lib/Service/FileService.php">
+    <MismatchingDocblockReturnType>
+      <code><![CDATA[Node|null]]></code>
+      <code><![CDATA[Node|null]]></code>
+      <code><![CDATA[int|null]]></code>
+    </MismatchingDocblockReturnType>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$file]]></code>
+      <code><![CDATA[$file]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Service\OCP\Files\Node>]]></code>
+      <code><![CDATA[list<OCP\Files\Node>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/GuzzleSolrService.php">
+    <InvalidArgument>
+      <code><![CDATA[$sampleValue]]></code>
+    </InvalidArgument>
+    <InvalidNamedArgument>
+      <code><![CDATA[multi]]></code>
+    </InvalidNamedArgument>
+    <InvalidReturnType>
+      <code><![CDATA[array]]></code>
+      <code><![CDATA[array]]></code>
+      <code><![CDATA[array]]></code>
+      <code><![CDATA[array]]></code>
+    </InvalidReturnType>
+    <NoValue>
+      <code><![CDATA[$object]]></code>
+    </NoValue>
+    <ParadoxicalCondition>
+      <code><![CDATA[is_object($fieldValue) === true]]></code>
+      <code><![CDATA[is_string($relations) || is_numeric($relations)]]></code>
+    </ParadoxicalCondition>
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$schemaIds === null]]></code>
+      <code><![CDATA[$schemaIds === null]]></code>
+      <code><![CDATA[$schemaIds === null]]></code>
+      <code><![CDATA[$schemaIds === null]]></code>
+    </TypeDoesNotContainNull>
+    <TypeDoesNotContainType>
+      <code><![CDATA[strpos($sampleValue, '.') !== false]]></code>
+    </TypeDoesNotContainType>
+    <UndefinedDocblockClass>
+      <code><![CDATA[ObjectEntityMapper]]></code>
+    </UndefinedDocblockClass>
+    <UndefinedVariable>
+      <code><![CDATA[$autoAddReplicas]]></code>
+      <code><![CDATA[$availability]]></code>
+      <code><![CDATA[$collection]]></code>
+      <code><![CDATA[$collection]]></code>
+      <code><![CDATA[$collectionType]]></code>
+      <code><![CDATA[$collectionType]]></code>
+      <code><![CDATA[$collectionType]]></code>
+      <code><![CDATA[$configName]]></code>
+      <code><![CDATA[$error]]></code>
+      <code><![CDATA[$errorDetails]]></code>
+      <code><![CDATA[$maxDocs]]></code>
+      <code><![CDATA[$maxShardsPerNode]]></code>
+      <code><![CDATA[$numDocs]]></code>
+      <code><![CDATA[$replicationFactor]]></code>
+      <code><![CDATA[$shards]]></code>
+      <code><![CDATA[$shards]]></code>
+      <code><![CDATA[$status]]></code>
+      <code><![CDATA[$tenantQuery]]></code>
+      <code><![CDATA[$tenantQuery]]></code>
+      <code><![CDATA[$totalDocs]]></code>
+    </UndefinedVariable>
+    <UnusedParam>
+      <code><![CDATA[$limit]]></code>
+      <code><![CDATA[$maxObjects]]></code>
+      <code><![CDATA[$objectMapper]]></code>
+      <code><![CDATA[$objectMapper]]></code>
+      <code><![CDATA[$offset]]></code>
+      <code><![CDATA[$schemaIds]]></code>
+      <code><![CDATA[$schemaIds]]></code>
+      <code><![CDATA[$schemaIds]]></code>
+    </UnusedParam>
+  </file>
+  <file src="lib/Service/ImportService.php">
+    <InvalidArgument>
+      <code><![CDATA[$result]]></code>
+    </InvalidArgument>
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[$this->schemaPropertiesCache]]></code>
+    </InvalidPropertyAssignmentValue>
+    <NoValue>
+      <code><![CDATA[$schemaIdKey]]></code>
+    </NoValue>
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$schema === null]]></code>
+    </TypeDoesNotContainNull>
+    <UndefinedFunction>
+      <code><![CDATA[\React\Async\await(\React\Promise\all($batch))]]></code>
+    </UndefinedFunction>
+  </file>
+  <file src="lib/Service/MagicMapper.php">
+    <UndefinedInterfaceMethod>
+      <code><![CDATA[getSchemaManager]]></code>
+      <code><![CDATA[getSchemaManager]]></code>
+      <code><![CDATA[getSchemaManager]]></code>
+      <code><![CDATA[getSchemaManager]]></code>
+    </UndefinedInterfaceMethod>
+    <UnusedFunctionCall>
+      <code><![CDATA[json_decode]]></code>
+    </UnusedFunctionCall>
+  </file>
+  <file src="lib/Service/MagicMapperHandlers/MagicRbacHandler.php">
+    <TypeDoesNotContainType>
+      <code><![CDATA[is_array($authConfig) === false]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="lib/Service/MetricsService.php">
+    <InvalidArrayAccess>
+      <code><![CDATA[$dayData['count']]]></code>
+    </InvalidArrayAccess>
+  </file>
+  <file src="lib/Service/NamedEntityRecognitionService.php">
+    <InaccessibleMethod>
+      <code><![CDATA[findEntities]]></code>
+    </InaccessibleMethod>
+    <InvalidNamedArgument>
+      <code><![CDATA[contextWindow]]></code>
+    </InvalidNamedArgument>
+  </file>
+  <file src="lib/Service/OasService.php">
+    <InvalidArgument>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+      <code><![CDATA[$schema]]></code>
+    </InvalidArgument>
+    <InvalidMethodCall>
+      <code><![CDATA[getDescription]]></code>
+      <code><![CDATA[getTitle]]></code>
+    </InvalidMethodCall>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$schema]]></code>
+    </UndefinedDocblockClass>
+    <UndefinedVariable>
+      <code><![CDATA[$schemaName]]></code>
+      <code><![CDATA[$schemaName]]></code>
+    </UndefinedVariable>
+  </file>
+  <file src="lib/Service/ObjectCacheService.php">
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[$this->nameCache]]></code>
+      <code><![CDATA[$this->nameCache]]></code>
+    </InvalidPropertyAssignmentValue>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$organisation]]></code>
+      <code><![CDATA[$organisation]]></code>
+      <code><![CDATA[$organisation]]></code>
+      <code><![CDATA[$organisation]]></code>
+      <code><![CDATA[array<ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>]]></code>
+    </UndefinedDocblockClass>
+    <UndefinedThisPropertyAssignment>
+      <code><![CDATA[$this->relationshipCache]]></code>
+    </UndefinedThisPropertyAssignment>
+  </file>
+  <file src="lib/Service/ObjectHandlers/DeleteObject.php">
+    <InvalidArgument>
+      <code><![CDATA[$objectEntity]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$file]]></code>
+    </UndefinedDocblockClass>
+    <UndefinedInterfaceMethod>
+      <code><![CDATA[getRegister]]></code>
+      <code><![CDATA[getSchema]]></code>
+    </UndefinedInterfaceMethod>
+  </file>
+  <file src="lib/Service/ObjectHandlers/DepublishObject.php">
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$object === null]]></code>
+    </TypeDoesNotContainNull>
+  </file>
+  <file src="lib/Service/ObjectHandlers/GetObject.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/ObjectHandlers/PublishObject.php">
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$object === null]]></code>
+    </TypeDoesNotContainNull>
+  </file>
+  <file src="lib/Service/ObjectHandlers/RenderObject.php">
+    <InvalidArgument>
+      <code><![CDATA[function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
+                        $data = $object->getObject();
+
+                        // Check if the referencing object has the inversedBy property.
+                        if (isset($data[$inversedByProperty]) === false) {
+                            return false;
+                        }
+
+                        $referenceValue = $data[$inversedByProperty];
+
+                        // Handle both array and single value references.
+                        if (is_array($referenceValue) === true) {
+                            // Check if the current entity's UUID is in the array.
+                            return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
+                        } else {
+                            // Check if the reference value matches the current entity's UUID.
+                            return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
+                        }
+                    }]]></code>
+      <code><![CDATA[function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
+                        $data = $object->getObject();
+
+                        // Check if the referencing object has the inversedBy property.
+                        if (isset($data[$inversedByProperty]) === false) {
+                            return false;
+                        }
+
+                        $referenceValue = $data[$inversedByProperty];
+
+                        // Handle both array and single value references.
+                        if (is_array($referenceValue) === true) {
+                            // Check if the current entity's UUID is in the array.
+                            return in_array($entity->getUuid(), $referenceValue, true) && $object->getSchema() === $schemaId;
+                        } else {
+                            // Check if the reference value matches the current entity's UUID.
+                            return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
+                        }
+                    }]]></code>
+      <code><![CDATA[function (ObjectEntity $object) {
+                        return $object->getUuid();
+                    }]]></code>
+      <code><![CDATA[function (ObjectEntity $object) {
+                    return $object->getUuid();
+                }]]></code>
+    </InvalidArgument>
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[array_merge($objectsToCache, $this->objectsCache)]]></code>
+    </InvalidPropertyAssignmentValue>
+    <UndefinedVariable>
+      <code><![CDATA[$modifiedDate]]></code>
+      <code><![CDATA[$modifiedDate]]></code>
+    </UndefinedVariable>
+  </file>
+  <file src="lib/Service/ObjectHandlers/SaveObject.php">
+    <EmptyArrayAccess>
+      <code><![CDATA[$imageValue['accessUrl']]]></code>
+      <code><![CDATA[$imageValue['downloadUrl']]]></code>
+    </EmptyArrayAccess>
+    <MismatchingDocblockReturnType>
+      <code><![CDATA[int|null]]></code>
+    </MismatchingDocblockReturnType>
+    <TypeDoesNotContainNull>
+      <code><![CDATA[$targetObject === null]]></code>
+    </TypeDoesNotContainNull>
+  </file>
+  <file src="lib/Service/ObjectHandlers/SaveObjects.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[$obj]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/ObjectHandlers/ValidateObject.php">
+    <InvalidArgument>
+      <code><![CDATA['bsn']]></code>
+      <code><![CDATA['semver']]></code>
+      <code><![CDATA[[
+                    [
+                        'name'   => is_array($uniqueFields) === true ? array_shift($uniqueFields) : $uniqueFields,
+                        'code'   => 'identificatie-niet-uniek',
+                        'reason' => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}",
+                    ],
+                ]]]></code>
+    </InvalidArgument>
+    <InvalidNamedArgument>
+      <code><![CDATA[resolver]]></code>
+      <code><![CDATA[resolver]]></code>
+    </InvalidNamedArgument>
+    <NoValue>
+      <code><![CDATA[$properties]]></code>
+      <code><![CDATA[$schemaString]]></code>
+      <code><![CDATA[$schemaString]]></code>
+    </NoValue>
+    <TypeDoesNotContainType>
+      <code><![CDATA[is_array($properties)]]></code>
+      <code><![CDATA[isset($properties) === true && is_array($properties) === true]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="lib/Service/ObjectService.php">
+    <InvalidArgument>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+    </InvalidArgument>
+    <InvalidArrayOffset>
+      <code><![CDATA[$bulkResult['statistics']['objectsCreated']]]></code>
+      <code><![CDATA[$bulkResult['statistics']['objectsUpdated']]]></code>
+    </InvalidArrayOffset>
+    <InvalidReturnStatement>
+      <code><![CDATA[$objects]]></code>
+      <code><![CDATA[$result]]></code>
+    </InvalidReturnStatement>
+    <UndefinedClass>
+      <code><![CDATA[$file]]></code>
+      <code><![CDATA[$file]]></code>
+    </UndefinedClass>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$file]]></code>
+      <code><![CDATA[$file]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$object]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[$sourceObject]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\ObjectEntity>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/SchemaService.php">
+    <TypeDoesNotContainType>
+      <code><![CDATA['double']]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="lib/Service/SettingsService.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[$organisation]]></code>
+      <code><![CDATA[$organisation]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/SolrFileService.php">
+    <ForbiddenCode>
+      <code><![CDATA[shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($command)))]]></code>
+    </ForbiddenCode>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$chunk]]></code>
+      <code><![CDATA[$chunk]]></code>
+      <code><![CDATA[$chunk]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/SolrSchemaService.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[fields]]></code>
+    </InvalidNamedArgument>
+  </file>
+  <file src="lib/Service/VectorEmbeddingService.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$settings['llm']]]></code>
+    </InvalidArrayOffset>
+  </file>
+  <file src="lib/Service/Vectorization/FileVectorizationStrategy.php">
+    <InaccessibleMethod>
+      <code><![CDATA[findEntities]]></code>
+    </InaccessibleMethod>
+  </file>
+  <file src="lib/Service/Vectorization/ObjectVectorizationStrategy.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[objectData]]></code>
+    </InvalidNamedArgument>
+  </file>
+  <file src="lib/Service/WebhookInterceptorService.php">
+    <InvalidArgument>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+    </InvalidArgument>
+    <UndefinedDocblockClass>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[$webhook]]></code>
+      <code><![CDATA[list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\Webhook>]]></code>
+    </UndefinedDocblockClass>
+  </file>
+  <file src="lib/Service/WebhookService.php">
+    <InvalidArgument>
+      <code><![CDATA[$webhook]]></code>
+    </InvalidArgument>
+  </file>
+  <file src="lib/Setup/SolrSetup.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[[
+                                'collection'    => $tenantCollectionName,
+                                'configSet'     => $tenantConfigSetName,
+                                'error_details' => $this->lastErrorDetails,
+                            ]]]></code>
+      <code><![CDATA[[
+                                'configSet'              => $tenantConfigSetName,
+                                'template'               => '_default',
+                                'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
+                                'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
+                                'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                                'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
+                                'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
+                                'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
+                                'solr_error_details'     => $errorDetails['solr_error_details'] ?? null,
+                            ]]]></code>
+      <code><![CDATA[[
+                                'error'      => 'SOLR connectivity test failed',
+                                'host'       => $this->solrConfig['host'] ?? 'unknown',
+                                'port'       => $this->solrConfig['port'] ?? 'unknown',
+                                'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json'),
+                            ]]]></code>
+      <code><![CDATA[[
+                            'configSet'           => $tenantConfigSetName,
+                            'error'               => $propagationResult['error'] ?? 'Unknown error',
+                            'propagation_details' => [
+                                'successful_operations' => $propagationResult['successful_operations'] ?? 0,
+                                'total_operations'      => $propagationResult['total_operations'] ?? 0,
+                                'operations_attempted'  => $propagationResult['operations'] ?? [],
+                                'api_calls'             => [
+                                    'configset_list_refresh' => $propagationResult['summary']['configset_list_refresh'] ?? 'unknown',
+                                    'cluster_status_sync'    => $propagationResult['summary']['cluster_status_sync'] ?? 'unknown',
+                                ],
+                                'detailed_operations'   => $propagationResult['operations'] ?? [],
+                            ],
+                        ]]]></code>
+      <code><![CDATA[[
+                            'configSet'           => $tenantConfigSetName,
+                            'propagation_details' => [
+                                'successful_operations' => $propagationResult['successful_operations'] ?? 0,
+                                'total_operations'      => $propagationResult['total_operations'] ?? 0,
+                                'operations_performed'  => $propagationResult['operations'] ?? [],
+                                'cluster_sync_status'   => $propagationResult['cluster_sync'] ?? 'unknown',
+                                'cache_refresh_status'  => $propagationResult['cache_refresh'] ?? 'unknown',
+                                'api_calls'             => [
+                                    'configset_list_refresh' => $propagationResult['summary']['configset_list_refresh'] ?? 'unknown',
+                                    'cluster_status_sync'    => $propagationResult['summary']['cluster_status_sync'] ?? 'unknown',
+                                ],
+                                'detailed_operations'   => $propagationResult['operations'] ?? [],
+                            ],
+                        ]]]></code>
+      <code><![CDATA[[
+                            'exception_type'    => get_class($e),
+                            'exception_message' => $e->getMessage(),
+                        ]]]></code>
+      <code><![CDATA[[
+                            'exception_type' => get_class($e),
+                            'collection'     => $tenantCollectionName,
+                        ]]]></code>
+      <code><![CDATA[[
+                        'exception_type' => get_class($e),
+                        'configSet'      => $tenantConfigSetName,
+                    ]]]></code>
+      <code><![CDATA[[
+                        'exception_type' => get_class($e),
+                        'configSet'      => $tenantConfigSetName,
+                    ]]]></code>
+    </InvalidNamedArgument>
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[$solrService->getHttpClient()]]></code>
+    </InvalidPropertyAssignmentValue>
+  </file>
+  <file src="lib/Tool/ObjectsTool.php">
+    <InvalidNamedArgument>
+      <code><![CDATA[query]]></code>
+    </InvalidNamedArgument>
+  </file>
+</files>

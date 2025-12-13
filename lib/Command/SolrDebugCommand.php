@@ -47,15 +47,20 @@ class SolrDebugCommand extends Command
     /**
      * Constructor
      *
+     * Initializes the SOLR debug command with required services.
+     *
      * @param SettingsService $settingsService Settings service for SOLR configuration
      * @param LoggerInterface $logger          Logger for debugging output
      * @param IConfig         $config          Nextcloud configuration
+     * @param IClientService  $clientService   HTTP client service (unused)
      */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         private readonly IConfig $config,
         /**
+         * HTTP client service (unused but required by dependency injection).
+         *
          * @psalm-suppress UnusedProperty
          */
         private readonly IClientService $clientService

@@ -229,11 +229,11 @@ class ApplicationMapper extends QBMapper
      * @param int    $limit            Maximum number of results to return (default: 50)
      * @param int    $offset           Number of results to skip for pagination (default: 0)
      *
-     * @return Application[] Array of application entities
+     * @return Application[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return array<int, Application>
+     * @psalm-return list<OCA\OpenRegister\Db\Application>
      */
     public function findByOrganisation(string $organisationUuid, int $limit = 50, int $offset = 0): array
     {
@@ -273,11 +273,11 @@ class ApplicationMapper extends QBMapper
      * @param array    $searchConditions Search conditions for WHERE clause (default: empty array)
      * @param array<string, mixed> $searchParams Parameters for search conditions (default: empty array)
      *
-     * @return Application[] Array of application entities
+     * @return Application[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return array<int, Application>
+     * @psalm-return list<OCA\OpenRegister\Db\Application>
      */
     public function findAll(
         ?int $limit = null,

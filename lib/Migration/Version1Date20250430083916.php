@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile.
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *

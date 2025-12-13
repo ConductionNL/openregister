@@ -147,13 +147,20 @@ class OptimizedBulkOperations
         $totalTime        = microtime(true) - $startTime;
         $objectsPerSecond = count($allObjects) / $totalTime;
 
+        // Calculate performance improvement.
+        if ($objectsPerSecond > 165) {
+            $performanceImprovement = round($objectsPerSecond / 165, 1).'x faster';
+        } else {
+            $performanceImprovement = 'baseline';
+        }
+
         $this->logger->info(
                 "Completed optimized bulk operations",
                 [
                     'total_objects'           => count($allObjects),
                     'total_time_seconds'      => round($totalTime, 3),
                     'objects_per_second'      => round($objectsPerSecond, 0),
-                    'performance_improvement' => $objectsPerSecond > 165 ? round($objectsPerSecond / 165, 1).'x faster' : 'baseline',
+                    'performance_improvement' => $performanceImprovement,
                 ]
                 );
 
@@ -309,7 +316,11 @@ class OptimizedBulkOperations
 
         // ENHANCED RETURN: Return complete objects with timestamps for precise classification.
         // If complete objects available, return them; otherwise fallback to UUID array.
-        $finalResult = !empty($completeObjects) === true ? $completeObjects : array_filter($processedUUIDs);
+        if (empty($completeObjects) === false) {
+            $finalResult = $completeObjects;
+        } else {
+            $finalResult = array_filter($processedUUIDs);
+        }
 
         // DEBUG: Returning bulk operation results.
         return $finalResult;
@@ -406,7 +417,9 @@ class OptimizedBulkOperations
      * @param array $insertObjects Array of arrays (insert data)
      * @param array $updateObjects Array of ObjectEntity instances (update data)
      *
-     * @return array Unified array format for all objects
+     * @return ((mixed|string)[]|mixed)[] Unified array format for all objects
+     *
+     * @psalm-return list{0?: array{uuid: mixed|string,...}|mixed,...}
      */
     private function unifyObjectFormats(array $insertObjects, array $updateObjects): array
     {
@@ -462,7 +475,9 @@ class OptimizedBulkOperations
      *
      * @param array $objectColumns Array of column names from object data
      *
-     * @return array Array of actual database column names
+     * @return string[] Array of actual database column names
+     *
+     * @psalm-return list{0?: string,...}
      */
     private function mapObjectColumnsToDatabase(array $objectColumns): array
     {

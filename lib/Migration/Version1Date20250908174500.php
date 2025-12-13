@@ -1,6 +1,8 @@
 <?php
+
 declare(strict_types=1);
-/*
+
+/**
  * OpenRegister UUID Unique Constraint Migration
  *
  * This migration adds a UNIQUE constraint on the uuid field of the openregister_objects

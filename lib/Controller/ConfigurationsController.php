@@ -70,7 +70,10 @@ class ConfigurationsController extends Controller
      * @return JSONResponse List of configurations.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -107,7 +110,10 @@ class ConfigurationsController extends Controller
      * @return JSONResponse Configuration details
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<404, array{error: 'Configuration not found'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -126,7 +132,10 @@ class ConfigurationsController extends Controller
      * @return JSONResponse The created configuration.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -181,7 +190,10 @@ class ConfigurationsController extends Controller
      * @return JSONResponse The updated configuration
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -245,7 +257,10 @@ class ConfigurationsController extends Controller
      * @return JSONResponse Empty response on success
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -269,9 +284,12 @@ class ConfigurationsController extends Controller
      * @return DataDownloadResponse|JSONResponse The exported configuration.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return DataDownloadResponse<200, 'application/json', array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
-    public function export(int $id, bool $includeObjects=false): DataDownloadResponse | JSONResponse
+    public function export(int $id, bool $includeObjects=false): JSONResponse|DataDownloadResponse
     {
         try {
             // Find the configuration.
@@ -317,6 +335,9 @@ class ConfigurationsController extends Controller
     public function import(): JSONResponse
     {
         try {
+            // Initialize uploadedFiles array.
+            $uploadedFiles = [];
+            
             // Get the uploaded file from the request if a single file has been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
             if (empty($uploadedFile) === false) {

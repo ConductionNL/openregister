@@ -145,9 +145,12 @@ class AgentsController extends Controller
      * All routing is handled client-side by the SPA.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return TemplateResponse Template response for agents SPA
+     *
+     * @psalm-return TemplateResponse<200, array<never, never>>
      */
     public function page(): TemplateResponse
     {
@@ -166,9 +169,12 @@ class AgentsController extends Controller
      * RBAC filtering is handled in the mapper layer.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of agents
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve agents', results?: array<Agent>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -250,11 +256,10 @@ class AgentsController extends Controller
      * @param int $id Agent database ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing agent data or error message
-     *
-     * @psalm-return JSONResponse<mixed|array{error: string}>
+     * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<403|404, array{error: 'Access denied to this agent'|'Agent not found'}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -298,9 +303,12 @@ class AgentsController extends Controller
      * Create a new agent
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Created agent
+     *
+     * @psalm-return JSONResponse<201, Agent, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
     {
@@ -380,9 +388,12 @@ class AgentsController extends Controller
      * @param int $id Agent ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated agent
+     *
+     * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
     {
@@ -457,11 +468,10 @@ class AgentsController extends Controller
      * @param int $id The ID of the agent to patch
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing updated agent or error message
-     *
-     * @psalm-return JSONResponse<mixed|array{error: string}>
+     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>
      */
     public function patch(int $id): JSONResponse
     {
@@ -478,9 +488,12 @@ class AgentsController extends Controller
      * @param int $id Agent ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Success message
+     *
+     * @psalm-return JSONResponse<200|400|403, array{error?: 'Failed to delete agent'|'You do not have permission to delete this agent', message?: 'Agent deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
@@ -529,9 +542,12 @@ class AgentsController extends Controller
      * Get agent statistics
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Agent statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve statistics', total?: int, active?: int, inactive?: int}, array<never, never>>
      */
     public function stats(): JSONResponse
     {
@@ -568,9 +584,12 @@ class AgentsController extends Controller
      * This is used by the frontend agent editor to display available tools.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse List of available tools with metadata
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve tools', results?: array}, array<never, never>>
      */
     public function tools(): JSONResponse
     {

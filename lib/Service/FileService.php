@@ -388,8 +388,6 @@ class FileService
      *
      * @param ObjectEntity $objectEntity The Object Entity to get the folder name for
      *
-     * @return string The folder name
-     *
      * @phpstan-return string
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
@@ -526,8 +524,6 @@ class FileService
      * @param IUser|null          $currentUser  The current user to share the folder with
      * @param int|string|null     $registerId   The register of the object to add the file to
      *
-     * @return Node|null The created folder Node or null if creation fails
-     *
      * @throws Exception If folder creation fails
      * @throws NotPermittedException If folder creation is not permitted
      *
@@ -537,7 +533,7 @@ class FileService
         ObjectEntity|string $objectEntity,
         ?IUser $currentUser=null,
         int|string|null $registerId=null
-    ): ?Node {
+    ): Node {
         $folderProperty = null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();
@@ -691,11 +687,11 @@ class FileService
      * @param Register|ObjectEntity $entity          The entity to get files for
      * @param bool|null             $sharedFilesOnly Whether to return only shared files
      *
-     * @return Node[] Array of file nodes
+     * @return Node[]
      *
      * @throws Exception If the entity folder cannot be accessed
      *
-     * @psalm-return   array<int, Node>
+     * @psalm-return list<OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
@@ -826,12 +822,10 @@ class FileService
      *
      * @param string $folderPath The full path to create
      *
-     * @return Node|null The created folder Node or null on failure
-     *
-     * @psalm-return   Node|null
+     * @psalm-return Node|null
      * @phpstan-return Node|null
      */
-    private function createFolderPath(string $folderPath): ?Node
+    private function createFolderPath(string $folderPath): Node
     {
         $folderPath = trim(string: $folderPath, characters: '/');
 
@@ -1111,15 +1105,17 @@ class FileService
 
     /**
      * Formats a single Node file into a metadata array.
-     //end if
+     * //end if
      *
-     //end foreach
+     * //end foreach
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
      * @param Node $file The Node file to format
      *
-     * @return array<string, mixed> The formatted file metadata array
+     * @return (((float|int|null|string|string[])[]|float|int|null|string)[]|float|int|null|string)[] The formatted file metadata array
+     *
+     * @psalm-return array{labels: list<string>,...}
      */
     public function formatFile(Node $file): array
     {
@@ -1475,7 +1471,9 @@ class FileService
      *
      * @param string $fileId The ID of the file
      *
-     * @return array<int, string> The list of tags associated with the file
+     * @return string[] The list of tags associated with the file
+     *
+     * @psalm-return list<string>
      */
     private function getFileTags(string $fileId): array
     {
@@ -1869,9 +1867,9 @@ class FileService
      *
      * @throws Exception If creating the folder is not permitted
      *
-     * @return Node|null The Node object for the folder (existing or newly created), or null on failure
+     * @return Node The Node object for the folder (existing or newly created), or null on failure
      */
-    public function createFolder(string $folderPath): ?Node
+    public function createFolder(string $folderPath): Node
     {
         $folderPath = trim(string: $folderPath, characters: '/');
 
@@ -2238,9 +2236,7 @@ class FileService
      *
      * @param ObjectEntity $objectEntity The object entity to generate the tag for
      *
-     * @return string The object tag in format 'object:uuid' or 'object:id'
-     *
-     * @psalm-return   string
+     * @psalm-return string
      * @phpstan-return string
      */
     private function generateObjectTag(ObjectEntity|string $objectEntity): string
@@ -2426,10 +2422,9 @@ class FileService
      *
      * @throws \Exception If there's an error retrieving the tags
      *
-     * @return array An array of tag names
+     * @return string[]
      *
-     * @psalm-return   array<int, string>
-     *
+     * @psalm-return list<string>
      * @phpstan-return array<int, string>
      */
     public function getAllTags(): array
@@ -2459,19 +2454,19 @@ class FileService
 
     /**
      * Get all files for an object.
-     //end try
+     * //end try
      *
      * See https://nextcloud-server.netlify.app/classes/ocp-files-file for the Nextcloud documentation on the File class.
      * See https://nextcloud-server.netlify.app/classes/ocp-files-node for the Nextcloud documentation on the Node superclass.
      *
      * @param ObjectEntity|string $object The object or object ID to fetch files for
      *
-     * @return Node[] The files found
+     * @return OCP\Files\Node[]
      *
      * @throws NotFoundException If the folder is not found
      * @throws DoesNotExistException If the object ID is not found
      *
-     * @psalm-return   array<int, Node>
+     * @psalm-return list<OCA\OpenRegister\Service\OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
@@ -2631,10 +2626,11 @@ class FileService
      *
      * @param File $file The file to stream
      *
-     * @return \OCP\AppFramework\Http\StreamResponse The stream response
+     * @phpstan-param File $file
      *
-     * @phpstan-param  File $file
      * @phpstan-return \OCP\AppFramework\Http\StreamResponse
+     *
+     * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -2908,14 +2904,9 @@ class FileService
      * @throws NotFoundException If the object folder is not found
      * @throws NotPermittedException If file access is not permitted
      *
-     * @return array{
-     *     path: string,
-     *     filename: string,
-     *     size: int,
-     *     mimeType: string
-     * } Information about the created ZIP file
+     * @return (int|string)[]
      *
-     * @psalm-return   array{path: string, filename: string, size: int, mimeType: string}
+     * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
@@ -3034,9 +3025,7 @@ class FileService
      *
      * @param int $errorCode The ZipArchive error code
      *
-     * @return string Human-readable error message
-     *
-     * @psalm-return   string
+     * @psalm-return string
      * @phpstan-return string
      */
     private function getZipErrorMessage(int $errorCode): string
@@ -3075,9 +3064,11 @@ class FileService
      *
      * @param int $fileId The file ID to search for
      *
-     * @return array|null File information or null if not found
+     * @return (float|int|string)[]|null File information or null if not found
+     *
+     * @psalm-return array{id: int, name: string, path: string, type: string, mimetype: string, size: float|int, parent_id: int, parent_path: string}|null
      */
-    public function debugFindFileById(int $fileId): ?array
+    public function debugFindFileById(int $fileId): array|null
     {
         try {
             $userFolder = $this->getOpenRegisterUserFolder();
@@ -3111,12 +3102,15 @@ class FileService
 
     /**
      * Debug method to list all files in an object's folder
-     //end try
+     * //end try
      *
-     //end foreach
+     * //end foreach
+     *
      * @param ObjectEntity $object The object to list files for
      *
-     * @return array List of file information
+     * @return (float|int|string)[][] List of file information
+     *
+     * @psalm-return list{0?: array{id: int, name: string, path: string, type: string, mimetype: string, size: float|int},...}
      */
     public function debugListObjectFiles(ObjectEntity $object): array
     {
@@ -3286,16 +3280,14 @@ class FileService
      //end try
      * @param IUser|null   $currentUser  The current user to share the folder with
      *
-     * @return int|null The folder ID or null if creation fails
-     *
      * @throws Exception If folder creation fails or entities not found
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @psalm-return   int|null
+     * @psalm-return int|null
      * @phpstan-return int|null
      */
-    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): ?int
+    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): int
     {
         // Ensure register folder exists first.
         $register = $this->registerMapper->find($objectEntity->getRegister());
@@ -3338,6 +3330,8 @@ class FileService
      * @param Node $node The node to check.
      *
      * @return string Node type ('file' or 'folder').
+     *
+     * @psalm-return 'file'|'folder'|'unknown'
      */
     private function getNodeTypeFromFolder(Node $node): string
     {
@@ -3355,9 +3349,9 @@ class FileService
      *
      * @param array $shares Array of IShare objects.
      *
-     * @return string|null Access URL or null if not found.
+     * @return null|string Access URL or null if not found.
      */
-    private function getAccessUrlFromShares(array $shares): ?string
+    private function getAccessUrlFromShares(array $shares): string|null
     {
         foreach ($shares as $share) {
             if ($share instanceof IShare) {
@@ -3375,10 +3369,9 @@ class FileService
      *
      * @param array $shares Array of IShare objects.
      *
-     * @return string|null Download URL or null if not found.
-     //end if
+     * @return null|string Download URL or null if not found. //end if
      */
-    private function getDownloadUrlFromShares(array $shares): ?string
+    private function getDownloadUrlFromShares(array $shares): string|null
     {
         foreach ($shares as $share) {
             if ($share instanceof IShare) {
