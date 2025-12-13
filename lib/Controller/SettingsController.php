@@ -1193,13 +1193,14 @@ class SettingsController extends Controller
     private function formatBytes(int $bytes, int $precision=2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $unitCount = count($units);
 
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+        for ($i = 0; $bytes > 1024 && $i < $unitCount - 1; $i++) {
             $bytes /= 1024;
         }
 
         // Ensure $i is within bounds of $units array.
-        $unitIndex = min($i, count($units) - 1);
+        $unitIndex = min($i, $unitCount - 1);
         return round($bytes, $precision).' '.$units[$unitIndex];
 
     }//end formatBytes()
@@ -1258,6 +1259,14 @@ class SettingsController extends Controller
             // Determine if prediction is safe.
             $predictionSafe = $totalEstimatedMemory < ($availableMemory * 0.8);
             // Use 80% as safety margin.
+
+            // Get recommendation message based on prediction safety.
+            if ($predictionSafe) {
+                $recommendationMessage = 'Safe to process';
+            } else {
+                $recommendationMessage = 'Warning: Memory usage may exceed available memory';
+            }
+
             $prediction = [
                 'success'                  => true,
                 'prediction_safe'          => $predictionSafe,
@@ -1278,7 +1287,7 @@ class SettingsController extends Controller
                     'memory_per_object' => $this->formatBytes($estimatedMemoryPerObject),
                 ],
                 // Get recommendation message based on prediction safety.
-                'recommendation'           => $predictionSafe ? 'Safe to process' : 'Warning: Memory usage may exceed available memory',
+                'recommendation'           => $recommendationMessage,
                 'note'                     => 'Fast prediction mode - actual object count will be determined during processing',
             ];
 
@@ -1356,6 +1365,13 @@ class SettingsController extends Controller
 
             // Get SOLR settings.
             $solrSettings = $this->settingsService->getSolrSettings();
+
+            // Determine port value for configuration display.
+            if (($solrSettings['port'] !== null) === true && ($solrSettings['port'] !== '') === true) {
+                $portValue = $solrSettings['port'];
+            } else {
+                $portValue = 'default';
+            }
 
             // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data).
             $logger->info(
@@ -1456,7 +1472,7 @@ class SettingsController extends Controller
                                     'guzzle_details'     => $errorDetails['guzzle_details'] ?? [],
                                     'configuration_used' => [
                                         'host'   => $solrSettings['host'],
-                                        'port'   => (($solrSettings['port'] !== null) === true && ($solrSettings['port'] !== '') === true) ? $solrSettings['port'] : 'default',
+                                        'port'   => $portValue,
                                         'scheme' => $solrSettings['scheme'],
                                         'path'   => $solrSettings['path'],
                                     ],
@@ -2310,11 +2326,18 @@ class SettingsController extends Controller
             // Restore original collection.
             $guzzleSolrService->setActiveCollection($originalCollection);
 
+            // Determine message based on result.
+            if ($result === true) {
+                $message = 'File metadata fields ensured successfully';
+            } else {
+                $message = 'Failed to ensure file metadata fields';
+            }
+
             return new JSONResponse(
                     data: [
                         'success'    => $result,
                         'collection' => 'files',
-                        'message'    => $result === true ? 'File metadata fields ensured successfully' : 'Failed to ensure file metadata fields',
+                        'message'    => $message,
                     ]
                     );
         } catch (\Exception $e) {
@@ -3000,36 +3023,59 @@ class SettingsController extends Controller
             switch ($operation) {
                 case 'commit':
                     $success = $guzzleSolrService->commit();
+
+                    // Get commit message based on success.
+                    if ($success === true) {
+                        $message = 'Index committed successfully';
+                    } else {
+                        $message = 'Failed to commit index';
+                    }
+
                     return new JSONResponse(
                             data: [
                                 'success'   => $success,
                                 'operation' => 'commit',
-                                // Get commit message based on success.
-                                'message'   => $success === true ? 'Index committed successfully' : 'Failed to commit index',
+                                'message'   => $message,
                                 'timestamp' => date('c'),
                             ]
                             );
 
                 case 'optimize':
                     $success = $guzzleSolrService->optimize();
+
+                    // Get optimize message based on success.
+                    if ($success === true) {
+                        $message = 'Index optimized successfully';
+                    } else {
+                        $message = 'Failed to optimize index';
+                    }
+
                     return new JSONResponse(
                             data: [
                                 'success'   => $success,
                                 'operation' => 'optimize',
-                                'message'   => $success === true ? 'Index optimized successfully' : 'Failed to optimize index',
+                                'message'   => $message,
                                 'timestamp' => date('c'),
                             ]
                             );
 
                 case 'clear':
                     $result = $guzzleSolrService->clearIndex();
+
+                    // Get clear message based on success.
+                    if ($result['success'] === true) {
+                        $message = 'Index cleared successfully';
+                    } else {
+                        $message = 'Failed to clear index: '.($result['error'] ?? 'Unknown error');
+                    }
+
                     return new JSONResponse(
                             data: [
                                 'success'       => $result['success'],
                                 'operation'     => 'clear',
                                 'error'         => $result['error'] ?? null,
                                 'error_details' => $result['error_details'] ?? null,
-                                'message'       => $result['success'] === true ? 'Index cleared successfully' : 'Failed to clear index: '.($result['error'] ?? 'Unknown error'),
+                                'message'       => $message,
                                 'timestamp'     => date('c'),
                             ]
                             );
@@ -3334,7 +3380,11 @@ class SettingsController extends Controller
             // Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
             $platform = $this->db->getDatabasePlatform();
             // Get platform name as string.
-            $platformName = method_exists($platform, 'getName') ? $platform->getName() : 'unknown';
+            if (method_exists($platform, 'getName')) {
+                $platformName = $platform->getName();
+            } else {
+                $platformName = 'unknown';
+            }
 
             // Determine database type and version.
             $dbType            = 'Unknown';
@@ -5003,7 +5053,11 @@ class SettingsController extends Controller
             $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
             // Ensure result is an array for spread operator.
-            $resultArray = is_array($result) === true ? $result : [];
+            if (is_array($result) === true) {
+                $resultArray = $result;
+            } else {
+                $resultArray = [];
+            }
 
             return new JSONResponse(
                     data: [

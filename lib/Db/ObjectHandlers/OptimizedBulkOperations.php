@@ -352,11 +352,12 @@ class OptimizedBulkOperations
         // Build VALUES portion - MEMORY INTENSIVE!
         $valuesClauses = [];
         $paramIndex    = 0;
+        $columnCount   = count($columns);
 
         for ($i = 0; $i < $objectCount; $i++) {
             $rowValues = [];
             // Iterate over columns (count only matters, not the column name).
-            for ($j = 0; $j < count($columns); $j++) {
+            for ($j = 0; $j < $columnCount; $j++) {
                 $rowValues[] = ':param_'.$paramIndex;
                 $paramIndex++;
             }

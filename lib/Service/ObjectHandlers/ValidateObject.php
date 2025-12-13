@@ -925,6 +925,8 @@ class ValidateObject
                 }
             }
         } catch (Exception $e) {
+            // Failed to fetch schemas, returning null.
+            $this->logger->debug('Failed to find schema by slug', ['slug' => $slug, 'exception' => $e->getMessage()]);
         }
 
         return null;
@@ -1204,7 +1206,11 @@ class ValidateObject
         $args     = $error->args();
 
         // Build property path for better identification.
-        $propertyPath = empty($dataPath) === true ? 'root' : implode('.', $dataPath);
+        if (empty($dataPath) === true) {
+            $propertyPath = 'root';
+        } else {
+            $propertyPath = implode('.', $dataPath);
+        }
 
         switch ($keyword) {
             case 'required':
@@ -1239,13 +1245,23 @@ class ValidateObject
                 return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. "."Please provide a value of the correct type.";
 
             case 'minItems':
-                $minItems    = $args['min'] ?? 0;
-                $actualItems = is_array($value) === true ? count($value) : 0;
+                $minItems = $args['min'] ?? 0;
+                if (is_array($value) === true) {
+                    $actualItems = count($value);
+                } else {
+                    $actualItems = 0;
+                }
+
                 return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. "."Please add more items to the array or set to null if the property is not required.";
 
             case 'maxItems':
-                $maxItems    = $args['max'] ?? 0;
-                $actualItems = is_array($value) === true ? count($value) : 0;
+                $maxItems = $args['max'] ?? 0;
+                if (is_array($value) === true) {
+                    $actualItems = count($value);
+                } else {
+                    $actualItems = 0;
+                }
+
                 return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. "."Please remove some items from the array.";
 
             case 'format':
@@ -1253,16 +1269,26 @@ class ValidateObject
                 return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "."Please provide a value in the correct format.";
 
             case 'minLength':
-                $minLength    = $args['min'] ?? 0;
-                $actualLength = is_string($value) === true ? strlen($value) : 0;
+                $minLength = $args['min'] ?? 0;
+                if (is_string($value) === true) {
+                    $actualLength = strlen($value);
+                } else {
+                    $actualLength = 0;
+                }
+
                 if ($actualLength === 0) {
                     return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. "."Please provide a non-empty string value.";
                 }
                 return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. "."Please provide a longer string value.";
 
             case 'maxLength':
-                $maxLength    = $args['max'] ?? 0;
-                $actualLength = is_string($value) === true ? strlen($value) : 0;
+                $maxLength = $args['max'] ?? 0;
+                if (is_string($value) === true) {
+                    $actualLength = strlen($value);
+                } else {
+                    $actualLength = 0;
+                }
+
                 return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. "."Please provide a shorter string value.";
 
             case 'minimum':
@@ -1361,8 +1387,14 @@ class ValidateObject
         $errors = [];
         if ($exception instanceof ValidationException) {
             // The exception message should already be meaningful thanks to generateErrorMessage().
+            if (method_exists($exception, 'getProperty') === true) {
+                $property = $exception->getProperty();
+            } else {
+                $property = null;
+            }
+
             $errors[] = [
-                'property' => method_exists($exception, 'getProperty') === true ? $exception->getProperty() : null,
+                'property' => $property,
                 'message'  => $exception->getMessage(),
                 'errors'   => (new ErrorFormatter())->format($exception->getErrors()),
             ];
@@ -1415,25 +1447,36 @@ class ValidateObject
 
         if ($count !== 0) {
             // IMPROVED ERROR MESSAGE: Show which field(s) caused the uniqueness violation.
-            $fieldNames  = is_array($uniqueFields) === true ? implode(', ', $uniqueFields) : $uniqueFields;
-            $fieldValues = is_array($uniqueFields) === true ? implode(
-                        ', ',
-                        array_map(
-                        function ($field) use ($object) {
-                            return $field.'='.($object[$field] ?? 'null');
-                        },
-                        $uniqueFields
-                        )
-                        ) : $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
+            if (is_array($uniqueFields) === true) {
+                $fieldNames = implode(', ', $uniqueFields);
+            } else {
+                $fieldNames = $uniqueFields;
+            }
+
+            if (is_array($uniqueFields) === true) {
+                $fieldValues = implode(
+                            ', ',
+                            array_map(
+                            function ($field) use ($object) {
+                                return $field.'='.($object[$field] ?? 'null');
+                            },
+                            $uniqueFields
+                            )
+                            );
+            } else {
+                $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
+            }
+
+            if (is_array($uniqueFields) === true) {
+                $errorName = (string) (array_shift($uniqueFields) ?? 'uniqueField');
+            } else {
+                $errorName = (string) $uniqueFields;
+            }
 
             throw new CustomValidationException(
                 message: "Fields are not unique: {$fieldNames} (values: {$fieldValues})",
                 errors: [
-                    [
-                        'name'   => is_array($uniqueFields) === true ? array_shift($uniqueFields) : $uniqueFields,
-                        'code'   => 'identificatie-niet-uniek',
-                        'reason' => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}",
-                    ],
+                    $errorName => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}",
                 ]
             );
         }//end if

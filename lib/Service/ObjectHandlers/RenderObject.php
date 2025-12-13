@@ -305,7 +305,7 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => $fileRecord['modified'] ?? null,
+                'modified'    => $fileRecord['mtime'] ?? null,
                 'labels'      => $labels,
             ];
 
@@ -629,7 +629,11 @@ class RenderObject
     {
         try {
             // Convert to string/int as needed.
-            $fileIdStr = is_numeric($fileId) === true ? (string) $fileId : $fileId;
+            if (is_numeric($fileId) === true) {
+                $fileIdStr = (string) $fileId;
+            } else {
+                $fileIdStr = $fileId;
+            }
 
             if (is_string($fileIdStr) === false && is_int($fileIdStr) === false) {
                 return null;
@@ -657,7 +661,7 @@ class RenderObject
                 'size'        => (int) $fileRecord['size'],
                 'hash'        => $fileRecord['etag'] ?? '',
                 'published'   => $fileRecord['published'] ?? null,
-                'modified'    => $fileRecord['modified'] ?? null,
+                'modified'    => $fileRecord['mtime'] ?? null,
                 'labels'      => $labels,
             ];
         } catch (Exception $e) {
@@ -967,7 +971,11 @@ class RenderObject
                                 return ['@circular' => true, 'id' => $object->getUuid()];
                             }
 
-                            $subExtend = $allFlag === true ? array_merge(['all'], $keyExtends) : $keyExtends;
+                            if ($allFlag === true) {
+                                $subExtend = array_merge(['all'], $keyExtends);
+                            } else {
+                                $subExtend = $keyExtends;
+                            }
 
                             return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
                         },
@@ -1011,7 +1019,11 @@ class RenderObject
                     continue;
                 }
 
-                $subExtend = $allFlag === true ? array_merge(['all'], $keyExtends) : $keyExtends;
+                if ($allFlag === true) {
+                    $subExtend = array_merge(['all'], $keyExtends);
+                } else {
+                    $subExtend = $keyExtends;
+                }
 
                 if (in_array($object->getUuid(), $visitedIds, true) === true) {
                     $rendered = ['@circular' => true, 'id' => $object->getUuid()];
@@ -1253,7 +1265,11 @@ class RenderObject
             if ($isArray === true) {
                 $objectData[$propertyName] = $inversedUuids;
             } else {
-                $objectData[$propertyName] = empty($inversedUuids) === false ? end($inversedUuids) : null;
+                if (empty($inversedUuids) === false) {
+                    $objectData[$propertyName] = end($inversedUuids);
+                } else {
+                    $objectData[$propertyName] = null;
+                }
             }
         }//end foreach
 

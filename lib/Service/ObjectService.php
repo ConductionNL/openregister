@@ -1056,7 +1056,7 @@ class ObjectService
      *
      * @psalm-return array<array{name: mixed|null|string,...}|mixed|string>|null
      */
-    private function applyInversedByFilter(array &$filters): array|null|null
+    private function applyInversedByFilter(array &$filters): array|null
     {
         if ($filters['schema'] === false) {
             return [];
@@ -3747,8 +3747,9 @@ class ObjectService
             foreach ($referencingObjects as $referencingObject) {
                 $relations = $referencingObject->getRelations();
                 $updated   = false;
+                $relationCount = count($relations);
 
-                for ($i = 0; $i < count($relations); $i++) {
+                for ($i = 0; $i < $relationCount; $i++) {
                     if ($relations[$i] === $sourceObject->getUuid()) {
                         $relations[$i] = $targetObject->getUuid();
                         $updated       = true;

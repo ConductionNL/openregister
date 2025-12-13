@@ -564,7 +564,11 @@ class SchemaService
         $existingPriority = $formatPriority[$existingFormat] ?? 0;
         $newPriority      = $formatPriority[$newFormat] ?? 0;
 
-        return $newPriority > $existingPriority ? $newFormat : $existingFormat;
+        if ($newPriority > $existingPriority) {
+            return $newFormat;
+        } else {
+            return $existingFormat;
+        }
 
     }//end consolidateFormatDetection()
 
@@ -744,6 +748,27 @@ class SchemaService
             // Determine recommended type.
             $recommendedType = $this->recommendPropertyType($analysis);
 
+            // Determine max length value.
+            if ($analysis['max_length'] > 0) {
+                $maxLengthValue = $analysis['max_length'];
+            } else {
+                $maxLengthValue = null;
+            }
+
+            // Determine min length value.
+            if (isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX) {
+                $minLengthValue = $analysis['min_length'];
+            } else {
+                $minLengthValue = null;
+            }
+
+            // Determine type variations.
+            if (count($analysis['types']) > 1) {
+                $typeVariations = $analysis['types'];
+            } else {
+                $typeVariations = null;
+            }
+
             $suggestion = [
                 'property_name'    => $propertyName,
                 'confidence'       => $confidence,
@@ -751,15 +776,15 @@ class SchemaService
                 'usage_count'      => $analysis['usage_count'],
                 'recommended_type' => $recommendedType,
                 'examples'         => array_slice($analysis['examples'], 0, 3),
-                'max_length'       => $analysis['max_length'] > 0 ? $analysis['max_length'] : null,
-                'min_length'       => isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX ? $analysis['min_length'] : null,
+                'max_length'       => $maxLengthValue,
+                'min_length'       => $minLengthValue,
                 'nullable'         => true,
             // Default to nullable unless evidence suggests otherwise.
                 'description'      => 'Property discovered through object analysis',
                 'detected_format'  => $analysis['detected_format'] ?? null,
                 'string_patterns'  => $analysis['string_patterns'] ?? [],
                 'numeric_range'    => $analysis['numeric_range'] ?? null,
-                'type_variations'  => count($analysis['types']) > 1 ? $analysis['types'] : null,
+                'type_variations'  => $typeVariations,
             ];
 
             // Add specific type recommendations.
@@ -840,7 +865,34 @@ class SchemaService
 
             if (empty($improvement['issues']) === false) {
                 $usagePercentage = $analysis['usage_percentage'] ?? 0;
-                $confidence      = $usagePercentage >= 80 ? 'high' : ($usagePercentage >= 50 ? 'medium' : 'low');
+                if ($usagePercentage >= 80) {
+                    $confidence = 'high';
+                } else if ($usagePercentage >= 50) {
+                    $confidence = 'medium';
+                } else {
+                    $confidence = 'low';
+                }
+
+                // Determine max length value.
+                if ($analysis['max_length'] > 0) {
+                    $maxLengthValue = $analysis['max_length'];
+                } else {
+                    $maxLengthValue = null;
+                }
+
+                // Determine min length value.
+                if (isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX) {
+                    $minLengthValue = $analysis['min_length'];
+                } else {
+                    $minLengthValue = null;
+                }
+
+                // Determine type variations.
+                if (count($analysis['types']) > 1) {
+                    $typeVariations = $analysis['types'];
+                } else {
+                    $typeVariations = null;
+                }
 
                 $suggestion = [
                     'property_name'      => $propertyName,
@@ -853,12 +905,12 @@ class SchemaService
                     'issues'             => $improvement['issues'],
                     'suggestions'        => $improvement['suggestions'],
                     'examples'           => array_slice($analysis['examples'], 0, 3),
-                    'max_length'         => $analysis['max_length'] > 0 ? $analysis['max_length'] : null,
-                    'min_length'         => isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX ? $analysis['min_length'] : null,
+                    'max_length'         => $maxLengthValue,
+                    'min_length'         => $minLengthValue,
                     'detected_format'    => $analysis['detected_format'] ?? null,
                     'string_patterns'    => $analysis['string_patterns'] ?? [],
                     'numeric_range'      => $analysis['numeric_range'] ?? null,
-                    'type_variations'    => count($analysis['types']) > 1 ? $analysis['types'] : null,
+                    'type_variations'    => $typeVariations,
                 ];
 
                 $improvements[] = $suggestion;

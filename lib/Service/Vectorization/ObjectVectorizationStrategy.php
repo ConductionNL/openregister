@@ -359,7 +359,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @return false|string Serialized text
      */
-    private function serializeObject(array $object, array $config): string|false|false
+    private function serializeObject(array $object, array $config): string|false
     {
         // TODO: Implement configurable serialization.
         // For now, just JSON encode with pretty print for readability.

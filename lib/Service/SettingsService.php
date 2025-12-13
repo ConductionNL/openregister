@@ -529,7 +529,11 @@ class SettingsService
         // Get all Nextcloud users (limit to prevent performance issues).
         $nextcloudUsers = $this->userManager->search('', 100);
         foreach ($nextcloudUsers as $user) {
-            $users[$user->getUID()] = (($user->getDisplayName() !== null) === true && ($user->getDisplayName() !== '') === true) ? $user->getDisplayName() : $user->getUID();
+            if (($user->getDisplayName() !== null) === true && ($user->getDisplayName() !== '') === true) {
+                $users[$user->getUID()] = $user->getDisplayName();
+            } else {
+                $users[$user->getUID()] = $user->getUID();
+            }
         }
 
         return $users;
@@ -658,7 +662,12 @@ class SettingsService
                 // Check if this option is provided in the input data.
                 if (isset($options[$option]) === true) {
                     // Convert boolean or string to string format for storage.
-                    $value = $options[$option] === true || $options[$option] === 'true' ? 'true' : 'false';
+                    if ($options[$option] === true || $options[$option] === 'true') {
+                        $value = 'true';
+                    } else {
+                        $value = 'false';
+                    }
+
                     // Store the value in the configuration.
                     $this->config->setAppValue($this->appName, $option, $value);
                     // Retrieve and convert back to boolean for the response.
@@ -1086,7 +1095,11 @@ class SettingsService
         $requests = $stats['requests'] ?? 0;
         $hits     = $stats['hits'] ?? 0;
 
-        return $requests > 0 ? ($hits / $requests) * 100 : 0.0;
+        if ($requests > 0) {
+            return ($hits / $requests) * 100;
+        } else {
+            return 0.0;
+        }
 
     }//end calculateHitRate()
 
@@ -1399,8 +1412,18 @@ class SettingsService
             $afterStats = $this->schemaCacheService->getCacheStatistics();
 
             // Stats arrays may contain 'entries' key even if not in type definition.
-            $beforeEntries = array_key_exists('entries', $beforeStats) ? $beforeStats['entries'] : 0;
-            $afterEntries  = array_key_exists('entries', $afterStats) ? $afterStats['entries'] : 0;
+            if (array_key_exists('entries', $beforeStats)) {
+                $beforeEntries = $beforeStats['entries'];
+            } else {
+                $beforeEntries = 0;
+            }
+
+            if (array_key_exists('entries', $afterStats)) {
+                $afterEntries = $afterStats['entries'];
+            } else {
+                $afterEntries = 0;
+            }
+
             return [
                 'service' => 'schema',
                 'cleared' => $beforeEntries - $afterEntries,
@@ -1711,8 +1734,41 @@ class SettingsService
         $serviceStats = $rawStats['service_stats'] ?? [];
         $totalOps     = ($serviceStats['searches'] ?? 0) + ($serviceStats['indexes'] ?? 0) + ($serviceStats['deletes'] ?? 0);
         $totalTime    = ($serviceStats['search_time'] ?? 0) + ($serviceStats['index_time'] ?? 0);
-        $opsPerSec    = $totalTime > 0 ? round($totalOps / ($totalTime / 1000), 2) : 0;
-        $errorRate    = $totalOps > 0 ? round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2) : 0;
+
+        // Calculate operations per second.
+        if ($totalTime > 0) {
+            $opsPerSec = round($totalOps / ($totalTime / 1000), 2);
+        } else {
+            $opsPerSec = 0;
+        }
+
+        // Calculate error rate.
+        if ($totalOps > 0) {
+            $errorRate = round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2);
+        } else {
+            $errorRate = 0;
+        }
+
+        // Determine core status.
+        if ($rawStats['available']) {
+            $coreStatus = 'active';
+        } else {
+            $coreStatus = 'inactive';
+        }
+
+        // Calculate average search time.
+        if (($serviceStats['searches'] ?? 0) > 0) {
+            $avgSearchTimeMs = round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2);
+        } else {
+            $avgSearchTimeMs = 0;
+        }
+
+        // Calculate average index time.
+        if (($serviceStats['indexes'] ?? 0) > 0) {
+            $avgIndexTimeMs = round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2);
+        } else {
+            $avgIndexTimeMs = 0;
+        }
 
         return [
             'overview'     => [
@@ -1727,7 +1783,7 @@ class SettingsService
             ],
             'cores'        => [
                 'active_core'  => $rawStats['collection'] ?? 'unknown',
-                'core_status'  => $rawStats['available'] ? 'active' : 'inactive',
+                'core_status'  => $coreStatus,
                 'endpoint_url' => 'N/A',
             // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly)
             ],
@@ -1735,8 +1791,8 @@ class SettingsService
                 'total_searches'     => $serviceStats['searches'] ?? 0,
                 'total_indexes'      => $serviceStats['indexes'] ?? 0,
                 'total_deletes'      => $serviceStats['deletes'] ?? 0,
-                'avg_search_time_ms' => ($serviceStats['searches'] ?? 0) > 0 ? round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2) : 0,
-                'avg_index_time_ms'  => ($serviceStats['indexes'] ?? 0) > 0 ? round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2) : 0,
+                'avg_search_time_ms' => $avgSearchTimeMs,
+                'avg_index_time_ms'  => $avgIndexTimeMs,
                 'total_search_time'  => $serviceStats['search_time'] ?? 0,
                 'total_index_time'   => $serviceStats['index_time'] ?? 0,
                 'operations_per_sec' => $opsPerSec,

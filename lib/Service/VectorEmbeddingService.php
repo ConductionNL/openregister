@@ -1758,7 +1758,8 @@ class VectorEmbeddingService
         if (($data['facet_counts']['facet_fields']['_embedding_model_'] ?? null) !== null) {
             $facets = $data['facet_counts']['facet_fields']['_embedding_model_'];
             // Facets are returned as [value1, count1, value2, count2, ...].
-            for ($i = 0; $i < count($facets); $i += 2) {
+            $facetCount = count($facets);
+            for ($i = 0; $i < $facetCount; $i += 2) {
                 if (($facets[$i] ?? null) !== null && (($facets[$i + 1] ?? null) !== null) === true) {
                     $modelName  = $facets[$i];
                     $modelCount = $facets[$i + 1];
@@ -2128,8 +2129,9 @@ class VectorEmbeddingService
         $dotProduct = 0.0;
         $magnitude1 = 0.0;
         $magnitude2 = 0.0;
+        $vectorLength = count($vector1);
 
-        for ($i = 0; $i < count($vector1); $i++) {
+        for ($i = 0; $i < $vectorLength; $i++) {
             $dotProduct += $vector1[$i] * $vector2[$i];
             $magnitude1 += $vector1[$i] ** 2;
             $magnitude2 += $vector2[$i] ** 2;

@@ -36,8 +36,10 @@
     <rule ref="rulesets/controversial.xml/CamelCaseClassName"/>
     <rule ref="rulesets/controversial.xml/CamelCasePropertyName"/>
     <rule ref="rulesets/controversial.xml/CamelCaseMethodName"/>
-    <rule ref="rulesets/controversial.xml/CamelCaseParameterName"/>
-    <rule ref="rulesets/controversial.xml/CamelCaseVariableName"/>
+    <!-- CamelCaseParameterName removed - we allow leading underscores on parameters (convention for unused/config params) -->
+    <!-- <rule ref="rulesets/controversial.xml/CamelCaseParameterName"/> -->
+    <!-- CamelCaseVariableName removed - we allow leading underscores on variables (convention for unused loop vars) -->
+    <!-- <rule ref="rulesets/controversial.xml/CamelCaseVariableName"/> -->
 
     <!-- Design Rules -->
     <rule ref="rulesets/design.xml/ExitExpression"/>

@@ -3394,7 +3394,7 @@ class GuzzleSolrService
      *
      * @psalm-return array{success: bool, error?: string, error_details?: 'No collection found for the current tenant'|'SOLR connection is not configured or unavailable'|array{solr_error?: 'Unknown SOLR error'|mixed, error_code?: -1|mixed, query: string, collection?: string, full_response?: mixed, exception_type?: string, message?: string, solr_response?: \ArrayAccess|array{error: mixed,...}, http_status?: int}, deleted_docs?: 0|mixed}|bool
      */
-    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool|array
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         if ($this->isAvailable() === false) {
             if ($returnDetails === true) {
@@ -4103,7 +4103,8 @@ class GuzzleSolrService
         if (($responseData['facet_counts']['facet_fields'] ?? null) !== null) {
             foreach ($responseData['facet_counts']['facet_fields'] as $field => $values) {
                 $facetData = [];
-                for ($i = 0; $i < count($values); $i += 2) {
+                $valueCount = count($values);
+                for ($i = 0; $i < $valueCount; $i += 2) {
                     if (($values[$i + 1] ?? null) !== null) {
                         $facetData[] = [
                             'value' => $values[$i],
@@ -5781,12 +5782,13 @@ class GuzzleSolrService
                 // Batch fetched (logging removed for performance)
 
                 $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset, $schemaIds);
+                $objectsCount = count($objects);
 
                 $fetchEnd = microtime(true);
                 $fetchDuration = round(($fetchEnd - $fetchStart) * 1000, 2);
                 $this->logger->info('✅ Batch fetch complete', [
                     'batch' => $batchCount + 1,
-                    'objectsFound' => count($objects),
+                    'objectsFound' => $objectsCount,
                     'fetchTime' => $fetchDuration . 'ms'
                 ]);
 
@@ -5860,7 +5862,7 @@ class GuzzleSolrService
                 $totalIndexed += $indexed; // Use actual indexed count, not object count
                 $offset += $currentBatchSize;
 
-            } while (count($objects) === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
+            } while ($objectsCount === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
 
             // **CRITICAL**: Commit all indexed documents at the end
             $this->commit();
@@ -6031,7 +6033,7 @@ class GuzzleSolrService
     /**
      * Process a single batch directly without ReactPHP promises
      *
-     * @param ObjectEntityMapper $objectMapper
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper
      * @param array $job
      *
      * @return (bool|int|mixed|string)[]

@@ -691,7 +691,7 @@ class FileService
      *
      * @throws Exception If the entity folder cannot be accessed
      *
-     * @psalm-return list<OCP\Files\Node>
+     * @psalm-return list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
@@ -2461,12 +2461,12 @@ class FileService
      *
      * @param ObjectEntity|string $object The object or object ID to fetch files for
      *
-     * @return OCP\Files\Node[]
+     * @return Node[]
      *
      * @throws NotFoundException If the folder is not found
      * @throws DoesNotExistException If the object ID is not found
      *
-     * @psalm-return list<OCA\OpenRegister\Service\OCP\Files\Node>
+     * @psalm-return list<OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
