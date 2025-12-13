@@ -1075,7 +1075,7 @@ class SaveObjects
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
 
-                //end if..
+                //end if...
                 if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                     // NEW STRUCTURE: object property contains business data.
                     $businessData = $object['object'];
@@ -1170,7 +1170,7 @@ class SaveObjects
             'saved'      => [],
             'updated'    => [],
 // Ensure consistent result structure.
-            //end if.
+            //end if..
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
@@ -1474,7 +1474,7 @@ class SaveObjects
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
-        //end if
+        //end if.
         $config = $schema->getConfiguration();
         $properties = $schema->getProperties();
 
@@ -1619,9 +1619,9 @@ class SaveObjects
                 // Handle single object relations.
                 if (($propertyInfo['isArray'] === false) === true && is_string($value) === true && \Symfony\Component\Uid\Uuid::isValid($value) === true) {
                     if (isset($objectsByUuid[$value]) === true) {
-                        // @psalm-suppress EmptyArrayAccess - Already checked isset above
+                        // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                         $targetObject = &$objectsByUuid[$value];
-                        // @psalm-suppress EmptyArrayAccess - Already checked isset above
+                        // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                         $existingValues = ($targetObject[$inversedBy] ?? []);
                         // @psalm-suppress EmptyArrayAccess - $existingValues is initialized with ?? []
                         if (is_array($existingValues) === false) {
@@ -1639,14 +1639,14 @@ class SaveObjects
                     foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
                             if (isset($objectsByUuid[$relatedUuid]) === true) {
-                                // @psalm-suppress EmptyArrayAccess - Already checked isset above
+                                // @psalm-suppress EmptyArrayAccess - Already checked isset above.
                                 $targetObject = &$objectsByUuid[$relatedUuid];
                                 // @psalm-suppress EmptyArrayAccess - $targetObject is guaranteed to exist from isset check
                                 $existingValues = ($targetObject[$inversedBy] ?? []);
                                 if (is_array($existingValues) === false) {
                                     $existingValues = [];
                                 }
-                                //end if...
+                                //end if....
                                 if (in_array($objectUuid, $existingValues, true) === false) {
                                     //end foreach......
                                     $existingValues[] = $objectUuid;
@@ -1876,7 +1876,7 @@ class SaveObjects
         // Return both transformed objects and any invalid objects found during transformation.
         return [
             'valid' => $transformedObjects,
-            //end if.
+            //end if..
             'invalid' => $invalidObjects
         //end foreach..
         ];
@@ -2054,7 +2054,7 @@ class SaveObjects
             } catch (Exception $e) {
 // Skip inverse relations processing if bulk fetch fails.
             }
-        //end if
+        //end if.
         }
 
         // Second pass: process inverse relations with proper context.

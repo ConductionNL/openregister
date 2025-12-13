@@ -643,7 +643,7 @@ class RegistersController extends Controller
 
             // If path is empty, use a default filename based on register slug.
             if (empty($path) === true) {
-                $slug = $register->getSlug();
+                $slug = $register->getSlug() ?? 'register';
                 $path = $slug.'_openregister.json';
             }
 

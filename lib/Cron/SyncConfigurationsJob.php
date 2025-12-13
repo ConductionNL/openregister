@@ -278,7 +278,7 @@ class SyncConfigurationsJob extends TimedJob
         $configData = $this->githubService->getFileContent(owner: $owner, repo: $repo, path: $githubPath, branch: $githubBranch);
 
         // Get app ID and version.
-        $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp();
+        $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
         $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
         // Import the configuration (force update).
@@ -334,7 +334,7 @@ class SyncConfigurationsJob extends TimedJob
         $configData = $this->gitlabService->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
         // Get app ID and version.
-        $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp();
+        $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
         $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
         // Import the configuration (force update).
@@ -381,7 +381,7 @@ class SyncConfigurationsJob extends TimedJob
         }
 
         // Get app ID and version.
-        $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp();
+        $appId   = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
         $version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
         // Import the configuration (force update).
@@ -419,8 +419,8 @@ class SyncConfigurationsJob extends TimedJob
         }
 
         // Get app ID and version.
-        $appId   = $configuration->getApp();
-        $version = $configuration->getVersion();
+        $appId   = $configuration->getApp() ?? 'unknown';
+        $version = $configuration->getVersion() ?? '1.0.0';
 
         // Use importFromFilePath to reload from file.
         $this->configurationService->importFromFilePath(

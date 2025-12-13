@@ -511,7 +511,7 @@ class FileMapper extends QBMapper
         $result = $qb->executeStatement();
 
         if ($result !== 1) {
-            throw new \Exception('Failed to create public share in database');
+            throw new Exception('Failed to create public share in database');
         }
 
         // Get the ID of the newly created share.
@@ -818,7 +818,7 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         if ($fileInfo === false || $fileInfo === null) {
-            throw new \Exception("File with ID $fileId not found in filecache");
+            throw new Exception("File with ID $fileId not found in filecache");
         }
 
         $storageId = $fileInfo['storage'];

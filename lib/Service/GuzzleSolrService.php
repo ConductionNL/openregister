@@ -285,7 +285,7 @@ class GuzzleSolrService
     public function buildSolrBaseUrl(): string
     {
         $host = $this->solrConfig['host'] ?? 'localhost';
-        $port = $this->solrConfig['port'] ?? null; // Don't default port here
+        $port = $this->solrConfig['port'] ?? null; // Don't default port here.
 
         // Normalize port - convert string '0' to null, handle empty strings.
         if ($port === '0' || $port === '' || $port === null) {
@@ -1683,7 +1683,7 @@ class GuzzleSolrService
                             'array_size' => count($fieldValue)
                         ]);
                     }
-                    continue; // Skip to next field after processing array
+                    continue; // Skip to next field after processing array.
                 }
 
                 // **FILTER OBJECTS**: Skip standalone objects (not arrays).
@@ -2202,20 +2202,20 @@ class GuzzleSolrService
 
                     // **SECONDARY**: Typed fields for advanced faceting and sorting.
                     if (is_string($value)) {
-                        $document[$key . '_s'] = $value;  // String field for faceting/filtering
-                        $document[$key . '_t'] = $value;  // Text field for full-text search
+                        $document[$key . '_s'] = $value;  // String field for faceting/filtering.
+                        $document[$key . '_t'] = $value;  // Text field for full-text search.
                     } elseif (is_numeric($value)) {
-                        $document[$key . '_i'] = (int)$value;    // Integer field
-                        $document[$key . '_f'] = (float)$value;  // Float field
+                        $document[$key . '_i'] = (int)$value;    // Integer field.
+                        $document[$key . '_f'] = (float)$value;  // Float field.
                     } elseif (is_bool($value)) {
-                        $document[$key . '_b'] = $value;  // Boolean field
+                        $document[$key . '_b'] = $value;  // Boolean field.
                     }
                 }
             }
         }
 
         // Add metadata fields with self_ prefix for easy identification and faceting.
-        $document['self_id'] = $uuid; // Always use UUID for consistency
+        $document['self_id'] = $uuid; // Always use UUID for consistency.
         $document['self_uuid'] = $uuid;
         $document['self_register'] = $this->resolveRegisterToId($object->getRegister());
         $document['self_schema'] = $this->resolveSchemaToId($object->getSchema());
@@ -2583,7 +2583,7 @@ class GuzzleSolrService
 
         foreach ($query as $key => $value) {
             if (str_starts_with($key, '_')) {
-                continue; // Skip internal parameters
+                continue; // Skip internal parameters.
             }
 
             // Handle @self metadata filters....
@@ -2821,7 +2821,7 @@ class GuzzleSolrService
             return implode(', ', $sortParts);
         }
 
-        return 'self_created desc'; // Default sort
+        return 'self_created desc'; // Default sort.
     }
 
     /**
@@ -2838,30 +2838,30 @@ class GuzzleSolrService
     {
         // Handle @self.* fields (metadata)
         if (str_starts_with($field, '@self.')) {
-            $metadataField = substr($field, 6); // Remove '@self.'
+            $metadataField = substr($field, 6); // Remove '@self.'.
 
             // Map metadata fields to their sortable Solr equivalents..
             $sortableFieldMappings = [
                 // Text fields use _s suffix (string type, single-valued, not tokenized).
-                'name' => 'self_name_s',           // Use sortable string variant
-                'title' => 'self_title_s',         // Use sortable string variant (if exists)
-                'summary' => 'self_summary_s',     // Use sortable string variant
-                'description' => 'self_description_s', // Use sortable string variant
-                'slug' => 'self_slug_s',           // Use sortable string variant
+                'name' => 'self_name_s',           // Use sortable string variant.
+                'title' => 'self_title_s',         // Use sortable string variant (if exists).
+                'summary' => 'self_summary_s',     // Use sortable string variant.
+                'description' => 'self_description_s', // Use sortable string variant.
+                'slug' => 'self_slug_s',           // Use sortable string variant.
 
                 // Date/time fields are already sortable.
-                'published' => 'self_published',   // Date fields are sortable
-                'created' => 'self_created',       // Date fields are sortable
-                'updated' => 'self_updated',       // Date fields are sortable
-                'depublished' => 'self_depublished', // Date fields are sortable
+                'published' => 'self_published',   // Date fields are sortable.
+                'created' => 'self_created',       // Date fields are sortable.
+                'updated' => 'self_updated',       // Date fields are sortable.
+                'depublished' => 'self_depublished', // Date fields are sortable.
 
                 // Integer/UUID fields are already sortable.
-                'register' => 'self_register',     // Integer fields are sortable
-                'schema' => 'self_schema',         // Integer fields are sortable
-                'organisation' => 'self_organisation', // UUID fields are sortable
-                'owner' => 'self_owner',           // Integer fields are sortable
-                'id' => 'id',                      // ID is always sortable
-                'uuid' => 'self_uuid'              // UUID is sortable
+                'register' => 'self_register',     // Integer fields are sortable.
+                'schema' => 'self_schema',         // Integer fields are sortable.
+                'organisation' => 'self_organisation', // UUID fields are sortable.
+                'owner' => 'self_owner',           // Integer fields are sortable.
+                'id' => 'id',                      // ID is always sortable.
+                'uuid' => 'self_uuid'              // UUID is sortable.
             ];
 
             if (isset($sortableFieldMappings[$metadataField])) {
@@ -5441,7 +5441,7 @@ class GuzzleSolrService
             // Use object collection for overall stats if available, otherwise fallback.
             $primaryCollection = $objectCollection ?? $legacyCollection;
             $primaryStats = $objectStats ?? $legacyStats;
-            $docCount = $objectDocCount + $legacyDocCount; // Combined document count
+            $docCount = $objectDocCount + $legacyDocCount; // Combined document count.
 
             // Use object collection for overall stats if available, otherwise fallback..
             if ($objectCollection !== null) {
@@ -5821,7 +5821,7 @@ class GuzzleSolrService
                 ->from('openregister_objects', 'o')
                 ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
                 ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
-                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects.
 
             // Add schema filtering if schema IDs are provided.
             if (!empty($schemaIds)) {
@@ -5866,7 +5866,7 @@ class GuzzleSolrService
                 ->from('openregister_objects', 'o')
                 ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
                 ->where($qb->expr()->eq('s.searchable', $qb->createNamedParameter(true, \PDO::PARAM_BOOL)))
-                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects
+                ->andWhere($qb->expr()->isNull('o.deleted')); // Exclude deleted objects.
 
             // Add schema filtering if schema IDs are provided.
             if (!empty($schemaIds)) {
@@ -5875,7 +5875,7 @@ class GuzzleSolrService
 
             $qb->setMaxResults($limit)
                 ->setFirstResult($offset)
-                ->orderBy('o.id', 'ASC'); // Consistent ordering for pagination
+                ->orderBy('o.id', 'ASC'); // Consistent ordering for pagination.
 
             $result = $qb->executeQuery();
             $rows = $result->fetchAll();
@@ -5996,7 +5996,7 @@ class GuzzleSolrService
                 ]);
 
                 if (empty($objects)) {
-                    break; // No more objects
+                    break; // No more objects.
                 }
 
                 // **IMPROVED**.: Index only searchable objects (already filtered at database level).
@@ -6044,8 +6044,8 @@ class GuzzleSolrService
                     $indexStart = microtime(true);
                     // Bulk index the documents (minimal logging for performance).
 
-                    $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
-                    $indexed = count($documents); // If we reach here, indexing succeeded
+                    $this->bulkIndex($documents, true); // Commit each batch for immediate visibility.
+                    $indexed = count($documents); // If we reach here, indexing succeeded.
 
                     $indexEnd = microtime(true);
                     $indexDuration = round(($indexEnd - $indexStart) * 1000, 2);
@@ -6062,7 +6062,7 @@ class GuzzleSolrService
                 }
 
                 $batchCount++;
-                $totalIndexed += $indexed; // Use actual indexed count, not object count
+                $totalIndexed += $indexed; // Use actual indexed count, not object count.
                 $offset += $currentBatchSize;
 
             } while ($objectsCount === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
@@ -6304,7 +6304,7 @@ class GuzzleSolrService
                     'limit' => $job['limit']
                 ]);
 
-                $bulkResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
+                $bulkResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility.
 
                 $this->logger->info('🔥 WARMUP: Bulk index result', [
                     'batchNumber' => $job['batchNumber'],
@@ -6313,7 +6313,7 @@ class GuzzleSolrService
                 ]);
 
                 if ($bulkResult) {
-                    $indexed = count($documents); // If we reach here, indexing succeeded
+                    $indexed = count($documents); // If we reach here, indexing succeeded.
                 } else {
                     $this->logger->error('🔥 WARMUP: Bulk index returned FALSE!', [
                         'batchNumber' => $job['batchNumber'],
@@ -6395,7 +6395,7 @@ class GuzzleSolrService
                 schema: null,
                 published: true, // Only fetch published objects
                 rbac: false,     // Skip RBAC for performance
-                multi: false     // Skip multitenancy for performance
+                multi: false     // Skip multitenancy for performance.
             );
 
             if (empty($objects)) {
@@ -6431,7 +6431,7 @@ class GuzzleSolrService
             // Bulk index the entire batch.
             $indexed = 0;
             if (!empty($documents)) {
-                $success = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
+                $success = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility.
                 $indexed = $success ? count($documents) : 0;
             }
 
@@ -6485,7 +6485,7 @@ class GuzzleSolrService
 
             // **OPTIMIZATION**: Single large batch instead of multiple small ones.
             $query = [
-                '_limit' => $maxObjects, // Get all objects in one go
+                '_limit' => $maxObjects, // Get all objects in one go.
                 '_offset' => 0
             ];
 
@@ -6509,7 +6509,7 @@ class GuzzleSolrService
                 schema: null,
                 published: true, // Only fetch published objects
                 rbac: false,     // Skip RBAC for performance
-                multi: false     // Skip multitenancy for performance
+                multi: false     // Skip multitenancy for performance.
             );
 
             if (empty($objects)) {
@@ -6550,8 +6550,8 @@ class GuzzleSolrService
 
             // **OPTIMIZATION**: Single massive bulk index operation.
             if (!empty($documents)) {
-                $this->bulkIndex($documents, true); // Commit immediately - will throw on error
-                $totalIndexed = count($documents); // If we reach here, indexing succeeded
+                $this->bulkIndex($documents, true); // Commit immediately - will throw on error.
+                $totalIndexed = count($documents); // If we reach here, indexing succeeded.
                 $batchCount = 1;
             }
 
@@ -6863,7 +6863,7 @@ class GuzzleSolrService
 
                 // Lazy-load SolrSchemaService to avoid circular dependency.
                 $solrSchemaService = \OC::$server->get(SolrSchemaService::class);
-                $mirrorResult = $solrSchemaService->mirrorSchemas(true); // Force update for testing
+                $mirrorResult = $solrSchemaService->mirrorSchemas(true); // Force update for testing.
                 $operations['schema_mirroring'] = $mirrorResult['success'] ?? false;
                 $operations['schemas_processed'] = $mirrorResult['stats']['schemas_processed'] ?? 0;
                 $operations['fields_created'] = $mirrorResult['stats']['fields_created'] ?? 0;
@@ -6874,7 +6874,7 @@ class GuzzleSolrService
                 $fieldManagementStart = microtime(true);
 
                 // Skip automatic field creation - use dedicated field management instead.
-                $operations['missing_fields_created'] = true; // Always true since we skip this step
+                $operations['missing_fields_created'] = true; // Always true since we skip this step.
                 $operations['fields_added'] = 0;
                 $operations['fields_updated'] = 0;
 
@@ -6903,7 +6903,7 @@ class GuzzleSolrService
                 $fieldManagementStart = microtime(true);
 
                 // Skip automatic field creation - use dedicated field management instead.
-                $operations['missing_fields_created'] = true; // Always true since we skip this step
+                $operations['missing_fields_created'] = true; // Always true since we skip this step.
                 $operations['fields_added'] = 0;
                 $operations['fields_updated'] = 0;
 
@@ -6943,9 +6943,9 @@ class GuzzleSolrService
 
             // 4. Perform basic warmup queries to warm SOLR caches.
             $warmupQueries = [
-                ['q' => '*:*', 'rows' => 1],           // Basic query to warm general cache
-                ['q' => 'name:*', 'rows' => 5],       // Name field search to warm field caches
-                ['q' => '*:*', 'rows' => 0, 'facet.field' => 'register_id_i'] // Facet query to warm facet cache
+                ['q' => '*:*', 'rows' => 1],           // Basic query to warm general cache.
+                ['q' => 'name:*', 'rows' => 5],       // Name field search to warm field caches.
+                ['q' => '*:*', 'rows' => 0, 'facet.field' => 'register_id_i'] // Facet query to warm facet cache.
             ];
 
             $successfulQueries = 0;
@@ -7237,7 +7237,7 @@ class GuzzleSolrService
 
                 // Bulk index the batch.
                 if (!empty($documents)) {
-                    $indexResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility
+                    $indexResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility.
                     if ($indexResult) {
                         $totalIndexed += count($documents);
                     } else {
@@ -8604,7 +8604,7 @@ class GuzzleSolrService
         }
 
         // **TRUNCATE SAFELY**: Ensure we don't break UTF-8 characters.
-        $truncated = mb_strcut($value, 0, $maxBytes - 100, 'UTF-8'); // Leave buffer for safety
+        $truncated = mb_strcut($value, 0, $maxBytes - 100, 'UTF-8'); // Leave buffer for safety.
 
         // Add truncation indicator.
         $truncated .= '...[TRUNCATED]';
@@ -8713,7 +8713,7 @@ class GuzzleSolrService
                 }
 
                 if (!isset($field['name']) || !isset($field['docValues']) || $field['docValues'] !== true) {
-                    continue; // Skip fields without docValues
+                    continue; // Skip fields without docValues.
                 }
 
                 $fieldName = $field['name'];
@@ -8722,7 +8722,7 @@ class GuzzleSolrService
                 // Categorize fields.
                 if (str_starts_with($fieldName, 'self_')) {
                     // Metadata field.
-                    $metadataKey = substr($fieldName, 5); // Remove 'self_' prefix
+                    $metadataKey = substr($fieldName, 5); // Remove 'self_' prefix.
                     $facetableFields['@self'][$metadataKey] = [
                         'name'           => $metadataKey,
                         'type'           => $this->mapSolrTypeToFacetType($fieldType),
@@ -8838,7 +8838,7 @@ class GuzzleSolrService
                 // Categorize fields.
                 if (str_starts_with($fieldName, 'self_')) {
                     // Metadata field.
-                    $metadataKey = substr($fieldName, 5); // Remove 'self_' prefix
+                    $metadataKey = substr($fieldName, 5); // Remove 'self_' prefix.
                     $fieldInfo['displayName'] = ucfirst(str_replace('_', ' ', $metadataKey));
                     $fieldInfo['category'] = 'metadata';
                     $rawFields['@self'][$metadataKey] = $fieldInfo;
@@ -8974,7 +8974,7 @@ class GuzzleSolrService
         // Build faceting query using the same parameters as the main query.
         // but with rows=0 for performance and JSON faceting enabled.
         $facetQuery = $solrQuery;
-        $facetQuery['rows'] = 0; // We only want facet data
+        $facetQuery['rows'] = 0; // We only want facet data.
 
 
         // Add JSON faceting for core metadata fields with domain filtering.
@@ -10389,7 +10389,7 @@ class GuzzleSolrService
             // In a full implementation, this would query the current schema context.
             // and extract field information from schema properties.
 
-            return null; // Placeholder - would need schema context to implement fully
+            return null; // Placeholder - would need schema context to implement fully.
 
         } catch (Exception $e) {
             $this->logger->debug(

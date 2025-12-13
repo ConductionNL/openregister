@@ -831,7 +831,7 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o')
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
             ->setMaxResults($limit)
-            ->setFirstResult($offset);
+            ->setFirstResult($offset ?? 0);
 
         // Apply RBAC filtering based on user permissions.
         $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
@@ -911,7 +911,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
-        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
+        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search ?? '');
 
         $sortInRoot = [];
         foreach ($sort as $key => $descOrAsc) {
@@ -924,7 +924,7 @@ class ObjectEntityMapper extends QBMapper
         if (empty($sortInRoot) === false) {
             $qb = $this->databaseJsonService->orderInRoot(builder: $qb, order: $sortInRoot);
         } else {
-            $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort);
+            $qb = $this->databaseJsonService->orderJson(builder: $qb, order: $sort ?? []);
         }
 
         return $this->findEntities(query: $qb);
@@ -2109,7 +2109,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Filter and search the objects.
         $qb = $this->databaseJsonService->filterJson(builder: $qb, filters: $filters);
-        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search);
+        $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search ?? '');
 
         $result = $qb->executeQuery();
 
@@ -3719,6 +3719,9 @@ class ObjectEntityMapper extends QBMapper
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
         // Use the optimized bulk operations handler for maximum performance.
+        if (!isset($this->logger)) {
+            throw new RuntimeException('Logger not initialized in ObjectEntityMapper.');
+        }
         $optimizedHandler = new OptimizedBulkOperations(
             $this->db,
             $this->logger

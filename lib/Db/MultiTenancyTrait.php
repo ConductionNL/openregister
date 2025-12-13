@@ -266,7 +266,7 @@ trait MultiTenancyTrait
             // return $qb;
         }
 
-        // Get active organisation UUIDs (active + all parents).
+        // Get active organisation. UUIDs (active + all parents).
         $activeOrganisationUuids = $this->getActiveOrganisationUuids();
 
         // Build fully qualified column name.
@@ -303,7 +303,7 @@ trait MultiTenancyTrait
                 $orgConditions->add($qb->expr()->isNull($organisationColumn));
             }
 
-            // Include published entities if bypass is enabled (works for objects, schemas, registers)
+            // Include published entities if bypass is enabled (works for objects, schemas, registers).
             // Note: Organizations can see their own depublished items via the organization filter above.
             // The depublished check here only applies to the published bypass (entities from OTHER organizations).
             if ($publishedBypassEnabled === true && $enablePublished === true) {
@@ -326,7 +326,7 @@ trait MultiTenancyTrait
                     $qb->expr()->andX(
                         $qb->expr()->isNotNull($publishedColumn),
                         $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
-                        // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished).
+                        // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)..
                         $qb->expr()->orX(
                             $qb->expr()->isNull($depublishedColumn),
                             $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
@@ -394,7 +394,7 @@ trait MultiTenancyTrait
         // Include entities from active organisation(s) and parents.
         // IMPORTANT: Users can see their own organization's depublished items.
         // Children can see ALL parent organization items (including depublished).
-        // Logic:
+        // Logic:.
         // 1. Entity is from direct active organization - includes ALL items (including depublished).
         // 2. Entity is from parent organization(s) - includes ALL items (including depublished).
         // 3. Entity is published and not depublished from ANY organization (via published bypass).
@@ -426,7 +426,7 @@ trait MultiTenancyTrait
 
         // Include published entities if bypass is enabled (works for objects, schemas, registers).
         //
-        // BEHAVIOR WHEN ENABLED:
+        // BEHAVIOR WHEN ENABLED:.
         // - Published objects bypass RBAC read permissions (anyone can read published objects).
         // - Published objects bypass organization filtering (visible from ANY organization).
         // - Published objects do NOT bypass RBAC create/update/delete (still require permissions).
@@ -435,12 +435,12 @@ trait MultiTenancyTrait
         // Organizations can still see their own depublished items via the organization filter above.
         // The depublished check here only applies to entities accessed via published bypass (from other organizations).
         //
-        // RESULT: Users see:
+        // RESULT: Users see:.
         // - ALL published (but not depublished) objects from ALL organizations (via published bypass).
         // - ALL objects (including depublished) from their own organization (via organization filter).
         // This is intentional when publishedObjectsBypassMultiTenancy is enabled in config.
         //
-        // If users report seeing too many objects from other organizations, check:
+        // If users report seeing too many objects from other organizations, check:.
         // 1. Is publishedObjectsBypassMultiTenancy enabled in config? (should be false for strict multi-tenancy).
         // 2. How many objects are currently published?
         // 3. Are objects being published unintentionally?
@@ -451,7 +451,7 @@ trait MultiTenancyTrait
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull($publishedColumn),
                     $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
-                    // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)
+                    // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished).
                     $qb->expr()->orX(
                         $qb->expr()->isNull($depublishedColumn),
                         $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
@@ -460,7 +460,7 @@ trait MultiTenancyTrait
             );
         }
 
-        // Include NULL organisation entities for admins (legacy data)
+        // Include NULL organisation entities for admins (legacy data).
         if ($isAdmin === true && $allowNullOrg === true) {
             $orgConditions->add($qb->expr()->isNull($organisationColumn));
         }
@@ -513,17 +513,17 @@ trait MultiTenancyTrait
      */
     protected function setOwnerOnCreate(Entity $entity): void
     {
-        // Only set owner if the entity has an owner property
+        // Only set owner if the entity has an owner property.
         if (!method_exists($entity, 'getOwner') || !method_exists($entity, 'setOwner')) {
             return;
         }
 
-        // Only set owner if not already set (allow explicit owner assignment)
+        // Only set owner if not already set (allow explicit owner assignment).
         if ($entity->getOwner() !== null && $entity->getOwner() !== '') {
             return;
         }
 
-        // Get current user from session
+        // Get current user from session.
         if (isset($this->userSession) === false) {
             return;
         }
@@ -565,7 +565,7 @@ trait MultiTenancyTrait
 
         // Verify the organisations match (applies to everyone including admins).
         if ($entityOrgUuid !== $activeOrgUuid) {
-            throw new \Exception(
+            throw new Exception(
                 'Security violation: You do not have permission to access this resource from a different organisation.',
                 Response::HTTP_FORBIDDEN
             );
@@ -598,7 +598,7 @@ trait MultiTenancyTrait
      */
     protected function hasRbacPermission(string $action, string $entityType): bool
     {
-        // Admins always have all permissions
+        // Admins always have all permissions.
         if ($this->isCurrentUserAdmin() === true) {
             return true;
         }
@@ -610,9 +610,9 @@ trait MultiTenancyTrait
             return false;
         }
 
-        // Get active organisation
+        // Get active organisation.
         if (isset($this->organisationService) === false) {
-            // No organisation service, allow access (backward compatibility)
+            // No organisation service, allow access (backward compatibility).
             return true;
         }
 
@@ -625,15 +625,15 @@ trait MultiTenancyTrait
         // Check if user is in the organisation's users list.
         $orgUsers = $activeOrg->getUserIds();
         if (in_array($userId, $orgUsers) === true) {
-            // User is explicitly listed in the organisation - check authorization
+            // User is explicitly listed in the organisation - check authorization.
         } else {
             // User is not in the organisation.
             return false;
         }
 
-        // Get user's groups
+        // Get user's groups.
         if (isset($this->groupManager) === false) {
-            // No group manager, allow access (backward compatibility)
+            // No group manager, allow access (backward compatibility).
             return true;
         }
 
@@ -647,25 +647,25 @@ trait MultiTenancyTrait
         // Get organisation's authorization configuration.
         $authorization = $activeOrg->getAuthorization();
         if ($authorization === null || empty($authorization) === true) {
-            // No RBAC configured, allow access (backward compatibility)
+            // No RBAC configured, allow access (backward compatibility).
             return true;
         }
 
-        // Check if the entity type exists in authorization
+        // Check if the entity type exists in authorization.
         if (isset($authorization[$entityType]) === false) {
-            // Entity type not in authorization, allow access (backward compatibility)
+            // Entity type not in authorization, allow access (backward compatibility).
             return true;
         }
 
-        // Check if the action exists for this entity type
+        // Check if the action exists for this entity type.
         if (isset($authorization[$entityType][$action]) === false) {
-            // Action not configured, allow access (backward compatibility)
+            // Action not configured, allow access (backward compatibility).
             return true;
         }
 
         $allowedGroups = $authorization[$entityType][$action];
 
-        // If the array is empty, it means no restrictions (allow all)
+        // If the array is empty, it means no restrictions (allow all).
         if (empty($allowedGroups) === true) {
             return true;
         }
@@ -677,7 +677,7 @@ trait MultiTenancyTrait
             }
         }
 
-        // Check for wildcard group
+        // Check for wildcard group.
         if (in_array('*', $allowedGroups) === true) {
             return true;
         }
@@ -701,7 +701,7 @@ trait MultiTenancyTrait
     protected function verifyRbacPermission(string $action, string $entityType): void
     {
         if ($this->hasRbacPermission($action, $entityType) === false) {
-            throw new \Exception(
+            throw new Exception(
                 "Access denied: You do not have permission to {$action} {$entityType} entities.",
                 Response::HTTP_FORBIDDEN
             );

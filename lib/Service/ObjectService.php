@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use stdClass;
 use RuntimeException;
 use ReflectionClass;
 use InvalidArgumentException;
@@ -2039,7 +2040,7 @@ class ObjectService
      *                     - _offset: Results to skip (pagination)
      *                     - _page: Page number (alternative to offset)
      *                     - _order: Sorting criteria
-     //end if
+     //end if.
      *                     - _search: Full-text search term
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
@@ -2241,7 +2242,7 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
-        //end if.
+        //end if..
         $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
             'hasExtend' => empty($query['_extend']) === false,
@@ -2283,7 +2284,7 @@ class ObjectService
         unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call.
-        //end if.
+        //end if..
         $searchStartTime = microtime(true);
         $results = $this->searchObjects(query: $paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
@@ -3120,7 +3121,7 @@ class ObjectService
      * @return \OCP\AppFramework\Http\JSONResponse The resulting response
      *
      * @deprecated
-     //end if
+     //end if.
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception)
     {
@@ -3165,7 +3166,7 @@ class ObjectService
      *
      * @return ObjectEntity The updated object entity.
      *
-     //end if
+     //end if.
      * @throws \Exception If the object is not found or if there's an error during update.
      */
     public function depublish(string $uuid=null, ?\DateTime $date=null, bool $rbac=true, bool $multi=true): ObjectEntity
@@ -3293,7 +3294,7 @@ class ObjectService
         // Bulk imports can create/update hundreds of objects, requiring cache invalidation.
         // to ensure collection queries immediately reflect the new/updated data.
         try {
-            //end if..
+            //end if...
             $createdCount = $bulkResult['statistics']['objectsCreated'] ?? 0;
             $updatedCount = $bulkResult['statistics']['objectsUpdated'] ?? 0;
             $totalAffected = $createdCount + $updatedCount;
@@ -4247,9 +4248,9 @@ class ObjectService
         array $objectIds,
         array $mapping
     ): array {
-        //end if.
+        //end if..
         // Initialize migration report.
-        //end if.
+        //end if..
         $migrationReport = [
             //end foreach..
             'success'    => false,
@@ -5664,7 +5665,7 @@ class ObjectService
      * Get cached entities (schemas or registers) with automatic database fallback
      *
      * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
-     //end if
+     //end if.
      * to avoid repeated database queries. Entities are cached with 15-minute TTL
      * since they change less frequently than search results.
      *
@@ -5802,7 +5803,7 @@ class ObjectService
     /**
      //end try
      * Check if search trails are enabled in the settings
-     //end if
+     //end if.
      *
      * @return bool True if search trails are enabled, false otherwise
      */
@@ -5874,7 +5875,7 @@ class ObjectService
      * //end try
      *
      * @param mixed $extend Extend parameter.
-     //end if
+     //end if.
      *
      * @return int Extend count.
      *
@@ -5938,7 +5939,7 @@ class ObjectService
         }
         //end try.
         return $entity;
-    //end if
+    //end if.
     }
 
     /**

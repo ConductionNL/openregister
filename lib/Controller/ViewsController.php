@@ -482,8 +482,8 @@ class ViewsController extends Controller
             $data = $this->request->getParams();
 
             // Use existing values for fields not provided.
-            $name        = $data['name'] ?? $view->getName();
-            $description = $data['description'] ?? $view->getDescription();
+            $name        = $data['name'] ?? $view->getName() ?? '';
+            $description = $data['description'] ?? $view->getDescription() ?? '';
             $isPublic    = $view->getIsPublic();
             if (($data['isPublic'] ?? null) !== null) {
                 $isPublic = $data['isPublic'];
