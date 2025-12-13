@@ -46,6 +46,8 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use stdClass;
+use RuntimeException;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -303,13 +305,13 @@ class FileService
      *
      * @param Register $register The Register to get the folder name for
      *
-     * @return string The name the folder for this Register should have
+     * @return null|string The name the folder for this Register should have
      */
-    private function getRegisterFolderName(Register $register): string
+    private function getRegisterFolderName(Register $register): string|null
     {
         $title = $register->getTitle();
 
-        if (str_ends_with(haystack: strtolower(rtrim($title)), needle: 'register') === true) {
+        if (str_ends_with(haystack: strtolower(rtrim($title ?? '')), needle: 'register') === true) {
             return $title;
         }
 
@@ -988,7 +990,7 @@ class FileService
             }
 
             return $result;
-        //end try
+        //end try...
         } catch (Exception $e) {
             $this->logger->error(message: "ownFile: Error setting ownership of file {$file->getName()}: ".$e->getMessage());
             throw new Exception("Failed to set file ownership: ".$e->getMessage());
@@ -1012,7 +1014,7 @@ class FileService
      *
      * @psalm-return   void
      * @phpstan-return void
-     //end try
+     //end try..
      */
     private function checkOwnership(Node $file): void
     {
@@ -1663,7 +1665,7 @@ class FileService
             // Get file owner.
             $fileOwner = $file->getOwner();
             if ($fileOwner === null) {
-                //end try
+                //end try.....
                 $this->logger->warning(message: "File {$file->getName()} has no owner, skipping ownership transfer");
                 return;
             }
@@ -1685,7 +1687,7 @@ class FileService
 
                 $this->logger->info(message: "Successfully transferred ownership and shared file {$file->getName()} with {$currentUserId}");
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: "Failed to transfer file ownership for {$file->getName()}: " . $e->getMessage());
             // Don't throw the exception to avoid breaking file operations.
             // The file operation should succeed even if ownership transfer fails.
@@ -1731,7 +1733,7 @@ class FileService
             $this->shareManager->createShare(share: $share);
 
             $this->logger->info(message: "Created share for file {$file->getName()} with user {$userId}");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: "Failed to share file {$file->getName()} with user {$userId}: " . $e->getMessage());
             throw $e;
         }
@@ -1774,7 +1776,7 @@ class FileService
             // Get folder owner.
             $folderOwner = $folder->getOwner();
             if ($folderOwner === null) {
-                //end try
+                //end try.....
                 $this->logger->warning(message: "Folder {$folder->getName()} has no owner, skipping ownership transfer");
                 return;
             }
@@ -1796,7 +1798,7 @@ class FileService
 
                 $this->logger->info(message: "Successfully transferred ownership and shared folder {$folder->getName()} with {$currentUserId}");
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: "Failed to transfer folder ownership for {$folder->getName()}: " . $e->getMessage());
             // Don't throw the exception to avoid breaking folder operations.
             // The folder operation should succeed even if ownership transfer fails.
@@ -1919,7 +1921,7 @@ class FileService
         }
     }//end createFolder()
 
-    //end try
+    //end try.
     /**
      * Overwrites an existing file in NextCloud.
      *
@@ -1989,7 +1991,7 @@ class FileService
         }
 
         // Skip the existing object/user folder search logic for file IDs since we already found the file.
-        //end if
+        //end if.
         if ($file === null) {
             // If object is provided, try to find the file in the object folder first.
         if ($object !== null) {
@@ -2029,15 +2031,15 @@ class FileService
                 }
             } catch (Exception $e) {
                 $this->logger->error(message: "updateFile: Error accessing object folder: " . $e->getMessage());
-            //end if
+            //end if..
             }
         } else {
             $this->logger->info(message: "updateFile: No object provided, will search in user folder");
-        //end try
+        //end try...
         }
 
         // If object wasn't provided or file wasn't found in object folder, try user folder.
-        //end if
+        //end if.
         if ($file === null) {
             $this->logger->info(message: "updateFile: Trying user folder approach with path: '$filePath'");
             try {
@@ -2076,7 +2078,7 @@ class FileService
         }
 
         // Update the file content if provided and content is not equal to the current content.
-        //end if
+        //end if.
         if ($content !== null && $file instanceof File && $file->hash(type: 'md5') !== md5(string: $content)) {
                 try {
 					// Check if the content is base64 encoded and decode it if necessary.
@@ -2102,7 +2104,7 @@ class FileService
         }
 
         // Update tags if provided.
-        //end if
+        //end if.
         if (empty($tags) === false) {
             // Get existing object tags to preserve them.
             $existingTags = $this->getFileTags(fileId: (string) $file->getId());
@@ -2164,7 +2166,7 @@ class FileService
 
         try {
             $file->delete();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'Failed to delete file: ' . $e->getMessage());
             return false;
         }
@@ -2275,7 +2277,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    //end try
+    //end try.
     public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $_schema = null, int | string | Register | null $_register = null, int|string|null $registerId = null): File
     {
 		try {
@@ -2342,10 +2344,10 @@ class FileService
             // Log permission error and rethrow exception.
             $this->logger->error(message: "Permission denied creating file $fileName: ".$e->getMessage());
             throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log general error and rethrow exception.
             $this->logger->error(message: "Failed to create file $fileName: ".$e->getMessage());
-            throw new \Exception("Failed to create file $fileName: ".$e->getMessage());
+            throw new Exception("Failed to create file $fileName: ".$e->getMessage());
         }
     }//end addFile()
 
@@ -2407,10 +2409,10 @@ class FileService
             // Log permission error and rethrow exception.
             $this->logger->error(message: "Permission denied saving file $fileName: ".$e->getMessage());
             throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log general error and rethrow exception.
             $this->logger->error(message: "Failed to save file $fileName: ".$e->getMessage());
-            throw new \Exception("Failed to save file $fileName: ".$e->getMessage());
+            throw new Exception("Failed to save file $fileName: ".$e->getMessage());
         }
     }//end saveFile()
 
@@ -2446,9 +2448,9 @@ class FileService
             // Return sorted array of tag names.
             sort($tagNames);
             return array_values($tagNames);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'Failed to retrieve tags: '.$e->getMessage());
-            throw new \Exception('Failed to retrieve tags: '.$e->getMessage());
+            throw new Exception('Failed to retrieve tags: '.$e->getMessage());
         }
     }//end getAllTags()
 
@@ -2520,7 +2522,7 @@ class FileService
 
             // Try to get the file by ID.
             try {
-                //end try
+                //end try.....
                 $nodes = $folder->getById((int)$file);
                 if (empty($nodes) === false && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
@@ -2528,7 +2530,7 @@ class FileService
                     $this->checkOwnership($fileNode);
                     return $fileNode;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(message: 'getFile: Error finding file by ID ' . $file . ': ' . $e->getMessage());
                 return null;
             }
@@ -2560,7 +2562,7 @@ class FileService
                     // Check ownership for NextCloud rights issues.
                     $this->checkOwnership($fileNode);
 
-                    //end try
+                    //end try......
                     return $fileNode;
                 } catch (NotFoundException) {
                     // File not found.
@@ -2610,7 +2612,7 @@ class FileService
             $this->checkOwnership($node);
 
             return $node;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(message: 'getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage());
             return null;
         }
@@ -2676,7 +2678,7 @@ class FileService
 
         // If $file is an integer (file ID), try to find the file directly by ID.
         if (is_int($file) === true) {
-            //end try
+            //end try....
             $this->logger->info(message: "publishFile: File ID provided: $file");
 
             // Try to find the file in the object's folder by ID.
@@ -2724,7 +2726,7 @@ class FileService
                 $this->logger->info(message: "publishFile: Successfully found file: " . $fileNode->getName() . " at " . $fileNode->getPath());
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
-                //end try
+                //end try.....
                 try {
                     $this->logger->info(message: "publishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $fileNode = $objectFolder->get($filePath);
@@ -2847,7 +2849,7 @@ class FileService
             } catch (NotFoundException $e) {
                 // Try with full path if filename didn't work.
                 try {
-                    //end if
+                    //end if....
                     $this->logger->info(message: "unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
                     $file = $objectFolder->get($filePath);
                     $this->logger->info(message: "unpublishFile: Successfully found file using full path: " . $file->getName() . " at " . $file->getPath());
@@ -2965,7 +2967,7 @@ class FileService
                     $this->logger->warning(message: "Skipping non-file node: " . $file->getName());
                     $skippedFiles++;
                     continue;
-                //end if
+                //end if...
                 }
 
                 // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
@@ -3174,7 +3176,7 @@ class FileService
             'rb', 'rbw',
             'jar', 'war', 'ear', 'class',
             // Containers and packages.
-            //end match
+            //end match.
             'appimage', 'snap', 'flatpak',
             // MacOS.
             'dmg', 'pkg', 'command',
@@ -3230,14 +3232,14 @@ class FileService
             "#!/bin/bash" => 'Bash script',
             "#!/usr/bin/env" => 'Script with env shebang',
             "<?php" => 'PHP script',
-            //end if
+            //end if.
             "\xCA\xFE\xBA\xBE" => 'Java class file',
         ];
 
         foreach ($magicBytes as $signature => $description) {
             if (strpos($content, $signature) === 0) {
                 $this->logger->warning(message: 'Executable magic bytes detected', context: [
-                    //end try
+                    //end try.
                     'app' => 'openregister',
                     'filename' => $fileName,
                     'type' => $description
@@ -3277,7 +3279,7 @@ class FileService
      * This allows for single-save workflows where the folder ID is set before saving.
      *
      * @param ObjectEntity $objectEntity The Object Entity to create a folder for
-     //end try
+     //end try..
      * @param IUser|null   $currentUser  The current user to share the folder with
      *
      * @throws Exception If folder creation fails or entities not found
@@ -3317,7 +3319,7 @@ class FileService
 
         // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-            //end try
+            //end try.
             $this->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID());
         }
 
@@ -3436,7 +3438,7 @@ class FileService
      */
     private function getFileInObjectFolderMessage(bool $fileInObjectFolder, int $fileId): string
     {
-        //end if
+        //end if.
         if ($fileInObjectFolder === true) {
             return "File $fileId is correctly located in object folder";
         }

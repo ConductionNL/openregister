@@ -42,6 +42,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use Exception;
+use RuntimeException;
+use DateTime;
 
 /**
  * Dynamic table search handler for MagicMapper
@@ -183,7 +186,7 @@ class MagicSearchHandler
 
         // Handle published filter.
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull('t._published'),
@@ -444,20 +447,20 @@ class MagicSearchHandler
             }
 
             if (($metadataData['created'] ?? null) !== null) {
-                $objectEntity->setCreated(new \DateTime($metadataData['created']));
+                $objectEntity->setCreated(new DateTime($metadataData['created']));
             }
 
             if (($metadataData['updated'] ?? null) !== null) {
-                $objectEntity->setUpdated(new \DateTime($metadataData['updated']));
+                $objectEntity->setUpdated(new DateTime($metadataData['updated']));
             }
 
             if (($metadataData['published'] ?? null) !== null) {
-                $objectEntity->setPublished(new \DateTime($metadataData['published']));
+                $objectEntity->setPublished(new DateTime($metadataData['published']));
             }
 
             if (($metadataData['deleted'] ?? null) !== null) {
                 // Convert deleted timestamp to array format expected by setDeleted.
-                $deletedDateTime = new \DateTime($metadataData['deleted']);
+                $deletedDateTime = new DateTime($metadataData['deleted']);
                 $objectEntity->setDeleted(
                         [
                             'deleted'   => $deletedDateTime->format('c'),
@@ -467,7 +470,7 @@ class MagicSearchHandler
             }
 
             if (($metadataData['depublished'] ?? null) !== null) {
-                $objectEntity->setDepublished(new \DateTime($metadataData['depublished']));
+                $objectEntity->setDepublished(new DateTime($metadataData['depublished']));
             }
 
             // Set register and schema.

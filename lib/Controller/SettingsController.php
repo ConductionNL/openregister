@@ -25,6 +25,13 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
+use Exception;
+use RuntimeException;
+use ReflectionClass;
+use DateTime;
+use stdClass;
+use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
@@ -174,7 +181,7 @@ class SettingsController extends Controller
             return $this->objectService;
         }
 
-        throw new \RuntimeException('OpenRegister service is not available.');
+        throw new RuntimeException('OpenRegister service is not available.');
 
     }//end getObjectService()
 
@@ -195,7 +202,7 @@ class SettingsController extends Controller
         }
 
         // Throw an exception if the service is not available.
-        throw new \RuntimeException('Configuration service is not available.');
+        throw new RuntimeException('Configuration service is not available.');
 
     }//end getConfigurationService()
 
@@ -216,7 +223,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getSettings();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -240,7 +247,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateSettings($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -261,7 +268,7 @@ class SettingsController extends Controller
         try {
             $result = $this->settingsService->getSettings();
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -283,7 +290,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updatePublishingOptions($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -309,7 +316,7 @@ class SettingsController extends Controller
         try {
             $result = $this->settingsService->rebase();
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -335,7 +342,7 @@ class SettingsController extends Controller
         try {
             $result = $this->settingsService->getStats();
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
         }
 
@@ -379,7 +386,7 @@ class SettingsController extends Controller
         try {
             $result = $this->settingsService->getCacheStats();
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -408,7 +415,7 @@ class SettingsController extends Controller
 
             $result = $this->settingsService->clearCache($type);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -434,7 +441,7 @@ class SettingsController extends Controller
         try {
             $result = $this->settingsService->warmupNamesCache();
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
         }
 
@@ -493,7 +500,7 @@ class SettingsController extends Controller
                             'errors'      => $validationResult->error(),
                         ];
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $validationResults['invalid_objects']++;
                     $validationResults['validation_errors'][] = [
                         'object_id'   => $object->getUuid(),
@@ -519,7 +526,7 @@ class SettingsController extends Controller
             ];
 
             return new JSONResponse(data: $validationResults);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'error'             => 'Failed to validate objects: '.$e->getMessage(),
@@ -741,7 +748,7 @@ class SettingsController extends Controller
                     );
 
             return new JSONResponse(data: $results);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
                     message: '❌ MASS VALIDATION FAILED',
@@ -785,7 +792,7 @@ class SettingsController extends Controller
      * @param  bool  $collectErrors Whether to collect all errors or stop on first
      * @return void
      */
-    private function processBatchSerial(array $batch, $objectService, array &$results, bool $collectErrors, $logger=null): void
+    private function processBatchSerial(array $batch, $objectService, array &$results, bool $collectErrors, ?LoggerInterface $logger = null): void
     {
         foreach ($batch as $object) {
             try {
@@ -816,7 +823,7 @@ class SettingsController extends Controller
                         'batch_mode'  => 'serial',
                     ];
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $results['stats']['failed_saves']++;
                 $results['errors'][] = [
                     'object_id'   => $object->getUuid(),
@@ -887,7 +894,7 @@ class SettingsController extends Controller
                         'batch_mode'  => 'parallel',
                     ];
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $batchErrors[] = [
                     'object_id'   => $object->getUuid(),
                     'object_name' => $object->getName() ?? $object->getUuid(),
@@ -925,7 +932,7 @@ class SettingsController extends Controller
      * @param  bool  $collectErrors Whether to collect all errors or stop on first
      * @return void
      */
-    private function processJobsSerial(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, $logger): void
+    private function processJobsSerial(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, ?LoggerInterface $logger): void
     {
         foreach ($batchJobs as $job) {
             $batchStartTime = microtime(true);
@@ -970,7 +977,7 @@ class SettingsController extends Controller
                             'batch_mode'  => 'serial_optimized',
                         ];
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $results['stats']['failed_saves']++;
                     $batchErrors[] = [
                         'object_id'   => $object->getUuid(),
@@ -1044,7 +1051,7 @@ class SettingsController extends Controller
      * @param  int   $parallelBatches Number of parallel batches to process
      * @return void
      */
-    private function processJobsParallel(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, int $parallelBatches, $logger): void
+    private function processJobsParallel(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, int $parallelBatches, ?LoggerInterface $logger): void
     {
         // Process batches in parallel chunks like SOLR warmup.
         $batchChunks = array_chunk($batchJobs, $parallelBatches);
@@ -1150,7 +1157,7 @@ class SettingsController extends Controller
                         'batch_mode'  => 'parallel_optimized',
                     ];
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $batchErrors[] = [
                     'object_id'   => $object->getUuid(),
                     'object_name' => $object->getName() ?? $object->getUuid(),
@@ -1292,7 +1299,7 @@ class SettingsController extends Controller
             ];
 
             return new JSONResponse(data: $prediction);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                 data: [
                     'success'         => false,
@@ -1385,7 +1392,7 @@ class SettingsController extends Controller
                     );
 
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $setup = new \OCA\OpenRegister\Setup\SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
@@ -1526,7 +1533,7 @@ class SettingsController extends Controller
                     );
                 }//end if
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Get logger for error logging if not already available.
             if (isset($logger) === false) {
                 $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
@@ -1560,7 +1567,7 @@ class SettingsController extends Controller
 
                     // **IMPROVED LOGGING**: Log setup progress and error details.
                     $logger->error('📋 SOLR setup failure details', $detailedError);
-                } catch (\Exception $progressException) {
+                } catch (Exception $progressException) {
                     $logger->warning(
                             message: 'Failed to get setup progress details',
                             context: [
@@ -1616,7 +1623,7 @@ class SettingsController extends Controller
 
             // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
             $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $setup = new \OCA\OpenRegister\Setup\SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // Run setup.
@@ -1643,7 +1650,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -1682,7 +1689,7 @@ class SettingsController extends Controller
                     );
 
             // Get GuzzleSolrService.
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Delete the specific collection.
             $result = $guzzleSolrService->deleteCollection($name);
@@ -1725,7 +1732,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
                     message: 'Exception during SOLR collection deletion',
@@ -1766,7 +1773,7 @@ class SettingsController extends Controller
     public function clearSpecificCollection(string $name): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Clear the specific collection.
             $result = $guzzleSolrService->clearIndex($name);
@@ -1790,7 +1797,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success'    => false,
@@ -1820,7 +1827,7 @@ class SettingsController extends Controller
     public function reindexSpecificCollection(string $name): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Get optional parameters from request body.
             $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
@@ -1872,7 +1879,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success'    => false,
@@ -1895,7 +1902,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse The test results
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, message: string, details: array{exception: string}}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<422, array{success: false, message: string, details: array{exception: string}}, array<never, never>>
      */
     public function testSolrConnection(): JSONResponse
     {
@@ -1906,7 +1913,7 @@ class SettingsController extends Controller
             $result            = $guzzleSolrService->testConnectivityOnly();
 
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2021,7 +2028,7 @@ class SettingsController extends Controller
                         'file_collection_status'   => $fileFieldStatus,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2095,7 +2102,7 @@ class SettingsController extends Controller
                         $totalErrors += $objectResult['error_count'];
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $results['objects'] = [
                     'success' => false,
                     'message' => 'Failed to create object fields: '.$e->getMessage(),
@@ -2121,7 +2128,7 @@ class SettingsController extends Controller
                         $totalErrors += $fileResult['error_count'];
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $results['files'] = [
                     'success' => false,
                     'message' => 'Failed to create file fields: '.$e->getMessage(),
@@ -2145,7 +2152,7 @@ class SettingsController extends Controller
                         'dry_run'           => $dryRun,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2183,7 +2190,7 @@ class SettingsController extends Controller
                         'status'     => $status,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2220,7 +2227,7 @@ class SettingsController extends Controller
                         'status'     => $status,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2272,7 +2279,7 @@ class SettingsController extends Controller
                         'result'     => $result,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2319,7 +2326,7 @@ class SettingsController extends Controller
             $guzzleSolrService->setActiveCollection($fileCollection);
 
             // Create missing file metadata fields using reflection to call private method.
-            $reflection = new \ReflectionClass($solrSchemaService);
+            $reflection = new ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('ensureFileMetadataFields');
             $result     = $method->invoke($solrSchemaService, true);
 
@@ -2340,7 +2347,7 @@ class SettingsController extends Controller
                         'message'    => $message,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2362,7 +2369,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse The field fix results
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<200|422, array{success: bool, message: string, details?: array{error: mixed|string}, fixed?: array<never, never>, errors?: array<never, never>}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<200|422, array{success: bool, message: string, details?: array{error: mixed|string}, fixed?: array<never, never>, errors?: array<never, never>}, array<never, never>>
      */
     public function fixMismatchedSolrFields(): JSONResponse
     {
@@ -2430,7 +2437,7 @@ class SettingsController extends Controller
 
             // The fixMismatchedFields method already returns the correct format.
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2463,7 +2470,7 @@ class SettingsController extends Controller
             $schemas = $schemaMapper->findAll(config: []);
 
             // Use the existing analyzeAndResolveFieldConflicts method via reflection.
-            $reflection = new \ReflectionClass($solrSchemaService);
+            $reflection = new ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
 
             $result = $method->invoke($solrSchemaService, $schemas);
@@ -2473,7 +2480,7 @@ class SettingsController extends Controller
             $expectedFields   = array_merge($expectedFields, $userSchemaFields);
 
             return $expectedFields;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->warning(
                     'Failed to get expected schema fields',
                     [
@@ -2602,7 +2609,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getSolrSettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -2626,7 +2633,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateSolrSettingsOnly($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -2649,7 +2656,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getSolrFacetConfiguration();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -2673,7 +2680,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateSolrFacetConfiguration($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -2695,7 +2702,7 @@ class SettingsController extends Controller
     {
         try {
             // Get GuzzleSolrService from container.
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Check if SOLR is available.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2719,7 +2726,7 @@ class SettingsController extends Controller
                         'facets'  => $facetableFields,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2748,7 +2755,7 @@ class SettingsController extends Controller
     {
         try {
             // Get GuzzleSolrService from container.
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             // Check if SOLR is available.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2839,7 +2846,7 @@ class SettingsController extends Controller
                         ],
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2877,7 +2884,7 @@ class SettingsController extends Controller
                         'config'  => $result,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -2959,7 +2966,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $result            = $guzzleSolrService->warmupIndex(schemas: [], maxObjects: $maxObjects, mode: $mode, collectErrors: $collectErrors, batchSize: $batchSize, schemaIds: $schemaIds);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details.
             return new JSONResponse(
                     data: [
@@ -2985,7 +2992,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse SOLR dashboard metrics and statistics
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
      */
     public function getSolrDashboardStats(): JSONResponse
     {
@@ -2994,7 +3001,7 @@ class SettingsController extends Controller
             $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $stats = $guzzleSolrService->getDashboardStats();
             return new JSONResponse(data: $stats);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3089,7 +3096,7 @@ class SettingsController extends Controller
                             statusCode: 400
                         );
             }//end switch
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
 
@@ -3112,7 +3119,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getRbacSettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3136,7 +3143,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateRbacSettingsOnly($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3159,7 +3166,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getOrganisationSettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3183,7 +3190,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateOrganisationSettingsOnly($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3206,7 +3213,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getMultitenancySettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3230,7 +3237,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateMultitenancySettingsOnly($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3253,7 +3260,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getLLMSettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3301,7 +3308,7 @@ class SettingsController extends Controller
                         $collectionsList = $guzzleSolrService->listCollections();
                         // Transform to format expected by frontend (array of objects with 'name' and 'id').
                         $collections = array_map(
-                                function ($collection) {
+                                function (array $collection): array {
                                     return [
                                         'id'            => $collection['name'],
                                         'name'          => $collection['name'],
@@ -3312,7 +3319,7 @@ class SettingsController extends Controller
                                 },
                                 $collectionsList
                                 );
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $this->logger->warning(
                                 '[SettingsController] Failed to list Solr collections',
                                 [
@@ -3322,7 +3329,7 @@ class SettingsController extends Controller
                         $collections = [];
                     }//end try
                 }//end if
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $errorMessage = $e->getMessage();
             }//end try
 
@@ -3338,7 +3345,7 @@ class SettingsController extends Controller
                         ],
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[SettingsController] Failed to get Solr info',
                     [
@@ -3409,7 +3416,7 @@ class SettingsController extends Controller
                         preg_match('/\d+\.\d+\.\d+/', $version, $matches);
                         $dbVersion = $matches[0] ?? $version;
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $dbType    = 'MySQL/MariaDB';
                     $dbVersion = 'Unknown';
                 }
@@ -3427,7 +3434,7 @@ class SettingsController extends Controller
                     $version = $result->fetchOne();
                     preg_match('/PostgreSQL (\d+\.\d+)/', $version, $matches);
                     $dbVersion = $matches[1] ?? 'Unknown';
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $dbVersion = 'Unknown';
                 }
 
@@ -3446,7 +3453,7 @@ class SettingsController extends Controller
                         $recommendedPlugin = 'pgvector (not installed)';
                         $performanceNote   = 'Install pgvector extension: CREATE EXTENSION vector;';
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $vectorSupport     = false;
                     $recommendedPlugin = 'pgvector (not found)';
                     $performanceNote   = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
@@ -3471,7 +3478,7 @@ class SettingsController extends Controller
                         ],
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[SettingsController] Failed to get database info',
                     [
@@ -3541,7 +3548,7 @@ class SettingsController extends Controller
                         'data'    => $result,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -3587,7 +3594,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Test result with embedding info
      *
-     * @psalm-return JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
      */
     public function testEmbedding(): JSONResponse
     {
@@ -3631,7 +3638,7 @@ class SettingsController extends Controller
             }
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -3659,7 +3666,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Test result with chat response
      *
-     * @psalm-return JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>
      */
     public function testChat(): JSONResponse
     {
@@ -3703,7 +3710,7 @@ class SettingsController extends Controller
             }
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -3733,7 +3740,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getFileSettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -3812,7 +3819,7 @@ class SettingsController extends Controller
                         ]
                         );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -3894,7 +3901,7 @@ class SettingsController extends Controller
 
             // Format models for frontend dropdown.
             $models = array_map(
-                    function ($model) {
+                    function (array $model): array {
                         $name = $model['name'] ?? 'unknown';
                         // Format size if available.
                         $size = '';
@@ -3941,7 +3948,7 @@ class SettingsController extends Controller
                         'count'   => count($models),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -3972,7 +3979,7 @@ class SettingsController extends Controller
             $result = $this->vectorEmbeddingService->checkEmbeddingModelMismatch();
 
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'has_vectors' => false,
@@ -4007,7 +4014,7 @@ class SettingsController extends Controller
             } else {
                 return new JSONResponse(data: $result, statusCode: 500);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4053,7 +4060,7 @@ class SettingsController extends Controller
                         'data'    => $result,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4087,7 +4094,7 @@ class SettingsController extends Controller
                         'data'    => $settings,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4129,7 +4136,7 @@ class SettingsController extends Controller
                         'data'    => $result,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4173,7 +4180,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getRetentionSettingsOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -4197,7 +4204,7 @@ class SettingsController extends Controller
             $data   = $this->request->getParams();
             $result = $this->settingsService->updateRetentionSettingsOnly($data);
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -4220,7 +4227,7 @@ class SettingsController extends Controller
         try {
             $data = $this->settingsService->getVersionInfoOnly();
             return new JSONResponse(data: $data);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -4236,13 +4243,13 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Test results
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<422, array{success: false, error: string}, array<never, never>>
      */
     public function testSchemaMapping(): JSONResponse
     {
         try {
             // Get GuzzleSolrService from container.
-            $solrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $solrService = $this->container->get(GuzzleSolrService::class);
 
             // Get required dependencies from container.
             $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
@@ -4252,7 +4259,7 @@ class SettingsController extends Controller
             $results = $solrService->testSchemaAwareMapping($objectMapper, $schemaMapper);
 
             return new JSONResponse(data: $results);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4313,7 +4320,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
                     message: 'Exception in inspectSolrIndex controller',
@@ -4374,7 +4381,7 @@ class SettingsController extends Controller
             }
 
             // Use reflection to call the private method (for API access).
-            $reflection = new \ReflectionClass($guzzleSolrService);
+            $reflection = new ReflectionClass($guzzleSolrService);
             $method     = $reflection->getMethod('predictWarmupMemoryUsage');
             $prediction = $method->invoke($guzzleSolrService, $maxObjects);
 
@@ -4385,7 +4392,7 @@ class SettingsController extends Controller
                         'prediction' => $prediction,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success'    => false,
@@ -4485,7 +4492,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $logger = $logger ?? \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
                     message: 'Exception deleting SOLR field via API',
@@ -4544,7 +4551,7 @@ class SettingsController extends Controller
             $results['all_organizations'] = [
                 'count'         => count($result1['results']),
                 'organizations' => array_map(
-                        function ($org) {
+                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
                                 'id'          => $org->getId(),
@@ -4568,7 +4575,7 @@ class SettingsController extends Controller
             $results['type_samenwerking'] = [
                 'count'         => count($result2['results']),
                 'organizations' => array_map(
-                        function ($org) {
+                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
                                 'id'   => $org->getId(),
@@ -4591,7 +4598,7 @@ class SettingsController extends Controller
             $results['type_community'] = [
                 'count'         => count($result3['results']),
                 'organizations' => array_map(
-                        function ($org) {
+                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
                                 'id'   => $org->getId(),
@@ -4614,7 +4621,7 @@ class SettingsController extends Controller
             $results['type_both'] = [
                 'count'         => count($result4['results']),
                 'organizations' => array_map(
-                        function ($org) {
+                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
                                 'id'   => $org->getId(),
@@ -4639,7 +4646,7 @@ class SettingsController extends Controller
             $results['direct_database_query'] = [
                 'count'         => count($rows),
                 'organizations' => array_map(
-                        function ($row) {
+                        function (array $row): array {
                             $objectData = json_decode($row['object'], true);
                             return [
                                 'id'          => $row['id'],
@@ -4653,7 +4660,7 @@ class SettingsController extends Controller
             ];
 
             return new JSONResponse(data: $results);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'error' => $e->getMessage(),
@@ -4691,7 +4698,7 @@ class SettingsController extends Controller
                         'timestamp'   => date('c'),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4730,7 +4737,7 @@ class SettingsController extends Controller
                         'timestamp'  => date('c'),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4756,7 +4763,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Creation result
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
     public function createSolrConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
@@ -4765,7 +4772,7 @@ class SettingsController extends Controller
             $result            = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
 
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4789,7 +4796,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Deletion result
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
     public function deleteSolrConfigSet(string $name): JSONResponse
     {
@@ -4798,7 +4805,7 @@ class SettingsController extends Controller
             $result            = $guzzleSolrService->deleteConfigSet($name);
 
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4826,7 +4833,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Creation result
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
     public function createSolrCollection(
         string $collectionName,
@@ -4846,7 +4853,7 @@ class SettingsController extends Controller
             );
 
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4873,7 +4880,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse Copy operation result
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
     public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): JSONResponse
     {
@@ -4882,7 +4889,7 @@ class SettingsController extends Controller
             $result            = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection, copyData: $copyData);
 
             return new JSONResponse(data: $result);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4937,7 +4944,7 @@ class SettingsController extends Controller
                         'timestamp'        => date('c'),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -4997,7 +5004,7 @@ class SettingsController extends Controller
                         'timestamp' => date('c'),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -5067,7 +5074,7 @@ class SettingsController extends Controller
                         'timestamp' => date('c'),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -5108,7 +5115,7 @@ class SettingsController extends Controller
                         'timestamp' => date('c'),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -5158,7 +5165,7 @@ class SettingsController extends Controller
                     );
 
             // Get GuzzleSolrService and TextExtractionService.
-            $guzzleSolrService     = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService     = $this->container->get(GuzzleSolrService::class);
             $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
 
             // Get files that need processing.
@@ -5213,7 +5220,7 @@ class SettingsController extends Controller
                         'mode'            => $mode,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[SettingsController] File warmup failed',
                     [
@@ -5249,7 +5256,7 @@ class SettingsController extends Controller
     public function indexFile(int $fileId): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
 
             $result = $guzzleSolrService->indexFiles([$fileId]);
 
@@ -5271,7 +5278,7 @@ class SettingsController extends Controller
                         statusCode: 422
                         );
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[SettingsController] Failed to index file',
                     [
@@ -5308,7 +5315,7 @@ class SettingsController extends Controller
         try {
             // Get all completed file texts.
             $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-            $guzzleSolrService     = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService     = $this->container->get(GuzzleSolrService::class);
 
             $maxFiles  = (int) $this->request->getParam('max_files', 1000);
             $batchSize = (int) $this->request->getParam('batch_size', 100);
@@ -5349,7 +5356,7 @@ class SettingsController extends Controller
                         'errors'          => array_slice($allErrors, 0, 20),
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[SettingsController] Reindex files failed',
                     [
@@ -5378,16 +5385,16 @@ class SettingsController extends Controller
      *
      * @return JSONResponse File index statistics
      *
-     * @psalm-return JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, message: string}, array<never, never>>
+     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{success: false, message: string}, array<never, never>>
      */
     public function getFileIndexStats(): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $stats = $guzzleSolrService->getFileIndexStats();
 
             return new JSONResponse(data: $stats);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     '[SettingsController] Failed to get file index stats',
                     [
@@ -5438,7 +5445,7 @@ class SettingsController extends Controller
             $dbStats = $textExtractionService->getExtractionStats('file');
 
             // Get SOLR statistics.
-            $guzzleSolrService = $this->container->get(\OCA\OpenRegister\Service\GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
             $solrStats         = $guzzleSolrService->getFileIndexStats();
 
             // Calculate storage in MB.
@@ -5468,7 +5475,7 @@ class SettingsController extends Controller
                         'vectorized'             => $dbStats['vectorized'],
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Return zeros instead of error to avoid breaking UI.
             return new JSONResponse(
                     data: [
@@ -5529,7 +5536,7 @@ class SettingsController extends Controller
                         'gitlab_url'   => $gitlabUrl,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to retrieve API tokens: '.$e->getMessage(),
@@ -5581,7 +5588,7 @@ class SettingsController extends Controller
                         'message' => 'API tokens saved successfully',
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                 data: [
                     'error' => 'Failed to save API tokens: '.$e->getMessage(),
@@ -5640,7 +5647,7 @@ class SettingsController extends Controller
                         'scopes'   => $response->getHeader('X-OAuth-Scopes') ?? [],
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,
@@ -5707,7 +5714,7 @@ class SettingsController extends Controller
                         'instance' => $apiUrl,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(
                     data: [
                         'success' => false,

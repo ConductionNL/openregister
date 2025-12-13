@@ -28,6 +28,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
+use Exception;
+use RuntimeException;
+use DateTime;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -322,8 +326,6 @@ class RegistersController extends Controller
      *
      * This method creates a new register based on POST data.
      *
-     * @return JSONResponse A JSON response containing the created register
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -368,8 +370,6 @@ class RegistersController extends Controller
      * This method updates an existing register based on its ID.
      *
      * @param int $id The ID of the register to update
-     *
-     * @return JSONResponse A JSON response containing the updated register details
      *
      * @NoAdminRequired
      *
@@ -462,7 +462,7 @@ class RegistersController extends Controller
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
             // Return 409 Conflict for cascade protection (objects still attached).
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
@@ -507,7 +507,7 @@ class RegistersController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the register doesn't exist.
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Return a 500 error for other exceptions.
             return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
         }//end try
@@ -527,7 +527,7 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, int|list<\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
+     * @psalm-return JSONResponse<200, int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -572,8 +572,8 @@ class RegistersController extends Controller
             switch ($format) {
                 case 'excel':
                     $spreadsheet = $this->exportService->exportToExcel(register: $register, schema: null, filters: [], currentUser: $this->userSession->getUser());
-                    $writer      = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug() ?? 'register', (new \DateTime())->format('Y-m-d_His'));
+                    $writer      = new Xlsx($spreadsheet);
+                    $filename    = sprintf('%s_%s.xlsx', $register->getSlug() ?? 'register', (new DateTime())->format('Y-m-d_His'));
                     ob_start();
                     $writer->save('php://output');
                     $content = ob_get_clean();
@@ -589,7 +589,7 @@ class RegistersController extends Controller
 
                     $schema   = $this->schemaMapper->find($schemaId);
                     $csv      = $this->exportService->exportToCsv(register: $register, schema: $schema, filters: [], currentUser: $this->userSession->getUser());
-                    $filename = sprintf('%s_%s_%s.csv', $register->getSlug(), $schema->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename = sprintf('%s_%s_%s.csv', $register->getSlug() ?? 'register', $schema->getSlug() ?? 'schema', (new DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
                 case 'configuration':
                 default:
@@ -599,7 +599,7 @@ class RegistersController extends Controller
                         throw new Exception('Failed to encode register data to JSON');
                     }
 
-                    $filename = sprintf('%s_%s.json', $register->getSlug(), (new \DateTime())->format('Y-m-d_His'));
+                    $filename = sprintf('%s_%s.json', $register->getSlug() ?? 'register', (new DateTime())->format('Y-m-d_His'));
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }//end switch
         } catch (Exception $e) {
@@ -616,13 +616,11 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to publish
      *
-     * @return JSONResponse Publish result with commit info
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed, commit_url?: mixed, file_url?: mixed, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed|null, commit_url?: mixed|null, file_url?: mixed|null, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -671,7 +669,7 @@ class RegistersController extends Controller
             $fileSha = null;
             try {
                 $fileSha = $this->githubService->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // File doesn't exist, which is fine for new files.
                 $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
             }
@@ -703,7 +701,7 @@ class RegistersController extends Controller
             try {
                 $repoInfo      = $this->githubService->getRepositoryInfo(owner: $owner, repo: $repo);
                 $defaultBranch = $repoInfo['default_branch'] ?? 'main';
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->warning(
                         'Could not fetch repository default branch',
                         [
@@ -745,7 +743,7 @@ class RegistersController extends Controller
         } catch (DoesNotExistException $e) {
             $this->logger->error('Register not found for publishing', ['register_id' => $id]);
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error('Failed to publish register OAS to GitHub: '.$e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to publish register OAS: '.$e->getMessage()], statusCode: 500);
@@ -924,7 +922,7 @@ class RegistersController extends Controller
                         $registerSchemas = $register->getSchemas();
 
                         // Merge new with existing.
-                        $mergedSchemaArray = array_merge($registerSchemas, $createdSchemas);
+                        $mergedSchemaArray = array_merge($registerSchemas ?? [], $createdSchemas);
                         $mergedSchemaArray = array_keys(array_flip($mergedSchemaArray));
 
                         $register->setSchemas($mergedSchemaArray);
@@ -940,7 +938,7 @@ class RegistersController extends Controller
                         'summary' => $summary,
                     ]
                     );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
 
@@ -979,7 +977,7 @@ class RegistersController extends Controller
             return new JSONResponse(data: $stats);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
 
@@ -1045,9 +1043,9 @@ class RegistersController extends Controller
             // Get the publication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+                $date = new DateTime($this->request->getParam('date'));
             } else {
-                $date = new \DateTime();
+                $date = new DateTime();
             }
 
             // Get the register.
@@ -1071,7 +1069,7 @@ class RegistersController extends Controller
             return new JSONResponse($updatedRegister->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to publish register',
                     [
@@ -1106,9 +1104,9 @@ class RegistersController extends Controller
             // Get the depublication date from request if provided, otherwise use now.
             $date = null;
             if ($this->request->getParam('date') !== null) {
-                $date = new \DateTime($this->request->getParam('date'));
+                $date = new DateTime($this->request->getParam('date'));
             } else {
-                $date = new \DateTime();
+                $date = new DateTime();
             }
 
             // Get the register.
@@ -1131,7 +1129,7 @@ class RegistersController extends Controller
             return new JSONResponse($updatedRegister->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     'Failed to depublish register',
                     [

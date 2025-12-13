@@ -79,7 +79,7 @@ class GetObject
      * @param string   $id       The ID of the object to get.
      * @param Register $register The register containing the object.
      * @param Schema   $schema   The schema of the object.
-     * @param array    $extend   Properties to extend with.
+     * @param array    $_extend  Properties to extend with.
      * @param bool     $files    Include file information.
      * @param bool     $rbac     Whether to apply RBAC checks (default: true).
      * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
@@ -123,7 +123,7 @@ class GetObject
      * @param string   $id       The ID of the object to get.
      * @param Register $register The register containing the object.
      * @param Schema   $schema   The schema of the object.
-     * @param array    $extend   Properties to extend with.
+     * @param array    $_extend  Properties to extend with.
      * @param bool     $files    Include file information.
      * @param bool     $rbac     Whether to apply RBAC checks (default: true).
      * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
@@ -161,7 +161,7 @@ class GetObject
      * @param array         $filters   Filter criteria.
      * @param array         $sort      Sort criteria.
      * @param string|null   $search    Search term.
-     * @param array|null    $extend    Properties to extend the objects with.
+     * @param array|null    $_extend   Properties to extend the objects with.
      * @param bool          $files     Whether to include file information.
      * @param string|null   $uses      Filter by object usage.
      * @param Register|null $register  Optional register to filter objects.

@@ -25,66 +25,10 @@
       <code><![CDATA[$searchResult['error']]]></code>
     </InvalidArrayOffset>
   </file>
-  <file src="lib/Controller/AgentsController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/ApplicationsController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<mixed|array{error: string}>]]></code>
-    </InvalidTemplateParam>
-    <MissingTemplateParam>
-      <code><![CDATA[JSONResponse<mixed|array{error: string}>]]></code>
-    </MissingTemplateParam>
-  </file>
   <file src="lib/Controller/AuditTrailController.php">
     <InvalidScalarArgument>
       <code><![CDATA[$exportResult['content']]]></code>
     </InvalidScalarArgument>
-  </file>
-  <file src="lib/Controller/BulkController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk delete operation completed successfully', deleted_count?: int<0, max>, deleted_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk depublish operation completed successfully', depublished_count?: int<0, max>, depublished_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk publish operation completed successfully', published_count?: int<0, max>, published_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk save operation completed successfully', saved_count?: mixed, saved_objects?: array<string, mixed>, requested_count?: int<0, max>}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Register objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, register_id?: int}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, schema_id?: int, hard_delete?: bool}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects publishing completed successfully', published_count?: int, published_uuids?: array<int, string>, schema_id?: int, publish_all?: bool}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, valid_count?: int, invalid_count?: int, valid_objects?: array<int, array>, invalid_objects?: array<int, array>, schema_id?: int}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/ChatController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: array<array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}>, total?: int, conversationId?: int}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: mixed|string, message?: mixed|string, conversation?: null|string,...}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/ConfigurationController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitLab', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from URL', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/ConversationController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to delete conversation', message: string, uuid?: string, archived?: true}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string, messageCount?: int}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch messages', message?: string, results?: array<array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}>, total?: int, limit?: int, offset?: int}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to permanently delete conversation', message: string, uuid?: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to restore conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to update conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/EndpointsController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: bool, message?: string, statusCode?: int, response?: mixed}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
   </file>
   <file src="lib/Controller/FilesController.php">
     <NoValue>
@@ -112,11 +56,6 @@
       <code><![CDATA[register]]></code>
       <code><![CDATA[schema]]></code>
     </InvalidNamedArgument>
-    <InvalidTemplateParam>
-      <code><![CDATA[DataDownloadResponse<200, mixed, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array<string, mixed>, array<never, never>>]]></code>
-    </InvalidTemplateParam>
     <NoValue>
       <code><![CDATA[$nameArray]]></code>
       <code><![CDATA[$nameArray]]></code>
@@ -134,21 +73,6 @@
       <code><![CDATA[is_array($typeRaw)]]></code>
     </TypeDoesNotContainType>
   </file>
-  <file src="lib/Controller/RegistersController.php">
-    <InvalidReturnStatement>
-      <code><![CDATA[new JSONResponse(
-                data: $this->objectEntityMapper->searchObjects(query: $query)
-        )]]></code>
-    </InvalidReturnStatement>
-    <InvalidReturnType>
-      <code><![CDATA[JSONResponse<200, int|list<\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>]]></code>
-    </InvalidReturnType>
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed, commit_url?: mixed, file_url?: mixed, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
   <file src="lib/Controller/SchemasController.php">
     <InvalidArrayOffset>
       <code><![CDATA[$schemaArr['@self']]]></code>
@@ -158,10 +82,6 @@
       <code><![CDATA[extend]]></code>
       <code><![CDATA[extend]]></code>
     </InvalidNamedArgument>
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<200, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<201, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
   </file>
   <file src="lib/Controller/SearchController.php">
     <InvalidArrayOffset>
@@ -172,40 +92,6 @@
     <InvalidScalarArgument>
       <code><![CDATA[$page]]></code>
     </InvalidScalarArgument>
-  </file>
-  <file src="lib/Controller/SettingsController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<200|422, array{success: bool, message: string, details?: array{error: mixed|string}, fixed?: array<never, never>, errors?: array<never, never>}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<422, array{success: false, message: string, details: array{exception: string}}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200, mixed, array<never, never>>|JSONResponse<500, array{success: false, message: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<200|400, mixed, array<never, never>>|JSONResponse<400, array{success: false, error: string, message: string}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/UserSettingsController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/ViewsController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Failed to delete view'|'User not authenticated'|'View not found', message?: string, success?: false}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, message?: string, view?: array}, array<never, never>>]]></code>
-      <code><![CDATA[JSONResponse<int, array{error?: string, message?: string, view?: array}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
-  </file>
-  <file src="lib/Controller/WebhooksController.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, array{error?: string, success?: bool, message?: null|string, error_details?: array{status_code: int|null, response_body: null|string}}, array<never, never>>]]></code>
-    </InvalidTemplateParam>
   </file>
   <file src="lib/Cron/ConfigurationCheckJob.php">
     <ParamNameMismatch>
@@ -291,11 +177,6 @@
       <code><![CDATA[key]]></code>
     </InvalidNamedArgument>
   </file>
-  <file src="lib/Db/WebhookMapper.php">
-    <UndefinedDocblockClass>
-      <code><![CDATA[array<int<0, max>, OCA\OpenRegister\Db\Webhook>]]></code>
-    </UndefinedDocblockClass>
-  </file>
   <file src="lib/Listener/ObjectChangeListener.php">
     <InvalidArrayOffset>
       <code><![CDATA[$objectSettings['objectExtractionMode']]]></code>
@@ -360,9 +241,6 @@
     </UndefinedVariable>
   </file>
   <file src="lib/Service/ConfigurationService.php">
-    <InvalidTemplateParam>
-      <code><![CDATA[JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, schemas: list{0?: array{type: string, action: string, slug: string, title: string, current: array|null, proposed: array, changes: array},...}, objects: list{0?: array{type: string, action: string, slug: string, title: string, register: string, schema: string, current: array|null, proposed: array, changes: array},...}, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}]]></code>
-    </InvalidTemplateParam>
     <NoValue>
       <code><![CDATA[$existingObjectData]]></code>
       <code><![CDATA[$existingObjectData]]></code>
@@ -620,11 +498,6 @@
     <InvalidNamedArgument>
       <code><![CDATA[objectData]]></code>
     </InvalidNamedArgument>
-  </file>
-  <file src="lib/Service/WebhookService.php">
-    <InvalidArgument>
-      <code><![CDATA[$webhook]]></code>
-    </InvalidArgument>
   </file>
   <file src="lib/Setup/SolrSetup.php">
     <InvalidNamedArgument>

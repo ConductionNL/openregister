@@ -115,7 +115,7 @@ class FileSearchController extends Controller
 
             // Add file type filter if specified.
             if (empty($fileTypes) === false) {
-                $typeFilter      = implode(' OR ', array_map(fn($t) => "mime_type:\"$t\"", $fileTypes));
+                $typeFilter      = implode(' OR ', array_map(fn(string $t): string => "mime_type:\"$t\"", $fileTypes));
                 $solrQuery['fq'] = $typeFilter;
             }
 

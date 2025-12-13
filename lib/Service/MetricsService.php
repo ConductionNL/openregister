@@ -172,7 +172,7 @@ class MetricsService
             ]);
 
             // Execute the insert query.
-            $qb->execute();
+            $qb->executeStatement();
         } catch (\Exception $e) {
             // Log errors but don't throw to prevent disrupting main operations.
             // Metrics recording failures should not break application functionality.
@@ -211,7 +211,7 @@ class MetricsService
             ->groupBy('date')
             ->orderBy('date', 'ASC');
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $rows   = $result->fetchAll();
         $result->closeCursor();
 
@@ -261,7 +261,7 @@ class MetricsService
             ->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)));
 
         // Execute query and fetch single row result.
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $row    = $result->fetch();
         $result->closeCursor();
 
@@ -338,7 +338,7 @@ class MetricsService
                 ->andWhere($qb->expr()->isNotNull('duration_ms'));
 
             // Execute query and fetch single row result.
-            $result = $qb->execute();
+            $result = $qb->executeQuery();
             $row    = $result->fetch();
             $result->closeCursor();
 
@@ -396,7 +396,7 @@ class MetricsService
             ->orderBy('date', 'ASC');
 
         // Execute query and fetch all results.
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $rows   = $result->fetchAll();
         $result->closeCursor();
 
@@ -406,7 +406,7 @@ class MetricsService
         $qb2->select($qb2->createFunction('SUM(LENGTH(embedding))'), 'total_bytes')
             ->from('openregister_vectors');
 
-        $result2 = $qb2->execute();
+        $result2 = $qb2->executeQuery();
         $sizeRow = $result2->fetch();
         $result2->closeCursor();
 
@@ -480,9 +480,9 @@ class MetricsService
             ->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime)));
 
         // Execute delete query.
-        $result = $qb->execute();
+        $result = $qb->executeStatement();
         
-        // Handle different return types from execute().
+        // Handle different return types from executeStatement().
         // Some database drivers return int, others return result object.
         if (is_int($result)) {
             return $result;
@@ -606,7 +606,7 @@ class MetricsService
         // Note: $growthData is [date => count], so $dayData is the count value.
         foreach ($growthData as $dayData) {
             // Cast to int for type safety (handles null values).
-            $totalVectors += (int) ($dayData['count'] ?? 0);
+            $totalVectors += $dayData['count'] ?? 0);
         }
 
         // Safety check: prevent division by zero.

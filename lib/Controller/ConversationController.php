@@ -245,8 +245,6 @@ class ConversationController extends Controller
      *
      * @param string $uuid Conversation UUID
      *
-     * @return JSONResponse Conversation data
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
@@ -321,9 +319,7 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Messages list
-     *
-     * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch messages', message?: string, results?: array<array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}>, total?: int, limit?: int, offset?: int}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch messages', message?: string, results?: list<array{content: null|string, conversationId: int|null, created: null|string, id: int, role: null|string, sources: array|null, uuid: null|string}>, total?: int, limit?: int, offset?: int}, array<never, never>>
      */
     public function messages(string $uuid): JSONResponse
     {
@@ -506,8 +502,6 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Updated conversation
-     *
      * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to update conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function update(string $uuid): JSONResponse
@@ -593,8 +587,6 @@ class ConversationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Success message
      *
      * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to delete conversation', message: string, uuid?: string, archived?: true}, array<never, never>>
      */
@@ -709,8 +701,6 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Restored conversation
-     *
      * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to restore conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function restore(string $uuid): JSONResponse
@@ -781,8 +771,6 @@ class ConversationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Success message
      *
      * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Conversation not found'|'Failed to permanently delete conversation', message: string, uuid?: string}, array<never, never>>
      */

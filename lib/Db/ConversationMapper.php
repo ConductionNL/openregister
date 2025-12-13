@@ -117,12 +117,12 @@ class ConversationMapper extends QBMapper
 
             // Step 2: Set created timestamp if not already set.
             if ($entity->getCreated() === null) {
-                $entity->setCreated(new \DateTime());
+                $entity->setCreated(new DateTime());
             }
 
             // Step 3: Set updated timestamp if not already set.
             if ($entity->getUpdated() === null) {
-                $entity->setUpdated(new \DateTime());
+                $entity->setUpdated(new DateTime());
             }
         }
 
@@ -158,7 +158,7 @@ class ConversationMapper extends QBMapper
 
         if ($entity instanceof Conversation) {
             // Step 2: Always update the updated timestamp to current time.
-            $entity->setUpdated(new \DateTime());
+            $entity->setUpdated(new DateTime());
         }
 
         // Step 3: Update entity in database using parent method.
@@ -397,7 +397,7 @@ class ConversationMapper extends QBMapper
             $qb->andWhere($qb->expr()->isNull('deleted_at'));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
         $result->closeCursor();
 
@@ -430,7 +430,7 @@ class ConversationMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation, IQueryBuilder::PARAM_STR)));
         }
 
-        $result = $qb->execute();
+        $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();
         $result->closeCursor();
 

@@ -433,7 +433,7 @@ class HyperFacetHandler
      * @phpstan-return array<string, mixed>
      * @psalm-param    array<string, mixed> $facetConfig
      * @psalm-param    array<string, mixed> $baseQuery
-     * @psalm-param    array<string, mixed> $datasetStats
+     * @psalm-param    array<string, mixed> $_datasetStats
      * @psalm-return   array<string, mixed>
      */
     private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $_datasetStats): array
@@ -1207,8 +1207,8 @@ class HyperFacetHandler
     /**
      * Apply JSON field filters to query builder
      *
-     * @param IQueryBuilder $queryBuilder Query builder instance
-     * @param array         $filters     Filters to apply
+     * @param IQueryBuilder $_queryBuilder Query builder instance
+     * @param array         $_filters      Filters to apply
      *
      * @return void
      */

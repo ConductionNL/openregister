@@ -25,6 +25,8 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
 use Exception;
 use RuntimeException;
+use ReflectionClass;
+use stdClass;
 use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -167,7 +169,7 @@ class SchemaMapper extends QBMapper
      * properties with the current schema, providing the complete resolved schema.
      *
      * @param int|string $id        The id of the schema
-     * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
+     * @param array      $_extend   Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published Whether to enable published bypass (default: null = check config)
      * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
@@ -331,7 +333,7 @@ class SchemaMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
-     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
+     * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
@@ -461,7 +463,7 @@ class SchemaMapper extends QBMapper
         // Ensure the object has a slug.
         if (empty($schema->getSlug()) === true) {
             // Convert to lowercase and replace spaces with dashes.
-            $slug = strtolower(trim($schema->getTitle()));
+            $slug = strtolower(trim($schema->getTitle() ?? 'schema'));
             // Assuming title is used for slug.
             // Remove special characters.
             $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);

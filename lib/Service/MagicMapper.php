@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use DateTime;
+use stdClass;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;

@@ -1,0 +1,123 @@
+name: Unit Tests & Coverage
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - development
+      - dev
+  push:
+    branches:
+      - main
+      - master
+      - development
+      - dev
+
+jobs:
+  unit-tests:
+    name: PHPUnit Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php-versions: ['8.1', '8.2', '8.3']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP ${{ matrix.php-versions }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, posix, simplexml, xmlreader, xmlwriter, zip
+          coverage: xdebug
+          tools: composer:v2
+      
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+      
+      - name: Run unit tests
+        run: composer test:unit
+        continue-on-error: false
+      
+      - name: Run integration tests
+        run: composer test:integration || echo "Integration tests require Nextcloud environment"
+        continue-on-error: true
+      
+      - name: Generate coverage report
+        if: matrix.php-versions == '8.1'
+        run: composer test:coverage || echo "Coverage requires Nextcloud environment"
+        continue-on-error: true
+      
+      - name: Check coverage threshold
+        if: matrix.php-versions == '8.1'
+        id: coverage
+        run: |
+          if [ -f coverage/clover.xml ]; then
+            composer coverage:check || true
+            COVERAGE=$(php -r "$xml = simplexml_load_file('coverage/clover.xml'); $metrics = $xml->project->metrics; $statements = (int)$metrics['statements']; $covered = (int)$metrics['coveredstatements']; $percentage = $statements > 0 ? round(($covered / $statements) * 100, 2) : 0; echo $percentage;")
+            echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+            echo "### Test Coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
+            
+            if (( $(echo "$COVERAGE < 75" | bc -l) )); then
+              echo "⚠️ Test coverage ($COVERAGE%) is below recommended 75%." >> $GITHUB_STEP_SUMMARY
+              echo "warning=true" >> $GITHUB_OUTPUT
+            else
+              echo "✅ Test coverage meets requirements!" >> $GITHUB_STEP_SUMMARY
+              echo "warning=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "percentage=0" >> $GITHUB_OUTPUT
+            echo "warning=true" >> $GITHUB_OUTPUT
+            echo "⚠️ No coverage report generated (requires Nextcloud environment)." >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+      
+      - name: Upload coverage reports
+        if: matrix.php-versions == '8.1'
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+      
+      - name: Comment PR with Coverage Report
+        if: github.event_name == 'pull_request' && matrix.php-versions == '8.1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverage = '${{ steps.coverage.outputs.percentage }}';
+            const warning = '${{ steps.coverage.outputs.warning }}' === 'true';
+            
+            if (coverage !== '0') {
+              const emoji = warning ? '⚠️' : '✅';
+              const status = warning ? 'Below recommended threshold' : 'Meets requirements';
+              
+              const body = `## ${emoji} Test Coverage Report
+              
+              ### Coverage: **${coverage}%** (${status})
+              
+              | Threshold | Required | Current | Status |
+              |-----------|----------|---------|--------|
+              | Minimum | 75% | ${coverage}% | ${warning ? '⚠️ Below threshold' : '✅ Pass'} |
+              | Recommended | 85% | ${coverage}% | ${parseFloat(coverage) >= 85 ? '✅ Pass' : '⚠️ Below recommended'} |
+              
+              ${warning ? 
+                '⚠️ **Warning:** Coverage is below the recommended 75% threshold. Consider adding more tests.' : 
+                '✅ **Success:** Test coverage meets requirements.'}
+              
+              📊 Full coverage report is available in the workflow artifacts.
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+        continue-on-error: true
+
+

@@ -30,6 +30,9 @@ use OCP\IUser;
 use OCP\BackgroundJob\IJobList;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use DateTime;
+use InvalidArgumentException;
+use Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Psr\Log\LoggerInterface;
 use React\Async\PromiseInterface;
@@ -309,7 +312,7 @@ class ImportService
 
         // CSV can only handle a single schema.
         if ($schema === null) {
-            throw new \InvalidArgumentException('CSV import requires a specific schema');
+            throw new InvalidArgumentException('CSV import requires a specific schema');
         }
 
         // Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
@@ -541,7 +544,7 @@ class ImportService
         if ((empty($allObjects) === false) && $register !== null && $schema !== null) {
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
-                $publishDate = (new \DateTime('now'))->format('c');
+                $publishDate = (new DateTime('now'))->format('c');
                 // ISO 8601 format.
                 $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
             }
@@ -550,11 +553,11 @@ class ImportService
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
-            $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-            $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+            $summary['created'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+            $summary['updated'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
 
             // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
-            $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+            $summary['unchanged'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
 
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
@@ -673,7 +676,7 @@ class ImportService
 
             // Add publish date to all objects if publish is enabled.
             if ($publish === true) {
-                $publishDate = (new \DateTime('now'))->format('c');
+                $publishDate = (new DateTime('now'))->format('c');
                 // ISO 8601 format.
                 $this->logger->debug(
                         message: 'Adding publish date to CSV import objects',
@@ -701,11 +704,11 @@ class ImportService
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
-            $summary['created'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-            $summary['updated'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+            $summary['created'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
+            $summary['updated'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
 
             // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
-            $summary['unchanged'] = array_map(fn($obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+            $summary['unchanged'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
 
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
@@ -866,9 +869,9 @@ class ImportService
         // Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === true) {
             try {
-                $dateTime = new \DateTime($value);
+                $dateTime = new DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Fallback to original value if parsing fails.
                 return $value;
             }
@@ -877,9 +880,9 @@ class ImportService
         // Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value) === true) {
             try {
-                $dateTime = new \DateTime($value);
+                $dateTime = new DateTime($value);
                 return $dateTime->format(format: 'Y-m-d H:i:s');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Fallback to original value if parsing fails.
                 return $value;
             }
@@ -1102,7 +1105,7 @@ class ImportService
      * @param int                                           $endRow           Ending row number
      * @param Register|null                                 $register         Optional register
      * @param Schema|null                                   $schema           Optional schema
-     * @param array                                         $schemaProperties Schema properties
+     * @param array                                         $_schemaProperties Schema properties
      *
      * @return (array|int)[]
      *
@@ -1650,7 +1653,7 @@ class ImportService
                     );
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                     message: 'Failed to schedule SOLR warmup job',
                     context: [

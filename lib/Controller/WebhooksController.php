@@ -910,7 +910,7 @@ class WebhooksController extends Controller
             $stats = $this->webhookLogMapper->getStatistics($id);
 
             // Count pending retries.
-            $now            = new \DateTime();
+            $now            = new DateTime();
             $pendingRetries = count($this->webhookLogMapper->findFailedForRetry($now));
 
             $stats['pendingRetries'] = $pendingRetries;
@@ -1078,7 +1078,7 @@ class WebhooksController extends Controller
             // Extract payload from request body if available, otherwise use stored payload.
             $payload = [];
             if ($log->getRequestBody() !== null) {
-                $decoded = json_decode($log->getRequestBody(), true);
+                $decoded = json_decode($log->getRequestBody() ?? '{}', true);
                 if ($decoded !== null) {
                     $payload = $decoded;
                 }

@@ -541,7 +541,7 @@ class Register extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $registers = $configuration->getRegisters();
-            if (in_array($this->id, $registers, true) === true) {
+            if (in_array($this->id, $registers ?? [], true) === true) {
                 return true;
             }
         }
@@ -572,7 +572,7 @@ class Register extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $registers = $configuration->getRegisters();
-            if (in_array($this->id, $registers, true) === true) {
+            if (in_array($this->id, $registers ?? [], true) === true) {
                 return $configuration;
             }
         }

@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Service\ObjectHandlers;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use RuntimeException;
+use ReflectionClass;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
@@ -41,6 +43,7 @@ use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -608,7 +611,7 @@ class SaveObject
                                 $entity->setImage($fileData['downloadUrl']);
                             }
                         }//end if
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // File not found or error loading - skip.
                         $this->logger->error(
                                 'Failed to load file for objectImageField',
@@ -655,7 +658,7 @@ class SaveObject
                             $entity->setImage($fileData['downloadUrl']);
                         }
                     }//end if
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // File not found or error loading - skip.
                     $this->logger->error(
                             'Failed to load file for objectImageField',
@@ -714,7 +717,7 @@ class SaveObject
             $published = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectPublishedField']);
             if ($published !== null && trim($published) !== '') {
                 try {
-                    $publishedDate = new \DateTime(trim($published));
+                    $publishedDate = new DateTime(trim($published));
                     $entity->setPublished($publishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation.
@@ -734,7 +737,7 @@ class SaveObject
             $depublished = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectDepublishedField']);
             if ($depublished !== null && trim($depublished) !== '') {
                 try {
-                    $depublishedDate = new \DateTime(trim($depublished));
+                    $depublishedDate = new DateTime(trim($depublished));
                     $entity->setDepublished($depublishedDate);
                 } catch (Exception $e) {
                     // Log warning but don't fail the entire operation.
@@ -1665,16 +1668,16 @@ class SaveObject
     /**
      * Saves an object.
      *
-     * @param Register|int|string|null $register   The register containing the object.
-     * @param Schema|int|string        $schema     The schema to validate against.
-     * @param array                    $data       The object data to save.
-     * @param string|null              $uuid       The UUID of the object to update (if updating).
-     * @param int|null                 $folderId   The folder ID to set on the object (optional).
-     * @param bool                     $rbac       Whether to apply RBAC checks (default: true).
-     * @param bool                     $multi      Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $persist    Whether to persist the object to database (default: true).
-     * @param bool                     $silent     Whether to skip audit trail creation and events (default: false).
-     * @param bool                     $validation Whether to validate the object (default: true).
+     * @param Register|int|string|null $register    The register containing the object.
+     * @param Schema|int|string        $schema      The schema to validate against.
+     * @param array                    $data        The object data to save.
+     * @param string|null              $uuid        The UUID of the object to update (if updating).
+     * @param int|null                 $folderId    The folder ID to set on the object (optional).
+     * @param bool                     $_rbac       Whether to apply RBAC checks (default: true).
+     * @param bool                     $multi       Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $persist     Whether to persist the object to database (default: true).
+     * @param bool                     $silent      Whether to skip audit trail creation and events (default: false).
+     * @param bool                     $_validation Whether to validate the object (default: true).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -1852,7 +1855,7 @@ class SaveObject
 
                 $savedEntity = $this->objectEntityMapper->update($savedEntity);
             }//end if
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // ROLLBACK: Delete the object if file processing failed.
             $this->logger->warning(
                     'File processing failed, rolling back object creation',
@@ -1961,7 +1964,7 @@ class SaveObject
             $this->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Hydration failures indicate schema/data mismatch - don't suppress!
-            throw new \Exception(
+            throw new Exception(
                 'Object metadata hydration failed: '.$e->getMessage().'. This indicates a mismatch between object data and schema configuration.',
                 0,
                 $e
@@ -2014,7 +2017,7 @@ class SaveObject
             $objectEntity = $this->updateObjectRelations(objectEntity: $objectEntity, data: $preparedData, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
-            throw new \Exception(
+            throw new Exception(
                 'Object relations processing failed: '.$e->getMessage().'. This indicates invalid relation data or schema configuration problems.',
                 0,
                 $e
@@ -2071,7 +2074,7 @@ class SaveObject
             $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
-            throw new \Exception(
+            throw new Exception(
                 'Object relations processing failed: ' . $e->getMessage() .
                 '. This indicates invalid relation data or schema configuration problems.',
                 0,
@@ -2131,7 +2134,7 @@ class SaveObject
                                     'publishedValue' => $publishedValue,
                                 ]
                                 );
-                        $objectEntity->setPublished(new \DateTime($publishedValue));
+                        $objectEntity->setPublished(new DateTime($publishedValue));
                     }
                 } catch (Exception $exception) {
                     $this->logger->warning(
@@ -2157,7 +2160,7 @@ class SaveObject
             try {
                 // Convert string to DateTime if it's a valid date string.
                 if (is_string($selfData['depublished']) === true) {
-                    $objectEntity->setDepublished(new \DateTime($selfData['depublished']));
+                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
                 }
             } catch (Exception $exception) {
                 // Silently ignore invalid date formats.
@@ -2196,7 +2199,7 @@ class SaveObject
             $data = $this->sanitizeEmptyStringsForObjectProperties(data: $data, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
-            throw new \Exception(
+            throw new Exception(
                 'Object data sanitization failed: '.$e->getMessage().'. This indicates invalid or corrupted object data that cannot be processed safely.',
                 0,
                 $e
@@ -2643,7 +2646,7 @@ class SaveObject
                         if (is_numeric($fileId) === true) {
                             try {
                                 $this->fileService->deleteFile(file: (int) $fileId, object: $objectEntity);
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
                                 $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
                             }
@@ -2653,7 +2656,7 @@ class SaveObject
                     // Single file ID.
                     try {
                         $this->fileService->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
                         $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
                     }
@@ -3130,17 +3133,17 @@ class SaveObject
                 $content  = base64_decode($matches[2], true);
                 // Strict mode.
                 if ($content === false) {
-                    throw new \OCA\OpenRegister\Exception\ValidationException('Invalid base64 content in data URI');
+                    throw new ValidationException('Invalid base64 content in data URI');
                 }
             } else {
-                throw new \OCA\OpenRegister\Exception\ValidationException('Invalid data URI format');
+                throw new ValidationException('Invalid data URI format');
             }
         } else {
             // Handle plain base64 content.
             $content = base64_decode($fileContent, true);
             // Strict mode.
             if ($content === false) {
-                throw new \OCA\OpenRegister\Exception\ValidationException('Invalid base64 content');
+                throw new ValidationException('Invalid base64 content');
             }
 
             // Try to detect MIME type from content.
@@ -3200,7 +3203,7 @@ class SaveObject
         // Validate MIME type.
         if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
             if (in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true) === false) {
-                throw new \OCA\OpenRegister\Exception\ValidationException(
+                throw new ValidationException(
                     "$errorPrefix has invalid type '{$fileData['mimeType']}'. "."Allowed types: ".implode(', ', $fileConfig['allowedTypes'])
                 );
             }
@@ -3209,7 +3212,7 @@ class SaveObject
         // Validate file size.
         if (($fileConfig['maxSize'] ?? null) !== null && $fileConfig['maxSize'] > 0) {
             if ($fileData['size'] > $fileConfig['maxSize']) {
-                throw new \OCA\OpenRegister\Exception\ValidationException(
+                throw new ValidationException(
                     "$errorPrefix exceeds maximum size ({$fileConfig['maxSize']} bytes). "."File size: {$fileData['size']} bytes"
                 );
             }
@@ -3313,7 +3316,7 @@ class SaveObject
                         ]
                         );
 
-                throw new \OCA\OpenRegister\Exception\ValidationException(
+                throw new ValidationException(
                     "$errorPrefix is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
                 );
             }
@@ -3351,7 +3354,7 @@ class SaveObject
                     ]
                     );
 
-            throw new \OCA\OpenRegister\Exception\ValidationException(
+            throw new ValidationException(
                 "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "."Executable files are blocked for security reasons."
             );
         }
@@ -3403,7 +3406,7 @@ class SaveObject
                         ]
                         );
 
-                throw new \OCA\OpenRegister\Exception\ValidationException(
+                throw new ValidationException(
                     "$errorPrefix contains executable code ($description). "."Executable files are blocked for security reasons."
                 );
             }
@@ -3412,14 +3415,14 @@ class SaveObject
         // Check for script shebangs anywhere in first 4 lines.
         $firstLines = substr($content, 0, 1024);
         if (preg_match('/^#!.*\/(sh|bash|zsh|ksh|csh|python|perl|ruby|php|node)/m', $firstLines) === 1) {
-            throw new \OCA\OpenRegister\Exception\ValidationException(
+            throw new ValidationException(
                 "$errorPrefix contains script shebang. "."Script files are blocked for security reasons."
             );
         }
 
         // Check for embedded PHP tags.
         if (preg_match('/<\?php|<\?=|<script\s+language\s*=\s*["\']php/i', $firstLines) === 1) {
-            throw new \OCA\OpenRegister\Exception\ValidationException(
+            throw new ValidationException(
                 "$errorPrefix contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
@@ -3788,7 +3791,7 @@ class SaveObject
         try {
             $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
             return $retentionSettings['auditTrailsEnabled'] ?? true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If we can't get settings, default to enabled for safety.
             $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
             return true;

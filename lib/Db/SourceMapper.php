@@ -213,8 +213,8 @@ class SourceMapper extends QBMapper
                 $entity->setUuid((string) Uuid::v4());
             }
 
-            $entity->setCreated(new \DateTime());
-            $entity->setUpdated(new \DateTime());
+            $entity->setCreated(new DateTime());
+            $entity->setUpdated(new DateTime());
         }
 
         // Auto-set organisation from active session.
@@ -250,7 +250,7 @@ class SourceMapper extends QBMapper
         $oldEntity = $this->find(id: $entity->getId());
 
         if ($entity instanceof Source) {
-            $entity->setUpdated(new \DateTime());
+            $entity->setUpdated(new DateTime());
         }
 
         $entity = parent::update($entity);
@@ -328,7 +328,7 @@ class SourceMapper extends QBMapper
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', $obj->getVersion());
+            $version    = explode('.', $obj->getVersion() ?? '1.0.0');
             $version[2] = ((int) $version[2] + 1);
             $obj->setVersion(implode('.', $version));
         }

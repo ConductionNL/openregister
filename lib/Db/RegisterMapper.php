@@ -170,7 +170,7 @@ class RegisterMapper extends QBMapper
      * Includes RBAC and organisation filtering for multi-tenancy.
      *
      * @param int|string $id        The ID of the register to find
-     * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
+     * @param array      $_extend   Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published Whether to enable published bypass (default: null = check config)
      * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
@@ -181,7 +181,7 @@ class RegisterMapper extends QBMapper
      */
     public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Register
     {
-        // Log search attempt for debugging
+        // Log search attempt for debugging.
         if (isset($this->logger) === true) {
             $this->logger->info(
                     '[RegisterMapper] Searching for register',
@@ -194,7 +194,7 @@ class RegisterMapper extends QBMapper
                     );
         }
 
-        // Verify RBAC permission to read registers if RBAC is enabled
+        // Verify RBAC permission to read registers if RBAC is enabled.
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'register');
@@ -211,7 +211,7 @@ class RegisterMapper extends QBMapper
                 )
             );
 
-        // Check if register exists before applying filters (for debugging)
+        // Check if register exists before applying filters (for debugging).
         $qbBeforeFilter     = clone $qb;
         $existsBeforeFilter = false;
         try {
@@ -243,14 +243,14 @@ class RegisterMapper extends QBMapper
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
+        // Use $published parameter if provided, otherwise check config.
         if ($published !== null) {
             $enablePublished = $published;
         } else {
             $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         }
 
-        // Log multitenancy configuration
+        // Log multitenancy configuration.
         if (isset($this->logger) === true) {
             $activeOrgUuids = $this->getActiveOrganisationUuids();
             $isAdmin        = false;
@@ -292,11 +292,11 @@ class RegisterMapper extends QBMapper
             multiTenancyEnabled: $multi
         );
 
-        // Just return the entity; do not attach stats here
+        // Just return the entity; do not attach stats here.
         try {
             return $this->findEntity(query: $qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Log detailed error information
+            // Log detailed error information.
             if (isset($this->logger) === true) {
                 $this->logger->error(
                         '[RegisterMapper] Register not found after filters',
@@ -396,7 +396,7 @@ class RegisterMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
+     * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
@@ -416,7 +416,7 @@ class RegisterMapper extends QBMapper
         bool $rbac=true,
         bool $multi=true
     ): array {
-        // Verify RBAC permission to read registers if RBAC is enabled
+        // Verify RBAC permission to read registers if RBAC is enabled.
         if ($rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'register');
@@ -448,7 +448,7 @@ class RegisterMapper extends QBMapper
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
+        // Use $published parameter if provided, otherwise check config.
         if ($published !== null) {
             $enablePublished = $published;
         } else {
@@ -463,7 +463,7 @@ class RegisterMapper extends QBMapper
             multiTenancyEnabled: $multi
         );
 
-        // Just return the entities; do not attach stats here
+        // Just return the entities; do not attach stats here.
         return $this->findEntities(query: $qb);
 
     }//end findAll()
@@ -488,7 +488,7 @@ class RegisterMapper extends QBMapper
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        // Auto-set owner from current user session
+        // Auto-set owner from current user session.
         $this->setOwnerOnCreate($entity);
 
         $entity = parent::insert($entity);
@@ -518,7 +518,7 @@ class RegisterMapper extends QBMapper
         // Ensure the object has a slug.
         if (empty($register->getSlug()) === true) {
             // Convert to lowercase and replace spaces with dashes.
-            $slug = strtolower(trim($register->getTitle()));
+            $slug = strtolower(trim($register->getTitle() ?? 'register'));
             // Assuming title is used for slug.
             // Remove special characters.
             $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
@@ -694,13 +694,13 @@ class RegisterMapper extends QBMapper
         $schemas = [];
 
         // Fetch each schema by its ID.
-        // Use $multi=false to bypass organization filter since the register has already passed access checks
-        // This ensures schemas linked to accessible registers can always be found
+        // Use $multi=false to bypass organization filter since the register has already passed access checks.
+        // This ensures schemas linked to accessible registers can always be found.
         foreach ($schemaIds as $schemaId) {
             try {
                 $schemas[] = $this->schemaMapper->find((int) $schemaId, [], $published, $rbac, false);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Schema not found, skip it (similar to RegistersController behavior)
+                // Schema not found, skip it (similar to RegistersController behavior).
                 continue;
             }
         }

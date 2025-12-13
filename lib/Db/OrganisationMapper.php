@@ -24,6 +24,8 @@ use DateTime;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use Exception;
+use RuntimeException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -93,8 +95,8 @@ class OrganisationMapper extends QBMapper
             }
 
             // Set timestamps.
-            $entity->setCreated(new \DateTime());
-            $entity->setUpdated(new \DateTime());
+            $entity->setCreated(new DateTime());
+            $entity->setUpdated(new DateTime());
         }
 
         $entity = parent::insert($entity);
@@ -125,7 +127,7 @@ class OrganisationMapper extends QBMapper
         $oldEntity = $this->findByUuid((string) $entity->getId());
 
         if ($entity instanceof Organisation) {
-            $entity->setUpdated(new \DateTime());
+            $entity->setUpdated(new DateTime());
         }
 
         $entity = parent::update($entity);
@@ -205,7 +207,7 @@ class OrganisationMapper extends QBMapper
                 $qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
             );
 
-        $result        = $qb->execute();
+        $result        = $qb->executeQuery();
         $organisations = [];
 
         $row = $result->fetch();
@@ -290,7 +292,7 @@ class OrganisationMapper extends QBMapper
         }
 
         // Set timestamps.
-        $now = new \DateTime();
+        $now = new DateTime();
         if ($organisation->getId() === null) {
             $organisation->setCreated($now);
         }
@@ -334,7 +336,7 @@ class OrganisationMapper extends QBMapper
 
                 // Organization events are now handled by cron job - no event dispatching needed.
                 return $result;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->logger->error(
                         '[OrganisationMapper] insert() failed: '.$e->getMessage(),
                         [
@@ -385,8 +387,8 @@ class OrganisationMapper extends QBMapper
             $qb->andWhere($qb->expr()->neq('id', $qb->createNamedParameter($excludeId, IQueryBuilder::PARAM_INT)));
         }
 
-        $result = $qb->execute();
-        $exists = $result->fetchColumn() !== false;
+        $result = $qb->executeQuery();
+        $exists = $result->fetchOne() !== false;
         $result->closeCursor();
 
         return $exists;
@@ -416,12 +418,12 @@ class OrganisationMapper extends QBMapper
         try {
             Uuid::fromString($uuid);
         } catch (\InvalidArgumentException $e) {
-            throw new \Exception('Invalid UUID format. UUID must be a valid RFC 4122 UUID.');
+            throw new Exception('Invalid UUID format. UUID must be a valid RFC 4122 UUID.');
         }
 
         // Check for uniqueness.
         if ($this->uuidExists(uuid: $uuid, excludeId: $organisation->getId()) === true) {
-            throw new \Exception('UUID already exists. Please use a different UUID.');
+            throw new Exception('UUID already exists. Please use a different UUID.');
         }
 
     }//end validateUuid()
@@ -502,8 +504,8 @@ class OrganisationMapper extends QBMapper
         // Total organisations.
         $qb->select($qb->createFunction('COUNT(*) as total'))
             ->from($this->getTableName());
-        $result = $qb->execute();
-        $total  = (int) $result->fetchColumn();
+        $result = $qb->executeQuery();
+        $total  = (int) $result->fetchOne();
         $result->closeCursor();
 
         return [
@@ -623,7 +625,7 @@ class OrganisationMapper extends QBMapper
             );
 
             return $parents;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 'Error finding parent chain',
                 [
@@ -706,7 +708,7 @@ class OrganisationMapper extends QBMapper
             );
 
             return $children;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 'Error finding children chain',
                 [
@@ -746,20 +748,20 @@ class OrganisationMapper extends QBMapper
 
         // Prevent self-reference.
         if ($organisationUuid === $newParentUuid) {
-            throw new \Exception('Organisation cannot be its own parent.');
+            throw new Exception('Organisation cannot be its own parent.');
         }
 
         // Check if new parent exists (validation only).
         try {
             $this->findByUuid($newParentUuid);
-        } catch (\Exception $e) {
-            throw new \Exception('Parent organisation not found.');
+        } catch (Exception $e) {
+            throw new Exception('Parent organisation not found.');
         }
 
         // Check for circular reference: if the new parent has this org in its parent chain.
         $parentChain = $this->findParentChain($newParentUuid);
         if (in_array($organisationUuid, $parentChain) === true) {
-            throw new \Exception(
+            throw new Exception(
                 'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
             );
         }
@@ -774,7 +776,7 @@ class OrganisationMapper extends QBMapper
         $totalDepth    = $maxDepthAbove + $maxDepthBelow;
 
         if ($totalDepth > 10) {
-            throw new \Exception(
+            throw new Exception(
                 "Maximum hierarchy depth exceeded. Total depth would be {$totalDepth} levels (max 10 allowed)."
             );
         }
@@ -819,7 +821,7 @@ class OrganisationMapper extends QBMapper
                 if ($child->getParent() !== null) {
                     $parentMap[$childUuid] = $child->getParent();
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Skip if child not found.
                 continue;
             }

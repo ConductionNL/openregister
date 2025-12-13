@@ -23,6 +23,10 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use Exception;
+use RuntimeException;
+use DateTime;
+use stdClass;
 
 /**
  * LogService handles audit trail logs
@@ -146,7 +150,7 @@ class LogService
         // Step 2: Validate that object belongs to specified register and schema.
         // This prevents unauthorized access to logs from other registers/schemas.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
-            throw new \InvalidArgumentException('Object does not belong to specified register/schema');
+            throw new InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
         // Step 3: Add object ID to filters to restrict logs to this object.
@@ -190,7 +194,7 @@ class LogService
         // Step 2: Validate that object belongs to specified register and schema.
         // This prevents unauthorized access to log counts from other registers/schemas.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
-            throw new \InvalidArgumentException('Object does not belong to specified register/schema');
+            throw new InvalidArgumentException('Object does not belong to specified register/schema');
         }
 
         // Step 3: Get all logs for this object using filter.
@@ -307,7 +311,7 @@ class LogService
             case 'txt':
                 return $this->exportToTxt($exportData);
             default:
-                throw new \InvalidArgumentException("Unsupported export format: {$format}");
+                throw new InvalidArgumentException("Unsupported export format: {$format}");
         }
 
     }//end exportLogs()
@@ -328,8 +332,8 @@ class LogService
             $log = $this->auditTrailMapper->find($id);
             $this->auditTrailMapper->delete($log);
             return true;
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to delete audit trail: ".$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Failed to delete audit trail: ".$e->getMessage());
         }
 
     }//end deleteLog()
@@ -362,7 +366,7 @@ class LogService
                         $log = $this->auditTrailMapper->find($id);
                         $this->auditTrailMapper->delete($log);
                         $deleted++;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $failed++;
                     }
                 }
@@ -377,7 +381,7 @@ class LogService
                     try {
                         $this->auditTrailMapper->delete($log);
                         $deleted++;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $failed++;
                     }
                 }
@@ -388,8 +392,8 @@ class LogService
                 'failed'  => $failed,
                 'total'   => $deleted + $failed,
             ];
-        } catch (\Exception $e) {
-            throw new \Exception("Mass deletion failed: ".$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Mass deletion failed: ".$e->getMessage());
         }//end try
 
     }//end deleteLogs()

@@ -268,7 +268,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Perform additional access check using mapper method.
-            if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $this->userId) === false) {
+            if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $this->userId ?? '') === false) {
                 return new JSONResponse(
                     data: ['error' => 'Access denied to this agent'],
                     statusCode: Http::STATUS_FORBIDDEN
@@ -401,7 +401,7 @@ class AgentsController extends Controller
             $agent = $this->agentMapper->find($id);
 
             // Check if user can modify this agent using mapper method.
-            if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId) === false) {
+            if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId ?? '') === false) {
                 return new JSONResponse(data: ['error' => 'You do not have permission to modify this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
@@ -471,7 +471,7 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>
+     * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {

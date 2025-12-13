@@ -22,6 +22,7 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use stdClass;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use Psr\Log\LoggerInterface;

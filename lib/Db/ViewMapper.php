@@ -260,8 +260,8 @@ class ViewMapper extends QBMapper
         }
 
         // Set timestamps.
-        $entity->setCreated(new \DateTime());
-        $entity->setUpdated(new \DateTime());
+        $entity->setCreated(new DateTime());
+        $entity->setUpdated(new DateTime());
 
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
@@ -296,7 +296,7 @@ class ViewMapper extends QBMapper
         $oldEntity = $this->find($entity->getId());
 
         // Update timestamp.
-        $entity->setUpdated(new \DateTime());
+        $entity->setUpdated(new DateTime());
 
         $entity = parent::update(entity: $entity);
 

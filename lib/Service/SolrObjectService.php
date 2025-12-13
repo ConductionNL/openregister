@@ -15,6 +15,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use DateTime;
+use RuntimeException;
+use Exception;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -304,7 +307,7 @@ class SolrObjectService
         $collection = $this->getObjectCollection();
 
         if ($collection === null) {
-            throw new \Exception('objectCollection not configured in SOLR settings');
+            throw new Exception('objectCollection not configured in SOLR settings');
         }
 
         $this->logger->debug(
@@ -337,7 +340,7 @@ class SolrObjectService
         $collection = $this->getObjectCollection();
 
         if ($collection === null) {
-            throw new \Exception('objectCollection not configured in SOLR settings');
+            throw new Exception('objectCollection not configured in SOLR settings');
         }
 
         // TODO: Move commit logic to use collection parameter.
@@ -367,7 +370,7 @@ class SolrObjectService
         $text = $this->convertObjectToText($object);
 
         if (trim($text) === '' || trim($text) === null) {
-            throw new \Exception("Object {$object->getId()} has no text content to vectorize");
+            throw new Exception("Object {$object->getId()} has no text content to vectorize");
         }
 
         // Step 2: Generate embedding using VectorEmbeddingService.
@@ -377,7 +380,7 @@ class SolrObjectService
         $embedding = $vectorService->generateEmbedding(text: $text, provider: $provider);
 
         if ($embedding === null || empty($embedding['embedding']) === true) {
-            throw new \Exception("Failed to generate embedding for object {$object->getId()}");
+            throw new Exception("Failed to generate embedding for object {$object->getId()}");
         }
 
         // Step 3: Store vector in database.
@@ -500,7 +503,7 @@ class SolrObjectService
                 }
 
                 if ($object === null) {
-                    throw new \Exception("Could not find object {$item['object_id']}");
+                    throw new Exception("Could not find object {$item['object_id']}");
                 }
 
                 // Store vector.

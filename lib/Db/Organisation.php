@@ -694,8 +694,8 @@ class Organisation extends Entity implements JsonSerializable
             // To be calculated from actual usage.
                 'requests'  => 0,
             // To be calculated from actual usage.
-                'users'     => count($users),
-                'groups'    => count($groups),
+                'users'     => count($users ?? []),
+                'groups'    => count($groups ?? []),
             ],
             'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
             'created'       => $this->getCreatedFormatted(),

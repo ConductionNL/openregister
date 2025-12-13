@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use DateTime;
+use DateInterval;
+use RuntimeException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -327,7 +330,7 @@ class SchemaFacetCacheService
         $qb = $this->db->getQueryBuilder();
         $qb->delete(self::FACET_CACHE_TABLE)
             ->where($qb->expr()->isNotNull('expires'))
-            ->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new \DateTime(), 'datetime')));
+            ->andWhere($qb->expr()->lt('expires', $qb->createNamedParameter(new DateTime(), 'datetime')));
 
         $deletedCount = $qb->executeStatement();
 
@@ -696,8 +699,8 @@ class SchemaFacetCacheService
 
         // Check if expired.
         if ($result['expires'] !== null) {
-            $expires = new \DateTime($result['expires']);
-            if ($expires <= new \DateTime()) {
+            $expires = new DateTime($result['expires']);
+            if ($expires <= new DateTime()) {
                 // Cache expired, remove it.
                 $this->removeCachedFacetData(schemaId: $schemaId, cacheKey: $cacheKey);
                 return null;
@@ -736,9 +739,9 @@ class SchemaFacetCacheService
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now = new \DateTime();
+        $now = new DateTime();
         if ($ttl > 0) {
-            $expires = (clone $now)->add(new \DateInterval("PT{$ttl}S"));
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
         } else {
             $expires = null;
         }

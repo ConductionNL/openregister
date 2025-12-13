@@ -120,7 +120,7 @@ class SearchController extends Controller
         // Step 5: Format search results for JSON response.
         // Extract relevant fields from each object and standardize format.
         $formattedResults = array_map(
-            function ($object) {
+            function (array $object): array {
                 return [
                     'id'     => $object['uuid'] ?? $object['id'] ?? null,
                     'name'   => $object['name'] ?? $object['@self']['name'] ?? 'Unknown',

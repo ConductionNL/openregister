@@ -130,6 +130,7 @@ use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use Twig\Loader\ArrayLoader;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\GitHubService;
+use OCA\OpenRegister\Service\GitLabService;
 /**
  * Class Application
  *
@@ -361,7 +362,7 @@ class Application extends App implements IBootstrap
                             objectCacheService: $container->get(ObjectCacheService::class),
                             settingsService: $container->get(SettingsService::class),
                             logger: $container->get('Psr\Log\LoggerInterface'),
-                            arrayLoader: new \Twig\Loader\ArrayLoader([])
+                            arrayLoader: new ArrayLoader([])
                             );
                 }
                 );
@@ -394,7 +395,7 @@ class Application extends App implements IBootstrap
                             container: $container,
                             appConfig: $container->get('OCP\IAppConfig'),
                             logger: $container->get('Psr\Log\LoggerInterface'),
-                            client: new \GuzzleHttp\Client(),
+                            client: new Client(),
                             objectService: $container->get(ObjectService::class),
                             appDataPath: $appDataPath
                             );
@@ -518,7 +519,7 @@ class Application extends App implements IBootstrap
         // Register GitHubService for GitHub API operations.
         $context->registerService( \OCA\OpenRegister\Service\GitHubService::class,
                 function ($container) {
-                    return new \OCA\OpenRegister\Service\GitHubService(
+                    return new GitHubService(
                             client: $container->get('OCP\Http\Client\IClientService')->newClient(),
                             config: $container->get('OCP\IConfig'),
                             cacheFactory: $container->get('OCP\ICacheFactory'),
@@ -534,7 +535,7 @@ class Application extends App implements IBootstrap
         $context->registerService(
                 \OCA\OpenRegister\Service\GitLabService::class,
                 function ($container) {
-                    return new \OCA\OpenRegister\Service\GitLabService(
+                    return new GitLabService(
                             $container->get('OCP\Http\Client\IClientService')->newClient(),
                             $container->get(id: 'OCP\IConfig'),
                             $container->get(id: 'Psr\Log\LoggerInterface')
@@ -672,7 +673,7 @@ class Application extends App implements IBootstrap
             } else {
                 $logger->debug('Webhook Retry Job already registered');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $logger->error(
                     'OpenRegister boot: Failed to register event listeners and background jobs',
                     [

@@ -39,8 +39,13 @@ use OCA\OpenRegister\Service\OrganisationService;
 use Exception;
 use RuntimeException;
 use DateTime;
+use DateTimeZone;
+use InvalidArgumentException;
+use ReflectionClass;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\Exception as OcpDbException;
+use OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -421,7 +426,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Check if action allows public access.
-        if (($authorization[$action] ?? null) !== null && in_array('public', $authorization[$action], true) === true) {
+        if (($authorization[$action] ?? null) !== null && in_array('public', $authorization[$action] ?? [], true) === true) {
             return true;
         }
 
@@ -520,7 +525,7 @@ class ObjectEntityMapper extends QBMapper
             $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->orX(
-                    //end if
+                    //end if...
                     $qb->expr()->orX(
                         $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
                         $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
@@ -588,8 +593,8 @@ class ObjectEntityMapper extends QBMapper
         // Published objects also bypass organization filtering (handled separately in applyOrganisationFilter)
         // This means published objects are visible to all users regardless of organization or RBAC read permissions
         //
-        // EXCEPTION: If disablePublishedBypass=true (e.g., when _published=false is set), skip published bypass
-        // This allows dashboard users to filter to only their organization's objects
+        // EXCEPTION: If disablePublishedBypass=true (e.g., when _published=false is set), skip published bypass.
+        // This allows dashboard users to filter to only their organization's objects.
         if ($disablePublishedBypass === false && $this->shouldPublishedObjectsBypassMultiTenancy()) {
             $now = (new DateTime())->format('Y-m-d H:i:s');
             $readConditions->add(
@@ -682,7 +687,7 @@ class ObjectEntityMapper extends QBMapper
         $idParam = -1;
         if (is_numeric($identifier) === true) {
             $idParam = $identifier;
-        //end if
+        //end if.
         }
 
         // Build the base query.
@@ -896,7 +901,7 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        //end if
+        //end if.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
@@ -1239,7 +1244,7 @@ class ObjectEntityMapper extends QBMapper
         $order          = $query['_order'] ?? [];
         $search         = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        // Convert _published to boolean if it exists (handles string "false" from HTTP requests)
+        // Convert _published to boolean if it exists (handles string "false" from HTTP requests).
         if (isset($query['_published'])) {
             $published = filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
         } else {
@@ -1249,9 +1254,9 @@ class ObjectEntityMapper extends QBMapper
         // Check if _published is explicitly set to false to disable published bypass mechanism
         // When _published=false: published objects still visible but must respect multi-tenancy and RBAC
         // - Published objects from user's organization: visible (pass org filter)
-        // - Published objects from other organizations: not visible (don't pass org filter)
-        // - Published objects still need RBAC permissions (bypass disabled)
-        // This is useful for dashboard views where users want to see only their organization's objects
+        // - Published objects from other organizations: not visible (don't pass org filter).
+        // - Published objects still need RBAC permissions (bypass disabled).
+        // This is useful for dashboard views where users want to see only their organization's objects.
         $disablePublishedBypass = isset($query['_published']) && $published === false;
 
         if ($disablePublishedBypass === true) {
@@ -1265,7 +1270,7 @@ class ObjectEntityMapper extends QBMapper
                     );
         }
 
-        // ids parameter is now passed as method parameter, not from query
+        // ids parameter is now passed as method parameter, not from query.
         $count = $query['_count'] ?? false;
         $perfTimings['extract_options'] = round((microtime(true) - $extractStart) * 1000, 2);
 
@@ -1422,9 +1427,9 @@ class ObjectEntityMapper extends QBMapper
                     ]
                     );
         } else {
-            // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck)
+            // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck).
             $rbacStart = microtime(true);
-            // Disable published bypass if _published=false is explicitly set (dashboard users want only their org)
+            // Disable published bypass if _published=false is explicitly set (dashboard users want only their org).
             $this->applyRbacFilters(qb: $queryBuilder, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac, disablePublishedBypass: $disablePublishedBypass);
             $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
 
@@ -1438,8 +1443,8 @@ class ObjectEntityMapper extends QBMapper
 
             // **PERFORMANCE TIMING**: Organization filtering (suspected bottleneck)
             $orgStart = microtime(true);
-            // Use enhanced MultiTenancyTrait method with published object bypass
-            // Disable published bypass if _published=false is explicitly set (dashboard users want only their org)
+            // Use enhanced MultiTenancyTrait method with published object bypass.
+            // Disable published bypass if _published=false is explicitly set (dashboard users want only their org).
             $enablePublishedBypass = !$disablePublishedBypass;
             $this->applyOrganisationFilter(
                 qb: $queryBuilder,
@@ -1447,7 +1452,7 @@ class ObjectEntityMapper extends QBMapper
             // Admins can see legacy NULL org objects.
                 tableAlias: 'o',
                 enablePublished: $enablePublishedBypass,
-            // Disable if _published=false
+            // Disable if _published=false.
                 multiTenancyEnabled: $multi
             );
             $perfTimings['org_filtering'] = round((microtime(true) - $orgStart) * 1000, 2);
@@ -1815,9 +1820,9 @@ class ObjectEntityMapper extends QBMapper
         // If published filter is set, only include objects that are currently published
         // However, if bypassPublishedFilter is true, we don't apply this filter as published objects
         // will be included via the organization filter bypass logic
-        // NOTE: When _published=false is set, it disables the bypass mechanism but doesn't exclude published objects
-        // Published objects from user's organization will still be visible (they pass org filter)
-        // Published objects from other organizations won't be visible (they don't pass org filter)
+        // NOTE: When _published=false is set, it disables the bypass mechanism but doesn't exclude published objects.
+        // Published objects from user's organization will still be visible (they pass org filter).
+        // Published objects from other organizations won't be visible (they don't pass org filter).
         if ($published === true && !$bypassPublishedFilter) {
             $now = (new DateTime())->format('Y-m-d H:i:s');
             if ($tableAlias !== '') {
@@ -2419,7 +2424,7 @@ class ObjectEntityMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        //end if
+        //end if.
         $qb->select('o.*')
             ->from('openregister_objects', 'o')
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
@@ -3227,7 +3232,7 @@ class ObjectEntityMapper extends QBMapper
         } else if (is_object($object) === true) {
             // For ObjectEntity objects (update case).
             $size       = 0;
-            $reflection = new \ReflectionClass($object);
+            $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
                 /*
                  * @psalm-suppress UnusedMethodCall
@@ -3262,7 +3267,7 @@ class ObjectEntityMapper extends QBMapper
      * and calculates a safe batch size to prevent max_allowed_packet errors.
      *
      * @param array $insertObjects Array of objects to insert
-     * @param array $columns       Array of column names
+     * @param array $_columns      Array of column names
      *
      * @return int Optimal batch size in number of objects
      *
@@ -3492,7 +3497,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk insert', 0, $e);
+                throw new OcpDbException('Database connection lost during bulk insert', 0, $e);
             }
 
             // Build VALUES clause for this batch.
@@ -3536,14 +3541,14 @@ class ObjectEntityMapper extends QBMapper
                     $result = $stmt->execute($parameters);
 
                     // Check if execution was successful (IResult).
-                    // @psalm-suppress TypeDoesNotContainType
+                    // @psalm-suppress TypeDoesNotContainType.
                     if ($result !== false) {
                         $batchSuccess = true;
                     } else {
                         throw new Exception('Statement execution returned false');
                     }
                 } catch (Exception $e) {
-                    //end foreach
+                    //end foreach..
                     $batchRetryCount++;
                     $errorMessage = $e->getMessage();
                     $this->logger->error('Error executing batch', ['batch' => $batchNumber, 'attempt' => $batchRetryCount, 'error' => $errorMessage]);
@@ -3714,7 +3719,7 @@ class ObjectEntityMapper extends QBMapper
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
         // Use the optimized bulk operations handler for maximum performance.
-        $optimizedHandler = new \OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations(
+        $optimizedHandler = new OptimizedBulkOperations(
             $this->db,
             $this->logger
         );
@@ -3774,7 +3779,7 @@ class ObjectEntityMapper extends QBMapper
     private function getEntityValue(ObjectEntity $entity, string $column): mixed
     {
         // Use reflection to get the value of the property.
-        $reflection = new \ReflectionClass($entity);
+        $reflection = new ReflectionClass($entity);
 
         try {
             $property = $reflection->getProperty($column);
@@ -3863,7 +3868,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk delete', 0, $e);
+                throw new OcpDbException('Database connection lost during bulk delete', 0, $e);
             }
 
             // First, get the current state of objects to determine soft vs hard delete.
@@ -3872,7 +3877,7 @@ class ObjectEntityMapper extends QBMapper
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->execute()->fetchAll();
+            $objects = $qb->executeQuery()->fetchAll();
 
             // Separate objects for soft delete and hard delete.
             $softDeleteIds = [];
@@ -3946,7 +3951,7 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array of UUIDs of published objects
      //end try
      *
-     //end while
+     //end while.
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
@@ -3983,7 +3988,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk publish', 0, $e);
+                throw new OcpDbException('Database connection lost during bulk publish', 0, $e);
             }
 
             // Get object IDs for the UUIDs in this chunk.
@@ -3992,7 +3997,7 @@ class ObjectEntityMapper extends QBMapper
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects           = $qb->execute()->fetchAll();
+            $objects           = $qb->executeQuery()->fetchAll();
             $objectIds         = array_column($objects, 'id');
             $chunkPublishedIds = array_column($objects, 'uuid');
 
@@ -4073,7 +4078,7 @@ class ObjectEntityMapper extends QBMapper
             try {
                 $this->db->executeQuery('SELECT 1');
             } catch (Exception $e) {
-                throw new \OCP\DB\Exception('Database connection lost during bulk depublish', 0, $e);
+                throw new OcpDbException('Database connection lost during bulk depublish', 0, $e);
             }
 
             // Get object IDs for the UUIDs in this chunk.
@@ -4082,7 +4087,7 @@ class ObjectEntityMapper extends QBMapper
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects   = $qb->execute()->fetchAll();
+            $objects   = $qb->executeQuery()->fetchAll();
             $objectIds = array_column($objects, 'id');
             $chunkDepublishedIds = array_column($objects, 'uuid');
 
@@ -4390,7 +4395,7 @@ class ObjectEntityMapper extends QBMapper
 
             // Commit transaction only if we started it.
             if ($transactionStarted === true) {
-                //end if
+                //end if..
                 $this->db->commit();
             }
         } catch (Exception $e) {
@@ -4407,7 +4412,7 @@ class ObjectEntityMapper extends QBMapper
     }//end publishObjects()
 
 
-    //end while
+    //end while.
     /**
      * Perform bulk depublish operations on objects by UUID
      *
@@ -4494,7 +4499,7 @@ class ObjectEntityMapper extends QBMapper
 
             if ($objectSize > $maxSafeSize) {
                 $largeObjects[] = $object;
-            //end foreach
+            //end foreach.
             } else {
                 $normalObjects[] = $object;
             }
@@ -4562,7 +4567,7 @@ class ObjectEntityMapper extends QBMapper
                 $result = $stmt->execute($parameters);
 
                 // Check if execution was successful (IResult) and UUID exists.
-                // @psalm-suppress TypeDoesNotContainType
+                // @psalm-suppress TypeDoesNotContainType.
                 if ($result !== false && (($objectData['uuid'] ?? null) !== null) === true) {
                     $processedIds[] = $objectData['uuid'];
                 }
@@ -4611,7 +4616,7 @@ class ObjectEntityMapper extends QBMapper
     public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
         if ($defaultOwner === null && $defaultOrganisation === null) {
-            throw new \InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
+            throw new InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
         }
 
         $results = [

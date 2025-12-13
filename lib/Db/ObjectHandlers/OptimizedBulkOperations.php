@@ -223,7 +223,7 @@ class OptimizedBulkOperations
         // TIMING: Get database time BEFORE operation for accurate classification.
         $stmt = $this->db->prepare("SELECT NOW() as operation_start");
         $stmt->execute();
-        $operationStartTime = $stmt->fetchColumn();
+        $operationStartTime = $stmt->fetchOne();
 
         $stmt   = $this->db->prepare($sql);
         $result = $stmt->execute($parameters);
@@ -239,7 +239,7 @@ class OptimizedBulkOperations
         // - 0 for unchanged rows.
         $totalObjects = count($objects);
         // @psalm-suppress RedundantCast
-        $affectedRows = (int) $result->rowCount();
+        $affectedRows = $result->rowCount();
 
         // Estimate created vs updated (rough calculation).
         // If affected_rows == totalObjects, all were created.
@@ -586,14 +586,14 @@ class OptimizedBulkOperations
                 // We only want to store the 'object' property contents in the database object column.
                 // VALIDATION: object property MUST be set and MUST be an array.
                 if (!isset($objectData['object'])) {
-                    throw new \InvalidArgumentException("Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData)));
+                    throw new InvalidArgumentException("Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData)));
                 }
 
                 $objectContent = $objectData['object'];
 
                 // VALIDATION: object content must be an array, not a string or other type.
                 if (!is_array($objectContent)) {
-                    throw new \InvalidArgumentException("Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing.");
+                    throw new InvalidArgumentException("Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing.");
                 }
 
                 // Normal case - array data needs JSON encoding.
@@ -673,7 +673,7 @@ class OptimizedBulkOperations
 
         // NO ERROR SUPPRESSION: Let datetime parsing errors bubble up immediately!
         // Convert ISO 8601 to MySQL datetime format.
-        $dateTime = new \DateTime($value);
+        $dateTime = new DateTime($value);
         return $dateTime->format('Y-m-d H:i:s');
 
     }//end convertDateTimeToMySQLFormat()

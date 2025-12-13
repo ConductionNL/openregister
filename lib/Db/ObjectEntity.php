@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use Exception;
+use RuntimeException;
 use JsonSerializable;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\Entity;
@@ -752,7 +753,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         $userId = $currentUser->getUID();
-        $now    = new \DateTime();
+        $now    = new DateTime();
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
@@ -765,7 +766,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
             // If same user, extend the lock.
             $newExpiration = clone $now;
-            $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
+            $newExpiration->add(new DateInterval('PT'.$duration.'S'));
 
             $this->setLocked(locked: [
                         'user'       => $userId,
@@ -777,7 +778,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         } else {
             // Create new lock.
             $expiration = clone $now;
-            $expiration->add(new \DateInterval('PT'.$duration.'S'));
+            $expiration->add(new DateInterval('PT'.$duration.'S'));
 
             $this->setLocked(locked: [
                         'user'       => $userId,
@@ -840,8 +841,8 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         // Check if lock has expired.
-        $now        = new \DateTime();
-        $expiration = new \DateTime($this->locked['expiration']);
+        $now        = new DateTime();
+        $expiration = new DateTime($this->locked['expiration']);
 
         return $now < $expiration;
 
@@ -883,10 +884,10 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         $userId    = $currentUser->getUID();
-        $now       = new \DateTime();
+        $now       = new DateTime();
         $purgeDate = clone $now;
-        // $purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
-        $purgeDate->add(new \DateInterval('P31D'));
+        // $purgeDate->add(new DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
+        $purgeDate->add(new DateInterval('P31D'));
 
         $this->setDeleted(deleted: [
                     'deleted'         => $now->format('c'),
@@ -979,7 +980,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $objects = $configuration->getObjects();
-            if (in_array($this->id, $objects, true) === true) {
+            if (in_array($this->id, $objects ?? [], true) === true) {
                 return true;
             }
         }
@@ -1010,7 +1011,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $objects = $configuration->getObjects();
-            if (in_array($this->id, $objects, true) === true) {
+            if (in_array($this->id, $objects ?? [], true) === true) {
                 return $configuration;
             }
         }

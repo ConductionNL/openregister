@@ -27,6 +27,9 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use Exception;
+use RuntimeException;
+use DateTime;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -306,7 +309,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setSession(session_id());
         $auditTrail->setRequest(\OC::$server->getRequest()->getId());
         $auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
-        $auditTrail->setCreated(new \DateTime());
+        $auditTrail->setCreated(new DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
@@ -314,7 +317,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setSize(max($serializedSize, 14));
 
         // Set default expiration date (30 days from now).
-        $auditTrail->setExpires(new \DateTime('+30 days'));
+        $auditTrail->setExpires(new DateTime('+30 days'));
 
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
@@ -429,7 +432,7 @@ class AuditTrailMapper extends QBMapper
         );
 
         if (empty($auditTrails) === true && $until !== null) {
-            throw new \Exception('No audit trail entries found for the specified reversion point.');
+            throw new Exception('No audit trail entries found for the specified reversion point.');
         }
 
         // Create a clone of the current object to apply reversions.
@@ -442,7 +445,7 @@ class AuditTrailMapper extends QBMapper
 
         // Handle versioning.
         if ($overwriteVersion === false) {
-            $version    = explode('.', $revertedObject->getVersion());
+            $version    = explode('.', $revertedObject->getVersion() ?? '1.0.0');
             $version[2] = ((int) $version[2] + 1);
             $revertedObject->setVersion(implode('.', $version));
         }
@@ -713,7 +716,7 @@ class AuditTrailMapper extends QBMapper
                         $qb->expr()->gte(
                                 'created',
                                 $qb->createNamedParameter(
-                                        (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                                        (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
                                         IQueryBuilder::PARAM_STR
                                         )
                                 )
@@ -805,7 +808,7 @@ class AuditTrailMapper extends QBMapper
                         $qb->expr()->gte(
                                 'created',
                                 $qb->createNamedParameter(
-                                        (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                                        (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
                                         IQueryBuilder::PARAM_STR
                                         )
                                 )
@@ -883,7 +886,7 @@ class AuditTrailMapper extends QBMapper
                         $qb->expr()->gte(
                                 'created',
                                 $qb->createNamedParameter(
-                                        (new \DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
+                                        (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
                                         IQueryBuilder::PARAM_STR
                                         )
                                 )

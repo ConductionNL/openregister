@@ -84,7 +84,7 @@ class RevertController extends Controller
             // Parse the revert point.
             $until = null;
             if (($data['datetime'] ?? null) !== null) {
-                $until = new \DateTime($data['datetime']);
+                $until = new DateTime($data['datetime']);
             } else if (($data['auditTrailId'] ?? null) !== null) {
                 $until = $data['auditTrailId'];
             } else if (($data['version'] ?? null) !== null) {

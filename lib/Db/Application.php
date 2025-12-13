@@ -657,7 +657,7 @@ class Application extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $applications = $configuration->getApplications();
-            if (in_array($this->id, $applications, true) === true) {
+            if (in_array($this->id, $applications ?? [], true) === true) {
                 return true;
             }
         }
@@ -688,7 +688,7 @@ class Application extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $applications = $configuration->getApplications();
-            if (in_array($this->id, $applications, true) === true) {
+            if (in_array($this->id, $applications ?? [], true) === true) {
                 return $configuration;
             }
         }

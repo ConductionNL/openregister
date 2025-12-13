@@ -231,9 +231,9 @@ class WebhookMapper extends QBMapper
      *
      * @param string $eventClass Event class name
      *
-     * @return \OCA\OpenRegister\Db\Webhook[]
+     * @return Webhook[]
      *
-     * @psalm-return array<int<0, max>, OCA\OpenRegister\Db\Webhook>
+     * @psalm-return array<int<0, max>, Webhook>
      */
     public function findForEvent(string $eventClass): array
     {

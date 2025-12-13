@@ -111,7 +111,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             ->groupBy('organisation', 'slug')
             ->having($qb->expr()->gt('duplicate_count', $qb->createNamedParameter(1)));
 
-        $duplicateGroups = $qb->execute()->fetchAll();
+        $duplicateGroups = $qb->executeQuery()->fetchAll();
 
         foreach ($duplicateGroups as $group) {
             $organisation = $group['organisation'];
@@ -127,7 +127,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                 ->andWhere($qb2->expr()->eq('slug', $qb2->createNamedParameter($originalSlug)))
                 ->orderBy('id', 'ASC');
 
-            $duplicates = $qb2->execute()->fetchAll();
+            $duplicates = $qb2->executeQuery()->fetchAll();
 
             // Skip the first record (keep original), update the rest.
             foreach (array_slice($duplicates, 1) as $index => $duplicate) {
@@ -144,7 +144,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                     ->set('slug', $updateQb->createNamedParameter($newSlug))
                     ->where($updateQb->expr()->eq('id', $updateQb->createNamedParameter($duplicate['id'])));
 
-                $updateQb->execute();
+                $updateQb->executeStatement();
 
                 $output->info("Updated {$entityType} '{$duplicate['title']}' (ID: {$duplicate['id']}) from slug '{$originalSlug}' to '{$newSlug}'");
             }
@@ -196,7 +196,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
             ->where($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)))
             ->andWhere($qb->expr()->eq('slug', $qb->createNamedParameter($slug)));
 
-        $count = $qb->execute()->fetchColumn();
+        $count = $qb->executeQuery()->fetchOne();
         return ((int) $count > 0);
 
     }//end slugExists()

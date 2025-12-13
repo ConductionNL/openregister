@@ -166,7 +166,7 @@ class ExportService
     public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
     {
         if ($register !== null && $schema === null) {
-            throw new \InvalidArgumentException('Cannot export multiple schemas to CSV format.');
+            throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
         }
 
         $spreadsheet = $this->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $currentUser);
@@ -381,9 +381,9 @@ class ExportService
                 ) {
                     // Convert ISO 8601 to our preferred format.
                     try {
-                        $date = new \DateTime($value);
+                        $date = new DateTime($value);
                         return $date->format('Y-m-d H:i:s');
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Return as-is if parsing fails.
                         return $value;
                     }
@@ -425,9 +425,9 @@ class ExportService
                 ) {
                     // Convert ISO 8601 to our preferred format.
                     try {
-                        $date = new \DateTime($value);
+                        $date = new DateTime($value);
                         return $date->format('Y-m-d H:i:s');
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Return as-is if parsing fails.
                         return $value;
                     }

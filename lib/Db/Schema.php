@@ -20,11 +20,14 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
 use stdClass;
+use Exception;
+use RuntimeException;
 use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
 
 /**
@@ -509,18 +512,18 @@ class Schema extends Entity implements JsonSerializable
         foreach ($this->authorization as $action => $groups) {
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
-                throw new \InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: ".implode(', ', $validActions));
+                throw new InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: ".implode(', ', $validActions));
             }
 
             // Validate groups is an array.
             if (is_array($groups) === false) {
-                throw new \InvalidArgumentException("Authorization groups for action '{$action}' must be an array");
+                throw new InvalidArgumentException("Authorization groups for action '{$action}' must be an array");
             }
 
             // Validate each group ID is a non-empty string.
             foreach ($groups as $groupId) {
                 if (is_string($groupId) === false || trim($groupId) === '') {
-                    throw new \InvalidArgumentException("Group ID in authorization for action '{$action}' must be a non-empty string");
+                    throw new InvalidArgumentException("Group ID in authorization for action '{$action}' must be a non-empty string");
                 }
             }
         }
@@ -1031,7 +1034,7 @@ class Schema extends Entity implements JsonSerializable
                 case 'objectImageField':
                     // These should be strings (dot-notation paths) or empty.
                     if ($value !== null && $value !== '' && is_string($value) === false) {
-                        throw new \InvalidArgumentException("Configuration '{$key}' must be a string or null");
+                        throw new InvalidArgumentException("Configuration '{$key}' must be a string or null");
                     }
 
                     if ($value === '') {
@@ -1044,7 +1047,7 @@ class Schema extends Entity implements JsonSerializable
                 case 'allowFiles':
                     // This should be a boolean.
                     if ($value !== null && is_bool($value) === false) {
-                        throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
+                        throw new InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
                     }
 
                     $validatedConfig[$key] = $value;
@@ -1053,7 +1056,7 @@ class Schema extends Entity implements JsonSerializable
                 case 'autoPublish':
                     // This should be a boolean.
                     if ($value !== null && is_bool($value) === false) {
-                        throw new \InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
+                        throw new InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
                     }
 
                     $validatedConfig[$key] = $value;
@@ -1063,13 +1066,13 @@ class Schema extends Entity implements JsonSerializable
                     // This should be an array of strings.
                     if ($value !== null) {
                         if (is_array($value) === false) {
-                            throw new \InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
+                            throw new InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
                         }
 
                         // Validate that all tags are strings.
                         foreach ($value as $tag) {
                             if (is_string($tag) === false) {
-                                throw new \InvalidArgumentException("All values in 'allowedTags' must be strings");
+                                throw new InvalidArgumentException("All values in 'allowedTags' must be strings");
                             }
                         }
                     }
@@ -1198,7 +1201,7 @@ class Schema extends Entity implements JsonSerializable
                     // Invalid JSON, set to null.
                     $this->facets = null;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->facets = null;
             }
         } else {
@@ -1592,7 +1595,7 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $schemas = $configuration->getSchemas();
-            if (in_array($this->id, $schemas, true) === true) {
+            if (in_array($this->id, $schemas ?? [], true) === true) {
                 return true;
             }
         }
@@ -1623,7 +1626,7 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $schemas = $configuration->getSchemas();
-            if (in_array($this->id, $schemas, true) === true) {
+            if (in_array($this->id, $schemas ?? [], true) === true) {
                 return $configuration;
             }
         }

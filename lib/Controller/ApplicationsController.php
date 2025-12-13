@@ -354,12 +354,11 @@ class ApplicationsController extends Controller
      *
      * @param int $id The ID of the application to patch
      *
-     * @return JSONResponse JSON response containing updated application or error message
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<mixed|array{error: string}>
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {
