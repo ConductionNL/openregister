@@ -10,6 +10,8 @@ keywords:
   - Psalm
   - PHPStan
   - PHP CodeSniffer
+  - PHPMetrics
+  - Code Quality
 ---
 
 # Testing
@@ -95,6 +97,53 @@ composer phpstan
 - Fix undefined method calls
 - Handle null safety properly
 - Add proper return type declarations
+
+#### PHPMetrics
+**Code quality and complexity metrics**
+
+PHPMetrics provides comprehensive metrics and visualizations about your codebase, including complexity, maintainability, and code quality indicators.
+
+**Running PHPMetrics:**
+```bash
+# Generate HTML report
+composer phpmetrics
+
+# Generate JSON report
+composer phpmetrics:json
+
+# Generate CSV report  
+composer phpmetrics:csv
+
+# Generate violations XML
+composer phpmetrics:violations
+
+# Or using vendor binary directly
+./vendor/bin/phpmetrics --report-html=phpmetrics lib/
+```
+
+**Output:**
+- HTML report in 'phpmetrics' directory with visualizations
+- Interactive charts for complexity, coupling, and OOP metrics
+- Detailed per-class and per-method analysis
+
+**Key Metrics Provided:**
+- **Lines of Code**: Physical and logical lines of code
+- **Complexity**: Cyclomatic complexity, Weighted Method Count
+- **Coupling**: Afferent/Efferent coupling, Instability, Depth of Inheritance
+- **Object-Oriented Metrics**: Classes, methods, interfaces, cohesion
+- **Quality Indicators**: Bugs prediction, maintainability index
+- **Violations**: Critical errors, warnings, and information notices
+
+**Understanding the Report:**
+- **Complexity Charts**: Identify overly complex classes/methods that need refactoring
+- **Coupling Graph**: Visualize dependencies between packages and classes
+- **Maintainability Index**: Higher is better; indicates ease of maintaining code
+- **Violations Tab**: Lists specific code quality issues with severity levels
+
+**Configuration:**
+PHPMetrics requires no configuration file. It analyzes all PHP files in the specified directory ('lib/') and generates comprehensive reports automatically.
+
+**Note:** The 'phpmetrics' directory is excluded from version control (.gitignore).
 
 #### PHP CodeSniffer (phpcs)
 **Coding standards enforcement**
@@ -205,12 +254,16 @@ All testing tools work together in the development workflow:
 2. **Before Commit**: Ensure all static analysis tools pass with zero errors
 3. **In CI/CD**: Automated checks run on all pull requests
 4. **Pre-Release**: Full integration test suite runs
+5. **Periodic Review**: Generate PHPMetrics reports to identify refactoring opportunities
 
 **Quick Check All Tools:**
 ```bash
 # Run all static analysis tools
 cd openregister
 composer psalm && composer phpstan && ./vendor/bin/phpcs --standard=phpcs.xml
+
+# Generate metrics report for code quality review
+composer phpmetrics
 ```
 
 ## Integration Test Strategy

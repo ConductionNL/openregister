@@ -233,7 +233,7 @@ class ApplicationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Application>
+     * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
     public function findByOrganisation(string $organisationUuid, int $limit = 50, int $offset = 0): array
     {
@@ -277,7 +277,7 @@ class ApplicationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Application>
+     * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
     public function findAll(
         ?int $limit = null,

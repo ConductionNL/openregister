@@ -130,7 +130,7 @@ class WebhookMapper extends QBMapper
      *
      * @return Webhook[] Array of webhook entities
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
+     * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
      */
     public function findAll(): array
     {
@@ -202,7 +202,7 @@ class WebhookMapper extends QBMapper
      *
      * @return Webhook[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
+     * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
      */
     public function findEnabled(): array
     {
@@ -231,7 +231,7 @@ class WebhookMapper extends QBMapper
      *
      * @param string $eventClass Event class name
      *
-     * @return OCA\OpenRegister\Db\Webhook[]
+     * @return \OCA\OpenRegister\Db\Webhook[]
      *
      * @psalm-return array<int<0, max>, OCA\OpenRegister\Db\Webhook>
      */

@@ -274,6 +274,13 @@ class ObjectCacheService
         // Get SOLR service using factory pattern (performance optimized).
         $solrService = $this->getSolrService();
 
+        // Determine SOLR availability for logging.
+        if ($solrService) {
+            $solrIsAvailable = $solrService->isAvailable();
+        } else {
+            $solrIsAvailable = false;
+        }
+
         $this->logger->info(
                 '🔥 DEBUGGING: indexObjectInSolr called',
                 [
@@ -282,7 +289,7 @@ class ObjectCacheService
                     'object_uuid'            => $object->getUuid(),
                     'object_name'            => $object->getName(),
                     'solr_service_available' => $solrService !== null,
-                    'solr_is_available'      => $solrService ? $solrService->isAvailable() : false,
+                    'solr_is_available'      => $solrIsAvailable,
                 ]
                 );
 
@@ -292,7 +299,7 @@ class ObjectCacheService
                     [
                         'object_id'              => $object->getId(),
                         'solr_service_available' => $solrService !== null,
-                        'solr_is_available'      => $solrService ? $solrService->isAvailable() : false,
+                        'solr_is_available'      => $solrIsAvailable,
                     ]
                     );
             return true;
@@ -414,7 +421,12 @@ class ObjectCacheService
                 $dynamicFields[$fieldName.'_s']   = $value;
                 $dynamicFields[$fieldName.'_txt'] = $value;
             } elseif (is_int($value) === true || is_float($value) === true) {
-                $suffix = is_int($value) === true ? '_i' : '_f';
+                if (is_int($value) === true) {
+                    $suffix = '_i';
+                } else {
+                    $suffix = '_f';
+                }
+
                 $dynamicFields[$fieldName.$suffix] = $value;
             } elseif (is_bool($value) === true) {
                 $dynamicFields[$fieldName.'_b'] = $value;
@@ -519,7 +531,7 @@ class ObjectCacheService
      *
      * @param array $identifiers Array of object IDs/UUIDs to preload
      *
-     * @return (ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity)[]
+     * @return (ObjectEntity|\\OCA\OpenRegister\Db\ObjectEntity)[]
      *
      * @phpstan-param array<int|string> $identifiers
      *
@@ -527,7 +539,7 @@ class ObjectCacheService
      *
      * @psalm-param array<int|string> $identifiers
      *
-     * @psalm-return array<ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
+     * @psalm-return array<ObjectEntity|\\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function preloadObjects(array $identifiers): array
     {
@@ -622,13 +634,25 @@ class ObjectCacheService
     public function getStats(): array
     {
         $totalRequests = $this->stats['hits'] + $this->stats['misses'];
-        $hitRate       = $totalRequests > 0 ? ($this->stats['hits'] / $totalRequests) * 100 : 0;
+        if ($totalRequests > 0) {
+            $hitRate = ($this->stats['hits'] / $totalRequests) * 100;
+        } else {
+            $hitRate = 0;
+        }
 
         $totalQueryRequests = $this->stats['query_hits'] + $this->stats['query_misses'];
-        $queryHitRate       = $totalQueryRequests > 0 ? ($this->stats['query_hits'] / $totalQueryRequests) * 100 : 0;
+        if ($totalQueryRequests > 0) {
+            $queryHitRate = ($this->stats['query_hits'] / $totalQueryRequests) * 100;
+        } else {
+            $queryHitRate = 0;
+        }
 
         $totalNameRequests = $this->stats['name_hits'] + $this->stats['name_misses'];
-        $nameHitRate       = $totalNameRequests > 0 ? ($this->stats['name_hits'] / $totalNameRequests) * 100 : 0;
+        if ($totalNameRequests > 0) {
+            $nameHitRate = ($this->stats['name_hits'] / $totalNameRequests) * 100;
+        } else {
+            $nameHitRate = 0;
+        }
 
         return array_merge(
                 $this->stats,
@@ -749,6 +773,13 @@ class ObjectCacheService
 
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
+        // Determine strategy for logging.
+        if ($schemaId !== null) {
+            $strategy = 'schema_targeted';
+        } else {
+            $strategy = 'global_fallback';
+        }
+
         $this->logger->info(
                 'Schema-related caches cleared for CUD operation',
                 [
@@ -757,7 +788,7 @@ class ObjectCacheService
                     'operation'     => $operation,
                     'executionTime' => $executionTime.'ms',
                     'impact'        => 'all_users_affected',
-                    'strategy'      => $schemaId !== null ? 'schema_targeted' : 'global_fallback',
+                    'strategy'      => $strategy,
                 ]
                 );
 
@@ -787,8 +818,24 @@ class ObjectCacheService
 
         // Extract context from object if provided.
         if ($object !== null) {
-            $registerId = $registerId ?? ($object->getRegister() !== null ? (int) $object->getRegister() : null);
-            $schemaId   = $schemaId ?? ($object->getSchema() !== null ? (int) $object->getSchema() : null);
+            // Extract register ID if not provided.
+            if ($registerId === null) {
+                if ($object->getRegister() !== null) {
+                    $registerId = (int) $object->getRegister();
+                } else {
+                    $registerId = null;
+                }
+            }
+
+            // Extract schema ID if not provided.
+            if ($schemaId === null) {
+                if ($object->getSchema() !== null) {
+                    $schemaId = (int) $object->getSchema();
+                } else {
+                    $schemaId = null;
+                }
+            }
+
             $object->getOrganisation();
             // Track organization for future use.
             // Clear individual object from cache.
@@ -850,8 +897,13 @@ class ObjectCacheService
     private function clearObjectFromCache(ObjectEntity $object): void
     {
         // Remove by ID. Ensure ID is string for array key.
-        $objectId    = $object->getId();
-        $objectIdKey = is_string($objectId) ? $objectId : (string) $objectId;
+        $objectId = $object->getId();
+        if (is_string($objectId)) {
+            $objectIdKey = $objectId;
+        } else {
+            $objectIdKey = (string) $objectId;
+        }
+
         unset($this->objectCache[$objectIdKey]);
 
         // Remove by UUID if available.
@@ -885,15 +937,32 @@ class ObjectCacheService
      */
     private function generateSearchCacheKey(array $query, ?string $activeOrganisationUuid, bool $rbac, bool $multi): string
     {
-        $user   = $this->userSession->getUser();
-        $userId = $user === true ? $user->getUID() : 'anonymous';
+        $user = $this->userSession->getUser();
+        if ($user === true) {
+            $userId = $user->getUID();
+        } else {
+            $userId = 'anonymous';
+        }
+
+        // Convert booleans to strings for cache key.
+        if ($rbac === true) {
+            $rbacStr = 'true';
+        } else {
+            $rbacStr = 'false';
+        }
+
+        if ($multi === true) {
+            $multiStr = 'true';
+        } else {
+            $multiStr = 'false';
+        }
 
         // Create consistent key components.
         $keyComponents = [
             'user'  => $userId,
             'org'   => $activeOrganisationUuid ?? 'null',
-            'rbac'  => $rbac === true ? 'true' : 'false',
-            'multi' => $multi === true ? 'true' : 'false',
+            'rbac'  => $rbacStr,
+            'multi' => $multiStr,
             'query' => $query,
         ];
 
@@ -1439,10 +1508,17 @@ class ObjectCacheService
 
         try {
             $result = $solrService->commit();
+            // Determine message based on result.
+            if ($result === true) {
+                $message = 'Commit successful';
+            } else {
+                $message = 'Commit failed';
+            }
+
             return [
                 'success'   => $result,
                 'timestamp' => date('c'),
-                'message'   => $result === true ? 'Commit successful' : 'Commit failed',
+                'message'   => $message,
             ];
         } catch (\Exception $e) {
             return [
@@ -1471,10 +1547,17 @@ class ObjectCacheService
 
         try {
             $result = $solrService->optimize();
+            // Determine message based on result.
+            if ($result === true) {
+                $message = 'Optimization successful';
+            } else {
+                $message = 'Optimization failed';
+            }
+
             return [
                 'success'   => $result,
                 'timestamp' => date('c'),
-                'message'   => $result === true ? 'Optimization successful' : 'Optimization failed',
+                'message'   => $message,
             ];
         } catch (\Exception $e) {
             return [
@@ -1503,12 +1586,19 @@ class ObjectCacheService
 
         try {
             $result = $solrService->clearIndex();
+            // Determine message based on result.
+            if (($result['success'] === true) === true) {
+                $message = 'Index cleared successfully';
+            } else {
+                $message = 'Index clear failed';
+            }
+
             return [
                 'success'       => $result['success'],
                 'error'         => $result['error'] ?? null,
                 'error_details' => $result['error_details'] ?? null,
                 'timestamp'     => date('c'),
-                'message'       => ($result['success'] === true) === true ? 'Index cleared successfully' : 'Index clear failed',
+                'message'       => $message,
             ];
         } catch (\Exception $e) {
             return [

@@ -79,7 +79,7 @@ class MagicSearchHandler
      * @param Schema   $schema    Schema context for the search
      * @param string   $tableName Target dynamic table name
      *
-     * @return OCA\OpenRegister\Db\ObjectEntity[]|int Array of ObjectEntity objects or count if _count=true
+     * @return \OCA\OpenRegister\Db\ObjectEntity[]|int Array of ObjectEntity objects or count if _count=true
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *

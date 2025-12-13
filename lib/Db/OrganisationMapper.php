@@ -227,7 +227,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return Organisation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
     public function findByUserId(string $userId): array
     {
@@ -247,7 +247,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return Organisation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
     public function findAllWithUserCount(): array
     {
@@ -444,7 +444,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return Organisation[] List of organisation entities
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
     public function findAll(int $limit=50, int $offset=0): array
     {
@@ -470,7 +470,7 @@ class OrganisationMapper extends QBMapper
      *
      * @return Organisation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
     public function findByName(string $name, int $limit=50, int $offset=0): array
     {

@@ -580,7 +580,7 @@ class Application extends Entity implements JsonSerializable
             // To be calculated from actual usage.
                 'users'     => 0,
             // Applications don't have direct users.
-                'groups'    => count($groups),
+                'groups'    => count($groups ?? []),
             ],
             'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
             'created'                => $this->getCreatedFormatted(),

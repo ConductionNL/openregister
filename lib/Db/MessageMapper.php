@@ -114,7 +114,7 @@ class MessageMapper extends QBMapper
      *
      * @return Message[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Message>
+     * @psalm-return list<\OCA\OpenRegister\Db\Message>
      */
     public function findByConversation(
         int $conversationId,
@@ -149,7 +149,7 @@ class MessageMapper extends QBMapper
      *
      * @return Message[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Message>
+     * @psalm-return list<\OCA\OpenRegister\Db\Message>
      */
     public function findRecentByConversation(int $conversationId, int $limit=10): array
     {

@@ -90,7 +90,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
+     * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
      */
     public function findByWebhook(int $webhookId, ?int $limit=null, ?int $offset=null): array
     {
@@ -122,7 +122,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
+     * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -152,7 +152,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
+     * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
      */
     public function findFailedForRetry(DateTime $before): array
     {

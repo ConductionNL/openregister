@@ -760,7 +760,7 @@ class ConfigurationService
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse | JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
         // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
@@ -1411,7 +1411,7 @@ class ConfigurationService
 
             if ($existingRegister !== null) {
                 // Compare versions using version_compare for proper semver comparison.
-                if ($force === false && version_compare($data['version'], $existingRegister->getVersion(), '<=') === true) {
+                if ($force === false && version_compare($data['version'], $existingRegister->getVersion() ?? '0.0.0', '<=') === true) {
                     $this->logger->info(message: 'Skipping register import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
@@ -1556,7 +1556,7 @@ class ConfigurationService
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } else {
+                        } elseif ($registerSlug !== null) {
                             // Try to find existing register in database.
                             // Note: May fail due to organisation filtering during cross-instance import.
                             try {
@@ -1618,7 +1618,7 @@ class ConfigurationService
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } else {
+                        } elseif ($registerSlug !== null) {
                             // Try to find existing register in database.
                             // Note: May fail due to organisation filtering during cross-instance import.
                             try {
@@ -1705,7 +1705,7 @@ class ConfigurationService
 
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
-                if ($force === false && version_compare($data['version'], $existingSchema->getVersion(), '<=') === true) {
+                if ($force === false && version_compare($data['version'], $existingSchema->getVersion() ?? '0.0.0', '<=') === true) {
                     $this->logger->info(message: 'Skipping schema import as existing version is newer or equal.');
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingSchema;

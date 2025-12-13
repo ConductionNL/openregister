@@ -185,7 +185,7 @@ class Agent extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfiguration = null;
+    protected ?Configuration $managedByConfiguration = null;
 
     /**
      * Owner user ID

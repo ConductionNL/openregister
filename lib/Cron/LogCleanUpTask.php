@@ -91,7 +91,7 @@ class LogCleanUpTask extends TimedJob
      *
      * @return void
      */
-    public function run(mixed $argument): void
+    public function run(mixed $_argument): void
     {
         try {
             // Attempt to clear expired logs.

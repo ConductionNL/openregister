@@ -562,70 +562,23 @@ class DashboardService
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            // Get the register info if registerId is provided.
-            $register = null;
-            if ($registerId !== null) {
-                try {
-                    $register = $this->registerMapper->find($registerId);
-                } catch (\Exception $e) {
-                    throw new \Exception('Register not found: '.$e->getMessage());
-                }
-            }
-
-            // Get the schema info if schemaId is provided.
-            $schema = null;
-            if ($schemaId !== null) {
-                try {
-                    $schema = $this->schemaMapper->find($schemaId);
-                    // Verify schema belongs to register if both are provided.
-                    if ($register !== null && in_array($schema->getId(), $register->getSchemas()) === false) {
-                        throw new \Exception('Schema does not belong to the specified register');
-                    }
-                } catch (\Exception $e) {
-                    throw new \Exception('Schema not found or invalid: '.$e->getMessage());
-                }
-            }
+            // Fetch and validate register and schema.
+            $register = $this->fetchRegister($registerId);
+            $schema = $this->fetchSchema($schemaId, $register);
 
             // Perform the calculations.
             $results = $this->recalculateAllSizes(registerId: $registerId, schemaId: $schemaId);
 
             // Build the response.
-            if ($register !== null) {
-                $registerScope = [
-                    'id'    => $register->getId(),
-                    'title' => $register->getTitle(),
-                ];
-            } else {
-                $registerScope = null;
-            }
-
-            if ($schema !== null) {
-                $schemaScope = [
-                    'id'    => $schema->getId(),
-                    'title' => $schema->getTitle(),
-                ];
-            } else {
-                $schemaScope = null;
-            }
-
-            if ($results['total']['processed'] > 0) {
-                $successRate = round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2);
-            } else {
-                $successRate = 0.0;
-            }
-
             $response = [
                 'status'    => 'success',
                 'timestamp' => (new \DateTime('now'))->format(format: 'c'),
-                'scope'     => [
-                    'register' => $registerScope,
-                    'schema'   => $schemaScope,
-                ],
+                'scope'     => $this->buildResponseScope($register, $schema),
                 'results'   => $results,
                 'summary'   => [
                     'total_processed' => $results['total']['processed'],
                     'total_failed'    => $results['total']['failed'],
-                    'success_rate'    => $successRate,
+                    'success_rate'    => $this->calculateSuccessRate($results),
                 ],
             ];
 
@@ -636,6 +589,114 @@ class DashboardService
         }//end try
 
     }//end calculate()
+
+
+    /**
+     * Fetch register by ID with validation
+     *
+     * @param int|null $registerId Register ID to fetch.
+     *
+     * @return \OCA\OpenRegister\Db\Register|null Register entity or null if not provided.
+     *
+     * @throws \Exception If register is not found.
+     */
+    private function fetchRegister(?int $registerId): ?\OCA\OpenRegister\Db\Register
+    {
+        if ($registerId === null) {
+            return null;
+        }
+
+        try {
+            return $this->registerMapper->find($registerId);
+        } catch (\Exception $e) {
+            throw new \Exception('Register not found: '.$e->getMessage());
+        }
+
+    }//end fetchRegister()
+
+
+    /**
+     * Fetch schema by ID with validation
+     *
+     * @param int|null                                 $schemaId Schema ID to fetch.
+     * @param \OCA\OpenRegister\Db\Register|null $register Register to validate against.
+     *
+     * @return \OCA\OpenRegister\Db\Schema|null Schema entity or null if not provided.
+     *
+     * @throws \Exception If schema is not found or doesn't belong to register.
+     */
+    private function fetchSchema(?int $schemaId, ?\OCA\OpenRegister\Db\Register $register): ?\OCA\OpenRegister\Db\Schema
+    {
+        if ($schemaId === null) {
+            return null;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($schemaId);
+            
+            // Verify schema belongs to register if both are provided.
+            if ($register !== null && in_array($schema->getId(), $register->getSchemas()) === false) {
+                throw new \Exception('Schema does not belong to the specified register');
+            }
+
+            return $schema;
+        } catch (\Exception $e) {
+            throw new \Exception('Schema not found or invalid: '.$e->getMessage());
+        }
+
+    }//end fetchSchema()
+
+
+    /**
+     * Build response scope object from register and schema
+     *
+     * @param \OCA\OpenRegister\Db\Register|null $register Register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema   Schema entity.
+     *
+     * @return array<string, array{id: int, title: string}|null> Scope object with register and schema info.
+     */
+    private function buildResponseScope(?\OCA\OpenRegister\Db\Register $register, ?\OCA\OpenRegister\Db\Schema $schema): array
+    {
+        $registerScope = null;
+        if ($register !== null) {
+            $registerScope = [
+                'id'    => $register->getId(),
+                'title' => $register->getTitle(),
+            ];
+        }
+
+        $schemaScope = null;
+        if ($schema !== null) {
+            $schemaScope = [
+                'id'    => $schema->getId(),
+                'title' => $schema->getTitle(),
+            ];
+        }
+
+        return [
+            'register' => $registerScope,
+            'schema'   => $schemaScope,
+        ];
+
+    }//end buildResponseScope()
+
+
+    /**
+     * Calculate success rate from results
+     *
+     * @param array<string, mixed> $results Results array with total processed and failed counts.
+     *
+     * @return float Success rate percentage.
+     */
+    private function calculateSuccessRate(array $results): float
+    {
+        if ($results['total']['processed'] > 0) {
+            return round(($results['total']['processed'] - $results['total']['failed']) / $results['total']['processed'] * 100, 2);
+        }
+
+        return 0.0;
+
+    }//end calculateSuccessRate()
 
 
     /**

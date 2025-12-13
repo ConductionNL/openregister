@@ -89,7 +89,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @return EndpointLog[] Array of endpoint log entities
      *
-     * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
+     * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -129,7 +129,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @return EndpointLog[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
+     * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
      */
     public function findByEndpoint(int $endpointId, ?int $limit=null, ?int $offset=null): array
     {

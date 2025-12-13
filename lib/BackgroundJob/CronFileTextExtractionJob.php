@@ -58,11 +58,11 @@ class CronFileTextExtractionJob extends TimedJob
     /**
      * Execute the cron file text extraction job
      *
-     * @param array $argument Job arguments (unused for recurring jobs)
+     * @param array $_argument Job arguments (unused for recurring jobs)
      *
      * @return void
      */
-    protected function run($argument): void
+    protected function run($_argument): void
     {
         $startTime = microtime(true);
 

@@ -104,7 +104,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail[] The audit trails
      *
-     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
+     * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -331,7 +331,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
+     * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
      */
     public function findByObjectUntil(int $objectId, string $objectUuid, $until=null): array
     {

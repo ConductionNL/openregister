@@ -64,7 +64,7 @@ class ChunkMapper extends QBMapper
      *
      * @return Chunk[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Chunk>
+     * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
      */
     public function findBySource(string $sourceType, int $sourceId): array
     {

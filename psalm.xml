@@ -26,6 +26,12 @@
                 <referencedClass name="Doctrine\DBAL\Types\Types"/>
                 <referencedClass name="Doctrine\DBAL\Connection"/>
                 <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
+                <referencedClass name="OCP\IMemcache"/>
+                <referencedClass name="OCP\IDBConnection"/>
+                <referencedClass name="OCP\AppFramework\IAppContainer"/>
+                <referencedClass name="OCP\AppFramework\Db\DoesNotExistException"/>
+                <referencedClass name="OCP\AppFramework\Db\Entity"/>
+                <referencedClass name="OCP\DB\Exception"/>
             </errorLevel>
         </UndefinedDocblockClass>
         <UndefinedClass>

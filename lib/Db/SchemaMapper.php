@@ -173,7 +173,7 @@ class SchemaMapper extends QBMapper
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(string | int $id, ?array $extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Schema
+    public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Schema
     {
         // Verify RBAC permission to read if RBAC is enabled
         if ($rbac === true) {
@@ -264,7 +264,7 @@ class SchemaMapper extends QBMapper
      *
      * @return Schema[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
     public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
     {
@@ -337,7 +337,7 @@ class SchemaMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
     public function findAll(
         ?int $limit=null,
@@ -345,7 +345,7 @@ class SchemaMapper extends QBMapper
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[],
+        ?array $_extend=[],
         ?bool $published=null,
         bool $rbac=true,
         bool $multi=true
@@ -867,7 +867,7 @@ class SchemaMapper extends QBMapper
      *
      * @return Schema[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
     public function getRelated(Schema|int|string $schema): array
     {

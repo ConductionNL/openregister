@@ -42,6 +42,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setTitle(?string $title)
  * @method string|null getUserId()
  * @method void setUserId(?string $userId)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
  * @method int|null getAgentId()
@@ -50,6 +52,8 @@ use Symfony\Component\Uid\Uuid;
  * @method void setMetadata(?array $metadata)
  * @method DateTime|null getDeletedAt()
  * @method void setDeletedAt(?DateTime $deletedAt)
+ * @method DateTime|null getDeleted_at()
+ * @method void setDeleted_at(?DateTime $deleted_at)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
@@ -82,6 +86,13 @@ class Conversation extends Entity implements JsonSerializable
     protected ?string $userId = null;
 
     /**
+     * Owner of the conversation (same as userId for compatibility)
+     *
+     * @var string|null The owner ID
+     */
+    protected ?string $owner = null;
+
+    /**
      * Organisation UUID
      *
      * @var string|null Organisation UUID
@@ -109,11 +120,18 @@ class Conversation extends Entity implements JsonSerializable
     protected ?array $metadata = null;
 
     /**
-     * Soft delete timestamp
+     * Soft delete timestamp (camelCase)
      *
      * @var DateTime|null Deleted at timestamp
      */
     protected ?DateTime $deletedAt = null;
+
+    /**
+     * Soft delete timestamp (snake_case for database compatibility)
+     *
+     * @var DateTime|null Deleted at timestamp
+     */
+    protected ?DateTime $deleted_at = null;
 
     /**
      * Creation timestamp

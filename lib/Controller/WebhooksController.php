@@ -838,7 +838,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: 'Failed to retrieve webhook logs'|'Webhook not found', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\WebhookLog>, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500, array{error?: 'Failed to retrieve webhook logs'|'Webhook not found', results?: list<\OCA\OpenRegister\Db\WebhookLog>, total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

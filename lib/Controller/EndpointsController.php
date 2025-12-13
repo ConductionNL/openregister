@@ -528,7 +528,7 @@ class EndpointsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs', results?: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500, array{error?: 'Endpoint not found'|'Failed to retrieve endpoint logs', results?: list<\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

@@ -127,14 +127,12 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      */
-    protected function run($argument): void
+    protected function run($_argument): void
     {
         $this->logger->info('Starting configuration check job');
 
         // Check if the job is disabled.
-        $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
-        if ($interval === 0) {
-            $this->logger->info('Configuration check job is disabled, skipping');
+        if ($this->isJobDisabled() === true) {
             return;
         }
 
@@ -143,80 +141,139 @@ class ConfigurationCheckJob extends TimedJob
             $configurations = $this->configurationMapper->findAll();
             $this->logger->info('Found '.count($configurations).' configurations to check');
 
-            $checked = 0;
-            $updated = 0;
-            $failed  = 0;
+            $stats = ['checked' => 0, 'updated' => 0, 'failed' => 0];
 
             foreach ($configurations as $configuration) {
-                try {
-                    // Only check remote configurations.
-                    if ($configuration->isRemoteSource() === false) {
-                        continue;
-                    }
-
-                    $this->logger->info("Checking configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
-
-                    // Check remote version.
-                    $remoteVersion = $this->configurationService->checkRemoteVersion(configuration: $configuration);
-                    $checked++;
-
-                    if ($remoteVersion === null) {
-                        $this->logger->warning("Could not determine remote version for configuration {$configuration->getId()}");
-                        continue;
-                    }
-
-                    // Check if update is available.
-                    if ($configuration->hasUpdateAvailable() === false) {
-                        $this->logger->info("Configuration {$configuration->getTitle()} is up to date");
-                        continue;
-                    }
-
-                    $this->logger->info("Update available for {$configuration->getTitle()}: {$configuration->getLocalVersion()} → {$remoteVersion}");
-
-                    // If auto-update is enabled, import the updates.
-                    if ($configuration->getAutoUpdate() === true) {
-                        $this->logger->info("Auto-update enabled, importing updates for {$configuration->getTitle()}");
-
-                        try {
-                            // Import all changes (no selection, import everything).
-                            $this->configurationService->importConfigurationWithSelection(
-                                configuration: $configuration,
-                                selection: []
-                            // Empty selection means import all.
-                            );
-
-                            $updated++;
-                            $this->logger->info("Successfully auto-updated configuration {$configuration->getTitle()}");
-                        } catch (Exception $e) {
-                            $this->logger->error("Failed to auto-update configuration {$configuration->getTitle()}: ".$e->getMessage());
-                            $failed++;
-                        }
-                    } else {
-                        $this->logger->info("Auto-update disabled for {$configuration->getTitle()}, sending notification");
-
-                        try {
-                            // Send notification to configured groups.
-                            $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
-                            $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
-                        } catch (Exception $e) {
-                            $this->logger->error("Failed to send notifications for configuration {$configuration->getTitle()}: ".$e->getMessage());
-                        }
-                    }//end if
-                } catch (Exception $e) {
-                    $failed++;
-                    $this->logger->error("Error checking configuration {$configuration->getId()}: ".$e->getMessage());
-                    continue;
-                }//end try
-            }//end foreach
+                $this->checkSingleConfiguration($configuration, $stats);
+            }
 
             $this->logger->info(
-                "Configuration check job completed: {$checked} checked, {$updated} updated, {$failed} failed"
+                "Configuration check job completed: {$stats['checked']} checked, {$stats['updated']} updated, {$stats['failed']} failed"
             );
         } catch (Exception $e) {
             $this->logger->error('Configuration check job failed: '.$e->getMessage());
         }//end try
 
     }//end run()
+
+
+    /**
+     * Check if the job is currently disabled via configuration
+     *
+     * @return bool True if job is disabled, false otherwise.
+     */
+    private function isJobDisabled(): bool
+    {
+        $interval = (int) $this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
+        if ($interval === 0) {
+            $this->logger->info('Configuration check job is disabled, skipping');
+            return true;
+        }
+
+        return false;
+
+    }//end isJobDisabled()
+
+
+    /**
+     * Check a single configuration for updates
+     *
+     * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to check.
+     * @param array                              &$stats        Statistics array (passed by reference).
+     *
+     * @return void
+     */
+    private function checkSingleConfiguration($configuration, array &$stats): void
+    {
+        try {
+            // Only check remote configurations.
+            if ($configuration->isRemoteSource() === false) {
+                return;
+            }
+
+            $this->logger->info("Checking configuration: {$configuration->getTitle()} (ID: {$configuration->getId()})");
+
+            // Check remote version.
+            $remoteVersion = $this->configurationService->checkRemoteVersion(configuration: $configuration);
+            $stats['checked']++;
+
+            if ($remoteVersion === null) {
+                $this->logger->warning("Could not determine remote version for configuration {$configuration->getId()}");
+                return;
+            }
+
+            // Check if update is available.
+            if ($configuration->hasUpdateAvailable() === false) {
+                $this->logger->info("Configuration {$configuration->getTitle()} is up to date");
+                return;
+            }
+
+            $this->logger->info("Update available for {$configuration->getTitle()}: {$configuration->getLocalVersion()} → {$remoteVersion}");
+
+            // Handle the update based on auto-update setting.
+            if ($configuration->getAutoUpdate() === true) {
+                $this->handleAutoUpdate($configuration, $stats);
+            } else {
+                $this->sendUpdateNotification($configuration);
+            }
+        } catch (Exception $e) {
+            $stats['failed']++;
+            $this->logger->error("Error checking configuration {$configuration->getId()}: ".$e->getMessage());
+        }//end try
+
+    }//end checkSingleConfiguration()
+
+
+    /**
+     * Handle automatic update of a configuration
+     *
+     * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to update.
+     * @param array                              &$stats        Statistics array (passed by reference).
+     *
+     * @return void
+     */
+    private function handleAutoUpdate($configuration, array &$stats): void
+    {
+        $this->logger->info("Auto-update enabled, importing updates for {$configuration->getTitle()}");
+
+        try {
+            // Import all changes (no selection, import everything).
+            $this->configurationService->importConfigurationWithSelection(
+                configuration: $configuration,
+                selection: []
+            // Empty selection means import all.
+            );
+
+            $stats['updated']++;
+            $this->logger->info("Successfully auto-updated configuration {$configuration->getTitle()}");
+        } catch (Exception $e) {
+            $this->logger->error("Failed to auto-update configuration {$configuration->getTitle()}: ".$e->getMessage());
+            $stats['failed']++;
+        }
+
+    }//end handleAutoUpdate()
+
+
+    /**
+     * Send update notification for a configuration
+     *
+     * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to notify about.
+     *
+     * @return void
+     */
+    private function sendUpdateNotification($configuration): void
+    {
+        $this->logger->info("Auto-update disabled for {$configuration->getTitle()}, sending notification");
+
+        try {
+            // Send notification to configured groups.
+            $notificationCount = $this->notificationService->notifyConfigurationUpdate(configuration: $configuration);
+            $this->logger->info("Sent {$notificationCount} notifications for configuration {$configuration->getTitle()}");
+        } catch (Exception $e) {
+            $this->logger->error("Failed to send notifications for configuration {$configuration->getTitle()}: ".$e->getMessage());
+        }
+
+    }//end sendUpdateNotification()
 
 
 }//end class

@@ -95,93 +95,12 @@ class ObjectChangeListener implements IEventListener
                 ]
                 );
 
-        // Get extraction mode from settings to determine processing strategy.
+        // Get extraction mode and process accordingly.
         try {
             $objectSettings = $this->settingsService->getObjectSettingsOnly();
             $extractionMode = $objectSettings['objectExtractionMode'] ?? 'background';
 
-            // Handle different extraction modes.
-            switch ($extractionMode) {
-                case 'immediate':
-                    // Process synchronously during object creation/update - direct link between object save and parsing.
-                    $this->logger->info(
-                            '[ObjectChangeListener] Immediate mode - processing synchronously',
-                            [
-                                'object_id'   => $objectId,
-                                'object_uuid' => $object->getUuid(),
-                            ]
-                            );
-                    try {
-                        $this->textExtractionService->extractObject(objectId: $objectId, forceReprocess: false);
-                        $this->logger->info(
-                                '[ObjectChangeListener] Immediate extraction completed',
-                                ['object_id' => $objectId]
-                                );
-                    } catch (\Exception $e) {
-                        $this->logger->error(
-                                '[ObjectChangeListener] Immediate extraction failed',
-                                [
-                                    'object_id' => $objectId,
-                                    'error'     => $e->getMessage(),
-                                ]
-                                );
-                    }
-                    break;
-
-                case 'background':
-                    // Queue background job for delayed extraction on job stack.
-                    $this->logger->info(
-                            '[ObjectChangeListener] Background mode - queueing extraction job',
-                            [
-                                'object_id'   => $objectId,
-                                'object_uuid' => $object->getUuid(),
-                            ]
-                            );
-                    try {
-                        $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
-                        $this->logger->debug(
-                                '[ObjectChangeListener] Background extraction job queued',
-                                ['object_id' => $objectId]
-                                );
-                    } catch (\Exception $e) {
-                        $this->logger->error(
-                                '[ObjectChangeListener] Failed to queue background job',
-                                [
-                                    'object_id' => $objectId,
-                                    'error'     => $e->getMessage(),
-                                ]
-                                );
-                    }
-                    break;
-
-                case 'cron':
-                    // Skip - cron job will handle periodic batch processing.
-                    $this->logger->debug(
-                            '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
-                            ['object_id' => $objectId]
-                            );
-                    break;
-
-                case 'manual':
-                    // Skip - only manual triggers will process.
-                    $this->logger->debug(
-                            '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
-                            ['object_id' => $objectId]
-                            );
-                    break;
-
-                default:
-                    // Fallback to background mode for unknown modes.
-                    $this->logger->warning(
-                            '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
-                            [
-                                'object_id'       => $objectId,
-                                'extraction_mode' => $extractionMode,
-                            ]
-                            );
-                    $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
-                    break;
-            }//end switch
+            $this->processExtractionMode($extractionMode, $objectId, $object->getUuid());
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ObjectChangeListener] Error determining extraction mode',
@@ -194,6 +113,173 @@ class ObjectChangeListener implements IEventListener
         }//end try
 
     }//end handle()
+
+
+    /**
+     * Process extraction based on configured mode
+     *
+     * @param string $mode       Extraction mode (immediate, background, cron, manual).
+     * @param int    $objectId   Object ID to process.
+     * @param string $objectUuid Object UUID for logging.
+     *
+     * @return void
+     */
+    private function processExtractionMode(string $mode, int $objectId, string $objectUuid): void
+    {
+        switch ($mode) {
+            case 'immediate':
+                $this->processImmediateExtraction($objectId, $objectUuid);
+                break;
+
+            case 'background':
+                $this->processBackgroundExtraction($objectId, $objectUuid);
+                break;
+
+            case 'cron':
+                $this->processCronMode($objectId);
+                break;
+
+            case 'manual':
+                $this->processManualMode($objectId);
+                break;
+
+            default:
+                $this->processUnknownMode($mode, $objectId);
+                break;
+        }//end switch
+
+    }//end processExtractionMode()
+
+
+    /**
+     * Process immediate synchronous extraction
+     *
+     * @param int    $objectId   Object ID to extract.
+     * @param string $objectUuid Object UUID for logging.
+     *
+     * @return void
+     */
+    private function processImmediateExtraction(int $objectId, string $objectUuid): void
+    {
+        $this->logger->info(
+                '[ObjectChangeListener] Immediate mode - processing synchronously',
+                [
+                    'object_id'   => $objectId,
+                    'object_uuid' => $objectUuid,
+                ]
+                );
+
+        try {
+            $this->textExtractionService->extractObject(objectId: $objectId, forceReprocess: false);
+            $this->logger->info(
+                    '[ObjectChangeListener] Immediate extraction completed',
+                    ['object_id' => $objectId]
+                    );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                    '[ObjectChangeListener] Immediate extraction failed',
+                    [
+                        'object_id' => $objectId,
+                        'error'     => $e->getMessage(),
+                    ]
+                    );
+        }
+
+    }//end processImmediateExtraction()
+
+
+    /**
+     * Queue background job for extraction
+     *
+     * @param int    $objectId   Object ID to extract.
+     * @param string $objectUuid Object UUID for logging.
+     *
+     * @return void
+     */
+    private function processBackgroundExtraction(int $objectId, string $objectUuid): void
+    {
+        $this->logger->info(
+                '[ObjectChangeListener] Background mode - queueing extraction job',
+                [
+                    'object_id'   => $objectId,
+                    'object_uuid' => $objectUuid,
+                ]
+                );
+
+        try {
+            $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+            $this->logger->debug(
+                    '[ObjectChangeListener] Background extraction job queued',
+                    ['object_id' => $objectId]
+                    );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                    '[ObjectChangeListener] Failed to queue background job',
+                    [
+                        'object_id' => $objectId,
+                        'error'     => $e->getMessage(),
+                    ]
+                    );
+        }
+
+    }//end processBackgroundExtraction()
+
+
+    /**
+     * Handle cron mode (skip processing)
+     *
+     * @param int $objectId Object ID.
+     *
+     * @return void
+     */
+    private function processCronMode(int $objectId): void
+    {
+        $this->logger->debug(
+                '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
+                ['object_id' => $objectId]
+                );
+
+    }//end processCronMode()
+
+
+    /**
+     * Handle manual mode (skip processing)
+     *
+     * @param int $objectId Object ID.
+     *
+     * @return void
+     */
+    private function processManualMode(int $objectId): void
+    {
+        $this->logger->debug(
+                '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
+                ['object_id' => $objectId]
+                );
+
+    }//end processManualMode()
+
+
+    /**
+     * Handle unknown extraction mode (fallback to background)
+     *
+     * @param string $mode     Unknown mode name.
+     * @param int    $objectId Object ID.
+     *
+     * @return void
+     */
+    private function processUnknownMode(string $mode, int $objectId): void
+    {
+        $this->logger->warning(
+                '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
+                [
+                    'object_id'       => $objectId,
+                    'extraction_mode' => $mode,
+                ]
+                );
+
+        $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+
+    }//end processUnknownMode()
 
 
 }//end class

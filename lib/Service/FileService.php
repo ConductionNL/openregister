@@ -2466,7 +2466,7 @@ class FileService
      * @throws NotFoundException If the folder is not found
      * @throws DoesNotExistException If the object ID is not found
      *
-     * @psalm-return list<OCP\Files\Node>
+     * @psalm-return list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array

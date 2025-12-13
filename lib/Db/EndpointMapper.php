@@ -133,7 +133,7 @@ class EndpointMapper extends QBMapper
      *
      * @return Endpoint[] Array of endpoint entities
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
+     * @psalm-return list<\OCA\OpenRegister\Db\Endpoint>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {

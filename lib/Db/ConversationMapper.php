@@ -251,7 +251,7 @@ class ConversationMapper extends QBMapper
      *
      * @return Conversation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Conversation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Conversation>
      */
     public function findByUser(
         string $userId,
@@ -295,7 +295,7 @@ class ConversationMapper extends QBMapper
      *
      * @return Conversation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Conversation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Conversation>
      */
     public function findDeletedByUser(
         string $userId,

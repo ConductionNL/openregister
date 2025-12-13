@@ -274,7 +274,7 @@ class OptimizedFacetHandler
                     $queryBuilder->expr()->isNotNull(
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                             )
-                    );
+                    )
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Limit results for performance.
@@ -356,7 +356,6 @@ class OptimizedFacetHandler
                                     )
                             )
                     );
-            );
         }
 
         // 4. Low selectivity: organization filters.
