@@ -463,6 +463,8 @@ class ObjectService
      * @return ObjectEntity|null The rendered object or null.
      *
      * @throws Exception If the object is not found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function find(
         int | string $id,
@@ -553,6 +555,8 @@ class ObjectService
      * @return ObjectEntity The retrieved object.
      *
      * @throws Exception If there is an error during retrieval.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findSilent(
         string $id,
@@ -611,6 +615,8 @@ class ObjectService
      * @param bool  $_multitenancy  Whether to apply multitenancy filtering (default: true).
      *
      * @return array Array of objects matching the configuration
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -782,6 +788,8 @@ class ObjectService
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function getLogs(string $uuid, array $filters=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -1011,6 +1019,8 @@ class ObjectService
      * @return bool Whether the deletion was successful
      *
      * @throws \Exception If user does not have delete permission
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
     {
@@ -2807,6 +2817,8 @@ class ObjectService
      *
      * @psalm-return PromiseInterface<array{results: mixed, total: mixed, page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>, offset: 0|mixed, facets: mixed, facetable?: mixed, next?: null|string, prev?: null|string}>
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function searchObjectsPaginatedAsync(
         array $query=[],
@@ -3078,6 +3090,8 @@ class ObjectService
      * @param bool         $_multitenancy  Whether to apply multitenancy filtering (default: true)
      *
      * @return array The rendered entity
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -3132,6 +3146,8 @@ class ObjectService
      * @return ObjectEntity The updated object entity.
      *
      * @throws \Exception If the object is not found or if there's an error during update.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function publish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
@@ -3158,6 +3174,8 @@ class ObjectService
      * @return ObjectEntity The updated object entity.
      *
      * @throws \Exception If the object is not found or if there's an error during update.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function depublish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
@@ -5710,6 +5728,7 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery).
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
+        /** @SuppressWarnings(PHPMD.UnusedFormalParameter) */
         return $this->getCachedEntities(ids: 'all', fallbackFunc: function($_ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
             // null = no limit (get all).

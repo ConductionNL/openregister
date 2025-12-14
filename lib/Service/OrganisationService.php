@@ -420,6 +420,8 @@ class OrganisationService
      * @param bool $_useCache Whether to use session cache (temporarily disabled)
      *
      * @return array Array of Organisation objects
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function getUserOrganisations(bool $_useCache=true): array
     {
