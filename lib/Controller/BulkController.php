@@ -316,8 +316,8 @@ class BulkController extends Controller
                     register: $register,
                     schema: null,
                 // Allow objects to specify their own schemas.
-                    rbac: true,
-                    multi: true,
+                    _rbac: true,
+                    _multitenancy: true,
                     validation: true,
                     events: false
                 );
@@ -330,8 +330,8 @@ class BulkController extends Controller
                     objects: $objects,
                     register: $register,
                     schema: $schema,
-                    rbac: true,
-                    multi: true,
+                    _rbac: true,
+                    _multitenancy: true,
                     validation: true,
                     events: false
                 );

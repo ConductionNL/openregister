@@ -304,7 +304,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $register    = $this->registerService->find(id: $id, _extend: []);
+        $register    = $this->registerService->find(id: $id, __extend: []);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {
@@ -824,8 +824,8 @@ class RegistersController extends Controller
                         chunkSize: $chunkSize,
                         validation: $validation,
                         events: $events,
-                        rbac: $rbac,
-                        multi: $multi,
+                        _rbac: $rbac,
+                        _multitenancy: $multi,
                         publish: $publish,
                         currentUser: $this->userSession->getUser()
                     );
@@ -853,8 +853,8 @@ class RegistersController extends Controller
                         chunkSize: $chunkSize,
                         validation: $validation,
                         events: $events,
-                        rbac: $rbac,
-                        multi: $multi,
+                        _rbac: $rbac,
+                        _multitenancy: $multi,
                         publish: $publish,
                         currentUser: $this->userSession->getUser()
                     );

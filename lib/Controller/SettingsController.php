@@ -611,7 +611,7 @@ class SettingsController extends Controller
 
             // Use optimized approach like SOLR warmup - get count first, then process in chunks.
             $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
-            $totalObjects = $objectMapper->countSearchObjects(query: [], activeOrganisationUuid: null, rbac: false, multi: false);
+            $totalObjects = $objectMapper->countSearchObjects(query: [], activeOrganisationUuid: null, _rbac: false, _multitenancy: false);
 
             // Apply maxObjects limit if specified.
             if ($maxObjects > 0 && $maxObjects < $totalObjects) {

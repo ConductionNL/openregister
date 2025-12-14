@@ -266,14 +266,14 @@ class ObjectsController extends Controller
      *               - filters: (array) Filter parameters
      *               - sort: (array) Sort parameters
      *               - search: (string|null) Search term
-     *               - extend: (array|null) Properties to extend
+     *               - _extend: (array|null) Properties to extend
      *               - fields: (array|null) Fields to include
      *               - unset: (array|null) Fields to exclude
      *               - register: (string|null) Register identifier
      *               - schema: (string|null) Schema identifier
      *               - ids: (array|null) Specific IDs to filter
      *
-     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<never, never>|mixed, search: mixed|null, extend: mixed|null, fields: mixed|null, unset: mixed|null, ids: array|null}
+     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<never, never>|mixed, search: mixed|null, _extend: mixed|null, fields: mixed|null, unset: mixed|null, ids: array|null}
      */
     private function getConfig(?string $_register=null, ?string $_schema=null, ?array $ids=null): array
     {
@@ -421,7 +421,7 @@ class ObjectsController extends Controller
         $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
-        $result = $objectService->searchObjectsPaginated(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
+        $result = $objectService->searchObjectsPaginated(query: $query, _rbac: $rbac, _multitenancy: $multi, published: $published, deleted: $deleted);
 
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
@@ -552,7 +552,7 @@ class ObjectsController extends Controller
         // If admin, disable multitenancy.
         // Find and validate the object.
         try {
-            $objectEntity = $this->objectService->find(id: $id, _extend: $extend, files: false, register: null, schema: null, rbac: $rbac, multi: $multi);
+            $objectEntity = $this->objectService->find(id: $id, __extend: $extend, files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
             if ($objectEntity === null) {
                 return new JSONResponse(data: ['error' => "Object with id {$id} not found"], statusCode: Http::STATUS_NOT_FOUND);
             }
@@ -560,13 +560,13 @@ class ObjectsController extends Controller
             // Render the object with requested extensions, filters, fields, and unset parameters.
             $renderedObject = $this->objectService->renderEntity(
                 entity: $objectEntity,
-                extend: $extend,
+                _extend: $extend,
                 depth: 0,
                 filter: $filter,
                 fields: $fields,
                 unset: $unset,
-                rbac: $rbac,
-                multi: $multi
+                _rbac: $rbac,
+                _multitenancy: $multi
             );
 
             return new JSONResponse(data: $renderedObject);
@@ -724,8 +724,8 @@ class ObjectsController extends Controller
                     object: $objectToSave,
                     register: $register,
                     schema: $schema,
-                    rbac: $rbac,
-                    multi: true,
+                    _rbac: $rbac,
+                    _multitenancy: true,
                     uuid: null,
                     uploadedFiles: $uploadedFilesValue
             );
@@ -864,7 +864,7 @@ class ObjectsController extends Controller
         // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectService->findSilent(id: $id, _extend: [], files: false, register: null, schema: null, rbac: $rbac, multi: $multi);
+            $existingObject = $this->objectService->findSilent(id: $id, __extend: [], files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
 
             // Get the resolved register and schema IDs from the ObjectService.
             // This ensures proper handling of both numeric IDs and slug identifiers.
@@ -915,8 +915,8 @@ class ObjectsController extends Controller
                     register: $register,
                     schema: $schema,
                     object: $object,
-                    rbac: $rbac,
-                    multi: $multi,
+                    _rbac: $rbac,
+                    _multitenancy: $multi,
                     uuid: $id,
                     uploadedFiles: $uploadedFilesValue
             );
@@ -944,7 +944,7 @@ class ObjectsController extends Controller
     /**
      * Patches (partially updates) an existing object
      *
-     * Takes the request data, multi: merges it with the existing object data, persist: validates it against
+     * Takes the request data, _multitenancy: merges it with the existing object data, persist: validates it against
      * the schema, silent: and updates the object in the database. Only the provided fields are updated, validation: * while other fields remain unchanged. Handles validation errors appropriately.
      *
      * @param string        $register      The register slug or identifier
@@ -1080,11 +1080,11 @@ class ObjectsController extends Controller
             // Determine RBAC and multitenancy settings based on admin status.
             $isAdmin = $this->isCurrentUserAdmin();
             $rbac    = !$isAdmin;
-            // If admin, rbac: disable RBAC.
+            // If admin, _rbac: disable RBAC.
             $multi = !$isAdmin;
-            // If admin, multi: disable multitenancy.
+            // If admin, _multitenancy: disable multitenancy.
             // Use ObjectService to delete the object (includes RBAC permission checks, persist: audit trail, silent: and soft delete).
-            $deleteResult = $objectService->deleteObject(uuid: $id, rbac: $rbac, multi: $multi);
+            $deleteResult = $objectService->deleteObject(uuid: $id, _rbac: $rbac, _multitenancy: $multi);
 
             if ($deleteResult === false) {
                 // If delete operation failed, return error.
@@ -1210,8 +1210,8 @@ class ObjectsController extends Controller
         // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter.
         $result = $objectService->searchObjectsPaginated(
             query: $searchQuery,
-            rbac: true,
-            multi: true,
+            _rbac: true,
+            _multitenancy: true,
             published: true,
             deleted: false,
             ids: $relations
@@ -1260,8 +1260,8 @@ class ObjectsController extends Controller
         // Use ObjectService searchObjectsPaginated directly - pass uses as named parameter.
         $result = $objectService->searchObjectsPaginated(
             query: $searchQuery,
-            rbac: true,
-            multi: true,
+            _rbac: true,
+            _multitenancy: true,
             published: true,
             deleted: false,
             uses: $id
@@ -1314,7 +1314,7 @@ class ObjectsController extends Controller
         $objectRegister = $object->getRegister();
         // could be ID or slug.
         $objectSchema = $object->getSchema();
-        // could be ID, schema: slug, extend: or array/object.
+        // could be ID, schema: slug, _extend: or array/object.
         // Normalize requested register.
         $requestedRegister = $register;
         $requestedSchema   = $schema;
@@ -1560,8 +1560,8 @@ class ObjectsController extends Controller
                         chunkSize: 5,
                         validation: $validation,
                         events: $events,
-                        rbac: true,
-                        multi: true,
+                        _rbac: true,
+                        _multitenancy: true,
                         publish: false,
                         currentUser: $this->userSession->getUser()
                     );
@@ -1599,8 +1599,8 @@ class ObjectsController extends Controller
                         chunkSize: $chunkSize,
                         validation: $validation,
                         events: $events,
-                        rbac: $rbac,
-                        multi: $multi
+                        _rbac: $rbac,
+                        _multitenancy: $multi
                     );
                     break;
 
@@ -1664,7 +1664,7 @@ class ObjectsController extends Controller
             }
 
             // Publish the object.
-            $object = $objectService->publish(uuid: $id, date: $date, rbac: $rbac, multi: $multi);
+            $object = $objectService->publish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
 
             return new JSONResponse(data: $object->jsonSerialize());
         } catch (Exception $e) {
@@ -1716,7 +1716,7 @@ class ObjectsController extends Controller
             }
 
             // Depublish the object.
-            $object = $objectService->depublish(uuid: $id, date: $date, rbac: $rbac, multi: $multi);
+            $object = $objectService->depublish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
 
             return new JSONResponse(data: $object->jsonSerialize());
         } catch (Exception $e) {
@@ -2020,8 +2020,8 @@ class ObjectsController extends Controller
                     '_count'  => true,
                     '_source' => 'database',
                 ],
-                rbac: false,
-                multi: false,
+                _rbac: false,
+                _multitenancy: false,
                 ids: null,
                 uses: null,
                 views: $views
