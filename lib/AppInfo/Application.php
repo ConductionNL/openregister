@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
 use OCA\OpenRegister\Service\Objects\PerformanceHandler;
@@ -466,7 +467,9 @@ class Application extends App implements IBootstrap
                             logger: $container->get('Psr\Log\LoggerInterface'),
                             schemaMapper: $container->get(SchemaMapper::class),
                             registerMapper: $container->get(RegisterMapper::class),
-                            organisationService: $container->get(OrganisationService::class)
+                            organisationService: $container->get(OrganisationService::class),
+                            organisationMapper: null,
+                            documentBuilder: $container->get(\OCA\OpenRegister\Service\Index\DocumentBuilder::class)
                             );
                 }
                 );
