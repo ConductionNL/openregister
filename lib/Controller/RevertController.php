@@ -20,7 +20,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\RevertService;
+use OCA\OpenRegister\Service\Objects\RevertHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -44,12 +44,12 @@ class RevertController extends Controller
      *
      * @param string        $appName       The name of the app
      * @param IRequest      $request       The request object
-     * @param RevertService $revertService The revert service
+     * @param RevertHandler $revertService The revert service
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly RevertService $revertService
+        private readonly RevertHandler $revertService
     ) {
         parent::__construct(appName: $appName, request: $request);
 

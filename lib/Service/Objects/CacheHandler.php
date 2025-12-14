@@ -1,6 +1,6 @@
 <?php
 /**
- * ObjectCacheService
+ * CacheHandler
  *
  * Service class responsible for caching frequently accessed objects to improve
  * performance by reducing database queries. This service provides:
@@ -21,7 +21,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Objects;
 
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
-class ObjectCacheService
+class CacheHandler
 {
 
     /**
@@ -128,7 +128,7 @@ class ObjectCacheService
 
 
     /**
-     * Constructor for ObjectCacheService
+     * Constructor for CacheHandler
      *
      * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param OrganisationMapper $organisationMapper The organisation entity mapper
@@ -579,7 +579,7 @@ class ObjectCacheService
             return $objects;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Bulk preload failed in ObjectCacheService',
+                    'Bulk preload failed in CacheHandler',
                     [
                         'exception'         => $e->getMessage(),
                         'identifiersToLoad' => count($identifiersToLoad),

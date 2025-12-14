@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
@@ -45,17 +45,17 @@ class FileSearchController extends Controller
     /**
      * Constructor
      *
-     * @param string                 $appName           App name
-     * @param IRequest               $request           Request object
-     * @param GuzzleSolrService      $guzzleSolrService SOLR service
-     * @param VectorEmbeddingService $vectorService     Vector service
-     * @param SettingsService        $settingsService   Settings service
-     * @param LoggerInterface        $logger            Logger
+     * @param string                 $appName         App name
+     * @param IRequest               $request         Request object
+     * @param IndexService           $indexService    Index service
+     * @param VectorEmbeddingService $vectorService   Vector service
+     * @param SettingsService        $settingsService Settings service
+     * @param LoggerInterface        $logger          Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly GuzzleSolrService $guzzleSolrService,
+        private readonly IndexService $indexService,
         private readonly VectorEmbeddingService $vectorService,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger
@@ -119,8 +119,8 @@ class FileSearchController extends Controller
                 $solrQuery['fq'] = $typeFilter;
             }
 
-            // Execute SOLR search.
-            $queryUrl   = $this->guzzleSolrService->buildSolrBaseUrl()."/{$fileCollection}/select";
+            // Execute search.
+            $queryUrl   = $this->indexService->getEndpointUrl($fileCollection);
             $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
 
             $requestOptions = [

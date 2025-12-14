@@ -53,7 +53,7 @@ use LLPhant\Embeddings\EmbeddingGenerator\EmbeddingGeneratorInterface;
  *
  * INTEGRATION POINTS:
  * - ChatService: Uses embeddings for RAG (Retrieval Augmented Generation)
- * - SolrObjectService/SolrFileService: Can work together for hybrid search
+ * - IndexService: Can work together for hybrid search
  * - SettingsController: Delegates testing to this service
  *
  * NOTE: This service does NOT depend on SOLR. For hybrid search that combines
@@ -91,15 +91,15 @@ class VectorEmbeddingService
     /**
      * Constructor
      *
-     * @param IDBConnection     $db              Database connection
-     * @param SettingsService   $settingsService Settings management service
-     * @param GuzzleSolrService $solrService     Solr service for vector storage
-     * @param LoggerInterface   $logger          PSR-3 logger
+     * @param IDBConnection   $db              Database connection
+     * @param SettingsService $settingsService Settings management service
+     * @param IndexService    $indexService    Index service for vector storage
+     * @param LoggerInterface $logger          PSR-3 logger
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly SettingsService $settingsService,
-        private readonly GuzzleSolrService $solrService,
+        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
     ) {
 

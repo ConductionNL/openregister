@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister ConfigurationHandler
  *
  * Handles Solr configuration initialization, validation, and management.
  *
- * @category  Handler
- * @package   OCA\OpenRegister\Service\Index
+ * @category Handler
+ * @package  OCA\OpenRegister\Service\Index
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -35,8 +35,8 @@ use Exception;
  * - Building connection URLs
  * - Configuration status checks
  *
- * @category  Handler
- * @package   OCA\OpenRegister\Service\Index
+ * @category Handler
+ * @package  OCA\OpenRegister\Service\Index
  */
 class ConfigurationHandler
 {
@@ -68,6 +68,7 @@ class ConfigurationHandler
     ) {
         $this->initializeConfig();
         $this->initializeHttpClient();
+
     }//end __construct()
 
 
@@ -125,10 +126,13 @@ class ConfigurationHandler
                 'basic',
             ];
 
-            $this->logger->info('ConfigurationHandler: HTTP Basic Authentication configured', [
-                'username' => $this->solrConfig['username'],
-                'auth_type' => 'basic'
-            ]);
+            $this->logger->info(
+                    'ConfigurationHandler: HTTP Basic Authentication configured',
+                    [
+                        'username'  => $this->solrConfig['username'],
+                        'auth_type' => 'basic',
+                    ]
+                    );
         }
 
         // TODO: Switch back to Nextcloud HTTP client when local access restrictions are properly configured.
@@ -209,7 +213,7 @@ class ConfigurationHandler
         // Allow custom path for reverse proxies or non-standard setups.
         $path = $this->solrConfig['path'] ?? '';
         if (!empty($path)) {
-            $path = '/' . ltrim($path, '/');
+            $path = '/'.ltrim($path, '/');
         }
 
         // Build protocol-relative or absolute URL based on configuration.
@@ -257,12 +261,12 @@ class ConfigurationHandler
      *
      * @return string Full endpoint URL.
      */
-    public function getEndpointUrl(?string $collection = null): string
+    public function getEndpointUrl(?string $collection=null): string
     {
         $baseUrl = $this->buildSolrBaseUrl();
-        $core = $collection ?? $this->solrConfig['core'] ?? 'openregister';
+        $core    = $collection ?? $this->solrConfig['core'] ?? 'openregister';
 
-        return $baseUrl . '/solr/' . $core;
+        return $baseUrl.'/solr/'.$core;
 
     }//end getEndpointUrl()
 
@@ -298,7 +302,7 @@ class ConfigurationHandler
             return '✓ Using default port';
         }
 
-        return '✓ Port ' . $port;
+        return '✓ Port '.$port;
 
     }//end getPortStatus()
 
@@ -311,11 +315,9 @@ class ConfigurationHandler
     public function getCoreStatus(): string
     {
         $core = $this->solrConfig['core'] ?? 'openregister';
-        return '✓ Core: ' . $core;
+        return '✓ Core: '.$core;
 
     }//end getCoreStatus()
 
 
 }//end class
-
-

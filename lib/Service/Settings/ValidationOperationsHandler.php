@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister ValidationOperationsHandler
  *
  * Handles administrative validation operations for all objects in the system.
  *
- * @category  Handler
- * @package   OCA\OpenRegister\Service\Settings
+ * @category Handler
+ * @package  OCA\OpenRegister\Service\Settings
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -37,24 +37,26 @@ use Exception;
  * This handler contains business logic for administrative validation
  * operations that are exposed through the settings interface.
  *
- * @category  Handler
- * @package   OCA\OpenRegister\Service\Settings
+ * @category Handler
+ * @package  OCA\OpenRegister\Service\Settings
  */
 class ValidationOperationsHandler
 {
 
+
     /**
      * Constructor for ValidationOperationsHandler.
      *
-     * @param ObjectService   $objectService   Service for object operations.
-     * @param ValidateObject  $validateHandler Handler for object validation.
-     * @param SchemaMapper    $schemaMapper    Mapper for schema operations.
+     * @param ObjectService  $objectService   Service for object operations.
+     * @param ValidateObject $validateHandler Handler for object validation.
+     * @param SchemaMapper   $schemaMapper    Mapper for schema operations.
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly ValidateObject $validateHandler,
         private readonly SchemaMapper $schemaMapper
     ) {
+
     }//end __construct()
 
 
@@ -117,7 +119,7 @@ class ValidationOperationsHandler
                     'object_name' => $object->getName() ?? $object->getUuid(),
                     'register'    => $object->getRegister(),
                     'schema'      => $object->getSchema(),
-                    'errors'      => ['Validation failed: ' . $e->getMessage()],
+                    'errors'      => ['Validation failed: '.$e->getMessage()],
                 ];
             }//end try
         }//end foreach
@@ -143,5 +145,3 @@ class ValidationOperationsHandler
 
 
 }//end class
-
-

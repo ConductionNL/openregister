@@ -6,7 +6,7 @@
  * capabilities integrated into the ObjectService, showing both new and legacy approaches.
  *
  * @category Example
- * @package   OCA\OpenRegister\Service\Objects
+ * @package  OCA\OpenRegister\Service\Objects
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.

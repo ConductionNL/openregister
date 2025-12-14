@@ -17,17 +17,17 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class SchemaPropertyValidatorService
+ * Class PropertyValidatorHandler
  *
  * Service class for validating schema properties according to JSON Schema specification
  */
-class SchemaPropertyValidatorService
+class PropertyValidatorHandler
 {
 
     /**

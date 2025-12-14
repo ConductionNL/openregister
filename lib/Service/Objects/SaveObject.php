@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -115,20 +115,20 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity data mapper.
-     * @param FileService             $fileService             File service for managing files.
-     * @param IUserSession            $userSession             User session service.
-     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for logging changes.
-     * @param SchemaMapper            $schemaMapper            Schema mapper for schema operations.
-     * @param RegisterMapper          $registerMapper          Register mapper for register operations.
-     * @param IURLGenerator           $urlGenerator            URL generator service.
-     * @param OrganisationService     $organisationService     Service for organisation operations.
-     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
-     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
-     * @param SettingsService         $settingsService         Settings service for accessing trail settings.
-     * @param LoggerInterface         $logger                  Logger interface for logging operations.
-     * @param ArrayLoader             $arrayLoader             Twig array loader for template rendering.
+     * @param ObjectEntityMapper  $objectEntityMapper      Object entity data mapper.
+     * @param FileService         $fileService             File service for managing files.
+     * @param IUserSession        $userSession             User session service.
+     * @param AuditTrailMapper    $auditTrailMapper        Audit trail mapper for logging changes.
+     * @param SchemaMapper        $schemaMapper            Schema mapper for schema operations.
+     * @param RegisterMapper      $registerMapper          Register mapper for register operations.
+     * @param IURLGenerator       $urlGenerator            URL generator service.
+     * @param OrganisationService $organisationService     Service for organisation operations.
+     * @param ObjectCacheService  $objectCacheService      Object cache service for entity and query caching.
+     * @param SchemaCacheService  $schemaCacheService      Schema cache service for schema entity caching.
+     * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param SettingsService     $settingsService         Settings service for accessing trail settings.
+     * @param LoggerInterface     $logger                  Logger interface for logging operations.
+     * @param ArrayLoader         $arrayLoader             Twig array loader for template rendering.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,

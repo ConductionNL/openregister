@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\DashboardService;
-use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
@@ -54,7 +54,7 @@ use OCA\OpenRegister\Service\Objects\PublishObject;
 use OCA\OpenRegister\Service\Objects\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FacetService;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\IndexService;
@@ -70,7 +70,7 @@ use OCA\OpenRegister\Setup\SolrSetup;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
@@ -184,7 +184,7 @@ class Application extends App implements IBootstrap
          * 1. Circular dependency resolution (e.g., SchemaMapper <-> ObjectEntityMapper <-> RegisterMapper)
          * 2. Special factory/configuration logic (e.g., VectorizationService with strategy registration)
          * 3. Services with non-type-hinted parameters (e.g., SaveObject with ArrayLoader)
-         * 4. Services with lazy loading to break circular dependencies (e.g., ObjectCacheService)
+         * 4. Services with lazy loading to break circular dependencies (e.g., CacheHandler)
          *
          * Services with only type-hinted interfaces/classes are automatically resolved by Nextcloud.
          *
@@ -197,7 +197,7 @@ class Application extends App implements IBootstrap
          * - AuditTrailMapper: Depends on ObjectEntityMapper
          *
          * Services with special logic:
-         * - ObjectCacheService: Lazy loading of GuzzleSolrService to break circular dependency
+         * - CacheHandler: Lazy loading of IndexService to break circular dependency
          * - VectorizationService: Factory logic for strategy registration
          * - SaveObject: Requires ArrayLoader instance
          * - SettingsService: Currently uses ContainerInterface (to be refactored)
@@ -264,7 +264,7 @@ class Application extends App implements IBootstrap
                     return new SchemaMapper(
                             db: $container->get('OCP\IDBConnection'),
                             eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                            validator: $container->get(SchemaPropertyValidatorService::class),
+                            validator: $container->get(PropertyValidatorHandler::class),
                             organisationService: $container->get(OrganisationService::class),
                             userSession: $container->get('OCP\IUserSession'),
                             groupManager: $container->get('OCP\IGroupManager'),
@@ -330,13 +330,13 @@ class Application extends App implements IBootstrap
          * );
          */
 
-        // Register ObjectCacheService for performance optimization with lightweight SOLR.
-        // NOTE: ObjectCacheService uses IAppContainer for lazy loading GuzzleSolrService to break circular dependency.
-        // This breaks the circular dependency: ObjectCacheService <-> GuzzleSolrService.
+        // Register CacheHandler for performance optimization with lightweight SOLR.
+        // NOTE: CacheHandler uses IAppContainer for lazy loading IndexService to break circular dependency.
+        // This breaks the circular dependency: CacheHandler <-> IndexService.
         $context->registerService(
-                 ObjectCacheService::class,
+                 CacheHandler::class,
                 function ($container) {
-                    return new ObjectCacheService(
+                    return new CacheHandler(
                             objectEntityMapper: $container->get(ObjectEntityMapper::class),
                             organisationMapper: $container->get(OrganisationMapper::class),
                             logger: $container->get('Psr\Log\LoggerInterface'),
@@ -362,7 +362,7 @@ class Application extends App implements IBootstrap
                             registerMapper: $container->get(RegisterMapper::class),
                             urlGenerator: $container->get('OCP\IURLGenerator'),
                             organisationService: $container->get(OrganisationService::class),
-                            objectCacheService: $container->get(ObjectCacheService::class),
+                            objectCacheService: $container->get(CacheHandler::class),
                             settingsService: $container->get(SettingsService::class),
                             logger: $container->get('Psr\Log\LoggerInterface'),
                             arrayLoader: new ArrayLoader([])
@@ -413,21 +413,21 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: SchemaCacheService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: SchemaFacetCacheService can be autowired (only type-hinted parameters).
+        // NOTE: FacetCacheHandler can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ObjectsProvider can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register ObjectsProvider as a search provider for Nextcloud search.
         $context->registerSearchProvider(ObjectsProvider::class);
 
-        // Register SettingsService BEFORE GuzzleSolrService to break circular dependency.
-        // NOTE: SettingsService no longer depends on GuzzleSolrService (removed to break circular dependency).
-        // GuzzleSolrService operations are now handled directly in the controller.
-        // SettingsService only uses IAppContainer for lazy loading SchemaMapper and ObjectCacheService.
+        // Register SettingsService BEFORE IndexService to break circular dependency.
+        // NOTE: SettingsService no longer depends on IndexService (removed to break circular dependency).
+        // IndexService operations are now handled directly in the controller.
+        // SettingsService only uses IAppContainer for lazy loading SchemaMapper and CacheHandler.
         $context->registerService(
                  SettingsService::class,
                 function ($container) {
-                    // ObjectCacheService is not available yet (will be lazy-loaded via container if needed).
+                    // CacheHandler is not available yet (will be lazy-loaded via container if needed).
                     return new SettingsService(
                             config: $container->get('OCP\IConfig'),
                             auditTrailMapper: $container->get(AuditTrailMapper::class),
@@ -437,19 +437,20 @@ class Application extends App implements IBootstrap
                             objectEntityMapper: $container->get(ObjectEntityMapper::class),
                             organisationMapper: $container->get(OrganisationMapper::class),
                             schemaCacheService: $container->get(SchemaCacheService::class),
-                            schemaFacetCacheService: $container->get(SchemaFacetCacheService::class),
+                            schemaFacetCacheService: $container->get(FacetCacheHandler::class),
                             searchTrailMapper: $container->get(SearchTrailMapper::class),
                             userManager: $container->get('OCP\IUserManager'),
                             db: $container->get('OCP\IDBConnection'),
                             objectCacheService: null,
-                            // ObjectCacheService - lazy-loaded via container.
+                            // CacheHandler - lazy-loaded via container.
                             container: $container,
                             appName: 'openregister'
                             );
                 }
                 );
 
-        // Register lightweight GuzzleSolrService directly (no factory needed!).
+        // GuzzleSolrService is now an internal backend for IndexService.
+        // It's still registered for backward compatibility but should not be used directly.
         $context->registerService(
                  GuzzleSolrService::class,
                 function ($container) {
@@ -518,7 +519,7 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: WebhookService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        // WebhookService creates GuzzleHttp\Client directly (similar to GuzzleSolrService).
+        // WebhookService creates GuzzleHttp\Client directly.
         // Register GitHubService for GitHub API operations.
         $context->registerService(
                  \OCA\OpenRegister\Service\GitHubService::class,

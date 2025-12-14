@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
-use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
@@ -59,12 +59,12 @@ class SolrManagementCommand extends Command
     /**
      * Constructor
      *
-     * @param LoggerInterface   $logger      Logger for debugging and monitoring
-     * @param GuzzleSolrService $solrService SOLR service for operations
+     * @param LoggerInterface $logger      Logger for debugging and monitoring
+     * @param IndexService    $solrService SOLR service for operations
      */
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly GuzzleSolrService $solrService
+        private readonly IndexService $solrService
     ) {
         parent::__construct();
 

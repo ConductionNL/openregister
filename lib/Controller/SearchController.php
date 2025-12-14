@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 
 /**
  * SearchController handles search operations
@@ -51,9 +51,9 @@ class SearchController extends Controller
      *
      * Handles SOLR-based search operations for objects.
      *
-     * @var GuzzleSolrService SOLR search service instance
+     * @var IndexService Index search service instance
      */
-    private readonly GuzzleSolrService $solrService;
+    private readonly IndexService $indexService;
 
 
     /**
@@ -62,22 +62,22 @@ class SearchController extends Controller
      * Initializes controller with SOLR search service for object search operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string            $appName     The name of the app
-     * @param IRequest          $request     The HTTP request object
-     * @param GuzzleSolrService $solrService The Solr search service instance
+     * @param string       $appName      The name of the app
+     * @param IRequest     $request      The HTTP request object
+     * @param IndexService $indexService The index search service instance
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        GuzzleSolrService $solrService
+        IndexService $indexService
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
 
-        // Store SOLR service for search operations.
-        $this->solrService = $solrService;
+        // Store index service for search operations.
+        $this->indexService = $indexService;
 
     }//end __construct()
 
@@ -115,7 +115,7 @@ class SearchController extends Controller
 
         // Step 4: Perform search using SOLR service.
         // Returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float].
-        $results = $this->solrService->searchObjects($searchParams);
+        $results = $this->indexService->searchObjects($searchParams);
 
         // Step 5: Format search results for JSON response.
         // Extract relevant fields from each object and standardize format.

@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\ILogger;
@@ -113,11 +113,11 @@ class SolrWarmupJob extends QueuedJob
             /*
              * Get required services.
              *
-             * @var GuzzleSolrService $solrService
+             * @var IndexService $solrService
              * @var SchemaMapper $schemaMapper
              */
 
-            $solrService  = \OC::$server->get(GuzzleSolrService::class);
+            $solrService  = \OC::$server->get(IndexService::class);
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
             // Check if SOLR is available before proceeding.
@@ -211,12 +211,12 @@ class SolrWarmupJob extends QueuedJob
      * attempting warmup operations. Prevents errors from running warmup
      * when SOLR is not configured or unavailable.
      *
-     * @param GuzzleSolrService $solrService SOLR service instance to check
-     * @param LoggerInterface   $logger      Logger instance for debug messages
+     * @param IndexService    $solrService SOLR service instance to check
+     * @param LoggerInterface $logger      Logger instance for debug messages
      *
      * @return bool True if SOLR is available and ready, false otherwise
      */
-    private function isSolrAvailable(GuzzleSolrService $solrService, LoggerInterface $logger): bool
+    private function isSolrAvailable(IndexService $solrService, LoggerInterface $logger): bool
     {
         // Check if SOLR service is available and configured.
         // Returns false if SOLR is not configured or connection fails.

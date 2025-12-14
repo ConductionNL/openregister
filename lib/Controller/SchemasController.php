@@ -30,7 +30,7 @@ use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SchemaCacheService;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\AppFramework\Controller;
@@ -74,19 +74,19 @@ class SchemasController extends Controller
      * Initializes controller with required dependencies for schema operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string                  $appName                 Application name
-     * @param IRequest                $request                 HTTP request object
-     * @param IAppConfig              $config                  App configuration for settings
-     * @param SchemaMapper            $schemaMapper            Schema mapper for database operations
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper for object queries
-     * @param DownloadService         $downloadService         Download service for file downloads
-     * @param UploadService           $uploadService           Upload service for file uploads
-     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for log statistics
-     * @param OrganisationService     $organisationService     Organisation service for multi-tenancy
-     * @param SchemaCacheService      $schemaCacheService      Schema cache service for caching operations
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching
-     * @param SchemaService           $schemaService           Schema service for exploration operations
-     * @param LoggerInterface         $logger                  Logger for error tracking
+     * @param string              $appName                 Application name
+     * @param IRequest            $request                 HTTP request object
+     * @param IAppConfig          $config                  App configuration for settings
+     * @param SchemaMapper        $schemaMapper            Schema mapper for database operations
+     * @param ObjectEntityMapper  $objectEntityMapper      Object entity mapper for object queries
+     * @param DownloadService     $downloadService         Download service for file downloads
+     * @param UploadService       $uploadService           Upload service for file uploads
+     * @param AuditTrailMapper    $auditTrailMapper        Audit trail mapper for log statistics
+     * @param OrganisationService $organisationService     Organisation service for multi-tenancy
+     * @param SchemaCacheService  $schemaCacheService      Schema cache service for caching operations
+     * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching
+     * @param SchemaService       $schemaService           Schema service for exploration operations
+     * @param LoggerInterface     $logger                  Logger for error tracking
      *
      * @return void
      */
@@ -101,7 +101,7 @@ class SchemasController extends Controller
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
         private readonly SchemaCacheService $schemaCacheService,
-        private readonly SchemaFacetCacheService $schemaFacetCacheService,
+        private readonly FacetCacheHandler $schemaFacetCacheService,
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger
     ) {
