@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use SimpleXMLElement;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -542,7 +543,7 @@ class LogService
      */
     private function exportToXml(array $data): array
     {
-        $xml = new \SimpleXMLElement('<auditTrails/>');
+        $xml = new SimpleXMLElement('<auditTrails/>');
 
         foreach ($data as $logData) {
             $logElement = $xml->addChild('auditTrail');

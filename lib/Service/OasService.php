@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;
@@ -192,7 +193,6 @@ class OasService
         }
 
         // Initialize paths array.
-        //end foreach.
         $this->oas['paths'] = [];
 
         // Add paths for each register.
@@ -229,12 +229,12 @@ class OasService
     {
         $content = file_get_contents(self::OAS_RESOURCE_PATH);
         if ($content === false) {
-            throw new \Exception('Could not read base OAS file');
+            throw new Exception('Could not read base OAS file');
         }
 
         $oas = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception('Could not parse base OAS file: '.json_last_error_msg());
+            throw new Exception('Could not parse base OAS file: '.json_last_error_msg());
         }
 
         return $oas;
@@ -381,7 +381,6 @@ class OasService
 
         // anyOf must have at least 1 item, remove if empty.
         if (($cleanDef['anyOf'] ?? null) !== null && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false) === true) {
-            //end if.
             unset($cleanDef['anyOf']);
         }//end if
 
@@ -479,9 +478,7 @@ class OasService
         // Only add whitelisted extended endpoints.
         foreach (self::INCLUDED_EXTENDED_ENDPOINTS as $endpoint) {
             switch ($endpoint) {
-                //end switch.
                 case 'audit-trails':
-                    //end foreach.
                     $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
                         'get' => $this->createLogsOperation($schema),
                     ];
@@ -586,7 +583,6 @@ class OasService
                     // Skip the id property as it's already handled as a path parameter.
                     if ($propertyName === 'id') {
                         continue;
-                    //end foreach.
                     }
 
                     // Get property type from definition.
@@ -1361,9 +1357,7 @@ class OasService
     private function validateSchemaReferences(array &$schema, string $context): void
     {
         // Check allOf constructs.
-        //end if.
         if (($schema['allOf'] ?? null) !== null) {
-            //end if.
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
             } else {

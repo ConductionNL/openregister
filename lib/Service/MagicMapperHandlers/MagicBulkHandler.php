@@ -37,7 +37,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\MagicMapperHandlers;
 
 use DateTime;
-
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -96,7 +95,7 @@ class MagicBulkHandler
     {
         $prepared   = [];
         $properties = $schema->getProperties();
-        $now        = new \DateTime();
+        $now        = new DateTime();
 
         foreach ($objects as $object) {
             $preparedObject = [];

@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\Vectorization\VectorizationStrategyInterface;
 use Psr\Log\LoggerInterface;
@@ -385,7 +386,7 @@ class VectorizationService
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
         if (!isset($this->strategies[$entityType])) {
-            throw new \Exception("No vectorization strategy registered for entity type: {$entityType}");
+            throw new Exception("No vectorization strategy registered for entity type: {$entityType}");
         }
 
         return $this->strategies[$entityType];

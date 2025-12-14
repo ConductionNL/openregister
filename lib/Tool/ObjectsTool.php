@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Tool;
 
+use RuntimeException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -319,7 +320,7 @@ class ObjectsTool extends AbstractTool
     {
         $object = $this->objectService->find(id: $id);
         if ($object === null) {
-            throw new \RuntimeException("Object with id {$id} not found.");
+            throw new RuntimeException("Object with id {$id} not found.");
         }
 
         return $this->formatSuccess(
@@ -445,7 +446,7 @@ class ObjectsTool extends AbstractTool
     {
         $object = $this->objectService->find(id: $id);
         if ($object === null) {
-            throw new \RuntimeException("Object with id {$id} not found.");
+            throw new RuntimeException("Object with id {$id} not found.");
         }
         $uuid   = $object->getUuid() ?? (string) $object->getId();
         $this->objectService->deleteObject(uuid: $uuid);

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
+use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -345,7 +346,7 @@ class OptimizedFacetHandler
 
         $published = $baseQuery['_published'] ?? false;
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
                     $queryBuilder->expr()->andX(
                             $queryBuilder->expr()->isNotNull('published'),

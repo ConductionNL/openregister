@@ -25,6 +25,7 @@
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
+use stdClass;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
+use OCA\OpenRegister\Formats\SemVerFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -41,7 +43,6 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
-use stdClass;
 
 /**
  * Handler class for validating objects in the OpenRegister application.
@@ -176,7 +177,7 @@ class ValidateObject
                     // For object properties, we need to handle both nested objects and UUID references.
                     if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
                         // Create a union type that allows both the full object and a UUID string.
-                        $unionSchema        = new \stdClass();
+                        $unionSchema        = new stdClass();
                         $unionSchema->oneOf = [
                             $resolvedSchema,
                         // Full object.
@@ -500,9 +501,7 @@ class ValidateObject
                 // Create a temporary object for isSelfReference check.
                 $tempSchema = (object) ['$ref' => $schemaSlug];
                 if ($this->isSelfReference($tempSchema, $schemaSlug) === true) {
-                    //end if.
                     $objectSchema->type        = 'object';
-                    //end if.
                     $objectSchema->description = 'Nested object (self-reference prevented)';
                     unset($objectSchema->{'$ref'});
 
@@ -1085,7 +1084,7 @@ class ValidateObject
         $validator = new Validator();
         $validator->setMaxErrors(100);
         $validator->parser()->getFormatResolver()->register(type: 'string', format: 'bsn', resolver: new BsnFormat());
-        $validator->parser()->getFormatResolver()->register(type: 'string', format: 'semver', resolver: new \OCA\OpenRegister\Formats\SemVerFormat());
+        $validator->parser()->getFormatResolver()->register(type: 'string', format: 'semver', resolver: new SemVerFormat());
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);

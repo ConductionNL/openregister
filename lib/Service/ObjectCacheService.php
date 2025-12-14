@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -1484,7 +1485,7 @@ class ObjectCacheService
     {
         $solrService = $this->getSolrService();
         if ($solrService === null) {
-            throw new \RuntimeException('SOLR service is not available');
+            throw new RuntimeException('SOLR service is not available');
         }
 
         return $solrService->getDashboardStats();

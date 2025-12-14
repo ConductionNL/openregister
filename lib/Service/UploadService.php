@@ -27,6 +27,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use stdClass;
@@ -301,7 +302,7 @@ class UploadService
     {
         // @todo: Implement file reading logic here.
         // For now, return a simple array to ensure code consistency.
-        throw new \Exception('File upload handling is not yet implemented');
+        throw new Exception('File upload handling is not yet implemented');
 
     }//end getJSONfromFile()
 

@@ -17,6 +17,7 @@ declare(strict_types=1);
  */
 namespace OCA\OpenRegister\Setup;
 
+use Exception;
 use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client as GuzzleClient;
 use OCA\OpenRegister\Service\GuzzleSolrService;
@@ -342,18 +343,18 @@ class SolrSetup
 
             try {
                 if ($this->verifySolrConnectivity() === false) {
-                    $this->trackStep(
-                            stepNumber: 1,
-                            stepName: 'SOLR Connectivity',
-                            status: 'failed',
-                            description: 'Cannot connect to SOLR server',
-                            [
-                                'error'      => 'SOLR connectivity test failed',
-                                'host'       => $this->solrConfig['host'] ?? 'unknown',
-                                'port'       => $this->solrConfig['port'] ?? 'unknown',
+                $this->trackStep(
+                        stepNumber: 1,
+                        stepName: 'SOLR Connectivity',
+                        status: 'failed',
+                        description: 'Cannot connect to SOLR server',
+                        details: [
+                            'error'      => 'SOLR connectivity test failed',
+                            'host'       => $this->solrConfig['host'] ?? 'unknown',
+                            'port'       => $this->solrConfig['port'] ?? 'unknown',
                                 'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json'),
                             ]
-                            );
+                    );
 
                     $this->lastErrorDetails = [
                         'operation'       => 'verifySolrConnectivity',
@@ -380,11 +381,11 @@ class SolrSetup
                         stepName: 'SOLR Connectivity',
                         status: 'failed',
                         description: $e->getMessage(),
-                        [
+                        details: [
                             'exception_type'    => get_class($e),
                             'exception_message' => $e->getMessage(),
                         ]
-                        );
+                    );
 
                 $this->lastErrorDetails = [
                     'operation'      => 'verifySolrConnectivity',
@@ -412,7 +413,7 @@ class SolrSetup
                             stepName: 'EnsureTenantConfigSet',
                             status: 'failed',
                             description: 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
-                            [
+                            details: [
                                 'configSet'              => $tenantConfigSetName,
                                 'template'               => '_default',
                                 'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
@@ -423,7 +424,7 @@ class SolrSetup
                                 'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
                                 'solr_error_details'     => $errorDetails['solr_error_details'] ?? null,
                             ]
-                            );
+                    );
 
                     // Enhanced error details for configSet failure.
                     if ($this->lastErrorDetails === null) {
@@ -456,11 +457,11 @@ class SolrSetup
                     stepName: 'EnsureTenantConfigSet',
                     status: 'failed',
                     description: $e->getMessage(),
-                    [
+                    details: [
                         'exception_type' => get_class($e),
                         'configSet'      => $tenantConfigSetName,
                     ]
-                    );
+                );
 
                 $this->lastErrorDetails = [
                     'operation'      => 'ensureTenantConfigSet',
@@ -486,7 +487,7 @@ class SolrSetup
                         stepName: 'ConfigSet Propagation',
                         status: 'completed',
                         description: 'ConfigSet propagation completed successfully',
-                        [
+                        details: [
                             'configSet'           => $tenantConfigSetName,
                             'propagation_details' => [
                                 'successful_operations' => $propagationResult['successful_operations'] ?? 0,
@@ -509,7 +510,7 @@ class SolrSetup
                         stepName: 'ConfigSet Propagation',
                         status: 'failed',
                         description: 'ConfigSet propagation failed',
-                        [
+                        details: [
                             'configSet'           => $tenantConfigSetName,
                             'error'               => $propagationResult['error'] ?? 'Unknown error',
                             'propagation_details' => [
@@ -541,11 +542,11 @@ class SolrSetup
                     stepName: 'ConfigSet Propagation',
                     status: 'failed',
                     description: 'Exception during configSet propagation: '.$e->getMessage(),
-                    [
+                    details: [
                         'exception_type' => get_class($e),
                         'configSet'      => $tenantConfigSetName,
                     ]
-                    );
+                );
 
                     // Note: Propagation exception is not critical, so we continue but log the issue.
                 $this->logger->warning(
@@ -571,12 +572,12 @@ class SolrSetup
                             stepName: 'Collection Creation',
                             status: 'failed',
                             description: 'Failed to create tenant collection',
-                            [
+                            details: [
                                 'collection'    => $tenantCollectionName,
                                 'configSet'     => $tenantConfigSetName,
                                 'error_details' => $this->lastErrorDetails,
                             ]
-                            );
+                    );
 
                     // Enhanced error details for collection failure.
                     if ($this->lastErrorDetails === null) {
@@ -611,11 +612,11 @@ class SolrSetup
                         stepName: 'Collection Creation',
                         status: 'failed',
                         description: $e->getMessage(),
-                        [
+                        details: [
                             'exception_type' => get_class($e),
                             'collection'     => $tenantCollectionName,
                         ]
-                        );
+                );
 
                 $this->lastErrorDetails = [
                     'operation'      => 'ensureTenantCollectionExists',
@@ -1629,10 +1630,10 @@ class SolrSetup
                     $totalElapsed = time() - $startTime;
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
-                    throw new \Exception(
+                    throw new Exception(
                         "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. This is normal in distributed SOLR environments. Attempted {$attempt} times over {$totalElapsed} seconds. Please wait 2-5 minutes and try the setup again.",
                         500,
-                        new \Exception(json_encode($retryDetails))
+                        new Exception(json_encode($retryDetails))
                     );
                 }
 

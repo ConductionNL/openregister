@@ -1537,7 +1537,7 @@ class MagicMapper
                 } else if (is_string($value) === true) {
                     // Validate and convert datetime strings.
                     try {
-                        $dateTime = new \DateTime($value);
+                        $dateTime = new DateTime($value);
                         $value    = $dateTime->format('Y-m-d H:i:s');
                     } catch (Exception $e) {
                         $value = null;
@@ -1684,7 +1684,7 @@ class MagicMapper
 
                     // Handle datetime fields.
                     if (in_array($metadataField, ['created', 'updated', 'published', 'depublished', 'expires'], true) === true && ($value !== null) === true) {
-                        $value = new \DateTime($value);
+                        $value = new DateTime($value);
                     }
 
                     // Handle JSON fields.

@@ -222,7 +222,7 @@ class SchemaMapper extends QBMapper
         $result->closeCursor();
 
         if ($row === false) {
-            throw new \OCA\OpenRegister\Exception\ValidationException('Schema not found');
+            throw new ValidationException('Schema not found');
         }
 
         $schema = Schema::fromRow($row);
@@ -761,7 +761,7 @@ class SchemaMapper extends QBMapper
         $result->closeCursor();
 
         if ($count > 0) {
-            throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete schema: objects are still attached.');
+            throw new ValidationException('Cannot delete schema: objects are still attached.');
         }
 
         // Proceed with deletion if no objects are attached.

@@ -20,6 +20,8 @@
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
+use DateTime;
+use Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
@@ -244,9 +246,9 @@ class MariaDbSearchHandler
                         if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                             try {
                                 // Convert to database format: Y-m-d H:i:s (2025-06-25 21:46:59).
-                                $dateTime        = new \DateTime($operatorValue);
+                                $dateTime        = new DateTime($operatorValue);
                                 $normalizedValue = $dateTime->format('Y-m-d H:i:s');
-                            } catch (\Exception $e) {
+                            } catch (Exception $e) {
                                 // Fall back to original value if date parsing fails.
                                 $normalizedValue = $operatorValue;
                             }

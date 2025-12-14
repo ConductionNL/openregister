@@ -1518,10 +1518,8 @@ class GuzzleSolrService
         // PROBLEM: Some array fields (like 'standaarden') are stored ONLY in the relations.
         // table as dot-notation entries (e.g., "standaarden.0", "standaarden.1") instead of.
         // being included in the object JSON body. This causes them to be missing from SOLR.
-        //
         // This is a data storage issue that should be fixed at the source (ObjectService/Mapper),.
         // but as a workaround, we reconstruct these arrays from relations to ensure they get indexed.
-        //
         // TODO: Investigate why some array fields are stored only as relations and fix the root cause.
         // in the object save logic so arrays are consistently stored in the object body.
         // ========================================================================.
@@ -2427,26 +2425,9 @@ class GuzzleSolrService
 
         $filters = $solrQuery['fq'] ?? [];
 
-        // @todo HOTFIX: Date calculation temporarily disabled along with published filtering.
-        // $now = date('Y-m-d\TH:i:s\Z');
-        // $publishedCondition = 'self_published:[* TO ' . $now . '] AND (-self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
-
-        // Multi-tenancy filtering (removed automatic published object exception).
-        // @todo HOTFIX: Organisation filtering temporarily disabled due to environment-specific issues.
-        // This filtering was causing different results between local and online environments
+        // @todo HOTFIX: Multi-tenancy and date filtering temporarily disabled due to environment-specific issues.
+        // This filtering was causing different results between local and online environments.
         // Need to investigate user context and organisation service differences between NC 30/31.
-        /*
-            if ($multi === true) {
-            $multitenancyEnabled = $this->isMultitenancyEnabled();
-            if ($multitenancyEnabled === true) {
-                $activeOrganisationUuid = $this->getActiveOrganisationUuid();
-                if ($activeOrganisationUuid !== null) {
-                    // Only include objects from user's organisation.
-                    $filters[] = 'self_organisation:' . $this->escapeSolrValue($activeOrganisationUuid);
-                }
-            }
-            }
-        */
 
         // RBAC filtering (removed automatic published object exception).
         if ($rbac) {
@@ -2455,29 +2436,10 @@ class GuzzleSolrService
             $this->logger->debug('[SOLR] RBAC filtering applied');
         }
 
-        // Published filtering (only if explicitly requested).
         // @todo HOTFIX: Published filtering temporarily disabled due to timezone/environment issues.
         // The date() function uses server timezone which causes different behavior between environments.
         // Need to fix timezone handling: use gmdate() or proper UTC DateTime objects.
         // Also investigate why published filtering returns 0 results on NC 31 vs NC 30.
-        /*
-            if ($published === true) {
-            // Filter for objects that have a published date AND it's in the past.
-            // Use existence check instead of NOT null to avoid SOLR date parsing errors.
-            $filters[] = 'self_published:[* TO ' . $now . ']';
-            $filters[] = '(NOT self_depublished:[* TO *] OR self_depublished:[' . $now . ' TO *])';
-            }
-        */
-
-        // Deleted filtering.
-        // @todo: this is not working as expected so we turned it of, for now deleted items should not be indexed.
-        //if ($deleted) {
-        //    // Include only deleted objects
-        //    $filters[] = 'self_deleted:[* TO *]';
-        //} else {
-        //    // Exclude deleted objects (default behavior)
-        //    $filters[] = '-self_deleted:[* TO *]';
-        //}
 
         // Update the filters in the query..
         $solrQuery['fq'] = $filters;

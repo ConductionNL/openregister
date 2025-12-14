@@ -504,7 +504,7 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC');
 
         // Apply filters.
-        foreach ($filters as $filter => $value) {
+        foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
             } else if ($value === 'IS NULL') {
@@ -517,7 +517,7 @@ class ConfigurationMapper extends QBMapper
         // Apply search conditions.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams as $param => $value) {
+            foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }

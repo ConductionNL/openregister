@@ -708,7 +708,7 @@ class RenderObject
         bool $_rbac=true,
         bool $_multi=true
     ): ObjectEntity {
-        if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds, true) === true) {
+        if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds ?? [], true) === true) {
             // @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
             $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);
             return $entity;

@@ -396,7 +396,6 @@ class EndpointService
      * @param mixed  $toolRegistry Tool registry
      *
      * @return array Function result
-     //end try
      */
     private function executeToolFunction(string $functionName, array $arguments, $agent, $toolRegistry): array
     {
@@ -621,14 +620,12 @@ class EndpointService
             $log->setEndpointId($endpoint->getId());
 
             // Set user info.
-            //end if.
             $user = $this->userSession->getUser();
             if ($user !== null) {
                 $log->setUserId($user->getUID());
             }
 
             // Set request/response data.
-            //end foreach.
             $log->setRequest($request);
             $log->setResponse(response: [
                         'statusCode' => $result['statusCode'],

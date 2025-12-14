@@ -507,7 +507,7 @@ class ObjectService
         }
 
         // If the object is not published, check the permissions.
-        $now = new \DateTime('now');
+        $now = new DateTime('now');
         if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
             // Check user has permission to read this specific object (includes object owner check).
             $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $rbac);
@@ -521,7 +521,7 @@ class ObjectService
 
         // Always use the current schema (either provided or derived from object).
         if ($this->currentSchema === null) {
-            throw new \RuntimeException('Schema must be set before rendering entity.');
+            throw new RuntimeException('Schema must be set before rendering entity.');
         }
         $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
@@ -873,7 +873,6 @@ class ObjectService
         }
 
         // Debug logging can be added here if needed.
-        // echo "=== SAVEOBJECT START ===\n";
         // Handle ObjectEntity input - extract UUID and convert to array.
         if ($object instanceof ObjectEntity) {
             // If no UUID was passed, use the UUID from the existing object.
@@ -1847,7 +1846,6 @@ class ObjectService
             'ultraCacheEnabled' => empty($this->renderHandler->getUltraCacheSize()) === false
         ]);
 
-        //end foreach.
         return $objects;
 
     }//end searchObjects()
@@ -2034,7 +2032,6 @@ class ObjectService
      *                     - _offset: Results to skip (pagination)
      *                     - _page: Page number (alternative to offset)
      *                     - _order: Sorting criteria
-     //end if.
      *                     - _search: Full-text search term
      *                     - _includeDeleted: Include soft-deleted objects
      *                     - _published: Only published objects
@@ -2058,9 +2055,7 @@ class ObjectService
      * @psalm-param    array<string, mixed> $query
      * @psalm-return   array<string, mixed>
      *
-     //end try
      * @throws \OCP\DB\Exception If a database error occurs
-     //end foreach
      * @throws \Exception If Solr search fails and cannot be recovered
      *
      * @return array<string, mixed> Array containing:
@@ -2224,7 +2219,6 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: For complex requests, use async version for better performance.
         if ($isComplexRequest === true) {
-            //end foreach..
             $this->logger->debug(message: 'Complex request detected, using async processing', context: [
                 'hasFacets' => $hasFacets,
                 'hasFacetable' => $hasFacetable,
@@ -2236,7 +2230,6 @@ class ObjectService
         }
 
         // **PERFORMANCE OPTIMIZATION**: Simple requests - minimal operations for sub-500ms performance.
-        //end if..
         $this->logger->debug(message: 'Simple request detected, using optimized path', context: [
             'limit' => $query['_limit'] ?? 20,
             'hasExtend' => empty($query['_extend']) === false,
@@ -2278,7 +2271,6 @@ class ObjectService
         unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
 
         // **CRITICAL OPTIMIZATION**: Get search results and count in a single optimized call.
-        //end if..
         $searchStartTime = microtime(true);
         $results = $this->searchObjects(query: $paginatedQuery, rbac: $rbac, multi: $multi, ids: $ids, uses: $uses);
         $searchTime = round((microtime(true) - $searchStartTime) * 1000, 2);
@@ -2443,7 +2435,6 @@ class ObjectService
                     'Optimize WHERE clauses',
                     'Consider selective field loading'
                 ]
-            //end foreach..
             ];
         }
 
@@ -3044,7 +3035,7 @@ class ObjectService
     public function getSchema(): int
     {
         if ($this->currentSchema === null) {
-            throw new \RuntimeException('Schema not set in ObjectService.');
+            throw new RuntimeException('Schema not set in ObjectService.');
         }
         return $this->currentSchema->getId();
 
@@ -3061,7 +3052,7 @@ class ObjectService
     public function getRegister(): int
     {
         if ($this->currentRegister === null) {
-            throw new \RuntimeException('Register not set in ObjectService.');
+            throw new RuntimeException('Register not set in ObjectService.');
         }
         return $this->currentRegister->getId();
 
@@ -3117,7 +3108,6 @@ class ObjectService
      * @return \OCP\AppFramework\Http\JSONResponse The resulting response
      *
      * @deprecated
-     //end if.
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception)
     {
@@ -3162,7 +3152,6 @@ class ObjectService
      *
      * @return ObjectEntity The updated object entity.
      *
-     //end if.
      * @throws \Exception If the object is not found or if there's an error during update.
      */
     public function depublish(string $uuid=null, ?\DateTime $date=null, bool $rbac=true, bool $multi=true): ObjectEntity
@@ -3290,7 +3279,6 @@ class ObjectService
         // Bulk imports can create/update hundreds of objects, requiring cache invalidation.
         // to ensure collection queries immediately reflect the new/updated data.
         try {
-            //end if...
             $createdCount = $bulkResult['statistics']['objectsCreated'] ?? 0;
             $updatedCount = $bulkResult['statistics']['objectsUpdated'] ?? 0;
             $totalAffected = $createdCount + $updatedCount;
@@ -3450,7 +3438,6 @@ class ObjectService
      */
     private function filterObjectsForPermissions(array $objects, bool $rbac, bool $multi): array
     {
-        //end try.
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
         if ($currentUser) {
@@ -4244,11 +4231,8 @@ class ObjectService
         array $objectIds,
         array $mapping
     ): array {
-        //end if..
         // Initialize migration report.
-        //end if..
         $migrationReport = [
-            //end foreach..
             'success'    => false,
             'statistics' => [
                 'objectsMigrated'     => 0,
@@ -5205,7 +5189,6 @@ class ObjectService
             $objectData = $object->getObject();
 
             foreach ($extend as $extendProperty) {
-                //end foreach...
                 if (isset($objectData[$extendProperty]) === true) {
                     $value = $objectData[$extendProperty];
 
@@ -5661,7 +5644,6 @@ class ObjectService
      * Get cached entities (schemas or registers) with automatic database fallback
      *
      * **PERFORMANCE OPTIMIZATION**: Cache frequently accessed schemas and registers
-     //end if.
      * to avoid repeated database queries. Entities are cached with 15-minute TTL
      * since they change less frequently than search results.
      *
@@ -5797,9 +5779,7 @@ class ObjectService
 
 
     /**
-     //end try
      * Check if search trails are enabled in the settings
-     //end if.
      *
      * @return bool True if search trails are enabled, false otherwise
      */
@@ -5871,7 +5851,6 @@ class ObjectService
      * //end try
      *
      * @param mixed $extend Extend parameter.
-     //end if.
      *
      * @return int Extend count.
      *
@@ -5933,9 +5912,7 @@ class ObjectService
             }
             return $this->schemaMapper->find($entity);
         }
-        //end try.
         return $entity;
-    //end if.
     }
 
     /**

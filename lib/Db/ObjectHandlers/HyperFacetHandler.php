@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
+use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IMemcache;
@@ -178,7 +179,6 @@ class HyperFacetHandler
                 $this->fragmentCache      = $this->cacheFactory->createLocal('openregister_facet_fragments');
                 $this->cardinalityCache    = $this->cacheFactory->createLocal('openregister_cardinality');
             } catch (\Exception $fallbackError) {
-                //end try
                 // No caching available - will use in-memory caching.
                 $this->logger->warning('Facet caching unavailable, performance will be reduced');
             }//end try
@@ -615,7 +615,6 @@ class HyperFacetHandler
                 }
 
                 $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-                //end try.
                 $this->logger->debug('Metadata facets completed', [
                     'executionTime' => $executionTime . 'ms',
                     'facetCount' => count($results),
@@ -757,7 +756,7 @@ class HyperFacetHandler
 
         $published = $baseQuery['_published'] ?? false;
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
                     $queryBuilder->expr()->andX(
                             $queryBuilder->expr()->isNotNull('published'),

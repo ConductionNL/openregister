@@ -606,7 +606,7 @@ class MetricsService
         // Note: $growthData is [date => count], so $dayData is the count value.
         foreach ($growthData as $dayData) {
             // Cast to int for type safety (handles null values).
-            $totalVectors += $dayData['count'] ?? 0);
+            $totalVectors += $dayData['count'] ?? 0;
         }
 
         // Safety check: prevent division by zero.
