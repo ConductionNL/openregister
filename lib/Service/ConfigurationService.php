@@ -2102,9 +2102,9 @@ class ConfigurationService
                         "Updated configuration entity for app {$appId}",
                         [
                             'configurationId' => $configuration->getId(),
-                            'totalRegisters'  => count($existingRegisterIds),
-                            'totalSchemas'    => count($existingSchemaIds),
-                            'totalObjects'    => count($existingObjectIds),
+                            'totalRegisters'  => count($existingRegisterIds ?? []),
+                            'totalSchemas'    => count($existingSchemaIds ?? []),
+                            'totalObjects'    => count($existingObjectIds ?? []),
                         ]
                         );
             }//end if

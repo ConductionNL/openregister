@@ -238,7 +238,7 @@ class ImportService
      *
      * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged?: array, updated: array, deduplication_efficiency?: string, schema?: array{id: int, title: null|string, slug: null|string}|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}}>
      */
-    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
+    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, int $chunkSize=self::DEFAULT_CHUNK_SIZE, bool $validation=false, bool $events=false, bool $_rbac=true, bool $_multitenancy=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -249,12 +249,12 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, register: $register, chunkSize: $chunkSize, validation: $validation, events: $events, rbac: $rbac, multi: $multi, publish: $publish, currentUser: $currentUser);
+            return $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, register: $register, chunkSize: $chunkSize, validation: $validation, events: $events, _rbac: $_rbac, _multitenancy: $_multitenancy, publish: $publish, currentUser: $currentUser);
         }
 
         // Single schema processing - use batch processing for better performance.
         $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, chunkSize: $chunkSize, validation: $validation, events: $events, rbac: $rbac, multi: $multi, publish: $publish, currentUser: $currentUser);
+        $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, chunkSize: $chunkSize, validation: $validation, events: $events, _rbac: $_rbac, _multitenancy: $_multitenancy, publish: $publish, currentUser: $currentUser);
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -284,8 +284,8 @@ class ImportService
      * @param int           $chunkSize   Number of rows to process in each chunk (default: 100).
      * @param bool          $validation  Whether to validate objects against schema definitions (default: false).
      * @param bool          $events      Whether to dispatch object lifecycle events (default: false).
-     * @param bool          $rbac        Whether to enforce RBAC checks (default: true).
-     * @param bool          $multi       Whether to enable multi-tenancy (default: true).
+     * @param bool          $_rbac        Whether to enforce RBAC checks (default: true).
+     * @param bool          $_multitenancy       Whether to enable multi-tenancy (default: true).
      * @param bool          $publish     Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser Current user for RBAC checks (default: null).
      *
@@ -302,8 +302,8 @@ class ImportService
         int $chunkSize=self::DEFAULT_CHUNK_SIZE,
         bool $validation=false,
         bool $events=false,
-        bool $rbac=true,
-        bool $multi=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null
     ): array {
@@ -331,8 +331,8 @@ class ImportService
             chunkSize: $chunkSize,
             validation: $validation,
             events: $events,
-            rbac: $rbac,
-            multi: $multi,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             publish: $publish,
             currentUser: $currentUser
         );
@@ -367,7 +367,7 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array, deduplication_efficiency?: string}>
      * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged?: array<array-key, mixed>, updated: array<array-key, mixed>, debug: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, deduplication_efficiency?: non-empty-lowercase-string, schema: array{id: int, slug: null|string, title: null|string}|null}>
      */
-    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
+    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, int $chunkSize, bool $validation=false, bool $events=false, bool $_rbac=true, bool $_multitenancy=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         $summary = [];
 
@@ -419,7 +419,7 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, chunkSize: $chunkSize, validation: $validation, events: $events, rbac: $rbac, multi: $multi, publish: $publish, currentUser: $currentUser);
+            $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, chunkSize: $chunkSize, validation: $validation, events: $events, _rbac: $_rbac, _multitenancy: $_multitenancy, publish: $publish, currentUser: $currentUser);
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -470,8 +470,8 @@ class ImportService
         int $chunkSize=self::DEFAULT_CHUNK_SIZE,
         bool $validation=false,
         bool $events=false,
-        bool $rbac=true,
-        bool $multi=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null
     ): array {
@@ -549,7 +549,7 @@ class ImportService
                 $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
             }
 
-            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
+            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, _rbac: $_rbac, _multitenancy: $_multitenancy, validation: $validation, events: $events);
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -602,7 +602,7 @@ class ImportService
      *
      * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{object: array<never, never>|mixed, error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}}
      */
-    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $rbac=true, bool $multi=true, bool $publish=false, ?IUser $currentUser=null): array
+    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, int $chunkSize, bool $validation=false, bool $events=false, bool $_rbac=true, bool $_multitenancy=true, bool $publish=false, ?IUser $currentUser=null): array
     {
         $summary = [
             'found'     => 0,
@@ -700,7 +700,7 @@ class ImportService
                 $this->logger->debug(message: 'Publish disabled for CSV import, not adding publish dates');
             }//end if
 
-            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, rbac: $rbac, multi: $multi, validation: $validation, events: $events);
+            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, _rbac: $_rbac, _multitenancy: $_multitenancy, validation: $validation, events: $events);
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.

@@ -60,6 +60,8 @@ class Version1Date20250123120000 extends SimpleMigrationStep
      * @param IOutput                   $output        Output interface
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
+     * 
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @return void
      */
