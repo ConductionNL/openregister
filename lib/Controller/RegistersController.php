@@ -51,7 +51,6 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use Exception;
 
 /**
  * RegistersController handles REST API endpoints for register management

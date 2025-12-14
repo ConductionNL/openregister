@@ -34,7 +34,6 @@ use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
@@ -835,7 +834,9 @@ class SettingsController extends Controller
                 ];
 
                 // Log the error for debugging (logger is passed as parameter).
-                $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                if ($logger !== null) {
+                    $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                }
 
                 // If not collecting errors, stop processing this batch.
                 if ($collectErrors === false) {
@@ -905,7 +906,9 @@ class SettingsController extends Controller
                 ];
 
                 // Log the error for debugging (logger is passed as parameter).
-                $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                if ($logger !== null) {
+                    $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                }
 
                 // If not collecting errors, stop processing this batch.
                 if ($collectErrors === false) {
@@ -932,7 +935,7 @@ class SettingsController extends Controller
      * @param  bool  $collectErrors Whether to collect all errors or stop on first
      * @return void
      */
-    private function processJobsSerial(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, ?LoggerInterface $logger): void
+    private function processJobsSerial(array $batchJobs, \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, \OCA\OpenRegister\Service\ObjectService $objectService, array &$results, bool $collectErrors, ?LoggerInterface $logger): void
     {
         foreach ($batchJobs as $job) {
             $batchStartTime = microtime(true);
@@ -988,7 +991,9 @@ class SettingsController extends Controller
                         'batch_mode'  => 'serial_optimized',
                     ];
 
+                    if ($logger !== null) {
                     $logger->error('Mass validation failed for object '.$object->getUuid().': '.$e->getMessage());
+                }
 
                     if ($collectErrors === false) {
                         break;
@@ -1004,8 +1009,9 @@ class SettingsController extends Controller
             }
 
             // Log progress every batch like SOLR warmup.
-            $logger->info(
-                    '📈 MASS VALIDATION PROGRESS',
+            if ($logger !== null) {
+                $logger->info(
+                        '📈 MASS VALIDATION PROGRESS',
                     [
                         'batchNumber'      => $job['batchNumber'],
                         'totalBatches'     => count($batchJobs),
@@ -1016,20 +1022,21 @@ class SettingsController extends Controller
                         'objectsPerSecond' => $objectsPerSecond,
                         'totalProcessed'   => $results['stats']['processed_objects'],
                     ]
-                    );
+                );
+            }
 
             // Add batch errors to results.
             $results['errors'] = array_merge($results['errors'], $batchErrors);
 
             // Memory management every 10 batches.
-            if ($job['batchNumber'] % 10 === 0) {
+            if ($job['batchNumber'] % 10 === 0 && $logger !== null) {
                 $logger->debug(
                         message: '🧹 MEMORY CLEANUP',
                         context: [
                             'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2).'MB',
                             'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
                         ]
-                        );
+                );
                 gc_collect_cycles();
             }
 
@@ -1051,20 +1058,22 @@ class SettingsController extends Controller
      * @param  int   $parallelBatches Number of parallel batches to process
      * @return void
      */
-    private function processJobsParallel(array $batchJobs, $objectMapper, $objectService, array &$results, bool $collectErrors, int $parallelBatches, ?LoggerInterface $logger): void
+    private function processJobsParallel(array $batchJobs, \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper, \OCA\OpenRegister\Service\ObjectService $objectService, array &$results, bool $collectErrors, int $parallelBatches, ?LoggerInterface $logger): void
     {
         // Process batches in parallel chunks like SOLR warmup.
         $batchChunks = array_chunk($batchJobs, $parallelBatches);
 
         foreach ($batchChunks as $chunkIndex => $chunk) {
-            $logger->info(
-                    message: '🔄 PROCESSING PARALLEL CHUNK',
+            if ($logger !== null) {
+                $logger->info(
+                        message: '🔄 PROCESSING PARALLEL CHUNK',
                     context: [
                         'chunkIndex'     => $chunkIndex + 1,
                         'totalChunks'    => count($batchChunks),
                         'batchesInChunk' => count($chunk),
                     ]
-                    );
+                );
+            }
 
             $chunkStartTime = microtime(true);
 
@@ -1087,15 +1096,17 @@ class SettingsController extends Controller
             $chunkTime      = round((microtime(true) - $chunkStartTime) * 1000, 2);
             $chunkProcessed = array_sum(array_column($chunkResults, 'processed'));
 
-            $logger->info(
-                    '✅ COMPLETED PARALLEL CHUNK',
-                    [
-                        'chunkIndex'       => $chunkIndex + 1,
-                        'chunkTime'        => $chunkTime.'ms',
-                        'objectsProcessed' => $chunkProcessed,
-                        'totalProcessed'   => $results['stats']['processed_objects'],
-                    ]
-                    );
+            if ($logger !== null) {
+                $logger->info(
+                        '✅ COMPLETED PARALLEL CHUNK',
+                        [
+                            'chunkIndex'       => $chunkIndex + 1,
+                            'chunkTime'        => $chunkTime.'ms',
+                            'objectsProcessed' => $chunkProcessed,
+                            'totalProcessed'   => $results['stats']['processed_objects'],
+                        ]
+                );
+            }
 
             // Memory cleanup after each chunk.
             gc_collect_cycles();

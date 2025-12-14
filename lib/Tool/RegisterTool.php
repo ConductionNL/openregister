@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Tool;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -370,7 +371,7 @@ class RegisterTool extends AbstractTool
         }
 
         if ($data === []) {
-            throw new \InvalidArgumentException('No update data provided');
+            throw new InvalidArgumentException('No update data provided');
         }
 
         $register = $this->registerService->updateFromArray(id: (int) $id, data: $data);

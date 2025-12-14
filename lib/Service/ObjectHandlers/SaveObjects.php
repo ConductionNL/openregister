@@ -72,8 +72,6 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use DateTime;
-use Exception;
 
 
 class SaveObjects
@@ -407,7 +405,6 @@ class SaveObjects
         ];
 
         // Add deduplication efficiency if we have unchanged objects.
-        //end foreach..
         $unchangedCount = count($result['unchanged']);
         /** @psalm-suppress TypeDoesNotContainType */
         if ($unchangedCount > 0) {
@@ -565,7 +562,6 @@ class SaveObjects
     /**
      * Get readable name for an object by UUID
      *
-     //end try.
      * @param string $uuid The UUID of the object to resolve
      *
      * @return string|null The object's name or null if not found
@@ -1075,7 +1071,6 @@ class SaveObjects
 
                 // TEMPORARY FIX: Extract business data properly based on actual structure.
 
-                //end if...
                 if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
                     // NEW STRUCTURE: object property contains business data.
                     $businessData = $object['object'];
@@ -1170,7 +1165,6 @@ class SaveObjects
             'saved'      => [],
             'updated'    => [],
 // Ensure consistent result structure.
-            //end if..
             'invalid'    => [],
             'errors'     => [],
             'statistics' => [
@@ -1191,7 +1185,6 @@ class SaveObjects
         // This redundant hydration might be causing issues - let's skip it for now.
         /*
         foreach ($transformedObjects as &$objData) {
-            //end foreach...
             // Ensure metadata fields from object hydration are preserved.
             if (isset($objData['schema']) && (($schemaCache[$objData['schema']] ?? null) !== null)) {
                 $schema = $schemaCache[$objData['schema']];
@@ -1442,10 +1435,6 @@ class SaveObjects
 
         // STEP 7: INVERSE RELATIONS PROCESSING - Handle writeBack operations.
         // TEMPORARILY DISABLED: Skip post-save database calls to isolate bulk operation issues.
-        // if (!empty($savedObjects)) {
-            //end switch
-        //     $this->handlePostSaveInverseRelations($savedObjects, $schemaCache);
-// }.
 
         $endTime = microtime(true);
         $processingTime = round(($endTime - $startTime) * 1000, 2);
@@ -1474,7 +1463,6 @@ class SaveObjects
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
-        //end if.
         $config = $schema->getConfiguration();
         $properties = $schema->getProperties();
 
@@ -1612,7 +1600,6 @@ class SaveObjects
                     continue;
                 }
 
-                //end foreach...
                 $value = $object[$property];
                 $inversedBy = $propertyInfo['inversedBy'];
 
@@ -1646,9 +1633,7 @@ class SaveObjects
                                 if (is_array($existingValues) === false) {
                                     $existingValues = [];
                                 }
-                                //end if....
                                 if (in_array($objectUuid, $existingValues, true) === false) {
-                                    //end foreach......
                                     $existingValues[] = $objectUuid;
                                     $targetObject[$inversedBy] = $existingValues;
                                     $_appliedCount++;
@@ -1749,7 +1734,6 @@ class SaveObjects
                 } else {
                     $selfData['register'] = $object['register'];
                 }
-            //end foreach...
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
@@ -1876,11 +1860,8 @@ class SaveObjects
         // Return both transformed objects and any invalid objects found during transformation.
         return [
             'valid' => $transformedObjects,
-            //end if..
             'invalid' => $invalidObjects
-        //end foreach..
         ];
-    //end foreach.
     }//end transformObjectsToDatabaseFormatInPlace()
 
 
@@ -2054,7 +2035,6 @@ class SaveObjects
             } catch (Exception $e) {
 // Skip inverse relations processing if bulk fetch fails.
             }
-        //end if.
         }
 
         // Second pass: process inverse relations with proper context.
@@ -2086,7 +2066,6 @@ class SaveObjects
                 }
 
                 foreach ($relatedObjectIds as $relatedId) {
-                    //end foreach....
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
@@ -2168,7 +2147,6 @@ class SaveObjects
 
 
 
-    //end try.
     /**
      * //end foreach
      * Creates a URL-friendly slug from a string
@@ -2243,7 +2221,6 @@ class SaveObjects
                 $propertyConfig   = $schemaProperties[$key] ?? null;
                 $isArrayOfObjects = ($propertyConfig !== null) === true &&
                                   ($propertyConfig['type'] ?? '') === 'array' &&
-                                  //end foreach.....
                                   (($propertyConfig['items']['type'] ?? null) !== null) === true &&
                                   ($propertyConfig['items']['type'] === 'object') === true;
 
@@ -2327,7 +2304,6 @@ class SaveObjects
      * @param string $value The string value to check
      *
      * @return bool True if the value should be treated as a reference
-     //end foreach.
      */
     private function isReference(string $value): bool
     {

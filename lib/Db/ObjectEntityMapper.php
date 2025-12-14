@@ -124,6 +124,20 @@ class ObjectEntityMapper extends QBMapper
     private ?AuthorizationExceptionService $authorizationExceptionService = null;
 
     /**
+     * Logger interface instance
+     *
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+
+    /**
+     * App configuration instance
+     *
+     * @var IAppConfig
+     */
+    private IAppConfig $appConfig;
+
+    /**
      * MariaDB search handler instance
      *
      * @var MariaDbSearchHandler|null
@@ -525,7 +539,6 @@ class ObjectEntityMapper extends QBMapper
             $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->orX(
-                    //end if...
                     $qb->expr()->orX(
                         $qb->expr()->isNull("{$schemaTableAlias}.authorization"),
                         $qb->expr()->eq("{$schemaTableAlias}.authorization", $qb->createNamedParameter('{}'))
@@ -695,7 +708,6 @@ class ObjectEntityMapper extends QBMapper
         $idParam = -1;
         if (is_numeric($identifier) === true) {
             $idParam = $identifier;
-        //end if.
         }
 
         // Build the base query.
@@ -909,7 +921,6 @@ class ObjectEntityMapper extends QBMapper
             }
         }
 
-        //end if.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
             foreach ($searchParams as $param => $value) {
@@ -1917,7 +1928,6 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-param   bool $includeDeleted
      * @psalm-param   bool|null $published
      * @psalm-param   mixed $register
-     //end if
      * @psalm-param   mixed $schema
      * @psalm-param   string $tableAlias
      *
@@ -1946,7 +1956,7 @@ class ObjectEntityMapper extends QBMapper
         // This is independent of publishedObjectsBypassMultiTenancy (which affects organization filtering).
         // Users can set _published=false to see all accessible objects (including unpublished from own org).
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
             $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
             $queryBuilder->andWhere(
@@ -2098,7 +2108,6 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Counts all objects with optional register and schema filters
      *
-     //end if
      * @param array|null    $filters        The filters to apply
      * @param string|null   $search         The search string to apply
      * @param array|null    $ids            Optional array of IDs/UUIDs to filter by
@@ -2310,7 +2319,6 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param ObjectEntity $object The object to delete
      *
-     //end if
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return ObjectEntity The deleted object
@@ -2536,7 +2544,6 @@ class ObjectEntityMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
-        //end if.
         $qb->select('o.*')
             ->from('openregister_objects', 'o')
             ->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id')
@@ -3660,7 +3667,6 @@ class ObjectEntityMapper extends QBMapper
                         throw new Exception('Statement execution returned false');
                     }
                 } catch (Exception $e) {
-                    //end foreach..
                     $batchRetryCount++;
                     $errorMessage = $e->getMessage();
                     $this->logger->error('Error executing batch', ['batch' => $batchNumber, 'attempt' => $batchRetryCount, 'error' => $errorMessage]);
@@ -4064,9 +4070,7 @@ class ObjectEntityMapper extends QBMapper
      * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset)
      *
      * @return array Array of UUIDs of published objects
-     //end try
      *
-     //end while.
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
      * @phpstan-return array<int, string>
@@ -4307,7 +4311,6 @@ class ObjectEntityMapper extends QBMapper
      * @return array Array containing statistics about the publishing operation
      *
      * @throws \Exception If the publishing operation fails
-     //end try
      *
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{published_count: int, published_uuids: array<int, string>, schema_id: int}
@@ -4510,7 +4513,6 @@ class ObjectEntityMapper extends QBMapper
 
             // Commit transaction only if we started it.
             if ($transactionStarted === true) {
-                //end if..
                 $this->db->commit();
             }
         } catch (Exception $e) {
@@ -4527,7 +4529,6 @@ class ObjectEntityMapper extends QBMapper
     }//end publishObjects()
 
 
-    //end while.
     /**
      * Perform bulk depublish operations on objects by UUID
      *
@@ -4541,7 +4542,6 @@ class ObjectEntityMapper extends QBMapper
      * @return string[]
      *
      * @phpstan-param array<int, string> $uuids
-     //end for
      *
      * @psalm-param array<int, string> $uuids
      *
@@ -4614,7 +4614,6 @@ class ObjectEntityMapper extends QBMapper
 
             if ($objectSize > $maxSafeSize) {
                 $largeObjects[] = $object;
-            //end foreach.
             } else {
                 $normalObjects[] = $object;
             }

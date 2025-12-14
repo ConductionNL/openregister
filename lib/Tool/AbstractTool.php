@@ -19,6 +19,8 @@
 
 namespace OCA\OpenRegister\Tool;
 
+use ReflectionMethod;
+use BadMethodCallException;
 use OCA\OpenRegister\Db\Agent;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -347,7 +349,7 @@ abstract class AbstractTool implements ToolInterface
         if (method_exists($this, $camelCaseMethod) === true) {
             // Step 3: Use reflection to get method parameter information.
             // This allows us to understand expected types and default values.
-            $reflection = new \ReflectionMethod($this, $camelCaseMethod);
+            $reflection = new ReflectionMethod($this, $camelCaseMethod);
             $parameters = $reflection->getParameters();
 
             // Step 4: Determine if arguments are associative (named) or positional.
@@ -433,7 +435,7 @@ abstract class AbstractTool implements ToolInterface
         }//end if
 
         // Method doesn't exist in either snake_case or camelCase format.
-        throw new \BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+        throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
 
     }//end __call()
 

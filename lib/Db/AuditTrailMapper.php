@@ -29,7 +29,6 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Exception;
 use RuntimeException;
-use DateTime;
 use stdClass;
 use ReflectionClass;
 use OCP\IDBConnection;

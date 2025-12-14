@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -352,7 +353,7 @@ class ObjectsController extends Controller
             $objectService->setSchema(schema: $schema);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // If schema not found, throw custom exception.
-            throw new \OCA\OpenRegister\Exception\SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
+            throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
         }
 
         // STEP 2: Get resolved numeric IDs.
@@ -2061,11 +2062,6 @@ class ObjectsController extends Controller
     {
         try {
             // TODO: Implement proper counting logic with schemas parameter.
-            // $schemas = $this->request->getParam('schemas');
-            // if (is_string($schemas)) {
-            // $schemas = explode(',', $schemas);
-            // }
-            // For now, return a placeholder.
             $count = 0;
 
             return new JSONResponse(

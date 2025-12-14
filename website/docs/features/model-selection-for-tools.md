@@ -378,3 +378,4 @@ For **tool-oriented agents**, use **`mistral-nemo`**. It provides the best balan
 Avoid using `mistral:7b`, `qwen2:0.5b`, or `phi3:mini` for agents that need to execute functions.
 
 
+

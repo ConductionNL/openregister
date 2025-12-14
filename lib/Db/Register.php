@@ -409,17 +409,17 @@ class Register extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         $updated = null;
-        if (($this->updated ?? null) !== null) {
+        if ($this->updated !== null) {
             $updated = $this->updated->format('c');
         }
 
         $created = null;
-        if (($this->created ?? null) !== null) {
+        if ($this->created !== null) {
             $created = $this->created->format('c');
         }
 
         $deleted = null;
-        if (($this->deleted ?? null) !== null) {
+        if ($this->deleted !== null) {
             $deleted = $this->deleted->format('c');
         }
 

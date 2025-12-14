@@ -37,6 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\MagicMapperHandlers;
 
+use DateTime;
+
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -397,7 +399,7 @@ class MagicFacetHandler
         }
 
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->andWhere(
                 $qb->expr()->andX(
                     $qb->expr()->isNotNull('t._published'),

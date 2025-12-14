@@ -109,7 +109,7 @@ class SchemaService
                 'discovered_properties' => [],
                 'existing_properties'   => $schema->getProperties(),
                 'suggestions'           => [],
-                'analysis_date'         => (new \DateTime('now'))->format(format: 'c'),
+                'analysis_date'         => (new DateTime('now'))->format(format: 'c'),
                 'message'               => 'No objects found for analysis',
             ];
         }
@@ -136,7 +136,7 @@ class SchemaService
             'existing_properties'   => $schema->getProperties(),
             'property_usage_stats'  => $propertyAnalysis['usage_stats'],
             'suggestions'           => array_merge($newPropertySuggestions, $existingPropertySuggestions),
-            'analysis_date'         => (new \DateTime())->format('c'),
+            'analysis_date'         => (new DateTime())->format('c'),
             'data_types'            => $propertyAnalysis['data_types'],
             'analysis_summary'      => [
                 'new_properties_count'             => count($newPropertySuggestions),

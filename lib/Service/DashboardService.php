@@ -575,7 +575,7 @@ class DashboardService
             // Build the response.
             $response = [
                 'status'    => 'success',
-                'timestamp' => (new \DateTime('now'))->format(format: 'c'),
+                'timestamp' => (new DateTime('now'))->format(format: 'c'),
                 'scope'     => $this->buildResponseScope($register, $schema),
                 'results'   => $results,
                 'summary'   => [

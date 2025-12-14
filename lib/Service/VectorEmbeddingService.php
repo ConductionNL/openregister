@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use InvalidArgumentException;
 use Exception;
 use RuntimeException;
 use stdClass;
@@ -2126,7 +2127,7 @@ class VectorEmbeddingService
     private function cosineSimilarity(array $vector1, array $vector2): float
     {
         if (count($vector1) !== count($vector2)) {
-            throw new \InvalidArgumentException('Vectors must have same dimensions');
+            throw new InvalidArgumentException('Vectors must have same dimensions');
         }
 
         $dotProduct = 0.0;

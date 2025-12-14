@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use Smalot\PdfParser\Parser;
+use ZipArchive;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use Exception;
@@ -290,7 +292,7 @@ class SolrFileService
         // Try using Smalot PdfParser if available.
         if (class_exists('\Smalot\PdfParser\Parser') === true) {
             try {
-                $parser = new \Smalot\PdfParser\Parser();
+                $parser = new Parser();
                 $pdf    = $parser->parseFile($filePath);
                 return $pdf->getText();
             } catch (Exception $e) {
@@ -421,7 +423,7 @@ class SolrFileService
             throw new Exception('ZipArchive extension is required for PPTX extraction');
         }
 
-        $zip = new \ZipArchive();
+        $zip = new ZipArchive();
         if ($zip->open($filePath) !== true) {
             throw new Exception('Failed to open PPTX file as ZIP');
         }

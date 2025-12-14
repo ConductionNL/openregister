@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
+use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -493,7 +494,7 @@ class MariaDbFacetHandler
 
         // If published filter is set, only include objects that are currently published.
         if ($published === true) {
-            $now = (new \DateTime())->format('Y-m-d H:i:s');
+            $now = (new DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull('published'),

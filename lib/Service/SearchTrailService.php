@@ -649,7 +649,7 @@ class SearchTrailService
         // Process date filters.
         if (($config['from'] ?? null) !== null) {
             try {
-                $processed['from'] = new \DateTime($config['from']);
+                $processed['from'] = new DateTime($config['from']);
             } catch (Exception $e) {
                 // Invalid date format, ignore.
             }
@@ -657,7 +657,7 @@ class SearchTrailService
 
         if (($config['to'] ?? null) !== null) {
             try {
-                $processed['to'] = new \DateTime($config['to']);
+                $processed['to'] = new DateTime($config['to']);
             } catch (Exception $e) {
                 // Invalid date format, ignore.
             }

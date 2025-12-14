@@ -1221,7 +1221,7 @@ class SettingsService
                     break;
 
                 default:
-                    throw new \InvalidArgumentException("Invalid cache type: {$type}");
+                    throw new InvalidArgumentException("Invalid cache type: {$type}");
             }//end switch
 
             // Calculate total cleared entries.
@@ -1366,7 +1366,6 @@ class SettingsService
             if ($objectCacheService === null) {
                 throw new Exception('ObjectCacheService not available');
             }
-            //end try.
 
             $beforeStats = $objectCacheService->getStats();
 

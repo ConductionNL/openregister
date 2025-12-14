@@ -25,6 +25,7 @@
 
 namespace OCA\OpenRegister\Service\ObjectHandlers;
 
+use finfo;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -2977,7 +2978,7 @@ class SaveObject
     private function parseFileDataFromUrl(string $url, string $content): array
     {
         // Try to detect MIME type from content.
-        $finfo    = new \finfo(FILEINFO_MIME_TYPE);
+        $finfo    = new finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->buffer($content);
 
         if ($mimeType === false) {
@@ -3147,7 +3148,7 @@ class SaveObject
             }
 
             // Try to detect MIME type from content.
-            $finfo            = new \finfo(FILEINFO_MIME_TYPE);
+            $finfo            = new finfo(FILEINFO_MIME_TYPE);
             $detectedMimeType = $finfo->buffer($content);
             if ($detectedMimeType !== false) {
                 $mimeType = $detectedMimeType;

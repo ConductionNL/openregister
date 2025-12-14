@@ -797,7 +797,7 @@ class ConfigurationService
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
-    private function getJSONfromURL(string $url): array|JSONResponse | JSONResponse
+    private function getJSONfromURL(string $url): array|JSONResponse
     {
         try {
             $response = $this->client->request('GET', $url);
@@ -838,7 +838,7 @@ class ConfigurationService
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      */
-    private function getJSONfromBody(array | string $phpArray): array|JSONResponse | JSONResponse
+    private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
         if (is_string($phpArray) === true) {
             $phpArray = json_decode($phpArray, associative: true);
@@ -2183,8 +2183,8 @@ class ConfigurationService
                 $info[] = sprintf(
                     "ID: %s, UUID: %s, Title: '%s', Created: %s",
                     $schema->getId(),
-                    $schema->getUuid(),
-                    $schema->getTitle(),
+                    $schema->getUuid() ?? '',
+                    $schema->getTitle() ?? '',
                     $createdDate
                 );
             }
@@ -2265,8 +2265,8 @@ class ConfigurationService
                 $info[] = sprintf(
                     "ID: %s, UUID: %s, Title: '%s', Created: %s",
                     $register->getId(),
-                    $register->getUuid(),
-                    $register->getTitle(),
+                    $register->getUuid() ?? '',
+                    $register->getTitle() ?? '',
                     $registerCreated
                 );
             }
@@ -2494,7 +2494,7 @@ class ConfigurationService
      *
      * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects: list<array{action: string, changes: array, current: array|null, proposed: array, register: string, schema: string, slug: string, title: string, type: string}>, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
      */
-    public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse|JSONResponse | JSONResponse
+    public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
         // Fetch the remote configuration.
         $remoteData = $this->fetchRemoteConfiguration($configuration);

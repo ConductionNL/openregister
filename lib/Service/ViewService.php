@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use stdClass;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use Psr\Log\LoggerInterface;
@@ -113,7 +114,7 @@ class ViewService
         // Users can access their own views or public views.
         if ($view->getOwner() !== $owner && $view->getIsPublic() === false) {
             // Throw exception to prevent unauthorized access.
-            throw new \OCP\AppFramework\Db\DoesNotExistException('View not found or access denied');
+            throw new DoesNotExistException('View not found or access denied');
         }
 
         // Step 3: Return view if access is granted.
