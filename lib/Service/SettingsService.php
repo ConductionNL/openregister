@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
@@ -62,7 +63,7 @@ use Psr\Log\LoggerInterface;
  *
  * WHAT THIS SERVICE DOES NOT DO:
  * - Test LLM connections (use VectorEmbeddingService or ChatService)
- * - Test SOLR connections (use GuzzleSolrService)
+ * - Test search index connections (use IndexService)
  * - Generate embeddings (use VectorEmbeddingService)
  * - Execute chat operations (use ChatService)
  * - Perform searches (use appropriate search services)
@@ -89,7 +90,7 @@ use Psr\Log\LoggerInterface;
  * - IConfig: Nextcloud's system configuration
  * - ChatService: Reads LLM settings for chat operations
  * - VectorEmbeddingService: Reads LLM settings for embeddings
- * - GuzzleSolrService: Reads SOLR settings for search operations
+ * - IndexService: Reads search index settings for search operations
  * - Controllers: Delegate settings CRUD operations to this service
  *
  * @category Service
@@ -147,6 +148,13 @@ class SettingsService
      * @var IGroupManager
      */
     private IGroupManager $groupManager;
+
+    /**
+     * Validation operations handler
+     *
+     * @var ValidationOperationsHandler
+     */
+    private ValidationOperationsHandler $validationOperationsHandler;
 
     /**
      * Logger
@@ -260,6 +268,7 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
+        ValidationOperationsHandler $validationOperationsHandler,
         ?ObjectCacheService $objectCacheService=null,
         ?IAppContainer $container=null,
         string $appName='openregister'
@@ -276,6 +285,7 @@ class SettingsService
         $this->searchTrailMapper       = $searchTrailMapper;
         $this->userManager = $userManager;
         $this->db          = $db;
+        $this->validationOperationsHandler = $validationOperationsHandler;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
         $this->appName            = $appName;
@@ -1788,7 +1798,7 @@ class SettingsService
                 'active_core'  => $rawStats['collection'] ?? 'unknown',
                 'core_status'  => $coreStatus,
                 'endpoint_url' => 'N/A',
-            // Endpoint URL no longer available in SettingsService (use GuzzleSolrService directly).
+            // Endpoint URL no longer available in SettingsService (use IndexService directly).
             ],
             'performance'  => [
                 'total_searches'     => $serviceStats['searches'] ?? 0,
@@ -2860,6 +2870,28 @@ class SettingsService
         return (bool) $value;
 
     }//end convertToBoolean()
+
+
+    /**
+     * Validate all objects in the system.
+     *
+     * Administrative operation that validates all objects against their schemas
+     * and returns a comprehensive validation report with statistics.
+     *
+     * @return array Validation results including:
+     *               - total_objects: Total number of objects validated.
+     *               - valid_objects: Number of valid objects.
+     *               - invalid_objects: Number of invalid objects.
+     *               - validation_errors: Array of validation errors with details.
+     *               - summary: Summary statistics including success rate.
+     *
+     * @throws Exception If validation operation fails.
+     */
+    public function validateAllObjects(): array
+    {
+        return $this->validationOperationsHandler->validateAllObjects();
+
+    }//end validateAllObjects()
 
 
 }//end class

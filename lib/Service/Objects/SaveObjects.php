@@ -47,7 +47,7 @@ declare(strict_types=1);
  * - Processing speed: 2-3x faster for large datasets
  *
  * @category  Handler
- * @package   OCA\OpenRegister\Service\ObjectHandlers
+ * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -56,7 +56,7 @@ declare(strict_types=1);
  * @since     2.0.0 Initial SaveObjects implementation with performance optimizations
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Objects;
 
 use DateTime;
 use Exception;
@@ -66,8 +66,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -212,8 +212,8 @@ class SaveObjects
      * @param array                    $objects    Array of objects in serialized format
      * @param Register|string|int|null $register   Optional register context
      * @param Schema|string|int|null   $schema     Optional schema context
-     * @param bool                     $rbac       Whether to apply RBAC filtering
-     * @param bool                     $multi      Whether to apply multi-organization filtering
+     * @param bool                     $_rbac       Whether to apply RBAC filtering
+     * @param bool                     $_multitenancy      Whether to apply multi-organization filtering
      * @param bool                     $validation Whether to validate objects against schema definitions
      * @param bool                     $events     Whether to dispatch object lifecycle events
      *
@@ -234,8 +234,8 @@ class SaveObjects
         array $objects,
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null,
-        bool $rbac=true,
-        bool $multi=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $validation=false,
         bool $events=false
     ): array {
@@ -349,7 +349,7 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
-            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $rbac, _multi: $multi, _validation: $validation, _events: $events);
+            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $_rbac, _multitenancy: $_multitenancy, _validation: $validation, _events: $events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -1148,8 +1148,8 @@ class SaveObjects
      *
      * @param array $objects     Array of pre-processed objects ready for database operations
      * @param array $schemaCache Pre-built schema cache for performance optimization
-     * @param bool  $rbac        Apply RBAC filtering
-     * @param bool  $multi       Apply multi-tenancy filtering
+     * @param bool  $_rbac        Apply RBAC filtering
+     * @param bool  $_multitenancy       Apply multi-tenancy filtering
      * @param bool  $validation  Apply schema validation
      * @param bool  $events      Dispatch events
      *
@@ -1157,7 +1157,7 @@ class SaveObjects
      *
      * @psalm-return array{saved: list{0?: array|mixed,...}, updated: list<array|mixed>, invalid: array, errors: array<never, never>, statistics: array{saved: int, updated: int, invalid: int<0, max>, errors?: mixed, unchanged?: int, processingTimeMs?: float}, unchanged?: array<int<0, max>, mixed>}
      */
-    private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multi, bool $_validation, bool $_events): array
+    private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multitenancy, bool $_validation, bool $_events): array
     {
         $startTime = microtime(true);
 

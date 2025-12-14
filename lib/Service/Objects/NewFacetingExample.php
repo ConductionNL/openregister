@@ -7,7 +7,7 @@
  * that has replaced the legacy getFacets approach.
  *
  * @category Example
- * @package  OCA\OpenRegister\Service\ObjectHandlers
+ * @package   OCA\OpenRegister\Service\Objects
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Objects;
 
 use OCA\OpenRegister\Service\ObjectService;
 

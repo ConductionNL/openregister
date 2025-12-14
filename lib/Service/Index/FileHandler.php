@@ -1,0 +1,345 @@
+<?php
+/**
+ * FileHandler
+ *
+ * Handles file chunk indexing to Solr/Elasticsearch.
+ * Reads chunks from database (created by TextExtractionService) and indexes them.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Index
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Index;
+
+use Exception;
+use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Service\SettingsService;
+use Psr\Log\LoggerInterface;
+
+/**
+ * FileHandler
+ *
+ * Indexes file chunks to search backend (Solr/Elastic).
+ *
+ * ARCHITECTURE:
+ * - TextExtractionService extracts text and creates chunks in database (separate flow).
+ * - FileHandler reads chunks from database and indexes them to Solr/Elastic.
+ * - Does NOT extract text - only indexes existing chunks.
+ *
+ * RESPONSIBILITIES:
+ * - Read chunks from database (ChunkMapper).
+ * - Index chunks to Solr fileCollection.
+ * - Retrieve file statistics from Solr.
+ * - Keep Solr index in sync with database chunks.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Index
+ */
+class FileHandler
+{
+
+
+    /**
+     * Constructor
+     *
+     * @param SettingsService        $settingsService Settings service for config
+     * @param LoggerInterface        $logger          Logger
+     * @param ChunkMapper            $chunkMapper     Chunk mapper for retrieving chunks from database
+     * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic/etc)
+     */
+    public function __construct(
+        private readonly SettingsService $settingsService,
+        private readonly LoggerInterface $logger,
+        private readonly ChunkMapper $chunkMapper,
+        private readonly SearchBackendInterface $searchBackend
+    ) {
+
+    }//end __construct()
+
+
+    /**
+     * Get the file collection name from settings.
+     *
+     * @return string|null Collection name or null if not configured.
+     */
+    private function getFileCollection(): ?string
+    {
+        $config = $this->settingsService->getConfiguration();
+
+        $fileCollection = $config['solr']['fileCollection'] ?? null;
+
+        if ($fileCollection === null || $fileCollection === '') {
+            $this->logger->warning('[FileHandler] fileCollection not configured in SOLR settings');
+            return null;
+        }
+
+        return $fileCollection;
+
+    }//end getFileCollection()
+
+
+    /**
+     * Index file chunks to Solr fileCollection.
+     *
+     * Reads chunks from database (already extracted by TextExtractionService) and indexes them.
+     * This method does NOT extract text - it only indexes existing chunks.
+     *
+     * @param int   $fileId   Nextcloud file ID
+     * @param array $chunks   Array of chunk entities from ChunkMapper (from database)
+     * @param array $metadata File metadata
+     *
+     * @return array Indexing result
+     *
+     * @throws Exception If fileCollection is not configured
+     *
+     * @psalm-return array{success: bool, indexed: int, collection: string}
+     */
+    public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
+    {
+        $collection = $this->getFileCollection();
+
+        if ($collection === null) {
+            throw new Exception('fileCollection not configured in SOLR settings');
+        }
+
+        $this->logger->info(
+                '[FileHandler] Indexing file chunks to fileCollection',
+                [
+                    'file_id'     => $fileId,
+                    'chunk_count' => count($chunks),
+                    'collection'  => $collection,
+                ]
+                );
+
+        $documents = [];
+        foreach ($chunks as $index => $chunk) {
+            $documents[] = [
+                'id'           => $chunk->getUuid() ?? $fileId.'_chunk_'.$index,
+                'file_id'      => $fileId,
+                'chunk_index'  => $chunk->getChunkIndex(),
+                'total_chunks' => count($chunks),
+                'chunk_text'   => $chunk->getTextContent(),
+                'file_name'    => $metadata['file_name'] ?? '',
+                'file_type'    => $metadata['file_type'] ?? '',
+                'file_size'    => $metadata['file_size'] ?? 0,
+                'owner'        => $chunk->getOwner(),
+                'organisation' => $chunk->getOrganisation(),
+                'language'     => $chunk->getLanguage(),
+                'created_at'   => $chunk->getCreatedAt()?->format('c') ?? date('c'),
+                'updated_at'   => $chunk->getUpdatedAt()?->format('c') ?? date('c'),
+            ];
+        }
+
+        // Use search backend to index documents.
+        $success = $this->searchBackend->index($documents);
+
+        if ($success === true) {
+            $indexedCount = count($documents);
+        } else {
+            $indexedCount = 0;
+        }
+
+        return [
+            'success'    => $success,
+            'indexed'    => $indexedCount,
+            'collection' => $collection,
+        ];
+
+    }//end indexFileChunks()
+
+
+    /**
+     * Get statistics for files in Solr.
+     *
+     * @return array Statistics including document count, collection info
+     *
+     * @psalm-return array{available: bool, collection?: string, document_count?: int, error?: string}
+     */
+    public function getFileStats(): array
+    {
+        $collection = $this->getFileCollection();
+
+        if ($collection === null) {
+            return [
+                'available' => false,
+                'error'     => 'fileCollection not configured',
+            ];
+        }
+
+        try {
+            // Get document count from search backend.
+            $searchResults = $this->searchBackend->search(
+                    [
+                        'q'    => '*:*',
+                        'rows' => 0,
+                    ]
+                    );
+
+            $documentCount = $searchResults['response']['numFound'] ?? 0;
+
+            return [
+                'available'      => true,
+                'collection'     => $collection,
+                'document_count' => $documentCount,
+            ];
+        } catch (Exception $e) {
+            $this->logger->error(
+                    '[FileHandler] Failed to get file stats',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+
+            return [
+                'available' => false,
+                'error'     => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end getFileStats()
+
+
+    /**
+     * Process and index chunks for unindexed files.
+     *
+     * Reads chunks from database that have indexed=false and indexes them to Solr.
+     * Chunks are created by TextExtractionService in a separate flow.
+     * This method only reads and indexes existing chunks - does NOT extract text.
+     *
+     * @param int|null $limit Maximum number of files to process
+     *
+     * @return array Processing result with statistics
+     *
+     * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array}}
+     */
+    public function processUnindexedChunks(?int $limit=null): array
+    {
+        $collection = $this->getFileCollection();
+
+        if ($collection === null) {
+            throw new Exception('fileCollection not configured in SOLR settings');
+        }
+
+        $this->logger->info(
+                '[FileHandler] Starting chunk indexing',
+                [
+                    'limit'      => $limit,
+                    'collection' => $collection,
+                ]
+                );
+
+        $startTime = microtime(true);
+        $stats     = [
+            'processed'    => 0,
+            'indexed'      => 0,
+            'failed'       => 0,
+            'total_chunks' => 0,
+            'errors'       => [],
+        ];
+
+        // Get chunks that haven't been indexed yet.
+        $unindexedChunks = $this->chunkMapper->findUnindexed(sourceType: 'file', limit: $limit);
+
+        // Group chunks by file_id.
+        $chunksByFile = [];
+        foreach ($unindexedChunks as $chunk) {
+            $fileId = $chunk->getSourceId();
+            if (isset($chunksByFile[$fileId]) === false) {
+                $chunksByFile[$fileId] = [];
+            }
+
+            $chunksByFile[$fileId][] = $chunk;
+        }
+
+        // Process each file's chunks.
+        foreach ($chunksByFile as $fileId => $chunks) {
+            try {
+                $stats['processed']++;
+
+                // Prepare metadata.
+                $metadata = [
+                    'file_name' => "File {$fileId}",
+                    'file_type' => 'unknown',
+                    'file_size' => 0,
+                ];
+
+                // Index the chunks.
+                $result = $this->indexFileChunks(fileId: $fileId, chunks: $chunks, metadata: $metadata);
+
+                if ($result['success'] === true) {
+                    $stats['indexed']++;
+                    $stats['total_chunks'] += $result['indexed'];
+
+                    // Mark chunks as indexed.
+                    foreach ($chunks as $chunk) {
+                        $chunk->setIndexed(true);
+                        $this->chunkMapper->update($chunk);
+                    }
+                } else {
+                    $stats['failed']++;
+                    $stats['errors'][] = "Failed to index file {$fileId}";
+                }
+            } catch (Exception $e) {
+                $stats['failed']++;
+                $stats['errors'][] = "File {$fileId}: ".$e->getMessage();
+                $this->logger->error(
+                        '[FileHandler] Failed to process file chunks',
+                        [
+                            'file_id' => $fileId,
+                            'error'   => $e->getMessage(),
+                        ]
+                        );
+            }//end try
+        }//end foreach
+
+        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
+        $stats['execution_time_ms'] = $executionTime;
+
+        $this->logger->info(
+                '[FileHandler] Chunk indexing complete',
+                [
+                    'stats' => $stats,
+                ]
+                );
+
+        return [
+            'success' => true,
+            'stats'   => $stats,
+        ];
+
+    }//end processUnindexedChunks()
+
+
+    /**
+     * Get chunking statistics.
+     *
+     * @return array Chunking statistics
+     *
+     * @psalm-return array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}
+     */
+    public function getChunkingStats(): array
+    {
+        $totalChunks      = $this->chunkMapper->countAll(sourceType: 'file');
+        $indexedChunks    = $this->chunkMapper->countIndexed(sourceType: 'file');
+        $unindexedChunks  = $this->chunkMapper->countUnindexed(sourceType: 'file');
+        $vectorizedChunks = $this->chunkMapper->countVectorized(sourceType: 'file');
+
+        return [
+            'total_chunks'      => $totalChunks,
+            'indexed_chunks'    => $indexedChunks,
+            'unindexed_chunks'  => $unindexedChunks,
+            'vectorized_chunks' => $vectorizedChunks,
+        ];
+
+    }//end getChunkingStats()
+
+
+}//end class

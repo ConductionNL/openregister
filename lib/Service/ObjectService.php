@@ -11,7 +11,7 @@ declare(strict_types=1);
  * coordinating operations between them and maintaining state.
  *
  * @category Handler
- * @package  OCA\OpenRegister\Service\ObjectHandlers
+ * @package  OCA\OpenRegister\Service\Objects
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -46,14 +46,14 @@ use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Service\SearchTrailService;
-use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
-use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
-use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObjects;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
-use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
-use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
+use OCA\OpenRegister\Service\Objects\DeleteObject;
+use OCA\OpenRegister\Service\Objects\GetObject;
+use OCA\OpenRegister\Service\Objects\RenderObject;
+use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\SaveObjects;
+use OCA\OpenRegister\Service\Objects\ValidateObject;
+use OCA\OpenRegister\Service\Objects\PublishObject;
+use OCA\OpenRegister\Service\Objects\DepublishObject;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -65,8 +65,7 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
-use OCA\OpenRegister\Service\SolrObjectService;
+use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -530,7 +529,7 @@ class ObjectService
                 _extend: $_extend,
             registers: $registers,
             schemas: $schemas,
-            __rbac: $_rbac,
+            _rbac: $_rbac,
             _multi: $multi
         );
 
@@ -687,7 +686,7 @@ class ObjectService
                             fields: $config['fields'] ?? null,
                             registers: $registers,
                             schemas: $schemas,
-                            __rbac: $_rbac,
+                            _rbac: $_rbac,
                             _multi: $multi
                         );
                         /** @var callable(mixed): void $resolve */
@@ -975,7 +974,7 @@ class ObjectService
                 data: $object,
             uuid: $uuid,
             folderId: $folderId,
-            __rbac: $_rbac,
+            _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             persist: true,
             silent: $silent,
@@ -994,7 +993,7 @@ class ObjectService
                 _extend: $_extend,
                 registers: $registers,
             schemas: $schemas,
-            __rbac: $_rbac,
+            _rbac: $_rbac,
             _multi: $multi
         );
 
@@ -1037,7 +1036,7 @@ class ObjectService
                 schema: $this->currentSchema,
                 uuid: $uuid,
             originalObjectId: null,
-            __rbac: $_rbac,
+            _rbac: $_rbac,
             _multi: $multi
         );
 
@@ -1837,7 +1836,7 @@ class ObjectService
              unset: $unset,
              registers: $registers,
              schemas: $schemas,
-             __rbac: $_rbac,
+             _rbac: $_rbac,
              _multi: $multi
             );
         }
@@ -1892,7 +1891,7 @@ class ObjectService
         }
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
-        return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, __rbac: $_rbac, __multitenancy: $_multitenancy, ids: $ids, uses: $uses);
+        return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $_rbac, _multitenancy: $_multitenancy, ids: $ids, uses: $uses);
 
     }//end countSearchObjects()
 
@@ -2118,9 +2117,9 @@ class ObjectService
             )
         ) {
 
-            // Forward to SOLR Object service - let it handle availability checks and error handling.
-            $solrService = $this->container->get(SolrObjectService::class);
-            $result = $solrService->searchObjects(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted);
+            // Forward to Index service - let it handle availability checks and error handling.
+            $indexService = $this->container->get(IndexService::class);
+            $result = $indexService->searchObjects(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted);
             $result['@self']['source'] = 'index';
             $result['@self']['query'] = $query;
             $result['@self']['rbac'] =  $_rbac;
@@ -3096,7 +3095,7 @@ class ObjectService
             filter: $filter,
             fields: $fields,
             unset: $unset,
-            __rbac: $_rbac,
+            _rbac: $_rbac,
             _multi: $multi
         )->jsonSerialize();
 
@@ -3140,7 +3139,7 @@ class ObjectService
         return $this->publishHandler->publish(
                 uuid: $uuid,
                 date: $date,
-                __rbac: $_rbac,
+                _rbac: $_rbac,
             _multi: $multi
         );
 
@@ -3165,7 +3164,7 @@ class ObjectService
         return $this->depublishHandler->depublish(
                 uuid: $uuid,
                 date: $date,
-                __rbac: $_rbac,
+                _rbac: $_rbac,
             _multi: $multi
         );
 

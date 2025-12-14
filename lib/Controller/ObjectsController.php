@@ -552,7 +552,7 @@ class ObjectsController extends Controller
         // If admin, disable multitenancy.
         // Find and validate the object.
         try {
-            $objectEntity = $this->objectService->find(id: $id, __extend: $extend, files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
+            $objectEntity = $this->objectService->find(id: $id, _extend: $extend, files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
             if ($objectEntity === null) {
                 return new JSONResponse(data: ['error' => "Object with id {$id} not found"], statusCode: Http::STATUS_NOT_FOUND);
             }
@@ -864,7 +864,7 @@ class ObjectsController extends Controller
         // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectService->findSilent(id: $id, __extend: [], files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
+            $existingObject = $this->objectService->findSilent(id: $id, _extend: [], files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
 
             // Get the resolved register and schema IDs from the ObjectService.
             // This ensures proper handling of both numeric IDs and slug identifiers.

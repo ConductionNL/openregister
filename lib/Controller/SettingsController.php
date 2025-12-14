@@ -464,71 +464,12 @@ class SettingsController extends Controller
     public function validateAllObjects(): JSONResponse
     {
         try {
-            $objectService   = $this->getObjectService();
-            $validateHandler = $this->container->get('OCA\OpenRegister\Service\ObjectHandlers\ValidateObject');
-            $schemaMapper    = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
-
-            // Get all objects from the system.
-            $allObjects = $objectService->findAll(config: []);
-
-            $validationResults = [
-                'total_objects'     => count($allObjects),
-                'valid_objects'     => 0,
-                'invalid_objects'   => 0,
-                'validation_errors' => [],
-                'summary'           => [],
-            ];
-
-            foreach ($allObjects as $object) {
-                try {
-                    // Get the schema for this object.
-                    $schema = $schemaMapper->find(id: $object->getSchema());
-
-                    // Validate the object against its schema using the ValidateObject handler.
-                    $validationResult = $validateHandler->validateObject($object->getObject(), register: $schema);
-
-                    if ($validationResult->isValid() === true) {
-                        $validationResults['valid_objects']++;
-                    } else {
-                        $validationResults['invalid_objects']++;
-                        $validationResults['validation_errors'][] = [
-                            'object_id'   => $object->getUuid(),
-                            'object_name' => $object->getName() ?? $object->getUuid(),
-                            'register'    => $object->getRegister(),
-                            'schema'      => $object->getSchema(),
-                            'errors'      => $validationResult->error(),
-                        ];
-                    }
-                } catch (Exception $e) {
-                    $validationResults['invalid_objects']++;
-                    $validationResults['validation_errors'][] = [
-                        'object_id'   => $object->getUuid(),
-                        'object_name' => $object->getName() ?? $object->getUuid(),
-                        'register'    => $object->getRegister(),
-                        'schema'      => $object->getSchema(),
-                        'errors'      => ['Validation failed: '.$e->getMessage()],
-                    ];
-                }//end try
-            }//end foreach
-
-            // Create summary.
-            // Calculate validation success rate.
-            $validationSuccessRate = 100;
-            if ($validationResults['total_objects'] > 0) {
-                $validationSuccessRate = round(($validationResults['valid_objects'] / $validationResults['total_objects']) * 100, 2);
-            }
-
-            $validationResults['summary'] = [
-                'validation_success_rate' => $validationSuccessRate,
-                'has_errors'              => $validationResults['invalid_objects'] > 0,
-                'error_count'             => count($validationResults['validation_errors']),
-            ];
-
+            $validationResults = $this->settingsService->validateAllObjects();
             return new JSONResponse(data: $validationResults);
         } catch (Exception $e) {
             return new JSONResponse(
                     data: [
-                        'error'             => 'Failed to validate objects: '.$e->getMessage(),
+                        'error'             => 'Failed to validate objects: ' . $e->getMessage(),
                         'total_objects'     => 0,
                         'valid_objects'     => 0,
                         'invalid_objects'   => 0,
