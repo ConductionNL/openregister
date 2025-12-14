@@ -1557,7 +1557,6 @@ class ObjectsController extends Controller
                         filePath: $uploadedFile['tmp_name'],
                         register: $registerEntity,
                         schema: null,
-                        chunkSize: 5,
                         validation: $validation,
                         events: $events,
                         _rbac: true,
@@ -1590,13 +1589,10 @@ class ObjectsController extends Controller
                     $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
                     $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
                     $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-                    $chunkSize  = (int) $this->request->getParam(key: 'chunkSize', default: 5);
-
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
                         register: $registerEntity,
                         schema: $schema,
-                        chunkSize: $chunkSize,
                         validation: $validation,
                         events: $events,
                         _rbac: $rbac,

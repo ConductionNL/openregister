@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FacetService;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -170,7 +170,7 @@ class ObjectService
      * @param OrganisationService     $organisationService     Service for organisation operations.
      * @param LoggerInterface         $logger                  Logger for performance monitoring.
      * @param FacetService            $facetService            Service for facet operations.
-     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
+     * @param CacheHandler      $cacheHandler      Object cache service for entity and query caching.
      * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
      * @param FacetCacheHandler $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param SettingsService         $settingsService         Service for settings operations.
@@ -197,7 +197,7 @@ class ObjectService
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger,
         private readonly FacetService $facetService,
-        private readonly ObjectCacheService $objectCacheService,
+        private readonly CacheHandler $cacheHandler,
 
 
         private readonly SettingsService $settingsService,
@@ -369,7 +369,7 @@ class ObjectService
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
             // When deriving register from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its register.
-            $registers = $this->getCachedEntities('register', [$register], function($ids) {
+            $registers = $this->getCachedEntities([$register], function($ids) {
                 return [$this->registerMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
             });
             $registerExists = isset($registers[0]) === true;
@@ -399,7 +399,7 @@ class ObjectService
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
             // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its schema.
-            $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
+            $schemas = $this->getCachedEntities([$schema], function($ids) {
                 return [$this->schemaMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
             });
             $schemaExists = isset($schemas[0]) === true;
@@ -663,13 +663,13 @@ class ObjectService
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
         if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas   = $this->getCachedEntities(entityType: 'schema', ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
+            $schemas   = $this->getCachedEntities(ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
         if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers   = $this->getCachedEntities(entityType: 'register', ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
+            $registers   = $this->getCachedEntities(ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
@@ -986,6 +986,7 @@ class ObjectService
         // Note: Register and schema filtering is handled by currentRegister/currentSchema properties.
         $registers = null;
         $schemas = null;
+        $_extend = $extend ?? [];
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -1658,7 +1659,7 @@ class ObjectService
         $schemas   = null;
 
         if (empty($registerIds) === false) {
-            $registerEntities = $this->getCachedEntities(entityType: 'register', ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
+            $registerEntities = $this->getCachedEntities(ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
 
             // **TYPE SAFETY**: Ensure we have Register objects, not arrays.
             $validRegisters = [];
@@ -1682,7 +1683,7 @@ class ObjectService
         }
 
         if (empty($schemaIds) === false) {
-            $schemaEntities = $this->getCachedEntities(entityType: 'schema', ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
+            $schemaEntities = $this->getCachedEntities(ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
 
             // **TYPE SAFETY**: Ensure we have Schema objects, not arrays.
             $validSchemas = [];
@@ -2665,7 +2666,7 @@ class ObjectService
                 $registerValue = $query['@self']['register'];
                 // Handle both single values and arrays.
                 $registerIds = is_array($registerValue) === true ? $registerValue : [$registerValue];
-                $this->getCachedEntities('register', $registerIds, function($ids) {
+                $this->getCachedEntities($registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) === true || is_int($id) === true) {
@@ -2686,7 +2687,7 @@ class ObjectService
                 $schemaValue = $query['@self']['schema'];
                 // Handle both single values and arrays.
                 $schemaIds = is_array($schemaValue) === true ? $schemaValue : [$schemaValue];
-                $this->getCachedEntities('schema', $schemaIds, function($ids) {
+                $this->getCachedEntities($schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
                         if (is_string($id) === true || is_int($id) === true) {
@@ -5666,7 +5667,7 @@ class ObjectService
      * @psalm-param    callable $fallbackFunc
      * @psalm-return   array<mixed>
      */
-    private function getCachedEntities(string $entityType, mixed $ids, callable $fallbackFunc): array
+    private function getCachedEntities(mixed $ids, callable $fallbackFunc): array
     {
         // Entity caching is disabled - always use fallback function.
         return call_user_func($fallbackFunc, $ids);
@@ -5695,10 +5696,10 @@ class ObjectService
         if ($schemaFilter !== null) {
             // Get specific schemas.
             if (is_array($schemaFilter) === true) {
-                return $this->getCachedEntities(entityType: 'schema', ids: $schemaFilter, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
+                return $this->getCachedEntities(ids: $schemaFilter, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             } else {
                 try {
-                    return $this->getCachedEntities(entityType: 'schema', ids: [$schemaFilter], fallbackFunc: function($ids) {
+                    return $this->getCachedEntities(ids: [$schemaFilter], fallbackFunc: function($ids) {
                         return [$this->schemaMapper->find($ids[0])];
                     });
                 } catch (Exception $e) {
@@ -5709,7 +5710,7 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery).
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
-        return $this->getCachedEntities(entityType: 'schema', ids: 'all', fallbackFunc: function($_ids) {
+        return $this->getCachedEntities(ids: 'all', fallbackFunc: function($_ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
             // null = no limit (get all).
         });

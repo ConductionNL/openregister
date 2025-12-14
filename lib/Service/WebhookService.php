@@ -502,7 +502,7 @@ class WebhookService
      *
      * @return void
      */
-    private function scheduleRetry(Webhook $webhook, string $eventName, array $payload, int $attempt): void
+    private function scheduleRetry(Webhook $webhook, string $eventName, array $_payload, int $attempt): void
     {
         $delay = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
 

@@ -26,7 +26,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,11 +47,11 @@ class SolrEventListener implements IEventListener
     /**
      * Constructor for SolrEventListener
      *
-     * @param ObjectCacheService $objectCacheService Service for handling object caching and Solr operations
+     * @param CacheHandler $cacheHandler Service for handling object caching and Solr operations
      * @param LoggerInterface    $logger             Logger for debugging and monitoring
      */
     public function __construct(
-        private readonly ObjectCacheService $objectCacheService,
+        private readonly CacheHandler $cacheHandler,
         private readonly LoggerInterface $logger
     ) {
 

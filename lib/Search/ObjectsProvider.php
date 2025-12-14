@@ -132,7 +132,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return 10
      */
-    public function getOrder(string $route, array $routeParameters): ?int
+    public function getOrder(string $_route, array $_routeParameters): ?int
     {
         return 10;
 
@@ -210,7 +210,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @throws \Exception If search operation fails
      */
-    public function search(IUser $user, ISearchQuery $query): SearchResult
+    public function search(IUser $_user, ISearchQuery $query): SearchResult
     {
         // Initialize filters array.
         $filters = [];

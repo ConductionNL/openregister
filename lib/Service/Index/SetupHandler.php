@@ -3,19 +3,19 @@
 declare(strict_types=1);
 
 /*
- * SolrSetup
+ * SetupHandler
  *
  * Setup class for SOLR configuration in the OpenRegister application.
  *
- * @category  Setup
- * @package   OCA\OpenRegister\Setup
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
-namespace OCA\OpenRegister\Setup;
+namespace OCA\OpenRegister\Service\Index;
 
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -31,15 +31,15 @@ use OCA\OpenRegister\Service\IndexService;
  * This class ensures that SOLR is properly configured with the necessary
  * configSets to support dynamic tenant core creation.
  *
- * @package   OCA\OpenRegister\Setup
- * @category  Setup
+ * @package   OCA\OpenRegister\Service\Index
+ * @category  Service
  * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
  * @license   AGPL-3.0-or-later
  * @version   GIT: <git_id>
  * @link      https://github.com/OpenRegister/OpenRegister
  */
-class SolrSetup
+class SetupHandler
 {
 
     /**
@@ -103,8 +103,8 @@ class SolrSetup
     /**
      * Initialize SOLR setup manager
      *
-     * @param IndexService $solrService SOLR service with authenticated HTTP client and configuration
-     * @param LoggerInterface   $logger      PSR-3 compliant logger for operation tracking
+     * @param IndexService    $solrService SOLR service with authenticated HTTP client and configuration
+     * @param LoggerInterface $logger      PSR-3 compliant logger for operation tracking
      */
     public function __construct(IndexService $solrService, LoggerInterface $logger)
     {
@@ -343,7 +343,7 @@ class SolrSetup
 
             try {
                 if ($this->verifySolrConnectivity() === false) {
-                $this->trackStep(
+                    $this->trackStep(
                         stepNumber: 1,
                         stepName: 'SOLR Connectivity',
                         status: 'failed',
@@ -352,8 +352,8 @@ class SolrSetup
                             'error'      => 'SOLR connectivity test failed',
                             'host'       => $this->solrConfig['host'] ?? 'unknown',
                             'port'       => $this->solrConfig['port'] ?? 'unknown',
-                                'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json'),
-                            ]
+                            'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json'),
+                        ]
                     );
 
                     $this->lastErrorDetails = [
@@ -1172,6 +1172,7 @@ class SolrSetup
                         $logData['response_status']  = $response->getStatusCode();
                         $logData['response_body']    = (string) $response->getBody();
                         $logData['response_headers'] = $response->getHeaders();
+                    }
                 }
 
                 if ($e->getRequest() !== null) {
@@ -1225,7 +1226,7 @@ class SolrSetup
                 $this->lastErrorDetails['guzzle_details']['is_request_exception'] = true;
 
                 if ($e->hasResponse() === true) {
-                    $response       = $e->getResponse();
+                    $response = $e->getResponse();
                     if ($response !== null) {
                         $responseStatus = $response->getStatusCode();
                         $responseBody   = (string) $response->getBody();
@@ -1253,7 +1254,7 @@ class SolrSetup
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
                 $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false;
-            } elseif (strpos($e->getMessage(), 'Connection refused') !== false
+            } else if (strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
             ) {
@@ -2308,7 +2309,7 @@ class SolrSetup
                 } else if ($result['action'] === 'updated') {
                     $fieldResults['fields_updated']++;
                     $fieldResults['updated_fields'][] = $fieldName;
-                } elseif ($result['action'] === 'skipped') {
+                } else if ($result['action'] === 'skipped') {
                     $fieldResults['fields_skipped']++;
                     $fieldResults['skipped_fields'][] = $fieldName;
                 }

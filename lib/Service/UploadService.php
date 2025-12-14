@@ -170,7 +170,7 @@ class UploadService
      *
      * @throws \Exception If file processing fails.
      */
-    private function processFileUpload(mixed $file): array | JSONResponse
+    private function processFileUpload(mixed $_file): array | JSONResponse
     {
         // @todo use .json file content from POST as $json.
         // Method always throws, so this is unreachable but kept for API compatibility.

@@ -31,10 +31,9 @@ use ReflectionClass;
 use DateTime;
 use stdClass;
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Setup\SolrSetup;
+use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Psr\Log\LoggerInterface;
@@ -1345,7 +1344,7 @@ class SettingsController extends Controller
 
             // Create SolrSetup using IndexService for authenticated HTTP client.
             $guzzleSolrService = $this->container->get(IndexService::class);
-            $setup = new SolrSetup(solrService: $guzzleSolrService, logger: $logger);
+            $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
             $logger->info(message: '🏗️ SolrSetup instance created, starting setup process');
@@ -1557,7 +1556,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse The SOLR setup test results
      */
-    public function testSolrSetup(): JSONResponse
+    public function testSetupHandler(): JSONResponse
     {
         try {
             // Get SOLR settings directly.
@@ -1576,7 +1575,7 @@ class SettingsController extends Controller
             // Create SolrSetup using IndexService for authenticated HTTP client.
             $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $guzzleSolrService = $this->container->get(IndexService::class);
-            $setup = new SolrSetup(solrService: $guzzleSolrService, logger: $logger);
+            $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
 
             // Run setup.
             $result = $setup->setupSolr();
@@ -1612,7 +1611,7 @@ class SettingsController extends Controller
                     );
         }//end try
 
-    }//end testSolrSetup()
+    }//end testSetupHandler()
 
 
     /**
@@ -2412,7 +2411,7 @@ class SettingsController extends Controller
     {
         try {
             // Start with the core ObjectEntity metadata fields from SolrSetup.
-            $expectedFields = \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
+            $expectedFields = \OCA\OpenRegister\Setup\SetupHandler::getObjectEntityFieldDefinitions();
 
             // Get IndexService to analyze user-defined schemas.
             $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\IndexService::class);
@@ -2440,7 +2439,7 @@ class SettingsController extends Controller
                     ]
                     );
             // Return at least the core metadata fields even if schema analysis fails.
-            return \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
+            return \OCA\OpenRegister\Setup\SetupHandler::getObjectEntityFieldDefinitions();
         }//end try
 
     }//end getExpectedSchemaFields()

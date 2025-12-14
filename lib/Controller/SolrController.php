@@ -15,8 +15,6 @@ use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use Psr\Log\LoggerInterface;
 

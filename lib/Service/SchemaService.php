@@ -864,7 +864,7 @@ class SchemaService
 
             $analysis      = $discoveredProperties[$propertyName];
             $currentConfig = $propertyConfig;
-            $improvement   = $this->comparePropertyWithAnalysis(propertyName: $propertyName, currentConfig: $currentConfig, analysis: $analysis);
+            $improvement   = $this->comparePropertyWithAnalysis(currentConfig: $currentConfig, analysis: $analysis);
 
             if (empty($improvement['issues']) === false) {
                 $usagePercentage = $analysis['usage_percentage'] ?? 0;
@@ -951,7 +951,7 @@ class SchemaService
      *
      * @psalm-return array{issues: list{0?: string, 1?: string, 2?: string, 3?: string, 4?: string, 5?: string, 6?: 'inconsistent_required'|'missing_enum', 7?: 'missing_enum'}, suggestions: list{0?: array{type: string, field: string, current: 'none'|'true'|'unlimited'|mixed|null, recommended: 1000|mixed|string, description: string}, 1?: array{type: string, field: string, current: 'none'|'true'|'unlimited'|mixed|null, recommended: 1000|mixed|string, description: string}, 2?: array{type: string, field: string, current: 'none'|'true'|'unlimited'|mixed|null, recommended: mixed|string, description: string}, 3?: array{type: string, field: string, current: 'none'|'true'|'unlimited'|mixed|null, recommended: mixed|string, description: string}, 4?: array{type: 'behavior'|'constraint'|'enum', field: string, current: 'true'|'unlimited'|mixed|null, recommended: mixed|string, description: string}, 5?: array{type: 'behavior'|'constraint'|'enum', field: 'enum'|'maximum'|'required', current: 'true'|'unlimited'|mixed|null, recommended: mixed|string, description: string}, 6?: array{type: 'behavior'|'enum', field: 'enum'|'required', current: 'true'|'unlimited', recommended: string, description: string}, 7?: array{type: 'enum', field: 'enum', current: 'unlimited', recommended: string, description: string}}, recommended_type: string}
      */
-    private function comparePropertyWithAnalysis(string $propertyName, array $currentConfig, array $analysis): array
+    private function comparePropertyWithAnalysis(array $currentConfig, array $analysis): array
     {
         $issues          = [];
         $suggestions     = [];

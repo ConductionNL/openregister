@@ -24,9 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Setup\SolrSetup;
+use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -220,7 +219,7 @@ class SolrManagementCommand extends Command
 
             // Use the injected solrService instead of creating a new one.
             // Initialize SolrSetup with proper configuration.
-            $solrSetup = new SolrSetup($this->solrService, $this->logger);
+            $solrSetup = new SetupHandler($this->solrService, $this->logger);
 
             // Run complete setup including schema field configuration.
             if ($solrSetup->setupSolr() === true) {

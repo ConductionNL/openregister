@@ -199,7 +199,7 @@ class FacetCacheHandler
      */
     public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
     {
-        $this->setCachedFacetData(schemaId: $schemaId, cacheKey: 'facetable_fields', facetType: 'config', fieldName: 'facetable_fields', facetConfig: [], data: $facetableFields, ttl: $ttl);
+        $this->setCachedFacetData(schemaId: $schemaId, cacheKey: 'facetable_fields', facetType: 'config', facetConfig: [], data: $facetableFields, ttl: $ttl);
 
         // Store in memory cache.
         $cacheKey = "facetable_fields_{$schemaId}";
@@ -731,7 +731,6 @@ class FacetCacheHandler
         int $schemaId,
         string $cacheKey,
         string $facetType,
-        string $fieldName,
         array $facetConfig,
         mixed $data,
         int $ttl
