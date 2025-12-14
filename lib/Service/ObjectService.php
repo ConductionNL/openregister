@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
+use OCA\OpenRegister\Service\Objects\PerformanceHandler;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
@@ -181,6 +182,7 @@ class ObjectService
     public function __construct(
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
+        private readonly PerformanceHandler $performanceHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
         private readonly SaveObjects $saveObjectsHandler,
@@ -2287,45 +2289,8 @@ class ObjectService
      */
     private function optimizeRequestForPerformance(array &$query, array &$perfTimings): void
     {
-        $optimizeStart = microtime(true);
+        $this->performanceHandler->optimizeRequestForPerformance(query: $query, perfTimings: $perfTimings);
 
-        // **OPTIMIZATION 1**: Fast path for simple requests.
-        $isSimpleRequest = $this->isSimpleRequest($query);
-        if ($isSimpleRequest === true) {
-            $query['_fast_path'] = true;
-            $this->logger->debug(message: '🚀 FAST PATH: Simple request detected', context: [
-                'benefit' => 'skip_heavy_processing',
-                'estimatedSaving' => '200-300ms'
-            ]);
-        }
-
-        // **OPTIMIZATION 2**: Limit destructive extend operations.
-        if (empty($query['_extend']) === false) {
-            // **BUGFIX**: Handle _extend as both string and array for count.
-            if (is_array($query['_extend']) === true) {
-                $originalExtendCount = count($query['_extend']);
-            } else {
-                $originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
-            }
-
-            $query['_extend'] = $this->optimizeExtendQueries($query['_extend']);
-
-            // optimizeExtendQueries always returns an array, so no need to check.
-            $newExtendCount = count($query['_extend']);
-
-            if ($newExtendCount < $originalExtendCount) {
-                $this->logger->info(message: '⚡ EXTEND OPTIMIZATION: Reduced extend complexity', context: [
-                    'original' => $originalExtendCount,
-                    'optimized' => $newExtendCount,
-                    'estimatedSaving' => ($originalExtendCount - $newExtendCount) * 100 . 'ms'
-                ]);
-            }
-        }
-
-        // **OPTIMIZATION 3**: Preload critical entities for cache warmup.
-        $this->preloadCriticalEntities($query);
-
-        $perfTimings['request_optimization'] = round((microtime(true) - $optimizeStart) * 1000, 2);
     }
 
     /**

@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
+use OCA\OpenRegister\Service\Objects\PerformanceHandler;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects;

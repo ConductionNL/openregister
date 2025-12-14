@@ -1186,6 +1186,8 @@ class SettingsService
      * @throws \RuntimeException If cache clearing fails
      *
      * @psalm-return array{type: string, userId: null|string, timestamp: string, results: array{names?: array, distributed?: array, facet?: array, schema?: array, object?: array}, errors: array<never, never>, totalCleared: 0|mixed}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
     {
@@ -1253,6 +1255,8 @@ class SettingsService
      * @return ((float|int)[]|bool|int|mixed|string)[] Clear operation results
      *
      * @psalm-return array{service: 'object', cleared: 0|mixed, success: bool, error?: string, before?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed, after?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function clearObjectCache(?string $_userId=null): array
     {
@@ -1414,6 +1418,8 @@ class SettingsService
      * @return ((int|mixed|string)[]|bool|int|mixed|string)[] Clear operation results
      *
      * @psalm-return array{service: 'schema', cleared: 0|mixed, success: bool, error?: string, before?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}, after?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function clearSchemaCache(?string $_userId=null): array
     {
@@ -1462,6 +1468,8 @@ class SettingsService
      * @return ((int|int[]|string)[]|bool|int|string)[] Clear operation results
      *
      * @psalm-return array{service: 'facet', cleared: int, success: bool, error?: string, before?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}, after?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function clearFacetCache(?string $_userId=null): array
     {
