@@ -169,6 +169,8 @@ class UploadService
      * @return array<string, mixed>|JSONResponse Processed data or error response.
      *
      * @throws \Exception If file processing fails.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processFileUpload(mixed $_file): array | JSONResponse
     {

@@ -92,6 +92,8 @@ class MagicRbacHandler
      * @param string        $tableAlias Table alias for the dynamic table
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function applyUnauthenticatedAccess(IQueryBuilder $_qb, Schema $schema, string $_tableAlias): void
     {

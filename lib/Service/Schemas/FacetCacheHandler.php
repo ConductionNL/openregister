@@ -632,6 +632,8 @@ class FacetCacheHandler
      * @return string[] Array of supported facet types
      *
      * @psalm-return list{0: 'date_histogram'|'terms', 1?: 'range'}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function determineFacetTypesFromProperty(string $type, string $_format): array
     {

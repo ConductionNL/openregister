@@ -502,6 +502,8 @@ class RenderObject
      *
      * @psalm-return   mixed
      * @phpstan-return mixed
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName)
     {
@@ -693,6 +695,8 @@ class RenderObject
      * @param bool              $multi      Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The rendered entity with applied extensions and filters
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -1065,6 +1069,8 @@ class RenderObject
      * @param array|null   $visitedIds ids of objects already handled
      *
      * @return array The extended object data
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function extendObject(
         ObjectEntity $entity,
@@ -1146,6 +1152,8 @@ class RenderObject
      * @param array|null   $_objects   Preloaded objects
      *
      * @return array The updated object data with inversed properties
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleInversedProperties(
         ObjectEntity $entity,

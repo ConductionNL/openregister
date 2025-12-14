@@ -88,6 +88,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * }
      *
      * @throws Exception When extraction fails.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
