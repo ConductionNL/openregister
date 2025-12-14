@@ -478,6 +478,58 @@ class Application extends App implements IBootstrap
                 }
                 );
 
+        // ====================================================================
+        // PHASE 3: INDEX HANDLERS (PRAGMATIC DELEGATION PATTERN)
+        // These handlers initially delegate to GuzzleSolrService for backward
+        // compatibility, enabling incremental method migration over time.
+        // ====================================================================
+
+        // Register DocumentBuilder for document creation.
+        $context->registerService(
+                 \OCA\OpenRegister\Service\Index\DocumentBuilder::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\Index\DocumentBuilder(
+                            guzzleSolrService: $container->get(GuzzleSolrService::class),
+                            logger: $container->get('Psr\Log\LoggerInterface'),
+                            schemaMapper: $container->get(SchemaMapper::class),
+                            registerMapper: $container->get(RegisterMapper::class)
+                            );
+                }
+                );
+
+        // Register BulkIndexer for bulk operations.
+        $context->registerService(
+                 \OCA\OpenRegister\Service\Index\BulkIndexer::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\Index\BulkIndexer(
+                            guzzleSolrService: $container->get(GuzzleSolrService::class),
+                            logger: $container->get('Psr\Log\LoggerInterface')
+                            );
+                }
+                );
+
+        // Register WarmupHandler for index warmup.
+        $context->registerService(
+                 \OCA\OpenRegister\Service\Index\WarmupHandler::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\Index\WarmupHandler(
+                            guzzleSolrService: $container->get(GuzzleSolrService::class),
+                            logger: $container->get('Psr\Log\LoggerInterface')
+                            );
+                }
+                );
+
+        // Register FacetBuilder for facet operations.
+        $context->registerService(
+                 \OCA\OpenRegister\Service\Index\FacetBuilder::class,
+                function ($container) {
+                    return new \OCA\OpenRegister\Service\Index\FacetBuilder(
+                            guzzleSolrService: $container->get(GuzzleSolrService::class),
+                            logger: $container->get('Psr\Log\LoggerInterface')
+                            );
+                }
+                );
+
         // Register SolrDebugCommand for SOLR debugging.
         // NOTE: Must be registered manually because it depends on SettingsService which has circular dependencies.
         $context->registerService(

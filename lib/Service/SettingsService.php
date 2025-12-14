@@ -1505,6 +1505,8 @@ class SettingsService
      * @return (bool|int|string)[] Clear operation results
      *
      * @psalm-return array{service: 'distributed', cleared: 'all'|0, success: bool, error?: string}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function clearDistributedCache(?string $_userId=null): array
     {

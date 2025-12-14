@@ -2,79 +2,79 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * FacetBuilder
  *
- * Handles building and processing faceted search queries.
+ * Handles Solr facet building operations.
+ * Extracted from GuzzleSolrService to separate facet logic.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
- * @author    Conduction Development Team
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-12
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\Index;
 
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use Psr\Log\LoggerInterface;
 
 /**
- * FacetBuilder for faceted search operations
+ * FacetBuilder for Solr facet operations
+ *
+ * PRAGMATIC APPROACH: Initially delegates to GuzzleSolrService.
+ * Methods will be migrated incrementally.
  *
  * @package OCA\OpenRegister\Service\Index
  */
 class FacetBuilder
 {
+    /**
+     * Guzzle Solr service (temporary delegation).
+     *
+     * @var GuzzleSolrService
+     */
+    private readonly GuzzleSolrService $guzzleSolrService;
 
+    /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
 
 
     /**
      * FacetBuilder constructor
      *
-     * @param LoggerInterface $logger Logger
+     * @param GuzzleSolrService $guzzleSolrService Backend implementation
+     * @param LoggerInterface   $logger            Logger
      *
      * @return void
      */
     public function __construct(
+        GuzzleSolrService $guzzleSolrService,
         LoggerInterface $logger
     ) {
+        $this->guzzleSolrService = $guzzleSolrService;
         $this->logger = $logger;
-
-    }//end __construct()
-
-
-    /**
-     * Build facet query for search
-     *
-     * @param array $facetableFields Fields to facet on
-     *
-     * @return array Facet query structure
-     */
-    public function buildFacetQuery(array $facetableFields): array
-    {
-        $this->logger->debug('[FacetBuilder] Building facet query', ['fieldCount' => count($facetableFields)]);
-
-        return [];
-
-    }//end buildFacetQuery()
+    }
 
 
     /**
-     * Process facet response from search backend
+     * Get facetable fields for configuration
      *
-     * @param array $facetData       Raw facet data
-     * @param array $facetableFields Available facetable fields
-     *
-     * @return array Processed facets
+     * @return array Facetable fields
      */
-    public function processFacetResponse(array $facetData, array $facetableFields): array
+    public function getRawSolrFieldsForFacetConfiguration(): array
     {
-        return [];
+        $this->logger->debug('FacetBuilder: Delegating to GuzzleSolrService');
 
-    }//end processFacetResponse()
+        return $this->guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
+    }
 
 
 }//end class
