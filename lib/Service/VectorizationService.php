@@ -305,7 +305,7 @@ class VectorizationService
                                 'error'      => $errorMsg,
                             ];
                         }
-                    }
+                    }//end foreach
                 } catch (\Exception $e) {
                     $failed += count($batch);
                     $this->logger->error(

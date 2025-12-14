@@ -149,12 +149,12 @@ class ViewService
      * Creates a new view entity with specified properties. If view is set as default,
      * clears any existing default view for the user. Validates and stores view in database.
      *
-     * @param string $name        The name of the view
-     * @param string $description The description of the view
-     * @param string $owner       The owner user ID
-     * @param bool   $isPublic    Whether the view is public (accessible to all users)
-     * @param bool   $isDefault   Whether the view is the default view for the user
-     * @param array<string, mixed> $query The query parameters (registers, schemas, filters)
+     * @param string               $name        The name of the view
+     * @param string               $description The description of the view
+     * @param string               $owner       The owner user ID
+     * @param bool                 $isPublic    Whether the view is public (accessible to all users)
+     * @param bool                 $isDefault   Whether the view is the default view for the user
+     * @param array<string, mixed> $query       The query parameters (registers, schemas, filters)
      *
      * @return View The created view entity
      *
@@ -191,7 +191,7 @@ class ViewService
             // Log error for debugging and monitoring.
             $this->logger->error(message: 'Error creating view: '.$e->getMessage());
             throw $e;
-        }
+        }//end try
 
     }//end create()
 

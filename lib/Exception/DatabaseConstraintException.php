@@ -48,7 +48,7 @@ class DatabaseConstraintException extends Exception
      * Used to return appropriate HTTP status codes in API responses.
      * Defaults to 409 Conflict for constraint violations.
      *
-     * @var int HTTP status code (typically 409 for conflicts)
+     * @var integer HTTP status code (typically 409 for conflicts)
      */
     private readonly int $httpStatusCode;
 
@@ -93,15 +93,15 @@ class DatabaseConstraintException extends Exception
      *
      * @param Exception $dbException The original database exception
      * @param string    $entityType  The type of entity (e.g., 'schema', 'register', 'object')
-     *                                Used to customize error messages (default: 'item')
+     *                               Used to customize error messages (default: 'item')
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      */
     public static function fromDatabaseException(Exception $dbException, string $entityType='item'): DatabaseConstraintException
     {
         // Extract original database error message.
-        $message     = $dbException->getMessage();
-        
+        $message = $dbException->getMessage();
+
         // Parse database error message to generate user-friendly message.
         $userMessage = self::parseConstraintError(dbMessage: $message, entityType: $entityType);
 
@@ -130,17 +130,16 @@ class DatabaseConstraintException extends Exception
         // MySQL/MariaDB format: "Duplicate entry 'value' for key 'constraint_name'".
         if (str_contains($dbMessage, 'Duplicate entry') === true && str_contains($dbMessage, 'for key') === true) {
             // Check for specific constraint names to provide more detailed messages.
-            
             // Schema slug uniqueness violation.
             if (str_contains($dbMessage, 'schemas_organisation_slug_unique') === true) {
                 return "A schema with this slug already exists in your organization. Please choose a different slug or title.";
             }
-            
+
             // Register slug uniqueness violation.
             if (str_contains($dbMessage, 'registers_organisation_slug_unique') === true) {
                 return "A register with this slug already exists in your organization. Please choose a different slug or title.";
             }
-            
+
             // Generic unique constraint violation.
             if (str_contains($dbMessage, 'unique') === true) {
                 return "This {$entityType} already exists. Please check your input and try again.";
@@ -148,7 +147,7 @@ class DatabaseConstraintException extends Exception
 
             // Fallback for duplicate entry errors without specific constraint name.
             return "A {$entityType} with these details already exists. Please modify your input and try again.";
-        }
+        }//end if
 
         // Handle foreign key constraint violations.
         // Occurs when referencing non-existent records in related tables.

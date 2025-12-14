@@ -1393,7 +1393,7 @@ class GuzzleSolrService
             $objectId = $object->getId();
             $schemaId = $object->getSchema();
             throw new RuntimeException(
-                'Schema mapper is not available. Cannot create SOLR document without schema validation. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId
+                'Schema mapper is not available. Cannot create SOLR document without schema validation. Object ID: '.($objectId ?? 'unknown').', Schema ID: '.($schemaId ?? 'unknown')
             );
         }
 
@@ -1403,14 +1403,14 @@ class GuzzleSolrService
         if (!($schema instanceof Schema)) {
             throw new RuntimeException(
                 'Schema not found for object. Cannot create SOLR document without valid schema. ' .
-                'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema()
+                'Object ID: ' . ($object->getId() ?? 'unknown') . ', Schema ID: ' . ($object->getSchema() ?? 'unknown')
             );
         }
 
         if (($schema instanceof Schema) === false) {
             $objectId     = $object->getId();
             $schemaId     = $object->getSchema();
-            $errorMessage = 'Schema not found for object. Cannot create SOLR document without valid schema. '.'Object ID: '.$objectId.', Schema ID: '.$schemaId;
+            $errorMessage = 'Schema not found for object. Cannot create SOLR document without valid schema. Object ID: '.($objectId ?? 'unknown').', Schema ID: '.($schemaId ?? 'unknown');
             throw new RuntimeException($errorMessage);
         }
 
@@ -1433,7 +1433,7 @@ class GuzzleSolrService
                 $schemaName = $schema->getSlug();
             }//end if
 
-            $errorMessage = 'Schema is not searchable. Objects of this schema are excluded from SOLR indexing. '.'Object ID: '.$objectId.', Schema: '.$schemaName;
+            $errorMessage = 'Schema is not searchable. Objects of this schema are excluded from SOLR indexing. Object ID: '.($objectId ?? 'unknown').', Schema: '.($schemaName ?? 'unknown');
             throw new RuntimeException($errorMessage);
         }//end if
 
@@ -1479,7 +1479,7 @@ class GuzzleSolrService
 
             throw new RuntimeException(
                 'Schema-aware mapping failed for object. Schemaless fallback is disabled to prevent inconsistent documents. ' .
-                'Object ID: ' . $object->getId() . ', Schema ID: ' . $object->getSchema() . '. ' .
+                'Object ID: ' . ($object->getId() ?? 'unknown') . ', Schema ID: ' . ($object->getSchema() ?? 'unknown') . '. ' .
                 'Original error: ' . $e->getMessage(),
                 0,
                 $e
@@ -2324,11 +2324,11 @@ class GuzzleSolrService
         }
 
         // Test SOLR connection.
-        if (!$this->isAvailable()) {
+        if ($this->isAvailable() === false) {
             $connectionTest = $this->testConnection();
             // Connection test may return 'error' key or other structure.
             // Type definition doesn't include 'error', so use array access with proper check.
-            if (is_array($connectionTest) && array_key_exists('error', $connectionTest)) {
+            if (is_array($connectionTest) === true && array_key_exists('error', $connectionTest) === true) {
                 $errorMessage = $connectionTest['error'];
             } else {
                 $errorMessage = 'Unknown connection error';
@@ -2430,7 +2430,7 @@ class GuzzleSolrService
         // Need to investigate user context and organisation service differences between NC 30/31.
 
         // RBAC filtering (removed automatic published object exception).
-        if ($rbac) {
+        if ($rbac === true) {
             // Note: RBAC role filtering would be implemented here if we had role-based fields.
             // For now, we assume all authenticated users have basic access.
             $this->logger->debug('[SOLR] RBAC filtering applied');
@@ -2460,7 +2460,7 @@ class GuzzleSolrService
             }
 
             $activeOrganisation = $this->organisationService->getActiveOrganisation();
-            if ($activeOrganisation) {
+            if ($activeOrganisation !== null) {
                 return $activeOrganisation->getUuid();
             } else {
                 return null;
@@ -2498,9 +2498,9 @@ class GuzzleSolrService
         }
 
         // Handle pagination..
-        if (isset($query['_page'])) {
+        if (isset($query['_page']) === true) {
             $page = max(1, (int)$query['_page']);
-            if (isset($query['_limit'])) {
+            if (isset($query['_limit']) === true) {
                 $limit = max(1, (int)$query['_limit']);
             } else {
                 $limit = 20;
@@ -2508,7 +2508,7 @@ class GuzzleSolrService
 
             $solrQuery['offset'] = ($page - 1) * $limit;
             $solrQuery['limit'] = $limit;
-        } elseif (isset($query['_limit'])) {
+        } elseif (isset($query['_limit']) === true) {
             $solrQuery['limit'] = max(1, (int)$query['_limit']);
         }
 
@@ -2535,7 +2535,7 @@ class GuzzleSolrService
         $this->logger->debug('Building SOLR filters from query', [
             'query_keys' => array_keys($query),
             'query_structure' => array_map(function($v) {
-                if (is_array($v)) {
+                if (is_array($v) === true) {
                     return 'array[' . count($v) . ']';
                 } else {
                     return gettype($v);
@@ -2544,20 +2544,20 @@ class GuzzleSolrService
         ]);
 
         foreach ($query as $key => $value) {
-            if (str_starts_with($key, '_')) {
+            if (str_starts_with($key, '_') === true) {
                 continue; // Skip internal parameters.
             }
 
             // Handle @self metadata filters....
-            if ($key === '@self' && is_array($value)) {
+            if ($key === '@self' && is_array($value) === true) {
                 foreach ($value as $metaKey => $metaValue) {
                     $solrField = 'self_' . $metaKey;
 
                     // Handle [or] and [and] operators.
-                    if (is_array($metaValue)) {
-                        if (isset($metaValue['or'])) {
+                    if (is_array($metaValue) === true) {
+                        if (isset($metaValue['or']) === true) {
                             // OR logic: (field:val1 OR field:val2)..
-                            if (is_string($metaValue['or'])) {
+                            if (is_string($metaValue['or']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['or']));
                             } else {
                                 $values = $metaValue['or'];
@@ -2565,23 +2565,23 @@ class GuzzleSolrService
 
                             $conditions = [];
                             foreach ($values as $val) {
-                                if (is_numeric($val)) {
+                                if (is_numeric($val) === true) {
                                     $conditions[] = $solrField . ':' . $val;
                                 } else {
                                     $conditions[] = $solrField . ':"' . $this->escapeSolrValue((string)$val) . '"';
                                 }
                             }
                             $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
-                        } elseif (isset($metaValue['and'])) {
+                        } elseif (isset($metaValue['and']) === true) {
                             // AND logic: multiple fq parameters..
-                            if (is_string($metaValue['and'])) {
+                            if (is_string($metaValue['and']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['and']));
                             } else {
                                 $values = $metaValue['and'];
                             }
 
                             foreach ($values as $val) {
-                                if (is_numeric($val)) {
+                                if (is_numeric($val) === true) {
                                     $filterQueries[] = $solrField . ':' . $val;
                                 } else {
                                     $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$val) . '"';
@@ -2590,7 +2590,7 @@ class GuzzleSolrService
                         } else {
                             // Default AND logic for simple arrays..
                             foreach ($metaValue as $val) {
-                                if (is_numeric($val)) {
+                                if (is_numeric($val) === true) {
                                     $filterQueries[] = $solrField . ':' . $val;
                                 } else {
                                     $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$val) . '"';
@@ -2599,7 +2599,7 @@ class GuzzleSolrService
                         }
                     } else {
                         // Single value...
-                        if (is_numeric($metaValue)) {
+                        if (is_numeric($metaValue) === true) {
                             $filterQueries[] = $solrField . ':' . $metaValue;
                         } else {
                             $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$metaValue) . '"';
@@ -2611,11 +2611,11 @@ class GuzzleSolrService
 
             $solrField = $this->translateFilterField($key);
 
-            if (is_array($value)) {
+            if (is_array($value) === true) {
                 // Check for explicit [or] or [and] operators..
-                if (isset($value['or'])) {
+                if (isset($value['or']) === true) {
                     // Explicit OR logic: (field:val1 OR field:val2)..
-                    if (is_string($value['or'])) {
+                    if (is_string($value['or']) === true) {
                         $values = array_map('trim', explode(',', $value['or']));
                     } else {
                         $values = $value['or'];
@@ -2627,16 +2627,16 @@ class GuzzleSolrService
                     ]);
                     $conditions = [];
                     foreach ($values as $v) {
-                        if (is_numeric($v)) {
+                        if (is_numeric($v) === true) {
                             $conditions[] = $solrField . ':' . $v;
                         } else {
                             $conditions[] = $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
                         }
                     }
                     $filterQueries[] = '(' . implode(' OR ', $conditions) . ')';
-                } elseif (isset($value['and'])) {
+                } elseif (isset($value['and']) === true) {
                     // Explicit AND logic: multiple fq parameters.
-                    if (is_string($value['and'])) {
+                    if (is_string($value['and']) === true) {
                         $values = array_map('trim', explode(',', $value['and']));
                     } else {
                         $values = $value['and'];
@@ -2647,7 +2647,7 @@ class GuzzleSolrService
                         'values' => $values
                     ]);
                     foreach ($values as $v) {
-                        if (is_numeric($v)) {
+                        if (is_numeric($v) === true) {
                             $filterQueries[] = $solrField . ':' . $v;
                         } else {
                             $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
@@ -2661,7 +2661,7 @@ class GuzzleSolrService
                         'note' => 'Default array values use AND logic (each value must match)'
                     ]);
                     foreach ($value as $v) {
-                        if (is_numeric($v)) {
+                        if (is_numeric($v) === true) {
                             $filterQueries[] = $solrField . ':' . $v;
                         } else {
                             $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$v) . '"';
@@ -2676,7 +2676,7 @@ class GuzzleSolrService
                     'value' => $value,
                     'note' => 'Single values use AND logic across different fields'
                 ]);
-                if (is_numeric($value)) {
+                if (is_numeric($value) === true) {
                     $filterQueries[] = $solrField . ':' . $value;
                 } else {
                     $filterQueries[] = $solrField . ':"' . $this->escapeSolrValue((string)$value) . '"';
@@ -2700,7 +2700,7 @@ class GuzzleSolrService
         // Filter queries built successfully..
 
         // Handle faceting - only add facets when _facetable=true..
-        if ($enableFacets) {
+        if ($enableFacets === true) {
             $solrQuery['facets'] = [
                 'self_register',
                 'self_schema',
@@ -2799,7 +2799,7 @@ class GuzzleSolrService
     private function translateSortableField(string $field): string
     {
         // Handle @self.* fields (metadata)
-        if (str_starts_with($field, '@self.')) {
+        if (str_starts_with($field, '@self.') === true) {
             $metadataField = substr($field, 6); // Remove '@self.'.
 
             // Map metadata fields to their sortable Solr equivalents..
@@ -2826,7 +2826,7 @@ class GuzzleSolrService
                 'uuid' => 'self_uuid'              // UUID is sortable.
             ];
 
-            if (isset($sortableFieldMappings[$metadataField])) {
+            if (isset($sortableFieldMappings[$metadataField]) === true) {
                 $this->logger->debug('SORT: Translating metadata field', [
                     'original' => '@self.' . $metadataField,
                     'solr_field' => $sortableFieldMappings[$metadataField]
@@ -2877,31 +2877,31 @@ class GuzzleSolrService
     {
         // Extract metadata from self_ fields.
         // Handle both single values and arrays (SOLR can return either).
-        if (is_array($doc['self_object'] ?? null)) {
+        if (is_array($doc['self_object'] ?? null) === true) {
             $object = ($doc['self_object'][0] ?? null);
         } else {
             $object = ($doc['self_object'] ?? null);
         }
 
-        if (is_array($doc['self_uuid'] ?? null)) {
+        if (is_array($doc['self_uuid'] ?? null) === true) {
             $uuid = ($doc['self_uuid'][0] ?? null);
         } else {
             $uuid = ($doc['self_uuid'] ?? null);
         }
 
-        if (is_array($doc['self_register'] ?? null)) {
+        if (is_array($doc['self_register'] ?? null) === true) {
             $register = ($doc['self_register'][0] ?? null);
         } else {
             $register = ($doc['self_register'] ?? null);
         }
 
-        if (is_array($doc['self_schema'] ?? null)) {
+        if (is_array($doc['self_schema'] ?? null) === true) {
             $schema = ($doc['self_schema'][0] ?? null);
         } else {
             $schema = ($doc['self_schema'] ?? null);
         }
 
-        if (!$object) {
+        if ($object === null) {
             $this->logger->error('[GuzzleSolrService] Invalid document missing required self_object', [
                 'uuid' => $uuid,
                 'register' => $register,
@@ -2931,11 +2931,11 @@ class GuzzleSolrService
     {
         $textParts = [];
 
-        if ($object->getName()) {
+        if ($object->getName() !== null) {
             $textParts[] = $object->getName();
         }
 
-        if ($object->getUuid()) {
+        if ($object->getUuid() !== null) {
             $textParts[] = $object->getUuid();
         }
 
@@ -2995,21 +2995,21 @@ class GuzzleSolrService
 
             $fieldName = $basePrefix . $key;
 
-            if (is_array($value)) {
-                if ($this->isAssociativeArray($value)) {
+            if (is_array($value) === true) {
+                if ($this->isAssociativeArray($value) === true) {
                     $fields = array_merge($fields, $this->extractDynamicFields($value, $fieldName . '_'));
                 } else {
                     foreach ($value as $item) {
-                        if (is_scalar($item)) {
+                        if (is_scalar($item) === true) {
                             $fields[$fieldName . '_ss'][] = (string)$item;
                         }
                     }
                 }
-            } elseif (is_bool($value)) {
+            } elseif (is_bool($value) === true) {
                 $fields[$fieldName . '_b'] = $value;
-            } elseif (is_int($value)) {
+            } elseif (is_int($value) === true) {
                 $fields[$fieldName . '_i'] = $value;
-            } elseif (is_float($value)) {
+            } elseif (is_float($value) === true) {
                 $fields[$fieldName . '_f'] = $value;
             } else {
                 $fields[$fieldName . '_s'] = (string)$value;
@@ -3189,7 +3189,7 @@ class GuzzleSolrService
         }
         $this->logger->debug('=== END BULK INDEX DEBUG ===');
 
-        if (!$this->isAvailable() || empty($documents)) {
+        if ($this->isAvailable() === false || empty($documents) === true) {
             $this->logger->warning('Bulk index early return', [
                 'is_available' => $this->isAvailable(),
                 'documents_empty' => empty($documents),
@@ -3288,7 +3288,7 @@ class GuzzleSolrService
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
 
-            if ($commit) {
+            if ($commit === true) {
                 $url .= '&commit=true';
             }
 
@@ -3575,7 +3575,7 @@ class GuzzleSolrService
                     'collection' => $tenantCollectionName
                 ]);
 
-                if ($returnDetails) {
+                if ($returnDetails === true) {
                     return [
                         'success'      => true,
                         'deleted_docs' => $data['responseHeader']['QTime'] ?? 0,
@@ -3617,7 +3617,7 @@ class GuzzleSolrService
                     $responseBody = (string) $e->getResponse()->getBody();
                     $responseData = json_decode($responseBody, true);
 
-                    if ($responseData && isset($responseData['error'])) {
+                    if ($responseData !== null && isset($responseData['error']) === true) {
                         $errorMsg = "SOLR HTTP {$e->getResponse()->getStatusCode()} Error: " . ($responseData['error']['msg'] ?? $responseData['error']);
                         $errorDetails['solr_response'] = $responseData;
                         $errorDetails['http_status']   = $e->getResponse()->getStatusCode();
@@ -3642,7 +3642,7 @@ class GuzzleSolrService
                     );
             return false;
         } catch (Exception $e) {
-            if ($returnDetails) {
+            if ($returnDetails === true) {
                 $this->logger->error('Exception deleting by query from SOLR', [
                     'query' => $query,
                     'error' => $e->getMessage(),
@@ -3851,12 +3851,12 @@ class GuzzleSolrService
         ];
 
         // Handle _facetable parameter for field discovery.
-        if (isset($query['_facetable']) && ($query['_facetable'] === true || $query['_facetable'] === 'true')) {
+        if (isset($query['_facetable']) === true && ($query['_facetable'] === true || $query['_facetable'] === 'true')) {
             $solrQuery['_facetable'] = true;
         }
 
         // Handle _facets parameter for extended faceting.
-        if (isset($query['_facets'])) {
+        if (isset($query['_facets']) === true) {
             $solrQuery['_facets'] = $query['_facets'];
 
             // For extended faceting, we'll use JSON faceting instead of traditional faceting.
@@ -3908,16 +3908,16 @@ class GuzzleSolrService
         $filters = [];
 
         // Handle @self metadata filters (register, schema, etc.)
-        if (isset($query['@self']) && is_array($query['@self'])) {
+        if (isset($query['@self']) === true && is_array($query['@self']) === true) {
             foreach ($query['@self'] as $metaKey => $metaValue) {
                 if ($metaValue !== null && $metaValue !== '') {
                     $solrField = 'self_' . $metaKey;
 
                     // Handle [or] and [and] operators. for metadata fields.
-                    if (is_array($metaValue) && (isset($metaValue['or']) || isset($metaValue['and']))) {
-                        if (isset($metaValue['or'])) {
+                    if (is_array($metaValue) === true && (isset($metaValue['or']) === true || isset($metaValue['and']) === true)) {
+                        if (isset($metaValue['or']) === true) {
                             // OR logic: (field:val1 OR field:val2 OR field:val3).
-                            if (is_string($metaValue['or'])) {
+                            if (is_string($metaValue['or']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['or']));
                             } else {
                                 $values = (array) $metaValue['or'];
@@ -3925,15 +3925,15 @@ class GuzzleSolrService
 
                             $orConditions = array_map(function($v) use ($solrField, $metaKey) {
                                 // Resolve schema/register names to IDs if needed.
-                                if (in_array($metaKey, ['register', 'schema']) && !is_numeric($v)) {
+                                if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($v) === false) {
                                     $v = $this->resolveMetadataValueToId($metaKey, $v);
                                 }
-                                return $solrField . ':' . (is_numeric($v) ? $v : $this->escapeSolrValue((string)$v));
+                                return $solrField . ':' . (is_numeric($v) === true ? $v : $this->escapeSolrValue((string)$v));
                             }, $values);
                             $filters[] = '(' . implode(' OR ', $orConditions) . ')';
-                        } elseif (isset($metaValue['and'])) {
+                        } elseif (isset($metaValue['and']) === true) {
                             // AND logic: field:val1 AND field:val2 AND field:val3.
-                            if (is_string($metaValue['and'])) {
+                            if (is_string($metaValue['and']) === true) {
                                 $values = array_map('trim', explode(',', $metaValue['and']));
                             } else {
                                 $values = (array) $metaValue['and'];
@@ -3964,19 +3964,19 @@ class GuzzleSolrService
 
                     // Handle string values for register/schema fields by resolving to integer IDs.
                     // Skip arrays - they will be handled in the array processing block below.
-                    if (in_array($metaKey, ['register', 'schema']) && !is_numeric($metaValue) && !is_array($metaValue)) {
+                    if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($metaValue) === false && is_array($metaValue) === false) {
                         $metaValue = $this->resolveMetadataValueToId($metaKey, $metaValue);
                     }
 
-                    if (is_array($metaValue)) {
+                    if (is_array($metaValue) === true) {
                         // Simple array (no operators) - default to OR logic.
                         $conditions = array_map(function($v) use ($solrField, $metaKey) {
                             // Handle string values in arrays by resolving to integer IDs.
-                            if (in_array($metaKey, ['register', 'schema']) && !is_numeric($v)) {
+                            if (in_array($metaKey, ['register', 'schema']) === true && is_numeric($v) === false) {
                                 $v = $this->resolveMetadataValueToId($metaKey, $v);
                                 }
 
-                                if (is_numeric($v)) {
+                                if (is_numeric($v) === true) {
                                     return $solrField . ':' . $v;
                                 } else {
                                     return $solrField . ':' . $this->escapeSolrValue((string)$v);
@@ -4059,7 +4059,7 @@ class GuzzleSolrService
                 if ($facetGroup === '@self' && is_array($facetConfig) === true) {
                     // Handle @self metadata facets.
                     foreach ($facetConfig as $metaField => $metaConfig) {
-                        if (is_array($metaConfig) && isset($metaConfig['type'])) {
+                        if (is_array($metaConfig) === true && isset($metaConfig['type']) === true) {
                             $solrFacetField = 'self_' . $metaField;
 
                             if ($metaConfig['type'] === 'terms') {
@@ -4221,7 +4221,7 @@ class GuzzleSolrService
         ];
 
         // Parse documents and convert back to OpenRegister objects..
-        if (isset($responseData['response']['docs'])) {
+        if (isset($responseData['response']['docs']) === true) {
             $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs'], $extend);
             $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
 
@@ -4340,7 +4340,7 @@ class GuzzleSolrService
         ];
 
         // Handle _facetable parameter for live field discovery from SOLR
-        if (isset($originalQuery['_facetable']) && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true')) {
+        if (isset($originalQuery['_facetable']) === true && ($originalQuery['_facetable'] === true || $originalQuery['_facetable'] === 'true')) {
             try {
                 $facetableFields = $this->discoverFacetableFieldsFromSolr();
                 // Combine all facetable fields into a single flat structure.
@@ -4470,31 +4470,31 @@ class GuzzleSolrService
         $openRegisterObjects = [];
 
         foreach ($solrDocuments as $doc) {
-            if (is_array($doc['self_object'] ?? null)) {
+            if (is_array($doc['self_object'] ?? null) === true) {
                 $object = ($doc['self_object'][0] ?? null);
             } else {
                 $object = ($doc['self_object'] ?? null);
             }
 
-            if (is_array($doc['self_uuid'] ?? null)) {
+            if (is_array($doc['self_uuid'] ?? null) === true) {
                 $uuid = ($doc['self_uuid'][0] ?? null);
             } else {
                 $uuid = ($doc['self_uuid'] ?? null);
             }
 
-            if (is_array($doc['self_register'] ?? null)) {
+            if (is_array($doc['self_register'] ?? null) === true) {
                 $registerId = ($doc['self_register'][0] ?? null);
             } else {
                 $registerId = ($doc['self_register'] ?? null);
             }
 
-            if (is_array($doc['self_schema'] ?? null)) {
+            if (is_array($doc['self_schema'] ?? null) === true) {
                 $schemaId = ($doc['self_schema'][0] ?? null);
             } else {
                 $schemaId = ($doc['self_schema'] ?? null);
             }
 
-            if (!$object) {
+            if ($object === null) {
                 $this->logger->warning('[GuzzleSolrService] Invalid document missing required self_object', [
                     'uuid' => $uuid,
                     'register' => $registerId,
@@ -4507,12 +4507,12 @@ class GuzzleSolrService
                 $objectData = json_decode($object, true);
 
                 // Add register and schema context to @self if requested and we have the necessary data.
-                if (is_array($extend) && ($registerId || $schemaId) &&
+                if (is_array($extend) === true && ($registerId !== null || $schemaId !== null) &&
                     (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true)) {
 
                     $self = $objectData['@self'] ?? [];
 
-                    if (in_array('@self.register', $extend) === true && $registerId && $this->registerMapper !== null) {
+                    if (in_array('@self.register', $extend) === true && $registerId !== null && $this->registerMapper !== null) {
                         // Use the RegisterMapper directly to get register.
                         try {
                             $register = $this->registerMapper->find($registerId);
@@ -4530,7 +4530,7 @@ class GuzzleSolrService
                         }
                     }
 
-                    if (in_array('@self.schema', $extend) === true && $schemaId && $this->schemaMapper !== null) {
+                    if (in_array('@self.schema', $extend) === true && $schemaId !== null && $this->schemaMapper !== null) {
                         // Use the SchemaMapper directly to get schema.
                         try {
                             $schema = $this->schemaMapper->find($schemaId);
@@ -4953,7 +4953,7 @@ class GuzzleSolrService
 
             $data = json_decode((string)$response->getBody(), true);
 
-            if (isset($data['response'])) {
+            if (isset($data['response']) === true) {
                 $collectionType = (strpos($collectionName, '_nc_') !== false) ? 'tenant-specific' : 'base';
                 $totalDocs = $data['response']['numFound'] ?? 0;
                 

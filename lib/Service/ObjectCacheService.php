@@ -418,10 +418,10 @@ class ObjectCacheService
                     $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
                     $dynamicFields = array_merge($dynamicFields, $nestedFields);
                 }
-            } elseif (is_string($value) === true) {
+            } else if (is_string($value) === true) {
                 $dynamicFields[$fieldName.'_s']   = $value;
                 $dynamicFields[$fieldName.'_txt'] = $value;
-            } elseif (is_int($value) === true || is_float($value) === true) {
+            } else if (is_int($value) === true || is_float($value) === true) {
                 if (is_int($value) === true) {
                     $suffix = '_i';
                 } else {
@@ -429,9 +429,9 @@ class ObjectCacheService
                 }
 
                 $dynamicFields[$fieldName.$suffix] = $value;
-            } elseif (is_bool($value) === true) {
+            } else if (is_bool($value) === true) {
                 $dynamicFields[$fieldName.'_b'] = $value;
-            } elseif ($this->isDateString($value) === true) {
+            } else if ($this->isDateString($value) === true) {
                 $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr($value);
             }//end if
         }//end foreach
@@ -479,7 +479,7 @@ class ObjectCacheService
         foreach ($data as $_key => $value) {
             if (is_string($value) === true) {
                 $textContent[] = $value;
-            } elseif (is_array($value) === true) {
+            } else if (is_array($value) === true) {
                 $this->extractTextFromArray(data: $value, textContent: $textContent);
             }
         }
@@ -853,7 +853,7 @@ class ObjectCacheService
                 if (($object->getId() !== null) === true && (string) $object->getId() !== $object->getUuid()) {
                     $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
-            } elseif ($operation === 'delete') {
+            } else if ($operation === 'delete') {
                 // Remove from SOLR index with immediate commit for instant visibility.
                 $this->removeObjectFromSolr(object: $object, commit: true);
 
@@ -1527,7 +1527,7 @@ class ObjectCacheService
                 'error'     => $e->getMessage(),
                 'timestamp' => date('c'),
             ];
-        }
+        }//end try
 
     }//end commitSolr()
 
@@ -1566,7 +1566,7 @@ class ObjectCacheService
                 'error'     => $e->getMessage(),
                 'timestamp' => date('c'),
             ];
-        }
+        }//end try
 
     }//end optimizeSolr()
 
@@ -1607,7 +1607,7 @@ class ObjectCacheService
                 'error'     => $e->getMessage(),
                 'timestamp' => date('c'),
             ];
-        }
+        }//end try
 
     }//end clearSolrIndexForDashboard()
 

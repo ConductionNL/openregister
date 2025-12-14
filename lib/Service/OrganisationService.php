@@ -1131,14 +1131,14 @@ class OrganisationService
         // This ensures all users always have at least one organisation.
         try {
             $defaultOrg = $this->ensureDefaultOrganisation();
-            
+
             // Add user to default organisation.
             if ($defaultOrg->hasUser($userId) === false) {
-                $users = $defaultOrg->getUsers() ?? [];
+                $users   = $defaultOrg->getUsers() ?? [];
                 $users[] = $userId;
                 $defaultOrg->setUsers($users);
                 $this->organisationMapper->update($defaultOrg);
-                
+
                 $this->logger->info(
                     'Added user to default organisation',
                     [
@@ -1148,7 +1148,7 @@ class OrganisationService
                     ]
                 );
             }
-            
+
             // Set as active organisation.
             $this->config->setUserValue(
                 $userId,
@@ -1156,7 +1156,7 @@ class OrganisationService
                 self::CONFIG_ACTIVE_ORGANISATION,
                 $defaultOrg->getUuid()
             );
-            
+
             $this->logger->info(
                 'Auto-set active organisation to default',
                 [
@@ -1165,7 +1165,7 @@ class OrganisationService
                     'organisationName' => $defaultOrg->getName(),
                 ]
             );
-            
+
             return $defaultOrg;
         } catch (Exception $e) {
             $this->logger->error(
@@ -1262,7 +1262,7 @@ class OrganisationService
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['created']) === true) {
                 $organisation->setCreated(new \DateTime($cachedData['created']));
-            } elseif ($cachedData['created'] instanceof \DateTime) {
+            } else if ($cachedData['created'] instanceof \DateTime) {
                 $organisation->setCreated($cachedData['created']);
             }
         }
@@ -1271,7 +1271,7 @@ class OrganisationService
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['updated']) === true) {
                 $organisation->setUpdated(new \DateTime($cachedData['updated']));
-            } elseif ($cachedData['updated'] instanceof \DateTime) {
+            } else if ($cachedData['updated'] instanceof \DateTime) {
                 $organisation->setUpdated($cachedData['updated']);
             }
         }

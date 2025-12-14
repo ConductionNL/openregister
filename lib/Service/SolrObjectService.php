@@ -207,10 +207,10 @@ class SolrObjectService
             if (is_string($value) === true && trim($value) !== '' && trim($value) !== null) {
                 // Add field name for context, then value.
                 $textParts[] = "{$contextKey}: {$value}";
-            } elseif (is_numeric($value) === true) {
+            } else if (is_numeric($value) === true) {
                 // Include numeric values with context.
                 $textParts[] = "{$contextKey}: {$value}";
-            } elseif (is_bool($value) === true) {
+            } else if (is_bool($value) === true) {
                 // Include boolean values.
                 if ($value === true) {
                     $boolStr = 'true';
@@ -219,7 +219,7 @@ class SolrObjectService
                 }
 
                 $textParts[] = "{$contextKey}: {$boolStr}";
-            } elseif (is_array($value) === true && empty($value) === false) {
+            } else if (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.
                 $nestedText = $this->extractTextFromArray(data: $value, prefix: $contextKey, depth: $depth + 1);
                 if (empty($nestedText) === false) {

@@ -1168,9 +1168,10 @@ class SolrSetup
                 $logData['guzzle_request_exception'] = true;
                 if ($e->hasResponse() === true) {
                     $response = $e->getResponse();
-                    $logData['response_status']  = $response->getStatusCode();
-                    $logData['response_body']    = (string) $response->getBody();
-                    $logData['response_headers'] = $response->getHeaders();
+                    if ($response !== null) {
+                        $logData['response_status']  = $response->getStatusCode();
+                        $logData['response_body']    = (string) $response->getBody();
+                        $logData['response_headers'] = $response->getHeaders();
                 }
 
                 if ($e->getRequest() !== null) {
@@ -1225,17 +1226,19 @@ class SolrSetup
 
                 if ($e->hasResponse() === true) {
                     $response       = $e->getResponse();
-                    $responseStatus = $response->getStatusCode();
-                    $responseBody   = (string) $response->getBody();
+                    if ($response !== null) {
+                        $responseStatus = $response->getStatusCode();
+                        $responseBody   = (string) $response->getBody();
 
-                    // Store in guzzle_details for comprehensive logging.
-                    $this->lastErrorDetails['guzzle_details']['response_status']  = $responseStatus;
-                    $this->lastErrorDetails['guzzle_details']['response_body']    = $responseBody;
-                    $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
+                        // Store in guzzle_details for comprehensive logging.
+                        $this->lastErrorDetails['guzzle_details']['response_status']  = $responseStatus;
+                        $this->lastErrorDetails['guzzle_details']['response_body']    = $responseBody;
+                        $this->lastErrorDetails['guzzle_details']['response_headers'] = $response->getHeaders();
 
-                    // Also store at top level for step tracking consistency.
-                    $this->lastErrorDetails['guzzle_response_status'] = $responseStatus;
-                    $this->lastErrorDetails['guzzle_response_body']   = $responseBody;
+                        // Also store at top level for step tracking consistency.
+                        $this->lastErrorDetails['guzzle_response_status'] = $responseStatus;
+                        $this->lastErrorDetails['guzzle_response_body']   = $responseBody;
+                    }
                 }
 
                 if ($e->getRequest() !== null) {

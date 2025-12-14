@@ -43,13 +43,13 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  *
  * @psalm-suppress UnusedClass
  */
@@ -185,6 +185,7 @@ class ChatController extends Controller
         $this->db     = $db;
         $this->logger = $logger;
         $this->userId = $userId;
+
     }//end __construct()
 
 
@@ -210,6 +211,7 @@ class ChatController extends Controller
             templateName: 'index',
             params: []
         );
+
     }//end page()
 
 
@@ -228,8 +230,8 @@ class ChatController extends Controller
             // Get request parameters.
             $conversationUuid = (string) $this->request->getParam('conversation');
             $agentUuid        = (string) $this->request->getParam('agentUuid');
-            $message    = (string) $this->request->getParam('message');
-            $viewsParam = $this->request->getParam('views');
+            $message          = (string) $this->request->getParam('message');
+            $viewsParam       = $this->request->getParam('views');
 
             if ($viewsParam !== null && is_array($viewsParam) === true) {
                 $selectedViews = $viewsParam;
@@ -290,7 +292,7 @@ class ChatController extends Controller
                         statusCode: 404
                     );
                 }
-            } elseif (empty($agentUuid) === false) {
+            } else if (empty($agentUuid) === false) {
                 // Create new conversation with specified agent.
                 $organisation = $this->organisationService->getActiveOrganisation();
 

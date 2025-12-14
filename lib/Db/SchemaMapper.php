@@ -51,13 +51,13 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  *
  * @method Schema insert(Entity $entity)
  * @method Schema update(Entity $entity)
@@ -158,7 +158,8 @@ class SchemaMapper extends QBMapper
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         // Assign appConfig to trait's protected property.
-        $this->appConfig           = $appConfig;
+        $this->appConfig = $appConfig;
+
     }//end __construct()
 
 
@@ -208,6 +209,7 @@ class SchemaMapper extends QBMapper
         } else {
             $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         }
+
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -372,7 +374,7 @@ class SchemaMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -395,6 +397,7 @@ class SchemaMapper extends QBMapper
         } else {
             $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         }
+
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -581,10 +584,10 @@ class SchemaMapper extends QBMapper
             if (($property['$ref'] ?? null) !== null) {
                 if (is_array($property['$ref']) === true && (($property['$ref']['id'] ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']['id'];
-                } elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
+                } else if (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']->id;
-                } elseif (is_int($property['$ref']) === true) {
-                } elseif (is_string($property['$ref']) === false && $property['$ref'] !== '') {
+                } else if (is_int($property['$ref']) === true) {
+                } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
                     throw new Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
                 }
             }
@@ -785,7 +788,7 @@ class SchemaMapper extends QBMapper
      * @phpstan-return array<int,int>  Associative array of schema ID => register count
      *
      * @psalm-return array<int, int>
-     * @return int[] Associative array of schema ID => register count
+     * @return       int[] Associative array of schema ID => register count
      */
     public function getRegisterCountPerSchema(): array
     {
@@ -1715,7 +1718,7 @@ class SchemaMapper extends QBMapper
                         "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from ".json_encode($parentValue)." to ".json_encode($childValue)." (adds types not in parent)"
                     );
                 }
-            } elseif (is_array($parentValue) === false && is_array($childValue) === false) {
+            } else if (is_array($parentValue) === false && is_array($childValue) === false) {
                 throw new Exception(
                     "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from "."'{$parentValue}' to '{$childValue}'"
                 );
@@ -1996,7 +1999,7 @@ class SchemaMapper extends QBMapper
             if (isset($parentProperty[$key]) === false) {
                 // New field in child.
                 $delta[$key] = $value;
-            } elseif ($this->arePropertiesDifferent($parentProperty[$key], $value) === true) {
+            } else if ($this->arePropertiesDifferent($parentProperty[$key], $value) === true) {
                 // Changed field.
                 if ($key === 'properties' && is_array($value) === true && is_array($parentProperty[$key]) === true) {
                     // Recursively extract delta for nested properties.

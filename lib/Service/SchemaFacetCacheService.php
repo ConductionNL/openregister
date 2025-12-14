@@ -763,16 +763,17 @@ class SchemaFacetCacheService
         if ($updated === 0) {
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::FACET_CACHE_TABLE)
-                ->values(values: [
-                           'schema_id'    => $qb->createNamedParameter($schemaId),
-                           'facet_type'   => $qb->createNamedParameter($facetType),
-                           'field_name'   => $qb->createNamedParameter($cacheKey),
-                           'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
-                           'cache_data'   => $qb->createNamedParameter(json_encode($data)),
-                           'created'      => $qb->createNamedParameter($now, 'datetime'),
-                           'updated'      => $qb->createNamedParameter($now, 'datetime'),
-                           'expires'      => $qb->createNamedParameter($expires, 'datetime'),
-                       ]
+                ->values(
+                        values: [
+                            'schema_id'    => $qb->createNamedParameter($schemaId),
+                            'facet_type'   => $qb->createNamedParameter($facetType),
+                            'field_name'   => $qb->createNamedParameter($cacheKey),
+                            'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
+                            'cache_data'   => $qb->createNamedParameter(json_encode($data)),
+                            'created'      => $qb->createNamedParameter($now, 'datetime'),
+                            'updated'      => $qb->createNamedParameter($now, 'datetime'),
+                            'expires'      => $qb->createNamedParameter($expires, 'datetime'),
+                        ]
                        );
             $qb->executeStatement();
         }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Migration - Add size column to search trails
  *
  * This migration adds a size column to the openregister_search_trails table

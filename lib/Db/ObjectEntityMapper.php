@@ -310,11 +310,11 @@ class ObjectEntityMapper extends QBMapper
                     // > 64MB
                     $this->maxPacketSizeBuffer = 0.6;
                     // 60% buffer
-                } elseif ($maxPacketSize > 33554432) {
+                } else if ($maxPacketSize > 33554432) {
                     // > 32MB
                     $this->maxPacketSizeBuffer = 0.5;
                     // 50% buffer
-                } elseif ($maxPacketSize > 16777216) {
+                } else if ($maxPacketSize > 16777216) {
                     // > 16MB
                     $this->maxPacketSizeBuffer = 0.4;
                     // 40% buffer
@@ -649,15 +649,15 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
-        $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-        
+        $bypassEnabled    = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
+
         // Allow per-request override via _crossOrg query parameter.
         // _crossOrg=false: Disable bypass for this request (only your org's objects).
         // _crossOrg=true: Enable bypass for this request (include published from other orgs).
         if (isset($_GET['_crossOrg']) === true) {
             $bypassEnabled = filter_var($_GET['_crossOrg'], FILTER_VALIDATE_BOOLEAN);
         }
-        
+
         return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
@@ -979,7 +979,7 @@ class ObjectEntityMapper extends QBMapper
                     return empty($term) === false;
                 }
             );
-        } elseif (is_string($search) === true) {
+        } else if (is_string($search) === true) {
             // Handle comma-separated values in string.
             $searchTerms = array_filter(
                 array_map('trim', explode(',', $search)),
@@ -1502,7 +1502,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
+        $basicSchema   = isset($metadataFilters['schema']) === true ? null : $schema;
         // Published filtering is controlled by the $published parameter (from _published query param).
         // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
         // The bypass adds published objects from other orgs; it doesn't skip the published filter.
@@ -1719,7 +1719,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
         $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
+        $basicSchema   = isset($metadataFilters['schema']) === true ? null : $schema;
         // Published filtering is controlled by the $published parameter (from _published query param).
         // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
         // The bypass adds published objects from other orgs; it doesn't skip the published filter.
@@ -1782,26 +1782,25 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Sum the size of search objects based on query parameters
      *
-     * @param array       $query                   Query parameters for filtering
+     * @param array       $query                  Query parameters for filtering
      * @param string|null $activeOrganisationUuid UUID of the active organisation
-     * @param bool        $rbac                    Whether to apply RBAC filters
-     * @param bool        $multi                   Whether to apply multi-tenancy filters
-     * @param array|null  $ids                     Optional array of IDs/UUIDs to filter by
+     * @param bool        $rbac                   Whether to apply RBAC filters
+     * @param bool        $multi                  Whether to apply multi-tenancy filters
+     * @param array|null  $ids                    Optional array of IDs/UUIDs to filter by
      *
      * @return int Total size of matching objects in bytes
      */
-    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null): int
+    public function sizeSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $multi=true, ?array $ids=null): int
     {
         // Extract options from query (prefixed with _) - same as countSearchObjects
-        $search = $this->processSearchParameter($query['_search'] ?? null);
+        $search         = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published = $query['_published'] ?? false;
+        $published      = $query['_published'] ?? false;
         // ids parameter is now passed as method parameter, not from query
-
         // Extract metadata from @self
         $metadataFilters = [];
-        $register = null;
-        $schema = null;
+        $register        = null;
+        $schema          = null;
 
         if (isset($query['@self']) === true && is_array($query['@self']) === true) {
             $metadataFilters = $query['@self'];
@@ -1820,9 +1819,13 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Clean the query: remove @self and all properties prefixed with _
-        $cleanQuery = array_filter($query, function($key) {
-            return $key !== '@self' && str_starts_with($key, '_') === false;
-        }, ARRAY_FILTER_USE_KEY);
+        $cleanQuery = array_filter(
+                $query,
+                function ($key) {
+                    return $key !== '@self' && str_starts_with($key, '_') === false;
+                },
+                ARRAY_FILTER_USE_KEY
+                );
 
         // If search handler is not available, fall back to a basic size query
         if ($this->searchHandler === null) {
@@ -1837,16 +1840,17 @@ class ObjectEntityMapper extends QBMapper
                 qb: $queryBuilder,
                 columnName: 'organisation',
                 allowNullOrg: true,
-                tableAlias: '',          // No table alias in this query
+                tableAlias: '',
+            // No table alias in this query
                 enablePublished: true,
                 multiTenancyEnabled: $multi
             );
 
             $result = $queryBuilder->executeQuery();
-            $size = $result->fetchOne();
+            $size   = $result->fetchOne();
             $result->closeCursor();
             return (int) ($size ?? 0);
-        }
+        }//end if
 
         $queryBuilder = $this->db->getQueryBuilder();
 
@@ -1856,7 +1860,7 @@ class ObjectEntityMapper extends QBMapper
 
         // Handle basic filters - skip register/schema if they're in metadata filters
         $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
+        $basicSchema   = isset($metadataFilters['schema']) === true ? null : $schema;
         // Published filtering is controlled by the $published parameter (from _published query param).
         // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
         // The bypass adds published objects from other orgs; it doesn't skip the published filter.
@@ -1899,7 +1903,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $result = $queryBuilder->executeQuery();
-        $size = $result->fetchOne();
+        $size   = $result->fetchOne();
         $result->closeCursor();
 
         return (int) ($size ?? 0);
@@ -1940,7 +1944,7 @@ class ObjectEntityMapper extends QBMapper
         ?bool $published,
         mixed $register,
         mixed $schema,
-        string $tableAlias = ''
+        string $tableAlias=''
     ): void {
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($tableAlias !== '') {
@@ -1958,8 +1962,8 @@ class ObjectEntityMapper extends QBMapper
         // Users can set _published=false to see all accessible objects (including unpublished from own org).
         if ($published === true) {
             $now = (new DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn = $tableAlias !== null && $tableAlias !== '' ? $tableAlias . '.published' : 'published';
-            $depublishedColumn = $tableAlias !== null && $tableAlias !== '' ? $tableAlias . '.depublished' : 'depublished';
+            $publishedColumn   = $tableAlias !== null && $tableAlias !== '' ? $tableAlias.'.published' : 'published';
+            $depublishedColumn = $tableAlias !== null && $tableAlias !== '' ? $tableAlias.'.depublished' : 'depublished';
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),
@@ -1996,7 +2000,7 @@ class ObjectEntityMapper extends QBMapper
                     $queryBuilder->expr()->eq($registerColumn, $queryBuilder->createNamedParameter($register, IQueryBuilder::PARAM_INT))
                 );
             }
-        }
+        }//end if
 
         // Add schema filter if provided.
         if ($schema !== null) {
@@ -2022,7 +2026,7 @@ class ObjectEntityMapper extends QBMapper
                     $queryBuilder->expr()->eq($schemaColumn, $queryBuilder->createNamedParameter($schema, IQueryBuilder::PARAM_INT))
                 );
             }
-        }
+        }//end if
 
     }//end applyBasicFilters()
 
@@ -3841,6 +3845,7 @@ class ObjectEntityMapper extends QBMapper
         if (!isset($this->logger)) {
             throw new RuntimeException('Logger not initialized in ObjectEntityMapper.');
         }
+
         $optimizedHandler = new OptimizedBulkOperations(
             $this->db,
             $this->logger

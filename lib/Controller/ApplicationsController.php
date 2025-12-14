@@ -37,13 +37,13 @@ use Exception;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
  */
@@ -105,7 +105,8 @@ class ApplicationsController extends Controller
         // Store dependencies for use in controller methods.
         $this->applicationService = $applicationService;
         $this->applicationMapper  = $applicationMapper;
-        $this->logger            = $logger;
+        $this->logger = $logger;
+
     }//end __construct()
 
 
@@ -131,6 +132,7 @@ class ApplicationsController extends Controller
             templateName: 'index',
             params: []
         );
+
     }//end page()
 
 
@@ -200,6 +202,7 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
+
     }//end index()
 
 
@@ -243,7 +246,8 @@ class ApplicationsController extends Controller
                 data: ['error' => 'Application not found'],
                 statusCode: Http::STATUS_NOT_FOUND
             );
-        }
+        }//end try
+
     }//end show()
 
 
@@ -290,6 +294,7 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
+
     }//end create()
 
 
@@ -343,6 +348,7 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
+
     }//end update()
 
 
@@ -364,6 +370,7 @@ class ApplicationsController extends Controller
     {
         // Delegate to update method (both handle partial updates).
         return $this->update($id);
+
     }//end patch()
 
 
@@ -407,7 +414,8 @@ class ApplicationsController extends Controller
                 data: ['error' => 'Failed to delete application'],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
+
     }//end destroy()
 
 
@@ -432,7 +440,9 @@ class ApplicationsController extends Controller
 
         // Return null if parameter not provided.
         return null;
+
     }//end extractLimit()
+
 
     /**
      * Extract offset parameter from request params
@@ -455,7 +465,9 @@ class ApplicationsController extends Controller
 
         // Return null if parameter not provided.
         return null;
+
     }//end extractOffset()
+
 
     /**
      * Extract page parameter from request params
@@ -478,6 +490,7 @@ class ApplicationsController extends Controller
 
         // Return null if parameter not provided.
         return null;
+
     }//end extractPage()
 
 

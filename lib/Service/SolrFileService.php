@@ -348,7 +348,7 @@ class SolrFileService
                 foreach ($section->getElements() as $element) {
                     if (method_exists($element, 'getText') === true) {
                         $text .= $element->getText()."\n";
-                    } elseif (method_exists($element, 'getElements') === true) {
+                    } else if (method_exists($element, 'getElements') === true) {
                         foreach ($element->getElements() as $childElement) {
                             if (method_exists($childElement, 'getText') === true) {
                                 $text .= $childElement->getText()."\n";
@@ -566,11 +566,11 @@ class SolrFileService
 
                 if (is_scalar($value) === true) {
                     $text .= $newPrefix.': '.$value."\n";
-                } elseif (is_array($value) === true || is_object($value) === true) {
+                } else if (is_array($value) === true || is_object($value) === true) {
                     $text .= $this->jsonToText($value, $newPrefix);
                 }
             }
-        } elseif (is_object($data) === true) {
+        } else if (is_object($data) === true) {
             $text .= $this->jsonToText((array) $data, $prefix);
         }
 

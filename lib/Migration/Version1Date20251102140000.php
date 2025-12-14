@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Views Table Migration
  *
  * This migration creates the 'openregister_views' table

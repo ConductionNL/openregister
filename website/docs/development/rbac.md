@@ -116,7 +116,9 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use OCP\IGroupManager;
+use OCP\IAppConfig;
 use OCA\OpenRegister\Service\OrganisationService;
+use Psr\Log\LoggerInterface;
 
 class YourMapper extends QBMapper
 {
@@ -126,16 +128,25 @@ class YourMapper extends QBMapper
     private IUserSession $userSession;
     private IGroupManager $groupManager;
     
+    // Optional: Define these properties if you need advanced multi-tenancy features.
+    // The trait does not declare these to avoid conflicts.
+    private IAppConfig $appConfig;
+    private LoggerInterface $logger;
+    
     public function __construct(
         IDBConnection $db,
         OrganisationService $organisationService,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IAppConfig $appConfig = null,
+        LoggerInterface $logger = null
     ) {
         parent::__construct($db, 'openregister_your_table', YourEntity::class);
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
+        $this->appConfig           = $appConfig;
+        $this->logger              = $logger;
     }
     
     public function insert(Entity $entity): Entity
@@ -334,10 +345,16 @@ Verifies RBAC permission and throws exception if denied.
 
 ### 1. Always Inject Dependencies
 
-Ensure your mapper constructor injects:
-- 'OrganisationService'
-- 'IUserSession'
-- 'IGroupManager'
+Ensure your mapper constructor injects required dependencies:
+- 'OrganisationService' (required)
+- 'IUserSession' (required)
+- 'IGroupManager' (required)
+
+Optional dependencies for advanced features:
+- 'IAppConfig' - For multitenancy config settings (published bypass, admin override, etc.)
+- 'LoggerInterface' - For debug logging
+
+Note: The 'MultiTenancyTrait' does not declare the '$appConfig' and '$logger' properties to avoid conflicts. Classes using the trait should declare these properties themselves if needed. The trait methods check 'isset()' before using them.
 
 ### 2. Apply Organisation Filter on All Reads
 

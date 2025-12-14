@@ -125,16 +125,16 @@ class LogService
      * pagination, sorting, and search capabilities. Validates that the object
      * belongs to the specified register and schema.
      *
-     * @param string $register The register identifier (slug or ID)
-     * @param string $schema   The schema identifier (slug or ID)
-     * @param string $id       The object ID to retrieve logs for
+     * @param string               $register The register identifier (slug or ID)
+     * @param string               $schema   The schema identifier (slug or ID)
+     * @param string               $id       The object ID to retrieve logs for
      * @param array<string, mixed> $config   Configuration array containing:
-     *                                      - limit: (int) Maximum number of items per page (default: 20)
-     *                                      - offset: (int|null) Number of items to skip for pagination
-     *                                      - page: (int|null) Current page number (alternative to offset)
-     *                                      - filters: (array) Filter parameters (e.g., ['action' => 'create'])
-     *                                      - sort: (array) Sort parameters ['field' => 'ASC|DESC'] (default: ['created' => 'DESC'])
-     *                                      - search: (string|null) Search term for log content
+     *                                       - limit: (int) Maximum number of items per page (default: 20)
+     *                                       - offset: (int|null) Number of items to skip for pagination
+     *                                       - page: (int|null) Current page number (alternative to offset)
+     *                                       - filters: (array) Filter parameters (e.g., ['action' => 'create'])
+     *                                       - sort: (array) Sort parameters ['field' => 'ASC|DESC'] (default: ['created' => 'DESC'])
+     *                                       - search: (string|null) Search term for log content
      *
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail log entries
      *

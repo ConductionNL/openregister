@@ -116,7 +116,7 @@ class EndpointsController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-        
+
         // Store dependencies for use in controller methods.
         $this->endpointMapper    = $endpointMapper;
         $this->endpointLogMapper = $endpointLogMapper;
@@ -390,7 +390,7 @@ class EndpointsController extends Controller
         try {
             // Find endpoint by ID to ensure it exists before deletion.
             $endpoint = $this->endpointMapper->find($id);
-            
+
             // Delete endpoint from database.
             $this->endpointMapper->delete($endpoint);
 
@@ -663,7 +663,7 @@ class EndpointsController extends Controller
         try {
             // Get optional endpoint ID filter from request parameters.
             $endpointId = $this->request->getParam('endpoint_id');
-            
+
             // Get pagination parameters from request (with defaults).
             $limit  = (int) ($this->request->getParam('limit') ?? 50);
             $offset = (int) ($this->request->getParam('offset') ?? 0);
@@ -679,7 +679,7 @@ class EndpointsController extends Controller
             } else {
                 // No endpoint filter - get all logs from all endpoints.
                 $logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
-                
+
                 // Get total count for all logs (without pagination).
                 $allLogs = $this->endpointLogMapper->findAll(limit: null, offset: null);
                 $total   = count($allLogs);

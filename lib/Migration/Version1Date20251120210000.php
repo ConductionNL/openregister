@@ -302,9 +302,9 @@ class Version1Date20251120210000 extends SimpleMigrationStep
                     'webhook',
                     Types::BIGINT,
                     [
-                        'notnull' => true,
+                        'notnull'  => true,
                         'unsigned' => true,
-                        'comment' => 'References openregister_webhooks.id',
+                        'comment'  => 'References openregister_webhooks.id',
                     ]
                     );
             $logsTable->addIndex(['webhook'], 'webhook_logs_webhook_idx');
@@ -429,7 +429,6 @@ class Version1Date20251120210000 extends SimpleMigrationStep
         // NOTE: No foreign key constraint added due to Nextcloud/Doctrine prefix handling issues.
         // Referential integrity is maintained by the application code instead.
         // When deleting a webhook, the application will also delete associated logs.
-
         return $schema;
 
     }//end changeSchema()

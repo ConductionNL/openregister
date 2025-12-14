@@ -238,7 +238,9 @@ class CloudEventService
         }
 
         return 'application/json';
+
     }//end getContentTypeHeader()
+
 
     /**
      * Get application version
@@ -251,6 +253,7 @@ class CloudEventService
     {
         // @todo Get actual version from appinfo/info.xml or composer.json.
         return '1.0.0';
+
     }//end getAppVersion()
 
 

@@ -837,15 +837,15 @@ class SearchTrailMapper extends QBMapper
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($field));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
-            } elseif (is_array($value) === true) {
+            } else if (is_array($value) === true) {
                 // Handle array values like ['IS NULL', ''].
                 $conditions = [];
                 foreach ($value as $val) {
                     if ($val === 'IS NULL') {
                         $conditions[] = $qb->expr()->isNull($field);
-                    } elseif ($val === 'IS NOT NULL') {
+                    } else if ($val === 'IS NOT NULL') {
                         $conditions[] = $qb->expr()->isNotNull($field);
                     } else {
                         $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));

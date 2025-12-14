@@ -42,13 +42,13 @@ use Exception;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
  */
@@ -133,8 +133,9 @@ class AgentsController extends Controller
         $this->agentMapper         = $agentMapper;
         $this->organisationService = $organisationService;
         $this->toolRegistry        = $toolRegistry;
-        $this->logger             = $logger;
-        $this->userId             = $userId;
+        $this->logger = $logger;
+        $this->userId = $userId;
+
     }//end __construct()
 
 
@@ -160,6 +161,7 @@ class AgentsController extends Controller
             templateName: 'index',
             params: []
         );
+
     }//end page()
 
 
@@ -244,6 +246,7 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
+
     }//end index()
 
 
@@ -296,6 +299,7 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_NOT_FOUND
             );
         }//end try
+
     }//end show()
 
 
@@ -379,6 +383,7 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
+
     }//end create()
 
 
@@ -456,6 +461,7 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
+
     }//end update()
 
 
@@ -477,6 +483,7 @@ class AgentsController extends Controller
     {
         // Delegate to update method (both handle partial updates).
         return $this->update($id);
+
     }//end patch()
 
 
@@ -504,6 +511,7 @@ class AgentsController extends Controller
             if ($this->userId === null) {
                 return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: Http::STATUS_FORBIDDEN);
             }
+
             if ($this->agentMapper->canUserModifyAgent(agent: $agent, userId: $this->userId) === false) {
                 return new JSONResponse(data: ['error' => 'You do not have permission to delete this agent'], statusCode: Http::STATUS_FORBIDDEN);
             }
@@ -538,6 +546,7 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
+
     }//end destroy()
 
 
@@ -628,6 +637,7 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
+
     }//end tools()
 
 

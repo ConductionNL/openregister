@@ -144,7 +144,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string[]
      *
-     * @psalm-return list{'term', 'since', 'until', 'person', 'register', 'schema'}
+     * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
      * @phpstan-return array<string>
      */
     public function getSupportedFilters(): array
@@ -168,7 +168,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return array
      *
-     * @psalm-return array<never, never>
+     * @psalm-return   array<never, never>
      * @phpstan-return array<string>
      */
     public function getAlternateIds(): array
@@ -183,7 +183,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return FilterDefinition[]
      *
-     * @psalm-return list{FilterDefinition, FilterDefinition}
+     * @psalm-return   list{FilterDefinition, FilterDefinition}
      * @phpstan-return list<\OCP\Search\FilterDefinition>
      */
     public function getCustomFilters(): array
@@ -214,7 +214,7 @@ class ObjectsProvider implements IFilteringProvider
     {
         // Initialize filters array.
         $filters = [];
-        
+
         /*
          * @var string|null $register
          */
@@ -381,7 +381,7 @@ class ObjectsProvider implements IFilteringProvider
         // Add summary/description if available.
         if (!empty($object['summary'])) {
             $parts[] = $object['summary'];
-        } elseif (empty($object['description']) === false) {
+        } else if (empty($object['description']) === false) {
             $descriptionPart = substr($object['description'], 0, 100);
             if (strlen($object['description']) > 100) {
                 $descriptionPart .= '...';

@@ -567,7 +567,7 @@ class DashboardService
         try {
             // Fetch and validate register and schema.
             $register = $this->fetchRegister($registerId);
-            $schema = $this->fetchSchema($schemaId, $register);
+            $schema   = $this->fetchSchema($schemaId, $register);
 
             // Perform the calculations.
             $results = $this->recalculateAllSizes(registerId: $registerId, schemaId: $schemaId);
@@ -621,7 +621,7 @@ class DashboardService
     /**
      * Fetch schema by ID with validation
      *
-     * @param int|null                                 $schemaId Schema ID to fetch.
+     * @param int|null                           $schemaId Schema ID to fetch.
      * @param \OCA\OpenRegister\Db\Register|null $register Register to validate against.
      *
      * @return \OCA\OpenRegister\Db\Schema|null Schema entity or null if not provided.
@@ -636,7 +636,7 @@ class DashboardService
 
         try {
             $schema = $this->schemaMapper->find($schemaId);
-            
+
             // Verify schema belongs to register if both are provided.
             if ($register !== null && in_array($schema->getId(), $register->getSchemas()) === false) {
                 throw new Exception('Schema does not belong to the specified register');

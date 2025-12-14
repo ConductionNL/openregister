@@ -286,7 +286,7 @@ class ObjectsController extends Controller
         $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } elseif (($params['_offset'] ?? null) !== null) {
+        } else if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
         } else {
             $offset = null;
@@ -294,7 +294,7 @@ class ObjectsController extends Controller
 
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } elseif (($params['_page'] ?? null) !== null) {
+        } else if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
         } else {
             $page = null;
@@ -680,11 +680,11 @@ class ObjectsController extends Controller
                  */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
-                $typeArray = is_array($typeRaw) === true ? $typeRaw : [];
+                $typeArray    = is_array($typeRaw) === true ? $typeRaw : [];
                 $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
-                $errorArray = is_array($errorRaw) === true ? $errorRaw : [];
-                $sizeArray = is_array($sizeRaw) === true ? $sizeRaw : [];
-                $fileCount = count($nameArray);
+                $errorArray   = is_array($errorRaw) === true ? $errorRaw : [];
+                $sizeArray    = is_array($sizeRaw) === true ? $sizeRaw : [];
+                $fileCount    = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
@@ -709,7 +709,6 @@ class ObjectsController extends Controller
         $rbac    = !$isAdmin;
         // If admin, disable RBAC.
         // Note: multitenancy is disabled for admins via $rbac flag.
-
         // Determine uploaded files value.
         if (!empty($uploadedFiles) === true) {
             $uploadedFilesValue = $uploadedFiles;
@@ -832,11 +831,11 @@ class ObjectsController extends Controller
                  */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
-                $typeArray = is_array($typeRaw) === true ? $typeRaw : [];
+                $typeArray    = is_array($typeRaw) === true ? $typeRaw : [];
                 $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
-                $errorArray = is_array($errorRaw) === true ? $errorRaw : [];
-                $sizeArray = is_array($sizeRaw) === true ? $sizeRaw : [];
-                $fileCount = count($nameArray);
+                $errorArray   = is_array($errorRaw) === true ? $errorRaw : [];
+                $sizeArray    = is_array($sizeRaw) === true ? $sizeRaw : [];
+                $fileCount    = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
                     $uploadedFiles[$fieldName.'['.$i.']'] = [
@@ -1197,7 +1196,8 @@ class ObjectsController extends Controller
         $objectService->setSchema(schema: $schema);
 
         // Get the relations for the object.
-        $relationsArray = $objectService->find(id: $id)->getRelations();
+        $object         = $objectService->find(id: $id);
+        $relationsArray = $object ? $object->getRelations() : null;
         $relations      = array_values($relationsArray ?? []);
 
         // Build search query using ObjectService searchObjectsPaginated directly.
@@ -1328,7 +1328,7 @@ class ObjectsController extends Controller
             } else {
                 $objectSchemaSlug = null;
             }
-        } elseif (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
+        } else if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
             $objectSchemaId = (string) $objectSchema->id;
             if (isset($objectSchema->slug) === true) {
                 $objectSchemaSlug = strtolower($objectSchema->slug);

@@ -154,8 +154,8 @@ class SchemaService
      * Iterates through all objects and analyzes their JSON data to discover
      * properties, data types, and usage patterns.
      *
-     * @param array $objects               Array of ObjectEntity objects
-     * @param array $_existingProperties   Current schema properties for comparison
+     * @param array $objects             Array of ObjectEntity objects
+     * @param array $_existingProperties Current schema properties for comparison
      *
      * @return (array|float|int|mixed|null|true)[][][] Analysis results with discovered properties and statistics
      *

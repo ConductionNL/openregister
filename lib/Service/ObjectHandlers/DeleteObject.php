@@ -168,7 +168,7 @@ class DeleteObject
                 registerId: $registerIdInt,
                 schemaId: $schemaIdInt
             );
-        }
+        }//end if
 
         // Create audit trail for delete if audit trails are enabled.
         if ($this->isAuditTrailsEnabled() === true) {

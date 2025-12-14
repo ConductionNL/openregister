@@ -45,13 +45,13 @@ use OCA\OpenRegister\Service\FileService;
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  *
  * @method Register insert(Entity $entity)
  * @method Register update(Entity $entity)
@@ -161,6 +161,7 @@ class RegisterMapper extends QBMapper
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->appConfig           = $appConfig;
+
     }//end __construct()
 
 
@@ -431,7 +432,7 @@ class RegisterMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -454,6 +455,7 @@ class RegisterMapper extends QBMapper
         } else {
             $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         }
+
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',

@@ -98,7 +98,7 @@ class WebhookDeliveryJob extends QueuedJob
     ) {
         // Call parent constructor to initialize base job with time factory.
         parent::__construct($time);
-        
+
         // Store dependencies for use in job execution.
         $this->webhookMapper  = $webhookMapper;
         $this->webhookService = $webhookService;
@@ -114,10 +114,10 @@ class WebhookDeliveryJob extends QueuedJob
      * delivers payload to webhook URL, and handles retries on failure.
      *
      * @param array<string, mixed> $argument Job arguments containing:
-     *                                     - webhook_id: Webhook ID to deliver (required)
-     *                                     - event_name: Event class name (required)
-     *                                     - payload: Event payload data (required)
-     *                                     - attempt: Current attempt number (default: 1)
+     *                                       - webhook_id: Webhook ID to deliver (required)
+     *                                       - event_name: Event class name (required)
+     *                                       - payload: Event payload data (required)
+     *                                       - attempt: Current attempt number (default: 1)
      *
      * @return void
      */

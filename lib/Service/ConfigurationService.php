@@ -165,6 +165,7 @@ class ConfigurationService
      */
     private string $appDataPath;
 
+
     /**
      * Constructor
      *
@@ -205,11 +206,13 @@ class ConfigurationService
         $this->appManager          = $appManager;
         $this->container           = $container;
         $this->appConfig           = $appConfig;
-        $this->logger              = $logger;
-        $this->client              = $client;
-        $this->objectService       = $objectService;
-        $this->appDataPath         = $appDataPath;
+        $this->logger        = $logger;
+        $this->client        = $client;
+        $this->objectService = $objectService;
+        $this->appDataPath   = $appDataPath;
+
     }//end __construct()
+
 
     /**
      * Attempts to retrieve the OpenConnector service from the container.
@@ -302,7 +305,7 @@ class ConfigurationService
                     'path'   => $input->getGithubPath(),
                 ],
             ];
-        } elseif ($input instanceof Register) {
+        } else if ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
             $registers = [$input];
             // Set the info from the register.
@@ -737,7 +740,7 @@ class ConfigurationService
             foreach ($data as $key => $value) {
                 if (is_object($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
                 }
             }
@@ -1149,7 +1152,7 @@ class ConfigurationService
                     }
 
                     $importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
-                    $existingVersion    = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+                    $existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
                     if (version_compare($importedVersion, $existingVersion, '>') > 0) {
                         $uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
                         // CRITICAL: Pass Register and Schema OBJECTS, not IDs.
@@ -1536,7 +1539,7 @@ class ConfigurationService
                     if (($property['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
-                        } elseif (($this->schemasMap[$property['$ref']] ?? null) !== null) {
+                        } else if (($this->schemasMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
                         }
                     }
@@ -1544,7 +1547,7 @@ class ConfigurationService
                     if (($property['items']['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
-                        } elseif (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
+                        } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
@@ -1559,7 +1562,7 @@ class ConfigurationService
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } elseif ($registerSlug !== null) {
+                        } else if ($registerSlug !== null) {
                             // Try to find existing register in database.
                             // Note: May fail due to organisation filtering during cross-instance import.
                             try {
@@ -1621,7 +1624,7 @@ class ConfigurationService
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } elseif ($registerSlug !== null) {
+                        } else if ($registerSlug !== null) {
                             // Try to find existing register in database.
                             // Note: May fail due to organisation filtering during cross-instance import.
                             try {
@@ -1671,7 +1674,7 @@ class ConfigurationService
                     if (($property['register'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $slugsAndIdsMap[$property['register']];
-                        } elseif (($this->registersMap[$property['register']] ?? null) !== null) {
+                        } else if (($this->registersMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $this->registersMap[$property['register']]->getId();
                         }
                     }
@@ -1679,7 +1682,7 @@ class ConfigurationService
                     if (is_array($property['items'] ?? []) && isset($property['items']['register'])) {
                         if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
-                        } elseif (($this->registersMap[$property['items']['register']] ?? null) !== null) {
+                        } else if (($this->registersMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
@@ -1771,7 +1774,7 @@ class ConfigurationService
             // Try multiple resolution strategies.
             $fullPath = $this->appDataPath.'/../../../'.$filePath;
             $fullPath = realpath($fullPath);
-            
+
             // If realpath fails, try direct path from Nextcloud root.
             if ($fullPath === false) {
                 $fullPath = '/var/www/html/'.$filePath;
@@ -2046,13 +2049,13 @@ class ConfigurationService
                 // Standard OAS properties from info section.
                 if (($info['title'] ?? null) !== null) {
                     $configuration->setTitle($info['title']);
-                } elseif (($xOpenregister['title'] ?? null) !== null) {
+                } else if (($xOpenregister['title'] ?? null) !== null) {
                     $configuration->setTitle($xOpenregister['title']);
                 }
 
                 if (($info['description'] ?? null) !== null) {
                     $configuration->setDescription($info['description']);
-                } elseif (($xOpenregister['description'] ?? null) !== null) {
+                } else if (($xOpenregister['description'] ?? null) !== null) {
                     $configuration->setDescription($xOpenregister['description']);
                 }
 
@@ -2174,7 +2177,7 @@ class ConfigurationService
             $info = [];
             foreach ($duplicates as $schema) {
                 // Format created date.
-                if (($schema->getCreated() !== null) === true) {
+                if ($schema->getCreated() !== null) {
                     $createdDate = $schema->getCreated()->format('Y-m-d H:i:s');
                 } else {
                     $createdDate = 'unknown';
@@ -2256,7 +2259,7 @@ class ConfigurationService
             $info = [];
             foreach ($duplicates as $register) {
                 // Format created date.
-                if (($register->getCreated() !== null) === true) {
+                if ($register->getCreated() !== null) {
                     $registerCreated = $register->getCreated()->format('Y-m-d H:i:s');
                 } else {
                     $registerCreated = 'unknown';
@@ -2399,7 +2402,7 @@ class ConfigurationService
         if ($comparison > 0) {
             $result['hasUpdate'] = true;
             $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
-        } elseif ($comparison === 0) {
+        } else if ($comparison === 0) {
             $result['message'] = 'Local version is up to date';
         } else {
             $result['message'] = 'Local version is newer than remote version';
@@ -2806,7 +2809,7 @@ class ConfigurationService
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $existingObjectData, proposed: $objectData);
             }
-        }
+        }//end if
 
         return $preview;
 
@@ -2869,7 +2872,7 @@ class ConfigurationService
                     $nestedChanges = $this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $fieldName);
                     $changes       = array_merge($changes, $nestedChanges);
                 }
-            } elseif ($proposedValue !== $currentValue) {
+            } else if ($proposedValue !== $currentValue) {
                 // Values are different.
                 $changes[] = [
                     'field'    => $fieldName,
@@ -3083,8 +3086,8 @@ class ConfigurationService
     {
         // Get the stored version from appconfig.
         // The key format is: <appId>_config_version.
-        $versionKey = $appId . '_config_version';
-        
+        $versionKey = $appId.'_config_version';
+
         try {
             // Try to get the value from appconfig.
             $version = $this->appConfig->getValueString(
@@ -3092,12 +3095,12 @@ class ConfigurationService
                 key: $versionKey,
                 default: ''
             );
-            
+
             // Return null if empty string.
             if ($version === '' || $version === null) {
                 return null;
             }
-            
+
             return $version;
         } catch (Exception $e) {
             // Log error and return null.
@@ -3108,10 +3111,10 @@ class ConfigurationService
                     'error' => $e->getMessage(),
                 ]
             );
-            
+
             return null;
-        }
-        
+        }//end try
+
     }//end getConfiguredAppVersion()
 
 
@@ -3129,8 +3132,8 @@ class ConfigurationService
     public function setConfiguredAppVersion(string $appId, string $version): void
     {
         // The key format is: <appId>_config_version.
-        $versionKey = $appId . '_config_version';
-        
+        $versionKey = $appId.'_config_version';
+
         try {
             // Store the version in appconfig.
             $this->appConfig->setValueString(
@@ -3138,7 +3141,7 @@ class ConfigurationService
                 key: $versionKey,
                 value: $version
             );
-            
+
             $this->logger->info(
                 message: 'Configured app version updated',
                 context: [
@@ -3156,8 +3159,8 @@ class ConfigurationService
                     'error'   => $e->getMessage(),
                 ]
             );
-        }
-        
+        }//end try
+
     }//end setConfiguredAppVersion()
 
 

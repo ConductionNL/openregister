@@ -1045,7 +1045,6 @@ class MagicMapper
                 } else {
                     $defaultValue = null;
                 }
-
                 return [
                     'name'     => $columnName,
                     'type'     => 'boolean',
@@ -1185,7 +1184,7 @@ class MagicMapper
         $intType = 'integer';
         if ($minimum !== null && $minimum >= 0 && $maximum !== null && $maximum <= 65535) {
             $intType = 'smallint';
-        } elseif ($maximum !== null && $maximum > 2147483647) {
+        } else if ($maximum !== null && $maximum > 2147483647) {
             $intType = 'bigint';
         }
 
@@ -1959,7 +1958,7 @@ class MagicMapper
         if (is_array($value) === true) {
             // Handle array filters (IN operation).
             $qb->andWhere($qb->expr()->in($columnName, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
-        } elseif (is_string($value) === true && str_contains($value, '%') === true) {
+        } else if (is_string($value) === true && str_contains($value, '%') === true) {
             // Handle LIKE operation.
             $qb->andWhere($qb->expr()->like($columnName, $qb->createNamedParameter($value)));
         } else {

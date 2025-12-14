@@ -91,6 +91,7 @@ class EndpointMapper extends QBMapper
      */
     private readonly IGroupManager $groupManager;
 
+
     /**
      * EndpointMapper constructor
      *
@@ -112,14 +113,13 @@ class EndpointMapper extends QBMapper
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_endpoints', Endpoint::class);
-        
+
         // Store dependencies for use in mapper methods.
         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
-    }
 
-
+    }//end __construct()
 
 
     /**

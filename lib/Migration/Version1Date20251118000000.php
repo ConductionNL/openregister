@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Migration to drop deprecated file_texts and object_texts tables.
  *
  * These tables are no longer needed as we've migrated to the chunks-based

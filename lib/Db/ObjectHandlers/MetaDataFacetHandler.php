@@ -499,7 +499,7 @@ class MetaDataFacetHandler
             if (!is_array($value)) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                } elseif ($value === 'IS NULL') {
+                } else if ($value === 'IS NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
                 } else {
                     // Simple equals (case insensitive for strings).
@@ -639,7 +639,7 @@ class MetaDataFacetHandler
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
-                } elseif ($value === 'IS NULL') {
+                } else if ($value === 'IS NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
@@ -901,9 +901,9 @@ class MetaDataFacetHandler
     {
         if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
             return $range['from'].'-'.$range['to'];
-                } elseif (($range['from'] ?? null) !== null) {
+        } else if (($range['from'] ?? null) !== null) {
             return $range['from'].'+';
-                } elseif (($range['to'] ?? null) !== null) {
+        } else if (($range['to'] ?? null) !== null) {
             return '0-'.$range['to'];
         } else {
             return 'all';

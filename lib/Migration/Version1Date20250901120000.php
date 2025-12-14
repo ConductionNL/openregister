@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Migration - Add summary column to objects
  *
  * This migration adds a summary column to the openregister_objects table

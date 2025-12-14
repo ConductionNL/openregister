@@ -243,7 +243,7 @@ class WebhookEventListener implements IEventListener
                 // RegisterUpdatedEvent has newRegister and oldRegister.
                 $register = $event->getNewRegister();
             }
-            
+
             $action = match (true) {
                 $event instanceof RegisterCreatedEvent => 'created',
                 $event instanceof RegisterUpdatedEvent => 'updated',
@@ -255,7 +255,7 @@ class WebhookEventListener implements IEventListener
                 'action'     => $action,
                 'register'   => $register->jsonSerialize(),
             ];
-        }
+        }//end if
 
         // Schema events.
         if ($event instanceof SchemaCreatedEvent || $event instanceof SchemaUpdatedEvent || $event instanceof SchemaDeletedEvent) {
@@ -266,7 +266,7 @@ class WebhookEventListener implements IEventListener
                 // SchemaUpdatedEvent has newSchema and oldSchema.
                 $schema = $event->getNewSchema();
             }
-            
+
             $action = match (true) {
                 $event instanceof SchemaCreatedEvent => 'created',
                 $event instanceof SchemaUpdatedEvent => 'updated',
@@ -278,7 +278,7 @@ class WebhookEventListener implements IEventListener
                 'action'     => $action,
                 'schema'     => $schema->jsonSerialize(),
             ];
-        }
+        }//end if
 
         // Application events.
         if ($event instanceof ApplicationCreatedEvent || $event instanceof ApplicationUpdatedEvent || $event instanceof ApplicationDeletedEvent) {
@@ -289,7 +289,7 @@ class WebhookEventListener implements IEventListener
                 // ApplicationUpdatedEvent has newApplication and oldApplication.
                 $application = $event->getNewApplication();
             }
-            
+
             $action = match (true) {
                 $event instanceof ApplicationCreatedEvent => 'created',
                 $event instanceof ApplicationUpdatedEvent => 'updated',
@@ -301,7 +301,7 @@ class WebhookEventListener implements IEventListener
                 'action'      => $action,
                 'application' => $application->jsonSerialize(),
             ];
-        }
+        }//end if
 
         // Agent events.
         if ($event instanceof AgentCreatedEvent || $event instanceof AgentUpdatedEvent || $event instanceof AgentDeletedEvent) {

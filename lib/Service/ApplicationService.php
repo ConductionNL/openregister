@@ -32,13 +32,13 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  */
 class ApplicationService
 {
@@ -61,6 +61,7 @@ class ApplicationService
      */
     private readonly LoggerInterface $logger;
 
+
     /**
      * Constructor
      *
@@ -78,6 +79,7 @@ class ApplicationService
         // Store dependencies for use in service methods.
         $this->applicationMapper = $applicationMapper;
         $this->logger            = $logger;
+
     }//end __construct()
 
 
@@ -95,7 +97,7 @@ class ApplicationService
      *
      * @psalm-return array<int, Application>
      */
-    public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array
+    public function findAll(?int $limit=null, ?int $offset=null, array $filters=[]): array
     {
         // Delegate to mapper to retrieve applications with pagination and filters.
         return $this->applicationMapper->findAll(
@@ -103,6 +105,7 @@ class ApplicationService
             offset: $offset,
             filters: $filters
         );
+
     }//end findAll()
 
 
@@ -124,6 +127,7 @@ class ApplicationService
     {
         // Delegate to mapper to find application by ID.
         return $this->applicationMapper->find($id);
+
     }//end find()
 
 
@@ -157,6 +161,7 @@ class ApplicationService
         );
 
         return $application;
+
     }//end create()
 
 
@@ -167,7 +172,7 @@ class ApplicationService
      * Throws exception if application does not exist.
      * Logs the update process for audit and debugging purposes.
      *
-     * @param int                $id   Application database ID
+     * @param int                  $id   Application database ID
      * @param array<string, mixed> $data Application data as key-value pairs to update
      *
      * @return Application The updated application entity
@@ -194,6 +199,7 @@ class ApplicationService
         );
 
         return $application;
+
     }//end update()
 
 
@@ -230,6 +236,7 @@ class ApplicationService
             message: 'Application deleted successfully',
             context: ['id' => $id]
         );
+
     }//end delete()
 
 
@@ -247,6 +254,7 @@ class ApplicationService
     {
         // Delegate to mapper to count all applications.
         return $this->applicationMapper->countAll();
+
     }//end countAll()
 
 

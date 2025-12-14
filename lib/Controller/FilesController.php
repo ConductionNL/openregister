@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * FilesController
  *
  * Controller for file operations in the OpenRegister application.
  *
- * @category Controller
- * @package  OCA\OpenRegister\Controller
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git-id>
- * @link     https://OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -37,13 +37,13 @@ use OCP\IRequest;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
  */
@@ -90,11 +90,13 @@ class FilesController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-        
+
         // Store dependencies for use in controller methods.
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
+
     }//end __construct()
+
 
     /**
      * Get all files associated with a specific object
@@ -425,7 +427,7 @@ class FilesController extends Controller
                     'share'    => $data['share'] === 'true',
                     'tags'     => $tags,
                 ];
-            } elseif (is_array($fileName) === true) {
+            } else if (is_array($fileName) === true) {
                 // Multiple file upload - $fileName is an array.
                 // Loop through each file using the count of 'name'.
                 $fileCount = count($fileName);
@@ -498,7 +500,7 @@ class FilesController extends Controller
 
                     if ($errorArray !== null && isset($errorArray[$i]) === true) {
                         $errorValueFinal = $errorArray[$i];
-                    } elseif (is_int($errorValue) === true) {
+                    } else if (is_int($errorValue) === true) {
                         $errorValueFinal = $errorValue;
                     }
 
@@ -507,7 +509,7 @@ class FilesController extends Controller
 
                     if ($sizeArray !== null && isset($sizeArray[$i]) === true) {
                         $sizeValueFinal = $sizeArray[$i];
-                    } elseif (is_int($sizeValue) === true) {
+                    } else if (is_int($sizeValue) === true) {
                         $sizeValueFinal = $sizeValue;
                     }
 
@@ -521,7 +523,7 @@ class FilesController extends Controller
                         'tags'     => $tags,
                     ];
                 }//end for
-            }//end elseif
+            }//end if
 
             // Get the uploaded file from the request if a single file hase been uploaded.
             $uploadedFile = $this->request->getUploadedFile('file');
@@ -543,8 +545,7 @@ class FilesController extends Controller
 
                 if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
                     throw new Exception(
-                        'File upload error for '.$file['name'].': '.
-                        $this->getUploadErrorMessage($fileError)
+                        'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($fileError)
                     );
                 }
 
@@ -883,6 +884,7 @@ class FilesController extends Controller
 
         // Fallback to false for other types.
         return false;
+
     }//end parseBool()
 
 
@@ -914,6 +916,7 @@ class FilesController extends Controller
 
         // Default to empty array.
         return [];
+
     }//end normalizeTags()
 
 
@@ -935,6 +938,7 @@ class FilesController extends Controller
             templateName: 'index',
             params: []
         );
+
     }//end page()
 
 

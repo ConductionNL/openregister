@@ -101,10 +101,10 @@ class SearchTrailService
      * after creating the new entry.
      *
      * @param array<string, mixed> $query         The search query parameters (system params excluded)
-     * @param int                   $resultCount   The number of results returned in this page
-     * @param int                   $totalResults  The total number of matching results
-     * @param float                 $responseTime  The response time in milliseconds (default: 0.0)
-     * @param string                $executionType The execution type: 'sync' or 'async' (default: 'sync')
+     * @param int                  $resultCount   The number of results returned in this page
+     * @param int                  $totalResults  The total number of matching results
+     * @param float                $responseTime  The response time in milliseconds (default: 0.0)
+     * @param string               $executionType The execution type: 'sync' or 'async' (default: 'sync')
      *
      * @return SearchTrail The created search trail entity
      *
@@ -141,7 +141,7 @@ class SearchTrailService
         } catch (Exception $e) {
             // Wrap exception with more context for debugging.
             throw new Exception("Search trail creation failed: ".$e->getMessage(), 0, $e);
-        }
+        }//end try
 
     }//end createSearchTrail()
 
@@ -606,7 +606,7 @@ class SearchTrailService
         // Process pagination parameters.
         if (($config['limit'] ?? null) !== null) {
             $processed['limit'] = max(1, (int) $config['limit']);
-        } elseif (($config['_limit'] ?? null) !== null) {
+        } else if (($config['_limit'] ?? null) !== null) {
             $processed['limit'] = max(1, (int) $config['_limit']);
         }
 
@@ -618,7 +618,7 @@ class SearchTrailService
 
         if (($config['page'] ?? null) !== null) {
             $processed['page'] = max(1, (int) $config['page']);
-        } elseif (($config['_page'] ?? null) !== null) {
+        } else if (($config['_page'] ?? null) !== null) {
             $processed['page'] = max(1, (int) $config['_page']);
         }
 
@@ -772,7 +772,7 @@ class SearchTrailService
 
         if ($slope > 0.1) {
             return 'increasing';
-        } elseif ($slope < -0.1) {
+        } else if ($slope < -0.1) {
             return 'decreasing';
         } else {
             return 'stable';
@@ -798,7 +798,7 @@ class SearchTrailService
             return 'excellent';
         } else if ($avgResults >= 5 && $avgResponseTime <= 200) {
             return 'good';
-        } elseif ($avgResults >= 1 && $avgResponseTime <= 500) {
+        } else if ($avgResults >= 1 && $avgResponseTime <= 500) {
             return 'average';
         } else {
             return 'poor';

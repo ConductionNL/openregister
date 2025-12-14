@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Configuration Management Migration
  *
  * This migration adds columns to the configurations table to support:
