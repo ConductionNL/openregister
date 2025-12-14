@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * BulkIndexer
  *
  * Handles bulk indexing operations for Solr.
@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class BulkIndexer
 {
+
     /**
      * Guzzle Solr service (temporary delegation).
      *
@@ -60,8 +61,9 @@ class BulkIndexer
         LoggerInterface $logger
     ) {
         $this->guzzleSolrService = $guzzleSolrService;
-        $this->logger = $logger;
-    }
+        $this->logger            = $logger;
+
+    }//end __construct()
 
 
     /**
@@ -72,15 +74,19 @@ class BulkIndexer
      *
      * @return array Results
      */
-    public function bulkIndexObjects(array $objects, bool $commit = true): array
+    public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
-        $this->logger->debug('BulkIndexer: Delegating to GuzzleSolrService', [
-            'object_count' => count($objects),
-            'commit' => $commit
-        ]);
+        $this->logger->debug(
+                'BulkIndexer: Delegating to GuzzleSolrService',
+                [
+                    'object_count' => count($objects),
+                    'commit'       => $commit,
+                ]
+                );
 
         return $this->guzzleSolrService->bulkIndexObjects($objects, $commit);
-    }
+
+    }//end bulkIndexObjects()
 
 
     /**
@@ -94,15 +100,18 @@ class BulkIndexer
      * @return array Results
      */
     public function bulkIndexFromDatabase(
-        int $batchSize = 1000,
-        int $maxObjects = 0,
-        array $solrFieldTypes = [],
-        array $schemaIds = []
+        int $batchSize=1000,
+        int $maxObjects=0,
+        array $solrFieldTypes=[],
+        array $schemaIds=[]
     ): array {
-        $this->logger->debug('BulkIndexer: Delegating bulkIndexFromDatabase', [
-            'batch_size' => $batchSize,
-            'max_objects' => $maxObjects
-        ]);
+        $this->logger->debug(
+                'BulkIndexer: Delegating bulkIndexFromDatabase',
+                [
+                    'batch_size'  => $batchSize,
+                    'max_objects' => $maxObjects,
+                ]
+                );
 
         return $this->guzzleSolrService->bulkIndexFromDatabase(
             $batchSize,
@@ -110,7 +119,8 @@ class BulkIndexer
             $solrFieldTypes,
             $schemaIds
         );
-    }
+
+    }//end bulkIndexFromDatabase()
 
 
 }//end class

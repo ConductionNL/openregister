@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * WarmupHandler
  *
  * Handles Solr index warmup operations.
@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class WarmupHandler
 {
+
     /**
      * Guzzle Solr service (temporary delegation).
      *
@@ -60,34 +61,38 @@ class WarmupHandler
         LoggerInterface $logger
     ) {
         $this->guzzleSolrService = $guzzleSolrService;
-        $this->logger = $logger;
-    }
+        $this->logger            = $logger;
+
+    }//end __construct()
 
 
     /**
      * Warm up the index
      *
-     * @param array  $schemas      Schemas to warm up
-     * @param int    $maxObjects   Max objects
-     * @param string $mode         Warmup mode
+     * @param array  $schemas       Schemas to warm up
+     * @param int    $maxObjects    Max objects
+     * @param string $mode          Warmup mode
      * @param bool   $collectErrors Collect errors
-     * @param int    $batchSize    Batch size
-     * @param array  $schemaIds    Schema IDs
+     * @param int    $batchSize     Batch size
+     * @param array  $schemaIds     Schema IDs
      *
      * @return array Results
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
-        $this->logger->debug('WarmupHandler: Delegating to GuzzleSolrService', [
-            'max_objects' => $maxObjects,
-            'mode' => $mode
-        ]);
+        $this->logger->debug(
+                'WarmupHandler: Delegating to GuzzleSolrService',
+                [
+                    'max_objects' => $maxObjects,
+                    'mode'        => $mode,
+                ]
+                );
 
         return $this->guzzleSolrService->warmupIndex(
             $schemas,
@@ -97,7 +102,8 @@ class WarmupHandler
             $batchSize,
             $schemaIds
         );
-    }
+
+    }//end warmupIndex()
 
 
 }//end class

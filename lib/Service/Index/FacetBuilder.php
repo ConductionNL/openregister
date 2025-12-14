@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * FacetBuilder
  *
  * Handles Solr facet building operations.
@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class FacetBuilder
 {
+
     /**
      * Guzzle Solr service (temporary delegation).
      *
@@ -60,8 +61,9 @@ class FacetBuilder
         LoggerInterface $logger
     ) {
         $this->guzzleSolrService = $guzzleSolrService;
-        $this->logger = $logger;
-    }
+        $this->logger            = $logger;
+
+    }//end __construct()
 
 
     /**
@@ -74,7 +76,8 @@ class FacetBuilder
         $this->logger->debug('FacetBuilder: Delegating to GuzzleSolrService');
 
         return $this->guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
-    }
+
+    }//end getRawSolrFieldsForFacetConfiguration()
 
 
 }//end class
