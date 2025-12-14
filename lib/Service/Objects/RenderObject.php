@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -103,7 +103,7 @@ class RenderObject
      * @param SchemaMapper           $schemaMapper       Schema mapper for database operations.
      * @param ISystemTagManager      $systemTagManager   System tag manager for file tags.
      * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper for file tags.
-     * @param ObjectCacheService     $objectCacheService Cache service for performance optimization.
+     * @param CacheHandler     $cacheHandler Cache service for performance optimization.
      * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(
@@ -113,7 +113,7 @@ class RenderObject
         private readonly SchemaMapper $schemaMapper,
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
-        private readonly ObjectCacheService $objectCacheService,
+        private readonly CacheHandler $cacheHandler,
         private readonly LoggerInterface $logger
     ) {
 
@@ -225,7 +225,7 @@ class RenderObject
             return $this->ultraPreloadCache[(string) $id];
         }
 
-        // **PERFORMANCE OPTIMIZATION**: Use ObjectCacheService for optimized caching.
+        // **PERFORMANCE OPTIMIZATION**: Use CacheHandler for optimized caching.
         // First check local cache for backward compatibility.
         if (($this->objectsCache[$id] ?? null) !== null) {
             return $this->objectsCache[$id];
@@ -1071,9 +1071,9 @@ class RenderObject
         array $_extend,
         array $objectData,
         int $depth,
-        ?array $filter=[],
-        ?array $fields=[],
-        ?array $unset=[],
+        ?array $_filter=[],
+        ?array $_fields=[],
+        ?array $_unset=[],
         ?array $visitedIds=[]
     ): array {
         // Add register and schema context to @self if requested.

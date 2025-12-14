@@ -93,7 +93,7 @@ class MagicRbacHandler
      *
      * @return void
      */
-    private function applyUnauthenticatedAccess(IQueryBuilder $qb, Schema $schema, string $_tableAlias): void
+    private function applyUnauthenticatedAccess(IQueryBuilder $_qb, Schema $schema, string $_tableAlias): void
     {
         $authorization = $schema->getAuthorization();
 

@@ -21,9 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Db\SchemaMapper;
+use Psr\Log\LoggerInterface;
+use OCP\AppFramework\IAppContainer;
 use Exception;
 
 /**
@@ -45,19 +46,30 @@ class ValidationOperationsHandler
 
 
     /**
-     * Constructor for ValidationOperationsHandler.
+     * Container for lazy loading ObjectService to break circular dependency.
      *
-     * @param ObjectService  $objectService   Service for object operations.
-     * @param ValidateObject $validateHandler Handler for object validation.
-     * @param SchemaMapper   $schemaMapper    Mapper for schema operations.
+     * @var IAppContainer
      */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly ValidateObject $validateHandler,
-        private readonly SchemaMapper $schemaMapper
-    ) {
+    private IAppContainer $container;
 
+    public function __construct(
+        private readonly ValidateObject $validateHandler,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly LoggerInterface $logger,
+        IAppContainer $container
+    ) {
+        $this->container = $container;
     }//end __construct()
+
+    /**
+     * Get ObjectService via lazy loading to break circular dependency.
+     *
+     * @return \OCA\OpenRegister\Service\ObjectService
+     */
+    private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
+    {
+        return $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+    }
 
 
     /**
@@ -78,7 +90,7 @@ class ValidationOperationsHandler
     public function validateAllObjects(): array
     {
         // Get all objects from the system.
-        $allObjects = $this->objectService->findAll(config: []);
+            $allObjects = $this->getObjectService()->findAll(config: []);
 
         $validationResults = [
             'total_objects'     => count($allObjects),

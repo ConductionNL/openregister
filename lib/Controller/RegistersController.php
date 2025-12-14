@@ -815,13 +815,11 @@ class RegistersController extends Controller
                     // Get additional performance parameters with enhanced boolean parsing.
                     $rbac      = $this->parseBooleanParam(paramName: 'rbac', default: true);
                     $multi     = $this->parseBooleanParam(paramName: 'multi', default: true);
-                    $chunkSize = (int) $this->request->getParam(key: 'chunkSize', default: 5);
                     // Use optimized default.
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
                         schema: null,
-                        chunkSize: $chunkSize,
                         validation: $validation,
                         events: $events,
                         _rbac: $rbac,
@@ -844,13 +842,11 @@ class RegistersController extends Controller
                     // Get additional performance parameters with enhanced boolean parsing.
                     $rbac      = $this->parseBooleanParam(paramName: 'rbac', default: true);
                     $multi     = $this->parseBooleanParam(paramName: 'multi', default: true);
-                    $chunkSize = (int) $this->request->getParam(key: 'chunkSize', default: 5);
                     // Use optimized default.
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
                         register: $register,
                         schema: $schema,
-                        chunkSize: $chunkSize,
                         validation: $validation,
                         events: $events,
                         _rbac: $rbac,

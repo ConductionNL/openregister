@@ -850,7 +850,7 @@ class SaveObjects
             $object['@self'] = $selfData;
 
             // Handle pre-validation cascading for inversedBy properties.
-            [$processedObject, $_uuid] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
+            [$processedObject, $_uuid] = $this->handlePreValidationCascading(object: $object, uuid: $selfData['id']);
 
             $preparedObjects[$index] = $processedObject;
         }//end foreach
@@ -1672,7 +1672,7 @@ class SaveObjects
      *
      * @psalm-return list{array, string}
      */
-    private function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid): array
+    private function handlePreValidationCascading(array $object, ?string $uuid): array
     {
         // SIMPLIFIED: For bulk operations, we skip complex cascading for now.
         // and handle it later in individual object processing if needed.

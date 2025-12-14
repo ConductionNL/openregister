@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -123,7 +123,7 @@ class SaveObject
      * @param RegisterMapper      $registerMapper          Register mapper for register operations.
      * @param IURLGenerator       $urlGenerator            URL generator service.
      * @param OrganisationService $organisationService     Service for organisation operations.
-     * @param ObjectCacheService  $objectCacheService      Object cache service for entity and query caching.
+     * @param CacheHandler  $cacheHandler      Object cache service for entity and query caching.
      * @param SchemaCacheService  $schemaCacheService      Schema cache service for schema entity caching.
      * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param SettingsService     $settingsService         Settings service for accessing trail settings.
@@ -139,7 +139,7 @@ class SaveObject
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
         private readonly OrganisationService $organisationService,
-        private readonly ObjectCacheService $objectCacheService,
+        private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,

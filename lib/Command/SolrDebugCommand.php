@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Setup\SolrSetup;
+use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCP\IConfig;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
@@ -229,7 +229,7 @@ class SolrDebugCommand extends Command
                 logger: $this->logger
             );
             // Test setup.
-            $setup  = new SolrSetup($solrService, $this->logger);
+            $setup  = new SetupHandler($solrService, $this->logger);
             $result = $setup->setupSolr();
 
             if ($result === true) {

@@ -56,6 +56,8 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
@@ -66,7 +68,7 @@ use OCA\OpenRegister\Service\NamedEntityRecognitionService;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Setup\SolrSetup;
+use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
@@ -349,6 +351,10 @@ class Application extends App implements IBootstrap
 
         // NOTE: FacetService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+        
+        // NOTE: ValidationOperationsHandler can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+        
         // Register SaveObject with consolidated cache services.
         $context->registerService(
                  SaveObject::class,
@@ -362,7 +368,7 @@ class Application extends App implements IBootstrap
                             registerMapper: $container->get(RegisterMapper::class),
                             urlGenerator: $container->get('OCP\IURLGenerator'),
                             organisationService: $container->get(OrganisationService::class),
-                            objectCacheService: $container->get(CacheHandler::class),
+                            cacheHandler: $container->get(CacheHandler::class),
                             settingsService: $container->get(SettingsService::class),
                             logger: $container->get('Psr\Log\LoggerInterface'),
                             arrayLoader: new ArrayLoader([])
@@ -449,8 +455,7 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // GuzzleSolrService is now an internal backend for IndexService.
-        // It's still registered for backward compatibility but should not be used directly.
+        // Register GuzzleSolrService as backend for IndexService.
         $context->registerService(
                  GuzzleSolrService::class,
                 function ($container) {
@@ -461,6 +466,14 @@ class Application extends App implements IBootstrap
                             registerMapper: $container->get(RegisterMapper::class),
                             organisationService: $container->get(OrganisationService::class)
                             );
+                }
+                );
+        
+        // Register GuzzleSolrService as the implementation for SearchBackendInterface.
+        $context->registerService(
+                 \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
+                function ($container) {
+                    return $container->get(GuzzleSolrService::class);
                 }
                 );
 

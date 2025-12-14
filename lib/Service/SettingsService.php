@@ -268,7 +268,6 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
-        ValidationOperationsHandler $validationOperationsHandler,
         ?CacheHandler $objectCacheService=null,
         ?IAppContainer $container=null,
         string $appName='openregister'
@@ -285,7 +284,6 @@ class SettingsService
         $this->searchTrailMapper       = $searchTrailMapper;
         $this->userManager = $userManager;
         $this->db          = $db;
-        $this->validationOperationsHandler = $validationOperationsHandler;
         $this->objectCacheService          = $objectCacheService;
         $this->container = $container;
         $this->appName   = $appName;
@@ -1596,7 +1594,7 @@ class SettingsService
      *
      * @throws \RuntimeException Always throws exception indicating method is deprecated
      */
-    public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false)
+    public function warmupSolrIndex()
     {
         // NOTE: This method is deprecated. Use IndexService->warmupIndex() directly via controller.
         // This method is kept for backward compatibility but should not be used.
@@ -2889,6 +2887,10 @@ class SettingsService
      */
     public function validateAllObjects(): array
     {
+        if ($this->validationOperationsHandler === null) {
+            $this->validationOperationsHandler = $this->container->get(ValidationOperationsHandler::class);
+        }
+        
         return $this->validationOperationsHandler->validateAllObjects();
 
     }//end validateAllObjects()

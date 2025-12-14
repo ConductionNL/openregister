@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Http;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -51,14 +50,12 @@ class FileTextController extends Controller
      * @param string                $appName               App name
      * @param IRequest              $request               Request object
      * @param TextExtractionService $textExtractionService Text extraction service
-     * @param TextExtractionService $textExtractionService Text extraction service
      * @param LoggerInterface       $logger                Logger
      * @param IAppConfig            $config                Application configuration
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly TextExtractionService $textExtractionService,
         private readonly TextExtractionService $textExtractionService,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
