@@ -103,4 +103,71 @@ class DocumentBuilder
     }
 
 
+    // ========================================================================
+    // EXTRACTED METHODS - Migrated from GuzzleSolrService
+    // ========================================================================
+
+    /**
+     * Flatten relations array for SOLR - extract all values from relations key-value pairs
+     *
+     * MIGRATED from GuzzleSolrService - now maintained here.
+     *
+     * @param mixed $relations Relations data from ObjectEntity (e.g., {"modules.0":"uuid", "other.1":"value"})
+     *
+     * @return string[] Simple array of strings for SOLR multi-valued field (e.g., ["uuid", "value"])
+     *
+     * @psalm-return list{0?: string,...}
+     */
+    public function flattenRelationsForSolr($relations): array
+    {
+        // **DEBUG**: Log what we're processing.
+        $this->logger->debug('Processing relations for SOLR', [
+            'relations_type'  => gettype($relations),
+            'relations_value' => $relations,
+            'is_empty'        => empty($relations),
+        ]);
+
+        if (empty($relations) === true) {
+            return [];
+        }
+
+        if (is_array($relations) === true) {
+            $values = [];
+            foreach ($relations as $key => $value) {
+                // **FIXED**: Extract ALL values from relations array, not just UUIDs.
+                // Relations are stored as {"modules.0":"value"} - we want all the values.
+                if (is_string($value) === true || is_numeric($value) === true) {
+                    $values[] = (string) $value;
+                    $this->logger->debug(
+                        'Found value in relations',
+                        [
+                            'key'   => $key,
+                            'value' => $value,
+                            'type'  => gettype($value),
+                        ]
+                    );
+                }
+
+                // Skip arrays, objects, null values, etc.
+            }
+
+            $this->logger->debug('Flattened relations result', [
+                'input_count'  => count($relations),
+                'output_count' => count($values),
+                'values'       => $values,
+            ]);
+
+            return $values;
+        }//end if
+
+        // Single value - convert to string.
+        if (is_string($relations) === true || is_numeric($relations) === true) {
+            return [(string) $relations];
+        }
+
+        return [];
+
+    }//end flattenRelationsForSolr()
+
+
 }//end class
