@@ -48,6 +48,8 @@ class Version1Date20250622212509 extends SimpleMigrationStep
      * @param array<array-key, mixed> $options       Migration options
      *
      * @return ISchemaWrapper|null Modified schema
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -267,6 +269,8 @@ class Version1Date20250622212509 extends SimpleMigrationStep
      * @param array<array-key, mixed> $options       Migration options
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

@@ -23,7 +23,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Objects;
 
 use finfo;
 use Adbar\Dot;
@@ -92,7 +92,7 @@ use Twig\Loader\ArrayLoader;
  * - Metadata hydration methods are designed for both individual and bulk use
  *
  * @category  Handler
- * @package   OCA\OpenRegister\Service\ObjectHandlers
+ * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -1669,16 +1669,16 @@ class SaveObject
     /**
      * Saves an object.
      *
-     * @param Register|int|string|null $register    The register containing the object.
-     * @param Schema|int|string        $schema      The schema to validate against.
-     * @param array                    $data        The object data to save.
-     * @param string|null              $uuid        The UUID of the object to update (if updating).
-     * @param int|null                 $folderId    The folder ID to set on the object (optional).
-     * @param bool                     $_rbac       Whether to apply RBAC checks (default: true).
-     * @param bool                     $multi       Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $persist     Whether to persist the object to database (default: true).
-     * @param bool                     $silent      Whether to skip audit trail creation and events (default: false).
-     * @param bool                     $_validation Whether to validate the object (default: true).
+     * @param Register|int|string|null $register      The register containing the object.
+     * @param Schema|int|string        $schema        The schema to validate against.
+     * @param array                    $data          The object data to save.
+     * @param string|null              $uuid          The UUID of the object to update (if updating).
+     * @param int|null                 $folderId      The folder ID to set on the object (optional).
+     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $persist       Whether to persist the object to database (default: true).
+     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false).
+     * @param bool                     $_validation   Whether to validate the object (default: true).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -1691,7 +1691,7 @@ class SaveObject
         ?string $uuid=null,
         ?int $folderId=null,
         bool $_rbac=true,
-        bool $multi=true,
+        bool $_multitenancy=true,
         bool $persist=true,
         bool $silent=false,
         bool $_validation=true,
@@ -1916,11 +1916,11 @@ class SaveObject
     /**
      * Prepares an object for creation by applying all necessary transformations.
      *
-     * @param ObjectEntity $objectEntity The object entity to prepare.
-     * @param Schema       $schema       The schema of the object.
-     * @param array        $data         The object data.
-     * @param array        $selfData     The @self metadata.
-     * @param bool         $multi        Whether to apply multitenancy filtering.
+     * @param ObjectEntity $objectEntity  The object entity to prepare.
+     * @param Schema       $schema        The schema of the object.
+     * @param array        $data          The object data.
+     * @param array        $selfData      The @self metadata.
+     * @param bool         $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return ObjectEntity The prepared object entity.
      *
@@ -2744,7 +2744,7 @@ class SaveObject
      * @phpstan-param array<string, mixed> $fileConfig
      * @phpstan-param int|null $index
      *
-     * @psalm-return int|null
+     * @psalm-return   int|null
      * @phpstan-return int|null
      */
     private function processSingleFileProperty(

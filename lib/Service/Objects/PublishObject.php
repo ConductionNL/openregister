@@ -5,7 +5,7 @@
  * Handler class for publishing objects in the OpenRegister application.
  *
  * @category Handler
- * @package  OCA\OpenRegister\Service\ObjectHandlers
+ * @package   OCA\OpenRegister\Service\Objects
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,7 +16,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Objects;
 
 use DateTime;
 use Exception;

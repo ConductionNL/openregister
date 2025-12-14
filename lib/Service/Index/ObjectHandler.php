@@ -1,0 +1,252 @@
+<?php
+/**
+ * ObjectHandler
+ *
+ * Handles object indexing and search in Solr/Elasticsearch.
+ * Reads objects from database and indexes them - does NOT extract text or vectorize.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Index
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Index;
+
+use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\SettingsService;
+use Psr\Log\LoggerInterface;
+
+/**
+ * ObjectHandler
+ *
+ * Indexes objects to search backend (Solr/Elastic).
+ *
+ * ARCHITECTURE:
+ * - TextExtractionService extracts text from objects (separate flow with listeners).
+ * - VectorizationService vectorizes objects (separate flow with listeners).
+ * - ObjectHandler reads objects from database and indexes them to Solr/Elastic.
+ * - Does NOT extract text or vectorize - only indexes existing data.
+ *
+ * RESPONSIBILITIES:
+ * - Read objects from database (ObjectEntityMapper).
+ * - Index objects to Solr objectCollection.
+ * - Search objects in Solr.
+ * - Commit changes to Solr.
+ * - Keep Solr index in sync with database objects.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Index
+ */
+class ObjectHandler
+{
+
+
+    /**
+     * Constructor
+     *
+     * @param SettingsService        $settingsService Settings service for config
+     * @param SchemaMapper           $schemaMapper    Schema mapper
+     * @param RegisterMapper         $registerMapper  Register mapper
+     * @param LoggerInterface        $logger          Logger
+     * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic/etc)
+     */
+    public function __construct(
+        private readonly SettingsService $settingsService,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
+        private readonly LoggerInterface $logger,
+        private readonly SearchBackendInterface $searchBackend
+    ) {
+
+    }//end __construct()
+
+
+    /**
+     * Get the object collection name from settings.
+     *
+     * @return string|null Collection name or null if not configured.
+     */
+    private function getObjectCollection(): ?string
+    {
+        $config = $this->settingsService->getConfiguration();
+
+        $objectCollection = $config['solr']['objectCollection'] ?? null;
+
+        if ($objectCollection === null || $objectCollection === '') {
+            $this->logger->warning('[ObjectHandler] objectCollection not configured in SOLR settings');
+            return null;
+        }
+
+        return $objectCollection;
+
+    }//end getObjectCollection()
+
+
+    /**
+     * Search objects in Solr.
+     *
+     * @param array $query        Search query parameters
+     * @param bool  $rbac         Apply RBAC filters
+     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $published    Filter published objects
+     * @param bool  $deleted      Include deleted objects
+     *
+     * @return array Search results in OpenRegister format
+     *
+     * @throws Exception If objectCollection is not configured
+     */
+    public function searchObjects(
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
+    ): array {
+        $collection = $this->getObjectCollection();
+
+        if ($collection === null) {
+            throw new Exception('objectCollection not configured in SOLR settings');
+        }
+
+        $this->logger->debug(
+                '[ObjectHandler] Searching objects',
+                [
+                    'collection'   => $collection,
+                    'query'        => $query,
+                    'rbac'         => $rbac,
+                    'multitenancy' => $multitenancy,
+                ]
+                );
+
+        // Build Solr query from OpenRegister query.
+        $solrQuery = $this->buildSolrQuery(query: $query, rbac: $rbac, multitenancy: $multitenancy, published: $published, deleted: $deleted);
+
+        // Execute search via backend.
+        $results = $this->searchBackend->search($solrQuery);
+
+        // Convert Solr results to OpenRegister format.
+        return $this->convertToOpenRegisterFormat($results);
+
+    }//end searchObjects()
+
+
+    /**
+     * Build Solr query from OpenRegister query parameters.
+     *
+     * @param array $query        OpenRegister query
+     * @param bool  $rbac         Apply RBAC filters
+     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $published    Filter published objects
+     * @param bool  $deleted      Include deleted objects
+     *
+     * @return array Solr query parameters
+     */
+    private function buildSolrQuery(array $query, bool $rbac, bool $multitenancy, bool $published, bool $deleted): array
+    {
+        $solrQuery = [
+            'q'     => $query['q'] ?? '*:*',
+            'start' => $query['start'] ?? 0,
+            'rows'  => $query['rows'] ?? 10,
+        ];
+
+        // Add filters.
+        $filters = [];
+
+        if ($rbac === true) {
+            // TODO: Add RBAC filters based on current user.
+        }
+
+        if ($multitenancy === true) {
+            // TODO: Add multitenancy filters based on current organisation.
+        }
+
+        if ($published === true) {
+            $filters[] = 'published:true';
+        }
+
+        if ($deleted === false) {
+            $filters[] = '-deleted:true';
+        }
+
+        if ($filters !== []) {
+            $solrQuery['fq'] = $filters;
+        }
+
+        return $solrQuery;
+
+    }//end buildSolrQuery()
+
+
+    /**
+     * Convert Solr response to OpenRegister format.
+     *
+     * @param array $solrResults Solr search results
+     *
+     * @return array OpenRegister formatted results
+     */
+    private function convertToOpenRegisterFormat(array $solrResults): array
+    {
+        $response = $solrResults['response'] ?? [];
+        $docs     = $response['docs'] ?? [];
+
+        return [
+            'results' => $docs,
+            'total'   => $response['numFound'] ?? 0,
+            'start'   => $response['start'] ?? 0,
+        ];
+
+    }//end convertToOpenRegisterFormat()
+
+
+    /**
+     * Commit changes to Solr.
+     *
+     * Forces Solr to commit pending changes to make them searchable.
+     *
+     * @return bool True if commit succeeded
+     *
+     * @throws Exception If objectCollection is not configured
+     */
+    public function commit(): bool
+    {
+        $collection = $this->getObjectCollection();
+
+        if ($collection === null) {
+            throw new Exception('objectCollection not configured in SOLR settings');
+        }
+
+        $this->logger->debug('[ObjectHandler] Committing to Solr', ['collection' => $collection]);
+
+        try {
+            // Use search backend to commit.
+            $result = $this->searchBackend->commit();
+
+            if ($result === true) {
+                $this->logger->info('[ObjectHandler] Successfully committed to Solr');
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            $this->logger->error(
+                    '[ObjectHandler] Failed to commit to Solr',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
+            throw $e;
+        }//end try
+
+    }//end commit()
+
+
+}//end class

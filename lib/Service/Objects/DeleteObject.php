@@ -23,7 +23,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Objects;
 
 use Exception;
 use JsonSerializable;
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  * including handling cascading deletes and file cleanup.
  *
  * @category  Service
- * @package   OCA\OpenRegister\Service\ObjectHandlers
+ * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister

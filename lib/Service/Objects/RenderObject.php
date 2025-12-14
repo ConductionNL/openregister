@@ -22,7 +22,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Objects;
 
 use Adbar\Dot;
 use Exception;
@@ -50,7 +50,7 @@ use Symfony\Component\Uid\Uuid;
  * including handling of extensions, depth control, and field filtering.
  *
  * @category  Service
- * @package   OCA\OpenRegister\Service\ObjectHandlers
+ * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction b.v. <info@conduction.nl>
  * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenCatalogi/OpenRegister

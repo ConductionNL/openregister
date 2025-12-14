@@ -44,22 +44,20 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
-use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
-use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObjects;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
-use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
-use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
+use OCA\OpenRegister\Service\Objects\DeleteObject;
+use OCA\OpenRegister\Service\Objects\GetObject;
+use OCA\OpenRegister\Service\Objects\RenderObject;
+use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\SaveObjects;
+use OCA\OpenRegister\Service\Objects\ValidateObject;
+use OCA\OpenRegister\Service\Objects\PublishObject;
+use OCA\OpenRegister\Service\Objects\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
-use OCA\OpenRegister\Service\SolrObjectService;
-use OCA\OpenRegister\Service\SolrFileService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\FileVectorizationStrategy;
@@ -68,7 +66,6 @@ use OCA\OpenRegister\Service\NamedEntityRecognitionService;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Command\SolrDebugCommand;
@@ -480,10 +477,8 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // NOTE: SolrObjectService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: SolrFileService can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
+        // NOTE: IndexService and handlers can be autowired.
+        // Removed manual registration - Nextcloud will autowire them automatically.
         // NOTE: VectorEmbeddingService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: NamedEntityRecognitionService can be autowired (only type-hinted parameters).
@@ -516,8 +511,6 @@ class Application extends App implements IBootstrap
         // NOTE: FileChangeListener can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ObjectChangeListener can be autowired (only type-hinted parameters).
-        // Removed manual registration - Nextcloud will autowire it automatically.
-        // NOTE: SolrSchemaService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: SolrManagementCommand can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.

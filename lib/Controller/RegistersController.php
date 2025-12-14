@@ -304,7 +304,7 @@ class RegistersController extends Controller
             $extend = [$extend];
         }
 
-        $register    = $this->registerService->find(id: $id, __extend: []);
+        $register    = $this->registerService->find(id: $id, _extend: []);
         $registerArr = $register->jsonSerialize();
         // If '@self.stats' is requested, attach statistics to the register.
         if (in_array('@self.stats', $extend, true) === true) {

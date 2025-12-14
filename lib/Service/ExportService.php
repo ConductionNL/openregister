@@ -205,7 +205,7 @@ class ExportService
             $sheet->setTitle('data');
         }
 
-        $headers = $this->getHeaders(register: $register, schema: $schema, currentUser: $currentUser);
+        $headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
         $row     = 1;
 
         // Set headers.
@@ -285,7 +285,7 @@ class ExportService
      *
      * @psalm-return array<array-key>
      */
-    private function getHeaders(?Register $register=null, ?Schema $schema=null, ?IUser $currentUser=null): array
+    private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
     {
         // Start with id as the first column.
         // Will contain the uuid.
