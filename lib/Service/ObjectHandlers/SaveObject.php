@@ -2744,7 +2744,7 @@ class SaveObject
      * @phpstan-param array<string, mixed> $fileConfig
      * @phpstan-param int|null $index
      *
-     * @psalm-return   int|null
+     * @psalm-return int|null
      * @phpstan-return int|null
      */
     private function processSingleFileProperty(

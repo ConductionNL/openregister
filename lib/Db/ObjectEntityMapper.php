@@ -471,21 +471,21 @@ class ObjectEntityMapper extends QBMapper
      * @param string        $objectTableAlias       Optional alias for the objects table (default: 'o')
      * @param string        $schemaTableAlias       Optional alias for the schemas table (default: 's')
      * @param string|null   $userId                 Optional user ID (defaults to current user)
-     * @param bool          $rbac                   Whether to apply RBAC checks (default: true). If false, no filtering is applied.
+     * @param bool          $_rbac                   Whether to apply RBAC checks (default: true). If false, no filtering is applied.
      * @param bool          $disablePublishedBypass If true, disable published object bypass for RBAC (default: false)
      *
      * @return void
      */
-    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias='o', string $schemaTableAlias='s', ?string $userId=null, bool $rbac=true, bool $disablePublishedBypass=false): void
+    private function applyRbacFilters(IQueryBuilder $qb, string $objectTableAlias='o', string $schemaTableAlias='s', ?string $userId=null, bool $_rbac=true, bool $disablePublishedBypass=false): void
     {
         $rbacMethodStart = microtime(true);
 
         // If RBAC is disabled, skip all permission filtering.
-        if ($rbac === false || $this->isRbacEnabled() === false) {
+        if ($_rbac === false || $this->isRbacEnabled() === false) {
             $this->logger->info(
                     '🔓 RBAC DISABLED - Skipping authorization checks',
                     [
-                        'rbacParam'         => $rbac,
+                        'rbacParam'         => $_rbac,
                         'rbacConfigEnabled' => $this->isRbacEnabled(),
                     ]
                     );
@@ -814,7 +814,7 @@ class ObjectEntityMapper extends QBMapper
         ?Register $register=null,
         ?Schema $schema=null,
         ?bool $published=false,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multi=true
     ): array {
         // Filter out system variables (starting with _).
@@ -854,7 +854,7 @@ class ObjectEntityMapper extends QBMapper
             ->setFirstResult($offset ?? 0);
 
         // Apply RBAC filtering based on user permissions.
-        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
+        $this->applyRbacFilters($qb, 'o', 's', null, $_rbac);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
@@ -1233,7 +1233,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return int|list<\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function searchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $rbac=true, bool $multi=true, ?array $ids=null, ?string $uses=null): array|int
+    public function searchObjects(array $query=[], ?string $activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): array|int
     {
         // **PERFORMANCE DEBUGGING**: Start detailed timing for ObjectEntityMapper
         $mapperStartTime = microtime(true);
@@ -1250,8 +1250,8 @@ class ObjectEntityMapper extends QBMapper
                 '🎯 MAPPER START - ObjectEntityMapper::searchObjects called',
                 [
                     'queryKeys' => array_keys($query),
-                    'rbac'      => $rbac,
-                    'multi'     => $multi,
+                    'rbac'      => $_rbac,
+                    'multi'     => $_multitenancy,
                     'activeOrg' => $activeOrgStatus,
                 ]
                 );
@@ -1368,7 +1368,7 @@ class ObjectEntityMapper extends QBMapper
         // **PERFORMANCE OPTIMIZATION**: Smart RBAC skipping for public data (30-40% improvement)
         $isSimplePublicRequest = $isSimpleRequest && $published !== false && empty($cleanQuery) && $search === null;
         // Smart bypass: only when RBAC explicitly disabled and it's a simple public request.
-        $smartBypass = $isSimplePublicRequest && ($rbac === false);
+        $smartBypass = $isSimplePublicRequest && ($_rbac === false);
 
         // Build base query - different for count vs search.
         if ($count === true) {
@@ -1377,7 +1377,7 @@ class ObjectEntityMapper extends QBMapper
                 ->from('openregister_objects', 'o');
 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)
-            $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
+            $needsSchemaJoin = $_rbac && !$performanceBypass && !$smartBypass;
             if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 COUNT: Including schema join for RBAC');
@@ -1409,7 +1409,7 @@ class ObjectEntityMapper extends QBMapper
                 ->setFirstResult($offset);
 
             // **PERFORMANCE OPTIMIZATION**: Only join schema table if RBAC is needed (15-20% improvement)
-            $needsSchemaJoin = $rbac && !$performanceBypass && !$smartBypass;
+            $needsSchemaJoin = $_rbac && !$performanceBypass && !$smartBypass;
             if ($needsSchemaJoin === true) {
                 $queryBuilder->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
                 $this->logger->debug('📊 SEARCH: Including schema join for RBAC');
@@ -1441,7 +1441,7 @@ class ObjectEntityMapper extends QBMapper
                             'public_data'    => $published !== false,
                             'no_filters'     => empty($cleanQuery),
                             'no_search'      => $search === null,
-                            'rbac_disabled'  => !$rbac,
+                            'rbac_disabled'  => !$_rbac,
                         ],
                     ]
                     );
@@ -1449,14 +1449,14 @@ class ObjectEntityMapper extends QBMapper
             // **PERFORMANCE TIMING**: RBAC filtering (suspected bottleneck).
             $rbacStart = microtime(true);
             // Disable published bypass if _published=false is explicitly set (dashboard users want only their org).
-            $this->applyRbacFilters(qb: $queryBuilder, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $rbac, disablePublishedBypass: $disablePublishedBypass);
+            $this->applyRbacFilters(qb: $queryBuilder, objectTableAlias: 'o', schemaTableAlias: 's', userId: null, rbac: $_rbac, disablePublishedBypass: $disablePublishedBypass);
             $perfTimings['rbac_filtering'] = round((microtime(true) - $rbacStart) * 1000, 2);
 
             $this->logger->info(
                     '🔒 RBAC FILTERING COMPLETED',
                     [
                         'rbacTime'    => $perfTimings['rbac_filtering'].'ms',
-                        'rbacEnabled' => $rbac,
+                        'rbacEnabled' => $_rbac,
                     ]
                     );
 
@@ -1487,7 +1487,7 @@ class ObjectEntityMapper extends QBMapper
                     '🏢 ORG FILTERING COMPLETED',
                     [
                         'orgTime'      => $perfTimings['org_filtering'].'ms',
-                        'multiEnabled' => $multi,
+                        'multiEnabled' => $_multitenancy,
                         'hasActiveOrg' => $hasActiveOrg,
                     ]
                     );
@@ -1784,13 +1784,13 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array       $query                  Query parameters for filtering
      * @param string|null $activeOrganisationUuid UUID of the active organisation
-     * @param bool        $rbac                   Whether to apply RBAC filters
-     * @param bool        $multi                  Whether to apply multi-tenancy filters
+     * @param bool        $_rbac                   Whether to apply RBAC filters
+     * @param bool        $_multitenancy                  Whether to apply multi-tenancy filters
      * @param array|null  $ids                    Optional array of IDs/UUIDs to filter by
      *
      * @return int Total size of matching objects in bytes
      */
-    public function sizeSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $multi=true, ?array $ids=null): int
+    public function sizeSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null): int
     {
         // Extract options from query (prefixed with _) - same as countSearchObjects
         $search         = $this->processSearchParameter($query['_search'] ?? null);
@@ -2121,8 +2121,8 @@ class ObjectEntityMapper extends QBMapper
      * @param Register|null $register       Optional register to filter by
      * @param Schema|null   $schema         Optional schema to filter by
      * @param bool|null     $published      Optional published filter
-     * @param bool          $rbac           Whether to apply RBAC filtering
-     * @param bool          $multi          Whether to apply multi-tenancy filtering
+     * @param bool          $_rbac           Whether to apply RBAC filtering
+     * @param bool          $_multitenancy          Whether to apply multi-tenancy filtering
      *
      * @return int The number of objects
      */
@@ -2135,7 +2135,7 @@ class ObjectEntityMapper extends QBMapper
         ?Register $register=null,
         ?Schema $schema=null,
         ?bool $published=false,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multi=true
     ): int {
         $qb = $this->db->getQueryBuilder();
@@ -2173,7 +2173,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Apply RBAC filtering based on user permissions.
-        $this->applyRbacFilters($qb, 'o', 's', null, $rbac);
+        $this->applyRbacFilters($qb, 'o', 's', null, $_rbac);
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {

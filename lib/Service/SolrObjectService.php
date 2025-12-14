@@ -293,8 +293,8 @@ class SolrObjectService
      * Search objects in SOLR
      *
      * @param array $query     Search query parameters
-     * @param bool  $rbac      Apply RBAC filters
-     * @param bool  $multi     Apply multi-tenancy filters
+     * @param bool  $_rbac      Apply RBAC filters
+     * @param bool  $_multitenancy     Apply multi-tenancy filters
      * @param bool  $published Filter for published objects only
      * @param bool  $deleted   Include deleted objects
      *
@@ -302,7 +302,7 @@ class SolrObjectService
      *
      * @throws \Exception If objectCollection is not configured
      */
-    public function searchObjects(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
+    public function searchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $published=false, bool $deleted=false): array
     {
         $collection = $this->getObjectCollection();
 
@@ -315,15 +315,15 @@ class SolrObjectService
                 [
                     'collection' => $collection,
                     'query'      => $query,
-                    'rbac'       => $rbac,
-                    'multi'      => $multi,
+                    'rbac'       => $_rbac,
+                    'multi'      => $_multitenancy,
                     'published'  => $published,
                     'deleted'    => $deleted,
                 ]
                 );
 
         // Delegate to GuzzleSolrService - will be refactored in later phases.
-        return $this->guzzleSolrService->searchObjectsPaginated(query: $query, rbac: $rbac, multi: $multi, published: $published, deleted: $deleted);
+        return $this->guzzleSolrService->searchObjectsPaginated(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted);
 
     }//end searchObjects()
 

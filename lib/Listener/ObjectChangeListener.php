@@ -170,7 +170,7 @@ class ObjectChangeListener implements IEventListener
                 );
 
         try {
-            $this->textExtractionService->extractObject(objectId: $objectId, forceReprocess: false);
+            $this->textExtractionService->extractObject(objectId: $objectId, forceReExtract: false);
             $this->logger->info(
                     '[ObjectChangeListener] Immediate extraction completed',
                     ['object_id' => $objectId]

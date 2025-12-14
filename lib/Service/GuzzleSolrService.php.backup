@@ -7194,7 +7194,7 @@ class GuzzleSolrService
                 // **IMPROVED**.: Fetch only objects with searchable schemas.
                 $objects = $this->fetchSearchableObjects($objectMapper, $currentBatchSize, $offset, $schemaIds);
 
-                if (empty($objects) === true) {
+                if (empty($objects)) {
                     break;
                 }
 
@@ -7204,12 +7204,12 @@ class GuzzleSolrService
                 foreach ($objects as $object) {
                     try {
                         $document = $this->createSolrDocument($object, $solrFieldTypes);
-                        if (empty($document) === false) {
+                        if (!empty($document)) {
                             $documents[] = $document;
                         }
                     } catch (\RuntimeException $e) {
                         // Skip non-searchable schemas.
-                        if (str_contains($e->getMessage(), 'Schema is not searchable') === true) {
+                        if (str_contains($e->getMessage(), 'Schema is not searchable')) {
                             continue;
                         }
                         $totalErrors++;
@@ -7227,9 +7227,9 @@ class GuzzleSolrService
                 }
 
                 // Bulk index the batch.
-                if (empty($documents) === false) {
+                if (!empty($documents)) {
                     $indexResult = $this->bulkIndex($documents, true); // Commit each batch for immediate visibility.
-                    if ($indexResult === true) {
+                    if ($indexResult) {
                         $totalIndexed += count($documents);
                     } else {
                         $totalErrors += count($documents);

@@ -180,10 +180,10 @@ class SchemaMapper extends QBMapper
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $rbac=true, bool $multi=true): Schema
+    public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Schema
     {
         // Verify RBAC permission to read if RBAC is enabled.
-        if ($rbac === true) {
+        if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
         }
@@ -201,7 +201,7 @@ class SchemaMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
-        // Set $multi=false to bypass organization filter (e.g., when expanding schemas for registers).
+        // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally.
         // Use $published parameter if provided, otherwise check config.
         if ($published !== null) {
@@ -216,7 +216,7 @@ class SchemaMapper extends QBMapper
             allowNullOrg: true,
             tableAlias: '',
             enablePublished: $enablePublished,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: $_multitenancy
         );
 
         $result = $qb->executeQuery();
@@ -260,9 +260,9 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array $ids   The ids of the schemas
-     * @param bool  $rbac  Whether to apply RBAC permission checks (default: true)
-     * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
+     * @param array $ids             The ids of the schemas
+     * @param bool  $_rbac           Whether to apply RBAC permission checks (default: true)
+     * @param bool  $_multitenancy   Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
@@ -274,12 +274,12 @@ class SchemaMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
-    public function findMultiple(array $ids, ?bool $published=null, bool $rbac=true, bool $multi=true): array
+    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find(id: $id, extend: [], published: $published, rbac: $rbac, multi: $multi);
+                $result[] = $this->find(id: $id, _extend: [], published: $published, _rbac: $_rbac, _multitenancy: $_multitenancy);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
@@ -355,11 +355,11 @@ class SchemaMapper extends QBMapper
         ?array $searchParams=[],
         ?array $_extend=[],
         ?bool $published=null,
-        bool $rbac=true,
-        bool $multi=true
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): array {
         // Verify RBAC permission to read if RBAC is enabled.
-        if ($rbac === true) {
+        if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
         }
@@ -404,7 +404,7 @@ class SchemaMapper extends QBMapper
             allowNullOrg: true,
             tableAlias: '',
             enablePublished: $enablePublished,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: $_multitenancy
         );
 
         // Just return the entities; do not attach stats here.

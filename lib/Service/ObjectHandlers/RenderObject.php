@@ -696,7 +696,7 @@ class RenderObject
      */
     public function renderEntity(
         ObjectEntity $entity,
-        array | string | null $extend=[],
+        array | string | null $_extend=[],
         int $depth=0,
         ?array $filter=[],
         ?array $fields=[],
@@ -803,7 +803,7 @@ class RenderObject
         }
 
         // Convert extend to an array if it's a string.
-        if (is_array($extend) === true && in_array('all', $extend, true) === true) {
+        if (is_array($_extend) === true && in_array('all', $_extend, true) === true) {
             $id       = $objectData['id'] ?? null;
             $originId = $objectData['originId'] ?? null;
 
@@ -813,16 +813,16 @@ class RenderObject
                 }
 
                 if ($value !== $id && $value !== $originId) {
-                    $extend[] = $key;
+                    $_extend[] = $key;
                 }
             }
-        } else if (is_string($extend) === true) {
-            $extend = explode(',', $extend);
+        } else if (is_string($_extend) === true) {
+            $_extend = explode(',', $_extend);
         }
 
         // Handle extensions if depth limit not reached.
-        if (empty($extend) === false && $depth < 10) {
-            $objectData = $this->extendObject(entity: $entity, extend: $extend, objectData: $objectData, depth: $depth, filter: $filter, fields: $fields, unset: $unset, visitedIds: $visitedIds);
+        if (empty($_extend) === false && $depth < 10) {
+            $objectData = $this->extendObject(entity: $entity, extend: $_extend, objectData: $objectData, depth: $depth, filter: $filter, fields: $fields, unset: $unset, visitedIds: $visitedIds);
         }
 
         $entity->setObject($objectData);
@@ -836,12 +836,12 @@ class RenderObject
      * Handle extends containing a wildcard ($)
      *
      * @param array $objectData The data to extend
-     * @param array $extend     The fields that should be extended
+     * @param array $_extend    The fields that should be extended
      * @param int   $depth      The current depth.
      *
      * @return array
      */
-    private function handleWildcardExtends(array $objectData, array &$extend, int $depth): array
+    private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array
     {
         $objectData = new Dot($objectData);
         if ($depth >= 10) {
@@ -849,7 +849,7 @@ class RenderObject
         }
 
         $wildcardExtends = array_filter(
-                $extend,
+                $_extend,
                 function (string $key) {
                     return str_contains($key, '.$.');
                 }
@@ -858,7 +858,7 @@ class RenderObject
         $extendedRoots = [];
 
         foreach ($wildcardExtends as $key => $wildcardExtend) {
-            unset($extend[$key]);
+            unset($_extend[$key]);
 
             [$root, $extends] = explode(separator: '.$.', string: $wildcardExtend, limit: 2);
 
@@ -902,13 +902,13 @@ class RenderObject
      *
      * @throws \OCP\DB\Exception
      */
-    private function handleExtendDot(array $data, array &$extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
+    private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
     {
-        $data = $this->handleWildcardExtends(objectData: $data, extend: $extend, depth: $depth + 1);
+        $data = $this->handleWildcardExtends(objectData: $data, extend: $_extend, depth: $depth + 1);
 
         $dataDot = new Dot($data);
 
-        foreach ($extend as $override => $key) {
+        foreach ($_extend as $override => $key) {
             // Skip if the key does not have to be extended.
             if ($dataDot->has(keys: $key) === false) {
                 continue;
@@ -923,7 +923,7 @@ class RenderObject
             $keyExtends = array_map(
                 fn(string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
                 array_filter(
-                    $extend,
+                    $_extend,
                     fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key.'.')
                 )
             );
@@ -1068,7 +1068,7 @@ class RenderObject
      */
     private function extendObject(
         ObjectEntity $entity,
-        array $extend,
+        array $_extend,
         array $objectData,
         int $depth,
         ?array $filter=[],
@@ -1077,17 +1077,17 @@ class RenderObject
         ?array $visitedIds=[]
     ): array {
         // Add register and schema context to @self if requested.
-        if (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true) {
+        if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
             $self = $objectData['@self'] ?? [];
 
-            if (in_array('@self.register', $extend) === true) {
+            if (in_array('@self.register', $_extend) === true) {
                 $register = $this->getRegister($entity->getRegister());
                 if ($register !== null) {
                     $self['register'] = $register->jsonSerialize();
                 }
             }
 
-            if (in_array('@self.schema', $extend) === true) {
+            if (in_array('@self.schema', $_extend) === true) {
                 $schema = $this->getSchema($entity->getSchema());
                 if ($schema !== null) {
                     $self['schema'] = $schema->jsonSerialize();
@@ -1097,7 +1097,7 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        $objectDataDot = $this->handleExtendDot(data: $objectData, extend: $extend, depth: $depth, allFlag: in_array('all', $extend, true), visitedIds: $visitedIds);
+        $objectDataDot = $this->handleExtendDot(data: $objectData, extend: $_extend, depth: $depth, allFlag: in_array('all', $_extend, true), visitedIds: $visitedIds);
 
         return $objectDataDot;
 
