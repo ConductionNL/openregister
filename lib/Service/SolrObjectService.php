@@ -292,11 +292,11 @@ class SolrObjectService
     /**
      * Search objects in SOLR
      *
-     * @param array $query     Search query parameters
-     * @param bool  $_rbac      Apply RBAC filters
-     * @param bool  $_multitenancy     Apply multi-tenancy filters
-     * @param bool  $published Filter for published objects only
-     * @param bool  $deleted   Include deleted objects
+     * @param array $query         Search query parameters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multi-tenancy filters
+     * @param bool  $published     Filter for published objects only
+     * @param bool  $deleted       Include deleted objects
      *
      * @return array Paginated search results
      *

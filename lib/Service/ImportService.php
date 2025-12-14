@@ -278,16 +278,16 @@ class ImportService
     /**
      * Import data from CSV file.
      *
-     * @param string        $filePath    The path to the CSV file.
-     * @param Register|null $register    Optional register to associate with imported objects.
-     * @param Schema|null   $schema      Optional schema to associate with imported objects.
-     * @param int           $chunkSize   Number of rows to process in each chunk (default: 100).
-     * @param bool          $validation  Whether to validate objects against schema definitions (default: false).
-     * @param bool          $events      Whether to dispatch object lifecycle events (default: false).
-     * @param bool          $_rbac        Whether to enforce RBAC checks (default: true).
-     * @param bool          $_multitenancy       Whether to enable multi-tenancy (default: true).
-     * @param bool          $publish     Whether to publish objects immediately (default: false).
-     * @param IUser|null    $currentUser Current user for RBAC checks (default: null).
+     * @param string        $filePath      The path to the CSV file.
+     * @param Register|null $register      Optional register to associate with imported objects.
+     * @param Schema|null   $schema        Optional schema to associate with imported objects.
+     * @param int           $chunkSize     Number of rows to process in each chunk (default: 100).
+     * @param bool          $validation    Whether to validate objects against schema definitions (default: false).
+     * @param bool          $events        Whether to dispatch object lifecycle events (default: false).
+     * @param bool          $_rbac         Whether to enforce RBAC checks (default: true).
+     * @param bool          $_multitenancy Whether to enable multi-tenancy (default: true).
+     * @param bool          $publish       Whether to publish objects immediately (default: false).
+     * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      *
      * @return (array|int|string)[][]
      *

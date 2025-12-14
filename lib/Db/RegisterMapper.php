@@ -679,10 +679,10 @@ class RegisterMapper extends QBMapper
     /**
      * Get all schemas associated with a register
      *
-     * @param int       $registerId      The ID of the register
-     * @param bool|null $published       Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac           Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy   Whether to apply multi-tenancy filtering (default: true)
+     * @param int       $registerId    The ID of the register
+     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Schema[]
      *

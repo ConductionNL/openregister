@@ -471,7 +471,7 @@ class ObjectEntityMapper extends QBMapper
      * @param string        $objectTableAlias       Optional alias for the objects table (default: 'o')
      * @param string        $schemaTableAlias       Optional alias for the schemas table (default: 's')
      * @param string|null   $userId                 Optional user ID (defaults to current user)
-     * @param bool          $_rbac                   Whether to apply RBAC checks (default: true). If false, no filtering is applied.
+     * @param bool          $_rbac                  Whether to apply RBAC checks (default: true). If false, no filtering is applied.
      * @param bool          $disablePublishedBypass If true, disable published object bypass for RBAC (default: false)
      *
      * @return void
@@ -1784,8 +1784,8 @@ class ObjectEntityMapper extends QBMapper
      *
      * @param array       $query                  Query parameters for filtering
      * @param string|null $activeOrganisationUuid UUID of the active organisation
-     * @param bool        $_rbac                   Whether to apply RBAC filters
-     * @param bool        $_multitenancy                  Whether to apply multi-tenancy filters
+     * @param bool        $_rbac                  Whether to apply RBAC filters
+     * @param bool        $_multitenancy          Whether to apply multi-tenancy filters
      * @param array|null  $ids                    Optional array of IDs/UUIDs to filter by
      *
      * @return int Total size of matching objects in bytes
@@ -2121,8 +2121,8 @@ class ObjectEntityMapper extends QBMapper
      * @param Register|null $register       Optional register to filter by
      * @param Schema|null   $schema         Optional schema to filter by
      * @param bool|null     $published      Optional published filter
-     * @param bool          $_rbac           Whether to apply RBAC filtering
-     * @param bool          $_multitenancy          Whether to apply multi-tenancy filtering
+     * @param bool          $_rbac          Whether to apply RBAC filtering
+     * @param bool          $_multitenancy  Whether to apply multi-tenancy filtering
      *
      * @return int The number of objects
      */
