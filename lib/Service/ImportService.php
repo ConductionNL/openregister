@@ -832,7 +832,7 @@ class ImportService
                 // Note: Other @ columns that don't start with @self. are ignored.
             } else {
                 // Regular properties - transform based on schema if needed.
-                if (($schemaProperties[$key] ?? null) !== null) {
+                if (is_array($schemaProperties) && ($schemaProperties[$key] ?? null) !== null) {
                     $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
                 } else {
                     $objectData[$key] = $value;

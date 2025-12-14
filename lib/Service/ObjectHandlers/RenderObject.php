@@ -757,7 +757,7 @@ class RenderObject
 
             $filteredData = [];
             foreach ($fields as $field) {
-                if (($objectData[$field] ?? null) !== null) {
+                if (is_array($objectData) && ($objectData[$field] ?? null) !== null) {
                     $filteredData[$field] = $objectData[$field];
                 }
             }
@@ -769,7 +769,7 @@ class RenderObject
         // Apply filters if specified.
         if (empty($filter) === false) {
             foreach ($filter as $key => $value) {
-                if (($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
+                if (is_array($objectData) && ($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
                     $entity->setObject([]);
                     return $entity;
                 }
@@ -779,7 +779,7 @@ class RenderObject
         // Apply unset - remove specified properties from the response.
         if (empty($unset) === false) {
             foreach ($unset as $property) {
-                if (($objectData[$property] ?? null) !== null) {
+                if (is_array($objectData) && ($objectData[$property] ?? null) !== null) {
                     unset($objectData[$property]);
                 }
             }

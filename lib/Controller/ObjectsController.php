@@ -1741,7 +1741,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array{error?: string, success?: true, sourceObject?: array, targetObject?: array, mergedObject?: mixed, actions?: array{properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...}, files: array<never, never>|mixed, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list{0?: array{objectId: mixed, title: mixed},...}}, statistics?: array{propertiesChanged: 0|1|2, filesTransferred: 0|mixed, filesDeleted: 0|mixed, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings?: array, errors?: array<never, never>}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: true, sourceObject?: array, targetObject?: array, mergedObject?: mixed, actions?: array{properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...}, files: array<never, never>|mixed, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list{0?: array{objectId: mixed, title: mixed},...}}, statistics?: array{propertiesChanged: 0|1|2, filesTransferred: 0|mixed, filesDeleted: 0|mixed, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings?: array, errors?: array<never, never>}, array<never, never>>
      */
     public function merge(
         string $id,
@@ -1797,7 +1797,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array{error?: string, success?: bool, statistics?: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int}, details?: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings?: list<'Some objects failed to migrate. Check details for specific errors.'>, errors?: list{0?: string,...}}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: bool, statistics?: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int}, details?: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings?: list<'Some objects failed to migrate. Check details for specific errors.'>, errors?: list{0?: string,...}}, array<never, never>>
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {

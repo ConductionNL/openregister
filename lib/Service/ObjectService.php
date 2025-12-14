@@ -371,7 +371,7 @@ class ObjectService
             // When deriving register from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its register.
             $registers = $this->getCachedEntities('register', [$register], function($ids) {
-                return [$this->registerMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
+                return [$this->registerMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
             });
             $registerExists = isset($registers[0]) === true;
             $isRegisterInstance = $registerExists === true && $registers[0] instanceof Register;
@@ -379,7 +379,7 @@ class ObjectService
                 $register = $registers[0];
             } else {
                 // Fallback to direct database lookup if cache fails.
-                $register = $this->registerMapper->find(id: $register, extend: [], published: null, rbac: false, multi: false);
+                $register = $this->registerMapper->find(id: $register, published: null, rbac: false, multi: false);
             }
         }
 
@@ -401,7 +401,7 @@ class ObjectService
             // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its schema.
             $schemas = $this->getCachedEntities('schema', [$schema], function($ids) {
-                return [$this->schemaMapper->find(id: $ids[0], extend: [], published: null, rbac: false, multi: false)];
+                return [$this->schemaMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
             });
             $schemaExists = isset($schemas[0]) === true;
             $isSchemaInstance = $schemaExists === true && $schemas[0] instanceof Schema;
@@ -409,7 +409,7 @@ class ObjectService
                 $schema = $schemas[0];
             } else {
                 // Fallback to direct database lookup if cache fails.
-                $schema = $this->schemaMapper->find(id: $schema, extend: [], published: null, rbac: false, multi: false);
+                $schema = $this->schemaMapper->find(id: $schema, published: null, rbac: false, multi: false);
             }
         }
 
@@ -1092,17 +1092,22 @@ class ObjectService
             }
 
             $iterator++;
-            $property = $schema->getProperties()[$key];
+            $schemaProperties = $schema->getProperties();
+            if (!is_array($schemaProperties) || !isset($schemaProperties[$key])) {
+                continue;
+            }
+            $property = $schemaProperties[$key];
 
             $value = (new Dot($value))->flatten(delimiter: '_');
 
             // @TODO fix schema finder.
-            $value['schema'] = $property['$ref'];
+            $value['schema'] = $property['$ref'] ?? null;
 
             $objects  = $this->findAll(config: ['filters' => $value]);
             $foundIds = array_map(
                     function (ObjectEntity $object) use ($property, $key) {
-                        $idRaw = $object->jsonSerialize()[$property['inversedBy']];
+                        $serialized = $object->jsonSerialize();
+                        $idRaw = is_array($property) && is_array($serialized) && isset($property['inversedBy']) ? $serialized[$property['inversedBy']] : null;
 
                         if (Uuid::isValid($idRaw) === true) {
                             return $idRaw;
@@ -2667,7 +2672,7 @@ class ObjectService
                         if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
-                                $results[] = $this->registerMapper->find(id: $id, extend: [], published: null, rbac: false, multi: false);
+                                $results[] = $this->registerMapper->find(id: $id, published: null, rbac: false, multi: false);
                             } catch (\Exception $e) {
                                 // Log and skip invalid IDs.
                                 $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
@@ -2688,7 +2693,7 @@ class ObjectService
                         if (is_string($id) === true || is_int($id) === true) {
                             try {
                                 // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
-                                $results[] = $this->schemaMapper->find(id: $id, extend: [], published: null, rbac: false, multi: false);
+                                $results[] = $this->schemaMapper->find(id: $id, published: null, rbac: false, multi: false);
                             } catch (\Exception $e) {
                                 // Log and skip invalid IDs.
                                 $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
@@ -3174,7 +3179,7 @@ class ObjectService
      * @param string|int $identifier The object to unlock
      *
      * @return ObjectEntity The unlocked objectEntity
-     * @throws DoesNotExistException
+     * @throws \OCP\AppFramework\Db\DoesNotExistException
      *
      * @deprecated
      *
@@ -3575,7 +3580,7 @@ class ObjectService
      *
      * @return (array|mixed|true)[]
      *
-     * @throws DoesNotExistException If either object doesn't exist
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If either object doesn't exist
      * @throws \InvalidArgumentException If objects are not in the same register/schema or required data is missing
      * @throws \Exception If there's an error during the merge process
      *
@@ -4220,7 +4225,7 @@ class ObjectService
      * @phpstan-return array<string, mixed>
      *
      * @psalm-return array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
-     * @throws DoesNotExistException If register or schema not found
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
      * @throws \InvalidArgumentException If invalid parameters provided
      */
     public function migrateObjects(
@@ -5033,7 +5038,7 @@ class ObjectService
                             continue;
                             // Skip this object - no permission.
                         }
-                    } catch (DoesNotExistException $e) {
+                    } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                         // Skip this object - schema not found.
                         continue;
                     }

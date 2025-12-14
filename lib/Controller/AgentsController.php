@@ -493,7 +493,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse Success message
      *
-     * @psalm-return JSONResponse<200|400|403, array{error?: 'Failed to delete agent'|'You do not have permission to delete this agent', message?: 'Agent deleted successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|403, array{error?: 'Failed to delete agent'|'You do not have permission to delete this agent'|'User not authenticated', message?: 'Agent deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {

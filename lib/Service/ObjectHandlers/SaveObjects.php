@@ -701,6 +701,7 @@ class SaveObjects
 
         $preparedObjects = [];
         $schemaCache     = [];
+        $schemaAnalysis  = [];
         $invalidObjects  = [];
 // PERFORMANCE OPTIMIZATION: Comprehensive schema analysis cache.
 
@@ -744,7 +745,6 @@ class SaveObjects
             }
 
             $schema = $schemaCache[$schemaId];
-            $schemaAnalysis[$schemaId];
 
             // Accept any non-empty string as ID, generate UUID if not provided.
             $providedId = $selfData['id'] ?? null;
@@ -1571,6 +1571,9 @@ class SaveObjects
      */
     private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
+        // Track statistics for debugging/monitoring.
+        $_appliedCount = 0;
+        $_processedCount = 0;
 
         // Create direct UUID to object reference mapping.
         $objectsByUuid = [];
@@ -1982,7 +1985,8 @@ class SaveObjects
 
         // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries.
         $allRelatedIds = [];
-// Track which objects need which related objects.
+        // Track which objects need which related objects.
+        $objectRelationsMap = [];
 
         // First pass: collect all related object IDs.
         foreach ($savedObjects ?? [] as $index => $savedObject) {
@@ -2100,7 +2104,8 @@ class SaveObjects
             return;
         }
 
-
+        // Track objects that need to be updated.
+        $objectsToUpdate = [];
 
         foreach ($writeBackOperations ?? [] as $operation) {
             $targetObject = $operation['targetObject'];

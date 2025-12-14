@@ -2360,7 +2360,7 @@ class MagicMapper
         $configuration = $schema->getConfiguration();
 
         // Enable magic mapping if explicitly enabled in schema config.
-        if (($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
+        if (is_array($configuration) && ($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
             return true;
         }
 
@@ -2385,7 +2385,7 @@ class MagicMapper
         // For backward compatibility, just check schema config without register context.
         $configuration = $schema->getConfiguration();
 
-        if (($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
+        if (is_array($configuration) && ($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
             return true;
         }
 

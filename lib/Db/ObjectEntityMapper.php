@@ -1786,10 +1786,11 @@ class ObjectEntityMapper extends QBMapper
      * @param string|null $activeOrganisationUuid UUID of the active organisation
      * @param bool        $rbac                    Whether to apply RBAC filters
      * @param bool        $multi                   Whether to apply multi-tenancy filters
+     * @param array|null  $ids                     Optional array of IDs/UUIDs to filter by
      *
      * @return int Total size of matching objects in bytes
      */
-    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true): int
+    public function sizeSearchObjects(array $query = [], ?string $activeOrganisationUuid = null, bool $rbac = true, bool $multi = true, ?array $ids = null): int
     {
         // Extract options from query (prefixed with _) - same as countSearchObjects
         $search = $this->processSearchParameter($query['_search'] ?? null);
@@ -1854,8 +1855,8 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters
-        $basicRegister = isset($metadataFilters['register']) ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
         // Published filtering is controlled by the $published parameter (from _published query param).
         // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
         // The bypass adds published objects from other orgs; it doesn't skip the published filter.
