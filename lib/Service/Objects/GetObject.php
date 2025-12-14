@@ -87,6 +87,8 @@ class GetObject
      * @return ObjectEntity The retrieved object.
      *
      * @throws DoesNotExistException If object not found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function find(
         string $id,
@@ -131,6 +133,8 @@ class GetObject
      * @return ObjectEntity The retrieved object.
      *
      * @throws DoesNotExistException If object not found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findSilent(
         string $id,
@@ -174,6 +178,8 @@ class GetObject
      * @return \\OCA\OpenRegister\Db\ObjectEntity[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,
@@ -266,6 +272,8 @@ class GetObject
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findLogs(
         ObjectEntity $object,
