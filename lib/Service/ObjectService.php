@@ -2294,162 +2294,6 @@ class ObjectService
     }
 
     /**
-     * Determine if this is a simple request that can use the fast path
-     *
-     * @param array $query The search query
-     *
-     * @return bool True if this is a simple request
-     */
-    private function isSimpleRequest(array $query): bool
-    {
-        // Simple request criteria:.
-        // - No complex extend operations (> 2).
-        // - No facets or facetable queries.
-        // - Small result set (limit <= 50).
-        // - No complex filters (< 3 filter criteria).
-
-        // **BUGFIX**: Handle _extend as both string and array.
-        $extendCount = 0;
-        if (empty($query['_extend']) === false) {
-            if (is_array($query['_extend']) === true) {
-                $extendCount = count($query['_extend']);
-            } else if (is_string($query['_extend']) === true) {
-                // Count comma-separated extend fields.
-                $extendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
-            }
-        }
-        $hasComplexExtend = $extendCount > 2;
-        $hasFacets = empty($query['_facets']) === false || ($query['_facetable'] ?? false);
-        $hasLargeLimit = ($query['_limit'] ?? 20) > 50;
-
-        // Count filter criteria (excluding system parameters).
-        $filterCount = 0;
-        foreach (array_keys($query) as $key) {
-            $startsWithUnderscore = str_starts_with(haystack: $key, needle: '_') === true;
-            $startsWithAt = str_starts_with(haystack: $key, needle: '@') === true;
-            if ($startsWithUnderscore === false && $startsWithAt === false) {
-                $filterCount++;
-            }
-        }
-        $hasComplexFilters = $filterCount > 3;
-
-        return !($hasComplexExtend || $hasFacets || $hasLargeLimit || $hasComplexFilters);
-    }
-
-    /**
-     * Optimize extend queries for performance
-     *
-     * @param array|string $extend Original extend data (array or comma-separated string)
-     *
-     * @return (mixed|string)[] Optimized extend array
-     *
-     * @psalm-return list<mixed|non-falsy-string>
-     */
-    private function optimizeExtendQueries($_extend): array
-    {
-        // **BUGFIX**: Handle _extend as both string and array.
-        if (is_string($_extend) === true) {
-            if (trim($_extend) === '') {
-                return [];
-            }
-            // Convert comma-separated string to array.
-            $_extend = array_filter(array_map('trim', explode(',', $_extend)));
-        } else if (is_array($_extend) === false) {
-            return [];
-        }
-
-        // **PERFORMANCE PRIORITY**: Keep only most critical relationships.
-        // Remove heavy relationships that take > 500ms each.
-        $heavyRelationships = [
-            '@self.auditTrails',
-            '@self.searchTrails',
-            '@self.attachments.content',
-            'organization.users',
-            'schema.properties.validations'
-        ];
-
-        $optimized = array_filter($_extend, function($relationship) use ($heavyRelationships) {
-            return !in_array($relationship, $heavyRelationships);
-        });
-
-        // **SMART LIMITING**: Keep maximum 3 extend relationships for sub-500ms performance.
-        if (count($optimized) > 3) {
-            $optimized = array_slice(array: $optimized, offset: 0, length: 3);
-        }
-
-        return array_values($optimized);
-    }
-
-    /**
-     * Preload critical entities to warm cache
-     *
-     * @param array $query The search query
-     *
-     * @return void
-     */
-    private function preloadCriticalEntities(array $query): void
-    {
-        $preloadStart = microtime(true);
-
-        try {
-            // **CACHE WARMUP**: Preload register and schema if not already cached.
-            if (isset($query['@self']['register']) === true) {
-                $registerValue = $query['@self']['register'];
-                // Handle both single values and arrays.
-                $registerIds = is_array($registerValue) === true ? $registerValue : [$registerValue];
-                $this->getCachedEntities($registerIds, function($ids) {
-                    $results = [];
-                    foreach ($ids as $id) {
-                        if (is_string($id) === true || is_int($id) === true) {
-                            try {
-                                // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
-                                $results[] = $this->registerMapper->find(id: $id, published: null, rbac: false, multi: false);
-                            } catch (\Exception $e) {
-                                // Log and skip invalid IDs.
-                                $this->logger->warning('Failed to preload register', ['id' => $id, 'error' => $e->getMessage()]);
-                            }
-                        }
-                    }
-                    return $results;
-                });
-            }
-
-            if (isset($query['@self']['schema']) === true) {
-                $schemaValue = $query['@self']['schema'];
-                // Handle both single values and arrays.
-                $schemaIds = is_array($schemaValue) === true ? $schemaValue : [$schemaValue];
-                $this->getCachedEntities($schemaIds, function($ids) {
-                    $results = [];
-                    foreach ($ids as $id) {
-                        if (is_string($id) === true || is_int($id) === true) {
-                            try {
-                                // Preloading is an internal operation, bypass RBAC and multi-tenancy checks.
-                                $results[] = $this->schemaMapper->find(id: $id, published: null, rbac: false, multi: false);
-                            } catch (\Exception $e) {
-                                // Log and skip invalid IDs.
-                                $this->logger->warning('Failed to preload schema', ['id' => $id, 'error' => $e->getMessage()]);
-                            }
-                        }
-                    }
-                    return $results;
-                });
-            }
-
-            $preloadTime = round((microtime(true) - $preloadStart) * 1000, 2);
-            if ($preloadTime > 0) {
-                $this->logger->debug(message: '🔥 CACHE WARMUP: Critical entities preloaded', context: [
-                    'preloadTime' => $preloadTime . 'ms',
-                    'benefit' => 'faster_main_query'
-                ]);
-            }
-        } catch (Exception $e) {
-            // Preloading failed, continue without cache warmup.
-            $this->logger->debug(message: 'Cache warmup failed, continuing', context: ['error' => $e->getMessage()]);
-        }
-    }
-
-
-    /**
      * Add pagination URLs efficiently to the results array
      *
      * **PERFORMANCE OPTIMIZATION**: Optimized URL generation to avoid repeated string operations
@@ -3845,62 +3689,11 @@ class ObjectService
      */
     private function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
-        $startTime = microtime(true);
-        $relatedData = [];
-
-        if (empty($results) === true) {
-            return $relatedData;
-        }
-
-        $allRelatedIds = [];
-
-        // Extract all related IDs from result objects.
-        foreach ($results as $result) {
-            if (($result instanceof ObjectEntity) === false) {
-                continue;
-            }
-
-            $objectData = $result->getObject();
-
-            // Look for relationship fields in the object data.
-            foreach ($objectData ?? [] as $value) {
-                if (is_array($value) === true) {
-                    // Handle array of IDs.
-                    foreach ($value as $relatedId) {
-                        if (is_string($relatedId) === true && $this->isUuid($relatedId) === true) {
-                            $allRelatedIds[] = $relatedId;
-                        }
-                    }
-                } else if (is_string($value) === true && $this->isUuid($value) === true) {
-                    // Handle single ID.
-                    $allRelatedIds[] = $value;
-                }
-            }
-        }
-
-        // Remove duplicates and filter valid UUIDs.
-        $allRelatedIds = array_unique($allRelatedIds);
-
-        if ($includeRelated === true) {
-            $relatedData['related'] = array_values($allRelatedIds);
-        }
-
-        if ($includeRelatedNames === true && empty($allRelatedIds) === false) {
-            // Get names for all related objects using the object cache service.
-            $relatedNames = $this->objectCacheService->getMultipleObjectNames($allRelatedIds);
-            $relatedData['relatedNames'] = $relatedNames;
-        }
-
-        $executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-        $this->logger->debug(message: '🔗 RELATED DATA EXTRACTED', context: [
-            'related_ids_found' => count($allRelatedIds),
-            'include_related' => $includeRelated,
-            'include_related_names' => $includeRelatedNames,
-            'execution_time' => $executionTime . 'ms'
-        ]);
-
-        return $relatedData;
+        return $this->performanceHandler->extractRelatedData(
+            results: $results,
+            includeRelated: $includeRelated,
+            includeRelatedNames: $includeRelatedNames
+        );
 
     }//end extractRelatedData()
 
@@ -5385,8 +5178,7 @@ class ObjectService
      */
     private function getCachedEntities(mixed $ids, callable $fallbackFunc): array
     {
-        // Entity caching is disabled - always use fallback function.
-        return call_user_func($fallbackFunc, $ids);
+        return $this->performanceHandler->getCachedEntities(ids: $ids, fallbackFunc: $fallbackFunc);
 
     }//end getCachedEntities()
 
@@ -5539,10 +5331,8 @@ class ObjectService
      */
     private function getFacetCount(bool $hasFacets, array $query): int
     {
-        if ($hasFacets === true) {
-            return count($query['_facets']);
-        }
-        return 0;
+        return $this->performanceHandler->getFacetCount(hasFacets: $hasFacets, query: $query);
+
     }
 
     /**
@@ -5555,10 +5345,8 @@ class ObjectService
      */
     private function calculateTotalPages(int $total, int $limit): int
     {
-        if ($total > 0) {
-            return intval(ceil($total / $limit));
-        }
-        return 1;
+        return $this->performanceHandler->calculateTotalPages(total: $total, limit: $limit);
+
     }
 
     /**
@@ -5572,12 +5360,10 @@ class ObjectService
      *
      * @psalm-return int<0, max>
      */
-    private function calculateExtendCount($_extend): int
+    private function calculateExtendCount(mixed $extend): int
     {
-        if (is_array($_extend) === true) {
-            return count($_extend);
-        }
-        return count(array_filter(array_map('trim', explode(',', $_extend))));
+        return $this->performanceHandler->calculateExtendCount(extend: $extend);
+
     }
 
     /**
