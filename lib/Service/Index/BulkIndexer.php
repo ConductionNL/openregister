@@ -2,85 +2,115 @@
 
 declare(strict_types=1);
 
-/*
+/**
  * BulkIndexer
  *
- * Handles bulk indexing operations for large datasets.
+ * Handles bulk indexing operations for Solr.
+ * Extracted from GuzzleSolrService to separate bulk operation logic.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
- * @author    Conduction Development Team
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-12
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\Index;
 
+use OCA\OpenRegister\Service\GuzzleSolrService;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 
 /**
- * BulkIndexer for batch indexing operations
+ * BulkIndexer for bulk Solr operations
+ *
+ * PRAGMATIC APPROACH: Initially delegates to GuzzleSolrService.
+ * Methods will be migrated incrementally.
  *
  * @package OCA\OpenRegister\Service\Index
  */
 class BulkIndexer
 {
+    /**
+     * Guzzle Solr service (temporary delegation).
+     *
+     * @var GuzzleSolrService
+     */
+    private readonly GuzzleSolrService $guzzleSolrService;
 
+    /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
-
-    private readonly SearchBackendInterface $searchBackend;
-
-    private readonly DocumentBuilder $documentBuilder;
 
 
     /**
      * BulkIndexer constructor
      *
-     * @param LoggerInterface        $logger          Logger
-     * @param SearchBackendInterface $searchBackend   Search backend
-     * @param DocumentBuilder        $documentBuilder Document builder
+     * @param GuzzleSolrService $guzzleSolrService Backend implementation
+     * @param LoggerInterface   $logger            Logger
      *
      * @return void
      */
     public function __construct(
-        LoggerInterface $logger,
-        SearchBackendInterface $searchBackend,
-        DocumentBuilder $documentBuilder
+        GuzzleSolrService $guzzleSolrService,
+        LoggerInterface $logger
     ) {
-        $this->logger          = $logger;
-        $this->searchBackend   = $searchBackend;
-        $this->documentBuilder = $documentBuilder;
-
-    }//end __construct()
+        $this->guzzleSolrService = $guzzleSolrService;
+        $this->logger = $logger;
+    }
 
 
     /**
-     * Bulk index objects from database
+     * Bulk index objects
      *
-     * @param int   $batchSize  Batch size for processing
-     * @param int   $maxObjects Maximum objects to index
-     * @param array $schemaIds  Schema IDs to filter
+     * @param array $objects Objects to index
+     * @param bool  $commit  Whether to commit
      *
-     * @return array Result statistics
+     * @return array Results
+     */
+    public function bulkIndexObjects(array $objects, bool $commit = true): array
+    {
+        $this->logger->debug('BulkIndexer: Delegating to GuzzleSolrService', [
+            'object_count' => count($objects),
+            'commit' => $commit
+        ]);
+
+        return $this->guzzleSolrService->bulkIndexObjects($objects, $commit);
+    }
+
+
+    /**
+     * Bulk index from database
+     *
+     * @param int   $batchSize      Batch size
+     * @param int   $maxObjects     Max objects
+     * @param array $solrFieldTypes Field types
+     * @param array $schemaIds      Schema IDs to filter
+     *
+     * @return array Results
      */
     public function bulkIndexFromDatabase(
-        int $batchSize=1000,
-        int $maxObjects=0,
-        array $schemaIds=[]
+        int $batchSize = 1000,
+        int $maxObjects = 0,
+        array $solrFieldTypes = [],
+        array $schemaIds = []
     ): array {
-        $this->logger->info('[BulkIndexer] Starting bulk index', ['batchSize' => $batchSize, 'maxObjects' => $maxObjects]);
+        $this->logger->debug('BulkIndexer: Delegating bulkIndexFromDatabase', [
+            'batch_size' => $batchSize,
+            'max_objects' => $maxObjects
+        ]);
 
-        // Skeleton implementation - will delegate to backend
-        return [
-            'success' => true,
-            'indexed' => 0,
-            'errors'  => 0,
-        ];
-
-    }//end bulkIndexFromDatabase()
+        return $this->guzzleSolrService->bulkIndexFromDatabase(
+            $batchSize,
+            $maxObjects,
+            $solrFieldTypes,
+            $schemaIds
+        );
+    }
 
 
 }//end class
