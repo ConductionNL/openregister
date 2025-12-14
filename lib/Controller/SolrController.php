@@ -14,9 +14,9 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
-use OCA\OpenRegister\Service\SolrObjectService;
-use OCA\OpenRegister\Service\SolrFileService;
+use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use Psr\Log\LoggerInterface;
 
@@ -484,7 +484,7 @@ class SolrController extends Controller
     public function listCollections(): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $collections       = $guzzleSolrService->listCollections();
 
             return new JSONResponse(
@@ -529,7 +529,7 @@ class SolrController extends Controller
     public function listConfigSets(): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $configSets        = $guzzleSolrService->listConfigSets();
 
             return new JSONResponse(
@@ -585,7 +585,7 @@ class SolrController extends Controller
         int $maxShardsPerNode=1
     ): JSONResponse {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             $result = $guzzleSolrService->createCollection(
                 collectionName: $collectionName,
@@ -642,7 +642,7 @@ class SolrController extends Controller
     public function createConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             $result = $guzzleSolrService->createConfigSet(name: $name, baseConfigSet: $baseConfigSet);
 
@@ -692,7 +692,7 @@ class SolrController extends Controller
     public function deleteConfigSet(string $name): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             $result = $guzzleSolrService->deleteConfigSet($name);
 
@@ -743,7 +743,7 @@ class SolrController extends Controller
     public function copyCollection(string $sourceCollection, string $targetCollection): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             $result = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection);
 
@@ -801,7 +801,7 @@ class SolrController extends Controller
         try {
             // Get services from container.
             $objectMapper      = $this->container->get(ObjectEntityMapper::class);
-            $solrObjectService = $this->container->get(SolrObjectService::class);
+            $solrObjectService = $this->container->get(IndexService::class);
 
             // Fetch the object.
             $object = $objectMapper->find($objectId);
@@ -897,7 +897,7 @@ class SolrController extends Controller
 
             // Get services from container.
             $objectMapper      = $this->container->get(ObjectEntityMapper::class);
-            $solrObjectService = $this->container->get(SolrObjectService::class);
+            $solrObjectService = $this->container->get(IndexService::class);
 
             // Fetch objects.
             // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.

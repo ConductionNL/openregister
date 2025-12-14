@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
@@ -172,7 +172,7 @@ class ObjectService
      * @param FacetService            $facetService            Service for facet operations.
      * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
      * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param FacetCacheHandler $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param SettingsService         $settingsService         Service for settings operations.
      * @param IAppContainer           $container               Application container.
      */

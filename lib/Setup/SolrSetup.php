@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Setup;
 use Exception;
 use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client as GuzzleClient;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 
 /**
  * SOLR Setup and Configuration Manager
@@ -57,7 +57,7 @@ class SolrSetup
     private array $solrConfig;
 
     /**
-     * HTTP client for SOLR requests (from GuzzleSolrService)
+     * HTTP client for SOLR requests (from IndexService)
      *
      * @var \OCP\Http\Client\IClient
      */
@@ -66,9 +66,9 @@ class SolrSetup
     /**
      * SOLR service for authenticated HTTP client and configuration
      *
-     * @var GuzzleSolrService
+     * @var IndexService
      */
-    private GuzzleSolrService $solrService;
+    private IndexService $solrService;
 
     /**
      * Detailed error information from the last failed operation
@@ -103,20 +103,20 @@ class SolrSetup
     /**
      * Initialize SOLR setup manager
      *
-     * @param GuzzleSolrService $solrService SOLR service with authenticated HTTP client and configuration
+     * @param IndexService $solrService SOLR service with authenticated HTTP client and configuration
      * @param LoggerInterface   $logger      PSR-3 compliant logger for operation tracking
      */
-    public function __construct(GuzzleSolrService $solrService, LoggerInterface $logger)
+    public function __construct(IndexService $solrService, LoggerInterface $logger)
     {
         $this->solrService = $solrService;
         $this->logger      = $logger;
 
-        // Get authenticated HTTP client and configuration from GuzzleSolrService.
+        // Get authenticated HTTP client and configuration from IndexService.
         $this->httpClient = $solrService->getHttpClient();
         $this->solrConfig = $solrService->getSolrConfig();
 
         $this->logger->info(
-                'SOLR Setup: Using authenticated HTTP client from GuzzleSolrService',
+                'SOLR Setup: Using authenticated HTTP client from IndexService',
                 [
                     'has_credentials' => empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false,
                     'username'        => $this->solrConfig['username'] ?? 'not_set',
@@ -173,7 +173,7 @@ class SolrSetup
 
 
     /**
-     * Build SOLR URL using GuzzleSolrService base URL method for consistency
+     * Build SOLR URL using IndexService base URL method for consistency
      *
      * @param string $path The SOLR API path (e.g., '/admin/info/system')
      *
@@ -181,7 +181,7 @@ class SolrSetup
      */
     private function buildSolrUrl(string $path): string
     {
-        // Use GuzzleSolrService's buildSolrBaseUrl method for consistency.
+        // Use IndexService's buildSolrBaseUrl method for consistency.
         // This ensures URL building logic is centralized and consistent.
         $baseUrl = $this->solrService->buildSolrBaseUrl();
         return $baseUrl.$path;
@@ -222,7 +222,7 @@ class SolrSetup
 
 
     /**
-     * Get tenant-specific collection name using GuzzleSolrService
+     * Get tenant-specific collection name using IndexService
      *
      * @return string Tenant-specific collection name (e.g., "openregister_nc_f0e53393")
      */
@@ -241,7 +241,7 @@ class SolrSetup
 
 
     /**
-     * Get tenant ID from GuzzleSolrService
+     * Get tenant ID from IndexService
      *
      * @return string Tenant identifier (e.g., "nc_f0e53393")
      */
@@ -782,7 +782,7 @@ class SolrSetup
 
 
     /**
-     * Verify SOLR connectivity using GuzzleSolrService for consistency
+     * Verify SOLR connectivity using IndexService for consistency
      *
      * **CONSISTENCY FIX**: Uses the same comprehensive connectivity testing
      * as all other parts of the system to ensure consistent behavior.
@@ -799,7 +799,7 @@ class SolrSetup
 
             if ($isConnected === true) {
                 $this->logger->info(
-                        'SOLR connectivity verified successfully using GuzzleSolrService',
+                        'SOLR connectivity verified successfully using IndexService',
                         [
                             'test_message'              => $connectionTest['message'] ?? 'Connection test passed',
                             'components_tested'         => array_keys($connectionTest['components'] ?? []),
@@ -809,7 +809,7 @@ class SolrSetup
                 return true;
             } else {
                 $this->logger->error(
-                        'SOLR connectivity verification failed using GuzzleSolrService',
+                        'SOLR connectivity verification failed using IndexService',
                         [
                             'test_message' => $connectionTest['message'] ?? 'Connection test failed',
                             'components'   => $connectionTest['components'] ?? [],
@@ -836,7 +836,7 @@ class SolrSetup
             }//end if
         } catch (\Exception $e) {
             $this->logger->error(
-                    'SOLR connectivity verification failed - exception during GuzzleSolrService test',
+                    'SOLR connectivity verification failed - exception during IndexService test',
                     [
                         'error'           => $e->getMessage(),
                         'exception_class' => get_class($e),
@@ -1039,7 +1039,7 @@ class SolrSetup
                 ]
                 );
 
-        // Use GuzzleSolrService's comprehensive connectivity test instead of simple ping.
+        // Use IndexService's comprehensive connectivity test instead of simple ping.
         try {
             $connectionTest = $this->solrService->testConnection();
             if ($connectionTest['success'] === true) {

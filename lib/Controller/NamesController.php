@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -59,15 +59,15 @@ class NamesController extends Controller
     /**
      * Constructor for NamesController.
      *
-     * @param string             $appName            Application name
-     * @param IRequest           $request            HTTP request object
-     * @param ObjectCacheService $objectCacheService Object cache service for name operations
-     * @param LoggerInterface    $logger             Logger for performance monitoring
+     * @param string          $appName            Application name
+     * @param IRequest        $request            HTTP request object
+     * @param CacheHandler    $objectCacheService Object cache service for name operations
+     * @param LoggerInterface $logger             Logger for performance monitoring
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly ObjectCacheService $objectCacheService,
+        private readonly CacheHandler $objectCacheService,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);

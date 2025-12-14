@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\BackgroundJob\TimedJob;
@@ -92,10 +92,10 @@ class SolrNightlyWarmupJob extends TimedJob
             /*
              * Get required services.
              *
-             * @var GuzzleSolrService $solrService
+             * @var IndexService $solrService
              */
 
-            $solrService = \OC::$server->get(GuzzleSolrService::class);
+            $solrService = \OC::$server->get(IndexService::class);
 
             /*
              * @var SettingsService $settingsService
@@ -283,14 +283,14 @@ class SolrNightlyWarmupJob extends TimedJob
     /**
      * Check if SOLR is enabled and available.
      *
-     * @param GuzzleSolrService $solrService     SOLR service instance
-     * @param SettingsService   $settingsService Settings service instance
-     * @param LoggerInterface   $logger          Logger instance
+     * @param IndexService    $solrService     SOLR service instance
+     * @param SettingsService $settingsService Settings service instance
+     * @param LoggerInterface $logger          Logger instance
      *
      * @return bool True if SOLR is enabled and available, false otherwise
      */
     private function isSolrEnabledAndAvailable(
-        GuzzleSolrService $solrService,
+        IndexService $solrService,
         SettingsService $settingsService,
         LoggerInterface $logger
     ): bool {

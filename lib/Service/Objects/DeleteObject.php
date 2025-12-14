@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectCacheService;
 use OCA\OpenRegister\Service\SchemaCacheService;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use Psr\Log\LoggerInterface;
@@ -81,14 +81,14 @@ class DeleteObject
     /**
      * Constructor for DeleteObject handler.
      *
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity data mapper.
-     * @param FileService             $fileService             File service for managing files.
-     * @param ObjectCacheService      $objectCacheService      Object cache service for entity and query caching.
-     * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service for facet caching.
-     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper for logs.
-     * @param SettingsService         $settingsService         Settings service for accessing trail settings.
-     * @param LoggerInterface         $logger                  Logger for error handling.
+     * @param ObjectEntityMapper $objectEntityMapper      Object entity data mapper.
+     * @param FileService        $fileService             File service for managing files.
+     * @param ObjectCacheService $objectCacheService      Object cache service for entity and query caching.
+     * @param SchemaCacheService $schemaCacheService      Schema cache service for schema entity caching.
+     * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs.
+     * @param SettingsService    $settingsService         Settings service for accessing trail settings.
+     * @param LoggerInterface    $logger                  Logger for error handling.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,

@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\ToolRegistry;
 use OCA\OpenRegister\Tool\ToolInterface;
@@ -71,12 +71,12 @@ use Symfony\Component\Uid\Uuid;
  * ARCHITECTURE:
  * - Uses LLPhant library for LLM interactions
  * - Integrates with VectorEmbeddingService for semantic search
- * - Can use GuzzleSolrService for keyword search (optional)
- * - Independent chat logic, not tied to SOLR infrastructure
+ * - Can use IndexService for keyword search (optional)
+ * - Independent chat logic, not tied to search infrastructure
  *
  * RAG CAPABILITIES:
  * - Semantic search using VectorEmbeddingService
- * - Keyword search using GuzzleSolrService (optional)
+ * - Keyword search using IndexService (optional)
  * - Hybrid search combining both approaches
  * - Agent-based filtering and context retrieval
  * - View-based filtering for multi-tenancy
@@ -89,7 +89,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * INTEGRATION POINTS:
  * - VectorEmbeddingService: For semantic search in RAG
- * - GuzzleSolrService: For keyword search (optional)
+ * - IndexService: For keyword search (optional)
  * - SettingsService: For reading LLM configuration
  * - SettingsController: Delegates testing to this service
  *
@@ -142,9 +142,9 @@ class ChatService
     /**
      * SOLR service
      *
-     * @var GuzzleSolrService
+     * @var IndexService
      */
-    private GuzzleSolrService $solrService;
+    private IndexService $indexService;
 
     /**
      * Settings service
@@ -176,7 +176,7 @@ class ChatService
      * @param MessageMapper          $messageMapper      Message mapper
      * @param AgentMapper            $agentMapper        Agent mapper
      * @param VectorEmbeddingService $vectorService      Vector embedding service
-     * @param GuzzleSolrService      $solrService        SOLR service
+     * @param IndexService           $indexService       Index service
      * @param SettingsService        $settingsService    Settings service
      * @param LoggerInterface        $logger             Logger
      * @param RegisterTool           $registerTool       Register tool for function calling (legacy)
@@ -190,7 +190,7 @@ class ChatService
         MessageMapper $messageMapper,
         AgentMapper $agentMapper,
         VectorEmbeddingService $vectorService,
-        GuzzleSolrService $solrService,
+        IndexService $indexService,
         SettingsService $settingsService,
         LoggerInterface $logger,
         RegisterTool $_registerTool,
@@ -202,7 +202,7 @@ class ChatService
         $this->messageMapper      = $messageMapper;
         $this->agentMapper        = $agentMapper;
         $this->vectorService      = $vectorService;
-        $this->solrService        = $solrService;
+        $this->indexService       = $indexService;
         $this->settingsService    = $settingsService;
         $this->logger       = $logger;
         $this->toolRegistry = $toolRegistry;

@@ -1,6 +1,6 @@
 <?php
 /**
- * OpenRegister RevertService
+ * OpenRegister RevertHandler
  *
  * Service class for handling object reversion in the OpenRegister application.
  *
@@ -16,7 +16,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Objects;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -31,10 +31,10 @@ use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
 
 /**
- * Class RevertService
+ * Class RevertHandler
  * Service for handling object reversion
  */
-class RevertService
+class RevertHandler
 {
 
     /**

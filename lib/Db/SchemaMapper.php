@@ -38,7 +38,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
@@ -88,9 +88,9 @@ class SchemaMapper extends QBMapper
      *
      * Validates schema property definitions and types.
      *
-     * @var SchemaPropertyValidatorService Schema property validator instance
+     * @var PropertyValidatorHandler Schema property validator instance
      */
-    private readonly SchemaPropertyValidatorService $validator;
+    private readonly PropertyValidatorHandler $validator;
 
     /**
      * Organisation service for multi-tenancy
@@ -129,20 +129,20 @@ class SchemaMapper extends QBMapper
      * Initializes mapper with database connection and required dependencies
      * for multi-tenancy, RBAC, validation, and event dispatching.
      *
-     * @param IDBConnection                  $db                  Database connection for queries
-     * @param IEventDispatcher               $eventDispatcher     Event dispatcher for schema events
-     * @param SchemaPropertyValidatorService $validator           Schema property validator for validation
-     * @param OrganisationService            $organisationService Organisation service for multi-tenancy
-     * @param IUserSession                   $userSession         User session for current user context
-     * @param IGroupManager                  $groupManager        Group manager for RBAC checks
-     * @param IAppConfig                     $appConfig           App configuration for multitenancy settings
+     * @param IDBConnection            $db                  Database connection for queries
+     * @param IEventDispatcher         $eventDispatcher     Event dispatcher for schema events
+     * @param PropertyValidatorHandler $validator           Schema property validator for validation
+     * @param OrganisationService      $organisationService Organisation service for multi-tenancy
+     * @param IUserSession             $userSession         User session for current user context
+     * @param IGroupManager            $groupManager        Group manager for RBAC checks
+     * @param IAppConfig               $appConfig           App configuration for multitenancy settings
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator,
+        PropertyValidatorHandler $validator,
         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,

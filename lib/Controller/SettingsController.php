@@ -30,11 +30,11 @@ use RuntimeException;
 use ReflectionClass;
 use DateTime;
 use stdClass;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SolrSchemaService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Psr\Log\LoggerInterface;
@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * - Validate HTTP request parameters
  * - Delegate settings CRUD operations to SettingsService
  * - Delegate LLM testing to VectorEmbeddingService and ChatService
- * - Delegate SOLR testing to GuzzleSolrService
+ * - Delegate SOLR testing to IndexService
  * - Return appropriate JSONResponse with correct HTTP status codes
  * - Handle HTTP-level concerns (authentication, CSRF, etc.)
  *
@@ -87,7 +87,7 @@ use Psr\Log\LoggerInterface;
  * - GET  /api/settings/solr         - Get SOLR settings
  * - PUT  /api/settings/solr         - Update SOLR settings
  * - PATCH /api/settings/solr        - Patch SOLR settings
- * - POST /api/settings/solr/test    - Test SOLR connection (delegates to GuzzleSolrService)
+ * - POST /api/settings/solr/test    - Test SOLR connection (delegates to IndexService)
  * - POST /api/settings/solr/warmup  - Warmup SOLR index
  *
  * LLM SETTINGS:
@@ -116,7 +116,7 @@ use Psr\Log\LoggerInterface;
  * - Settings storage/retrieval → SettingsService
  * - LLM embedding testing → VectorEmbeddingService
  * - LLM chat testing → ChatService
- * - SOLR testing → GuzzleSolrService
+ * - SOLR testing → IndexService
  * - Cache operations → Cache services
  *
  * @category Controller
@@ -1343,8 +1343,8 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Create SolrSetup using IndexService for authenticated HTTP client.
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $setup = new SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
@@ -1573,9 +1573,9 @@ class SettingsController extends Controller
                         );
             }
 
-            // Create SolrSetup using GuzzleSolrService for authenticated HTTP client.
+            // Create SolrSetup using IndexService for authenticated HTTP client.
             $logger            = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $setup = new SolrSetup(solrService: $guzzleSolrService, logger: $logger);
 
             // Run setup.
@@ -1640,8 +1640,8 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get GuzzleSolrService.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Delete the specific collection.
             $result = $guzzleSolrService->deleteCollection($name);
@@ -1725,7 +1725,7 @@ class SettingsController extends Controller
     public function clearSpecificCollection(string $name): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Clear the specific collection.
             $result = $guzzleSolrService->clearIndex($name);
@@ -1779,7 +1779,7 @@ class SettingsController extends Controller
     public function reindexSpecificCollection(string $name): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Get optional parameters from request body.
             $maxObjects = (int) ($this->request->getParam('maxObjects', 0));
@@ -1861,7 +1861,7 @@ class SettingsController extends Controller
         try {
             // Test only basic SOLR connectivity and authentication.
             // Does NOT test collections, queries, or Zookeeper.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->testConnectivityOnly();
 
             return new JSONResponse(data: $result);
@@ -1893,9 +1893,9 @@ class SettingsController extends Controller
     public function getSolrFields(): JSONResponse
     {
         try {
-            // Use SolrSchemaService to get field status for both collections.
-            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Use IndexService to get field status for both collections.
+            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\IndexService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Check if SOLR is available first.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2009,8 +2009,8 @@ class SettingsController extends Controller
     {
         try {
             // Get services.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
-            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $solrSchemaService = $this->container->get(IndexService::class);
 
             // Check if SOLR is available first.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2132,7 +2132,7 @@ class SettingsController extends Controller
     public function getObjectCollectionFields(): JSONResponse
     {
         try {
-            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $solrSchemaService = $this->container->get(IndexService::class);
             $status            = $solrSchemaService->getObjectCollectionFieldStatus();
 
             return new JSONResponse(
@@ -2169,7 +2169,7 @@ class SettingsController extends Controller
     public function getFileCollectionFields(): JSONResponse
     {
         try {
-            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $solrSchemaService = $this->container->get(IndexService::class);
             $status            = $solrSchemaService->getFileCollectionFieldStatus();
 
             return new JSONResponse(
@@ -2206,7 +2206,7 @@ class SettingsController extends Controller
     public function createMissingObjectFields(): JSONResponse
     {
         try {
-            $solrSchemaService = $this->container->get(SolrSchemaService::class);
+            $solrSchemaService = $this->container->get(IndexService::class);
 
             // Switch to object collection.
             $objectCollection = $this->settingsService->getSolrSettingsOnly()['objectCollection'] ?? null;
@@ -2258,8 +2258,8 @@ class SettingsController extends Controller
     public function createMissingFileFields(): JSONResponse
     {
         try {
-            $solrSchemaService = $this->container->get(SolrSchemaService::class);
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $solrSchemaService = $this->container->get(IndexService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Switch to file collection.
             $fileCollection = $this->settingsService->getSolrSettingsOnly()['fileCollection'] ?? null;
@@ -2326,8 +2326,8 @@ class SettingsController extends Controller
     public function fixMismatchedSolrFields(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService for field operations.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService for field operations.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Check if SOLR is available first.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2414,8 +2414,8 @@ class SettingsController extends Controller
             // Start with the core ObjectEntity metadata fields from SolrSetup.
             $expectedFields = \OCA\OpenRegister\Setup\SolrSetup::getObjectEntityFieldDefinitions();
 
-            // Get SolrSchemaService to analyze user-defined schemas.
-            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\SolrSchemaService::class);
+            // Get IndexService to analyze user-defined schemas.
+            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\IndexService::class);
             $schemaMapper      = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
             // Get all schemas.
@@ -2653,8 +2653,8 @@ class SettingsController extends Controller
     public function discoverSolrFacets(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService from container.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService from container.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Check if SOLR is available.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2706,8 +2706,8 @@ class SettingsController extends Controller
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService from container.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService from container.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Check if SOLR is available.
             if ($guzzleSolrService->isAvailable() === false) {
@@ -2914,8 +2914,8 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Phase 1: Use IndexService directly for SOLR operations.
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->warmupIndex(schemas: [], maxObjects: $maxObjects, mode: $mode, collectErrors: $collectErrors, batchSize: $batchSize, schemaIds: $schemaIds);
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
@@ -2949,8 +2949,8 @@ class SettingsController extends Controller
     public function getSolrDashboardStats(): JSONResponse
     {
         try {
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Phase 1: Use IndexService directly for SOLR operations.
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $stats = $guzzleSolrService->getDashboardStats();
             return new JSONResponse(data: $stats);
         } catch (Exception $e) {
@@ -2976,8 +2976,8 @@ class SettingsController extends Controller
     public function manageSolr(string $operation): JSONResponse
     {
         try {
-            // Phase 1: Use GuzzleSolrService directly for SOLR operations.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Phase 1: Use IndexService directly for SOLR operations.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             switch ($operation) {
                 case 'commit':
@@ -3243,8 +3243,8 @@ class SettingsController extends Controller
 
             // Check if Solr service is available.
             try {
-                // Get GuzzleSolrService from container.
-                $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+                // Get IndexService from container.
+                $guzzleSolrService = $this->container->get(IndexService::class);
                 $solrAvailable     = $guzzleSolrService->isAvailable();
 
                 if ($solrAvailable === true) {
@@ -4200,8 +4200,8 @@ class SettingsController extends Controller
     public function testSchemaMapping(): JSONResponse
     {
         try {
-            // Get GuzzleSolrService from container.
-            $solrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService from container.
+            $solrService = $this->container->get(IndexService::class);
 
             // Get required dependencies from container.
             $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
@@ -4245,8 +4245,8 @@ class SettingsController extends Controller
             // Limit between 1 and 100.
             $start = max($start, 0);
 
-            // Get GuzzleSolrService from container.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService from container.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             // Search documents in SOLR.
             $result = $guzzleSolrService->inspectIndex(query: $query, start: $start, rows: $rows, fields: $fields);
@@ -4315,8 +4315,8 @@ class SettingsController extends Controller
             // Get request parameters.
             $maxObjects = (int) $this->request->getParam('maxObjects', 0);
 
-            // Get GuzzleSolrService for prediction.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService for prediction.
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
@@ -4405,8 +4405,8 @@ class SettingsController extends Controller
                         );
             }
 
-            // Get GuzzleSolrService from container.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService from container.
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->deleteField($fieldName);
 
             if ($result['success'] === true) {
@@ -4639,7 +4639,7 @@ class SettingsController extends Controller
     public function listSolrCollections(): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $collections       = $guzzleSolrService->listCollections();
 
             return new JSONResponse(
@@ -4678,7 +4678,7 @@ class SettingsController extends Controller
     public function listSolrConfigSets(): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $configSets        = $guzzleSolrService->listConfigSets();
 
             return new JSONResponse(
@@ -4720,7 +4720,7 @@ class SettingsController extends Controller
     public function createSolrConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->createConfigSet($name, $baseConfigSet);
 
             return new JSONResponse(data: $result);
@@ -4753,7 +4753,7 @@ class SettingsController extends Controller
     public function deleteSolrConfigSet(string $name): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->deleteConfigSet($name);
 
             return new JSONResponse(data: $result);
@@ -4795,7 +4795,7 @@ class SettingsController extends Controller
         int $maxShardsPerNode=1
     ): JSONResponse {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->createCollection(
                 $collectionName,
                 $configName,
@@ -4837,7 +4837,7 @@ class SettingsController extends Controller
     public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $result            = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection, copyData: $copyData);
 
             return new JSONResponse(data: $result);
@@ -5116,8 +5116,8 @@ class SettingsController extends Controller
                     ]
                     );
 
-            // Get GuzzleSolrService and TextExtractionService.
-            $guzzleSolrService     = $this->container->get(GuzzleSolrService::class);
+            // Get IndexService and TextExtractionService.
+            $guzzleSolrService     = $this->container->get(IndexService::class);
             $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
 
             // Get files that need processing.
@@ -5208,7 +5208,7 @@ class SettingsController extends Controller
     public function indexFile(int $fileId): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
             $result = $guzzleSolrService->indexFiles([$fileId]);
 
@@ -5267,7 +5267,7 @@ class SettingsController extends Controller
         try {
             // Get all completed file texts.
             $textExtractionService = $this->container->get(\OCA\OpenRegister\Service\TextExtractionService::class);
-            $guzzleSolrService     = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService     = $this->container->get(IndexService::class);
 
             $maxFiles  = (int) $this->request->getParam('max_files', 1000);
             $batchSize = (int) $this->request->getParam('batch_size', 100);
@@ -5342,7 +5342,7 @@ class SettingsController extends Controller
     public function getFileIndexStats(): JSONResponse
     {
         try {
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $stats = $guzzleSolrService->getFileIndexStats();
 
             return new JSONResponse(data: $stats);
@@ -5372,7 +5372,7 @@ class SettingsController extends Controller
      * Combines multiple data sources for comprehensive file statistics:
      * - FileMapper: Total files in Nextcloud (from oc_filecache, bypasses rights logic)
      * - FileTextMapper: Extraction status (from oc_openregister_file_texts)
-     * - GuzzleSolrService: Chunk statistics (from SOLR index)
+     * - IndexService: Chunk statistics (from SOLR index)
      *
      * This provides accurate statistics without dealing with Nextcloud's extensive rights logic.
      *
@@ -5397,7 +5397,7 @@ class SettingsController extends Controller
             $dbStats = $textExtractionService->getExtractionStats('file');
 
             // Get SOLR statistics.
-            $guzzleSolrService = $this->container->get(GuzzleSolrService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
             $solrStats         = $guzzleSolrService->getFileIndexStats();
 
             // Calculate storage in MB.

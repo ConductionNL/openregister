@@ -40,9 +40,9 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -138,9 +138,9 @@ class SettingsService
     /**
      * Object cache service (lazy-loaded when needed)
      *
-     * @var ObjectCacheService|null
+     * @var CacheHandler|null
      */
-    private ?ObjectCacheService $objectCacheService = null;
+    private ?CacheHandler $objectCacheService = null;
 
     /**
      * Group manager
@@ -187,9 +187,9 @@ class SettingsService
     /**
      * Schema facet cache service
      *
-     * @var SchemaFacetCacheService
+     * @var FacetCacheHandler
      */
-    private SchemaFacetCacheService $schemaFacetCacheService;
+    private FacetCacheHandler $schemaFacetCacheService;
 
     /**
      * Search trail mapper
@@ -237,21 +237,21 @@ class SettingsService
     /**
      * Constructor for SettingsService
      *
-     * @param IConfig                 $config                  Configuration service
-     * @param AuditTrailMapper        $auditTrailMapper        Audit trail mapper
-     * @param ICacheFactory           $cacheFactory            Cache factory
-     * @param IGroupManager           $groupManager            Group manager
-     * @param LoggerInterface         $logger                  Logger
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper
-     * @param OrganisationMapper      $organisationMapper      Organisation mapper
-     * @param SchemaCacheService      $schemaCacheService      Schema cache service
-     * @param SchemaFacetCacheService $schemaFacetCacheService Schema facet cache service
-     * @param SearchTrailMapper       $searchTrailMapper       Search trail mapper
-     * @param IUserManager            $userManager             User manager
-     * @param IDBConnection           $db                      Database connection
-     * @param ObjectCacheService|null $objectCacheService      Object cache service (optional, lazy-loaded)
-     * @param IAppContainer|null      $container               Container for lazy loading (optional)
-     * @param string                  $appName                 Application name
+     * @param IConfig            $config                  Configuration service
+     * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper
+     * @param ICacheFactory      $cacheFactory            Cache factory
+     * @param IGroupManager      $groupManager            Group manager
+     * @param LoggerInterface    $logger                  Logger
+     * @param ObjectEntityMapper $objectEntityMapper      Object entity mapper
+     * @param OrganisationMapper $organisationMapper      Organisation mapper
+     * @param SchemaCacheService $schemaCacheService      Schema cache service
+     * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service
+     * @param SearchTrailMapper  $searchTrailMapper       Search trail mapper
+     * @param IUserManager       $userManager             User manager
+     * @param IDBConnection      $db                      Database connection
+     * @param CacheHandler|null  $objectCacheService      Object cache service (optional, lazy-loaded)
+     * @param IAppContainer|null $container               Container for lazy loading (optional)
+     * @param string             $appName                 Application name
      *
      * @return void
      */
@@ -264,12 +264,12 @@ class SettingsService
         ObjectEntityMapper $objectEntityMapper,
         OrganisationMapper $organisationMapper,
         SchemaCacheService $schemaCacheService,
-        SchemaFacetCacheService $schemaFacetCacheService,
+        FacetCacheHandler $schemaFacetCacheService,
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
         ValidationOperationsHandler $validationOperationsHandler,
-        ?ObjectCacheService $objectCacheService=null,
+        ?CacheHandler $objectCacheService=null,
         ?IAppContainer $container=null,
         string $appName='openregister'
     ) {
@@ -286,9 +286,9 @@ class SettingsService
         $this->userManager = $userManager;
         $this->db          = $db;
         $this->validationOperationsHandler = $validationOperationsHandler;
-        $this->objectCacheService = $objectCacheService;
-        $this->container          = $container;
-        $this->appName            = $appName;
+        $this->objectCacheService          = $objectCacheService;
+        $this->container = $container;
+        $this->appName   = $appName;
 
     }//end __construct()
 
@@ -966,7 +966,7 @@ class SettingsService
             $distributedStats = $this->getDistributedCacheStats();
             $performanceStats = $this->getCachePerformanceMetrics();
 
-            // Get object cache stats (only if ObjectCacheService provides them)
+            // Get object cache stats (only if CacheHandler provides them)
             // Use cached stats to avoid expensive operations on every request.
             $objectStats = $this->getCachedObjectStats();
 
@@ -1054,7 +1054,7 @@ class SettingsService
      */
     private function getCachedObjectStats(): array
     {
-        // Use a simple in-memory cache with 30-second TTL to avoid expensive ObjectCacheService calls.
+        // Use a simple in-memory cache with 30-second TTL to avoid expensive CacheHandler calls.
         static $cachedStats = null;
         static $lastUpdate  = 0;
 
@@ -1064,14 +1064,14 @@ class SettingsService
                 $objectCacheService = $this->objectCacheService;
                 if ($objectCacheService === null && $this->container !== null) {
                     try {
-                        $objectCacheService = $this->container->get(ObjectCacheService::class);
+                        $objectCacheService = $this->container->get(CacheHandler::class);
                     } catch (Exception $e) {
-                        throw new Exception('ObjectCacheService not available');
+                        throw new Exception('CacheHandler not available');
                     }
                 }
 
                 if ($objectCacheService === null) {
-                    throw new Exception('ObjectCacheService not available');
+                    throw new Exception('CacheHandler not available');
                 }
 
                 $cachedStats = $objectCacheService->getStats();
@@ -1262,14 +1262,14 @@ class SettingsService
             $objectCacheService = $this->objectCacheService;
             if ($objectCacheService === null && $this->container !== null) {
                 try {
-                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                    $objectCacheService = $this->container->get(CacheHandler::class);
                 } catch (Exception $e) {
-                    throw new Exception('ObjectCacheService not available');
+                    throw new Exception('CacheHandler not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new Exception('ObjectCacheService not available');
+                throw new Exception('CacheHandler not available');
             }
 
             $beforeStats = $objectCacheService->getStats();
@@ -1308,14 +1308,14 @@ class SettingsService
             $objectCacheService = $this->objectCacheService;
             if ($objectCacheService === null && $this->container !== null) {
                 try {
-                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                    $objectCacheService = $this->container->get(CacheHandler::class);
                 } catch (Exception $e) {
-                    throw new Exception('ObjectCacheService not available');
+                    throw new Exception('CacheHandler not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new Exception('ObjectCacheService not available');
+                throw new Exception('CacheHandler not available');
             }
 
             $beforeStats         = $objectCacheService->getStats();
@@ -1367,14 +1367,14 @@ class SettingsService
             $objectCacheService = $this->objectCacheService;
             if ($objectCacheService === null && $this->container !== null) {
                 try {
-                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                    $objectCacheService = $this->container->get(CacheHandler::class);
                 } catch (Exception $e) {
-                    throw new Exception('ObjectCacheService not available');
+                    throw new Exception('CacheHandler not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new Exception('ObjectCacheService not available');
+                throw new Exception('CacheHandler not available');
             }
 
             $beforeStats = $objectCacheService->getStats();
@@ -1581,11 +1581,11 @@ class SettingsService
 
 
     /**
-     * Complete SOLR warmup: mirror schemas and index objects from the database
+     * Complete search index warmup: mirror schemas and index objects from the database
      *
-     * @deprecated This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
+     * @deprecated This method is deprecated. Use IndexService->warmupIndex() directly via controller.
      * This method is kept for backward compatibility but should not be used.
-     * The controller now uses GuzzleSolrService directly to avoid circular dependencies.
+     * The controller now uses IndexService directly to avoid circular dependencies.
      *
      * @param int    $_batchSize    Number of objects to process per batch (unused, kept for API compatibility)
      * @param int    $maxObjects    Maximum number of objects to index (unused, kept for API compatibility)
@@ -1598,11 +1598,11 @@ class SettingsService
      */
     public function warmupSolrIndex(int $_batchSize=2000, int $maxObjects=0, string $mode='serial', bool $collectErrors=false)
     {
-        // NOTE: This method is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.
+        // NOTE: This method is deprecated. Use IndexService->warmupIndex() directly via controller.
         // This method is kept for backward compatibility but should not be used.
-        // The controller now uses GuzzleSolrService directly to avoid circular dependencies.
+        // The controller now uses IndexService directly to avoid circular dependencies.
         throw new RuntimeException(
-            'SettingsService::warmupSolrIndex() is deprecated. Use GuzzleSolrService->warmupIndex() directly via controller.'
+            'SettingsService::warmupSolrIndex() is deprecated. Use IndexService->warmupIndex() directly via controller.'
         );
 
     }//end warmupSolrIndex()
@@ -1623,14 +1623,14 @@ class SettingsService
             $objectCacheService = $this->objectCacheService;
             if ($objectCacheService === null && $this->container !== null) {
                 try {
-                    $objectCacheService = $this->container->get(ObjectCacheService::class);
+                    $objectCacheService = $this->container->get(CacheHandler::class);
                 } catch (Exception $e) {
-                    throw new Exception('ObjectCacheService not available');
+                    throw new Exception('CacheHandler not available');
                 }
             }
 
             if ($objectCacheService === null) {
-                throw new Exception('ObjectCacheService not available');
+                throw new Exception('CacheHandler not available');
             }
 
             $rawStats = $objectCacheService->getSolrDashboardStats();

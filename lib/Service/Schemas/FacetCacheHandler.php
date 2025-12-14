@@ -21,7 +21,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Schemas;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -63,7 +63,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class SchemaFacetCacheService
+class FacetCacheHandler
 {
 
     /**

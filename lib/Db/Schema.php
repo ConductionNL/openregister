@@ -28,7 +28,7 @@ use OCP\IURLGenerator;
 use stdClass;
 use Exception;
 use RuntimeException;
-use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
  * Class Schema
@@ -459,7 +459,7 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Validate the schema properties
      *
-     * @param SchemaPropertyValidatorService $validator The schema property validator
+     * @param PropertyValidatorHandler $validator The schema property validator
      *
      * @throws \Exception If the properties are invalid
      *
@@ -467,7 +467,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function validateProperties(SchemaPropertyValidatorService $validator): bool
+    public function validateProperties(PropertyValidatorHandler $validator): bool
     {
         // Check if properties are set and not empty.
         if (empty($this->properties) === true) {
@@ -653,14 +653,14 @@ class Schema extends Entity implements JsonSerializable
      *
      * Sets entity properties based on input array values
      *
-     * @param array                          $object    The data array to hydrate from
-     * @param SchemaPropertyValidatorService $validator Optional validator for properties
+     * @param array                    $object    The data array to hydrate from
+     * @param PropertyValidatorHandler $validator Optional validator for properties
      *
      * @throws \Exception If property validation fails
      *
      * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object, ?SchemaPropertyValidatorService $validator=null): static
+    public function hydrate(array $object, ?PropertyValidatorHandler $validator=null): static
     {
         $jsonFields = $this->getJsonFields();
 

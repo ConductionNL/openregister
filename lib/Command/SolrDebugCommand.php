@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
 use OCP\Http\Client\IClientService;
@@ -223,8 +223,8 @@ class SolrDebugCommand extends Command
             $output->writeln("    Core: <comment>{$solrSettings['core']}</comment>");
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
-            // Create GuzzleSolrService from settings.
-            $solrService = new GuzzleSolrService(
+            // Create IndexService from settings.
+            $solrService = new IndexService(
                 settingsService: $this->settingsService,
                 logger: $this->logger
             );
@@ -260,7 +260,7 @@ class SolrDebugCommand extends Command
         try {
             // Get SOLR service via direct DI injection.
             $container   = \OC::$server->getRegisteredAppContainer('openregister');
-            $solrService = $container->get(GuzzleSolrService::class);
+            $solrService = $container->get(IndexService::class);
 
             if ($solrService === null) {
                 $output->writeln('<error>❌ Failed to create SOLR service</error>');
