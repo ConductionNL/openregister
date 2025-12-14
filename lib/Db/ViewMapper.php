@@ -136,11 +136,11 @@ class ViewMapper extends QBMapper
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_views', View::class);
-        
+
         // Store dependencies for use in mapper methods.
-        $this->organisationService       = $organisationService;
-        $this->userSession               = $userSession;
-        $this->groupManager              = $groupManager;
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
         $this->configurationCacheService = $configurationCacheService;
         $this->eventDispatcher           = $eventDispatcher;
 

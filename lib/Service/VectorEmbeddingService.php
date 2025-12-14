@@ -515,15 +515,15 @@ class VectorEmbeddingService
      * Stores a vector embedding in the configured Solr collection using dense vector fields.
      * The vector is stored as a Solr document with the embedding in a dense vector field.
      *
-     * @param string      $entityType  Entity type ('object' or 'file')
-     * @param string      $entityId    Entity UUID
-     * @param array       $embedding   Vector embedding (array of floats)
-     * @param string      $model       Model used to generate embedding
-     * @param int         $dimensions  Number of dimensions
-     * @param int         $chunkIndex    Chunk index (0 for objects, N for file chunks)
-     * @param int         $_totalChunks  Total number of chunks
-     * @param string|null $_chunkText    The text that was embedded
-     * @param array       $_metadata     Additional metadata as associative array
+     * @param string      $entityType   Entity type ('object' or 'file')
+     * @param string      $entityId     Entity UUID
+     * @param array       $embedding    Vector embedding (array of floats)
+     * @param string      $model        Model used to generate embedding
+     * @param int         $dimensions   Number of dimensions
+     * @param int         $chunkIndex   Chunk index (0 for objects, N for file chunks)
+     * @param int         $_totalChunks Total number of chunks
+     * @param string|null $_chunkText   The text that was embedded
+     * @param array       $_metadata    Additional metadata as associative array
      *
      * @return string The Solr document ID
      *
@@ -992,7 +992,8 @@ class VectorEmbeddingService
 
             $qb = $this->db->getQueryBuilder();
             $qb->insert('openregister_vectors')
-                ->values(values: [
+                ->values(
+                        values: [
                             'entity_type'          => $qb->createNamedParameter($entityType),
                             'entity_id'            => $qb->createNamedParameter($entityId),
                             'chunk_index'          => $qb->createNamedParameter($chunkIndex, \PDO::PARAM_INT),
@@ -1384,9 +1385,9 @@ class VectorEmbeddingService
             foreach ($finalResults as $result) {
                 if ($result['in_vector'] === true && $result['in_solr'] === true) {
                     $both++;
-                } elseif ($result['in_vector'] === true) {
+                } else if ($result['in_vector'] === true) {
                     $vectorOnly++;
-                } elseif ($result['in_solr'] === true) {
+                } else if ($result['in_solr'] === true) {
                     $solrOnly++;
                 }
             }
@@ -1950,13 +1951,14 @@ class VectorEmbeddingService
              */
             private readonly \Psr\Log\LoggerInterface $logger;
 
+
             /**
              * Constructor
              *
              * Initializes embedding generator with model, configuration, and logger.
              *
              * @param string                   $model  Model name
-             * @param array<string, mixed>      $config Configuration array
+             * @param array<string, mixed>     $config Configuration array
              * @param \Psr\Log\LoggerInterface $logger Logger instance
              *
              * @return void
@@ -2130,9 +2132,9 @@ class VectorEmbeddingService
             throw new InvalidArgumentException('Vectors must have same dimensions');
         }
 
-        $dotProduct = 0.0;
-        $magnitude1 = 0.0;
-        $magnitude2 = 0.0;
+        $dotProduct   = 0.0;
+        $magnitude1   = 0.0;
+        $magnitude2   = 0.0;
         $vectorLength = count($vector1);
 
         for ($i = 0; $i < $vectorLength; $i++) {
@@ -2204,9 +2206,9 @@ class VectorEmbeddingService
 
             if ($currentProvider === 'openai') {
                 $currentModel = $settings['openaiConfig']['model'] ?? null;
-            } elseif ($currentProvider === 'ollama') {
+            } else if ($currentProvider === 'ollama') {
                 $currentModel = $settings['ollamaConfig']['model'] ?? null;
-            } elseif ($currentProvider === 'fireworks') {
+            } else if ($currentProvider === 'fireworks') {
                 $currentModel = $settings['fireworksConfig']['embeddingModel'] ?? null;
             }
 

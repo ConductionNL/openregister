@@ -36,7 +36,7 @@ class AgentHandler
     /**
      * Agent mapper instance.
      *
-     * @var AgentMapper The agent mapper instance.
+     * @var                                        AgentMapper The agent mapper instance.
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private AgentMapper $agentMapper;
@@ -44,7 +44,7 @@ class AgentHandler
     /**
      * Logger instance.
      *
-     * @var LoggerInterface The logger instance.
+     * @var                                        LoggerInterface The logger instance.
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private LoggerInterface $logger;

@@ -36,7 +36,7 @@ class OrganisationHandler
     /**
      * Organisation mapper instance.
      *
-     * @var OrganisationMapper The organisation mapper instance.
+     * @var                                        OrganisationMapper The organisation mapper instance.
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private OrganisationMapper $organisationMapper;
@@ -44,7 +44,7 @@ class OrganisationHandler
     /**
      * Logger instance.
      *
-     * @var LoggerInterface The logger instance.
+     * @var                                        LoggerInterface The logger instance.
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private LoggerInterface $logger;

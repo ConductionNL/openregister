@@ -79,11 +79,11 @@ class ToolRegistrationListener implements IEventListener
     /**
      * Constructor
      *
-     * @param RegisterTool     $registerTool     Register tool.
-     * @param SchemaTool       $schemaTool       Schema tool.
-     * @param ObjectsTool      $objectsTool      Objects tool.
-     * @param ApplicationTool  $applicationTool  Application tool.
-     * @param AgentTool        $agentTool        Agent tool.
+     * @param RegisterTool    $registerTool    Register tool.
+     * @param SchemaTool      $schemaTool      Schema tool.
+     * @param ObjectsTool     $objectsTool     Objects tool.
+     * @param ApplicationTool $applicationTool Application tool.
+     * @param AgentTool       $agentTool       Agent tool.
      */
     public function __construct(
         RegisterTool $registerTool,
@@ -92,11 +92,11 @@ class ToolRegistrationListener implements IEventListener
         ApplicationTool $applicationTool,
         AgentTool $agentTool
     ) {
-        $this->registerTool = $registerTool;
-        $this->schemaTool = $schemaTool;
-        $this->objectsTool = $objectsTool;
+        $this->registerTool    = $registerTool;
+        $this->schemaTool      = $schemaTool;
+        $this->objectsTool     = $objectsTool;
         $this->applicationTool = $applicationTool;
-        $this->agentTool = $agentTool;
+        $this->agentTool       = $agentTool;
 
     }//end __construct()
 

@@ -603,14 +603,16 @@ class SchemaCacheService
         if ($updated === 0) {
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::CACHE_TABLE)
-                ->values(values: [
-                           'schema_id'  => $qb->createNamedParameter($schemaId),
-                           'cache_key'  => $qb->createNamedParameter($cacheKey),
-                           'cache_data' => $qb->createNamedParameter(json_encode($data)),
-                           'created'    => $qb->createNamedParameter($now, 'datetime'),
-                           'updated'    => $qb->createNamedParameter($now, 'datetime'),
-                           'expires'    => $qb->createNamedParameter($expires, 'datetime'),
-                       ]);
+                ->values(
+                        values: [
+                            'schema_id'  => $qb->createNamedParameter($schemaId),
+                            'cache_key'  => $qb->createNamedParameter($cacheKey),
+                            'cache_data' => $qb->createNamedParameter(json_encode($data)),
+                            'created'    => $qb->createNamedParameter($now, 'datetime'),
+                            'updated'    => $qb->createNamedParameter($now, 'datetime'),
+                            'expires'    => $qb->createNamedParameter($expires, 'datetime'),
+                        ]
+                        );
             $qb->executeStatement();
         }
 

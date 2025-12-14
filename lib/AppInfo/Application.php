@@ -244,7 +244,8 @@ class Application extends App implements IBootstrap
                 );
 
         // Register OrganisationService (needed by SchemaMapper, MUST be before SchemaMapper).
-        $context->registerService( OrganisationService::class,
+        $context->registerService(
+                 OrganisationService::class,
                 function ($container) {
                     return new OrganisationService(
                             organisationMapper: $container->get(OrganisationMapper::class),
@@ -260,7 +261,8 @@ class Application extends App implements IBootstrap
                 );
 
         // Register SchemaMapper with required dependencies (MUST be before ObjectEntityMapper).
-        $context->registerService( SchemaMapper::class,
+        $context->registerService(
+                 SchemaMapper::class,
                 function ($container) {
                     return new SchemaMapper(
                             db: $container->get('OCP\IDBConnection'),
@@ -275,7 +277,8 @@ class Application extends App implements IBootstrap
                 );
 
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies.
-        $context->registerService( ObjectEntityMapper::class,
+        $context->registerService(
+                 ObjectEntityMapper::class,
                 function ($container) {
                     return new ObjectEntityMapper(
                             db: $container->get('OCP\IDBConnection'),
@@ -295,7 +298,8 @@ class Application extends App implements IBootstrap
                 );
 
         // Register RegisterMapper with required dependencies (MUST be after ObjectEntityMapper).
-        $context->registerService( RegisterMapper::class,
+        $context->registerService(
+                 RegisterMapper::class,
                 function ($container) {
                     return new RegisterMapper(
                             db: $container->get('OCP\IDBConnection'),
@@ -332,7 +336,8 @@ class Application extends App implements IBootstrap
         // Register ObjectCacheService for performance optimization with lightweight SOLR.
         // NOTE: ObjectCacheService uses IAppContainer for lazy loading GuzzleSolrService to break circular dependency.
         // This breaks the circular dependency: ObjectCacheService <-> GuzzleSolrService.
-        $context->registerService( ObjectCacheService::class,
+        $context->registerService(
+                 ObjectCacheService::class,
                 function ($container) {
                     return new ObjectCacheService(
                             objectEntityMapper: $container->get(ObjectEntityMapper::class),
@@ -348,7 +353,8 @@ class Application extends App implements IBootstrap
         // NOTE: FacetService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register SaveObject with consolidated cache services.
-        $context->registerService( SaveObject::class,
+        $context->registerService(
+                 SaveObject::class,
                 function ($container) {
                     return new SaveObject(
                             objectEntityMapper: $container->get(ObjectEntityMapper::class),
@@ -378,14 +384,14 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ObjectService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        
         // Register ConfigurationService with appDataPath parameter.
-        $context->registerService(ConfigurationService::class,
+        $context->registerService(
+                ConfigurationService::class,
                 function ($container) {
                     // Get the app data directory path.
-                    $dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                    $appDataPath = $dataDir . '/appdata_openregister';
-                    
+                    $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+                    $appDataPath = $dataDir.'/appdata_openregister';
+
                     return new ConfigurationService(
                             schemaMapper: $container->get(SchemaMapper::class),
                             registerMapper: $container->get(RegisterMapper::class),
@@ -401,7 +407,7 @@ class Application extends App implements IBootstrap
                             );
                 }
                 );
-        
+
         // NOTE: ImportService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ExportService can be autowired (only type-hinted parameters).
@@ -421,7 +427,8 @@ class Application extends App implements IBootstrap
         // NOTE: SettingsService no longer depends on GuzzleSolrService (removed to break circular dependency).
         // GuzzleSolrService operations are now handled directly in the controller.
         // SettingsService only uses IAppContainer for lazy loading SchemaMapper and ObjectCacheService.
-        $context->registerService( SettingsService::class,
+        $context->registerService(
+                 SettingsService::class,
                 function ($container) {
                     // ObjectCacheService is not available yet (will be lazy-loaded via container if needed).
                     return new SettingsService(
@@ -446,7 +453,8 @@ class Application extends App implements IBootstrap
                 );
 
         // Register lightweight GuzzleSolrService directly (no factory needed!).
-        $context->registerService( GuzzleSolrService::class,
+        $context->registerService(
+                 GuzzleSolrService::class,
                 function ($container) {
                     return new GuzzleSolrService(
                             settingsService: $container->get(SettingsService::class),
@@ -460,7 +468,8 @@ class Application extends App implements IBootstrap
 
         // Register SolrDebugCommand for SOLR debugging.
         // NOTE: Must be registered manually because it depends on SettingsService which has circular dependencies.
-        $context->registerService( SolrDebugCommand::class,
+        $context->registerService(
+                 SolrDebugCommand::class,
                 function ($container) {
                     return new SolrDebugCommand(
                             settingsService: $container->get(SettingsService::class),
@@ -484,7 +493,8 @@ class Application extends App implements IBootstrap
         // NOTE: ObjectVectorizationStrategy can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register unified VectorizationService with strategies.
-        $context->registerService( VectorizationService::class,
+        $context->registerService(
+                 VectorizationService::class,
                 function ($container) {
                     $service = new VectorizationService(
                             vectorService: $container->get(VectorEmbeddingService::class),
@@ -517,7 +527,8 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // WebhookService creates GuzzleHttp\Client directly (similar to GuzzleSolrService).
         // Register GitHubService for GitHub API operations.
-        $context->registerService( \OCA\OpenRegister\Service\GitHubService::class,
+        $context->registerService(
+                 \OCA\OpenRegister\Service\GitHubService::class,
                 function ($container) {
                     return new GitHubService(
                             client: $container->get('OCP\Http\Client\IClientService')->newClient(),

@@ -43,26 +43,18 @@ use OCP\AppFramework\Http\JSONResponse;
  *
  * Optional dependencies for advanced features:
  * - IAppConfig ($this->appConfig) - for multitenancy config settings
+ *   Classes should define this property themselves if needed (e.g., private IAppConfig $appConfig)
  * - LoggerInterface ($this->logger) - for debug logging
+ *   Classes should define this property themselves if needed (e.g., private LoggerInterface $logger)
+ *
+ * Note: The trait does not declare the $appConfig and $logger properties to avoid conflicts.
+ * Classes using this trait should declare these properties with their preferred visibility
+ * (private/protected) and nullability. The trait methods check isset() before using them.
  *
  * @package OCA\OpenRegister\Db
  */
 trait MultiTenancyTrait
 {
-
-    /**
-     * Optional app config for multitenancy settings
-     *
-     * @var IAppConfig|null
-     */
-    protected ?IAppConfig $appConfig = null;
-
-    /**
-     * Optional logger for debug logging
-     *
-     * @var LoggerInterface|null
-     */
-    protected ?LoggerInterface $logger = null;
 
 
     /**
@@ -333,7 +325,7 @@ trait MultiTenancyTrait
                         )
                     )
                 );
-            }
+            }//end if
 
             // If no conditions were added, deny all access.
             if ($orgConditions->count() === 0) {

@@ -109,7 +109,7 @@ class RegisterService
         $this->registerMapper      = $registerMapper;
         $this->fileService         = $fileService;
         $this->organisationService = $organisationService;
-        $this->logger              = $logger;
+        $this->logger = $logger;
 
     }//end __construct()
 
@@ -120,7 +120,7 @@ class RegisterService
      * Retrieves register entity by ID with optional extended data.
      * Extensions can include related entities like schemas, objects, etc.
      *
-     * @param int|string $id     The ID of the register to find
+     * @param int|string    $id     The ID of the register to find
      * @param array<string> $extend Optional array of extension names to include
      *
      * @return Register The found register entity
@@ -129,9 +129,9 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
      */
-    public function find(int | string $id, array $extend=[]): Register
+    public function find(int | string $id, array $_extend=[]): Register
     {
-        return $this->registerMapper->find(id: $id, extend: $extend);
+        return $this->registerMapper->find(id: $id, _extend: $_extend);
 
     }//end find()
 
@@ -143,12 +143,12 @@ class RegisterService
      * Supports pagination via limit and offset parameters.
      * Extensions can include related entities like schemas, objects, etc.
      *
-     * @param int|null   $limit            Maximum number of results to return (null = no limit)
-     * @param int|null   $offset           Number of results to skip for pagination
+     * @param int|null                  $limit            Maximum number of results to return (null = no limit)
+     * @param int|null                  $offset           Number of results to skip for pagination
      * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])
      * @param array<string, mixed>|null $searchConditions Search conditions for advanced filtering
      * @param array<string, mixed>|null $searchParams     Search parameters for query building
-     * @param array<string> $extend           Optional extensions to include in results
+     * @param array<string>             $extend           Optional extensions to include in results
      *
      * @return Register[] Array of found register entities
      *
@@ -160,7 +160,7 @@ class RegisterService
         ?array $filters=[],
         ?array $searchConditions=[],
         ?array $searchParams=[],
-        ?array $extend=[]
+        ?array $_extend=[]
     ): array {
         // Find all registers with optional filtering, pagination, and extensions.
         return $this->registerMapper->findAll(
@@ -169,7 +169,7 @@ class RegisterService
             filters: $filters,
             searchConditions: $searchConditions,
             searchParams: $searchParams,
-            extend: $extend
+            _extend: $_extend
         );
 
     }//end findAll()

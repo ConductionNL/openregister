@@ -58,7 +58,7 @@ class AuthorizationExceptionService
      *
      * @var IUserSession
      *
-     * @psalm-suppress UnusedProperty
+     * @psalm-suppress                             UnusedProperty
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private IUserSession $userSession;
@@ -82,7 +82,7 @@ class AuthorizationExceptionService
      *
      * @var ICacheFactory|null
      *
-     * @psalm-suppress UnusedProperty
+     * @psalm-suppress                             UnusedProperty
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private ?ICacheFactory $cacheFactory;

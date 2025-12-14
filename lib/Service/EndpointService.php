@@ -93,7 +93,7 @@ class EndpointService
      * Executes endpoint with optional test data to verify endpoint configuration
      * and functionality. Checks permissions before execution and logs results.
      *
-     * @param Endpoint $endpoint The endpoint to test
+     * @param Endpoint             $endpoint The endpoint to test
      * @param array<string, mixed> $testData Optional test data to use in execution
      *
      * @return array<string, mixed> Test result with success status, status code, response, and optional error
@@ -161,8 +161,8 @@ class EndpointService
      * Routes endpoint execution to appropriate handler based on target type.
      * Supports multiple target types: view, agent, webhook, register, and schema.
      *
-     * @param Endpoint $endpoint The endpoint to execute
-     * @param array<string, mixed> $request Request data containing method, path, data, and headers
+     * @param Endpoint             $endpoint The endpoint to execute
+     * @param array<string, mixed> $request  Request data containing method, path, data, and headers
      *
      * @return array<string, mixed> Execution result with success status, status code, response, and optional error
      *
@@ -627,10 +627,12 @@ class EndpointService
 
             // Set request/response data.
             $log->setRequest($request);
-            $log->setResponse(response: [
+            $log->setResponse(
+                    response: [
                         'statusCode' => $result['statusCode'],
                         'body'       => $result['response'],
-                    ]);
+                    ]
+                    );
 
             // Set status.
             $log->setStatusCode($result['statusCode']);

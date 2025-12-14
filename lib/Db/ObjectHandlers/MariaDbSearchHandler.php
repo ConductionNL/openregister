@@ -159,6 +159,7 @@ class MariaDbSearchHandler
                                 } else {
                                     $values = $operatorValue;
                                 }
+
                                 if (!empty($values)) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
@@ -186,6 +187,7 @@ class MariaDbSearchHandler
                                 } else {
                                     $values = $operatorValue;
                                 }
+
                                 foreach ($values as $val) {
                                     if (in_array($field, $textFields) === true) {
                                         $queryBuilder->andWhere(
@@ -229,15 +231,15 @@ class MariaDbSearchHandler
                         $sqlOperator = $operator;
                         if ($operator === 'gte') {
                             $sqlOperator = '>=';
-                        } elseif ($operator === 'lte') {
+                        } else if ($operator === 'lte') {
                             $sqlOperator = '<=';
-                        } elseif ($operator === 'gt') {
+                        } else if ($operator === 'gt') {
                             $sqlOperator = '>';
-                        } elseif ($operator === 'lt') {
+                        } else if ($operator === 'lt') {
                             $sqlOperator = '<';
-                        } elseif ($operator === 'ne') {
+                        } else if ($operator === 'ne') {
                             $sqlOperator = '!=';
-                        } elseif ($operator === 'eq') {
+                        } else if ($operator === 'eq') {
                             $sqlOperator = '=';
                         }
 
@@ -323,6 +325,7 @@ class MariaDbSearchHandler
                                 } else {
                                     $values = $operatorValue;
                                 }
+
                                 if (!empty($values)) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
@@ -341,6 +344,7 @@ class MariaDbSearchHandler
                                 } else {
                                     $values = $operatorValue;
                                 }
+
                                 foreach ($values as $val) {
                                     $queryBuilder->andWhere(
                                         $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
@@ -376,6 +380,7 @@ class MariaDbSearchHandler
                         } else {
                             $values = $value['or'];
                         }
+
                         $orConditions = $queryBuilder->expr()->orX();
                         foreach ($values as $val) {
                             $orConditions->add(
@@ -384,19 +389,20 @@ class MariaDbSearchHandler
                         }
 
                         $queryBuilder->andWhere($orConditions);
-                    } elseif (($value['and'] ?? null) !== null) {
+                    } else if (($value['and'] ?? null) !== null) {
                         // AND logic: multiple andWhere clauses.
                         if (is_string($value['and']) === true) {
                             $values = array_map('trim', explode(',', $value['and']));
                         } else {
                             $values = $value['and'];
                         }
+
                         foreach ($values as $val) {
                             $queryBuilder->andWhere(
                                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                             );
                         }
-                    }
+                    }//end if
 
                     continue;
                 }//end if

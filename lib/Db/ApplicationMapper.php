@@ -43,13 +43,13 @@ use OCP\IUserSession;
  * @category Mapper
  * @package  OCA\OpenRegister\Db
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git-id>
+ * @version GIT: <git-id>
  *
- * @link     https://OpenRegister.app
+ * @link https://OpenRegister.app
  *
  * @method Application insert(Entity $entity)
  * @method Application update(Entity $entity)
@@ -134,6 +134,7 @@ class ApplicationMapper extends QBMapper
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->eventDispatcher     = $eventDispatcher;
+
     }//end __construct()
 
 
@@ -175,6 +176,7 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entity.
         return $this->findEntity($qb);
+
     }//end find()
 
 
@@ -216,6 +218,7 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entity.
         return $this->findEntity($qb);
+
     }//end findByUuid()
 
 
@@ -235,7 +238,7 @@ class ApplicationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
-    public function findByOrganisation(string $organisationUuid, int $limit = 50, int $offset = 0): array
+    public function findByOrganisation(string $organisationUuid, int $limit=50, int $offset=0): array
     {
         // Verify RBAC permission to read applications.
         $this->verifyRbacPermission(action: 'read', entityType: 'application');
@@ -257,6 +260,7 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entities.
         return $this->findEntities($qb);
+
     }//end findByOrganisation()
 
 
@@ -267,11 +271,11 @@ class ApplicationMapper extends QBMapper
      * Results are ordered by creation date (newest first).
      * Automatically applies organisation filtering for multi-tenancy.
      *
-     * @param int|null $limit            Maximum number of results to return (null for all)
-     * @param int|null $offset           Number of results to skip for pagination (null for no offset)
-     * @param array<string, mixed> $filters Filter conditions as key-value pairs (default: empty array)
-     * @param array    $searchConditions Search conditions for WHERE clause (default: empty array)
-     * @param array<string, mixed> $searchParams Parameters for search conditions (default: empty array)
+     * @param int|null             $limit            Maximum number of results to return (null for all)
+     * @param int|null             $offset           Number of results to skip for pagination (null for no offset)
+     * @param array<string, mixed> $filters          Filter conditions as key-value pairs (default: empty array)
+     * @param array                $searchConditions Search conditions for WHERE clause (default: empty array)
+     * @param array<string, mixed> $searchParams     Parameters for search conditions (default: empty array)
      *
      * @return Application[]
      *
@@ -280,11 +284,11 @@ class ApplicationMapper extends QBMapper
      * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
     public function findAll(
-        ?int $limit = null,
-        ?int $offset = null,
-        array $filters = [],
-        array $searchConditions = [],
-        array $searchParams = []
+        ?int $limit=null,
+        ?int $offset=null,
+        array $filters=[],
+        array $searchConditions=[],
+        array $searchParams=[]
     ): array {
         // Verify RBAC permission to read applications.
         $this->verifyRbacPermission(action: 'read', entityType: 'application');
@@ -323,6 +327,7 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entities.
         return $this->findEntities($qb);
+
     }//end findAll()
 
 
@@ -368,6 +373,7 @@ class ApplicationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ApplicationCreatedEvent($entity));
 
         return $entity;
+
     }//end insert()
 
 
@@ -411,6 +417,7 @@ class ApplicationMapper extends QBMapper
         );
 
         return $entity;
+
     }//end update()
 
 
@@ -428,7 +435,7 @@ class ApplicationMapper extends QBMapper
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @psalm-suppress PossiblyUnusedReturnValue
-     * @psalm-return Application
+     * @psalm-return   Application
      */
     public function delete(Entity $entity): Entity
     {
@@ -445,6 +452,7 @@ class ApplicationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ApplicationDeletedEvent($entity));
 
         return $entity;
+
     }//end delete()
 
 
@@ -470,6 +478,7 @@ class ApplicationMapper extends QBMapper
 
         // Insert entity into database (handles UUID, timestamps, organisation).
         return $this->insert($application);
+
     }//end createFromArray()
 
 
@@ -479,7 +488,7 @@ class ApplicationMapper extends QBMapper
      * Updates an existing application entity from a data array.
      * First retrieves the application by ID, then hydrates it with new data and updates.
      *
-     * @param int                $id   The application database ID
+     * @param int                  $id   The application database ID
      * @param array<string, mixed> $data The application data as key-value pairs to update
      *
      * @return Application The updated application entity
@@ -498,6 +507,7 @@ class ApplicationMapper extends QBMapper
 
         // Update entity in database (handles timestamp, organisation verification).
         return $this->update($application);
+
     }//end updateFromArray()
 
 
@@ -539,6 +549,7 @@ class ApplicationMapper extends QBMapper
 
         // Return count as integer.
         return (int) $count;
+
     }//end countByOrganisation()
 
 
@@ -576,6 +587,7 @@ class ApplicationMapper extends QBMapper
 
         // Return count as integer.
         return (int) $count;
+
     }//end countAll()
 
 

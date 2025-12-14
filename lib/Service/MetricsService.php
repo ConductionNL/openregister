@@ -157,19 +157,21 @@ class MetricsService
             // Build INSERT query for metrics table.
             // Create named parameters for all values to prevent SQL injection.
             $qb->insert('openregister_metrics')
-                ->values(values: [
-                [
-                    'metric_type'   => $qb->createNamedParameter($metricType),
-                    'entity_type'   => $qb->createNamedParameter($entityType),
-                    'entity_id'     => $qb->createNamedParameter($entityId),
-                    'user_id'       => $qb->createNamedParameter($userId),
-                    'status'        => $qb->createNamedParameter($status),
-                    'duration_ms'   => $qb->createNamedParameter($durationMs),
-                    'metadata'      => $qb->createNamedParameter($this->encodeMetadata($metadata)),
-                    'error_message' => $qb->createNamedParameter($errorMessage),
-                    'created_at'    => $qb->createNamedParameter(time()),
-                ]
-            ]);
+                ->values(
+                        values: [
+                            [
+                                'metric_type'   => $qb->createNamedParameter($metricType),
+                                'entity_type'   => $qb->createNamedParameter($entityType),
+                                'entity_id'     => $qb->createNamedParameter($entityId),
+                                'user_id'       => $qb->createNamedParameter($userId),
+                                'status'        => $qb->createNamedParameter($status),
+                                'duration_ms'   => $qb->createNamedParameter($durationMs),
+                                'metadata'      => $qb->createNamedParameter($this->encodeMetadata($metadata)),
+                                'error_message' => $qb->createNamedParameter($errorMessage),
+                                'created_at'    => $qb->createNamedParameter(time()),
+                            ],
+                        ]
+                        );
 
             // Execute the insert query.
             $qb->executeStatement();
@@ -266,12 +268,12 @@ class MetricsService
         $result->closeCursor();
 
         // Extract and cast values from database result.
-        $total       = (int) ($row['total'] ?? 0);
-        $successful  = (int) ($row['successful'] ?? 0);
-        
+        $total      = (int) ($row['total'] ?? 0);
+        $successful = (int) ($row['successful'] ?? 0);
+
         // Calculate failed operations (total - successful).
-        $failed      = $total - $successful;
-        
+        $failed = $total - $successful;
+
         // Calculate success rate percentage.
         $successRate = $this->calculateSuccessRate($total, $successful);
 
@@ -280,7 +282,7 @@ class MetricsService
         // Average: 500 tokens per embedding = 0.5K tokens.
         // Cost per embedding: $0.00013 * 0.5 = $0.000065.
         $estimatedCost = $successful * 0.000065;
-        
+
         // Return comprehensive statistics array.
         return [
             'total'              => $total,
@@ -344,8 +346,8 @@ class MetricsService
 
             // Extract search type name (remove 'search_' prefix).
             // Example: 'search_keyword' -> 'keyword'.
-            $type         = str_replace('search_', '', $searchType);
-            
+            $type = str_replace('search_', '', $searchType);
+
             // Store statistics for this search type.
             $stats[$type] = [
                 'count'  => (int) ($row['count'] ?? 0),
@@ -412,9 +414,9 @@ class MetricsService
 
         // Extract and calculate storage metrics.
         $totalBytes = (int) ($sizeRow['total_bytes'] ?? 0);
-        
+
         // Convert bytes to megabytes (1024 * 1024 = 1 MB).
-        $totalMB    = $totalBytes / (1024 * 1024);
+        $totalMB = $totalBytes / (1024 * 1024);
 
         // Transform daily counts into associative array [date => count].
         $growthData = [];
@@ -481,7 +483,7 @@ class MetricsService
 
         // Execute delete query.
         $result = $qb->executeStatement();
-        
+
         // Handle different return types from executeStatement().
         // Some database drivers return int, others return result object.
         if (is_int($result) === true) {
@@ -514,7 +516,7 @@ class MetricsService
 
         // Encode array to JSON string.
         $encoded = json_encode($metadata);
-        
+
         // If encoding fails (e.g., due to invalid UTF-8), return empty object.
         if ($encoded === false) {
             return '{}';
@@ -598,10 +600,10 @@ class MetricsService
 
         // Initialize total vectors counter.
         $totalVectors = 0;
-        
+
         // Count number of days in dataset.
-        $days         = count($growthData);
-        
+        $days = count($growthData);
+
         // Sum all vector counts from growth data.
         // Note: $growthData is [date => count], so $dayData is the count value.
         foreach ($growthData as $dayData) {

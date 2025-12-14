@@ -381,40 +381,40 @@ abstract class AbstractTool implements ToolInterface
                     } else {
                         $value = null;
                     }
-                } elseif ($param->hasType() === true) {
+                } else if ($param->hasType() === true) {
                     // Step 5c: Type-cast argument to match method signature.
                     // This ensures type safety when LLM provides loosely-typed values.
                     $type = $param->getType();
                     if ($type !== null && $type instanceof \ReflectionNamedType) {
                         $typeName = $type->getName();
-                        
+
                         // Cast to integer type.
                         if ($typeName === 'int') {
                             $value = (int) $value;
                         }
                         // Cast to float type.
-                        elseif ($typeName === 'float') {
+                        else if ($typeName === 'float') {
                             $value = (float) $value;
                         }
                         // Cast to boolean type using filter_var for proper conversion.
                         // Handles 'true', 'false', '1', '0', etc.
-                        elseif ($typeName === 'bool') {
+                        else if ($typeName === 'bool') {
                             $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
                         }
                         // Cast to string type.
-                        elseif ($typeName === 'string') {
+                        else if ($typeName === 'string') {
                             $value = (string) $value;
                         }
                         // Cast to array type.
                         // If already array, keep it; otherwise convert to empty array.
-                        elseif ($typeName === 'array') {
+                        else if ($typeName === 'array') {
                             if (is_array($value) === true) {
                                 $value = $value;
                             } else {
                                 $value = [];
                             }
                         }
-                    }
+                    }//end if
                 }//end if
 
                 // Add processed argument to typed arguments array.

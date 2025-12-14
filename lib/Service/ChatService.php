@@ -444,7 +444,7 @@ class ChatService
                     ]
                         );
             }
-        } elseif (empty($selectedViews) === false) {
+        } else if (empty($selectedViews) === false) {
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
@@ -487,7 +487,7 @@ class ChatService
                     filters: $vectorFilters
                 // Pass filters array instead of 0.7.
                 );
-            } elseif ($searchMode === 'hybrid') {
+            } else if ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
                     query: $query,
                     solrFilters: ['vector_filters' => $vectorFilters],
@@ -593,7 +593,7 @@ class ChatService
                 // Increment the appropriate counter.
                 if ($isFile === true) {
                     $fileSourceCount++;
-                } elseif ($isObject === true) {
+                } else if ($isObject === true) {
                     $objectSourceCount++;
                 }
 
@@ -736,7 +736,7 @@ class ChatService
             if (empty($metadata['title']) === false) {
                 return $metadata['title'];
             }
-        }
+        }//end if
 
         // Fallback to entity ID.
         if (empty($result['entity_id']) === false) {
@@ -796,9 +796,9 @@ class ChatService
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
-                } elseif ($role === 'assistant') {
+                } else if ($role === 'assistant') {
                     $history[] = LLPhantMessage::assistant($content);
-                } elseif ($role === 'system') {
+                } else if ($role === 'system') {
                     $history[] = LLPhantMessage::system($content);
                 } else {
                     $this->logger->warning(
@@ -1839,6 +1839,7 @@ class ChatService
             } else {
                 $role = 'Assistant';
             }
+
             $conversationText .= "{$role}: {$message->getContent()}\n\n";
         }
 
@@ -2127,6 +2128,7 @@ class ChatService
 
     }//end convertFunctionsToFunctionInfo()
 
+
     /**
      * Get LLPhant URL from config or return default
      *
@@ -2143,6 +2145,7 @@ class ChatService
         }
 
         return 'default';
+
     }//end getLlphantUrl()
 
 

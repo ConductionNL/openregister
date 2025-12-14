@@ -366,7 +366,7 @@ class FileMapper extends QBMapper
             // Use the fileid as the node id.
             $nodeId = (int) $rows[0]['fileid'];
             return $this->getFiles($nodeId);
-        } elseif ($count > 1) {
+        } else if ($count > 1) {
             // Multiple folders found with same UUID - pick the oldest one (lowest fileid).
             // TODO: Add nightly cron job to cleanup orphaned folders and logs.
             usort(
@@ -485,7 +485,8 @@ class FileMapper extends QBMapper
         // Insert the new share into the database.
         $qb = $this->db->getQueryBuilder();
         $qb->insert('share')
-            ->values(values: [
+            ->values(
+                    values: [
                         'share_type'    => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT),
         // 3 = public link.
                         'share_with'    => $qb->createNamedParameter(null),

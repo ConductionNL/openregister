@@ -146,7 +146,7 @@ class UploadService
      */
     private function validateUploadSource(array $data): ?JSONResponse
     {
-        $allowedKeys = ['file', 'url', 'json'];
+        $allowedKeys  = ['file', 'url', 'json'];
         $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
 
         if (count($matchingKeys) === 0) {

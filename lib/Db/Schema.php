@@ -627,7 +627,7 @@ class Schema extends Entity implements JsonSerializable
             if (($property['inversedBy'] ?? null) !== null) {
                 if (is_array($property['inversedBy']) === true && (($property['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
-                } elseif (is_string($property['inversedBy']) === false) {
+                } else if (is_string($property['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['inversedBy']);
                 }
@@ -638,7 +638,7 @@ class Schema extends Entity implements JsonSerializable
             if (($property['items']['inversedBy'] ?? null) !== null) {
                 if (is_array($property['items']['inversedBy']) === true && (($property['items']['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
-                } elseif (is_string($property['items']['inversedBy']) === false) {
+                } else if (is_string($property['items']['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['items']['inversedBy']);
                 }
@@ -1260,7 +1260,7 @@ class Schema extends Entity implements JsonSerializable
                 if ($facetType === 'date_histogram') {
                     $facetConfig['object_fields'][$propertyKey]['default_interval']    = 'month';
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
-                } elseif ($facetType === 'range') {
+                } else if ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
                 } else if ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];

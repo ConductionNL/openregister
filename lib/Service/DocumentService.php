@@ -6,13 +6,13 @@
  * for anonymization purposes. This service provides functionality to
  * replace text in various document formats (Word, PDF, text files).
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
- * @author   Conduction B.V. <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
+ * @author    Conduction B.V. <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version  GIT: <git_id>
- * @link     https://www.OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://www.OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
  */
 class DocumentService
 {
+
     /**
      * Logger instance for error reporting
      *
@@ -54,6 +55,7 @@ class DocumentService
      * @var IRootFolder
      */
     private readonly IRootFolder $rootFolder;
+
 
     /**
      * Constructor for DocumentService
@@ -71,6 +73,7 @@ class DocumentService
         $this->rootFolder = $rootFolder;
 
     }//end __construct()
+
 
     /**
      * Replace words in a document
@@ -112,6 +115,7 @@ class DocumentService
         }
 
     }//end replaceWords()
+
 
     /**
      * Replace words in a Word document
@@ -216,9 +220,8 @@ class DocumentService
             }
 
             $outputStream = fopen($outputTempFile, 'r');
-            $newFile     = $parentFolder->newFile($outputName, $outputStream);
+            $newFile      = $parentFolder->newFile($outputName, $outputStream);
             // Do NOT call fclose($outputStream) here; Nextcloud handles the stream lifecycle internally.
-
             // Clean up temp files.
             unlink($tempFile);
             unlink($outputTempFile);
@@ -249,6 +252,7 @@ class DocumentService
         }//end try
 
     }//end replaceWordsInWordDocument()
+
 
     /**
      * Replace words in a text-based document
@@ -299,6 +303,7 @@ class DocumentService
 
     }//end replaceWordsInTextDocument()
 
+
     /**
      * Anonymize a document by replacing detected entities
      *
@@ -340,6 +345,5 @@ class DocumentService
 
     }//end anonymizeDocument()
 
+
 }//end class
-
-

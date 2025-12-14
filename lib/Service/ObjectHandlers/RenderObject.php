@@ -622,7 +622,7 @@ class RenderObject
      *
      * @phpstan-param mixed $fileId
      *
-     * @psalm-return array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: mixed, labels: array<int, string>}|null
+     * @psalm-return   array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: mixed, labels: array<int, string>}|null
      * @phpstan-return array<string, mixed>|null
      */
     private function getFileObject($fileId): array|null
@@ -816,7 +816,7 @@ class RenderObject
                     $extend[] = $key;
                 }
             }
-        } elseif (is_string($extend) === true) {
+        } else if (is_string($extend) === true) {
             $extend = explode(',', $extend);
         }
 
@@ -1135,15 +1135,15 @@ class RenderObject
     /**
      * Handles inversed properties for an object
      *
-     * @param ObjectEntity $entity      The entity to process
-     * @param array        $objectData  The current object data
-     * @param int          $_depth      Current depth level
-     * @param array|null   $_filter     Filters to apply
-     * @param array|null   $_fields     Fields to include
-     * @param array|null   $_unset      Properties to remove from the rendered entity
-     * @param array|null   $_registers  Preloaded registers
-     * @param array|null   $_schemas    Preloaded schemas
-     * @param array|null   $_objects    Preloaded objects
+     * @param ObjectEntity $entity     The entity to process
+     * @param array        $objectData The current object data
+     * @param int          $_depth     Current depth level
+     * @param array|null   $_filter    Filters to apply
+     * @param array|null   $_fields    Fields to include
+     * @param array|null   $_unset     Properties to remove from the rendered entity
+     * @param array|null   $_registers Preloaded registers
+     * @param array|null   $_schemas   Preloaded schemas
+     * @param array|null   $_objects   Preloaded objects
      *
      * @return array The updated object data with inversed properties
      */
@@ -1206,7 +1206,7 @@ class RenderObject
                 $isArray            = true;
             }
             // Check if this is a direct object property with inversedBy.
-            elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
+            else if (($propertyConfig['inversedBy'] ?? null) !== null) {
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
                 $isArray            = false;

@@ -59,9 +59,10 @@ class CustomValidationException extends Exception
      * Initializes exception with custom validation error message and
      * detailed error array. Calls parent constructor to set message.
      *
-     * @param string $message The error message describing validation failure
-     * @param array<string, string|array<string>> $errors The validation errors array,
-     *                                                     typically keyed by field names
+     * @param string                              $message The error message describing validation failure
+     * @param array<string, string|array<string>> $errors  The validation errors array,
+     *                                                     typically keyed by field
+     *                                                     names
      *
      * @return void
      */
@@ -69,7 +70,7 @@ class CustomValidationException extends Exception
     {
         // Store validation errors for detailed error reporting.
         $this->errors = $errors;
-        
+
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message);
 

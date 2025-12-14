@@ -291,7 +291,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -390,7 +390,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             } else {
@@ -508,7 +508,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
                 $query = $data['query'];
             }
 

@@ -273,11 +273,13 @@ class ObjectsTool extends AbstractTool
 
         $filters = $this->applyViewFilters($filters);
 
-        $result = $this->objectService->findAll(query: [
-                'limit'   => $limit,
-                'offset'  => $offset,
-                'filters' => $filters,
-            ]);
+        $result = $this->objectService->findAll(
+                query: [
+                    'limit'   => $limit,
+                    'offset'  => $offset,
+                    'filters' => $filters,
+                ]
+                );
 
         $objectList = array_map(
                 function ($object) {
@@ -448,7 +450,8 @@ class ObjectsTool extends AbstractTool
         if ($object === null) {
             throw new RuntimeException("Object with id {$id} not found.");
         }
-        $uuid   = $object->getUuid() ?? (string) $object->getId();
+
+        $uuid = $object->getUuid() ?? (string) $object->getId();
         $this->objectService->deleteObject(uuid: $uuid);
 
         return $this->formatSuccess(

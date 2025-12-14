@@ -262,7 +262,7 @@ class View extends Entity implements JsonSerializable
      */
     private function getCreatedFormatted(): ?string
     {
-        if (($this->created ?? null) !== null) {
+        if ($this->created !== null) {
             return $this->created->format('c');
         }
 
@@ -278,7 +278,7 @@ class View extends Entity implements JsonSerializable
      */
     private function getUpdatedFormatted(): ?string
     {
-        if (($this->updated ?? null) !== null) {
+        if ($this->updated !== null) {
             return $this->updated->format('c');
         }
 

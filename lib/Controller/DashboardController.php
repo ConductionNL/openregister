@@ -87,7 +87,7 @@ class DashboardController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-        
+
         // Store dependencies for use in controller methods.
         $this->dashboardService = $dashboardService;
         $this->logger           = $logger;
@@ -135,7 +135,7 @@ class DashboardController extends Controller
                 params: ['error' => $e->getMessage()],
                 renderAs: '500'
             );
-        }
+        }//end try
 
     }//end page()
 
@@ -175,7 +175,7 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             // Return error response if dashboard data retrieval fails.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
 
     }//end index()
 
@@ -202,7 +202,7 @@ class DashboardController extends Controller
             // Calculate sizes and statistics using dashboard service.
             // Service handles aggregation of object and log sizes.
             $result = $this->dashboardService->calculate(registerId: $registerId, schemaId: $schemaId);
-            
+
             // Return successful response with calculation results.
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {

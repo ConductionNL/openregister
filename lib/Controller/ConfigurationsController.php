@@ -164,9 +164,9 @@ class ConfigurationsController extends Controller
         // External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
         if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
             $data['isLocal'] = true;
-        } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+        } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
             $data['isLocal'] = false;
-        } elseif (isset($data['isLocal']) === false) {
+        } else if (isset($data['isLocal']) === false) {
             // Fallback: if sourceType is something else and isLocal not set, default to true.
             $data['isLocal'] = true;
         }
@@ -216,7 +216,7 @@ class ConfigurationsController extends Controller
         if (($data['sourceType'] ?? null) !== null) {
             if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
                 $data['isLocal'] = true;
-            } elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
+            } else if (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
                 $data['isLocal'] = false;
             }
         }
@@ -337,7 +337,7 @@ class ConfigurationsController extends Controller
         try {
             // Initialize uploadedFiles array.
             $uploadedFiles = [];
-            
+
             // Get the uploaded file from the request if a single file has been uploaded.
             $uploadedFile = $this->request->getUploadedFile(key: 'file');
             if (empty($uploadedFile) === false) {

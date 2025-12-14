@@ -364,7 +364,7 @@ class SaveObject
                                     schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
-                            } elseif (is_string($item) === true && empty($item) === false) {
+                            } else if (is_string($item) === true && empty($item) === false) {
                                 // String values in object arrays are always treated as relations.
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
@@ -380,7 +380,7 @@ class SaveObject
                                     schema: $schema
                                 );
                                 $relations     = array_merge($relations, $itemRelations);
-                            } elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
+                            } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
                                 // Check if the string looks like a reference.
                                 if ($this->isReference($item) === true) {
                                     $relations[$currentPath.'.'.$index] = $item;
@@ -388,7 +388,7 @@ class SaveObject
                             }
                         }
                     }//end if
-                } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
+                } else if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
                     $shouldTreatAsRelation = false;
 
                     // Check schema property configuration first.
@@ -400,7 +400,7 @@ class SaveObject
                         // Check for explicit relation types.
                         if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true) {
                             $shouldTreatAsRelation = true;
-                        } elseif ($propertyType === 'object') {
+                        } else if ($propertyType === 'object') {
                             // Object properties with string values are always relations.
                             $shouldTreatAsRelation = true;
                         }
@@ -623,10 +623,10 @@ class SaveObject
                                 ]
                                 );
                     }//end try
-                } elseif (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null)) {
+                } else if (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null)) {
                     // Array of file objects - use first file's downloadUrl.
                     $entity->setImage($firstElement['downloadUrl']);
-                } elseif (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {
+                } else if (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {
                     // Fallback to accessUrl if downloadUrl not available.
                     $entity->setImage($firstElement['accessUrl']);
                 }//end if
@@ -838,7 +838,7 @@ class SaveObject
      *
      * @return null|string
      *
-     * @psalm-return string|null
+     * @psalm-return   string|null
      * @phpstan-return string|null
      */
     private function processTwigLikeTemplate(array $data, string $template): string|null
@@ -2070,14 +2070,12 @@ class SaveObject
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
         // Update object relations.
-
         try {
             $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
             throw new Exception(
-                'Object relations processing failed: ' . $e->getMessage() .
-                '. This indicates invalid relation data or schema configuration problems.',
+                'Object relations processing failed: '.$e->getMessage().'. This indicates invalid relation data or schema configuration problems.',
                 0,
                 $e
             );
@@ -2746,7 +2744,7 @@ class SaveObject
      * @phpstan-param array<string, mixed> $fileConfig
      * @phpstan-param int|null $index
      *
-     * @psalm-return int|null
+     * @psalm-return   int|null
      * @phpstan-return int|null
      */
     private function processSingleFileProperty(
@@ -2972,7 +2970,7 @@ class SaveObject
      * @phpstan-param string $url
      * @phpstan-param string $content
      *
-     * @psalm-return array{content: string, mimeType: string, extension: string, size: int<0, max>}
+     * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      */
     private function parseFileDataFromUrl(string $url, string $content): array
@@ -3119,7 +3117,7 @@ class SaveObject
      *
      * @phpstan-param string $fileContent
      *
-     * @psalm-return array{content: string, mimeType: string, extension: string, size: int<0, max>}
+     * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      */
     private function parseFileData(string $fileContent): array
@@ -3446,7 +3444,7 @@ class SaveObject
      * @phpstan-param string $extension
      * @phpstan-param int|null $index
      *
-     * @psalm-return string
+     * @psalm-return   string
      * @phpstan-return string
      */
     private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
@@ -3520,7 +3518,7 @@ class SaveObject
      *
      * @phpstan-param string $mimeType
      *
-     * @psalm-return string
+     * @psalm-return   string
      * @phpstan-return string
      */
     private function getExtensionFromMimeType(string $mimeType): string

@@ -418,7 +418,7 @@ class TextExtractionService
         if (preg_match('/\b(de|het|een)\b/i', $text) === 1) {
             $language   = 'nl';
             $confidence = 0.35;
-        } elseif (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
+        } else if (preg_match('/\b(the|and|of)\b/i', $text) === 1) {
             $language   = 'en';
             $confidence = 0.35;
         }
@@ -802,13 +802,13 @@ class TextExtractionService
                             'length' => strlen($extractedText),
                         ]
                         );
-            } elseif ($mimeType === 'application/pdf') {
+            } else if ($mimeType === 'application/pdf') {
                 // Extract text from PDF using Smalot PdfParser.
                 $extractedText = $this->extractPdf($file);
-            } elseif ($this->isWordDocument($mimeType) === true) {
+            } else if ($this->isWordDocument($mimeType) === true) {
                 // Extract text from DOCX/DOC using PhpWord.
                 $extractedText = $this->extractWord($file);
-            } elseif ($this->isSpreadsheet($mimeType) === true) {
+            } else if ($this->isSpreadsheet($mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet($file);
             } else {
@@ -1267,7 +1267,7 @@ class TextExtractionService
                 foreach ($section->getElements() as $element) {
                     if (method_exists($element, 'getText') === true) {
                         $text .= $element->getText()."\n";
-                    } elseif (method_exists($element, 'getElements') === true) {
+                    } else if (method_exists($element, 'getElements') === true) {
                         // Handle nested elements (tables, etc.).
                         foreach ($element->getElements() as $childElement) {
                             if (method_exists($childElement, 'getText') === true) {

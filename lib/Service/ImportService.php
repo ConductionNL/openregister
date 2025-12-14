@@ -814,7 +814,7 @@ class ImportService
             if ($firstChar === '_') {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } elseif ($firstChar === '@') {
+            } else if ($firstChar === '@') {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -1006,7 +1006,7 @@ class ImportService
             if (str_starts_with($key, '_') === true) {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } elseif (str_starts_with($key, '@') === true) {
+            } else if (str_starts_with($key, '@') === true) {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -1097,12 +1097,12 @@ class ImportService
     /**
      * Process a chunk of rows asynchronously
      *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet            The worksheet
-     * @param array<string, string>                         $columnMapping    Column mapping
-     * @param int                                           $startRow         Starting row number
-     * @param int                                           $endRow           Ending row number
-     * @param Register|null                                 $register         Optional register
-     * @param Schema|null                                   $schema           Optional schema
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet             The worksheet
+     * @param array<string, string>                         $columnMapping     Column mapping
+     * @param int                                           $startRow          Starting row number
+     * @param int                                           $endRow            Ending row number
+     * @param Register|null                                 $register          Optional register
+     * @param Schema|null                                   $schema            Optional schema
      * @param array                                         $_schemaProperties Schema properties
      *
      * @return (array|int)[]
@@ -1155,7 +1155,7 @@ class ImportService
             }
 
             // Process promises in batches to limit concurrency.
-            $batchSize = self::MAX_CONCURRENT;
+            $batchSize    = self::MAX_CONCURRENT;
             $promiseCount = count($promises);
             for ($i = 0; $i < $promiseCount; $i += $batchSize) {
                 $batch = array_slice($promises, $i, $batchSize);
@@ -1251,7 +1251,7 @@ class ImportService
                 $selfPropertyName = substr($key, 1);
                 // Remove the _ prefix.
                 $selfData[$selfPropertyName] = $value;
-            } elseif (str_starts_with($key, '@self.') === true) {
+            } else if (str_starts_with($key, '@self.') === true) {
                 // Move properties starting with @self. to @self array and remove the @self. prefix.
                 $selfPropertyName = substr($key, 6);
                 // Remove the @self. prefix (6 characters).
@@ -1702,7 +1702,7 @@ class ImportService
         if ($totalImported > 10000) {
             // Fast mode for large imports.
             return 'fast';
-        } elseif ($totalImported > 1000) {
+        } else if ($totalImported > 1000) {
             // Balanced mode for medium imports.
             return 'balanced';
         } else {
