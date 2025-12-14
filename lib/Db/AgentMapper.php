@@ -22,7 +22,7 @@ use DateTime;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
-use OCA\OpenRegister\Service\ConfigurationCacheService;
+use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;

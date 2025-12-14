@@ -85,9 +85,9 @@ class CacheHandler
     /**
      * CacheHandler constructor
      *
-     * @param ISession              $session              Session for caching
-     * @param ConfigurationMapper   $configurationMapper  Mapper for configurations
-     * @param OrganisationService   $organisationService  Organisation service
+     * @param ISession            $session             Session for caching
+     * @param ConfigurationMapper $configurationMapper Mapper for configurations
+     * @param OrganisationService $organisationService Organisation service
      */
     public function __construct(
         ISession $session,
@@ -97,7 +97,8 @@ class CacheHandler
         $this->session = $session;
         $this->configurationMapper = $configurationMapper;
         $this->organisationService = $organisationService;
-    }
+
+    }//end __construct()
 
 
     /**

@@ -25,8 +25,8 @@ use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\GitHubService;
-use OCA\OpenRegister\Service\GitLabService;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -61,16 +61,16 @@ class SyncConfigurationsJob extends TimedJob
     /**
      * GitHub service instance.
      *
-     * @var GitHubService The GitHub service instance.
+     * @var GitHubHandler The GitHub service instance.
      */
-    private GitHubService $githubService;
+    private GitHubHandler $githubService;
 
     /**
      * GitLab service instance.
      *
-     * @var GitLabService The GitLab service instance.
+     * @var GitLabHandler The GitLab service instance.
      */
-    private GitLabService $gitlabService;
+    private GitLabHandler $gitlabService;
 
     /**
      * HTTP client instance.
@@ -93,8 +93,8 @@ class SyncConfigurationsJob extends TimedJob
      * @param ITimeFactory         $time                 Time factory for job scheduling
      * @param ConfigurationMapper  $configurationMapper  Configuration mapper
      * @param ConfigurationService $configurationService Configuration service
-     * @param GitHubService        $githubService        GitHub service
-     * @param GitLabService        $gitlabService        GitLab service
+     * @param GitHubHandler        $githubService        GitHub service
+     * @param GitLabHandler        $gitlabService        GitLab service
      * @param Client               $httpClient           HTTP client
      * @param LoggerInterface      $logger               Logger
      */
@@ -102,8 +102,8 @@ class SyncConfigurationsJob extends TimedJob
         ITimeFactory $time,
         ConfigurationMapper $configurationMapper,
         ConfigurationService $configurationService,
-        GitHubService $githubService,
-        GitLabService $gitlabService,
+        GitHubHandler $githubService,
+        GitLabHandler $gitlabService,
         Client $httpClient,
         LoggerInterface $logger
     ) {

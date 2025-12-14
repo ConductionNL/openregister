@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Settings Controller
  *
  * This file contains the controller class for handling settings in the OpenRegister application.
@@ -473,7 +473,7 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                     data: [
-                        'error'             => 'Failed to validate objects: ' . $e->getMessage(),
+                        'error'             => 'Failed to validate objects: '.$e->getMessage(),
                         'total_objects'     => 0,
                         'valid_objects'     => 0,
                         'invalid_objects'   => 0,
@@ -576,7 +576,6 @@ class SettingsController extends Controller
     }//end massValidateObjects()
 
 
-
     /**
      * Predict memory usage for mass validation operation
      *
@@ -630,7 +629,6 @@ class SettingsController extends Controller
             // Determine if prediction is safe.
             $predictionSafe = $totalEstimatedMemory < ($availableMemory * 0.8);
             // Use 80% as safety margin.
-
             // Get recommendation message based on prediction safety.
             if ($predictionSafe === true) {
                 $recommendationMessage = 'Safe to process';
@@ -2401,7 +2399,6 @@ class SettingsController extends Controller
                     } else {
                         $message = 'Failed to commit index';
                     }
-
                     return new JSONResponse(
                             data: [
                                 'success'   => $success,
@@ -2420,7 +2417,6 @@ class SettingsController extends Controller
                     } else {
                         $message = 'Failed to optimize index';
                     }
-
                     return new JSONResponse(
                             data: [
                                 'success'   => $success,
@@ -2439,7 +2435,6 @@ class SettingsController extends Controller
                     } else {
                         $message = 'Failed to clear index: '.($result['error'] ?? 'Unknown error');
                     }
-
                     return new JSONResponse(
                             data: [
                                 'success'       => $result['success'],
@@ -2789,7 +2784,7 @@ class SettingsController extends Controller
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
                 $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-            } elseif (strpos($platformName, 'postgres') !== false) {
+            } else if (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
                 try {
@@ -2822,7 +2817,7 @@ class SettingsController extends Controller
                     $recommendedPlugin = 'pgvector (not found)';
                     $performanceNote   = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
                 }
-            } elseif (strpos($platformName, 'sqlite') !== false) {
+            } else if (strpos($platformName, 'sqlite') !== false) {
                 $dbType            = 'SQLite';
                 $vectorSupport     = false;
                 $recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';

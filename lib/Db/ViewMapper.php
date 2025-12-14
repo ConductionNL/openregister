@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Db;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
-use OCA\OpenRegister\Service\ConfigurationCacheService;
+use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -97,9 +97,9 @@ class ViewMapper extends QBMapper
      *
      * Used to invalidate configuration cache when views change.
      *
-     * @var ConfigurationCacheService Configuration cache service instance
+     * @var CacheHandler Configuration cache service instance
      */
-    private readonly ConfigurationCacheService $configurationCacheService;
+    private readonly CacheHandler $configurationCacheService;
 
     /**
      * Event dispatcher for dispatching view events
@@ -117,12 +117,12 @@ class ViewMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection             $db                        Database connection
-     * @param OrganisationService       $organisationService       Organisation service for multi-tenancy
-     * @param IUserSession              $userSession               User session for RBAC
-     * @param IGroupManager             $groupManager              Group manager for RBAC
-     * @param ConfigurationCacheService $configurationCacheService Configuration cache service for cache invalidation
-     * @param IEventDispatcher          $eventDispatcher           Event dispatcher for view lifecycle events
+     * @param IDBConnection       $db                        Database connection
+     * @param OrganisationService $organisationService       Organisation service for multi-tenancy
+     * @param IUserSession        $userSession               User session for RBAC
+     * @param IGroupManager       $groupManager              Group manager for RBAC
+     * @param CacheHandler        $configurationCacheService Configuration cache service for cache invalidation
+     * @param IEventDispatcher    $eventDispatcher           Event dispatcher for view lifecycle events
      *
      * @return void
      */
@@ -131,7 +131,7 @@ class ViewMapper extends QBMapper
         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        ConfigurationCacheService $configurationCacheService,
+        CacheHandler $configurationCacheService,
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.

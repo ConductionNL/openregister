@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Objects\GetObject;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
+use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Service\Objects\PublishObject;
 use OCA\OpenRegister\Service\Objects\DepublishObject;
@@ -128,8 +129,9 @@ use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 
 use Twig\Loader\ArrayLoader;
 use GuzzleHttp\Client;
-use OCA\OpenRegister\Service\GitHubService;
-use OCA\OpenRegister\Service\GitLabService;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\CacheHandler;
 /**
  * Class Application
  *
@@ -531,11 +533,11 @@ class Application extends App implements IBootstrap
         // NOTE: WebhookService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // WebhookService creates GuzzleHttp\Client directly.
-        // Register GitHubService for GitHub API operations.
+        // Register GitHubHandler for GitHub API operations.
         $context->registerService(
-                 \OCA\OpenRegister\Service\GitHubService::class,
+                 GitHubHandler::class,
                 function ($container) {
-                    return new GitHubService(
+                    return new GitHubHandler(
                             client: $container->get('OCP\Http\Client\IClientService')->newClient(),
                             config: $container->get('OCP\IConfig'),
                             cacheFactory: $container->get('OCP\ICacheFactory'),
@@ -546,15 +548,27 @@ class Application extends App implements IBootstrap
 
         // NOTE: DashboardService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        // Register GitLabService for GitLab API operations.
+        // Register GitLabHandler for GitLab API operations.
         // NOTE: Must be registered manually because it requires IClientService->newClient() factory call.
         $context->registerService(
-                \OCA\OpenRegister\Service\GitLabService::class,
+                GitLabHandler::class,
                 function ($container) {
-                    return new GitLabService(
+                    return new GitLabHandler(
                             $container->get('OCP\Http\Client\IClientService')->newClient(),
                             $container->get(id: 'OCP\IConfig'),
                             $container->get(id: 'Psr\Log\LoggerInterface')
+                            );
+                }
+                );
+
+        // Register CacheHandler for configuration caching.
+        $context->registerService(
+                CacheHandler::class,
+                function ($container) {
+                    return new CacheHandler(
+                            session: $container->get('OCP\ISession'),
+                            configurationMapper: $container->get(\OCA\OpenRegister\Db\ConfigurationMapper::class),
+                            organisationService: $container->get(\OCA\OpenRegister\Service\OrganisationService::class)
                             );
                 }
                 );

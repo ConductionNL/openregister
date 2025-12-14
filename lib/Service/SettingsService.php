@@ -2912,10 +2912,10 @@ class SettingsService
      * @throws Exception If mass validation operation fails.
      */
     public function massValidateObjects(
-        int $maxObjects = 0,
-        int $batchSize = 1000,
-        string $mode = 'serial',
-        bool $collectErrors = false
+        int $maxObjects=0,
+        int $batchSize=1000,
+        string $mode='serial',
+        bool $collectErrors=false
     ): array {
         $startTime   = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -3115,11 +3115,11 @@ class SettingsService
     /**
      * Process batch jobs in serial mode
      *
-     * @param array                                          $batchJobs     Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper       $objectMapper  The object entity mapper.
-     * @param \OCA\OpenRegister\Service\ObjectService       $objectService The object service instance.
-     * @param array                                          $results       Results array to update.
-     * @param bool                                           $collectErrors Whether to collect all errors.
+     * @param array                                   $batchJobs     Array of batch job definitions.
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
+     * @param array                                   $results       Results array to update.
+     * @param bool                                    $collectErrors Whether to collect all errors.
      *
      * @return void
      */
@@ -3240,12 +3240,12 @@ class SettingsService
     /**
      * Process batch jobs in parallel mode
      *
-     * @param array                                          $batchJobs       Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper       $objectMapper    The object entity mapper.
-     * @param \OCA\OpenRegister\Service\ObjectService       $objectService   The object service instance.
-     * @param array                                          $results         Results array to update.
-     * @param bool                                           $collectErrors   Whether to collect all errors.
-     * @param int                                            $parallelBatches Number of parallel batches.
+     * @param array                                   $batchJobs       Array of batch job definitions.
+     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper    The object entity mapper.
+     * @param \OCA\OpenRegister\Service\ObjectService $objectService   The object service instance.
+     * @param array                                   $results         Results array to update.
+     * @param bool                                    $collectErrors   Whether to collect all errors.
+     * @param int                                     $parallelBatches Number of parallel batches.
      *
      * @return void
      */
@@ -3317,8 +3317,8 @@ class SettingsService
      *
      * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
      * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
-     * @param array                                    $job           Batch job definition.
-     * @param bool                                     $collectErrors Whether to collect all errors.
+     * @param array                                   $job           Batch job definition.
+     * @param bool                                    $collectErrors Whether to collect all errors.
      *
      * @return array Batch processing results.
      */
@@ -3405,7 +3405,7 @@ class SettingsService
      *
      * @return string Formatted string.
      */
-    private function formatBytes(int $bytes, int $precision = 2): string
+    private function formatBytes(int $bytes, int $precision=2): string
     {
         $units     = ['B', 'KB', 'MB', 'GB', 'TB'];
         $unitCount = count($units);

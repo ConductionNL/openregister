@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Objects\GetObject;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
+use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Service\Objects\PublishObject;
 use OCA\OpenRegister\Service\Objects\DepublishObject;
@@ -155,6 +156,7 @@ class ObjectService
      * @param RenderObject            $renderHandler           Handler for object rendering.
      * @param SaveObject              $saveHandler             Handler for individual object saving.
      * @param SaveObjects             $saveObjectsHandler      Handler for bulk object saving operations.
+     * @param SearchQueryHandler      $searchQueryHandler      Handler for search query operations.
      * @param ValidateObject          $validateHandler         Handler for object validation.
      * @param PublishObject           $publishHandler          Handler for object publication.
      * @param DepublishObject         $depublishHandler        Handler for object depublication.
@@ -182,6 +184,7 @@ class ObjectService
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
         private readonly SaveObjects $saveObjectsHandler,
+        private readonly SearchQueryHandler $searchQueryHandler,
         private readonly ValidateObject $validateHandler,
         private readonly PublishObject $publishHandler,
         private readonly DepublishObject $depublishHandler,
@@ -2159,12 +2162,8 @@ class ObjectService
      */
     private function isSolrAvailable(): bool
     {
-        try {
-            $solrSettings = $this->settingsService->getSolrSettings();
-            return $solrSettings['enabled'] ?? false;
-        } catch (Exception $e) {
-            return false;
-        }
+        return $this->searchQueryHandler->isSolrAvailable();
+
     }
 
     /**
@@ -2745,34 +2744,11 @@ class ObjectService
      */
     private function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void
     {
-        // **PERFORMANCE OPTIMIZATION**: Only generate URLs if pagination is needed.
-        if ($pages <= 1) {
-            return;
-        }
-
-        $currentUrl = $_SERVER['REQUEST_URI'];
-
-        // Add next page link if there are more pages.
-        if ($page < $pages) {
-            $nextPage = ($page + 1);
-            $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
-            if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
-            }
-
-            $paginatedResults['next'] = $nextUrl;
-        }
-
-        // Add previous page link if not on first page.
-        if ($page > 1) {
-            $prevPage = ($page - 1);
-            $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
-            if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
-            }
-
-            $paginatedResults['prev'] = $prevUrl;
-        }
+        $this->searchQueryHandler->addPaginationUrls(
+            paginatedResults: $paginatedResults,
+            page: $page,
+            pages: $pages
+        );
 
     }//end addPaginationUrls()
 
@@ -5809,14 +5785,8 @@ class ObjectService
      */
     private function isSearchTrailsEnabled(): bool
     {
-        try {
-            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
-            return $retentionSettings['searchTrailsEnabled'] ?? true;
-        } catch (Exception $e) {
-            // If we can't get settings, default to enabled for safety.
-            $this->logger->warning(message: 'Failed to check search trails setting, defaulting to enabled', context: ['error' => $e->getMessage()]);
-            return true;
-        }
+        return $this->searchQueryHandler->isSearchTrailsEnabled();
+
     }//end isSearchTrailsEnabled()
 
     /**

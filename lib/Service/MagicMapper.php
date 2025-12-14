@@ -1338,6 +1338,8 @@ class MagicMapper
      * @param Schema   $schema    The schema for index analysis
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void
     {
@@ -1666,6 +1668,8 @@ class MagicMapper
      * @param Schema   $schema   Schema for context
      *
      * @return ObjectEntity|null ObjectEntity or null if conversion fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity
     {
@@ -2352,6 +2356,8 @@ class MagicMapper
      * @param Schema   $schema   The schema to check
      *
      * @return bool True if MagicMapper should be used for this register+schema
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function isMagicMappingEnabled(Register $_register, Schema $schema): bool
     {
