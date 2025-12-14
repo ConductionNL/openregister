@@ -428,7 +428,7 @@ class GuzzleSolrService
         }
 
         // Check if basic configuration is present.
-        if (empty($this->solrConfig['host'])) {
+        if (empty($this->solrConfig['host']) === true) {
             $this->logger->debug('SOLR host not configured');
             return false;
         }
@@ -522,7 +522,7 @@ class GuzzleSolrService
 
             // Fallback to file-based caching.
             $cacheFile = sys_get_temp_dir() . '/' . $cacheKey . '.cache';
-            if (file_exists($cacheFile)) {
+            if (file_exists($cacheFile) === true) {
                 $data = json_decode(file_get_contents($cacheFile), true);
                 if ($data !== null && ($data['expires'] ?? 0) > time()) {
                     return (bool) $data['available'];
@@ -697,11 +697,11 @@ class GuzzleSolrService
             }
 
             // Test 3: Collection/Core availability (conditional).
-            if ($includeCollectionTests) {
+            if ($includeCollectionTests === true) {
                 $collectionTest = $this->testSolrCollection();
                 $testResults['components']['collection'] = $collectionTest;
 
-                if (!$collectionTest['success']) {
+                if ($collectionTest['success'] === false) {
                     $testResults['success'] = false;
                     $testResults['message'] = 'SOLR collection/core not available';
                 }
@@ -1161,14 +1161,14 @@ class GuzzleSolrService
 
                 // **DEBUG**.: Log what we're about to send to SOLR.
                 // Determine self relations type for logging.
-                if (isset($document['self_relations'])) {
+                if (isset($document['self_relations']) === true) {
                     $selfRelationsType = gettype($document['self_relations']);
                 } else {
                     $selfRelationsType = 'NOT_SET';
                 }
 
                 // Determine self relations count for logging.
-                if (isset($document['self_relations']) && is_array($document['self_relations'])) {
+                if (isset($document['self_relations']) === true && is_array($document['self_relations']) === true) {
                     $selfRelationsCount = count($document['self_relations']);
                 } else {
                     $selfRelationsCount = 'NOT_ARRAY';
@@ -1213,7 +1213,7 @@ class GuzzleSolrService
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
 
-            if ($commit) {
+            if ($commit === true) {
                 $url .= '&commit=true';
             }
 
@@ -1296,7 +1296,7 @@ class GuzzleSolrService
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
 
-            if ($commit) {
+            if ($commit === true) {
                 $url .= '&commit=true';
             }
 
@@ -1546,28 +1546,28 @@ class GuzzleSolrService
         }
 
         // Determine self_image value (must not exceed SOLR field length limit).
-        if ($object->getImage() && strlen($object->getImage()) <= 32766) {
+        if ($object->getImage() !== null && strlen($object->getImage()) <= 32766) {
             $selfImage = $object->getImage();
         } else {
             $selfImage = null;
         }
 
         // Determine document ID.
-        if ($object->getUuid()) {
+        if ($object->getUuid() !== null) {
             $documentId = $object->getUuid();
         } else {
             $documentId = (string)$object->getId();
         }
 
-        // Determine values for core object fields using Elvis operators.
-        $selfName = $object->getName() ?: null;
-        $selfDescription = $object->getDescription() ?: null;
-        $selfSummary = $object->getSummary() ?: null;
-        $selfSlug = $object->getSlug() ?: null;
-        $selfUri = $object->getUri() ?: null;
-        $selfVersion = $object->getVersion() ?: null;
-        $selfSize = $object->getSize() ?: null;
-        $selfFolder = $object->getFolder() ?: null;
+        // Determine values for core object fields using explicit comparisons.
+        $selfName = $object->getName() !== null && $object->getName() !== '' ? $object->getName() : null;
+        $selfDescription = $object->getDescription() !== null && $object->getDescription() !== '' ? $object->getDescription() : null;
+        $selfSummary = $object->getSummary() !== null && $object->getSummary() !== '' ? $object->getSummary() : null;
+        $selfSlug = $object->getSlug() !== null && $object->getSlug() !== '' ? $object->getSlug() : null;
+        $selfUri = $object->getUri() !== null && $object->getUri() !== '' ? $object->getUri() : null;
+        $selfVersion = $object->getVersion() !== null && $object->getVersion() !== '' ? $object->getVersion() : null;
+        $selfSize = $object->getSize() !== null && $object->getSize() !== 0 ? $object->getSize() : null;
+        $selfFolder = $object->getFolder() !== null && $object->getFolder() !== '' ? $object->getFolder() : null;
 
         // Base SOLR document with core identifiers and metadata fields using self_ prefix.
         $document = [
@@ -1623,12 +1623,12 @@ class GuzzleSolrService
             'self_files' => $this->flattenFilesForSolr($object->getFiles()),
 
             // **COMPLETE OBJECT STORAGE**: Store entire object as JSON for exact reconstruction.
-            'self_object' => json_encode($object->jsonSerialize() ?: [])
+            'self_object' => json_encode($object->jsonSerialize() !== null ? $object->jsonSerialize() : [])
         ];
 
         // **SCHEMA-AWARE FIELD MAPPING**: Map object data based on schema properties.
 
-        if (is_array($schemaProperties) && is_array($objectData)) {
+        if (is_array($schemaProperties) === true && is_array($objectData) === true) {
             // **DEBUG**.: Log what we're mapping.
             $this->logger->debug('Schema-aware mapping', [
                 'object_id' => $object->getId(),
@@ -1645,12 +1645,12 @@ class GuzzleSolrService
                 $fieldType = $fieldDefinition['type'] ?? 'string';
 
                 // **TRUNCATE LARGE VALUES**: Respect SOLR's 32,766 byte limit for indexed fields.
-                if ($this->shouldTruncateField($fieldName, $fieldDefinition)) {
+                if ($this->shouldTruncateField($fieldName, $fieldDefinition) === true) {
                     $fieldValue = $this->truncateFieldValue($fieldValue, $fieldName);
                 }
 
                 // **HANDLE ARRAYS**: Process arrays by inspecting actual content.
-                if (is_array($fieldValue)) {
+                if (is_array($fieldValue) === true) {
                     $this->logger->debug('Processing array field', [
                         'field' => $fieldName,
                         'array_size' => count($fieldValue),
@@ -1661,9 +1661,9 @@ class GuzzleSolrService
                     // Extract indexable values from the array (ignores schema definition).
                     $extractedValues = $this->extractIndexableArrayValues($fieldValue, $fieldName);
 
-                    if (!empty($extractedValues)) {
+                    if (empty($extractedValues) === false) {
                         $solrFieldName = $this->mapFieldToSolrType($fieldName, 'array', $extractedValues);
-                        if ($solrFieldName && $this->validateFieldForSolr($solrFieldName, $extractedValues, $solrFieldTypes)) {
+                        if ($solrFieldName !== null && $this->validateFieldForSolr($solrFieldName, $extractedValues, $solrFieldTypes) === true) {
                             $document[$solrFieldName] = $extractedValues;
                             $this->logger->debug(
                                     'Indexed array field (content-based extraction)',
@@ -1685,7 +1685,7 @@ class GuzzleSolrService
                 }
 
                 // **FILTER OBJECTS**: Skip standalone objects (not arrays).
-                if (is_object($fieldValue)) {
+                if (is_object($fieldValue) === true) {
                     $this->logger->debug('Skipping object field value', [
                         'field' => $fieldName,
                         'type' => gettype($fieldValue),
@@ -1734,11 +1734,11 @@ class GuzzleSolrService
                         // Map field based on schema type to appropriate SOLR field name.
                         $solrFieldName = $this->mapFieldToSolrType($fieldName, $fieldType, $fieldValue);
 
-                        if ($solrFieldName) {
+                        if ($solrFieldName !== null) {
                             $convertedValue = $this->convertValueForSolr($fieldValue, $fieldType);
 
                             // **FIELD VALIDATION**: Check if field exists in SOLR and type is compatible.
-                            if ($convertedValue !== null && $this->validateFieldForSolr($solrFieldName, $convertedValue, $solrFieldTypes)) {
+                            if ($convertedValue !== null && $this->validateFieldForSolr($solrFieldName, $convertedValue, $solrFieldTypes) === true) {
                                 $document[$solrFieldName] = $convertedValue;
                         $this->logger->debug('Mapped field', [
                             'original' => $fieldName,
@@ -1774,11 +1774,11 @@ class GuzzleSolrService
         // Remove null values, but keep published/depublished fields and empty arrays for multi-valued fields.
         return array_filter($document, function($value, $key) {
             // Always keep published/depublished fields even if null for proper Solr filtering.
-            if (in_array($key, ['self_published', 'self_depublished'])) {
+            if (in_array($key, ['self_published', 'self_depublished']) === true) {
                 return true;
             }
             // Keep empty arrays for multi-valued fields like self_relations, self_files.
-            if (is_array($value) && in_array($key, ['self_relations', 'self_files'])) {
+            if (is_array($value) === true && in_array($key, ['self_relations', 'self_files']) === true) {
                 return true;
             }
             return $value !== null && $value !== '';
@@ -1804,11 +1804,11 @@ class GuzzleSolrService
             'is_empty' => empty($relations)
         ]);
 
-        if (empty($relations)) {
+        if (empty($relations) === true) {
             return [];
         }
 
-        if (is_array($relations)) {
+        if (is_array($relations) === true) {
             $values = [];
             foreach ($relations as $key => $value) {
                 // **FIXED**: Extract ALL values from relations array, not just UUIDs.
@@ -1843,7 +1843,7 @@ class GuzzleSolrService
         }
 
         // Single value - convert to string.
-        if (is_string($relations) || is_numeric($relations)) {
+        if (is_string($relations) === true || is_numeric($relations) === true) {
             return [(string)$relations];
         }
 
@@ -1893,7 +1893,7 @@ class GuzzleSolrService
                 }
 
                 // Add value at the specified index (or skip if index is not numeric).
-                if (is_numeric($index)) {
+                if (is_numeric($index) === true) {
                     $arrays[$fieldName][(int)$index] = $relationValue;
                 } else {
                     // Non-numeric index - this is a nested object property, not an array element.
@@ -2013,7 +2013,7 @@ class GuzzleSolrService
             return [];
         }
 
-        if (is_array($files)) {
+        if (is_array($files) === true) {
             $flattened = [];
             foreach ($files as $file) {
                 if (is_string($file) === true) {
@@ -2028,7 +2028,7 @@ class GuzzleSolrService
             return $flattened;
         }
 
-        if (is_string($files)) {
+        if (is_string($files) === true) {
             return [$files];
         } else {
             return [];
@@ -2131,7 +2131,7 @@ class GuzzleSolrService
                 return $value;
 
             case 'array':
-                if (is_array($value)) {
+                if (is_array($value) === true) {
                     return $value;
                 } else {
                     return [$value];
@@ -2158,7 +2158,7 @@ class GuzzleSolrService
     {
         // **CRITICAL**: Ensure we always have a unique ID for SOLR document ID.
         $uuid = $object->getUuid();
-        if (empty($uuid)) {
+        if (empty($uuid) === true) {
             // **FALLBACK**: Use object ID if UUID is missing (for legacy objects).
             $uuid = $object->getId();
             $this->logger->warning('Object missing UUID - using object ID as fallback', [
@@ -2171,7 +2171,7 @@ class GuzzleSolrService
         $objectData = $object->getObject();
 
         // Extract text content for full-text search.
-        if ($objectData) {
+        if ($objectData !== null) {
             $textContent = $this->extractTextContent($object, $objectData);
         } else {
             $textContent = $this->extractTextContent($object, []);
@@ -2187,11 +2187,11 @@ class GuzzleSolrService
         ];
 
         // **SCHEMALESS MODE**: Add object properties at root level + typed fields for advanced queries.
-        if (is_array($objectData)) {
+        if (is_array($objectData) === true) {
             foreach ($objectData as $key => $value) {
-                if (!is_array($value) && !is_object($value)) {
+                if (is_array($value) === false && is_object($value) === false) {
                     // **TRUNCATE LARGE VALUES**: Apply truncation for known large content fields.
-                    if (is_string($value) && $this->shouldTruncateField($key)) {
+                    if (is_string($value) === true && $this->shouldTruncateField($key) === true) {
                         $value = $this->truncateFieldValue($value, $key);
                     }
 
@@ -2199,13 +2199,13 @@ class GuzzleSolrService
                     $document[$key] = $value;
 
                     // **SECONDARY**: Typed fields for advanced faceting and sorting.
-                    if (is_string($value)) {
+                    if (is_string($value) === true) {
                         $document[$key . '_s'] = $value;  // String field for faceting/filtering.
                         $document[$key . '_t'] = $value;  // Text field for full-text search.
-                    } elseif (is_numeric($value)) {
+                    } elseif (is_numeric($value) === true) {
                         $document[$key . '_i'] = (int)$value;    // Integer field.
                         $document[$key . '_f'] = (float)$value;  // Float field.
-                    } elseif (is_bool($value)) {
+                    } elseif (is_bool($value) === true) {
                         $document[$key . '_b'] = $value;  // Boolean field.
                     }
                 }
@@ -2232,50 +2232,50 @@ class GuzzleSolrService
         $document['self_application'] = $object->getApplication();
 
         // DateTime fields.
-        if ($object->getCreated()) {
+        if ($object->getCreated() !== null) {
             $document['self_created'] = $object->getCreated()->format('Y-m-d\TH:i:s\Z');
         } else {
             $document['self_created'] = null;
         }
 
-        if ($object->getUpdated()) {
+        if ($object->getUpdated() !== null) {
             $document['self_updated'] = $object->getUpdated()->format('Y-m-d\TH:i:s\Z');
         } else {
             $document['self_updated'] = null;
         }
 
-        if ($object->getPublished()) {
+        if ($object->getPublished() !== null) {
             $document['self_published'] = $object->getPublished()->format('Y-m-d\TH:i:s\Z');
         } else {
             $document['self_published'] = null;
         }
 
-        if ($object->getDepublished()) {
+        if ($object->getDepublished() !== null) {
             $document['self_depublished'] = $object->getDepublished()->format('Y-m-d\TH:i:s\Z');
         } else {
             $document['self_depublished'] = null;
         }
 
         // Complex fields as JSON.
-        if ($object->getAuthorization()) {
+        if ($object->getAuthorization() !== null) {
             $document['self_authorization'] = json_encode($object->getAuthorization());
         } else {
             $document['self_authorization'] = null;
         }
 
-        if ($object->getDeleted()) {
+        if ($object->getDeleted() !== null) {
             $document['self_deleted'] = json_encode($object->getDeleted());
         } else {
             $document['self_deleted'] = null;
         }
 
-        if ($object->getValidation()) {
+        if ($object->getValidation() !== null) {
             $document['self_validation'] = json_encode($object->getValidation());
         } else {
             $document['self_validation'] = null;
         }
 
-        if ($object->getGroups()) {
+        if ($object->getGroups() !== null) {
             $document['self_groups'] = json_encode($object->getGroups());
         } else {
             $document['self_groups'] = null;
@@ -3552,7 +3552,7 @@ class GuzzleSolrService
 
             $url = $this->buildSolrBaseUrl() . '/' . $tenantCollectionName . '/update?wt=json';
 
-            if ($commit) {
+            if ($commit === true) {
                 $url .= '&commit=true';
             }
 
@@ -3571,7 +3571,7 @@ class GuzzleSolrService
             if ($success === true) {
                 $this->stats['deletes']++;
                 $this->logger->debug('🗑️ SOLR DELETE BY QUERY', [
-                    'query' => $tenantQuery,
+                    'query' => $query,
                     'collection' => $tenantCollectionName
                 ]);
 
@@ -4805,6 +4805,11 @@ class GuzzleSolrService
                 $collections = $data['cluster']['collections'] ?? [];
 
                 if (isset($collections[$collectionName])) {
+                    $collectionData = $collections[$collectionName];
+                    $collectionType = (strpos($collectionName, '_nc_') !== false) ? 'tenant-specific' : 'base';
+                    $status = $collectionData['health'] ?? 'unknown';
+                    $shards = $collectionData['shards'] ?? [];
+                    
                     return [
                         'success' => true,
                         'message' => "Collection '{$collectionName}' exists and is available",
@@ -4850,6 +4855,11 @@ class GuzzleSolrService
                 $cores = $data['status'] ?? [];
 
                 if (isset($cores[$collectionName])) {
+                    $coreData = $cores[$collectionName];
+                    $collectionType = (strpos($collectionName, '_nc_') !== false) ? 'tenant-specific' : 'base';
+                    $numDocs = $coreData['index']['numDocs'] ?? 0;
+                    $maxDocs = $coreData['index']['maxDoc'] ?? 0;
+                    
                     return [
                         'success' => true,
                         'message' => "Core '{$collectionName}' exists and is available",
@@ -4944,6 +4954,9 @@ class GuzzleSolrService
             $data = json_decode((string)$response->getBody(), true);
 
             if (isset($data['response'])) {
+                $collectionType = (strpos($collectionName, '_nc_') !== false) ? 'tenant-specific' : 'base';
+                $totalDocs = $data['response']['numFound'] ?? 0;
+                
                 return [
                     'success' => true,
                     'message' => 'Query test successful',
@@ -5067,11 +5080,13 @@ class GuzzleSolrService
                     'collection'   => $targetCollection,
                 ];
             } else {
-                $this->logger->error('SOLR index clear failed', [
+                $errorDetails = [
                     'status_code' => $response->getStatusCode(),
                     'response' => $responseData,
                     'collection' => $targetCollection
-                ]);
+                ];
+                
+                $this->logger->error('SOLR index clear failed', $errorDetails);
 
                 return [
                     'success'       => false,
@@ -5153,7 +5168,7 @@ class GuzzleSolrService
                 $totalResults = $data['response']['numFound'] ?? 0;
 
                 $this->logger->debug('🔍 SOLR INDEX INSPECT', [
-                    'query' => $tenantQuery,
+                    'query' => $query,
                     'collection' => $tenantCollectionName,
                     'total_results' => $totalResults,
                     'returned_docs' => count($documents)
@@ -5603,6 +5618,12 @@ class GuzzleSolrService
 
         $collectionInfo = $statsData['cluster']['collections'][$collectionName] ?? [];
 
+        $shards = $collectionInfo['shards'] ?? [];
+        $configName = $collectionInfo['configName'] ?? 'unknown';
+        $replicationFactor = $collectionInfo['replicationFactor'] ?? 1;
+        $maxShardsPerNode = $collectionInfo['maxShardsPerNode'] ?? -1;
+        $autoAddReplicas = $collectionInfo['autoAddReplicas'] ?? 'false';
+
         return [
             'name'              => $collectionName,
             'shards'            => $shards,
@@ -5688,6 +5709,7 @@ class GuzzleSolrService
         try {
             $connectionTest = $this->testConnection();
             $stats = $this->getDashboardStats();
+            $availability = $this->isAvailable();
 
             return [
                 'connection'   => $connectionTest,
@@ -6782,6 +6804,7 @@ class GuzzleSolrService
 
         $startTime  = microtime(true);
         $operations = [];
+        $timing = []; // Initialize timing array for performance tracking
 
         // **MEMORY OPTIMIZATION**: Increase memory limit and optimize settings for large datasets.
         $originalMemoryLimit = ini_get('memory_limit');
@@ -6940,6 +6963,12 @@ class GuzzleSolrService
             $operations['commit'] = true;
 
             $executionTime = (microtime(true) - $startTime) * 1000;
+
+            // Initialize indexing statistics (may be populated during warmup).
+            $totalObjectsFound = $operations['objects_found'] ?? 0;
+            $objectsIndexed = $operations['objects_indexed'] ?? 0;
+            $batchesProcessed = $operations['batches_processed'] ?? 0;
+            $indexingErrors = $operations['indexing_errors'] ?? 0;
 
             // **MEMORY TRACKING**: Calculate final memory usage and statistics.
             $finalMemoryUsage = (int) memory_get_usage(true);
@@ -7575,7 +7604,7 @@ class GuzzleSolrService
                 return [
                     'success' => false,
                     'message' => 'Failed to clear SOLR index: '.$clearResult['message'],
-                    'error'   => $error,
+                    'error'   => $clearResult['error'] ?? 'Unknown error',
                 ];
             }
 
@@ -7791,6 +7820,9 @@ class GuzzleSolrService
      */
     public function createMissingFields(array $expectedFields=[], bool $_dryRun=false): array
     {
+        // Copy parameter to local variable for cleaner code
+        $dryRun = $_dryRun;
+        
         if ($this->isAvailable() === false) {
             return [
                 'success' => false,

@@ -236,9 +236,6 @@
       <code><![CDATA[$config->apiKey]]></code>
       <code><![CDATA[$llphantConfig->apiKey]]></code>
     </UndefinedPropertyFetch>
-    <UndefinedVariable>
-      <code><![CDATA[$urlValue]]></code>
-    </UndefinedVariable>
   </file>
   <file src="lib/Service/ConfigurationService.php">
     <NoValue>
@@ -280,7 +277,6 @@
     </NoValue>
     <ParadoxicalCondition>
       <code><![CDATA[is_object($fieldValue) === true]]></code>
-      <code><![CDATA[is_string($relations) || is_numeric($relations)]]></code>
     </ParadoxicalCondition>
     <TypeDoesNotContainNull>
       <code><![CDATA[$schemaIds === null]]></code>
@@ -292,26 +288,8 @@
       <code><![CDATA[strpos($sampleValue, '.') !== false]]></code>
     </TypeDoesNotContainType>
     <UndefinedVariable>
-      <code><![CDATA[$autoAddReplicas]]></code>
-      <code><![CDATA[$availability]]></code>
       <code><![CDATA[$collection]]></code>
       <code><![CDATA[$collection]]></code>
-      <code><![CDATA[$collectionType]]></code>
-      <code><![CDATA[$collectionType]]></code>
-      <code><![CDATA[$collectionType]]></code>
-      <code><![CDATA[$configName]]></code>
-      <code><![CDATA[$error]]></code>
-      <code><![CDATA[$errorDetails]]></code>
-      <code><![CDATA[$maxDocs]]></code>
-      <code><![CDATA[$maxShardsPerNode]]></code>
-      <code><![CDATA[$numDocs]]></code>
-      <code><![CDATA[$replicationFactor]]></code>
-      <code><![CDATA[$shards]]></code>
-      <code><![CDATA[$shards]]></code>
-      <code><![CDATA[$status]]></code>
-      <code><![CDATA[$tenantQuery]]></code>
-      <code><![CDATA[$tenantQuery]]></code>
-      <code><![CDATA[$totalDocs]]></code>
     </UndefinedVariable>
     <UnusedParam>
       <code><![CDATA[$limit]]></code>
@@ -500,75 +478,6 @@
     </InvalidNamedArgument>
   </file>
   <file src="lib/Setup/SolrSetup.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[[
-                                'collection'    => $tenantCollectionName,
-                                'configSet'     => $tenantConfigSetName,
-                                'error_details' => $this->lastErrorDetails,
-                            ]]]></code>
-      <code><![CDATA[[
-                                'configSet'              => $tenantConfigSetName,
-                                'template'               => '_default',
-                                'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
-                                'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
-                                'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
-                                'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
-                                'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
-                                'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
-                                'solr_error_details'     => $errorDetails['solr_error_details'] ?? null,
-                            ]]]></code>
-      <code><![CDATA[[
-                                'error'      => 'SOLR connectivity test failed',
-                                'host'       => $this->solrConfig['host'] ?? 'unknown',
-                                'port'       => $this->solrConfig['port'] ?? 'unknown',
-                                'url_tested' => $this->buildSolrUrl('/admin/info/system?wt=json'),
-                            ]]]></code>
-      <code><![CDATA[[
-                            'configSet'           => $tenantConfigSetName,
-                            'error'               => $propagationResult['error'] ?? 'Unknown error',
-                            'propagation_details' => [
-                                'successful_operations' => $propagationResult['successful_operations'] ?? 0,
-                                'total_operations'      => $propagationResult['total_operations'] ?? 0,
-                                'operations_attempted'  => $propagationResult['operations'] ?? [],
-                                'api_calls'             => [
-                                    'configset_list_refresh' => $propagationResult['summary']['configset_list_refresh'] ?? 'unknown',
-                                    'cluster_status_sync'    => $propagationResult['summary']['cluster_status_sync'] ?? 'unknown',
-                                ],
-                                'detailed_operations'   => $propagationResult['operations'] ?? [],
-                            ],
-                        ]]]></code>
-      <code><![CDATA[[
-                            'configSet'           => $tenantConfigSetName,
-                            'propagation_details' => [
-                                'successful_operations' => $propagationResult['successful_operations'] ?? 0,
-                                'total_operations'      => $propagationResult['total_operations'] ?? 0,
-                                'operations_performed'  => $propagationResult['operations'] ?? [],
-                                'cluster_sync_status'   => $propagationResult['cluster_sync'] ?? 'unknown',
-                                'cache_refresh_status'  => $propagationResult['cache_refresh'] ?? 'unknown',
-                                'api_calls'             => [
-                                    'configset_list_refresh' => $propagationResult['summary']['configset_list_refresh'] ?? 'unknown',
-                                    'cluster_status_sync'    => $propagationResult['summary']['cluster_status_sync'] ?? 'unknown',
-                                ],
-                                'detailed_operations'   => $propagationResult['operations'] ?? [],
-                            ],
-                        ]]]></code>
-      <code><![CDATA[[
-                            'exception_type'    => get_class($e),
-                            'exception_message' => $e->getMessage(),
-                        ]]]></code>
-      <code><![CDATA[[
-                            'exception_type' => get_class($e),
-                            'collection'     => $tenantCollectionName,
-                        ]]]></code>
-      <code><![CDATA[[
-                        'exception_type' => get_class($e),
-                        'configSet'      => $tenantConfigSetName,
-                    ]]]></code>
-      <code><![CDATA[[
-                        'exception_type' => get_class($e),
-                        'configSet'      => $tenantConfigSetName,
-                    ]]]></code>
-    </InvalidNamedArgument>
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[$solrService->getHttpClient()]]></code>
     </InvalidPropertyAssignmentValue>

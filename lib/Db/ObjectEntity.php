@@ -758,6 +758,9 @@ class ObjectEntity extends Entity implements JsonSerializable
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
             $lock = $this->getLocked();
+            if ($lock === null) {
+                throw new Exception('Lock data is missing');
+            }
 
             // If locked by different user.
             if ($lock['user'] !== $userId) {
@@ -819,6 +822,9 @@ class ObjectEntity extends Entity implements JsonSerializable
         $userId = $currentUser->getUID();
 
         // Check if locked by different user.
+        if ($this->locked === null) {
+            throw new Exception('Object is not locked');
+        }
         if ($this->locked['user'] !== $userId) {
             throw new Exception('Object is locked by another user');
         }

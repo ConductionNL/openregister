@@ -1555,7 +1555,7 @@ class ConfigurationService
                     }
 
                     // Handle register slug/ID in objectConfiguration (new structure).
-                    if (($property['objectConfiguration']['register'] ?? null) !== null) {
+                    if (is_array($property['objectConfiguration'] ?? null) && ($property['objectConfiguration']['register'] ?? null) !== null) {
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
@@ -1578,7 +1578,7 @@ class ConfigurationService
                     }//end if
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
-                    if (($property['objectConfiguration']['schema'] ?? null) !== null) {
+                    if (is_array($property['objectConfiguration'] ?? null) && ($property['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
                         if (empty($schemaSlug) === false) {
@@ -1611,13 +1611,13 @@ class ConfigurationService
                             $property['items'] = (array) $property['items'];
                         }
 
-                        if (($property['items']['objectConfiguration'] ?? null) !== null && is_object($property['items']['objectConfiguration']) === true) {
+                        if (is_array($property['items']) && ($property['items']['objectConfiguration'] ?? null) !== null && is_object($property['items']['objectConfiguration']) === true) {
                             $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
                         }
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure).
-                    if (($property['items']['objectConfiguration']['register'] ?? null) !== null) {
+                    if (is_array($property['items'] ?? []) && is_array($property['items']['objectConfiguration'] ?? []) && isset($property['items']['objectConfiguration']['register'])) {
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
@@ -1640,7 +1640,7 @@ class ConfigurationService
                     }//end if
 
                     // Handle schema slug/ID in array items objectConfiguration (new structure).
-                    if (($property['items']['objectConfiguration']['schema'] ?? null) !== null) {
+                    if (is_array($property['items'] ?? []) && is_array($property['items']['objectConfiguration'] ?? []) && isset($property['items']['objectConfiguration']['schema'])) {
                         $schemaSlug = $property['items']['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
                         if (empty($schemaSlug) === false) {
@@ -1676,7 +1676,7 @@ class ConfigurationService
                         }
                     }
 
-                    if (($property['items']['register'] ?? null) !== null) {
+                    if (is_array($property['items'] ?? []) && isset($property['items']['register'])) {
                         if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
                         } elseif (($this->registersMap[$property['items']['register']] ?? null) !== null) {

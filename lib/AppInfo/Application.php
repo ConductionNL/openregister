@@ -673,7 +673,7 @@ class Application extends App implements IBootstrap
             } else {
                 $logger->debug('Webhook Retry Job already registered');
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $logger->error(
                     'OpenRegister boot: Failed to register event listeners and background jobs',
                     [

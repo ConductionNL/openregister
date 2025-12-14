@@ -155,21 +155,21 @@ class ToolRegistry
     {
         // Validate ID format (should be app_name.tool_name).
         if (preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id) === 0) {
-            throw new InvalidArgumentException(
+            throw new \InvalidArgumentException(
                 "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
             );
         }
 
         // Check if already registered.
         if (($this->tools[$id] ?? null) !== null) {
-            throw new InvalidArgumentException("Tool already registered: {$id}");
+            throw new \InvalidArgumentException("Tool already registered: {$id}");
         }
 
         // Validate required metadata.
         $required = ['name', 'description', 'icon', 'app'];
         foreach ($required as $field) {
             if (isset($metadata[$field]) === false) {
-                throw new InvalidArgumentException("Missing required metadata field: {$field}");
+                throw new \InvalidArgumentException("Missing required metadata field: {$field}");
             }
         }
 

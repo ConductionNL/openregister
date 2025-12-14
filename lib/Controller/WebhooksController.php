@@ -1052,7 +1052,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<int, array{error?: string, success?: bool, message?: null|string, error_details?: array{status_code: int|null, response_body: null|string}}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: bool, message?: null|string, error_details?: array{status_code: int|null, response_body: null|string}}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
