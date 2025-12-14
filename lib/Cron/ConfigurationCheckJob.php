@@ -126,6 +126,8 @@ class ConfigurationCheckJob extends TimedJob
      * @param mixed $_argument Job arguments (not used)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($_argument): void
     {

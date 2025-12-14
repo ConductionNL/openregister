@@ -765,6 +765,8 @@ class ConfigurationService
      * @return JSONResponse|array
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {

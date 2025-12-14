@@ -813,8 +813,8 @@ class RegistersController extends Controller
                 case 'excel':
                     // Import from Excel and get summary (now returns sheet-based format).
                     // Get additional performance parameters with enhanced boolean parsing.
-                    $rbac      = $this->parseBooleanParam(paramName: 'rbac', default: true);
-                    $multi     = $this->parseBooleanParam(paramName: 'multi', default: true);
+                    $rbac  = $this->parseBooleanParam(paramName: 'rbac', default: true);
+                    $multi = $this->parseBooleanParam(paramName: 'multi', default: true);
                     // Use optimized default.
                     $summary = $this->importService->importFromExcel(
                         filePath: $uploadedFile['tmp_name'],
@@ -840,8 +840,8 @@ class RegistersController extends Controller
                     $schema = $this->schemaMapper->find($schemaId);
 
                     // Get additional performance parameters with enhanced boolean parsing.
-                    $rbac      = $this->parseBooleanParam(paramName: 'rbac', default: true);
-                    $multi     = $this->parseBooleanParam(paramName: 'multi', default: true);
+                    $rbac  = $this->parseBooleanParam(paramName: 'rbac', default: true);
+                    $multi = $this->parseBooleanParam(paramName: 'multi', default: true);
                     // Use optimized default.
                     $summary = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],

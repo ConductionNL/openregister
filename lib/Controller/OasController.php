@@ -90,7 +90,9 @@ class OasController extends Controller
     /**
      * Generate OAS for a specific register
      *
-     * @param string $id The register slug or identifier
+     * @param string $id The register slug or identifier.
+     *
+     * @return JSONResponse OAS specification JSON response.
      *
      * @NoAdminRequired
      *

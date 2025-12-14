@@ -123,7 +123,7 @@ class SaveObject
      * @param RegisterMapper      $registerMapper          Register mapper for register operations.
      * @param IURLGenerator       $urlGenerator            URL generator service.
      * @param OrganisationService $organisationService     Service for organisation operations.
-     * @param CacheHandler  $cacheHandler      Object cache service for entity and query caching.
+     * @param CacheHandler        $cacheHandler            Object cache service for entity and query caching.
      * @param SchemaCacheService  $schemaCacheService      Schema cache service for schema entity caching.
      * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param SettingsService     $settingsService         Settings service for accessing trail settings.

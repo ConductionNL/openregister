@@ -249,4 +249,45 @@ class ObjectHandler
     }//end commit()
 
 
+    /**
+     * Reindex all objects in the system.
+     *
+     * This delegates to the underlying search backend's reindexAll method.
+     *
+     * @param int         $maxObjects     Maximum objects to reindex (0 = all).
+     * @param int         $batchSize      Batch size for reindexing.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Reindexing results with statistics.
+     */
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
+    {
+        $this->logger->info(
+            '[ObjectHandler] Starting full reindex',
+            [
+                'maxObjects' => $maxObjects,
+                'batchSize'  => $batchSize,
+                'collection' => $collectionName,
+            ]
+        );
+
+        try {
+            // Delegate to search backend.
+            return $this->searchBackend->reindexAll($maxObjects, $batchSize, $collectionName);
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[ObjectHandler] Reindex failed',
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end reindexAll()
+
+
 }//end class

@@ -212,6 +212,8 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
      * @psalm-return array{success: true, statusCode: 200, response: array{message: 'View endpoint executed (placeholder)'}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function executeViewEndpoint(Endpoint $_endpoint, array $_request): array
     {
@@ -490,6 +492,8 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
      * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Webhook endpoint executed (placeholder)'}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function executeWebhookEndpoint(Endpoint $_endpoint, array $_request): array
     {
@@ -515,6 +519,8 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
      * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Register endpoint executed (placeholder)'}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function executeRegisterEndpoint(Endpoint $_endpoint, array $_request): array
     {
@@ -540,6 +546,8 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      *
      * @psalm-return array{success: true, statusCode: 200, response: array{message: 'Schema endpoint executed (placeholder)'}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function executeSchemaEndpoint(Endpoint $_endpoint, array $_request): array
     {

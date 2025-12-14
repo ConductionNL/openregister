@@ -179,6 +179,8 @@ class RegisterMapper extends QBMapper
      * @return Register The found register, possibly with stats
      *
      * @throws \Exception If RBAC permission check fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Register
     {
@@ -405,6 +407,8 @@ class RegisterMapper extends QBMapper
      * @return Register[] Array of found registers, multi: possibly with stats
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Register>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,

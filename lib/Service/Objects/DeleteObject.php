@@ -83,7 +83,7 @@ class DeleteObject
      *
      * @param ObjectEntityMapper $objectEntityMapper      Object entity data mapper.
      * @param FileService        $fileService             File service for managing files.
-     * @param CacheHandler $cacheHandler      Object cache service for entity and query caching.
+     * @param CacheHandler       $cacheHandler            Object cache service for entity and query caching.
      * @param SchemaCacheService $schemaCacheService      Schema cache service for schema entity caching.
      * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs.

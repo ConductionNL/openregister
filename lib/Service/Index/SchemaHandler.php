@@ -632,4 +632,43 @@ class SchemaHandler
     }//end createMissingFields()
 
 
+    /**
+     * Fix mismatched fields in the schema.
+     *
+     * Corrects field types that don't match expected types.
+     *
+     * @param array $mismatchedFields Array of fields to fix.
+     * @param bool  $dryRun           Whether to only simulate (not apply).
+     *
+     * @return array Results with fixed/failed fields.
+     */
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
+    {
+        $this->logger->info(
+            '[SchemaHandler] Fixing mismatched fields',
+            [
+                'count'  => count($mismatchedFields),
+                'dryRun' => $dryRun,
+            ]
+        );
+
+        try {
+            // Delegate to search backend.
+            return $this->searchBackend->fixMismatchedFields($mismatchedFields, $dryRun);
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[SchemaHandler] Failed to fix mismatched fields',
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end fixMismatchedFields()
+
+
 }//end class

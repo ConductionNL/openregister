@@ -103,7 +103,7 @@ class RenderObject
      * @param SchemaMapper           $schemaMapper       Schema mapper for database operations.
      * @param ISystemTagManager      $systemTagManager   System tag manager for file tags.
      * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper for file tags.
-     * @param CacheHandler     $cacheHandler Cache service for performance optimization.
+     * @param CacheHandler           $cacheHandler       Cache service for performance optimization.
      * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(

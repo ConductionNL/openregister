@@ -76,6 +76,8 @@ class ExportService
      * @param IUserManager       $userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager       The group manager
      * @param ObjectService      $objectService      The object service
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function __construct(
         ObjectEntityMapper $_objectEntityMapper,

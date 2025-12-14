@@ -372,6 +372,8 @@ class ObjectEntityMapper extends QBMapper
      * @param string        $action           The action being performed (default: 'read')
      *
      * @return null True if user should have access via exceptions, false if denied, null if no exceptions apply
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function applyAuthorizationExceptions(
         IQueryBuilder $_qb,
@@ -699,6 +701,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs.
      *
      * @return ObjectEntity The ObjectEntity.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function find(string | int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false, bool $_rbac=true, bool $_multi=true): ObjectEntity
     {
@@ -799,13 +803,14 @@ class ObjectEntityMapper extends QBMapper
      * @return ObjectEntity[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
         ?array $searchConditions=[],
-        ?array $searchParams=[],
         ?array $sort=[],
         ?string $search=null,
         ?array $ids=null,
@@ -1657,6 +1662,8 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return int The number of objects matching the criteria
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function countSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multi=true, ?array $ids=null, ?string $uses=null): int
     {
@@ -1789,6 +1796,8 @@ class ObjectEntityMapper extends QBMapper
      * @param array|null  $ids                    Optional array of IDs/UUIDs to filter by
      *
      * @return int Total size of matching objects in bytes
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function sizeSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null): int
     {
@@ -2045,6 +2054,8 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-param   string $type
      *
      * @return Register|Schema|array<int|string>|int|string|null The processed value
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processRegisterSchemaValue(mixed $value, string $_type): mixed
     {
@@ -2125,6 +2136,8 @@ class ObjectEntityMapper extends QBMapper
      * @param bool          $_multitenancy  Whether to apply multi-tenancy filtering
      *
      * @return int The number of objects
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function countAll(
         ?array $filters=[],
@@ -3400,6 +3413,8 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-param array<int, array<string, mixed>> $insertObjects
      *
      * @psalm-return int<5, 100>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function calculateOptimalBatchSize(array $insertObjects, array $_columns): int
     {
@@ -4956,6 +4971,8 @@ class ObjectEntityMapper extends QBMapper
      * @param array         $filters Applied filters
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {

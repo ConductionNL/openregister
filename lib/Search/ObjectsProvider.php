@@ -131,6 +131,8 @@ class ObjectsProvider implements IFilteringProvider
      * @return int Order priority (0-100, lower = higher priority) or null for default
      *
      * @psalm-return 10
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function getOrder(string $_route, array $_routeParameters): ?int
     {
@@ -209,6 +211,8 @@ class ObjectsProvider implements IFilteringProvider
      * @return SearchResult The search results formatted for Nextcloud's search interface
      *
      * @throws \Exception If search operation fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function search(IUser $_user, ISearchQuery $query): SearchResult
     {

@@ -798,6 +798,8 @@ class SettingsController extends Controller
      * @param  int   $_parallelBatches Number of parallel batches (unused in current implementation)
      * @param  mixed $logger             Optional logger instance
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processBatchParallel(array $batch, $objectService, array &$results, bool $collectErrors, int $_parallelBatches=1, $logger=null): void
     {

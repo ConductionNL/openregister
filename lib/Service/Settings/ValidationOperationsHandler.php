@@ -44,13 +44,13 @@ use Exception;
 class ValidationOperationsHandler
 {
 
-
     /**
      * Container for lazy loading ObjectService to break circular dependency.
      *
      * @var IAppContainer
      */
     private IAppContainer $container;
+
 
     public function __construct(
         private readonly ValidateObject $validateHandler,
@@ -59,7 +59,9 @@ class ValidationOperationsHandler
         IAppContainer $container
     ) {
         $this->container = $container;
+
     }//end __construct()
+
 
     /**
      * Get ObjectService via lazy loading to break circular dependency.
@@ -69,7 +71,8 @@ class ValidationOperationsHandler
     private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
     {
         return $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-    }
+
+    }//end getObjectService()
 
 
     /**

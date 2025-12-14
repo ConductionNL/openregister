@@ -274,6 +274,8 @@ class ObjectsController extends Controller
      *               - ids: (array|null) Specific IDs to filter
      *
      * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<never, never>|mixed, search: mixed|null, _extend: mixed|null, fields: mixed|null, unset: mixed|null, ids: array|null}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function getConfig(?string $_register=null, ?string $_schema=null, ?array $ids=null): array
     {
@@ -1589,7 +1591,7 @@ class ObjectsController extends Controller
                     $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
                     $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
                     $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-                    $summary = $this->importService->importFromCsv(
+                    $summary    = $this->importService->importFromCsv(
                         filePath: $uploadedFile['tmp_name'],
                         register: $registerEntity,
                         schema: $schema,

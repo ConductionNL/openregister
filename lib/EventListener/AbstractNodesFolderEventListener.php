@@ -90,6 +90,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      * @param NodeCopiedEvent $event The node copied event
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
@@ -103,6 +105,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      * @param NodeRenamedEvent $event The node renamed event
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {
