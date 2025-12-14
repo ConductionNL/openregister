@@ -81,8 +81,8 @@ class GetObject
      * @param Schema   $schema   The schema of the object.
      * @param array    $_extend  Properties to extend with.
      * @param bool     $files    Include file information.
-     * @param bool     $_rbac     Whether to apply RBAC checks (default: true).
-     * @param bool     $_multitenancy    Whether to apply multitenancy filtering (default: true).
+     * @param bool     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -94,10 +94,10 @@ class GetObject
         ?Schema $schema=null,
         ?array $_extend=[],
         bool $files=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, __rbac: $_rbac, __multitenancy: $_multitenancy);
+        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $rbac, _multi: $multi);
 
         if ($files === true) {
             $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
@@ -125,8 +125,8 @@ class GetObject
      * @param Schema   $schema   The schema of the object.
      * @param array    $_extend  Properties to extend with.
      * @param bool     $files    Include file information.
-     * @param bool     $_rbac     Whether to apply RBAC checks (default: true).
-     * @param bool     $_multitenancy    Whether to apply multitenancy filtering (default: true).
+     * @param bool     $rbac     Whether to apply RBAC checks (default: true).
+     * @param bool     $multi    Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -138,10 +138,10 @@ class GetObject
         ?Schema $schema=null,
         ?array $_extend=[],
         bool $files=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $rbac=true,
+        bool $multi=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, __rbac: $_rbac, __multitenancy: $_multitenancy);
+        $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $rbac, _multi: $multi);
 
         if ($files === true) {
             $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
@@ -168,8 +168,8 @@ class GetObject
      * @param Schema|null   $schema    Optional schema to filter objects.
      * @param array|null    $ids       Array of IDs or UUIDs to filter by.
      * @param bool|null     $published Whether to filter by published status.
-     * @param bool          $_rbac      Whether to apply RBAC checks (default: true).
-     * @param bool          $_multitenancy     Whether to apply multitenancy filtering (default: true).
+     * @param bool          $rbac      Whether to apply RBAC checks (default: true).
+     * @param bool          $multi     Whether to apply multitenancy filtering (default: true).
      *
      * @return \\OCA\OpenRegister\Db\ObjectEntity[]
      *
@@ -188,8 +188,8 @@ class GetObject
         ?Schema $schema=null,
         ?array $ids=null,
         ?bool $published=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $rbac=true,
+        bool $multi=true
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectEntityMapper->findAll(
@@ -203,7 +203,7 @@ class GetObject
             register: $register,
             schema: $schema,
             published: $published,
-            _rbac: $_rbac,
+            rbac: $rbac,
             _multi: $multi
         );
 
@@ -260,8 +260,8 @@ class GetObject
      * @param array|null   $filters Additional filters to apply
      * @param array|null   $sort    Sort criteria ['field' => 'ASC|DESC']
      * @param string|null  $search  Optional search term
-     * @param bool         $_rbac    Whether to apply RBAC checks (default: true).
-     * @param bool         $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool         $rbac    Whether to apply RBAC checks (default: true).
+     * @param bool         $multi   Whether to apply multitenancy filtering (default: true).
      *
      * @return \OCA\OpenRegister\Db\AuditTrail[] Array of log entries
      *

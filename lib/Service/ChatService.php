@@ -429,9 +429,9 @@ class ChatService
                 $this->logger->info(
                     message: '[ChatService] Using filtered views',
                     context: [
-                        'agentViews'    => count($agentViews),
-                        'selectedViews' => count($selectedViews),
-                        'filteredViews' => count($viewFilters),
+                        'agentViews'    => count($agentViews ?? []),
+                        'selectedViews' => count($selectedViews ?? []),
+                        'filteredViews' => count($viewFilters ?? []),
                     ]
                         );
             } else {

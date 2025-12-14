@@ -2304,7 +2304,7 @@ class GuzzleSolrService
      *
      * @psalm-return array{_execution_time_ms: float, results?: mixed, total?: mixed,...}
      */
-    public function searchObjectsPaginated(array $query=[], bool $rbac=true, bool $multi=true, bool $published=false, bool $deleted=false): array
+    public function searchObjectsPaginated(array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $published=false, bool $deleted=false): array
     {
 
         $startTime = microtime(true);
@@ -2363,7 +2363,7 @@ class GuzzleSolrService
             ]);
 
             // Apply additional filters (RBAC, multi-tenancy, published, deleted).
-            $this->applyAdditionalFilters($solrQuery, $rbac, $multi, $published, $deleted);
+            $this->applyAdditionalFilters($solrQuery, $_rbac, $_multitenancy, $published, $deleted);
 
             // Execute the search.
             $extend = $query['_extend'] ?? [];
@@ -2412,15 +2412,15 @@ class GuzzleSolrService
     /**
      * Apply additional filters based on RBAC, multi-tenancy, published, and deleted parameters
      *
-     * @param array $solrQuery Reference to the Solr query array to modify
-     * @param bool  $rbac      Apply role-based access control
-     * @param bool  $multi     Apply multi-tenancy filtering
-     * @param bool  $published Filter for published objects only
-     * @param bool  $deleted   Include deleted objects
+     * @param array $solrQuery      Reference to the Solr query array to modify
+     * @param bool  $_rbac          Apply role-based access control
+     * @param bool  $_multitenancy  Apply multi-tenancy filtering
+     * @param bool  $published      Filter for published objects only
+     * @param bool  $deleted        Include deleted objects
      *
      * @return void
      */
-    private function applyAdditionalFilters(array &$solrQuery, bool $rbac, bool $_multi, bool $_published, bool $_deleted): void
+    private function applyAdditionalFilters(array &$solrQuery, bool $_rbac, bool $_multitenancy, bool $_published, bool $_deleted): void
     {
 
         $filters = $solrQuery['fq'] ?? [];
@@ -2430,7 +2430,7 @@ class GuzzleSolrService
         // Need to investigate user context and organisation service differences between NC 30/31.
 
         // RBAC filtering (removed automatic published object exception).
-        if ($rbac === true) {
+        if ($_rbac === true) {
             // Note: RBAC role filtering would be implemented here if we had role-based fields.
             // For now, we assume all authenticated users have basic access.
             $this->logger->debug('[SOLR] RBAC filtering applied');
@@ -4096,7 +4096,7 @@ class GuzzleSolrService
      * @return array Search results
      * @throws \Exception When search fails
      */
-    private function executeSearch(array $solrQuery, string $collectionName, array $extend=[]): array
+    private function executeSearch(array $solrQuery, string $collectionName, array $_extend=[]): array
     {
         $url = $this->buildSolrBaseUrl() . '/' . $collectionName . '/select';
 
@@ -4186,7 +4186,7 @@ class GuzzleSolrService
                 throw new Exception('Invalid JSON response from SOLR: '.json_last_error_msg());
             }
 
-            return $this->parseSolrResponse(responseData: $responseData, extend: $extend);
+            return $this->parseSolrResponse(responseData: $responseData, _extend: $_extend);
         } catch (Exception $e) {
             $this->logger->error(
                     'SOLR search execution failed',
@@ -4212,7 +4212,7 @@ class GuzzleSolrService
      *
      * @psalm-return array{objects: array<array<string, mixed>>, total: int<0, max>|mixed, facets: array<list{0?: array{value: mixed, count: mixed},...}>}
      */
-    private function parseSolrResponse(array $responseData, array $extend=[]): array
+    private function parseSolrResponse(array $responseData, array $_extend=[]): array
     {
         $results = [
             'objects' => [],
@@ -4222,7 +4222,7 @@ class GuzzleSolrService
 
         // Parse documents and convert back to OpenRegister objects..
         if (isset($responseData['response']['docs']) === true) {
-            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs'], $extend);
+            $results['objects'] = $this->convertSolrDocumentsToOpenRegisterObjects($responseData['response']['docs'], $_extend);
             $results['total'] = $responseData['response']['numFound'] ?? count($results['objects']);
 
             // **DEBUG**: Log total vs results count for troubleshooting.
@@ -4462,10 +4462,10 @@ class GuzzleSolrService
      * @psalm-return   array<array<string, mixed>>
      *
      * @param  array $solrDocuments Array of SOLR documents
-     * @param  array $extend        Array of properties to extend (e.g., ['@self.register', '@self.schema'])
+     * @param  array $_extend       Array of properties to extend (e.g., ['@self.register', '@self.schema'])
      * @return array Array of OpenRegister objects with extended @self properties
      */
-    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments=[], $extend=[]): array
+    private function convertSolrDocumentsToOpenRegisterObjects(array $solrDocuments=[], $_extend=[]): array
     {
         $openRegisterObjects = [];
 
@@ -4507,12 +4507,12 @@ class GuzzleSolrService
                 $objectData = json_decode($object, true);
 
                 // Add register and schema context to @self if requested and we have the necessary data.
-                if (is_array($extend) === true && ($registerId !== null || $schemaId !== null) &&
-                    (in_array('@self.register', $extend) === true || in_array('@self.schema', $extend) === true)) {
+                if (is_array($_extend) === true && ($registerId !== null || $schemaId !== null) &&
+                    (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true)) {
 
                     $self = $objectData['@self'] ?? [];
 
-                    if (in_array('@self.register', $extend) === true && $registerId !== null && $this->registerMapper !== null) {
+                    if (in_array('@self.register', $_extend) === true && $registerId !== null && $this->registerMapper !== null) {
                         // Use the RegisterMapper directly to get register.
                         try {
                             $register = $this->registerMapper->find($registerId);
@@ -4530,7 +4530,7 @@ class GuzzleSolrService
                         }
                     }
 
-                    if (in_array('@self.schema', $extend) === true && $schemaId !== null && $this->schemaMapper !== null) {
+                    if (in_array('@self.schema', $_extend) === true && $schemaId !== null && $this->schemaMapper !== null) {
                         // Use the SchemaMapper directly to get schema.
                         try {
                             $schema = $this->schemaMapper->find($schemaId);

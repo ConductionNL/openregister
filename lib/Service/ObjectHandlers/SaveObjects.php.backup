@@ -212,8 +212,8 @@ class SaveObjects
      * @param array                    $objects    Array of objects in serialized format
      * @param Register|string|int|null $register   Optional register context
      * @param Schema|string|int|null   $schema     Optional schema context
-     * @param bool                     $_rbac       Whether to apply RBAC filtering
-     * @param bool                     $_multitenancy      Whether to apply multi-organization filtering
+     * @param bool                     $rbac       Whether to apply RBAC filtering
+     * @param bool                     $multi      Whether to apply multi-organization filtering
      * @param bool                     $validation Whether to validate objects against schema definitions
      * @param bool                     $events     Whether to dispatch object lifecycle events
      *
@@ -234,8 +234,8 @@ class SaveObjects
         array $objects,
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
+        bool $rbac=true,
+        bool $multi=true,
         bool $validation=false,
         bool $events=false
     ): array {
@@ -349,7 +349,7 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
-            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, __rbac: $_rbac, __multitenancy: $_multitenancy, _validation: $validation, _events: $events);
+            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $rbac, _multi: $multi, _validation: $validation, _events: $events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -1148,8 +1148,8 @@ class SaveObjects
      *
      * @param array $objects     Array of pre-processed objects ready for database operations
      * @param array $schemaCache Pre-built schema cache for performance optimization
-     * @param bool  $_rbac        Apply RBAC filtering
-     * @param bool  $_multitenancy       Apply multi-tenancy filtering
+     * @param bool  $rbac        Apply RBAC filtering
+     * @param bool  $multi       Apply multi-tenancy filtering
      * @param bool  $validation  Apply schema validation
      * @param bool  $events      Dispatch events
      *
