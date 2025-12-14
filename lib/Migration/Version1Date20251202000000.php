@@ -62,11 +62,11 @@ class Version1Date20251202000000 extends SimpleMigrationStep
         $output->info('🔧 Adding publication fields to schemas and registers tables...');
 
         // Add columns to schemas table.
-        if ($schema->hasTable('openregister_schemas')) {
+        if ($schema->hasTable('openregister_schemas') === true) {
             $schemasTable = $schema->getTable('openregister_schemas');
 
             // Add published field (datetime) - publication timestamp.
-            if (!$schemasTable->hasColumn('published')) {
+            if ($schemasTable->hasColumn('published') === false) {
                 $schemasTable->addColumn(
                         'published',
                         Types::DATETIME,
@@ -83,7 +83,7 @@ class Version1Date20251202000000 extends SimpleMigrationStep
             }
 
             // Add depublished field (datetime) - depublication timestamp.
-            if (!$schemasTable->hasColumn('depublished')) {
+            if ($schemasTable->hasColumn('depublished') === false) {
                 $schemasTable->addColumn(
                         'depublished',
                         Types::DATETIME,
@@ -103,11 +103,11 @@ class Version1Date20251202000000 extends SimpleMigrationStep
         }//end if
 
         // Add columns to registers table.
-        if ($schema->hasTable('openregister_registers')) {
+        if ($schema->hasTable('openregister_registers') === true) {
             $registersTable = $schema->getTable('openregister_registers');
 
             // Add published field (datetime) - publication timestamp.
-            if (!$registersTable->hasColumn('published')) {
+            if ($registersTable->hasColumn('published') === false) {
                 $registersTable->addColumn(
                         'published',
                         Types::DATETIME,
@@ -124,7 +124,7 @@ class Version1Date20251202000000 extends SimpleMigrationStep
             }
 
             // Add depublished field (datetime) - depublication timestamp.
-            if (!$registersTable->hasColumn('depublished')) {
+            if ($registersTable->hasColumn('depublished') === false) {
                 $registersTable->addColumn(
                         'depublished',
                         Types::DATETIME,

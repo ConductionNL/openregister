@@ -874,7 +874,7 @@ class ObjectService
 
         // Debug logging can be added here if needed.
         // Handle ObjectEntity input - extract UUID and convert to array.
-        if ($object instanceof ObjectEntity) {
+        if ($object instanceof ObjectEntity === true) {
             // If no UUID was passed, use the UUID from the existing object.
             if ($uuid === null) {
                 $uuid = $object->getUuid();
@@ -1330,7 +1330,7 @@ class ObjectService
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated).
         // Convert boolean-like parameters to actual booleans for consistency.
-        if (isset($specialParams['_published'])) {
+        if (isset($specialParams['_published']) === true) {
             $specialParams['_published'] = filter_var($specialParams['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
         }
         
@@ -1406,7 +1406,7 @@ class ObjectService
 
                 // Apply search terms.
                 if (empty($viewQuery['searchTerms']) === false) {
-                    if (is_array($viewQuery['searchTerms'])) {
+                    if (is_array($viewQuery['searchTerms']) === true) {
                         $searchTerms = implode(' ', $viewQuery['searchTerms']);
                     } else {
                         $searchTerms = $viewQuery['searchTerms'];
@@ -1669,7 +1669,7 @@ class ObjectService
                         // Skip invalid register data.
                         continue;
                     }
-                } else if ($register instanceof \OCA\OpenRegister\Db\Register) {
+                } else if ($register instanceof \OCA\OpenRegister\Db\Register === true) {
                     $validRegisters[] = $register;
                 }
             }
@@ -1693,7 +1693,7 @@ class ObjectService
                         // Skip invalid schema data.
                         continue;
                     }
-                } else if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+                } else if ($schema instanceof \OCA\OpenRegister\Db\Schema === true) {
                     $validSchemas[] = $schema;
                 }
             }
@@ -2660,7 +2660,7 @@ class ObjectService
             if (isset($query['@self']['register']) === true) {
                 $registerValue = $query['@self']['register'];
                 // Handle both single values and arrays.
-                $registerIds = is_array($registerValue) ? $registerValue : [$registerValue];
+                $registerIds = is_array($registerValue) === true ? $registerValue : [$registerValue];
                 $this->getCachedEntities('register', $registerIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
@@ -2681,7 +2681,7 @@ class ObjectService
             if (isset($query['@self']['schema']) === true) {
                 $schemaValue = $query['@self']['schema'];
                 // Handle both single values and arrays.
-                $schemaIds = is_array($schemaValue) ? $schemaValue : [$schemaValue];
+                $schemaIds = is_array($schemaValue) === true ? $schemaValue : [$schemaValue];
                 $this->getCachedEntities('schema', $schemaIds, function($ids) {
                     $results = [];
                     foreach ($ids as $id) {
@@ -3440,7 +3440,7 @@ class ObjectService
     {
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
-        if ($currentUser) {
+        if ($currentUser !== null) {
             $userId = $currentUser->getUID();
         } else {
             $userId = null;
@@ -3452,7 +3452,7 @@ class ObjectService
             $self = $object['@self'] ?? [];
 
             // Check RBAC permissions if enabled.
-            if ($rbac && $userId !== null) {
+            if ($rbac === true && $userId !== null) {
                 $objectOwner  = $self['owner'] ?? null;
                 $objectSchema = $self['schema'] ?? null;
 
@@ -3473,7 +3473,7 @@ class ObjectService
             }
 
             // Check multi-organization filtering if enabled.
-            if ($multi && $activeOrganisation !== null) {
+            if ($multi === true && $activeOrganisation !== null) {
                 $objectOrganisation = $self['organisation'] ?? null;
                 if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
                     continue;
@@ -3711,7 +3711,7 @@ class ObjectService
                 $targetRelations = $targetObject->getRelations();
 
                 $transferredRelations = [];
-                foreach ($sourceRelations as $relation) {
+                foreach ($sourceRelations ?? [] as $relation) {
                     if (in_array($relation, $targetRelations) === false) {
                         $targetRelations[]      = $relation;
                         $transferredRelations[] = $relation;
@@ -4142,7 +4142,7 @@ class ObjectService
             $objectData = $result->getObject();
 
             // Look for relationship fields in the object data.
-            foreach ($objectData as $value) {
+            foreach ($objectData ?? [] as $value) {
                 if (is_array($value) === true) {
                     // Handle array of IDs.
                     foreach ($value as $relatedId) {
@@ -4909,7 +4909,7 @@ class ObjectService
      * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>,
      *                      invalid_objects: array<int, array>, schema_id: int}
      *
-     * @psalm-return array{valid_count: int<0, max>, invalid_count: int<0, max>, valid_objects: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects: list{0?: array{id: int, uuid: null|string, name: null|string, data: array, errors: list{array{path: 'general'|'unknown'|mixed, message: mixed|string, keyword: 'exception'|'validation'|mixed},...}},...}, schema_id: int}
+     * @psalm-return array{valid_count: int<0, max>, invalid_count: int<0, max>, valid_objects: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects: list<array{data: array, errors: list<array{keyword: 'exception'|'validation'|mixed, message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>, id: int, name: null|string, uuid: null|string}>, schema_id: int}
      */
     public function validateObjectsBySchema(int $schemaId): array
     {
@@ -4951,7 +4951,7 @@ class ObjectService
 
                 // Check if it's a validation exception with detailed errors.
                 if ($e instanceof \OCA\OpenRegister\Exception\ValidationException) {
-                    foreach ($e->getErrors() as $error) {
+                    foreach ($e->getErrors() ?? [] as $error) {
                         $errors[] = [
                             'path' => $error['path'] ?? 'unknown',
                             'message' => $error['message'] ?? $error,

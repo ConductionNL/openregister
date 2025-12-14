@@ -180,7 +180,7 @@ class AuditTrailMapper extends QBMapper
         }
 
         // Add sorting.
-        foreach ($sort as $field => $direction) {
+        foreach ($sort ?? [] as $field => $direction) {
             // Ensure the field is a valid column name.
             if (in_array(
                     $field,

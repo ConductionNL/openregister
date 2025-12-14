@@ -308,7 +308,7 @@ class FilesController extends Controller
             $contentExists = array_key_exists('content', $data) === false;
             $contentEmpty  = empty($data['content']) === true;
 
-            if ($contentExists || $contentEmpty) {
+            if ($contentExists === true || $contentEmpty === true) {
                 return new JSONResponse(
                     data: ['error' => 'File content is required'],
                     statusCode: 400

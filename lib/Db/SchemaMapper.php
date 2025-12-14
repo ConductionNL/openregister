@@ -369,7 +369,7 @@ class SchemaMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        foreach ($filters as $filter => $value) {
+        foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
             } elseif ($value === 'IS NULL') {
@@ -381,7 +381,7 @@ class SchemaMapper extends QBMapper
 
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams as $param => $value) {
+            foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }

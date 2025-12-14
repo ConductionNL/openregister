@@ -270,7 +270,7 @@ trait MultiTenancyTrait
         $activeOrganisationUuids = $this->getActiveOrganisationUuids();
 
         // Build fully qualified column name.
-        if ($tableAlias) {
+        if ($tableAlias !== null && $tableAlias !== '') {
             $organisationColumn = $tableAlias.'.'.$columnName;
         } else {
             $organisationColumn = $columnName;
@@ -308,13 +308,13 @@ trait MultiTenancyTrait
             // The depublished check here only applies to the published bypass (entities from OTHER organizations).
             if ($publishedBypassEnabled === true && $enablePublished === true) {
                 $now = (new DateTime())->format('Y-m-d H:i:s');
-                if ($tableAlias) {
+                if ($tableAlias !== null && $tableAlias !== '') {
                     $publishedColumn = $tableAlias.'.published';
                 } else {
                     $publishedColumn = 'published';
                 }
 
-                if ($tableAlias) {
+                if ($tableAlias !== null && $tableAlias !== '') {
                     $depublishedColumn = $tableAlias.'.depublished';
                 } else {
                     $depublishedColumn = 'depublished';
@@ -374,13 +374,13 @@ trait MultiTenancyTrait
         $orgConditions = $qb->expr()->orX();
 
         // Prepare published/depublished column names for checks.
-        if ($tableAlias) {
+        if ($tableAlias !== null && $tableAlias !== '') {
             $publishedColumn = $tableAlias.'.published';
         } else {
             $publishedColumn = 'published';
         }
 
-        if ($tableAlias) {
+        if ($tableAlias !== null && $tableAlias !== '') {
             $depublishedColumn = $tableAlias.'.depublished';
         } else {
             $depublishedColumn = 'depublished';

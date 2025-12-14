@@ -64,7 +64,7 @@ class Version1Date20241022135300 extends SimpleMigrationStep
             $table->addColumn('register', Types::INTEGER, ['notnull' => false]);
         }
 
-        if ($table->hasColumn('regsiter')) {
+        if ($table->hasColumn('regsiter') === true) {
             $table->dropColumn('regsiter', 'register');
         }
 

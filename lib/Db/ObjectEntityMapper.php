@@ -608,7 +608,7 @@ class ObjectEntityMapper extends QBMapper
         //
         // EXCEPTION: If disablePublishedBypass=true (e.g., when _published=false is set), skip published bypass.
         // This allows dashboard users to filter to only their organization's objects.
-        if ($disablePublishedBypass === false && $this->shouldPublishedObjectsBypassMultiTenancy()) {
+        if ($disablePublishedBypass === false && $this->shouldPublishedObjectsBypassMultiTenancy() === true) {
             $now = (new DateTime())->format('Y-m-d H:i:s');
             $readConditions->add(
                 $qb->expr()->andX(
@@ -654,7 +654,7 @@ class ObjectEntityMapper extends QBMapper
         // Allow per-request override via _crossOrg query parameter.
         // _crossOrg=false: Disable bypass for this request (only your org's objects).
         // _crossOrg=true: Enable bypass for this request (include published from other orgs).
-        if (isset($_GET['_crossOrg'])) {
+        if (isset($_GET['_crossOrg']) === true) {
             $bypassEnabled = filter_var($_GET['_crossOrg'], FILTER_VALIDATE_BOOLEAN);
         }
         
@@ -923,7 +923,7 @@ class ObjectEntityMapper extends QBMapper
 
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams as $param => $value) {
+            foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
@@ -933,7 +933,7 @@ class ObjectEntityMapper extends QBMapper
         $qb = $this->databaseJsonService->searchJson(builder: $qb, search: $search ?? '');
 
         $sortInRoot = [];
-        foreach ($sort as $key => $descOrAsc) {
+        foreach ($sort ?? [] as $key => $descOrAsc) {
             if (str_starts_with($key, '@self.') === true) {
                 $sortInRoot = [str_replace('@self.', '', $key) => $descOrAsc];
                 break;
@@ -1264,7 +1264,7 @@ class ObjectEntityMapper extends QBMapper
         $search         = $this->processSearchParameter($query['_search'] ?? null);
         $includeDeleted = $query['_includeDeleted'] ?? false;
         // Convert _published to boolean if it exists (handles string "false" from HTTP requests).
-        if (isset($query['_published'])) {
+        if (isset($query['_published']) === true) {
             $published = filter_var($query['_published'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
         } else {
             $published = false;
@@ -1501,8 +1501,8 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
-        $basicRegister = isset($metadataFilters['register']) ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
         // Published filtering is controlled by the $published parameter (from _published query param).
         // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
         // The bypass adds published objects from other orgs; it doesn't skip the published filter.
@@ -1718,8 +1718,8 @@ class ObjectEntityMapper extends QBMapper
             ->from('openregister_objects', 'o');
 
         // Handle basic filters - skip register/schema if they're in metadata filters (to avoid double filtering)
-        $basicRegister = isset($metadataFilters['register']) ? null : $register;
-        $basicSchema = isset($metadataFilters['schema']) ? null : $schema;
+        $basicRegister = isset($metadataFilters['register']) === true ? null : $register;
+        $basicSchema = isset($metadataFilters['schema']) === true ? null : $schema;
         // Published filtering is controlled by the $published parameter (from _published query param).
         // This is independent of publishedObjectsBypassMultiTenancy, which only affects organization filtering.
         // The bypass adds published objects from other orgs; it doesn't skip the published filter.
@@ -1957,8 +1957,8 @@ class ObjectEntityMapper extends QBMapper
         // Users can set _published=false to see all accessible objects (including unpublished from own org).
         if ($published === true) {
             $now = (new DateTime())->format('Y-m-d H:i:s');
-            $publishedColumn = $tableAlias ? $tableAlias . '.published' : 'published';
-            $depublishedColumn = $tableAlias ? $tableAlias . '.depublished' : 'depublished';
+            $publishedColumn = $tableAlias !== null && $tableAlias !== '' ? $tableAlias . '.published' : 'published';
+            $depublishedColumn = $tableAlias !== null && $tableAlias !== '' ? $tableAlias . '.depublished' : 'depublished';
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->isNotNull($publishedColumn),

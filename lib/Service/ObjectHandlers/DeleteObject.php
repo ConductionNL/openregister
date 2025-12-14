@@ -116,7 +116,7 @@ class DeleteObject
      */
     public function delete(array | JsonSerializable $object): bool
     {
-        if ($object instanceof JsonSerializable) {
+        if ($object instanceof JsonSerializable === true) {
             $objectEntity = $object;
             $object->jsonSerialize();
         } else {
@@ -125,7 +125,7 @@ class DeleteObject
 
         // Delete associated files from storage.
         $files = $this->fileService->getFiles($objectEntity);
-        foreach ($files as $file) {
+        foreach ($files ?? [] as $file) {
             $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
         }
 
@@ -149,14 +149,14 @@ class DeleteObject
             $schemaId   = $objectEntity->getSchema();
 
             // Convert register ID to int if numeric.
-            if ($registerId !== null && is_numeric($registerId)) {
+            if ($registerId !== null && is_numeric($registerId) === true) {
                 $registerIdInt = (int) $registerId;
             } else {
                 $registerIdInt = null;
             }
 
             // Convert schema ID to int if numeric.
-            if ($schemaId !== null && is_numeric($schemaId)) {
+            if ($schemaId !== null && is_numeric($schemaId) === true) {
                 $schemaIdInt = (int) $schemaId;
             } else {
                 $schemaIdInt = null;
@@ -236,7 +236,7 @@ class DeleteObject
         string $originalObjectId
     ): void {
         $properties = $schema->getProperties();
-        foreach ($properties as $propertyName => $property) {
+        foreach ($properties ?? [] as $propertyName => $property) {
             if (isset($property['cascade']) === false || $property['cascade'] !== true) {
                 continue;
             }
@@ -247,7 +247,7 @@ class DeleteObject
             }
 
             if (is_array($value) === true) {
-                foreach ($value as $id) {
+                foreach ($value ?? [] as $id) {
                     $this->deleteObject(register: $register, schema: $schema, uuid: $id, originalObjectId: $originalObjectId);
                 }
             } else {

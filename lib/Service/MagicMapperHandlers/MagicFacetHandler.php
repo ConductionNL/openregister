@@ -180,7 +180,7 @@ class MagicFacetHandler
             $rows   = $result->fetchAll();
 
             $terms = [];
-            foreach ($rows as $row) {
+            foreach ($rows ?? [] as $row) {
                 $terms[] = [
                     'value' => $row[$columnName],
                     'count' => (int) $row['count'],
@@ -257,7 +257,7 @@ class MagicFacetHandler
             $rows   = $result->fetchAll();
 
             $buckets = [];
-            foreach ($rows as $row) {
+            foreach ($rows ?? [] as $row) {
                 $buckets[] = [
                     'key'   => $row['period'],
                     'count' => (int) $row['count'],
@@ -326,7 +326,7 @@ class MagicFacetHandler
 
         $buckets = [];
 
-        foreach ($ranges as $range) {
+        foreach ($ranges ?? [] as $range) {
             $from = $range['from'] ?? null;
             $to   = $range['to'] ?? null;
             $key  = $range['key'] ?? ($from.'-'.$to);
@@ -414,7 +414,7 @@ class MagicFacetHandler
 
         // Apply metadata filters (@self).
         if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
-            foreach ($baseQuery['@self'] as $field => $value) {
+            foreach ($baseQuery['@self'] ?? [] as $field => $value) {
                 $columnName = '_'.$field;
 
                 if ($value === 'IS NOT NULL') {
@@ -438,7 +438,7 @@ class MagicFacetHandler
                 ARRAY_FILTER_USE_KEY
                 );
 
-        foreach ($objectFilters as $field => $value) {
+        foreach ($objectFilters ?? [] as $field => $value) {
             $columnName = $this->sanitizeColumnName($field);
 
             if ($value === 'IS NOT NULL') {
@@ -561,7 +561,7 @@ class MagicFacetHandler
         $properties      = $schema->getProperties();
         $facetableFields = [];
 
-        foreach ($properties as $propertyName => $propertyConfig) {
+        foreach ($properties ?? [] as $propertyName => $propertyConfig) {
             if (($propertyConfig['facetable'] ?? false) === true) {
                 $facetableFields[$propertyName] = [
                     'type'        => $propertyConfig['type'] ?? 'string',

@@ -346,7 +346,7 @@ class ConfigurationService
         }//end if
 
         // Export each register and its schemas.
-        foreach ($registers as $register) {
+        foreach ($registers ?? [] as $register) {
             if ($register instanceof Register === false && is_int($register) === true) {
                 $register = $this->registerMapper->find($register);
             }
@@ -2367,7 +2367,7 @@ class ConfigurationService
         $lastChecked   = $configuration->getLastChecked();
 
         // Format last checked date.
-        if ($lastChecked) {
+        if ($lastChecked !== null) {
             $lastCheckedFormatted = $lastChecked->format('c');
         } else {
             $lastCheckedFormatted = null;

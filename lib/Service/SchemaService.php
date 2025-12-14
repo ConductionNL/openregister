@@ -759,7 +759,7 @@ class SchemaService
             }
 
             // Determine min length value.
-            if (isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX) {
+            if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
                 $minLengthValue = $analysis['min_length'];
             } else {
                 $minLengthValue = null;
@@ -884,7 +884,7 @@ class SchemaService
                 }
 
                 // Determine min length value.
-                if (isset($analysis['min_length']) && $analysis['min_length'] < PHP_INT_MAX) {
+                if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
                     $minLengthValue = $analysis['min_length'];
                 } else {
                     $minLengthValue = null;

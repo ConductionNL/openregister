@@ -251,7 +251,7 @@ class EndpointService
             // Find agent by UUID.
             $agent = $agentMapper->findByUuid($agentId);
 
-            if (!$agent) {
+            if ($agent === null) {
                 return [
                     'success'    => false,
                     'statusCode' => 404,
@@ -440,7 +440,7 @@ class EndpointService
                         $result = $tool->$functionName(...array_values([$arguments]));
 
                         // If result is JSON string (from __call), decode it.
-                        if (is_string($result)) {
+                        if (is_string($result) === true) {
                             $decoded = json_decode($result, true);
                             if ($decoded !== null) {
                                 $result = $decoded;

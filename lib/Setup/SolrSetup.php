@@ -229,7 +229,7 @@ class SolrSetup
     private function getTenantCollectionName(): string
     {
         // solrConfig may contain 'core' key even if not in type definition.
-        if (is_array($this->solrConfig) && array_key_exists('core', $this->solrConfig)) {
+        if (is_array($this->solrConfig) === true && array_key_exists('core', $this->solrConfig) === true) {
             $baseCollectionName = $this->solrConfig['core'];
         } else {
             $baseCollectionName = 'openregister';
@@ -251,7 +251,7 @@ class SolrSetup
         // Extract tenant ID from collection name or use a default.
         $collectionName = $this->solrService->getTenantSpecificCollectionName('openregister');
         // Extract tenant ID from collection name pattern (e.g., "openregister_nc_xxx" -> "nc_xxx").
-        if (preg_match('/_nc_([a-f0-9]+)$/', $collectionName, $matches)) {
+        if (preg_match('/_nc_([a-f0-9]+)$/', $collectionName, $matches) === 1) {
             return 'nc_'.$matches[1];
         }
 
@@ -270,7 +270,7 @@ class SolrSetup
     {
         // Use the configSet from configuration (defaults to '_default').
         // solrConfig may contain 'configSet' key even if not in type definition.
-        if (is_array($this->solrConfig) && array_key_exists('configSet', $this->solrConfig)) {
+        if (is_array($this->solrConfig) === true && array_key_exists('configSet', $this->solrConfig) === true) {
             $configSetName = $this->solrConfig['configSet'];
         } else {
             $configSetName = '_default';
@@ -1411,13 +1411,13 @@ class SolrSetup
             $urlAttempted  = 'unknown';
 
             // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types
-            if (method_exists($e, 'getRequest') && $e->getRequest() !== null) {
+            if (method_exists($e, 'getRequest') === true && $e->getRequest() !== null) {
                 $requestMethod = $e->getRequest()->getMethod();
                 $urlAttempted  = (string) $e->getRequest()->getUri();
             }
 
             // @psalm-suppress UndefinedInterfaceMethod - Methods exist on specific exception types
-            if (method_exists($e, 'hasResponse') && $e->hasResponse() === true && method_exists($e, 'getResponse')) {
+            if (method_exists($e, 'hasResponse') === true && $e->hasResponse() === true && method_exists($e, 'getResponse') === true) {
                 $response = $e->getResponse();
                 if ($response !== null) {
                     $responseCode = $response->getStatusCode();

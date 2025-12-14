@@ -1415,13 +1415,13 @@ class SettingsService
             $afterStats = $this->schemaCacheService->getCacheStatistics();
 
             // Stats arrays may contain 'entries' key even if not in type definition.
-            if (array_key_exists('entries', $beforeStats)) {
+            if (array_key_exists('entries', $beforeStats) === true) {
                 $beforeEntries = $beforeStats['entries'];
             } else {
                 $beforeEntries = 0;
             }
 
-            if (array_key_exists('entries', $afterStats)) {
+            if (array_key_exists('entries', $afterStats) === true) {
                 $afterEntries = $afterStats['entries'];
             } else {
                 $afterEntries = 0;
@@ -1753,7 +1753,7 @@ class SettingsService
         }
 
         // Determine core status.
-        if ($rawStats['available']) {
+        if ($rawStats['available'] === true) {
             $coreStatus = 'active';
         } else {
             $coreStatus = 'inactive';

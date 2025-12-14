@@ -696,7 +696,7 @@ class RegisterMapper extends QBMapper
         // Fetch each schema by its ID.
         // Use $multi=false to bypass organization filter since the register has already passed access checks.
         // This ensures schemas linked to accessible registers can always be found.
-        foreach ($schemaIds as $schemaId) {
+        foreach ($schemaIds ?? [] as $schemaId) {
             try {
                 $schemas[] = $this->schemaMapper->find((int) $schemaId, [], $published, $rbac, false);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

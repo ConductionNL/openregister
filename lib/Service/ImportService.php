@@ -771,7 +771,7 @@ class ImportService
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
         // Ensure schemaId is string for array key.
-        if (is_string($schemaId)) {
+        if (is_string($schemaId) === true) {
             $schemaIdKey = $schemaId;
         } else {
             $schemaIdKey = (string) $schemaId;
@@ -803,7 +803,7 @@ class ImportService
             }
 
             // Ensure $key is a string before accessing as array.
-            if (is_string($key)) {
+            if (is_string($key) === true) {
                 $keyString = $key;
             } else {
                 $keyString = (string) $key;

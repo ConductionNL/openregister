@@ -314,7 +314,7 @@ class SaveObjects
         }
 
         // CRITICAL FIX: Include objects that failed during preparation in result.
-        foreach ($preparationInvalidObjects as $invalidObj) {
+        foreach ($preparationInvalidObjects ?? [] as $invalidObj) {
             $result['invalid'][] = $invalidObj;
             $result['statistics']['invalid']++;
             $result['statistics']['errors']++;
@@ -345,7 +345,7 @@ class SaveObjects
         $chunks     = array_chunk($processedObjects, $chunkSize);
 
         // SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
-        foreach ($chunks as $chunkIndex => $objectsChunk) {
+        foreach ($chunks ?? [] as $chunkIndex => $objectsChunk) {
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
@@ -433,7 +433,7 @@ class SaveObjects
         $keys    = explode('.', $path);
         $current = $data;
 
-        foreach ($keys as $key) {
+        foreach ($keys ?? [] as $key) {
             if (is_array($current) === false || isset($current[$key]) === false) {
                 return null;
             }
@@ -517,7 +517,7 @@ class SaveObjects
         $keys    = explode('.', $fieldPath);
         $current = $object;
 
-        foreach ($keys as $key) {
+        foreach ($keys ?? [] as $key) {
             if (is_array($current) === false || isset($current[$key]) === false) {
                 return null;
             }
@@ -586,7 +586,7 @@ class SaveObjects
             // Look for common name fields in order of preference.
             $nameFields = ['naam', 'name', 'title', 'contractNummer', 'achternaam'];
 
-            foreach ($nameFields as $field) {
+            foreach ($nameFields ?? [] as $field) {
                 if (($objectData[$field] ?? null) !== null && empty($objectData[$field]) === true) {
                     return (string) $objectData[$field];
                 }
@@ -706,7 +706,7 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
         $schemaIds = [];
-        foreach ($objects as $object) {
+        foreach ($objects ?? [] as $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
             if (($schemaId !== null) === true && in_array($schemaId, $schemaIds, true) === false) {
@@ -716,7 +716,7 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Load and analyze all schemas with caching.
         // NO ERROR SUPPRESSION: Let schema loading errors bubble up immediately!
-        foreach ($schemaIds as $schemaId) {
+        foreach ($schemaIds ?? [] as $schemaId) {
             // PERFORMANCE: Use cached schema loading.
             $schema = $this->loadSchemaWithCache($schemaId);
             $schemaCache[$schemaId] = $schema;
@@ -727,7 +727,7 @@ class SaveObjects
 
         // Pre-process objects using cached schema analysis.
 // Track objects with invalid schemas.
-        foreach ($objects as $index => $object) {
+        foreach ($objects ?? [] as $index => $object) {
             // NO ERROR SUPPRESSION: Let object processing errors bubble up immediately!
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
@@ -937,7 +937,7 @@ class SaveObjects
         $preparedObjects = [];
         $invalidObjects = [];
 
-        foreach ($objects as $_index => $object) {
+        foreach ($objects ?? [] as $_index => $object) {
             // NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
             $selfData = $object['@self'] ?? [];
 
@@ -1082,7 +1082,7 @@ class SaveObjects
                                      'published', 'depublished', 'register', 'schema', 'organisation',
                                      'uuid', 'owner', 'created', 'updated', 'id'];
 
-                    foreach ($metadataFields as $field) {
+                    foreach ($metadataFields ?? [] as $field) {
                         unset($businessData[$field]);
                     }
 
@@ -1184,7 +1184,7 @@ class SaveObjects
         // CRITICAL FIX: The metadata hydration should already be done in prepareSingleSchemaObjectsOptimized.
         // This redundant hydration might be causing issues - let's skip it for now.
         /*
-        foreach ($transformedObjects as &$objData) {
+        foreach ($transformedObjects ?? [] as &$objData) {
             // Ensure metadata fields from object hydration are preserved.
             if (isset($objData['schema']) && (($schemaCache[$objData['schema']] ?? null) !== null)) {
                 $schema = $schemaCache[$objData['schema']];
@@ -1251,7 +1251,7 @@ class SaveObjects
         if ($validation === true) {
             $validatedObjects = $this->validateObjectsAgainstSchemaOptimized($transformedObjects, $schemaCache);
             // Move invalid objects to result and remove from processing.
-            foreach ($validatedObjects['invalid'] as $invalidObj) {
+            foreach ($validatedObjects['invalid'] ?? [] as $invalidObj) {
                 $result['invalid'][] = $invalidObj;
                 $result['statistics']['invalid']++;
             }
@@ -1315,7 +1315,7 @@ class SaveObjects
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
 
-                foreach ($bulkResult as $completeObject) {
+                foreach ($bulkResult ?? [] as $completeObject) {
                     $savedObjectIds[] = $completeObject['uuid'];
 
                     // DATABASE-COMPUTED CLASSIFICATION: Use the object_status calculated by database.
@@ -1370,7 +1370,7 @@ class SaveObjects
             $savedObjectIds = $bulkResult;
 
                 // Fallback counting (less precise).
-            foreach ($transformedObjects as $objData) {
+            foreach ($transformedObjects ?? [] as $objData) {
                 if (in_array($objData['uuid'], $bulkResult) === true) {
                     $result['statistics']['saved']++;
                 }
@@ -1379,7 +1379,7 @@ class SaveObjects
         } else {
             // Fallback for unexpected return format.
             $this->logger->warning("[SaveObjects] Unexpected bulk result format, using fallback");
-            foreach ($transformedObjects as $objData) {
+            foreach ($transformedObjects ?? [] as $objData) {
                 $savedObjectIds[] = $objData['uuid'];
                 $result['statistics']['saved']++;
             }
@@ -1390,7 +1390,7 @@ class SaveObjects
             // NEW APPROACH: Use already reconstructed objects from timestamp classification.
 
             // Objects are already classified, add to appropriate response arrays.
-            foreach ($createdObjects as $createdObj) {
+            foreach ($createdObjects ?? [] as $createdObj) {
                 if (is_array($createdObj) === true) {
                     $result['saved'][] = $createdObj;
                 } else {
@@ -1398,7 +1398,7 @@ class SaveObjects
                 }
             }
 
-            foreach ($updatedObjects as $updatedObj) {
+            foreach ($updatedObjects ?? [] as $updatedObj) {
                 if (is_array($updatedObj) === true) {
                     $result['updated'][] = $updatedObj;
                 } else {
@@ -1406,7 +1406,7 @@ class SaveObjects
                 }
             }
 
-            foreach ($unchangedObjects as $unchangedObj) {
+            foreach ($unchangedObjects ?? [] as $unchangedObj) {
                 if (is_array($unchangedObj) === true) {
                     $result['unchanged'][] = $unchangedObj;
                 } else {
@@ -1426,7 +1426,7 @@ class SaveObjects
             $savedObjects = $this->reconstructSavedObjects(insertObjects: $transformedObjects, updateObjects: $updateObjects, _savedObjectIds: $savedObjectIds, _existingObjects: []);
 
             // Fallback classification (less precise).
-        foreach ($savedObjects as $obj) {
+        foreach ($savedObjects ?? [] as $obj) {
                 $result['saved'][] = $obj->jsonSerialize();
             }
 
@@ -1489,7 +1489,7 @@ class SaveObjects
         });
 
         // PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
-        foreach ($properties as $propertyName => $propertyConfig) {
+        foreach ($properties ?? [] as $propertyName => $propertyConfig) {
             $items = $propertyConfig['items'] ?? [];
 
             // Check for inversedBy at property level (single object relations).
@@ -1574,7 +1574,7 @@ class SaveObjects
 
         // Create direct UUID to object reference mapping.
         $objectsByUuid = [];
-        foreach ($preparedObjects as $_index => &$object) {
+        foreach ($preparedObjects ?? [] as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
             if ($objectUuid !== null && $objectUuid !== '') {
@@ -1583,7 +1583,7 @@ class SaveObjects
         }
 
         // Process inverse relations using cached analysis.
-        foreach ($preparedObjects as $_index => &$object) {
+        foreach ($preparedObjects ?? [] as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $schemaId   = $selfData['schema'] ?? null;
             $objectUuid = $selfData['id'] ?? null;
@@ -1595,7 +1595,7 @@ class SaveObjects
             $analysis = $schemaAnalysis[$schemaId];
 
             // PERFORMANCE OPTIMIZATION: Use pre-analyzed inverse properties.
-            foreach ($analysis['inverseProperties'] as $property => $propertyInfo) {
+            foreach ($analysis['inverseProperties'] ?? [] as $property => $propertyInfo) {
                 if (isset($object[$property]) === false) {
                     continue;
                 }
@@ -1623,7 +1623,7 @@ class SaveObjects
                     }
                 } elseif (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
-                    foreach ($value as $relatedUuid) {
+                    foreach ($value ?? [] as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
                             if (isset($objectsByUuid[$relatedUuid]) === true) {
                                 // @psalm-suppress EmptyArrayAccess - Already checked isset above.
@@ -1699,7 +1699,7 @@ class SaveObjects
         $transformedObjects = [];
         $invalidObjects = [];
 
-        foreach ($objects as $index => &$object) {
+        foreach ($objects ?? [] as $index => &$object) {
 
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
@@ -1818,7 +1818,7 @@ class SaveObjects
                                  'published', 'depublished', 'register', 'schema', 'organisation',
                                  'uuid', 'owner', 'created', 'updated', 'id'];
 
-            foreach ($metadataFields as $field) {
+            foreach ($metadataFields ?? [] as $field) {
                     unset($businessData[$field]);
                 }
 
@@ -1898,7 +1898,7 @@ class SaveObjects
 
         // Check custom ID fields.
         $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
-        foreach ($customIdFields as $field) {
+        foreach ($customIdFields ?? [] as $field) {
             if (empty($incomingData[$field]) === false && (($existingObjects[$incomingData[$field]] ?? null) !== null)) {
                 return $existingObjects[$incomingData[$field]];
             }
@@ -1932,7 +1932,7 @@ class SaveObjects
 
         // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
         // Instead, create ObjectEntity and hydrate without inserting.
-        foreach ($insertObjects as $objData) {
+        foreach ($insertObjects ?? [] as $objData) {
             $obj = new ObjectEntity();
 
             // CRITICAL FIX: Objects missing UUIDs after save indicate serious database issues - LOG ERROR!
@@ -1954,7 +1954,7 @@ class SaveObjects
         }
 
         // Add all update objects.
-        foreach ($updateObjects as $obj) {
+        foreach ($updateObjects ?? [] as $obj) {
             $savedObjects[] = $obj;
         }
 
@@ -1985,7 +1985,7 @@ class SaveObjects
 // Track which objects need which related objects.
 
         // First pass: collect all related object IDs.
-        foreach ($savedObjects as $index => $savedObject) {
+        foreach ($savedObjects ?? [] as $index => $savedObject) {
             $schema = $schemaCache[$savedObject->getSchema()] ?? null;
             if ($schema === null) {
                 continue;
@@ -2002,7 +2002,7 @@ class SaveObjects
             $objectRelationsMap[$index] = [];
 
             // Process inverse relations for this object.
-            foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
+            foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
                 if (isset($objectData[$propertyName]) === false) {
                     continue;
                 }
@@ -2013,7 +2013,7 @@ class SaveObjects
                     $relatedObjectIds = [$objectData[$propertyName]];
                 }
 
-                foreach ($relatedObjectIds as $relatedId) {
+                foreach ($relatedObjectIds ?? [] as $relatedId) {
                     if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
                         $allRelatedIds[] = $relatedId;
                         $objectRelationsMap[$index][] = $relatedId;
@@ -2029,7 +2029,7 @@ class SaveObjects
 
             try {
                 $relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
-                foreach ($relatedObjects as $obj) {
+                foreach ($relatedObjects ?? [] as $obj) {
                     $relatedObjectsMap[$obj->getUuid()] = $obj;
                 }
             } catch (Exception $e) {
@@ -2039,7 +2039,7 @@ class SaveObjects
 
         // Second pass: process inverse relations with proper context.
         $writeBackOperations = [];
-        foreach ($savedObjects as $index => $savedObject) {
+        foreach ($savedObjects ?? [] as $index => $savedObject) {
             if (isset($objectRelationsMap[$index]) === false) {
                 continue;
             }
@@ -2054,7 +2054,7 @@ class SaveObjects
             $objectData = $savedObject->getObject();
 
             // Build writeBack operations with full context.
-            foreach ($analysis['inverseProperties'] as $propertyName => $inverseConfig) {
+            foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
                 if (isset($objectData[$propertyName]) === false || ($inverseConfig['writeBack'] === false) === true) {
                     continue;
                 }
@@ -2065,7 +2065,7 @@ class SaveObjects
                     $relatedObjectIds = [$objectData[$propertyName]];
                 }
 
-                foreach ($relatedObjectIds as $relatedId) {
+                foreach ($relatedObjectIds ?? [] as $relatedId) {
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
@@ -2102,7 +2102,7 @@ class SaveObjects
 
 
 
-        foreach ($writeBackOperations as $operation) {
+        foreach ($writeBackOperations ?? [] as $operation) {
             $targetObject = $operation['targetObject'];
             $sourceUuid = $operation['sourceUuid'];
             $inverseProperty = $operation['inverseProperty'] ?? null;
@@ -2204,7 +2204,7 @@ class SaveObjects
             $schemaProperties = $schema->getProperties();
         }
 
-        foreach ($data as $key => $value) {
+        foreach ($data ?? [] as $key => $value) {
             // Skip if key is not a string or is empty.
             if (is_string($key) === false || empty($key) === true) {
                 continue;
@@ -2226,7 +2226,7 @@ class SaveObjects
 
                 if ($isArrayOfObjects === true) {
                     // For arrays of objects, scan each item for relations.
-                    foreach ($value as $index => $item) {
+                    foreach ($value ?? [] as $index => $item) {
                         if (is_array($item) === true) {
                             $itemRelations = $this->scanForRelations(
                                     data: $item,
@@ -2241,7 +2241,7 @@ class SaveObjects
                     }
                 } else {
                     // For non-object arrays, check each item.
-                    foreach ($value as $index => $item) {
+                    foreach ($value ?? [] as $index => $item) {
                         if (is_array($item) === true) {
                             // Recursively scan nested arrays/objects.
                             $itemRelations = $this->scanForRelations(

@@ -418,7 +418,7 @@ class RenderObject
             }
 
             // Process each property in the object data.
-            foreach ($objectData as $propertyName => $propertyValue) {
+            foreach ($objectData ?? [] as $propertyName => $propertyValue) {
                 // Skip metadata properties.
                 if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
                     continue;

@@ -443,7 +443,7 @@ class SolrFileService
                 $xml->registerXPathNamespace('a', 'http://schemas.openxmlformats.org/drawingml/2006/main');
                 $textElements = $xml->xpath('//a:t');
 
-                foreach ($textElements as $textElement) {
+                foreach ($textElements ?? [] as $textElement) {
                     $text .= (string) $textElement.' ';
                 }
 
@@ -1117,9 +1117,9 @@ class SolrFileService
                 } else {
                     $stats['failed']++;
                     // Result array may contain 'error' or 'message' keys even if not in type definition.
-                    if (array_key_exists('error', $result)) {
+                    if (array_key_exists('error', $result) === true) {
                         $errorMsg = $result['error'];
-                    } else if (array_key_exists('message', $result)) {
+                    } else if (array_key_exists('message', $result) === true) {
                         $errorMsg = $result['message'];
                     } else {
                         $errorMsg = 'Unknown error';

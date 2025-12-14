@@ -3485,12 +3485,12 @@ class SaveObject
         $processedTags = [];
         foreach ($autoTags as $tag) {
             // Handle both string tags and array tags (flatten arrays).
-            if (is_array($tag)) {
+            if (is_array($tag) === true) {
                 $tag = implode(',', array_filter($tag, 'is_string'));
             }
 
             // Ensure tag is a string.
-            if (!is_string($tag)) {
+            if (is_string($tag) === false) {
                 continue;
             }
 
