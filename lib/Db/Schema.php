@@ -737,7 +737,7 @@ class Schema extends Entity implements JsonSerializable
         $properties = [];
 
         if (($this->properties ?? null) !== null) {
-            foreach ($this->properties as $propertyKey => $property) {
+            foreach ($this->properties ?? [] as $propertyKey => $property) {
                 $isRequired    = (isset($property['required']) && $property['required'] === true);
                 $notInRequired = in_array($propertyKey, $required) === false;
 
@@ -833,7 +833,7 @@ class Schema extends Entity implements JsonSerializable
         $schema->{'$id'}     = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
         $schema->properties  = new stdClass();
 
-        foreach ($this->properties as $propertyName => $property) {
+        foreach ($this->properties ?? [] as $propertyName => $property) {
             if (($property['properties'] ?? null) !== null) {
                 $nestedProperties         = new stdClass();
                 $nestedProperty           = new stdClass();

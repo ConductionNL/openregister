@@ -680,10 +680,10 @@ class ObjectsController extends Controller
                  */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
-                $typeArray = is_array($typeRaw) ? $typeRaw : [];
-                $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
-                $errorArray = is_array($errorRaw) ? $errorRaw : [];
-                $sizeArray = is_array($sizeRaw) ? $sizeRaw : [];
+                $typeArray = is_array($typeRaw) === true ? $typeRaw : [];
+                $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
+                $errorArray = is_array($errorRaw) === true ? $errorRaw : [];
+                $sizeArray = is_array($sizeRaw) === true ? $sizeRaw : [];
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].
@@ -832,10 +832,10 @@ class ObjectsController extends Controller
                  */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
-                $typeArray = is_array($typeRaw) ? $typeRaw : [];
-                $tmpNameArray = is_array($tmpNameRaw) ? $tmpNameRaw : [];
-                $errorArray = is_array($errorRaw) ? $errorRaw : [];
-                $sizeArray = is_array($sizeRaw) ? $sizeRaw : [];
+                $typeArray = is_array($typeRaw) === true ? $typeRaw : [];
+                $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
+                $errorArray = is_array($errorRaw) === true ? $errorRaw : [];
+                $sizeArray = is_array($sizeRaw) === true ? $sizeRaw : [];
                 $fileCount = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
                     // Use indexed key to preserve all files: images[0], images[1], images[2].

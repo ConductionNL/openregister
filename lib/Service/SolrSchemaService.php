@@ -1207,11 +1207,11 @@ class SolrSchemaService
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;
 
             // ensureVectorFieldType expects a string collection name, not boolean.
-            if (is_string($objectCollection) && empty($objectCollection) === false) {
+            if (is_string($objectCollection) === true && empty($objectCollection) === false) {
                 $this->ensureVectorFieldType(collection: $objectCollection, dimensions: 4096, similarity: 'cosine');
             }
 
-            if (is_string($fileCollection) && empty($fileCollection) === false) {
+            if (is_string($fileCollection) === true && empty($fileCollection) === false) {
                 $this->ensureVectorFieldType(collection: $fileCollection, dimensions: 4096, similarity: 'cosine');
             }
         } catch (\Exception $e) {

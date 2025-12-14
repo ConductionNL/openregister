@@ -484,7 +484,7 @@ class MetricsService
         
         // Handle different return types from executeStatement().
         // Some database drivers return int, others return result object.
-        if (is_int($result)) {
+        if (is_int($result) === true) {
             return $result;
         } else {
             return (int) $result->rowCount();

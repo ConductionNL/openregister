@@ -276,7 +276,7 @@ class ObjectCacheService
         $solrService = $this->getSolrService();
 
         // Determine SOLR availability for logging.
-        if ($solrService) {
+        if ($solrService !== null) {
             $solrIsAvailable = $solrService->isAvailable();
         } else {
             $solrIsAvailable = false;
@@ -899,7 +899,7 @@ class ObjectCacheService
     {
         // Remove by ID. Ensure ID is string for array key.
         $objectId = $object->getId();
-        if (is_string($objectId)) {
+        if (is_string($objectId) === true) {
             $objectIdKey = $objectId;
         } else {
             $objectIdKey = (string) $objectId;

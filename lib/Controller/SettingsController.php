@@ -1279,7 +1279,7 @@ class SettingsController extends Controller
             // Use 80% as safety margin.
 
             // Get recommendation message based on prediction safety.
-            if ($predictionSafe) {
+            if ($predictionSafe === true) {
                 $recommendationMessage = 'Safe to process';
             } else {
                 $recommendationMessage = 'Warning: Memory usage may exceed available memory';
@@ -3398,7 +3398,7 @@ class SettingsController extends Controller
             // Note: getDatabasePlatform() returns a platform instance, but we avoid type hinting it.
             $platform = $this->db->getDatabasePlatform();
             // Get platform name as string.
-            if (method_exists($platform, 'getName')) {
+            if (method_exists($platform, 'getName') === true) {
                 $platformName = $platform->getName();
             } else {
                 $platformName = 'unknown';

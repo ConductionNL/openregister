@@ -121,7 +121,7 @@ class OasService
         // Step 3: Extract unique schema IDs from all registers.
         // Multiple registers may share schemas, so we deduplicate.
         $schemaIds = [];
-        foreach ($registers as $register) {
+        foreach ($registers ?? [] as $register) {
             $schemaIds = array_merge($schemaIds, $register->getSchemas());
         }
 
@@ -131,7 +131,7 @@ class OasService
         // Step 4: Get all schemas using unique schema IDs and index by schema ID.
         // Indexing by ID allows fast lookup when processing registers.
         $schemas = [];
-        foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) as $schema) {
+        foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) ?? [] as $schema) {
             $schemas[$schema->getId()] = $schema;
         }
 
@@ -168,7 +168,7 @@ class OasService
         $this->oas['tags'] = [];
 
         // Step 8: Add schemas to components and create tags for each schema.
-        foreach ($schemas as $schema) {
+        foreach ($schemas ?? [] as $schema) {
             // Step 8a: Ensure schema has valid title (skip if empty).
             $schemaTitle = $schema->getTitle();
             if (empty($schemaTitle) === true) {
@@ -196,12 +196,12 @@ class OasService
         $this->oas['paths'] = [];
 
         // Add paths for each register.
-        foreach ($registers as $register) {
+        foreach ($registers ?? [] as $register) {
             // Get schema slugs for the current register.
             $schemaIds = $register->getSchemas();
 
             // Loop through each schema slug to get the schema from the schemas array.
-            foreach ($schemaIds as $schemaId) {
+            foreach ($schemaIds ?? [] as $schemaId) {
                 if (($schemas[$schemaId] ?? null) !== null) {
                     $schema = $schemas[$schemaId];
                     $this->addCrudPaths($register, $schema);
@@ -289,7 +289,7 @@ class OasService
         ];
 
         // Process schema-defined properties and ensure they're valid OAS.
-        foreach ($schemaProperties as $propertyName => $propertyDefinition) {
+        foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
             $cleanProperties[$propertyName] = $this->sanitizePropertyDefinition($propertyDefinition);
         }
 
@@ -367,7 +367,7 @@ class OasService
         ];
 
         // Copy only valid OpenAPI schema keywords.
-        foreach ($allowedSchemaKeywords as $keyword) {
+        foreach ($allowedSchemaKeywords ?? [] as $keyword) {
             if (($propertyDefinition[$keyword] ?? null) !== null) {
                 $cleanDef[$keyword] = $propertyDefinition[$keyword];
             }
@@ -391,7 +391,7 @@ class OasService
             } else {
                 // Validate each allOf element.
                 $validAllOfItems = [];
-                foreach ($cleanDef['allOf'] as $item) {
+                foreach ($cleanDef['allOf'] ?? [] as $item) {
                     // Each allOf item must be an object/array.
                     if (is_array($item) === true && empty($item) === false) {
                         $validAllOfItems[] = $item;
@@ -476,7 +476,7 @@ class OasService
         $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
 
         // Only add whitelisted extended endpoints.
-        foreach (self::INCLUDED_EXTENDED_ENDPOINTS as $endpoint) {
+        foreach (self::INCLUDED_EXTENDED_ENDPOINTS ?? [] as $endpoint) {
             switch ($endpoint) {
                 case 'audit-trails':
                     $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
@@ -574,7 +574,7 @@ class OasService
             // Add dynamic filter parameters based on schema properties.
             if ($schema !== null) {
                 $schemaProperties = $schema->getProperties();
-                foreach ($schemaProperties as $propertyName => $propertyDefinition) {
+                foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
                     // Skip metadata properties and internal system properties.
                     if (str_starts_with($propertyName, '@') === true) {
                         continue;
@@ -1322,7 +1322,7 @@ class OasService
     {
         // Check for invalid $ref references in schemas.
         if (($this->oas['components']['schemas'] ?? null) !== null) {
-            foreach ($this->oas['components']['schemas'] as $schemaName => &$schema) {
+            foreach ($this->oas['components']['schemas'] ?? [] as $schemaName => &$schema) {
                 if (is_array($schema) === true) {
                     $this->validateSchemaReferences($schema, $schemaName);
                 }
@@ -1331,10 +1331,10 @@ class OasService
 
         // Check for invalid allOf constructs in paths.
         if (($this->oas['paths'] ?? null) !== null) {
-            foreach ($this->oas['paths'] as $pathName => &$path) {
-                foreach ($path as $method => &$operation) {
+            foreach ($this->oas['paths'] ?? [] as $pathName => &$path) {
+                foreach ($path ?? [] as $method => &$operation) {
                     if (($operation['responses'] ?? null) !== null) {
-                        foreach ($operation['responses'] as $statusCode => &$response) {
+                        foreach ($operation['responses'] ?? [] as $statusCode => &$response) {
                             if (($response['content']['application/json']['schema'] ?? null) !== null) {
                                 $this->validateSchemaReferences($response['content']['application/json']['schema'], "path:{$pathName}:{$method}:response:{$statusCode}");
                             }
@@ -1362,7 +1362,7 @@ class OasService
                 unset($schema['allOf']);
             } else {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] as $_index => $item) {
+                foreach ($schema['allOf'] ?? [] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.
@@ -1399,7 +1399,7 @@ class OasService
 
         // Recursively check nested schemas.
         if (($schema['properties'] ?? null) !== null) {
-            foreach ($schema['properties'] as $propName => $property) {
+            foreach ($schema['properties'] ?? [] as $propName => $property) {
                 if (is_array($property) === true) {
                     $this->validateSchemaReferences($property, "{$context}.properties.{$propName}");
                 }

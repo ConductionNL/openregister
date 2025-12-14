@@ -87,12 +87,12 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         }
 
         // drop the files table (deprecated).
-        if ($schema->hasTable('openregister_files')) {
+        if ($schema->hasTable('openregister_files') === true) {
             $schema->dropTable('openregister_files');
         }
 
         // drop the audit log table (deprecated).
-        if ($schema->hasTable('openregister_object_audit_logs')) {
+        if ($schema->hasTable('openregister_object_audit_logs') === true) {
             $schema->dropTable('openregister_object_audit_logs');
         }
 

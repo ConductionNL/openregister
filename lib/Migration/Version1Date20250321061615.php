@@ -275,7 +275,7 @@ class Version1Date20250321061615 extends SimpleMigrationStep
         }
 
         // Drop the openregister_object_audit_logs table as it is no longer used.
-        if ($schema->hasTable('openregister_object_audit_logs')) {
+        if ($schema->hasTable('openregister_object_audit_logs') === true) {
             $schema->dropTable('openregister_object_audit_logs');
         }
 

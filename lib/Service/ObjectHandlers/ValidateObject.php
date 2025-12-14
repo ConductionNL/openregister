@@ -220,7 +220,7 @@ class ValidateObject
 
         // Recursively process nested properties.
         if (($propertySchema->properties ?? null) !== null) {
-            foreach ($propertySchema->properties as $nestedPropertyName => $nestedPropertySchema) {
+            foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
                 $propertySchema->properties->$nestedPropertyName = $this->resolveSchemaProperty(propertySchema: $nestedPropertySchema, visited: $visited);
             }
         }
@@ -322,7 +322,7 @@ class ValidateObject
 
         // Recursively transform nested properties.
         if (($propertySchema->properties ?? null) !== null) {
-            foreach ($propertySchema->properties as $_nestedPropertyName => $nestedPropertySchema) {
+            foreach ($propertySchema->properties ?? [] as $_nestedPropertyName => $nestedPropertySchema) {
                 $this->transformPropertyForOpenRegister($nestedPropertySchema);
             }
         }

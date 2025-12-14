@@ -1040,7 +1040,7 @@ class MagicMapper
 
             case 'boolean':
                 // Determine default value.
-                if (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) {
+                if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
                     $defaultValue = $propertyConfig['default'];
                 } else {
                     $defaultValue = null;
@@ -1190,7 +1190,7 @@ class MagicMapper
         }
 
         // Determine default value.
-        if (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) {
+        if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
             $defaultValue = $propertyConfig['default'];
         } else {
             $defaultValue = null;
@@ -1225,7 +1225,7 @@ class MagicMapper
         $isRequired = in_array($columnName, $propertyConfig['required'] ?? []);
 
         // Determine default value.
-        if (is_array($propertyConfig) && array_key_exists('default', $propertyConfig)) {
+        if (is_array($propertyConfig) === true && array_key_exists('default', $propertyConfig) === true) {
             $defaultValue = $propertyConfig['default'];
         } else {
             $defaultValue = null;
@@ -1307,15 +1307,15 @@ class MagicMapper
         }
 
         // Column array may contain additional keys not in type definition.
-        if (is_array($column) && array_key_exists('autoincrement', $column) && $column['autoincrement'] === true) {
+        if (is_array($column) === true && array_key_exists('autoincrement', $column) === true && $column['autoincrement'] === true) {
             $options['autoincrement'] = true;
         }
 
-        if (is_array($column) && array_key_exists('precision', $column) && $column['precision'] !== null) {
+        if (is_array($column) === true && array_key_exists('precision', $column) === true && $column['precision'] !== null) {
             $options['precision'] = $column['precision'];
         }
 
-        if (is_array($column) && array_key_exists('scale', $column) && $column['scale'] !== null) {
+        if (is_array($column) === true && array_key_exists('scale', $column) === true && $column['scale'] !== null) {
             $options['scale'] = $column['scale'];
         }
 
@@ -1324,7 +1324,7 @@ class MagicMapper
 
         // Set primary key if specified.
         // Column array may contain additional keys not in type definition.
-        if (is_array($column) && array_key_exists('primary', $column) && $column['primary'] === true) {
+        if (is_array($column) === true && array_key_exists('primary', $column) === true && $column['primary'] === true) {
             $table->setPrimaryKey([$column['name']]);
         }
 
@@ -1989,7 +1989,7 @@ class MagicMapper
             $result = $qb->executeQuery();
             $row    = $result->fetch();
 
-            if (is_array($row)) {
+            if (is_array($row) === true) {
                 return $row;
             } else {
                 return null;
