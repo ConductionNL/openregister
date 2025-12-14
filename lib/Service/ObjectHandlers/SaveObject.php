@@ -1669,16 +1669,16 @@ class SaveObject
     /**
      * Saves an object.
      *
-     * @param Register|int|string|null $register    The register containing the object.
-     * @param Schema|int|string        $schema      The schema to validate against.
-     * @param array                    $data        The object data to save.
-     * @param string|null              $uuid        The UUID of the object to update (if updating).
-     * @param int|null                 $folderId    The folder ID to set on the object (optional).
-     * @param bool                     $_rbac       Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy       Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $persist     Whether to persist the object to database (default: true).
-     * @param bool                     $silent      Whether to skip audit trail creation and events (default: false).
-     * @param bool                     $_validation Whether to validate the object (default: true).
+     * @param Register|int|string|null $register      The register containing the object.
+     * @param Schema|int|string        $schema        The schema to validate against.
+     * @param array                    $data          The object data to save.
+     * @param string|null              $uuid          The UUID of the object to update (if updating).
+     * @param int|null                 $folderId      The folder ID to set on the object (optional).
+     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $persist       Whether to persist the object to database (default: true).
+     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false).
+     * @param bool                     $_validation   Whether to validate the object (default: true).
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -1916,11 +1916,11 @@ class SaveObject
     /**
      * Prepares an object for creation by applying all necessary transformations.
      *
-     * @param ObjectEntity $objectEntity The object entity to prepare.
-     * @param Schema       $schema       The schema of the object.
-     * @param array        $data         The object data.
-     * @param array        $selfData     The @self metadata.
-     * @param bool         $_multitenancy        Whether to apply multitenancy filtering.
+     * @param ObjectEntity $objectEntity  The object entity to prepare.
+     * @param Schema       $schema        The schema of the object.
+     * @param array        $data          The object data.
+     * @param array        $selfData      The @self metadata.
+     * @param bool         $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return ObjectEntity The prepared object entity.
      *
@@ -2744,7 +2744,7 @@ class SaveObject
      * @phpstan-param array<string, mixed> $fileConfig
      * @phpstan-param int|null $index
      *
-     * @psalm-return int|null
+     * @psalm-return   int|null
      * @phpstan-return int|null
      */
     private function processSingleFileProperty(

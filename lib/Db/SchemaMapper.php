@@ -260,9 +260,9 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array $ids             The ids of the schemas
-     * @param bool  $_rbac           Whether to apply RBAC permission checks (default: true)
-     * @param bool  $_multitenancy   Whether to apply multi-tenancy filtering (default: true)
+     * @param array $ids           The ids of the schemas
+     * @param bool  $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool  $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found

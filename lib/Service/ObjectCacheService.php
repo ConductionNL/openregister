@@ -931,8 +931,8 @@ class ObjectCacheService
      *
      * @param array       $query                  Search query parameters
      * @param string|null $activeOrganisationUuid Active organization UUID
-     * @param bool        $_rbac                   Whether RBAC is enabled
-     * @param bool        $_multitenancy                  Whether multi-tenancy is enabled
+     * @param bool        $_rbac                  Whether RBAC is enabled
+     * @param bool        $_multitenancy          Whether multi-tenancy is enabled
      *
      * @return string The generated cache key
      */

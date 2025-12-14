@@ -1010,9 +1010,9 @@ class GitHubService
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
                         $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
-                    } elseif ($statusCode === 403) {
+                    } else if ($statusCode === 403) {
                         $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' or the branch '{$branch}' is protected";
-                    } elseif ($statusCode === 422) {
+                    } else if ($statusCode === 422) {
                         $errorMessage = "Validation Error - {$errorMessage}. Check that the branch '{$branch}' exists and the path '{$path}' is valid";
                     }
                 }
