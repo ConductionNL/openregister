@@ -52,6 +52,8 @@ class SchemaMapper
      * @param array $schema OpenRegister schema
      *
      * @return array Search backend schema
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function mapToBackendSchema(array $schema): array
     {

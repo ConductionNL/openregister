@@ -242,51 +242,13 @@ class ObjectService
      */
     private function hasPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true): bool
     {
-        // If RBAC is disabled, always return true (bypass all permission checks).
-        if ($_rbac === false) {
-            return true;
-        }
-
-        // Get current user if not provided.
-        if ($userId === null) {
-            $user = $this->userSession->getUser();
-            if ($user === null) {
-                // For unauthenticated requests, check if 'public' group has permission.
-                return $schema->hasPermission(groupId: 'public', action: $action, userId: null, userGroup: null, objectOwner: $objectOwner);
-            }
-
-            $userId = $user->getUID();
-        }
-
-        // Get user object from user ID.
-        $userObj = $this->userManager->get($userId);
-        if ($userObj === null) {
-            // User doesn't exist, treat as public.
-            return $schema->hasPermission(groupId: 'public', action: $action, userId: null, userGroup: null, objectOwner: $objectOwner);
-        }
-
-        $userGroups = $this->groupManager->getUserGroupIds($userObj);
-
-        // Check if user is admin (admin group always has all permissions).
-        if (in_array('admin', $userGroups) === true) {
-            return true;
-        }
-
-        // Object owner permission check is now handled in schema->hasPermission() call below.
-        // Check schema permissions for each user group.
-        foreach ($userGroups as $groupId) {
-            $isAdmin = in_array('admin', $userGroups) === true;
-            $adminGroup = null;
-            if ($isAdmin === true) {
-                $adminGroup = 'admin';
-            }
-
-            if ($schema->hasPermission(groupId: $groupId, action: $action, userId: $userId, userGroup: $adminGroup, objectOwner: $objectOwner) === true) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->permissionHandler->hasPermission(
+            schema: $schema,
+            action: $action,
+            userId: $userId,
+            objectOwner: $objectOwner,
+            rbac: $_rbac
+        );
 
     }//end hasPermission()
 
@@ -306,15 +268,13 @@ class ObjectService
      */
     private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true): void
     {
-        if ($this->hasPermission(schema: $schema, action: $action, userId: $userId, objectOwner: $objectOwner, _rbac: $_rbac) === false) {
-            $user = $this->userSession->getUser();
-            $userName = 'Anonymous';
-            if ($user !== null) {
-                $userName = $user->getDisplayName();
-            }
-
-            throw new Exception("User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'");
-        }
+        $this->permissionHandler->checkPermission(
+            schema: $schema,
+            action: $action,
+            userId: $userId,
+            objectOwner: $objectOwner,
+            rbac: $_rbac
+        );
 
     }//end checkPermission()
 
@@ -3005,53 +2965,11 @@ class ObjectService
      */
     private function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
     {
-        $filteredObjects = [];
-        $currentUser     = $this->userSession->getUser();
-        if ($currentUser !== null) {
-            $userId = $currentUser->getUID();
-        } else {
-            $userId = null;
-        }
-
-        $activeOrganisation = $this->getActiveOrganisationForContext();
-
-        foreach ($objects as $object) {
-            $self = $object['@self'] ?? [];
-
-            // Check RBAC permissions if enabled.
-            if ($_rbac === true && $userId !== null) {
-                $objectOwner  = $self['owner'] ?? null;
-                $objectSchema = $self['schema'] ?? null;
-
-                if ($objectSchema !== null) {
-                    try {
-                        $schema = $this->schemaMapper->find($objectSchema);
-                        // TODO: Add property-level RBAC check for 'create' action here.
-                        // Check individual property permissions before allowing property values to be set.
-                        if ($this->hasPermission(schema: $schema, action: 'create', userId: $userId, objectOwner: $objectOwner, _rbac: $_rbac) === false) {
-                            continue;
-                            // Skip this object if user doesn't have permission.
-                        }
-                    } catch (Exception $e) {
-                        // Skip objects with invalid schemas.
-                        continue;
-                    }
-                }
-            }
-
-            // Check multi-organization filtering if enabled.
-            if ($_multitenancy === true && $activeOrganisation !== null) {
-                $objectOrganisation = $self['organisation'] ?? null;
-                if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
-                    continue;
-                    // Skip objects from different organizations.
-                }
-            }
-
-            $filteredObjects[] = $object;
-        }//end foreach
-
-        return $filteredObjects;
+        return $this->permissionHandler->filterObjectsForPermissions(
+            objects: $objects,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy
+        );
 
     }//end filterObjectsForPermissions()
 
@@ -4520,58 +4438,11 @@ class ObjectService
      */
     private function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
     {
-        $filteredUuids = [];
-        $currentUser   = $this->userSession->getUser();
-        $userId = null;
-        if ($currentUser !== null) {
-            $userId = $currentUser->getUID();
-        }
-        $activeOrganisation = $this->getActiveOrganisationForContext();
-
-        // Get objects for permission checking.
-        $objects = $this->objectEntityMapper->findAll(ids: $uuids, includeDeleted: true);
-
-        foreach ($objects as $object) {
-            $objectUuid = $object->getUuid();
-
-            // Check RBAC permissions if enabled.
-            if ($_rbac === true && $userId !== null) {
-                $objectOwner  = $object->getOwner();
-                $objectSchema = $object->getSchema();
-
-                if ($objectSchema !== null) {
-                    try {
-                        $schema = $this->schemaMapper->find($objectSchema);
-
-                        // TODO: Add property-level RBAC check for 'delete' action here
-                        // Check if user has permission to delete objects with specific property values.
-                        if ($this->hasPermission(schema: $schema, action: 'delete', userId: $userId, objectOwner: $objectOwner, _rbac: $_rbac) === false) {
-                            continue;
-                            // Skip this object - no permission.
-                        }
-                    } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                        // Skip this object - schema not found.
-                        continue;
-                    }
-                }
-            }
-
-            // Check multi-organization permissions if enabled.
-            if ($_multitenancy === true && $activeOrganisation !== null) {
-                $objectOrganisation = $object->getOrganisation();
-
-                if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
-                    // Skip this object - different organization.
-                    continue;
-                }
-            }
-
-            if ($objectUuid !== null) {
-                $filteredUuids[] = $objectUuid;
-            }
-        }//end foreach
-
-        return array_values(array_filter($filteredUuids, fn($uuid) => $uuid !== null));
+        return $this->permissionHandler->filterUuidsForPermissions(
+            uuids: $uuids,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy
+        );
 
     }//end filterUuidsForPermissions()
 
