@@ -40,6 +40,9 @@ use OCA\OpenRegister\Service\Handler\AgentHandler;
 use OCA\OpenRegister\Service\Handler\OrganisationHandler;
 use OCA\OpenRegister\Service\Handler\ApplicationHandler;
 use OCA\OpenRegister\Service\Handler\SourceHandler;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -165,6 +168,27 @@ class ConfigurationService
      */
     private string $appDataPath;
 
+    /**
+     * GitHub handler for GitHub API operations
+     *
+     * @var GitHubHandler The GitHub handler instance.
+     */
+    private readonly GitHubHandler $githubHandler;
+
+    /**
+     * GitLab handler for GitLab API operations
+     *
+     * @var GitLabHandler The GitLab handler instance.
+     */
+    private readonly GitLabHandler $gitlabHandler;
+
+    /**
+     * Cache handler for configuration caching
+     *
+     * @var CacheHandler The cache handler instance.
+     */
+    private readonly CacheHandler $cacheHandler;
+
 
     /**
      * Constructor
@@ -181,6 +205,9 @@ class ConfigurationService
      * @param LoggerInterface     $logger              Logger for error tracking
      * @param Client              $client              HTTP client for external requests
      * @param ObjectService       $objectService       Object service for object operations
+     * @param GitHubHandler       $githubHandler       GitHub handler for GitHub operations
+     * @param GitLabHandler       $gitlabHandler       GitLab handler for GitLab operations
+     * @param CacheHandler        $cacheHandler        Cache handler for configuration caching
      * @param string              $appDataPath         Application data path
      *
      * @return void
@@ -196,6 +223,9 @@ class ConfigurationService
         LoggerInterface $logger,
         Client $client,
         ObjectService $objectService,
+        GitHubHandler $githubHandler,
+        GitLabHandler $gitlabHandler,
+        CacheHandler $cacheHandler,
         string $appDataPath
     ) {
         // Store dependencies for use in service methods.
@@ -209,6 +239,9 @@ class ConfigurationService
         $this->logger        = $logger;
         $this->client        = $client;
         $this->objectService = $objectService;
+        $this->githubHandler = $githubHandler;
+        $this->gitlabHandler = $gitlabHandler;
+        $this->cacheHandler  = $cacheHandler;
         $this->appDataPath   = $appDataPath;
 
     }//end __construct()
@@ -3164,6 +3197,80 @@ class ConfigurationService
         }//end try
 
     }//end setConfiguredAppVersion()
+
+
+    /**
+     * Search GitHub for OpenRegister configurations
+     *
+     * Delegates to GitHubHandler.
+     *
+     * @param string $search  Search terms
+     * @param int    $page    Page number
+     * @param int    $perPage Results per page
+     *
+     * @return array Search results
+     * @throws Exception If search fails
+     */
+    public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
+    {
+        return $this->githubHandler->searchConfigurations($search, $page, $perPage);
+
+    }//end searchGitHub()
+
+
+    /**
+     * Search GitLab for OpenRegister configurations
+     *
+     * Delegates to GitLabHandler.
+     *
+     * @param string $search  Search terms
+     * @param int    $page    Page number
+     * @param int    $perPage Results per page
+     *
+     * @return array Search results
+     * @throws Exception If search fails
+     */
+    public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
+    {
+        return $this->gitlabHandler->searchConfigurations($search, $page, $perPage);
+
+    }//end searchGitLab()
+
+
+    /**
+     * Get GitHubHandler for direct access
+     *
+     * @return GitHubHandler The GitHub handler
+     */
+    public function getGitHubHandler(): GitHubHandler
+    {
+        return $this->githubHandler;
+
+    }//end getGitHubHandler()
+
+
+    /**
+     * Get GitLabHandler for direct access
+     *
+     * @return GitLabHandler The GitLab handler
+     */
+    public function getGitLabHandler(): GitLabHandler
+    {
+        return $this->gitlabHandler;
+
+    }//end getGitLabHandler()
+
+
+    /**
+     * Get CacheHandler for direct access
+     *
+     * @return CacheHandler The cache handler
+     */
+    public function getCacheHandler(): CacheHandler
+    {
+        return $this->cacheHandler;
+
+    }//end getCacheHandler()
 
 
 }//end class

@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
-use OCA\OpenRegister\Service\GitHubService;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\OasService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -119,9 +119,9 @@ class RegistersController extends Controller
     /**
      * GitHub service for publishing to GitHub
      *
-     * @var GitHubService
+     * @var GitHubHandler
      */
-    private readonly GitHubService $githubService;
+    private readonly GitHubHandler $githubService;
 
     /**
      * App manager for getting app version
@@ -156,7 +156,7 @@ class RegistersController extends Controller
      * @param ImportService        $importService        Import service for data imports
      * @param SchemaMapper         $schemaMapper         Schema mapper for schema operations
      * @param RegisterMapper       $registerMapper       Register mapper for database operations
-     * @param GitHubService        $githubService        GitHub service for publishing
+     * @param GitHubHandler        $githubService        GitHub service for publishing
      * @param IAppManager          $appManager           App manager for app version
      * @param OasService           $oasService           OAS service for OpenAPI generation
      *
@@ -176,7 +176,7 @@ class RegistersController extends Controller
         ImportService $importService,
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        GitHubService $githubService,
+        GitHubHandler $githubService,
         IAppManager $appManager,
         OasService $oasService
     ) {

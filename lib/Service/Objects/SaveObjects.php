@@ -1156,6 +1156,8 @@ class SaveObjects
      * @return array[] Processing result for this chunk with bulk operation statistics
      *
      * @psalm-return array{saved: list{0?: array|mixed,...}, updated: list<array|mixed>, invalid: array, errors: array<never, never>, statistics: array{saved: int, updated: int, invalid: int<0, max>, errors?: mixed, unchanged?: int, processingTimeMs?: float}, unchanged?: array<int<0, max>, mixed>}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multitenancy, bool $_validation, bool $_events): array
     {
@@ -1928,6 +1930,8 @@ class SaveObjects
      * @return (ObjectEntity|mixed)[] Array of ObjectEntity objects representing saved objects
      *
      * @psalm-return list{0?: ObjectEntity|mixed,...}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $_savedObjectIds, array $_existingObjects): array
     {

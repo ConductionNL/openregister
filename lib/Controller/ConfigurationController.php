@@ -23,8 +23,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\GitHubService;
-use OCA\OpenRegister\Service\GitLabService;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\App\IAppManager;
 use DateTime;
@@ -69,18 +69,18 @@ class ConfigurationController extends Controller
     private NotificationService $notificationService;
 
     /**
-     * GitHub service instance.
+     * GitHub handler instance.
      *
-     * @var GitHubService The GitHub service instance.
+     * @var GitHubHandler The GitHub handler instance.
      */
-    private GitHubService $githubService;
+    private GitHubHandler $githubHandler;
 
     /**
-     * GitLab service instance.
+     * GitLab handler instance.
      *
-     * @var GitLabService The GitLab service instance.
+     * @var GitLabHandler The GitLab handler instance.
      */
-    private GitLabService $gitlabService;
+    private GitLabHandler $gitlabHandler;
 
     /**
      * Logger instance.
@@ -105,8 +105,8 @@ class ConfigurationController extends Controller
      * @param ConfigurationMapper  $configurationMapper  Configuration mapper
      * @param ConfigurationService $configurationService Configuration service
      * @param NotificationService  $notificationService  Notification service
-     * @param GitHubService        $githubService        GitHub service
-     * @param GitLabService        $gitlabService        GitLab service
+     * @param GitHubHandler        $githubHandler        GitHub handler
+     * @param GitLabHandler        $gitlabHandler        GitLab handler
      * @param IAppManager          $appManager           App manager
      * @param LoggerInterface      $logger               Logger
      */
@@ -116,8 +116,8 @@ class ConfigurationController extends Controller
         ConfigurationMapper $configurationMapper,
         ConfigurationService $configurationService,
         NotificationService $notificationService,
-        GitHubService $githubService,
-        GitLabService $gitlabService,
+        GitHubHandler $githubHandler,
+        GitLabHandler $gitlabHandler,
         IAppManager $appManager,
         LoggerInterface $logger
     ) {
@@ -126,8 +126,8 @@ class ConfigurationController extends Controller
         $this->configurationMapper  = $configurationMapper;
         $this->configurationService = $configurationService;
         $this->notificationService  = $notificationService;
-        $this->githubService        = $githubService;
-        $this->gitlabService        = $gitlabService;
+        $this->githubHandler        = $githubHandler;
+        $this->gitlabHandler        = $gitlabHandler;
         $this->appManager           = $appManager;
         $this->logger = $logger;
 
@@ -227,7 +227,7 @@ class ConfigurationController extends Controller
             // Call appropriate service.
             $details = null;
             if ($source === 'github') {
-                $details = $this->githubService->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
+                $details = $this->githubHandler->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
             } else if ($source === 'gitlab') {
                 // GitLab enrichment can be added later if needed.
                 $this->logger->warning('GitLab enrichment not yet implemented');
@@ -657,11 +657,11 @@ class ConfigurationController extends Controller
             // Call appropriate service.
             if ($source === 'github') {
                 $this->logger->info('About to call GitHub search service');
-                $results = $this->githubService->searchConfigurations(search: $search, page: $page);
+                $results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
             } else {
                 $this->logger->info('About to call GitLab search service');
-                $results = $this->gitlabService->searchConfigurations(search: $search, page: $page);
+                $results = $this->gitlabHandler->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
             }
 
@@ -714,7 +714,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $branches = $this->githubService->getBranches(owner: $owner, repo: $repo);
+            $branches = $this->githubHandler->getBranches(owner: $owner, repo: $repo);
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
@@ -761,7 +761,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $repositories = $this->githubService->getRepositories(page: $page, perPage: $perPage);
+            $repositories = $this->githubHandler->getRepositories(page: $page, perPage: $perPage);
 
             return new JSONResponse(data: ['repositories' => $repositories], statusCode: 200);
         } catch (Exception $e) {
@@ -807,7 +807,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $files = $this->githubService->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
+            $files = $this->githubHandler->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
@@ -844,7 +844,7 @@ class ConfigurationController extends Controller
             }
 
             // Get project ID from namespace/project path.
-            $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
+            $projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
             $this->logger->info(
@@ -856,7 +856,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $branches = $this->gitlabService->getBranches($projectId);
+            $branches = $this->gitlabHandler->getBranches($projectId);
 
             return new JSONResponse(data: ['branches' => $branches], statusCode: 200);
         } catch (Exception $e) {
@@ -894,7 +894,7 @@ class ConfigurationController extends Controller
             }
 
             // Get project ID from namespace/project path.
-            $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
+            $projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
             $this->logger->info(
@@ -907,7 +907,7 @@ class ConfigurationController extends Controller
                     ]
                     );
 
-            $files = $this->gitlabService->listConfigurationFiles(projectId: $projectId, ref: $ref);
+            $files = $this->gitlabHandler->listConfigurationFiles(projectId: $projectId, ref: $ref);
 
             return new JSONResponse(data: ['files' => $files], statusCode: 200);
         } catch (Exception $e) {
@@ -961,7 +961,7 @@ class ConfigurationController extends Controller
                     );
 
             // Step 1: Get file content from GitHub.
-            $configData = $this->githubService->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
+            $configData = $this->githubHandler->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
 
             // Extract metadata from config.
             $info          = $configData['info'] ?? [];
@@ -1084,7 +1084,7 @@ class ConfigurationController extends Controller
             }
 
             // Get project ID from namespace/project path.
-            $projectData = $this->gitlabService->getProjectByPath(namespace: $namespace, project: $project);
+            $projectData = $this->gitlabHandler->getProjectByPath(namespace: $namespace, project: $project);
             $projectId   = $projectData['id'];
 
             $this->logger->info(
@@ -1099,10 +1099,10 @@ class ConfigurationController extends Controller
                     );
 
             // Step 1: Get file content from GitLab.
-            $configData = $this->gitlabService->getFileContent(projectId: $projectId, path: $path, ref: $ref);
+            $configData = $this->gitlabHandler->getFileContent(projectId: $projectId, path: $path, ref: $ref);
 
             // Build GitLab URL for sourceUrl.
-            $gitlabBase = $this->gitlabService->getApiBase();
+            $gitlabBase = $this->gitlabHandler->getApiBase();
             $webBase    = str_replace('/api/v4', '', $gitlabBase);
             $sourceUrl  = "{$webBase}/{$namespace}/{$project}/-/blob/{$ref}/{$path}";
 
@@ -1417,14 +1417,14 @@ class ConfigurationController extends Controller
             // Check if file already exists (for updates).
             $fileSha = null;
             try {
-                $fileSha = $this->githubService->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
+                $fileSha = $this->githubHandler->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
             } catch (Exception $e) {
                 // File doesn't exist, which is fine for new files.
                 $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
             }
 
             // Publish to GitHub.
-            $result = $this->githubService->publishConfiguration(
+            $result = $this->githubHandler->publishConfiguration(
                 owner: $owner,
                 repo: $repo,
                 path: $path,
@@ -1457,7 +1457,7 @@ class ConfigurationController extends Controller
             // Check if published to default branch (required for Code Search indexing).
             $defaultBranch = null;
             try {
-                $repoInfo      = $this->githubService->getRepositoryInfo(owner: $owner, repo: $repo);
+                $repoInfo      = $this->githubHandler->getRepositoryInfo(owner: $owner, repo: $repo);
                 $defaultBranch = $repoInfo['default_branch'] ?? 'main';
             } catch (Exception $e) {
                 $this->logger->warning(
