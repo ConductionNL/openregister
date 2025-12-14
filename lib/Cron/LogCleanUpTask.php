@@ -87,9 +87,11 @@ class LogCleanUpTask extends TimedJob
      * This method is called by the Nextcloud background job system to clean up
      * expired audit trail logs from the database.
      *
-     * @param mixed $argument The job argument (not used in this implementation)
+     * @param mixed $_argument The job argument (not used in this implementation).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function run(mixed $_argument): void
     {

@@ -435,6 +435,8 @@ class HyperFacetHandler
      * @psalm-param    array<string, mixed> $baseQuery
      * @psalm-param    array<string, mixed> $_datasetStats
      * @psalm-return   array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function calculateExactFacetsParallel(array $facetConfig, array $baseQuery, array $_datasetStats): array
     {
@@ -1085,6 +1087,8 @@ class HyperFacetHandler
     // Placeholder methods that would need to be implemented based on specific requirements.
     /**
      * @psalm-return PromiseInterface
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processJsonFacetsParallel(array $_jsonFacets, array $_baseQuery): Promise
     {
@@ -1143,6 +1147,8 @@ class HyperFacetHandler
      * @return array Facet results
      *
      * @psalm-return array<never, never>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function calculateMetadataFacetsHyperFast(array $_config, array $_baseQuery): array
     {
@@ -1161,6 +1167,8 @@ class HyperFacetHandler
      * @return ((int|string|true)[][]|mixed|string)[] Estimated facet results
      *
      * @psalm-return array{type: 'terms'|mixed, buckets: list{array{key: 'estimated', results: int, approximate: true}}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function estimateJsonFieldFacet(string $_field, array $config, array $_baseQuery, array $stats): array
     {
@@ -1182,6 +1190,8 @@ class HyperFacetHandler
      * @return array Facet results
      *
      * @psalm-return array<never, never>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function calculateSingleMetadataFacet(string $_field, array $_config, array $_baseQuery): array
     {
@@ -1196,6 +1206,8 @@ class HyperFacetHandler
      * @param mixed  $value Field value
      *
      * @return string Human-readable label
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function getFieldLabel(string $_field, mixed $_value): string
     {
@@ -1210,6 +1222,8 @@ class HyperFacetHandler
      * @param array         $_filters      Filters to apply
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function applyJsonFieldFilters(IQueryBuilder $_queryBuilder, array $_filters): void
     {

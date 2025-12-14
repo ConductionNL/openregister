@@ -98,6 +98,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleNodeCreated(NodeCreatedEvent $_event): void
     {
@@ -116,6 +117,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleNodeDeleted(NodeDeletedEvent $_event): void
     {
@@ -134,6 +136,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleNodeTouched(NodeTouchedEvent $_event): void
     {
@@ -152,6 +155,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function handleNodeWritten(NodeWrittenEvent $_event): void
     {

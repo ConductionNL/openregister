@@ -342,4 +342,71 @@ class FileHandler
     }//end getChunkingStats()
 
 
+    /**
+     * Index files by their IDs.
+     *
+     * This method indexes file chunks into the search backend.
+     *
+     * @param array       $fileIds        Array of file IDs to index.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Indexing results.
+     */
+    public function indexFiles(array $fileIds, ?string $collectionName=null): array
+    {
+        $this->logger->info(
+            '[FileHandler] Indexing files',
+            [
+                'count'      => count($fileIds),
+                'collection' => $collectionName,
+            ]
+        );
+
+        try {
+            // Delegate to search backend.
+            return $this->searchBackend->indexFiles($fileIds, $collectionName);
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[FileHandler] Failed to index files',
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end indexFiles()
+
+
+    /**
+     * Get file indexing statistics.
+     *
+     * Returns statistics about indexed files.
+     *
+     * @return array File indexing statistics.
+     */
+    public function getFileIndexStats(): array
+    {
+        try {
+            // Delegate to search backend.
+            return $this->searchBackend->getFileIndexStats();
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[FileHandler] Failed to get file index stats',
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end getFileIndexStats()
+
+
 }//end class

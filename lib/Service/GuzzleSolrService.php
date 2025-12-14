@@ -136,33 +136,27 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
 
 
     /**
-     * Constructor
+     * Constructor - Initialize GuzzleSolrService with dependencies
      *
-     * @param SettingsService          $settingsService     Settings service for configuration
-     * @param LoggerInterface          $logger              Logger for debugging and monitoring
-     * @param IClientService           $clientService       HTTP client service
-     * @param IConfig                  $config              Nextcloud configuration
-     * @param SchemaMapper|null        $schemaMapper        Schema mapper for database operations
-     * @param RegisterMapper|null      $registerMapper      Register mapper for database operations
-     * @param OrganisationService|null $organisationService Organisation service for organisation operations
-     * @param OrganisationMapper|null  $organisationMapper  Organisation mapper for database operations
-     */
-
-
-    /**
-     * @param IClientService $clientService HTTP client service (unused but kept for future use)
-     * @param IConfig        $config        Nextcloud configuration (unused but kept for future use)
+     * Initializes the SOLR service with required dependencies and configuration.
+     * Sets up HTTP client and SOLR configuration for search operations.
+     *
+     * @param SettingsService          $settingsService     Settings service for configuration.
+     * @param LoggerInterface          $logger              Logger for debugging and monitoring.
+     * @param SchemaMapper|null        $schemaMapper        Schema mapper for database operations.
+     * @param RegisterMapper|null      $registerMapper      Register mapper for database operations.
+     * @param OrganisationService|null $organisationService Organisation service for organisation operations.
+     * @param OrganisationMapper|null  $organisationMapper  Organisation mapper for database operations.
+     *
+     * @psalm-suppress UnusedProperty
      */
     public function __construct(
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly ?SchemaMapper $schemaMapper=null,
-        private readonly ?RegisterMapper $registerMapper=null,
-        /**
-         * @psalm-suppress UnusedProperty
-         */
-        private readonly ?OrganisationService $organisationService=null,
-        private readonly ?OrganisationMapper $organisationMapper=null,
+        private readonly ?SchemaMapper $schemaMapper = null,
+        private readonly ?RegisterMapper $registerMapper = null,
+        private readonly ?OrganisationService $organisationService = null,
+        private readonly ?OrganisationMapper $organisationMapper = null,
     ) {
         $this->initializeConfig();
         $this->initializeHttpClient();
@@ -248,17 +242,20 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         ];
 
         // Add HTTP Basic Authentication if credentials are provided.
-        if (!empty($this->solrConfig['username']) && !empty($this->solrConfig['password'])) {
+        if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
             $clientConfig['auth'] = [
                 $this->solrConfig['username'],
                 $this->solrConfig['password'],
                 'basic',
             ];
 
-            $this->logger->info('GuzzleSolrService: HTTP Basic Authentication configured', [
-                'username' => $this->solrConfig['username'],
-                'auth_type' => 'basic'
-            ]);
+            $this->logger->info(
+                'GuzzleSolrService: HTTP Basic Authentication configured',
+                [
+                    'username'  => $this->solrConfig['username'],
+                    'auth_type' => 'basic',
+                ]
+            );
         }
 
         // TODO: Switch back to Nextcloud HTTP client when local access restrictions are properly configured.
@@ -293,7 +290,9 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
     public function buildSolrBaseUrl(): string
     {
         $host = $this->solrConfig['host'] ?? 'localhost';
-        $port = $this->solrConfig['port'] ?? null; // Don't default port here.
+
+        // Don't default port here.
+        $port = $this->solrConfig['port'] ?? null;
 
         // Normalize port - convert string '0' to null, handle empty strings.
         if ($port === '0' || $port === '' || $port === null) {
@@ -442,35 +441,41 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         }
 
         // **CACHING STRATEGY**: Check cached availability result first (unless forced refresh).
-        $cacheKey = 'solr_availability_' . md5($this->solrConfig['host'] . ':' . ($this->solrConfig['port'] ?? 8983));
+        $cacheKey = 'solr_availability_'.md5($this->solrConfig['host'].':'.($this->solrConfig['port'] ?? 8983));
 
-        if (!$forceRefresh) {
+        if ($forceRefresh === false) {
             $cachedResult = $this->getCachedAvailability($cacheKey);
 
             if ($cachedResult !== null) {
                 $this->logger->debug(
-                        'Using cached SOLR availability result',
-                        [
-                            'available' => $cachedResult,
-                            'cache_key' => $cacheKey,
-                        ]
-                        );
+                    'Using cached SOLR availability result',
+                    [
+                        'available' => $cachedResult,
+                        'cache_key' => $cacheKey,
+                    ]
+                );
                 return $cachedResult;
             }
         } else {
-            $this->logger->debug('Forcing fresh SOLR availability check (ignoring cache)', [
-                'cache_key' => $cacheKey
-            ]);
+            $this->logger->debug(
+                'Forcing fresh SOLR availability check (ignoring cache)',
+                [
+                    'cache_key' => $cacheKey,
+                ]
+            );
         }
 
         try {
             // **DEBUG**.: Log current SOLR configuration for troubleshooting.
-            $this->logger->debug('SOLR availability check - current configuration', [
-                'enabled' => $this->solrConfig['enabled'] ?? false,
-                'host' => $this->solrConfig['host'] ?? 'not set',
-                'port' => $this->solrConfig['port'] ?? 'not set',
-                'force_refresh' => $forceRefresh
-            ]);
+            $this->logger->debug(
+                'SOLR availability check - current configuration',
+                [
+                    'enabled'       => $this->solrConfig['enabled'] ?? false,
+                    'host'          => $this->solrConfig['host'] ?? 'not set',
+                    'port'          => $this->solrConfig['port'] ?? 'not set',
+                    'force_refresh' => $forceRefresh,
+                ]
+            );
 
             // **COMPREHENSIVE TEST**: Use full operational readiness test for accurate availability.
             // This ensures complete SOLR readiness including collections and schema.
@@ -480,23 +485,29 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
             // **CACHE RESULT**: Store result for 1 hour to improve performance.
             $this->setCachedAvailability($cacheKey, $isAvailable);
 
-            $this->logger->debug('SOLR availability check completed and cached', [
-                'available' => $isAvailable,
-                'test_result' => $connectionTest['message'] ?? 'No message',
-                'components_tested' => array_keys($connectionTest['components'] ?? []),
-                'cache_key' => $cacheKey,
-                'cache_ttl' => 3600,
-                'full_test_result' => $connectionTest // **DEBUG**: Full test result for troubleshooting
-            ]);
+            $this->logger->debug(
+                'SOLR availability check completed and cached',
+                [
+                    'available'         => $isAvailable,
+                    'test_result'       => $connectionTest['message'] ?? 'No message',
+                    'components_tested' => array_keys($connectionTest['components'] ?? []),
+                    'cache_key'         => $cacheKey,
+                    'cache_ttl'         => 3600,
+                    'full_test_result'  => $connectionTest,
+                ]
+            );
 
             return $isAvailable;
 
         } catch (Exception $e) {
-            $this->logger->warning('SOLR availability check failed with exception', [
-                'error' => $e->getMessage(),
-                'host' => $this->solrConfig['host'] ?? 'unknown',
-                'exception_class' => get_class($e)
-            ]);
+            $this->logger->warning(
+                'SOLR availability check failed with exception',
+                [
+                    'error'           => $e->getMessage(),
+                    'host'            => $this->solrConfig['host'] ?? 'unknown',
+                    'exception_class' => get_class($e),
+                ]
+            );
 
             // **CACHE FAILURE**: Cache negative result for shorter period (5 minutes).
             $this->setCachedAvailability($cacheKey, false, 300);
@@ -543,12 +554,12 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
             return null;
         } catch (Exception $e) {
             $this->logger->debug(
-                    'Failed to read SOLR availability cache',
-                    [
-                        'error'     => $e->getMessage(),
-                        'cache_key' => $cacheKey,
-                    ]
-                    );
+                'Failed to read SOLR availability cache',
+                [
+                    'error'     => $e->getMessage(),
+                    'cache_key' => $cacheKey,
+                ]
+            );
             return null;
         }//end try
 
@@ -558,13 +569,13 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
     /**
      * Cache SOLR availability result
      *
-     * @param string $cacheKey    The cache key to store under
-     * @param bool   $isAvailable The availability result to cache
-     * @param int    $ttl         Time to live in seconds (default: 1 hour)
+     * @param string $cacheKey    The cache key to store under.
+     * @param bool   $isAvailable The availability result to cache.
+     * @param int    $ttl         Time to live in seconds (default: 1 hour).
      *
      * @return void
      */
-    private function setCachedAvailability(string $cacheKey, bool $isAvailable, int $ttl=3600): void
+    private function setCachedAvailability(string $cacheKey, bool $isAvailable, int $ttl = 3600): void
     {
         try {
             // Use APCu cache if available for best performance.
@@ -600,14 +611,14 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
     /**
      * Clear cached SOLR availability result (internal method)
      *
-     * @param string|null $cacheKey Specific cache key to clear, or null to clear all SOLR availability cache
+     * @param string|null $cacheKey Specific cache key to clear, or null to clear all SOLR availability cache.
      *
      * @return void
      */
-    private function clearCachedAvailability(?string $cacheKey=null): void
+    private function clearCachedAvailability(?string $cacheKey = null): void
     {
         try {
-            if ($cacheKey !== null && $cacheKey !== '') {
+            if ($cacheKey !== null && empty($cacheKey) === false) {
                 // Clear specific cache entry.
                 if (function_exists('apcu_delete') === true) {
                     apcu_delete($cacheKey);
@@ -636,12 +647,12 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
             }//end if
         } catch (Exception $e) {
             $this->logger->debug(
-                    'Failed to clear SOLR availability cache',
-                    [
-                        'error'     => $e->getMessage(),
-                        'cache_key' => $cacheKey,
-                    ]
-                    );
+                'Failed to clear SOLR availability cache',
+                [
+                    'error'     => $e->getMessage(),
+                    'cache_key' => $cacheKey,
+                ]
+            );
         }//end try
 
     }//end clearCachedAvailability()
@@ -650,18 +661,18 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
     /**
      * Test SOLR connection with comprehensive testing
      *
-     * @param bool $includeCollectionTests Whether to include collection/query tests (default: true for full test)
+     * @param bool $includeCollectionTests Whether to include collection/query tests (default: true for full test).
      *
-     * @return ((array|string)[]|bool|string)[] Connection test results
+     * @return ((array|string)[]|bool|string)[] Connection test results.
      *
      * @psalm-return array{success: bool, message: string, details: array{error?: string}, components: array{zookeeper?: array, solr?: array, collection?: array, query?: array}}
      */
-    public function testConnection(bool $includeCollectionTests=true): array
+    public function testConnection(bool $includeCollectionTests = true): array
     {
         try {
             $solrConfig = $this->solrConfig;
 
-            if (!$solrConfig['enabled']) {
+            if ($solrConfig['enabled'] === false) {
                 return [
                     'success'    => false,
                     'message'    => 'SOLR is disabled in settings',
@@ -688,7 +699,7 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
                 $zookeeperTest = $this->testZookeeperConnection();
                 $testResults['components']['zookeeper'] = $zookeeperTest;
 
-                if (!$zookeeperTest['success']) {
+                if ($zookeeperTest['success'] === false) {
                     $testResults['success'] = false;
                     $testResults['message'] = 'Zookeeper connection failed';
                 }
@@ -698,7 +709,7 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
             $solrTest = $this->testSolrConnectivity();
             $testResults['components']['solr'] = $solrTest;
 
-            if (!$solrTest['success']) {
+            if ($solrTest['success'] === false) {
                 $testResults['success'] = false;
                 $testResults['message'] = 'SOLR connection or authentication failed';
                 return $testResults;
@@ -781,19 +792,22 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
     {
         try {
             $url      = $this->buildSolrBaseUrl().'/admin/collections?action=CLUSTERSTATUS&wt=json';
-            $response = $this->httpClient->get($url, ['timeout' => 10]);
-            $data = json_decode((string)$response->getBody(), true);
+            $response = $this->httpClient->get(
+                $url,
+                ['timeout' => 10]
+            );
+            $data = json_decode((string) $response->getBody(), true);
 
             return isset($data['cluster']['collections'][$collectionName]);
 
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to check collection existence',
-                    [
-                        'collection' => $collectionName,
-                        'error'      => $e->getMessage(),
-                    ]
-                    );
+                'Failed to check collection existence',
+                [
+                    'collection' => $collectionName,
+                    'error'      => $e->getMessage(),
+                ]
+            );
             return false;
         }
 
@@ -803,9 +817,9 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
     /**
      * Ensure tenant collection exists (check both tenant-specific and base collections)
      *
-     * @return array|bool True if collection exists, array if collection was created, false on failure
+     * @return array|bool True if collection exists, array if collection was created, false on failure.
      */
-    public function ensureTenantCollection(): array | bool
+    public function ensureTenantCollection(): array|bool
     {
         if ($this->isAvailable() === false) {
             return false;
@@ -814,35 +828,35 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         $baseCollectionName   = $this->solrConfig['collection'] ?? $this->solrConfig['core'] ?? 'openregister';
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
 
-        // Check if tenant collection exists..
+        // Check if tenant collection exists.
         if ($this->collectionExists($tenantCollectionName) === true) {
             $this->logger->debug(
-                    'Tenant collection already exists',
-                    [
-                        'collection' => $tenantCollectionName,
-                    ]
-                    );
+                'Tenant collection already exists',
+                [
+                    'collection' => $tenantCollectionName,
+                ]
+            );
             return true;
         }
 
         // FALLBACK: Check if base collection exists.
         if ($this->collectionExists($baseCollectionName) === true) {
             $this->logger->info(
-                    'Using base collection as fallback (no tenant isolation)',
-                    [
-                        'base_collection' => $baseCollectionName,
-                    ]
-                    );
+                'Using base collection as fallback (no tenant isolation)',
+                [
+                    'base_collection' => $baseCollectionName,
+                ]
+            );
             return true;
         }
 
         // Try to create tenant collection.
         $this->logger->info(
-                'Attempting to create tenant collection',
-                [
-                    'collection' => $tenantCollectionName,
-                ]
-                );
+            'Attempting to create tenant collection',
+            [
+                'collection' => $tenantCollectionName,
+            ]
+        );
         $configSet = $this->solrConfig['configSet'] ?? 'openregister';
         return $this->createCollection(collectionName: $tenantCollectionName, configSetName: $configSet);
 
@@ -866,12 +880,12 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         if ($baseCollectionName === null) {
             $baseCollectionName = $this->solrConfig['collection'] ?? 'openregister';
             $this->logger->debug(
-                    'Using legacy collection field (deprecated)',
-                    [
-                        'collection'     => $baseCollectionName,
-                        'recommendation' => 'Please configure objectCollection in SOLR settings',
-                    ]
-                    );
+                'Using legacy collection field (deprecated)',
+                [
+                    'collection'     => $baseCollectionName,
+                    'recommendation' => 'Please configure objectCollection in SOLR settings',
+                ]
+            );
         }
 
         $tenantCollectionName = $this->getTenantSpecificCollectionName($baseCollectionName);
@@ -883,10 +897,13 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
 
         // **FIX**: No fallback to base collection - if tenant collection doesn't exist, return null.
         // This prevents operations on non-existent collections.
-        $this->logger->warning('Tenant-specific collection does not exist', [
-            'tenant_collection' => $tenantCollectionName,
-            'base_collection' => $baseCollectionName
-        ]);
+        $this->logger->warning(
+            'Tenant-specific collection does not exist',
+            [
+                'tenant_collection' => $tenantCollectionName,
+                'base_collection'   => $baseCollectionName,
+            ]
+        );
 
         return null;
 
@@ -930,14 +947,14 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         $replicationFactor = $config['replicationFactor'] ?? 1;
         $maxShardsPerNode = $config['maxShardsPerNode'] ?? 1;
         $this->logger->info(
-                '📋 Creating new SOLR collection',
-                [
-                    'name'      => $collectionName,
-                    'configSet' => $configSetName,
-                    'shards'    => $numShards,
-                    'replicas'  => $replicationFactor,
-                ]
-                );
+            '📋 Creating new SOLR collection',
+            [
+                'name'      => $collectionName,
+                'configSet' => $configSetName,
+                'shards'    => $numShards,
+                'replicas'  => $replicationFactor,
+            ]
+        );
 
         // Check if SOLR is configured before attempting to connect.
         // This prevents DNS resolution errors when Solr host is not configured.
@@ -2055,6 +2072,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @param array|null|scalar $_fieldValue
      *
      * @return string|null SOLR field name (clean, no suffixes - field types defined in SOLR setup)
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
     {
@@ -2428,6 +2447,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @param bool  $deleted        Include deleted objects
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function applyAdditionalFilters(array &$solrQuery, bool $_rbac, bool $_multitenancy, bool $_published, bool $_deleted): void
     {
@@ -6096,6 +6117,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @param int $maxObjects Maximum total objects to process (0 = no limit)
      * @param int $parallelBatches Number of parallel batches to process (default: 4)
      * @return array Result with success status and statistics
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function bulkIndexFromDatabaseParallel(int $batchSize = 1000, int $maxObjects = 0, int $parallelBatches = 4, array $solrFieldTypes = [], array $schemaIds = []): array
     {
@@ -8965,6 +8988,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @param  array $solrQuery      The current SOLR query parameters
      * @param  array $_originalQuery The original OpenRegister query
      * @return array Contextual facet data with both facetable fields and extended data
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function getContextualFacetsFromSameQuery(array $solrQuery, array $_originalQuery): array
     {
@@ -9203,6 +9228,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @return array[][] Processed contextual facet data
      *
      * @psalm-return array{facetable: array{'@self': array<never, never>, object_fields: array<never, never>}, extended: array{'@self': array<never, never>, object_fields: array<never, never>}}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processContextualFacetsFromSearchResults(array $_searchFacets): array
     {
@@ -11785,6 +11812,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @param string $collection Collection name.
      *
      * @return array Field types indexed by name.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function getFieldTypes(string $collection): array
     {
@@ -11827,6 +11856,8 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      * @param string $collection Collection name.
      *
      * @return array Fields indexed by name.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function getFields(string $collection): array
     {
@@ -11865,4 +11896,15 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
                 return 'created';
             }
             if (isset($result['exists']) && in_array($fieldName, $result['exists'])) {
-                return $fo
+                return $force ? 'updated' : 'skipped';
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Error in addOrUpdateField', ['error' => $e->getMessage()]);
+        }
+        
+        return 'skipped';
+
+    }//end addOrUpdateField()
+
+
+}//end class

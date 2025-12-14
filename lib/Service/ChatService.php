@@ -183,6 +183,8 @@ class ChatService
      * @param SchemaTool             $schemaTool         Schema tool for function calling (legacy)
      * @param ObjectsTool            $objectsTool        Objects tool for function calling (legacy)
      * @param ToolRegistry           $toolRegistry       Tool registry for dynamic tool loading
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function __construct(
         IDBConnection $_db,
@@ -665,6 +667,8 @@ class ChatService
      * @return (false|float|mixed|null|string)[][] Search results
      *
      * @psalm-return list{0?: array{entity_id: mixed|null, entity_type: 'object', text: false|mixed|string, score: float|mixed},...}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function searchKeywordOnly(string $query, int $_limit): array
     {

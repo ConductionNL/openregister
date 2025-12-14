@@ -68,6 +68,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param mixed $_argument Job arguments (unused for recurring jobs)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($_argument): void
     {
@@ -319,6 +321,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param LoggerInterface $_logger          Logger instance (unused, kept for API compatibility)
      *
      * @return array Warmup configuration array
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function getWarmupConfiguration(SettingsService $_settingsService, LoggerInterface $_logger): array
     {

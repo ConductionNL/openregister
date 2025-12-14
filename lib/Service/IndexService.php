@@ -467,4 +467,80 @@ class IndexService
     }//end getConfig()
 
 
+    /**
+     * Reindex all objects in the system.
+     *
+     * Delegates to ObjectHandler for full reindexing operation.
+     *
+     * @param int         $maxObjects     Maximum objects to reindex (0 = all).
+     * @param int         $batchSize      Batch size for reindexing.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Reindexing results with statistics.
+     */
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
+    {
+        return $this->objectHandler->reindexAll(
+            maxObjects: $maxObjects,
+            batchSize: $batchSize,
+            collectionName: $collectionName
+        );
+
+    }//end reindexAll()
+
+
+    /**
+     * Fix mismatched fields in the schema.
+     *
+     * Delegates to SchemaHandler for field type corrections.
+     *
+     * @param array $mismatchedFields Fields to fix.
+     * @param bool  $dryRun           Whether to only simulate (not apply).
+     *
+     * @return array Results with fixed/failed fields.
+     */
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
+    {
+        return $this->schemaHandler->fixMismatchedFields(
+            mismatchedFields: $mismatchedFields,
+            dryRun: $dryRun
+        );
+
+    }//end fixMismatchedFields()
+
+
+    /**
+     * Index files by their IDs.
+     *
+     * Delegates to FileHandler for file indexing operations.
+     *
+     * @param array       $fileIds        Array of file IDs to index.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Indexing results.
+     */
+    public function indexFiles(array $fileIds, ?string $collectionName=null): array
+    {
+        return $this->fileHandler->indexFiles(
+            fileIds: $fileIds,
+            collectionName: $collectionName
+        );
+
+    }//end indexFiles()
+
+
+    /**
+     * Get file indexing statistics.
+     *
+     * Delegates to FileHandler for file index statistics.
+     *
+     * @return array File indexing stats.
+     */
+    public function getFileIndexStats(): array
+    {
+        return $this->fileHandler->getFileIndexStats();
+
+    }//end getFileIndexStats()
+
+
 }//end class

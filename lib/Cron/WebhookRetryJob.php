@@ -119,6 +119,8 @@ class WebhookRetryJob extends TimedJob
      * @param mixed $_argument Job arguments (unused)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($_argument): void
     {

@@ -89,11 +89,15 @@ class SearchController extends Controller
      * Supports pagination via offset and limit parameters.
      * Returns formatted search results with facets and total count.
      *
+     * @return JSONResponse Search results with facets and total count.
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed, type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed, facets: array<never, never>|mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed,
+     *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed,
+     *                                facets: array<never, never>|mixed}, array<never, never>>
      */
     public function search(): JSONResponse
     {

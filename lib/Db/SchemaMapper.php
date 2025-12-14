@@ -179,6 +179,8 @@ class SchemaMapper extends QBMapper
      *
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Schema
     {
@@ -346,6 +348,8 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have read permission
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,

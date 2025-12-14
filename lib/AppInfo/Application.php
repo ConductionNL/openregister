@@ -351,10 +351,8 @@ class Application extends App implements IBootstrap
 
         // NOTE: FacetService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        
         // NOTE: ValidationOperationsHandler can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        
         // Register SaveObject with consolidated cache services.
         $context->registerService(
                  SaveObject::class,
@@ -468,7 +466,7 @@ class Application extends App implements IBootstrap
                             );
                 }
                 );
-        
+
         // Register GuzzleSolrService as the implementation for SearchBackendInterface.
         $context->registerService(
                  \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,

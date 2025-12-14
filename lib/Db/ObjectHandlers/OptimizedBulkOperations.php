@@ -180,6 +180,8 @@ class OptimizedBulkOperations
      * @param int   $totalChunks Total chunks for progress tracking
      *
      * @return array Array of processed UUIDs
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function processUnifiedChunk(array $objects, int $chunkNumber, int $_totalChunks): array
     {

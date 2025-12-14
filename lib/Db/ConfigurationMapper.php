@@ -286,6 +286,8 @@ class ConfigurationMapper extends QBMapper
      * @since 0.2.10
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message=''): Configuration
     {

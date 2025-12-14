@@ -35,10 +35,12 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Controller
  */
+
 /**
+ * Controller for managing configurations
+ *
  * @psalm-suppress UnusedClass
  */
-
 class ConfigurationsController extends Controller
 {
 

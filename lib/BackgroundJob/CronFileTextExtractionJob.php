@@ -61,6 +61,8 @@ class CronFileTextExtractionJob extends TimedJob
      * @param array $_argument Job arguments (unused for recurring jobs)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($_argument): void
     {

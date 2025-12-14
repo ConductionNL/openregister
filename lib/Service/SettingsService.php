@@ -284,9 +284,9 @@ class SettingsService
         $this->searchTrailMapper       = $searchTrailMapper;
         $this->userManager = $userManager;
         $this->db          = $db;
-        $this->objectCacheService          = $objectCacheService;
-        $this->container = $container;
-        $this->appName   = $appName;
+        $this->objectCacheService = $objectCacheService;
+        $this->container          = $container;
+        $this->appName            = $appName;
 
     }//end __construct()
 
@@ -2890,7 +2890,7 @@ class SettingsService
         if ($this->validationOperationsHandler === null) {
             $this->validationOperationsHandler = $this->container->get(ValidationOperationsHandler::class);
         }
-        
+
         return $this->validationOperationsHandler->validateAllObjects();
 
     }//end validateAllObjects()
