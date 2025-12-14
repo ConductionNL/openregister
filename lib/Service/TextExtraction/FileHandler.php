@@ -265,6 +265,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @return null[]
      *
      * @psalm-return array{language: null, level: null, confidence: null, method: null}
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private function detectLanguage(string $_text): array
     {

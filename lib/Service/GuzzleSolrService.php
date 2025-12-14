@@ -157,6 +157,7 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         private readonly ?RegisterMapper $registerMapper = null,
         private readonly ?OrganisationService $organisationService = null,
         private readonly ?OrganisationMapper $organisationMapper = null,
+        private readonly ?\OCA\OpenRegister\Service\Index\DocumentBuilder $documentBuilder = null,
     ) {
         $this->initializeConfig();
         $this->initializeHttpClient();
@@ -1821,15 +1822,27 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
      *
      * @psalm-return list{0?: string,...}
      */
+    /**
+     * Flatten relations array for SOLR
+     *
+     * DELEGATED to DocumentBuilder - method extracted for better separation of concerns.
+     *
+     * @param mixed $relations Relations data
+     *
+     * @return string[] Flattened array
+     *
+     * @deprecated Use DocumentBuilder->flattenRelationsForSolr() directly
+     */
     private function flattenRelationsForSolr($relations): array
     {
-        // **DEBUG**: Log what we're processing..
-        $this->logger->debug('Processing relations for SOLR', [
-            'relations_type' => gettype($relations),
-            'relations_value' => $relations,
-            'is_empty' => empty($relations)
-        ]);
+        // Delegate to DocumentBuilder if available.
+        if ($this->documentBuilder !== null) {
+            return $this->documentBuilder->flattenRelationsForSolr($relations);
+        }
 
+        // Fallback implementation (should not be reached in normal operation).
+        $this->logger->warning('DocumentBuilder not available, using fallback implementation');
+        
         if (empty($relations) === true) {
             return [];
         }
@@ -1837,40 +1850,15 @@ class GuzzleSolrService implements \OCA\OpenRegister\Service\Index\SearchBackend
         if (is_array($relations) === true) {
             $values = [];
             foreach ($relations as $key => $value) {
-                // **FIXED**: Extract ALL values from relations array, not just UUIDs.
-                // Relations are stored as {"modules.0":"value"} - we want all the values.
                 if (is_string($value) === true || is_numeric($value) === true) {
                     $values[] = (string) $value;
-                    $this->logger->debug(
-                            'Found value in relations',
-                            [
-                                'key'   => $key,
-                                'value' => $value,
-                                'type'  => gettype($value),
-                            ]
-                            );
                 }
-
-                // Skip arrays, objects, null values, etc.
             }
-
-            $this->logger->debug('Flattened relations result', [
-                'input_count' => count($relations),
-                'output_count' => count($values),
-                'values' => $values
-            ]);
-
             return $values;
-        }//end if
-
-        // Single value - convert to string..
-        if (is_string($relations) === true || is_numeric($relations) === true) {
-            return [(string) $relations];
         }
 
-        // Single value - convert to string.
         if (is_string($relations) === true || is_numeric($relations) === true) {
-            return [(string)$relations];
+            return [(string) $relations];
         }
 
         return [];

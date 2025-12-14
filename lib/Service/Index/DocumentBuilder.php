@@ -170,4 +170,181 @@ class DocumentBuilder
     }//end flattenRelationsForSolr()
 
 
+    /**
+     * Flatten files array for SOLR to prevent document multiplication
+     *
+     * MIGRATED from GuzzleSolrService - now maintained here.
+     *
+     * @param mixed $files Files data from ObjectEntity
+     *
+     * @return array Simple array of strings for SOLR multi-valued field
+     */
+    public function flattenFilesForSolr($files): array
+    {
+        if (empty($files) === true) {
+            return [];
+        }
+
+        if (is_array($files) === true) {
+            $flattened = [];
+            foreach ($files as $file) {
+                if (is_string($file) === true) {
+                    $flattened[] = $file;
+                } elseif (is_array($file) === true && (($file['id'] ?? null) !== null)) {
+                    $flattened[] = (string) $file['id'];
+                } elseif (is_array($file) === true && (($file['uuid'] ?? null) !== null)) {
+                    $flattened[] = $file['uuid'];
+                }
+            }
+
+            return $flattened;
+        }
+
+        if (is_string($files) === true) {
+            return [$files];
+        }
+
+        return [];
+
+    }//end flattenFilesForSolr()
+
+
+    /**
+     * Extract ID/UUID from an object/array
+     *
+     * MIGRATED from GuzzleSolrService - now maintained here.
+     *
+     * @param array $object Object/array to extract ID from
+     *
+     * @return string|null Extracted ID or null if not found
+     */
+    public function extractIdFromObject(array $object): ?string
+    {
+        // Try common ID field names in order of preference.
+        $idFields = ['id', 'uuid', 'identifier', 'key', 'value'];
+
+        foreach ($idFields as $field) {
+            if (($object[$field] ?? null) !== null && is_string($object[$field]) === true) {
+                return $object[$field];
+            }
+        }
+
+        // If no ID field found, return null.
+        return null;
+
+    }//end extractIdFromObject()
+
+
+    /**
+     * Extract array fields from dot-notation relations
+     *
+     * MIGRATED from GuzzleSolrService - now maintained here.
+     *
+     * WORKAROUND/HACK FOR MISSING DATA: This method reconstructs arrays from relations
+     * because some array fields (e.g., 'standaarden') are stored ONLY as dot-notation
+     * relation entries ("standaarden.0", "standaarden.1") instead of in the object body.
+     *
+     * @param array $relations The relations array from ObjectEntity
+     *
+     * @return array Associative array of field names to their array values
+     */
+    public function extractArraysFromRelations(array $relations): array
+    {
+        $arrays = [];
+
+        // Group relations by their base field name (before the dot).
+        foreach ($relations as $relationKey => $relationValue) {
+            // Check if this is a dot-notation array relation (e.g., "standaarden.0").
+            if (str_contains($relationKey, '.') === true) {
+                $parts     = explode('.', $relationKey, 2);
+                $fieldName = $parts[0];
+                $index     = $parts[1];
+
+                // Initialize array if not exists.
+                if (!isset($arrays[$fieldName])) {
+                    $arrays[$fieldName] = [];
+                }
+
+                // Add value at the specified index (or skip if index is not numeric).
+                if (is_numeric($index) === true) {
+                    $arrays[$fieldName][(int) $index] = $relationValue;
+                } else {
+                    // Non-numeric index - this is a nested object property, not an array element.
+                    $this->logger->debug(
+                        'Skipping non-numeric array index in relations',
+                        [
+                            'relation_key' => $relationKey,
+                            'field_name'   => $fieldName,
+                            'index'        => $index,
+                        ]
+                    );
+                }
+            }
+        }
+
+        // Sort each array by index and re-index to sequential keys.
+        foreach ($arrays as $fieldName => &$arrayValues) {
+            ksort($arrayValues);
+            // Re-index to sequential numeric keys (0, 1, 2, ...).
+            $arrayValues = array_values($arrayValues);
+        }
+
+        $this->logger->debug('Extracted arrays from relations', [
+            'field_count'   => count($arrays),
+            'fields'        => array_keys($arrays),
+            'total_values'  => array_sum(array_map('count', $arrays)),
+        ]);
+
+        return $arrays;
+
+    }//end extractArraysFromRelations()
+
+
+    /**
+     * Extract indexable values from an array for SOLR indexing
+     *
+     * MIGRATED from GuzzleSolrService - now maintained here.
+     *
+     * This method intelligently handles mixed arrays by inspecting the actual content
+     * rather than relying on schema definitions, which may not match runtime data.
+     *
+     * @param array  $arrayValue The array to extract values from
+     * @param string $fieldName  Field name for logging
+     *
+     * @return string[] Array of indexable string values
+     */
+    public function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
+    {
+        $extractedValues = [];
+
+        foreach ($arrayValue as $item) {
+            if (is_string($item) === true) {
+                // Direct string value - use as-is.
+                $extractedValues[] = $item;
+            } elseif (is_array($item) === true) {
+                // Object/array - try to extract ID/UUID.
+                $idValue = $this->extractIdFromObject($item);
+                if ($idValue !== null) {
+                    $extractedValues[] = $idValue;
+                }
+            } elseif (is_scalar($item) === true) {
+                // Other scalar values (int, float, bool) - convert to string.
+                $extractedValues[] = (string) $item;
+            }
+
+            // Skip null values and complex objects.
+        }
+
+        $this->logger->debug('Extracted indexable array values', [
+            'field'            => $fieldName,
+            'original_count'   => count($arrayValue),
+            'extracted_count'  => count($extractedValues),
+            'extracted_values' => $extractedValues,
+        ]);
+
+        return $extractedValues;
+
+    }//end extractIndexableArrayValues()
+
+
 }//end class

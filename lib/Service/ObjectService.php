@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
 use OCA\OpenRegister\Service\Objects\PerformanceHandler;
@@ -181,6 +182,7 @@ class ObjectService
      * @param IAppContainer           $container               Application container.
      */
     public function __construct(
+        private readonly DataManipulationHandler $dataManipulationHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
         private readonly PerformanceHandler $performanceHandler,
@@ -3840,17 +3842,10 @@ class ObjectService
      */
     private function mapObjectProperties(array $sourceData, array $mapping): array
     {
-        $mappedData = [];
-
-        // Simple mapping: keys are target properties, values are source properties.
-        foreach ($mapping as $targetProperty => $sourceProperty) {
-            // Only map if the source property exists in the source data.
-            if (array_key_exists($sourceProperty, $sourceData) === true) {
-                $mappedData[$targetProperty] = $sourceData[$sourceProperty];
-            }
-        }
-
-        return $mappedData;
+        return $this->dataManipulationHandler->mapObjectProperties(
+            sourceData: $sourceData,
+            mapping: $mapping
+        );
 
     }//end mapObjectProperties()
 
@@ -5091,8 +5086,7 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery).
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
-        /** @SuppressWarnings(PHPMD.UnusedFormalParameter) */
-        return $this->getCachedEntities(ids: 'all', fallbackFunc: function($_ids) {
+        return $this->getCachedEntities(ids: 'all', /** @SuppressWarnings(PHPMD.UnusedFormalParameter) */ fallbackFunc: function($_ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
             // null = no limit (get all).
         });
