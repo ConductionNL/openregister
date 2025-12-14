@@ -211,6 +211,8 @@ class PerformanceHandler
      * @param array<string, mixed> $query The search query.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preloadCriticalEntities(array $query): void
     {

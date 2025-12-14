@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
 use OCA\OpenRegister\Service\Objects\PerformanceHandler;
+use OCA\OpenRegister\Service\Objects\PermissionHandler;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
@@ -183,6 +184,7 @@ class ObjectService
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
         private readonly PerformanceHandler $performanceHandler,
+        private readonly PermissionHandler $permissionHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
         private readonly SaveObjects $saveObjectsHandler,

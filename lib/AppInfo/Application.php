@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
 use OCA\OpenRegister\Service\Objects\GetObject;
 use OCA\OpenRegister\Service\Objects\PerformanceHandler;
+use OCA\OpenRegister\Service\Objects\PermissionHandler;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
@@ -132,7 +133,7 @@ use Twig\Loader\ArrayLoader;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
-use OCA\OpenRegister\Service\Configuration\CacheHandler;
+use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 /**
  * Class Application
  *
