@@ -59,7 +59,6 @@ class ValidationOperationsHandler
         IAppContainer $container
     ) {
         $this->container = $container;
-
     }//end __construct()
 
 
@@ -71,7 +70,6 @@ class ValidationOperationsHandler
     private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
     {
         return $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-
     }//end getObjectService()
 
 
@@ -155,8 +153,5 @@ class ValidationOperationsHandler
         ];
 
         return $validationResults;
-
     }//end validateAllObjects()
-
-
 }//end class

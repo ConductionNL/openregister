@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\Message;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\ToolRegistry;
@@ -70,12 +70,12 @@ use Symfony\Component\Uid\Uuid;
  *
  * ARCHITECTURE:
  * - Uses LLPhant library for LLM interactions
- * - Integrates with VectorEmbeddingService for semantic search
+ * - Integrates with VectorizationService for semantic search
  * - Can use IndexService for keyword search (optional)
  * - Independent chat logic, not tied to search infrastructure
  *
  * RAG CAPABILITIES:
- * - Semantic search using VectorEmbeddingService
+ * - Semantic search using VectorizationService
  * - Keyword search using IndexService (optional)
  * - Hybrid search combining both approaches
  * - Agent-based filtering and context retrieval
@@ -88,7 +88,7 @@ use Symfony\Component\Uid\Uuid;
  * - Source tracking for RAG responses
  *
  * INTEGRATION POINTS:
- * - VectorEmbeddingService: For semantic search in RAG
+ * - VectorizationService: For semantic search in RAG
  * - IndexService: For keyword search (optional)
  * - SettingsService: For reading LLM configuration
  * - SettingsController: Delegates testing to this service
@@ -133,11 +133,11 @@ class ChatService
     private AgentMapper $agentMapper;
 
     /**
-     * Vector embedding service
+     * Vectorization service
      *
-     * @var VectorEmbeddingService
+     * @var VectorizationService
      */
-    private VectorEmbeddingService $vectorService;
+    private VectorizationService $vectorService;
 
     /**
      * SOLR service
@@ -175,7 +175,7 @@ class ChatService
      * @param ConversationMapper     $conversationMapper Conversation mapper
      * @param MessageMapper          $messageMapper      Message mapper
      * @param AgentMapper            $agentMapper        Agent mapper
-     * @param VectorEmbeddingService $vectorService      Vector embedding service
+     * @param VectorizationService $vectorService      Vectorization service
      * @param IndexService           $indexService       Index service
      * @param SettingsService        $settingsService    Settings service
      * @param LoggerInterface        $logger             Logger
@@ -191,7 +191,7 @@ class ChatService
         ConversationMapper $conversationMapper,
         MessageMapper $messageMapper,
         AgentMapper $agentMapper,
-        VectorEmbeddingService $vectorService,
+        VectorizationService $vectorService,
         IndexService $indexService,
         SettingsService $settingsService,
         LoggerInterface $logger,

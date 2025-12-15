@@ -52,9 +52,8 @@ class BulkValidationHandler
      * @param LoggerInterface $logger Logger interface for logging operations.
      */
     public function __construct(
-        private readonly LoggerInterface $logger,
+    private readonly LoggerInterface $logger,
     ) {
-
     }//end __construct()
 
 
@@ -102,11 +101,11 @@ class BulkValidationHandler
         ];
 
         $analysis['metadataFields'] = array_filter(
-                $metadataFieldMap,
-                function ($field) {
-                    return empty($field) === false;
-                }
-                );
+            $metadataFieldMap,
+            function ($field) {
+                return empty($field) === false;
+            }
+        );
 
         // PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
         foreach ($properties ?? [] as $propertyName => $propertyConfig) {
@@ -142,7 +141,6 @@ class BulkValidationHandler
         }//end foreach
 
         return $analysis;
-
     }//end performComprehensiveSchemaAnalysis()
 
 
@@ -174,7 +172,6 @@ class BulkValidationHandler
         }
 
         return (bool) $value;
-
     }//end castToBoolean()
 
 
@@ -198,8 +195,5 @@ class BulkValidationHandler
         }
 
         return [$object, $uuid];
-
     }//end handlePreValidationCascading()
-
-
 }//end class

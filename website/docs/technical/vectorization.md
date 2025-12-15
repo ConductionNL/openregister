@@ -71,11 +71,13 @@ classDiagram
 
 ## Services
 
-### VectorizationService
+### VectorizationService (Public API)
 
-**Location**: `lib/Service/VectorizationService.php`
+**Location**: `lib/Service/Vectorization/VectorizationService.php`
 
-**Purpose**: Orchestrates vectorization using strategies.
+**Purpose**: Public API facade for all vector operations. Orchestrates vectorization using strategies and delegates to VectorEmbeddingService.
+
+**Architecture**: This is the single entry point for all vector operations. Other services should call VectorizationService, not VectorEmbeddingService directly.
 
 **Key Methods**:
 
@@ -111,11 +113,11 @@ public function vectorizeEntity(
 }
 ```
 
-### VectorEmbeddingService
+### VectorEmbeddingService (Internal Handler)
 
-**Location**: `lib/Service/VectorEmbeddingService.php`
+**Location**: `lib/Service/Vectorization/VectorEmbeddingService.php`
 
-**Purpose**: Generates embeddings using LLM providers.
+**Purpose**: Internal service that generates embeddings using LLM providers. This is an implementation detail - use VectorizationService as the public API.
 
 **Supported Providers**:
 - **OpenAI**: text-embedding-ada-002, text-embedding-3-small, text-embedding-3-large

@@ -52,10 +52,9 @@ class FilePropertyHandler
      * @param LoggerInterface $logger      Logger for logging operations.
      */
     public function __construct(
-        private readonly FileService $fileService,
-        private readonly LoggerInterface $logger
+    private readonly FileService $fileService,
+    private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
 
@@ -86,14 +85,14 @@ class FilePropertyHandler
             if ($fileInfo['error'] !== UPLOAD_ERR_OK) {
                 // Log the error but don't fail the entire request.
                 $this->logger->warning(
-                        'File upload error for field {field}: {error}',
-                        [
+                    'File upload error for field {field}: {error}',
+                    [
                             'app'   => 'openregister',
                             'field' => $fieldName,
                             'error' => $fileInfo['error'],
                             'file'  => $fileInfo['name'] ?? 'unknown',
                         ]
-                        );
+                );
                 continue;
             }
 
@@ -137,7 +136,6 @@ class FilePropertyHandler
         }//end foreach
 
         return $data;
-
     }//end processUploadedFiles()
 
 
@@ -151,7 +149,7 @@ class FilePropertyHandler
      * @return         bool True if the value should be treated as a file property
      * @phpstan-return bool
      */
-    public function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
+    public function isFileProperty($value, ?Schema $schema = null, ?string $propertyName = null): bool
     {
         // If we have schema and property name, use schema-based checking.
         if ($schema !== null && $propertyName !== null) {
@@ -251,7 +249,7 @@ class FilePropertyHandler
                     if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
                         return true;
                     }
-                } else if (is_array($item) === true && $this->isFileObject($item) === true) {
+                } elseif (is_array($item) === true && $this->isFileObject($item) === true) {
                     // File object in array.
                     return true;
                 }//end if
@@ -259,7 +257,6 @@ class FilePropertyHandler
         }//end if
 
         return false;
-
     }//end isFileProperty()
 
 
@@ -303,7 +300,6 @@ class FilePropertyHandler
         }
 
         return $hasFileProperties;
-
     }//end isFileObject()
 
 
@@ -381,7 +377,7 @@ class FilePropertyHandler
                             }
                         }
                     }
-                } else if (is_numeric($existingFileIds) === true) {
+                } elseif (is_numeric($existingFileIds) === true) {
                     // Single file ID.
                     try {
                         $this->fileService->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
@@ -442,7 +438,6 @@ class FilePropertyHandler
                 }
             }
         }//end if
-
     }//end handleFileProperty()
 
 
@@ -484,14 +479,14 @@ class FilePropertyHandler
         $fileInput,
         string $propertyName,
         array $fileConfig,
-        ?int $index=null
+        ?int $index = null
     ): int {
         try {
             // Determine input type and process accordingly.
             if (is_string($fileInput) === true) {
                 // Handle string inputs (base64, data URI, or URL).
                 return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
-            } else if (is_array($fileInput) === true && $this->isFileObject($fileInput) === true) {
+            } elseif (is_array($fileInput) === true && $this->isFileObject($fileInput) === true) {
                 // Handle file object input.
                 return $this->processFileObjectInput(objectEntity: $objectEntity, fileObject: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
             } else {
@@ -500,7 +495,6 @@ class FilePropertyHandler
         } catch (Exception $e) {
             throw $e;
         }
-
     }//end processSingleFileProperty()
 
 
@@ -535,7 +529,7 @@ class FilePropertyHandler
         string $fileInput,
         string $propertyName,
         array $fileConfig,
-        ?int $index=null
+        ?int $index = null
     ): int {
         // Check if it's a URL.
         if (filter_var($fileInput, FILTER_VALIDATE_URL) !== false
@@ -571,7 +565,6 @@ class FilePropertyHandler
         );
 
         return $file->getId();
-
     }//end processStringFileInput()
 
 
@@ -606,7 +599,7 @@ class FilePropertyHandler
         array $fileObject,
         string $propertyName,
         array $fileConfig,
-        ?int $index=null
+        ?int $index = null
     ): int {
         // If file object has an ID, try to use the existing file.
         if (($fileObject['id'] ?? null) !== null) {
@@ -634,7 +627,7 @@ class FilePropertyHandler
         // This requires downloadUrl or accessUrl to fetch content.
         if (($fileObject['downloadUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['downloadUrl'];
-        } else if (($fileObject['accessUrl'] ?? null) !== null) {
+        } elseif (($fileObject['accessUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['accessUrl'];
         } else {
             throw new Exception("File object for property '$propertyName' has no downloadable URL");
@@ -642,7 +635,6 @@ class FilePropertyHandler
 
         // Fetch and process as URL.
         return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileUrl, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
-
     }//end processFileObjectInput()
 
 
@@ -664,16 +656,16 @@ class FilePropertyHandler
     {
         // Create a context with appropriate options.
         $context = stream_context_create(
-                [
+            [
                     'http' => [
                         'timeout'         => 30,
-        // 30 second timeout.
+            // 30 second timeout.
                         'user_agent'      => 'OpenRegister/1.0',
                         'follow_location' => true,
                         'max_redirects'   => 5,
                     ],
                 ]
-                );
+        );
 
         $content = file_get_contents($url, false, $context);
 
@@ -682,7 +674,6 @@ class FilePropertyHandler
         }
 
         return $content;
-
     }//end fetchFileFromUrl()
 
 
@@ -731,7 +722,6 @@ class FilePropertyHandler
             'extension' => $extension,
             'size'      => strlen($content),
         ];
-
     }//end parseFileDataFromUrl()
 
 
@@ -758,7 +748,7 @@ class FilePropertyHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function validateExistingFileAgainstConfig(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
+    private function validateExistingFileAgainstConfig(File $file, array $fileConfig, string $propertyName, ?int $index = null): void
     {
         if ($index !== null) {
             $errorPrefix = "Existing file at $propertyName[$index]";
@@ -785,7 +775,6 @@ class FilePropertyHandler
                 );
             }
         }
-
     }//end validateExistingFileAgainstConfig()
 
 
@@ -810,7 +799,7 @@ class FilePropertyHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function applyAutoTagsToExistingFile(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
+    private function applyAutoTagsToExistingFile(File $file, array $fileConfig, string $propertyName, ?int $index = null): void
     {
         $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
 
@@ -825,14 +814,13 @@ class FilePropertyHandler
                 $this->fileService->updateFile(
                     filePath: $file->getId(),
                     content: null,
-                // Don't change content.
+                    // Don't change content.
                     tags: $allTags
                 );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.
             }
         }
-
     }//end applyAutoTagsToExistingFile()
 
 
@@ -894,7 +882,6 @@ class FilePropertyHandler
             'extension' => $extension,
             'size'      => strlen($content),
         ];
-
     }//end parseFileData()
 
 
@@ -921,7 +908,7 @@ class FilePropertyHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    public function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index=null): void
+    public function validateFileAgainstConfig(array $fileData, array $fileConfig, string $propertyName, ?int $index = null): void
     {
         $errorPrefix = $index !== null ? "File at $propertyName[$index]" : "File at $propertyName";
 
@@ -948,7 +935,6 @@ class FilePropertyHandler
                 );
             }
         }
-
     }//end validateFileAgainstConfig()
 
 
@@ -981,14 +967,14 @@ class FilePropertyHandler
             $extension = strtolower(pathinfo($fileData['filename'], PATHINFO_EXTENSION));
             if (in_array($extension, $dangerousExtensions, true) === true) {
                 $this->logger->warning(
-                        'Executable file upload blocked',
-                        [
+                    'Executable file upload blocked',
+                    [
                             'app'       => 'openregister',
                             'filename'  => $fileData['filename'],
                             'extension' => $extension,
                             'mimeType'  => $fileData['mimeType'] ?? 'unknown',
                         ]
-                        );
+                );
 
                 throw new Exception(
                     "$errorPrefix is an executable file (.$extension). "."Executable files are blocked for security reasons. "."Allowed formats: documents, images, archives, data files."
@@ -1006,18 +992,17 @@ class FilePropertyHandler
 
         if (($fileData['mimeType'] ?? null) !== null && in_array($fileData['mimeType'], $executableMimeTypes, true) === true) {
             $this->logger->warning(
-                    'Executable MIME type blocked',
-                    [
+                'Executable MIME type blocked',
+                [
                         'app'      => 'openregister',
                         'mimeType' => $fileData['mimeType'],
                     ]
-                    );
+            );
 
             throw new Exception(
                 "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "."Executable files are blocked for security reasons."
             );
         }
-
     }//end blockExecutableFiles()
 
 
@@ -1065,12 +1050,12 @@ class FilePropertyHandler
 
             if (strpos($content, $signature) === 0) {
                 $this->logger->warning(
-                        'Executable magic bytes detected',
-                        [
+                    'Executable magic bytes detected',
+                    [
                             'app'  => 'openregister',
                             'type' => $description,
                         ]
-                        );
+                );
 
                 throw new Exception(
                     "$errorPrefix contains executable code ($description). "."Executable files are blocked for security reasons."
@@ -1092,7 +1077,6 @@ class FilePropertyHandler
                 "$errorPrefix contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
-
     }//end detectExecutableMagicBytes()
 
 
@@ -1116,13 +1100,12 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      */
-    private function generateFileName(string $propertyName, string $extension, ?int $index=null): string
+    private function generateFileName(string $propertyName, string $extension, ?int $index = null): string
     {
         $timestamp   = time();
         $indexSuffix = $index !== null ? "_$index" : '';
 
         return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
-
     }//end generateFileName()
 
 
@@ -1144,7 +1127,7 @@ class FilePropertyHandler
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      */
-    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index=null): array
+    private function prepareAutoTags(array $fileConfig, string $propertyName, ?int $index = null): array
     {
         $autoTags = $fileConfig['autoTags'] ?? [];
 
@@ -1174,7 +1157,6 @@ class FilePropertyHandler
         }//end foreach
 
         return $processedTags;
-
     }//end prepareAutoTags()
 
 
@@ -1252,7 +1234,6 @@ class FilePropertyHandler
         ];
 
         return $mimeToExtension[$mimeType] ?? 'bin';
-
     }//end getExtensionFromMimeType()
 
 
@@ -1326,7 +1307,6 @@ class FilePropertyHandler
             'deb',
             'rpm',
         ];
-
     }//end getCommonFileExtensions()
 
 
@@ -1405,7 +1385,6 @@ class FilePropertyHandler
             'so',
             'dylib',
         ];
-
     }//end getDangerousExecutableExtensions()
 
 
@@ -1435,8 +1414,5 @@ class FilePropertyHandler
             'application/x-python-code',
             'application/java-archive',
         ];
-
     }//end getExecutableMimeTypes()
-
-
 }//end class

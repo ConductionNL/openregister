@@ -1,0 +1,66 @@
+> ./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa
+ [Filesystem\CleanDir] Cleaned phpqa
+ [Filesystem\FilesystemStack] mkdir ["phpqa"]
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpmetrics"  --exclude="vendor" --extensions=php --report-html="phpqa/phpmetrics/" --report-violations="phpqa/phpmetrics.xml" "lib"
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpcs" -p --standard="PSR2"  --ignore=*/vendor/* "lib" --extensions=php --report-checkstyle="phpqa/checkstyle.xml"
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/php-cs-fixer.phar" fix "lib" --verbose --format junit --rules @PSR2 --allow-risky no --dry-run
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpmd" "lib" xml "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/app/phpmd.xml"  --exclude /vendor/ --suffixes php --reportfile "phpqa/phpmd.xml"
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/pdepend" --jdepend-xml="phpqa/pdepend-jdepend.xml" --summary-xml="phpqa/pdepend-summary.xml" --dependency-xml="phpqa/pdepend-dependencies.xml" --jdepend-chart="phpqa/pdepend-jdepend.svg" --overview-pyramid="phpqa/pdepend-pyramid.svg" --suffix=php  --ignore=/vendor/ "lib"
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpunit"
+ [Edge\QA\Task\ParallelExec] "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/psalm" --config="phpqa/psalm-phpqa.xml" --show-info=true --report="phpqa/psalm.xml" --use-ini-defaults
+ [Edge\QA\Task\ParallelExec]  Error for "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpmd" "lib" xml "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/app/phpmd.xml"  --exclude /vendor/ --suffixes php --reportfile "phpqa/phpmd.xml" 
+You are running PHP CS Fixer on PHP 8.2.22, but the minimum supported version in composer.json is PHP 8.1. This may introduce syntax or features not yet available in PHP 8.1, which could cause issues under that version. It is recommended to run PHP CS Fixer on PHP 8.1, to fit your project specifics.
+If you need help while solving warnings, ask at https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/discussions/, we will help you!
+
+PHP CS Fixer 3.89.2 (3dde298) Folding Bike by Fabien Potencier, Dariusz Ruminski and contributors.
+PHP runtime: 8.2.22
+Running analysis on 1 core sequentially.
+You can enable parallel runner and speed up the analysis! Please see https://cs.symfony.com/doc/usage.html for more information.
+Loaded config default.
+Using cache file ".php-cs-fixer.cache".
+
+Files that were not fixed due to errors reported during linting before fixing:
+   1) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/SolrManagementController.php
+   2) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/ConfigurationSettingsController.php
+   3) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/ValidationSettingsController.php
+   4) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/FileSettingsController.php
+   5) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/CacheSettingsController.php
+   6) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/LlmSettingsController.php
+   7) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/ApiTokenSettingsController.php
+   8) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Controller/Settings/SolrOperationsController.php
+   9) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/Settings/SolrSettingsHandler.php
+  10) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/Settings/ObjectRetentionHandler.php
+  11) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/Settings/CacheSettingsHandler.php
+  12) /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/lib/Service/Settings/ConfigurationSettingsHandler.php
+ 
+ [Edge\QA\Task\ParallelExec]  Error for "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpmd" "lib" xml "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/app/phpmd.xml"  --exclude /vendor/ --suffixes php --reportfile "phpqa/phpmd.xml" 
+Problem parsing /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/phpqa/psalm-phpqa.xml:
+  Error on line 11:
+    Element '{https://getpsalm.org/schema/config}MisplacedRequiredParam': This element is not expected.
+
+ 
+ [Edge\QA\Task\ParallelExec]  '"/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpcs" -p --standard="PSR2"  --ignore=*/vendor/* "lib" --extensions=php --report-checkstyle="phpqa/checkstyle.xml"' exited with code 2 
+'"/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/php-cs-fixer.phar" fix "lib" --verbose --format junit --rules @PSR2 --allow-risky no --dry-run' exited with code 12 
+'"/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/phpmd" "lib" xml "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/app/phpmd.xml"  --exclude /vendor/ --suffixes php --reportfile "phpqa/phpmd.xml"' exited with code 3 
+'"/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister/vendor/edgedesign/phpqa/../../../vendor/bin/psalm" --config="phpqa/psalm-phpqa.xml" --show-info=true --report="phpqa/psalm.xml" --use-ini-defaults' exited with code 1 
+  Time 42.564s
+ [Edge\QA\Task\ParallelExec]  Exit code 12  Time 42.564s
+
+[phpqa] 
++--------------+----------------+---------------------------------+--------+-----------------------------+
+| Tool         | Allowed Errors | Errors count                    | Is OK? | HTML report                 |
++--------------+----------------+---------------------------------+--------+-----------------------------+
+| phpmetrics   |                |                                 | ✓      | phpqa/phpmetrics/index.html |
+| phpcs        |                | 14313                           | ✓      | phpqa/phpcs.html            |
+| php-cs-fixer |                | 186                             | ✓      | phpqa/php-cs-fixer.html     |
+| phpmd        |                | 1408                            | ✓      | phpqa/phpmd.html            |
+| pdepend      |                |                                 | ✓      | phpqa/pdepend.html          |
+| phpunit      |                | 0                               | ✓      | phpqa/phpunit.html          |
+| psalm        |                | XML [phpqa/psalm.xml] not found | ✓      | phpqa/psalm.html            |
++--------------+----------------+---------------------------------+--------+-----------------------------+
+| phpqa        |                | 15907                           | ✓      | phpqa/phpqa.html            |
++--------------+----------------+---------------------------------+--------+-----------------------------+
+
+[phpqa] Not installed tools: phploc, phpcpd, phpstan, security-checker, parallel-lint, deptrac
+
+[phpqa] No failed tools

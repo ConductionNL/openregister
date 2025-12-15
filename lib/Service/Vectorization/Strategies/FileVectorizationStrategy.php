@@ -16,7 +16,7 @@
  * @link https://www.OpenRegister.nl
  */
 
-namespace OCA\OpenRegister\Service\Vectorization;
+namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;

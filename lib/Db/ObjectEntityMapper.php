@@ -34,7 +34,6 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\IDatabaseJsonService;
 use OCA\OpenRegister\Service\MySQLJsonService;
-use OCA\OpenRegister\Service\AuthorizationExceptionService;
 use OCA\OpenRegister\Service\OrganisationService;
 use Exception;
 use RuntimeException;
@@ -117,13 +116,6 @@ class ObjectEntityMapper extends QBMapper
     private IUserManager $userManager;
 
     /**
-     * Authorization exception service instance
-     *
-     * @var AuthorizationExceptionService|null
-     */
-    private ?AuthorizationExceptionService $authorizationExceptionService = null;
-
-    /**
      * Logger interface instance
      *
      * @var LoggerInterface
@@ -184,7 +176,6 @@ class ObjectEntityMapper extends QBMapper
      * @param IAppConfig                         $appConfig                     The app configuration
      * @param LoggerInterface                    $logger                        The logger
      * @param OrganisationService                $organisationService           The organisation service for multi-tenancy
-     * @param AuthorizationExceptionService|null $authorizationExceptionService Optional authorization exception service
      */
     public function __construct(
         IDBConnection $db,
@@ -196,8 +187,7 @@ class ObjectEntityMapper extends QBMapper
         IUserManager $userManager,
         IAppConfig $appConfig,
         LoggerInterface $logger,
-        OrganisationService $organisationService,
-        ?AuthorizationExceptionService $authorizationExceptionService=null
+        OrganisationService $organisationService
     ) {
         parent::__construct($db, 'openregister_objects');
 
@@ -216,7 +206,6 @@ class ObjectEntityMapper extends QBMapper
         $this->appConfig       = $appConfig;
         $this->logger          = $logger;
         $this->organisationService           = $organisationService;
-        $this->authorizationExceptionService = $authorizationExceptionService;
 
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
@@ -357,75 +346,6 @@ class ObjectEntityMapper extends QBMapper
 
 
     /**
-     * Apply authorization exception filters to a query builder
-     *
-     * This method handles authorization exceptions (inclusions and exclusions) that override
-     * the standard RBAC system. It's called before normal RBAC filtering to apply
-     * higher-priority exception rules.
-     *
-     * //end try
-     *
-     * @param IQueryBuilder $qb               The query builder to modify
-     * @param string        $userId           The user ID to check exceptions for
-     * @param string        $objectTableAlias Optional alias for the objects table (default: 'o')
-     * @param string        $schemaTableAlias Optional alias for the schemas table (default: 's')
-     * @param string        $action           The action being performed (default: 'read')
-     *
-     * @return null True if user should have access via exceptions, false if denied, null if no exceptions apply
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    private function applyAuthorizationExceptions(
-        IQueryBuilder $_qb,
-        string $userId,
-        string $_objectTableAlias='o',
-        string $_schemaTableAlias='s',
-        string $action='read'
-    ) {
-        // If authorization exception service is not available, skip exception handling.
-        if ($this->authorizationExceptionService === null) {
-            return null;
-        }
-
-        try {
-            // Use optimized method to check if user has any authorization exceptions.
-            $hasExceptions = $this->authorizationExceptionService->userHasExceptionsOptimized($userId);
-            if (($hasExceptions === false)) {
-                // No exceptions for this user, fall back to normal RBAC.
-            }
-
-            // For query builder-based authorization, we need to add conditions for exceptions
-            // This is complex because we need to handle both inclusions and exclusions
-            // at the database level. For now, we'll rely on post-processing or
-            // implement simplified exception handling here.
-            $this->logger->debug(
-                    'User has authorization exceptions, applying complex filtering',
-                    [
-                        'user_id' => $userId,
-                        'action'  => $action,
-                    ]
-                    );
-
-            // @todo: Implement complex query building for exceptions
-            // For now, return null to fall back to normal RBAC with post-processing
-            return null;
-        } catch (Exception $e) {
-            $this->logger->error(
-                    'Error applying authorization exceptions',
-                    [
-                        'user_id'   => $userId,
-                        'action'    => $action,
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
-            // Fall back to normal RBAC on error.
-            return null;
-        }//end try
-
-    }//end applyAuthorizationExceptions()
-
-
-    /**
      * Check schema-level permissions for a user and action
      *
      * @param string $userId The user ID to check
@@ -466,8 +386,7 @@ class ObjectEntityMapper extends QBMapper
      * Apply RBAC permission filters to a query builder
      *
      * This method adds WHERE conditions to filter objects based on the current user's
-     * permissions according to the schema's authorization configuration, taking into
-     * account authorization exceptions that may override normal RBAC rules.
+     * permissions according to the schema's authorization configuration.
      *
      * @param IQueryBuilder $qb                     The query builder to modify
      * @param string        $objectTableAlias       Optional alias for the objects table (default: 'o')
@@ -567,16 +486,6 @@ class ObjectEntityMapper extends QBMapper
             // No filtering needed for admin users.
         }
 
-        // Check for authorization exceptions first (highest priority).
-        $exceptionResult = $this->applyAuthorizationExceptions($qb, $userId, $objectTableAlias, $schemaTableAlias, 'read');
-        if ($exceptionResult === false) {
-            // User is explicitly denied access via exclusion - apply very restrictive filter.
-            // Always false.
-            return;
-        }
-
-        // Note: If $exceptionResult is true (inclusion), we still apply normal RBAC as additional conditions
-        // If $exceptionResult is null, we proceed with normal RBAC.
         // Build conditions for read access.
         $readConditions = $qb->expr()->orX();
 
