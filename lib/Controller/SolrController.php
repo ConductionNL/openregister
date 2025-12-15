@@ -13,7 +13,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use Psr\Log\LoggerInterface;
@@ -112,8 +112,8 @@ class SolrController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container.
-            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            // Get VectorizationService from container.
+            $vectorService = $this->container->get(VectorizationService::class);
 
             // Perform semantic search.
             $results = $vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
@@ -216,8 +216,8 @@ class SolrController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container.
-            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            // Get VectorizationService from container.
+            $vectorService = $this->container->get(VectorizationService::class);
 
             // Perform hybrid search.
             $result = $vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
@@ -280,8 +280,8 @@ class SolrController extends Controller
     public function getVectorStats(): JSONResponse
     {
         try {
-            // Get VectorEmbeddingService from container.
-            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            // Get VectorizationService from container.
+            $vectorService = $this->container->get(VectorizationService::class);
 
             // Get statistics.
             $stats = $vectorService->getVectorStats();
@@ -358,8 +358,8 @@ class SolrController extends Controller
                         );
             }
 
-            // Get VectorEmbeddingService from container.
-            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            // Get VectorizationService from container.
+            $vectorService = $this->container->get(VectorizationService::class);
 
             // Build embedding configuration based on provider.
             $embeddingConfig = [
@@ -985,7 +985,7 @@ class SolrController extends Controller
     {
         try {
             // Get services from container.
-            $vectorService = $this->container->get(VectorEmbeddingService::class);
+            $vectorService = $this->container->get(VectorizationService::class);
             $objectMapper  = $this->container->get(ObjectEntityMapper::class);
 
             // Get vector stats.

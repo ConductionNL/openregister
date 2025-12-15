@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,7 +48,7 @@ class FileSearchController extends Controller
      * @param string                 $appName         App name
      * @param IRequest               $request         Request object
      * @param IndexService           $indexService    Index service
-     * @param VectorEmbeddingService $vectorService   Vector service
+     * @param VectorizationService $vectorService   Vectorization service
      * @param SettingsService        $settingsService Settings service
      * @param LoggerInterface        $logger          Logger
      */
@@ -56,7 +56,7 @@ class FileSearchController extends Controller
         string $appName,
         IRequest $request,
         private readonly IndexService $indexService,
-        private readonly VectorEmbeddingService $vectorService,
+        private readonly VectorizationService $vectorService,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger
     ) {
@@ -219,7 +219,7 @@ class FileSearchController extends Controller
                     );
             }
 
-            // Use existing semanticSearch method from VectorEmbeddingService.
+            // Use existing semanticSearch method from VectorizationService.
             $results = $this->vectorService->semanticSearch(
                 query: $query,
                 limit: $limit,
@@ -282,7 +282,7 @@ class FileSearchController extends Controller
                         );
             }
 
-            // Use existing hybridSearch method from VectorEmbeddingService.
+            // Use existing hybridSearch method from VectorizationService.
             $results = $this->vectorService->hybridSearch(
                 query: $query,
                 solrFilters: ['entityType' => 'file'],

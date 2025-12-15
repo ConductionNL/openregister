@@ -20,8 +20,8 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
-use OCA\OpenRegister\Service\Vectorization\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\VectorEmbeddingService;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -392,6 +392,145 @@ class VectorizationService
         return $this->strategies[$entityType];
 
     }//end getStrategy()
+
+
+    // =============================================================================
+    // PUBLIC API FACADE METHODS - Delegate to VectorEmbeddingService
+    // =============================================================================
+    // These methods provide a single entry point for all vector operations.
+    // Other services should call VectorizationService instead of
+    // VectorEmbeddingService directly.
+    // =============================================================================
+
+    /**
+     * Generate embedding for a single text
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @param string      $text     Text to embed
+     * @param string|null $provider Embedding provider (null = use default from settings)
+     *
+     * @return array{embedding: array<float>, model: string, dimensions: int} Embedding data
+     *
+     * @throws \Exception If embedding generation fails
+     */
+    public function generateEmbedding(string $text, ?string $provider=null): array
+    {
+        return $this->vectorService->generateEmbedding($text, $provider);
+
+    }//end generateEmbedding()
+
+
+    /**
+     * Perform semantic similarity search
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @param string      $query    Query text to search for
+     * @param int         $limit    Maximum number of results
+     * @param array       $filters  Additional filters (entity_type, etc.)
+     * @param string|null $provider Embedding provider
+     *
+     * @return array<int,array<string,mixed>> Search results
+     *
+     * @throws \Exception If search fails
+     */
+    public function semanticSearch(
+        string $query,
+        int $limit=10,
+        array $filters=[],
+        ?string $provider=null
+    ): array {
+        return $this->vectorService->semanticSearch($query, $limit, $filters, $provider);
+
+    }//end semanticSearch()
+
+
+    /**
+     * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @param string      $query       Query text
+     * @param array       $solrFilters SOLR-specific filters
+     * @param int         $limit       Maximum results
+     * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider    Embedding provider
+     *
+     * @return array Hybrid search results
+     *
+     * @throws \Exception If hybrid search fails
+     */
+    public function hybridSearch(
+        string $query,
+        array $solrFilters=[],
+        int $limit=20,
+        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider=null
+    ): array {
+        return $this->vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+
+    }//end hybridSearch()
+
+
+    /**
+     * Get vector statistics
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @return array Statistics about stored vectors
+     */
+    public function getVectorStats(): array
+    {
+        return $this->vectorService->getVectorStats();
+
+    }//end getVectorStats()
+
+
+    /**
+     * Test embedding generation with custom configuration
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
+     * @param array  $config   Provider-specific configuration
+     * @param string $testText Optional test text to embed
+     *
+     * @return array Test results
+     */
+    public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
+    {
+        return $this->vectorService->testEmbedding($provider, $config, $testText);
+
+    }//end testEmbedding()
+
+
+    /**
+     * Check if embedding model has changed since vectors were created
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @return array Model mismatch information
+     */
+    public function checkEmbeddingModelMismatch(): array
+    {
+        return $this->vectorService->checkEmbeddingModelMismatch();
+
+    }//end checkEmbeddingModelMismatch()
+
+
+    /**
+     * Clear all embeddings from the database
+     *
+     * Delegates to VectorEmbeddingService.
+     *
+     * @return array Deletion results
+     */
+    public function clearAllEmbeddings(): array
+    {
+        return $this->vectorService->clearAllEmbeddings();
+
+    }//end clearAllEmbeddings()
 
 
 }//end class

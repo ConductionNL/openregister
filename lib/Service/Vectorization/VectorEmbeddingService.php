@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Vectorization;
 
 use InvalidArgumentException;
 use Exception;

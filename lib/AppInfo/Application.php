@@ -58,6 +58,15 @@ use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
 use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
 use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
+use OCA\OpenRegister\Service\ObjectService\ValidationHandler;
+use OCA\OpenRegister\Service\ObjectService\FacetHandler;
+use OCA\OpenRegister\Service\ObjectService\MetadataHandler;
+use OCA\OpenRegister\Service\ObjectService\BulkOperationsHandler;
+use OCA\OpenRegister\Service\ObjectService\RelationHandler;
+use OCA\OpenRegister\Service\ObjectService\QueryHandler;
+use OCA\OpenRegister\Service\ObjectService\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\ObjectService\MergeHandler;
+use OCA\OpenRegister\Service\ObjectService\UtilityHandler;
 use OCA\OpenRegister\Service\Objects\PublishObject;
 use OCA\OpenRegister\Service\Objects\DepublishObject;
 use OCA\OpenRegister\Service\FileService;
@@ -74,10 +83,10 @@ use OCA\OpenRegister\Service\Index\Backends\Solr\SolrFacetProcessor;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrSchemaManager;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\Vectorization\VectorEmbeddingService;
 use OCA\OpenRegister\Service\VectorizationService;
-use OCA\OpenRegister\Service\Vectorization\FileVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\NamedEntityRecognitionService;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -304,9 +313,7 @@ class Application extends App implements IBootstrap
                             userManager: $container->get('OCP\IUserManager'),
                             appConfig: $container->get('OCP\IAppConfig'),
                             logger: $container->get('Psr\Log\LoggerInterface'),
-                            organisationService: $container->get(OrganisationService::class),
-                            authorizationExceptionService: null
-                            // AuthorizationExceptionService.
+                            organisationService: $container->get(OrganisationService::class)
                             );
                 }
                 );
@@ -372,6 +379,17 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: BulkValidationHandler can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+        // NOTE: ObjectService handlers can be autowired (only type-hinted parameters).
+        // - ValidationHandler (validateRequiredFields, validateObjectsBySchema, handleValidationException)
+        // - FacetHandler (getFacetsForObjects, getFacetableFields)
+        // - MetadataHandler (getValueFromPath, generateSlugFromValue, createSlugHelper)
+        // - BulkOperationsHandler (saveObjects, deleteObjects, publishObjects, depublishObjects)
+        // - RelationHandler (applyInversedByFilter, extractRelatedData, bulk relationship loading)
+        // - QueryHandler (searchObjects, searchObjectsPaginated, countSearchObjects)
+        // - PerformanceOptimizationHandler (getActiveOrganisationForContext)
+        // - MergeHandler (mergeObjects, transferObjectFiles, deleteObjectFiles)
+        // - UtilityHandler (isUuid, normalizeEntity, normalizeToArray, cleanQuery, calculateEfficiency, getUrlSeparator)
+        // All removed manual registration - Nextcloud will autowire them automatically.
         // Register SaveObject with handlers and consolidated cache services.
         $context->registerService(
                  SaveObject::class,

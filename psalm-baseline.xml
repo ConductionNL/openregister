@@ -246,12 +246,6 @@
       <code><![CDATA[$version === null]]></code>
     </TypeDoesNotContainNull>
   </file>
-  <file src="lib/Service/DocumentService.php">
-    <UndefinedInterfaceMethod>
-      <code><![CDATA[fopen]]></code>
-      <code><![CDATA[getContent]]></code>
-    </UndefinedInterfaceMethod>
-  </file>
   <file src="lib/Service/FileService.php">
     <MismatchingDocblockReturnType>
       <code><![CDATA[Node|null]]></code>

@@ -69,6 +69,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Objects\SaveObject;
 use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
 use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects\ChunkProcessingHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects\PreparationHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
@@ -119,6 +122,9 @@ class SaveObjects
         private readonly SaveObject $saveHandler,
         private readonly BulkValidationHandler $bulkValidationHandler,
         private readonly BulkRelationHandler $bulkRelationHandler,
+        private readonly TransformationHandler $transformationHandler,
+        private readonly PreparationHandler $preparationHandler,
+        private readonly ChunkProcessingHandler $chunkProcessingHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger
@@ -313,7 +319,7 @@ class SaveObjects
 
             // STANDARD PATH: Mixed-schema operation - use full preparation logic.
             // NO ERROR SUPPRESSION: Let real preparation errors surface immediately.
-            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareObjectsForBulkSave($objects);
+            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->preparationHandler->prepareObjectsForBulkSave($objects);
         }
 
         // CRITICAL FIX: Include objects that failed during preparation in result.
@@ -352,7 +358,7 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result.
-            $chunkResult = $this->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $_rbac, _multitenancy: $_multitenancy, _validation: $validation, _events: $events);
+            $chunkResult = $this->chunkProcessingHandler->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $_rbac, _multitenancy: $_multitenancy, _validation: $validation, _events: $events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged.
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -1182,7 +1188,7 @@ class SaveObjects
         ];
 
         // STEP 1: Transform objects for database format with metadata hydration.
-        $transformationResult = $this->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
+        $transformationResult = $this->transformationHandler->transformObjectsToDatabaseFormatInPlace(objects: $objects, schemaCache: $schemaCache);
         $transformedObjects = $transformationResult['valid'];
 
 
