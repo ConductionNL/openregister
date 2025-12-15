@@ -1066,6 +1066,139 @@ Response:
 }
 ```
 
+## Webhook Architecture
+
+OpenRegister's webhook system is built with a clean, unified architecture that handles both post-event webhooks and pre-request interception.
+
+### Core Components
+
+```mermaid
+flowchart TD
+    A[Event Occurs] --> B[WebhookEventListener]
+    B --> C[WebhookService]
+    
+    J[HTTP Request] --> K[ObjectsController]
+    K --> C
+    C --> D{Payload Format}
+    
+    D -->|Standard| E[Standard JSON Payload]
+    D -->|CloudEvents| F[CloudEventFormatter]
+    F --> G[CloudEvents 1.0 Payload]
+    E --> H[HTTP Delivery]
+    G --> H
+    H --> I[External Webhook]
+    
+    C --> L{Request Type}
+    L -->|Pre-Request| M[Before Controller]
+    L -->|Post-Event| N[After Controller]
+    
+    M --> O[Continue to Controller]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#e8f5e9
+    style F fill:#f3e5f5
+    style K fill:#fff4e1
+    style I fill:#e1f5ff
+```
+
+#### WebhookService
+The unified service responsible for all webhook operations. Features:
+- **Post-event webhook delivery** - Sends webhooks after events occur
+- **Pre-request interception** - Intercepts HTTP requests before controller execution
+- Event dispatching to configured webhooks
+- Retry logic with configurable policies
+- Statistics tracking
+- Payload filtering
+- HMAC signature generation
+- Support for multiple payload formats (standard and CloudEvents)
+
+#### CloudEventFormatter
+A dedicated formatter service that creates CloudEvents 1.0 compliant payloads. Can format:
+- Standard event data into CloudEvents
+- HTTP requests into CloudEvents (for pre-request interception)
+- Supports custom source and subject identifiers
+
+#### WebhookEventListener
+Event listener that connects Nextcloud events to the webhook system:
+- Listens to all OpenRegister events
+- Extracts event payloads
+- Dispatches to WebhookService
+
+### Payload Formats
+
+OpenRegister webhooks support two payload formats:
+
+#### Standard Format (default)
+
+```json
+{
+  "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+  "webhook": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "My Webhook"
+  },
+  "data": {
+    "objectType": "object",
+    "action": "created",
+    "object": {...}
+  },
+  "timestamp": "2025-01-25T10:30:00+00:00",
+  "attempt": 1
+}
+```
+
+#### CloudEvents Format
+
+To use CloudEvents format, configure your webhook with:
+
+```json
+{
+  "name": "My CloudEvents Webhook",
+  "url": "https://my-service.com/webhook",
+  "configuration": {
+    "useCloudEvents": true,
+    "cloudEventSource": "/apps/openregister/my-source",
+    "cloudEventSubject": "my-subject"
+  }
+}
+```
+
+CloudEvents payload structure:
+
+```json
+{
+  "specversion": "1.0",
+  "type": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+  "source": "/apps/openregister/my-source",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "time": "2025-01-25T10:30:00+00:00",
+  "datacontenttype": "application/json",
+  "subject": "my-subject",
+  "dataschema": null,
+  "data": {
+    "objectType": "object",
+    "action": "created",
+    "object": {...},
+    "webhook": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "My CloudEvents Webhook"
+    },
+    "attempt": 1
+  },
+  "openregister": {
+    "app": "openregister",
+    "version": "1.0.0"
+  }
+}
+```
+
+CloudEvents format is particularly useful when:
+- Integrating with systems that expect CloudEvents
+- Building event-driven architectures with standardized events
+- Using event streaming platforms (Kafka, Pulsar, etc.)
+- Implementing event sourcing patterns
+
 ## API Reference
 
 For complete API documentation, see the [Events API Reference](../api/events-reference.md).

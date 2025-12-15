@@ -362,7 +362,7 @@ Added critical indexes for search performance:
 
 ### Schema Caching System
 
-**Service**: `lib/Service/SchemaCacheService.php`
+**Handler**: `lib/Service/Schemas/SchemaCacheHandler.php`
 
 Implemented comprehensive schema caching with:
 - **In-memory caching** for frequently accessed schemas

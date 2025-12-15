@@ -143,8 +143,6 @@ class RegisterMapper extends QBMapper
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
         ObjectEntityMapper $objectEntityMapper,
-        // REMOVED: Services should not be in mappers
-        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -156,13 +154,9 @@ class RegisterMapper extends QBMapper
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
         $this->objectEntityMapper = $objectEntityMapper;
-
-        // Initialize multi-tenancy trait dependencies.
-        // REMOVED: Services should not be in mappers
-        //         $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->appConfig           = $appConfig;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->appConfig          = $appConfig;
 
     }//end __construct()
 

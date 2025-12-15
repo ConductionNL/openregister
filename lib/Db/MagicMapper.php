@@ -2,7 +2,7 @@
 /**
  * MagicMapper - Dynamic Schema-Based Table Management
  *
- * This service provides dynamic table creation and management based on JSON schema objects.
+ * This mapper provides dynamic table creation and management based on JSON schema objects.
  * It creates dedicated tables for each schema, providing better performance and organization
  * compared to storing all objects in a single generic table.
  *
@@ -19,8 +19,8 @@
  * - Schema property columns mapped from JSON schema to SQL types
  * - Automatic indexing for performance optimization
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
+ * @category Database
+ * @package  OCA\OpenRegister\Db
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -33,7 +33,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Db;
 
 use Exception;
 use DateTime;
@@ -44,11 +44,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Service\MagicMapperHandlers\MagicSearchHandler;
-use OCA\OpenRegister\Service\MagicMapperHandlers\MagicRbacHandler;
-use OCA\OpenRegister\Service\MagicMapperHandlers\MagicBulkHandler;
-use OCA\OpenRegister\Service\MagicMapperHandlers\MagicOrganizationHandler;
-use OCA\OpenRegister\Service\MagicMapperHandlers\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

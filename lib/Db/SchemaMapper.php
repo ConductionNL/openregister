@@ -102,6 +102,15 @@ class SchemaMapper extends QBMapper
     private readonly OrganisationService $organisationService;
 
     /**
+     * App configuration for multi-tenancy settings
+     *
+     * Used by MultiTenancyTrait to check multi-tenancy status.
+     *
+     * @var IAppConfig App configuration instance
+     */
+    private IAppConfig $appConfig;
+
+    /**
      * User session for current user
      *
      * Used to get current user context for RBAC and multi-tenancy.
@@ -142,10 +151,8 @@ class SchemaMapper extends QBMapper
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        // REMOVED: Handlers should not be in mappers
-        //         PropertyValidatorHandler $validator,
-        // REMOVED: Services should not be in mappers
-        //         OrganisationService $organisationService,
+        PropertyValidatorHandler $validator,
+        OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -155,9 +162,8 @@ class SchemaMapper extends QBMapper
 
         // Store dependencies for use in mapper methods.
         $this->eventDispatcher     = $eventDispatcher;
-        //         $this->validator           = $validator; // REMOVED
-        // REMOVED: Services should not be in mappers
-        //         $this->organisationService = $organisationService;
+        $this->validator           = $validator;
+        $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         // Assign appConfig to trait's protected property.
@@ -173,12 +179,12 @@ class SchemaMapper extends QBMapper
      * an 'extend' property set, it will load the parent schema and merge its
      * properties with the current schema, providing the complete resolved schema.
      *
-     * @param int|string $id        The id of the schema
-     * @param array      $_extend   Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
-     *                              Set to false to bypass organization filter (e.g., when expanding schemas for registers)
+     * @param int|string $id            The id of the schema
+     * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
+     * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     *                                  Set to false to bypass organization filter (e.g., when expanding schemas for registers)
      *
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
@@ -265,9 +271,10 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array $ids           The ids of the schemas
-     * @param bool  $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool  $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param array     $ids           The ids of the schemas
+     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
@@ -343,8 +350,8 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchParams     The search parameters to apply
      * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
      * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
+     * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
+     * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Schema[] The schemas, multi: possibly with stats
      *
@@ -736,7 +743,7 @@ class SchemaMapper extends QBMapper
     /**
      * Delete a schema
      *
-     * @param Entity $schema The schema to delete
+     * @param Entity $entity The schema entity to delete
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If user doesn't have delete permission or access to this organisation

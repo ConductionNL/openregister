@@ -42,15 +42,12 @@ graph TB
         ObjectHandler[ObjectHandler]
         EmailHandler[EmailHandler<br/>Future]
         CalendarHandler[CalendarHandler<br/>Future]
-    end
-    
-    subgraph Chunking[Chunking Service]
         Chunker[Smart Chunking<br/>Recursive/Fixed]
+        ERH[EntityRecognitionHandler<br/>Extract Entities]
     end
     
     subgraph Enhancement[Enhancement Pipeline]
         Vectorization[VectorizationService<br/>Generate Embeddings]
-        NER[NamedEntityRecognitionService<br/>Extract Entities]
         SolrIndexing[Solr Indexing<br/>Full-Text Search]
         LanguageDetect[Language Detection<br/>Future]
     end
@@ -73,15 +70,15 @@ graph TB
     CalendarHandler --> Chunker
     
     Chunker --> ChunksDB
+    Chunker --> ERH
     
     ChunksDB --> Vectorization
-    ChunksDB --> NER
     ChunksDB --> SolrIndexing
     ChunksDB --> LanguageDetect
     
     Vectorization --> VectorsDB
-    NER --> EntitiesDB
-    NER --> RelationsDB
+    ERH --> EntitiesDB
+    ERH --> RelationsDB
     
     style Sources fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style Extraction fill:#fff9c4,stroke:#f57f17,stroke-width:2px

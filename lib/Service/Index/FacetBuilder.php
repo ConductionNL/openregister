@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * FacetBuilder
  *
  * Handles Solr facet building operations.
@@ -16,6 +14,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 

@@ -30,7 +30,7 @@
 ## 📋 Detailed Plan for Remaining Handlers
 
 ### CacheSettingsHandler (~600 lines)
-**Dependencies**: IConfig, ICacheFactory, SchemaCacheService, FacetCacheHandler, CacheHandler, IAppContainer
+**Dependencies**: IConfig, ICacheFactory, SchemaCacheHandler, FacetCacheHandler, CacheHandler, IAppContainer
 **Methods**:
 - getCacheStats() - Get comprehensive cache statistics
 - getCachedObjectStats() - Get cached object stats

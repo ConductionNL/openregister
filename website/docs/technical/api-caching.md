@@ -107,8 +107,8 @@ curl 'api/objects/voorzieningen/module?_extend[]=@self.schema&_cache=false'
 
 ### Cache Services
 - `ObjectCacheService`: Object-specific caching with SOLR integration
-- `SchemaCacheService`: Schema-specific caching  
-- `SchemaFacetCacheService`: Facet-specific caching
+- `SchemaCacheHandler`: Schema-specific caching (Handler in Schemas/)
+- `FacetCacheHandler`: Facet-specific caching (Handler in Schemas/)
 - `SolrService`: Apache SOLR search engine integration
 
 ### SOLR Integration

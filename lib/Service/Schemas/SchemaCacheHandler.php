@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenRegister Schema Cache Service
+ * OpenRegister Schema Cache Handler
  *
- * Service class for caching schema data to improve performance.
+ * Handler class for caching schema data to improve performance.
  *
- * This service provides high-performance caching for schema objects and their
+ * This handler provides high-performance caching for schema objects and their
  * computed properties like facetable fields, validation rules, and configuration.
  * It automatically invalidates cache when schemas are updated.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service
+ * @package  OCA\OpenRegister\Service\Schemas
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -21,7 +21,7 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Schemas;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -34,9 +34,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
 /**
- * Schema Cache Service for improved performance
+ * Schema Cache Handler for improved performance
  *
- * This service provides comprehensive caching for schema-related data:
+ * This handler provides comprehensive caching for schema-related data:
  * - Schema objects and their properties
  * - Computed facetable fields
  * - Validation configurations
@@ -54,7 +54,7 @@ use Psr\Log\LoggerInterface;
  * - Enables predictable facet caching based on schema structure
  *
  * @category Service
- * @package  OCA\OpenRegister\Service
+ * @package  OCA\OpenRegister\Service\Schemas
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -64,7 +64,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class SchemaCacheService
+class SchemaCacheHandler
 {
 
     /**
@@ -128,7 +128,7 @@ class SchemaCacheService
      * In-memory cache for frequently accessed data
      *
      * Static array cache for ultra-fast access to frequently used schema data.
-     * Shared across all instances of this service.
+     * Shared across all instances of this handler.
      *
      * @var array<string, mixed> In-memory cache array
      */
@@ -165,7 +165,7 @@ class SchemaCacheService
     /**
      * Constructor
      *
-     * Initializes service with database connection, schema mapper, and logger
+     * Initializes handler with database connection, schema mapper, and logger
      * for schema caching operations.
      *
      * @param IDBConnection   $db           Database connection for persistent cache
@@ -179,7 +179,7 @@ class SchemaCacheService
         SchemaMapper $schemaMapper,
         LoggerInterface $logger
     ) {
-        // Store dependencies for use in service methods.
+        // Store dependencies for use in handler methods.
         $this->db           = $db;
         $this->schemaMapper = $schemaMapper;
         $this->logger       = $logger;
@@ -443,6 +443,8 @@ class SchemaCacheService
      * This method removes expired cache entries from the database.
      * Should be called periodically via cron job.
      *
+     * @return int Number of deleted entries
+     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return int<min, max>
@@ -478,7 +480,7 @@ class SchemaCacheService
     /**
      * Get comprehensive cache statistics
      *
-     * @return (int|string)[]
+     * @return (int|string)[] Cache statistics array
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *

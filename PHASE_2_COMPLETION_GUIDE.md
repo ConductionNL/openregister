@@ -145,7 +145,7 @@ $context->registerService(ObjectRetentionHandler::class, function (IContainer $c
 $context->registerService(CacheSettingsHandler::class, function (IContainer $c) {
     return new CacheSettingsHandler(
         $c->get(ICacheFactory::class),
-        $c->get(SchemaCacheService::class),
+        $c->get(SchemaCacheHandler::class),
         $c->get(FacetCacheHandler::class),
         null, // objectCacheService - lazy loaded
         $c    // container

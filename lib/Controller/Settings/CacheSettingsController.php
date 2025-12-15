@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Cache Settings Controller
  *
  * @category  Controller
@@ -13,6 +11,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
@@ -144,13 +144,13 @@ class CacheSettingsController extends Controller
     /**
      * Clear a specific SOLR collection by name
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $name The name of the collection to clear
      *
      * @return JSONResponse The clear result
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|422, array{success: bool, message: mixed|string, collection: string}, array<never, never>>
      */

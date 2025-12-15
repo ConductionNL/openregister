@@ -33,7 +33,7 @@ Added critical indexes for search performance:
 
 ### 2. Schema Caching System
 
-**Service**: `lib/Service/SchemaCacheService.php`
+**Handler**: `lib/Service/Schemas/SchemaCacheHandler.php`
 
 Implemented comprehensive schema caching with:
 
@@ -110,9 +110,9 @@ Added two new cache tables:
 
 ### Service Registration
 
-Updated `lib/AppInfo/Application.php` to register new cache services:
-- `SchemaCacheService` - Schema caching and management
-- `SchemaFacetCacheService` - Facet caching and discovery
+Updated `lib/AppInfo/Application.php` to register new cache handlers:
+- `SchemaCacheHandler` - Schema caching and management
+- `FacetCacheHandler` - Facet caching and discovery
 
 ### Event-Driven Cache Invalidation
 

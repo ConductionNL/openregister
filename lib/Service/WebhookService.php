@@ -25,12 +25,18 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
+use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
- * WebhookService handles webhook delivery
+ * WebhookService handles webhook delivery and request interception
+ *
+ * This service provides two main capabilities:
+ * 1. Post-event webhook delivery - Sends webhooks after events occur
+ * 2. Pre-request webhook interception - Intercepts requests before controller execution
  */
 class WebhookService
 {
@@ -63,24 +69,34 @@ class WebhookService
      */
     private WebhookLogMapper $webhookLogMapper;
 
+    /**
+     * CloudEvent formatter
+     *
+     * @var CloudEventFormatter|null
+     */
+    private ?CloudEventFormatter $cloudEventFormatter;
+
 
     /**
      * Constructor
      *
-     * @param WebhookMapper     $webhookMapper     Webhook mapper
-     * @param LoggerInterface   $logger           Logger
-     * @param WebhookLogMapper  $webhookLogMapper Webhook log mapper
+     * @param WebhookMapper            $webhookMapper        Webhook mapper
+     * @param LoggerInterface          $logger               Logger
+     * @param WebhookLogMapper         $webhookLogMapper     Webhook log mapper
+     * @param CloudEventFormatter|null $cloudEventFormatter  CloudEvent formatter (optional)
      *
      * @return void
      */
     public function __construct(
         WebhookMapper $webhookMapper,
         LoggerInterface $logger,
-        WebhookLogMapper $webhookLogMapper
+        WebhookLogMapper $webhookLogMapper,
+        ?CloudEventFormatter $cloudEventFormatter = null
     ) {
-        $this->webhookMapper     = $webhookMapper;
-        $this->logger            = $logger;
-        $this->webhookLogMapper  = $webhookLogMapper;
+        $this->webhookMapper        = $webhookMapper;
+        $this->logger               = $logger;
+        $this->webhookLogMapper     = $webhookLogMapper;
+        $this->cloudEventFormatter  = $cloudEventFormatter;
         $this->initializeHttpClient();
 
     }//end __construct()
@@ -392,17 +408,44 @@ class WebhookService
     /**
      * Build webhook payload
      *
+     * Builds the webhook payload in either standard format or CloudEvents format
+     * based on webhook configuration.
+     *
      * @param Webhook $webhook   Webhook configuration
      * @param string  $eventName Event name
      * @param array   $payload   Event payload
      * @param int     $attempt   Delivery attempt number
      *
-     * @return (array|int|string)[]
+     * @return array Formatted webhook payload
      *
-     * @psalm-return array{event: string, webhook: array{id: string, name: string}, data: array, timestamp: string, attempt: int}
+     * @psalm-return array{event: string, webhook: array{id: string, name: string}, data: array, timestamp: string, attempt: int}|array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: 'application/json', subject: null|string, dataschema: null, data: array, openregister: array{app: 'openregister', version: string}}
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
+        // Check if webhook is configured to use CloudEvents format.
+        $config = $webhook->getConfigurationArray();
+        $useCloudEvents = ($config['useCloudEvents'] ?? false) === true;
+
+        // Use CloudEvents format if configured and formatter is available.
+        if ($useCloudEvents === true && $this->cloudEventFormatter !== null) {
+            // Add webhook metadata to payload.
+            $enrichedPayload = array_merge($payload, [
+                'webhook' => [
+                    'id'   => $webhook->getUuid(),
+                    'name' => $webhook->getName(),
+                ],
+                'attempt' => $attempt,
+            ]);
+
+            return $this->cloudEventFormatter->formatAsCloudEvent(
+                eventType: $eventName,
+                payload: $enrichedPayload,
+                source: $config['cloudEventSource'] ?? null,
+                subject: $config['cloudEventSubject'] ?? null
+            );
+        }
+
+        // Use standard format.
         return [
             'event'     => $eventName,
             'webhook'   => [
@@ -570,6 +613,192 @@ class WebhookService
         }//end switch
 
     }//end calculateRetryDelay()
+
+
+    /**
+     * Intercept request and send to webhooks
+     *
+     * Finds webhooks configured for "before" events matching this request,
+     * sends CloudEvent-formatted payloads, and optionally processes responses
+     * to modify the request.
+     *
+     * This enables pre-request webhook notifications and request modification
+     * based on webhook responses.
+     *
+     * @param IRequest $request   The HTTP request
+     * @param string   $eventType The event type (e.g., 'object.creating')
+     *
+     * @return array Modified request data or original request data
+     */
+    public function interceptRequest(IRequest $request, string $eventType): array
+    {
+        // Find webhooks configured for this event type.
+        $webhooks = $this->findWebhooksForInterception($eventType);
+
+        if (empty($webhooks) === true) {
+            // No webhooks configured, return original request data.
+            return $request->getParams();
+        }
+
+        // Format request as CloudEvent if formatter is available.
+        if ($this->cloudEventFormatter !== null) {
+            $cloudEvent = $this->cloudEventFormatter->formatRequestAsCloudEvent(
+                request: $request,
+                eventType: $eventType
+            );
+        } else {
+            // Fallback to basic request data.
+            $cloudEvent = [
+                'type'   => $eventType,
+                'method' => $request->getMethod(),
+                'path'   => $request->getPathInfo(),
+                'body'   => $request->getParams(),
+            ];
+        }
+
+        // Get original request data.
+        $requestData  = $request->getParams();
+        $modifiedData = $requestData;
+
+        // Process each webhook.
+        foreach ($webhooks as $webhook) {
+            try {
+                // Convert CloudEvent to standard webhook payload format.
+                $webhookPayload = [
+                    'objectType' => 'request',
+                    'action'     => $eventType,
+                    'cloudEvent' => $cloudEvent,
+                ];
+
+                // Deliver webhook.
+                $success = $this->deliverWebhook(
+                    webhook: $webhook,
+                    eventName: $eventType,
+                    payload: $webhookPayload,
+                    attempt: 1
+                );
+
+                // Process response if webhook is configured to handle responses.
+                // Note: This is currently limited as we're using fire-and-forget delivery.
+                // TODO: Implement response handling if needed.
+                if ($success === true && $this->shouldProcessResponse($webhook) === true) {
+                    $this->logger->info(
+                        'Webhook delivery successful but response processing not yet implemented',
+                        [
+                            'webhook_id' => $webhook->getId(),
+                            'event_type' => $eventType,
+                        ]
+                    );
+                }
+            } catch (\Exception $e) {
+                // Log failure but continue processing other webhooks.
+                $this->logger->error(
+                    'Failed to deliver webhook during request interception',
+                    [
+                        'webhook_id'   => $webhook->getId(),
+                        'webhook_name' => $webhook->getName(),
+                        'event_type'   => $eventType,
+                        'error'        => $e->getMessage(),
+                    ]
+                );
+
+                // Continue processing other webhooks even if one fails.
+                continue;
+            }//end try
+        }//end foreach
+
+        return $modifiedData;
+
+    }//end interceptRequest()
+
+
+    /**
+     * Find webhooks configured for request interception
+     *
+     * Finds webhooks that are configured for request interception and match
+     * the specified event type.
+     *
+     * @param string $eventType Event type (e.g., 'object.creating')
+     *
+     * @return array List of matching webhooks
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+     */
+    private function findWebhooksForInterception(string $eventType): array
+    {
+        // Get all enabled webhooks.
+        $allWebhooks = $this->webhookMapper->findEnabled();
+
+        // Filter webhooks that match this event type and are configured for interception.
+        $matchingWebhooks = [];
+
+        foreach ($allWebhooks as $webhook) {
+            $config = $webhook->getConfigurationArray();
+
+            // Check if webhook is configured for request interception.
+            if (($config['interceptRequests'] ?? false) !== true) {
+                continue;
+            }
+
+            // Check if webhook listens to this event type.
+            $events = $webhook->getEventsArray();
+            if (empty($events) === false) {
+                // Check if event type matches.
+                $eventClass = $this->eventTypeToEventClass($eventType);
+                if ($webhook->matchesEvent($eventClass) === false) {
+                    continue;
+                }
+            }
+
+            $matchingWebhooks[] = $webhook;
+        }//end foreach
+
+        return $matchingWebhooks;
+
+    }//end findWebhooksForInterception()
+
+
+    /**
+     * Check if webhook response should be processed
+     *
+     * Determines if the webhook is configured to have its response processed
+     * to modify the incoming request.
+     *
+     * @param Webhook $webhook Webhook configuration
+     *
+     * @return bool True if response should be processed
+     */
+    private function shouldProcessResponse(Webhook $webhook): bool
+    {
+        $config = $webhook->getConfigurationArray();
+
+        // Process response if configured to do so and not async.
+        return ($config['processResponse'] ?? false) === true
+            && ($config['async'] ?? false) === false;
+
+    }//end shouldProcessResponse()
+
+
+    /**
+     * Convert event type to event class name
+     *
+     * Converts a dot-notation event type to the corresponding event class name.
+     *
+     * @param string $eventType Event type (e.g., 'object.creating')
+     *
+     * @return string Event class name (e.g., 'OCA\OpenRegister\Event\ObjectCreatingEvent')
+     */
+    private function eventTypeToEventClass(string $eventType): string
+    {
+        // Convert event type to event class name.
+        // Example: 'object.creating' -> 'OCA\OpenRegister\Event\ObjectCreatingEvent'.
+        $parts  = explode('.', $eventType);
+        $entity = ucfirst($parts[0]);
+        $action = ucfirst($parts[1] ?? 'created');
+
+        return 'OCA\\OpenRegister\\Event\\' . $entity . $action . 'Event';
+
+    }//end eventTypeToEventClass()
 
 
 }//end class

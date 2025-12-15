@@ -104,15 +104,15 @@ class CrudHandler
             // TODO: Implement proper search logic
             $result = ['results' => [], 'total' => 0];
             // $this->objectEntityMapper->searchObjectsPaginated(
-                query: $query,
-                _rbac: $rbac,
-                _multitenancy: $multi,
-                published: $published,
-                deleted: $deleted,
-                ids: $ids,
-                uses: $uses,
-                views: $views
-            );
+            //     query: $query,
+            //     _rbac: $rbac,
+            //     _multitenancy: $multi,
+            //     published: $published,
+            //     deleted: $deleted,
+            //     ids: $ids,
+            //     uses: $uses,
+            //     views: $views
+            // );
 
             $this->logger->debug(
                 message: '[CrudHandler] Objects listed',
@@ -163,10 +163,10 @@ class CrudHandler
             // TODO: Implement proper find logic
             $object = null;
             // $this->objectEntityMapper->find(
-                id: $objectId,
-                _rbac: $rbac,
-                _multitenancy: $multi
-            );
+            //     id: $objectId,
+            //     _rbac: $rbac,
+            //     _multitenancy: $multi
+            // );
 
             if ($object === null) {
                 $this->logger->warning(
@@ -225,11 +225,11 @@ class CrudHandler
             // TODO: Implement proper save logic
             $object = null;
             // $this->objectEntityMapper->saveObject(
-                objectId: null,
-                object: $data,
-                _rbac: $rbac,
-                _multitenancy: $multi
-            );
+            //     objectId: null,
+            //     object: $data,
+            //     _rbac: $rbac,
+            //     _multitenancy: $multi
+            // );
 
             $this->logger->info(
                 message: '[CrudHandler] Object created',
@@ -286,11 +286,11 @@ class CrudHandler
             // TODO: Implement proper save logic
             $object = null;
             // $this->objectEntityMapper->saveObject(
-                objectId: $objectId,
-                object: $data,
-                _rbac: $rbac,
-                _multitenancy: $multi
-            );
+            //     objectId: $objectId,
+            //     object: $data,
+            //     _rbac: $rbac,
+            //     _multitenancy: $multi
+            // );
 
             $this->logger->info(
                 message: '[CrudHandler] Object updated',
@@ -411,10 +411,10 @@ class CrudHandler
         try {
             // TODO: Implement proper delete logic
             // $this->objectEntityMapper->deleteObject(
-                uuid: $objectId,
-                _rbac: $rbac,
-                _multitenancy: $multi
-            );
+            //     uuid: $objectId,
+            //     _rbac: $rbac,
+            //     _multitenancy: $multi
+            // );
 
             $this->logger->info(
                 message: '[CrudHandler] Object deleted',

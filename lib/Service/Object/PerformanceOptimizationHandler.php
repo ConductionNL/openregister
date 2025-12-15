@@ -96,101 +96,101 @@ class PerformanceOptimizationHandler
         // Time-based recommendations.
         if ($totalTime > 2000) {
             $recommendations[] = [
-                'type' => 'critical',
-                'issue' => 'Very slow response time',
-                'message' => "Total time {$totalTime}ms exceeds 2s threshold",
+                'type'        => 'critical',
+                'issue'       => 'Very slow response time',
+                'message'     => "Total time {$totalTime}ms exceeds 2s threshold",
                 'suggestions' => [
                     'Enable caching with appropriate TTL',
                     'Reduce _extend complexity or use selective loading',
                     'Consider database indexing optimization',
-                    'Implement pagination with smaller page sizes'
-                ]
+                    'Implement pagination with smaller page sizes',
+                ],
             ];
-        } elseif ($totalTime > 500) {
+        } else if ($totalTime > 500) {
             $recommendations[] = [
-                'type' => 'warning',
-                'issue' => 'Slow response time',
-                'message' => "Total time {$totalTime}ms exceeds 500ms target",
+                'type'        => 'warning',
+                'issue'       => 'Slow response time',
+                'message'     => "Total time {$totalTime}ms exceeds 500ms target",
                 'suggestions' => [
                     'Consider enabling caching',
                     'Optimize _extend usage',
-                    'Review database query complexity'
-                ]
+                    'Review database query complexity',
+                ],
             ];
-        }
+        }//end if
 
         // Database query optimization.
         if (($perfTimings['database_query'] ?? 0) > 200) {
             $recommendations[] = [
-                'type' => 'warning',
-                'issue' => 'Slow database queries',
-                'message' => "Database query time {$perfTimings['database_query']}ms is high",
+                'type'        => 'warning',
+                'issue'       => 'Slow database queries',
+                'message'     => "Database query time {$perfTimings['database_query']}ms is high",
                 'suggestions' => [
                     'Add database indexes for frequently filtered columns',
                     'Optimize WHERE clauses',
-                    'Consider selective field loading'
-                ]
+                    'Consider selective field loading',
+                ],
             ];
         }
 
         // Relationship loading optimization.
         if (($perfTimings['relationship_loading'] ?? 0) > 1000) {
             $recommendations[] = [
-                'type' => 'critical',
-                'issue' => 'Very slow relationship loading',
-                'message' => "Relationship loading time {$perfTimings['relationship_loading']}ms is excessive",
+                'type'        => 'critical',
+                'issue'       => 'Very slow relationship loading',
+                'message'     => "Relationship loading time {$perfTimings['relationship_loading']}ms is excessive",
                 'suggestions' => [
                     'Reduce number of _extend relationships',
                     'Use selective relationship loading',
                     'Consider relationship caching',
-                    'Implement relationship pagination if applicable'
-                ]
+                    'Implement relationship pagination if applicable',
+                ],
             ];
         }
-
 
         // Extend usage recommendations.
         $extendCount = 0;
         if (empty($query['_extend']) === false) {
             $extendCount = $this->calculateExtendCount($query['_extend']);
         }
+
         if ($extendCount > 3) {
             $recommendations[] = [
-                'type' => 'warning',
-                'issue' => 'High _extend usage',
-                'message' => 'Loading many relationships simultaneously',
+                'type'        => 'warning',
+                'issue'       => 'High _extend usage',
+                'message'     => 'Loading many relationships simultaneously',
                 'suggestions' => [
                     'Consider reducing the number of _extend parameters',
                     'Use selective loading for only required relationships',
-                    'Implement client-side lazy loading for secondary data'
-                ]
+                    'Implement client-side lazy loading for secondary data',
+                ],
             ];
         }
 
         // JSON processing optimization.
         if (($perfTimings['json_processing'] ?? 0) > 100) {
             $recommendations[] = [
-                'type' => 'info',
-                'issue' => 'JSON processing overhead',
-                'message' => "JSON processing time {$perfTimings['json_processing']}ms could be optimized",
+                'type'        => 'info',
+                'issue'       => 'JSON processing overhead',
+                'message'     => "JSON processing time {$perfTimings['json_processing']}ms could be optimized",
                 'suggestions' => [
                     'Consider JSON field truncation for large objects',
                     'Implement selective JSON field loading',
-                    'Use lightweight object serialization'
-                ]
+                    'Use lightweight object serialization',
+                ],
             ];
         }
 
         // Success case.
         if ($totalTime <= 500 && empty($recommendations) === true) {
             $recommendations[] = [
-                'type' => 'success',
-                'issue' => 'Excellent performance',
-                'message' => "Response time {$totalTime}ms meets performance target",
+                'type'        => 'success',
+                'issue'       => 'Excellent performance',
+                'message'     => "Response time {$totalTime}ms meets performance target",
                 'suggestions' => [
                     'Current optimization level is excellent',
-                    'Consider this configuration as a performance baseline'
-                ]
+                    'Consider this configuration as a performance baseline',
+                ],
             ];
         }
 

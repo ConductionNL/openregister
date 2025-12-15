@@ -625,6 +625,8 @@ class SaveObjects
      * @param string $metadataType   The type of metadata
      * @param array  $propertyConfig The property configuration
      *
+     * @return string Generated fallback name for the metadata
+     *
      * @psalm-return string
      * @phpstan-return string
      */

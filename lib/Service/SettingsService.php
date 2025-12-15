@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
@@ -234,11 +234,11 @@ class SettingsService
     private OrganisationMapper $organisationMapper;
 
     /**
-     * Schema cache service
+     * Schema cache handler
      *
-     * @var SchemaCacheService
+     * @var SchemaCacheHandler
      */
-    private SchemaCacheService $schemaCacheService;
+    private SchemaCacheHandler $schemaCacheService;
 
     /**
      * Schema facet cache service
@@ -300,7 +300,7 @@ class SettingsService
      * @param LoggerInterface              $logger                       Logger
      * @param ObjectEntityMapper           $objectEntityMapper           Object entity mapper
      * @param OrganisationMapper           $organisationMapper           Organisation mapper
-     * @param SchemaCacheService           $schemaCacheService           Schema cache service
+     * @param SchemaCacheHandler           $schemaCacheService           Schema cache handler
      * @param FacetCacheHandler            $schemaFacetCacheService      Schema facet cache service
      * @param SearchTrailMapper            $searchTrailMapper            Search trail mapper
      * @param IUserManager                 $userManager                  User manager
@@ -327,7 +327,7 @@ class SettingsService
         LoggerInterface $logger,
         ObjectEntityMapper $objectEntityMapper,
         OrganisationMapper $organisationMapper,
-        SchemaCacheService $schemaCacheService,
+        SchemaCacheHandler $schemaCacheService,
         FacetCacheHandler $schemaFacetCacheService,
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,

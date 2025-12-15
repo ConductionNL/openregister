@@ -3,10 +3,8 @@
   <file src="lib/AppInfo/Application.php">
     <InvalidNamedArgument>
       <code><![CDATA[organisationService]]></code>
+      <code><![CDATA[validator]]></code>
     </InvalidNamedArgument>
-    <NullArgument>
-      <code><![CDATA[null]]></code>
-    </NullArgument>
     <TooFewArguments>
       <code><![CDATA[new ConfigurationService(
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -18,8 +16,7 @@
                     appConfig: $container->get('OCP\IAppConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     client: new Client(),
-                    objectService: null,
-                // CIRCULAR FIX
+                    objectService: $container->get(ObjectService::class),
                     githubHandler: $container->get(GitHubHandler::class),
                     gitlabHandler: $container->get(GitLabHandler::class),
                     cacheHandler: $container->get(ConfigurationCacheHandler::class),
@@ -35,8 +32,7 @@
                     appConfig: $container->get('OCP\IAppConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     client: new Client(),
-                    objectService: null,
-                // CIRCULAR FIX
+                    objectService: $container->get(ObjectService::class),
                     githubHandler: $container->get(GitHubHandler::class),
                     gitlabHandler: $container->get(GitLabHandler::class),
                     cacheHandler: $container->get(ConfigurationCacheHandler::class),
@@ -52,8 +48,7 @@
                     appConfig: $container->get('OCP\IAppConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     client: new Client(),
-                    objectService: null,
-                // CIRCULAR FIX
+                    objectService: $container->get(ObjectService::class),
                     githubHandler: $container->get(GitHubHandler::class),
                     gitlabHandler: $container->get(GitLabHandler::class),
                     cacheHandler: $container->get(ConfigurationCacheHandler::class),
@@ -61,134 +56,109 @@
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
       <code><![CDATA[new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
-                )]]></code>
-      <code><![CDATA[new ObjectEntityMapper(
-                    db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    userSession: $container->get('OCP\IUserSession'),
-                    schemaMapper: $container->get(SchemaMapper::class),
-                    groupManager: $container->get('OCP\IGroupManager'),
-                    userManager: $container->get('OCP\IUserManager'),
-                    appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
-                )]]></code>
-      <code><![CDATA[new ObjectEntityMapper(
-                    db: $container->get('OCP\IDBConnection'),
-                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    userSession: $container->get('OCP\IUserSession'),
-                    schemaMapper: $container->get(SchemaMapper::class),
-                    groupManager: $container->get('OCP\IGroupManager'),
-                    userManager: $container->get('OCP\IUserManager'),
-                    appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
-                    // organisationService: REMOVED - No services in mappers
-                    // ALL HANDLERS REMOVED: No handlers in mappers
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 )]]></code>
     </TooFewArguments>
     <TooManyArguments>
-      <code><![CDATA[new RegisterMapper(
+      <code><![CDATA[new SchemaMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    schemaMapper: $container->get(SchemaMapper::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    validator: $container->get(PropertyValidatorHandler::class),
                     organisationService: $container->get(OrganisationService::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     appConfig: $container->get('OCP\IAppConfig')
                 )]]></code>
     </TooManyArguments>
+    <UndefinedClass>
+      <code><![CDATA[CacheHandler]]></code>
+      <code><![CDATA[CacheHandler]]></code>
+      <code><![CDATA[CacheHandler]]></code>
+      <code><![CDATA[FilePropertyHandler]]></code>
+      <code><![CDATA[MetadataHydrationHandler]]></code>
+      <code><![CDATA[SaveObject]]></code>
+      <code><![CDATA[SaveObject]]></code>
+    </UndefinedClass>
   </file>
   <file src="lib/BackgroundJob/CronFileTextExtractionJob.php">
     <ParamNameMismatch>
@@ -238,6 +208,11 @@
     <InvalidScalarArgument>
       <code><![CDATA[$exportResult['content']]]></code>
     </InvalidScalarArgument>
+  </file>
+  <file src="lib/Controller/BulkController.php">
+    <UndefinedMethod>
+      <code><![CDATA[validateObjectsBySchema]]></code>
+    </UndefinedMethod>
   </file>
   <file src="lib/Controller/ChatController.php">
     <InvalidReturnStatement>
@@ -410,6 +385,9 @@
       <code><![CDATA[is_array($typeRaw)]]></code>
       <code><![CDATA[is_array($typeRaw)]]></code>
     </TypeDoesNotContainType>
+    <UndefinedMethod>
+      <code><![CDATA[mergeObjects]]></code>
+    </UndefinedMethod>
   </file>
   <file src="lib/Controller/RegistersController.php">
     <InvalidTemplateParam>
@@ -443,99 +421,6 @@
       <code><![CDATA[$page]]></code>
     </InvalidScalarArgument>
   </file>
-  <file src="lib/Controller/Settings/ApiTokenSettingsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
-  <file src="lib/Controller/Settings/CacheSettingsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
-  <file src="lib/Controller/Settings/ConfigurationSettingsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
-  <file src="lib/Controller/Settings/FileSettingsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
-  <file src="lib/Controller/Settings/LlmSettingsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
-  <file src="lib/Controller/Settings/SolrManagementController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
-  <file src="lib/Controller/Settings/SolrOperationsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
-  </file>
   <file src="lib/Controller/Settings/SolrSettingsController.php">
     <UndefinedClass>
       <code><![CDATA[IndexService]]></code>
@@ -549,14 +434,6 @@
       <code><![CDATA[$this->container]]></code>
       <code><![CDATA[$this->container]]></code>
     </UndefinedThisPropertyFetch>
-  </file>
-  <file src="lib/Controller/Settings/ValidationSettingsController.php">
-    <ParseError>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[public]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
   </file>
   <file src="lib/Controller/SettingsController.php">
     <NullReference>
@@ -858,11 +735,6 @@
     <UndefinedMethod>
       <code><![CDATA[findAll]]></code>
     </UndefinedMethod>
-  </file>
-  <file src="lib/Service/Configuration/ImportHandler.php">
-    <ParseError>
-      <code><![CDATA[$this]]></code>
-    </ParseError>
   </file>
   <file src="lib/Service/ConfigurationService.php">
     <InvalidNamedArgument>
@@ -1196,30 +1068,6 @@
       <code><![CDATA[$object]]></code>
       <code><![CDATA[$object]]></code>
     </NullableReturnStatement>
-    <ParseError>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-    </ParseError>
     <UndefinedThisPropertyFetch>
       <code><![CDATA[$this->objectService]]></code>
       <code><![CDATA[$this->objectService]]></code>
@@ -1400,17 +1248,6 @@
       <code><![CDATA[$fileData['downloadUrl']]]></code>
       <code><![CDATA[$fileData['downloadUrl']]]></code>
     </NullArrayAccess>
-    <ParseError>
-      <code><![CDATA[$fileData]]></code>
-      <code><![CDATA[$fileData]]></code>
-      <code><![CDATA[$objectEntity]]></code>
-      <code><![CDATA[if]]></code>
-      <code><![CDATA[if]]></code>
-      <code><![CDATA[if]]></code>
-      <code><![CDATA[if]]></code>
-      <code><![CDATA[}]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
     <TypeDoesNotContainType>
       <code><![CDATA[$fileNode !== null]]></code>
       <code><![CDATA[$fileNode !== null]]></code>
@@ -1434,22 +1271,6 @@
     <NullReference>
       <code><![CDATA[getId]]></code>
     </NullReference>
-    <ParseError>
-      <code><![CDATA[$existingTags]]></code>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[filePath]]></code>
-      <code><![CDATA[if]]></code>
-      <code><![CDATA[objectEntity]]></code>
-      <code><![CDATA[}]]></code>
-      <code><![CDATA[}]]></code>
-    </ParseError>
     <TypeDoesNotContainType>
       <code><![CDATA[$existingFile !== null]]></code>
     </TypeDoesNotContainType>
@@ -1544,22 +1365,12 @@
     </UnusedParam>
   </file>
   <file src="lib/Service/Object/SaveObjects/TransformationHandler.php">
-    <ParseError>
-      <code><![CDATA[}]]></code>
-    </ParseError>
     <TypeDoesNotContainNull>
       <code><![CDATA[[]]]></code>
       <code><![CDATA[[]]]></code>
     </TypeDoesNotContainNull>
   </file>
   <file src="lib/Service/Object/SearchQueryHandler.php">
-    <ParseError>
-      <code><![CDATA[)]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-      <code><![CDATA[,]]></code>
-    </ParseError>
     <TypeDoesNotContainType>
       <code><![CDATA[is_array($current[$part]) === false]]></code>
     </TypeDoesNotContainType>
@@ -1646,6 +1457,10 @@
       <code><![CDATA[find]]></code>
       <code><![CDATA[find]]></code>
       <code><![CDATA[findByRelation]]></code>
+      <code><![CDATA[getCachedEntities]]></code>
+      <code><![CDATA[getCachedEntities]]></code>
+      <code><![CDATA[getCachedEntities]]></code>
+      <code><![CDATA[getCachedEntities]]></code>
       <code><![CDATA[searchObjectsPaginatedDatabase]]></code>
     </UndefinedMethod>
     <UndefinedVariable>

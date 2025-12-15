@@ -29,11 +29,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Unit\Service;
+namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use OCA\OpenRegister\Service\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;

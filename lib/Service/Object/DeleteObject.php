@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
@@ -83,7 +83,7 @@ class DeleteObject
      * @param ObjectEntityMapper $objectEntityMapper      Object entity data mapper.
      * @param FileService        $fileService             File service for managing files.
      * @param CacheHandler       $cacheHandler            Object cache service for entity and query caching.
-     * @param SchemaCacheService $schemaCacheService      Schema cache service for schema entity caching.
+     * @param SchemaCacheHandler $schemaCacheService      Schema cache handler for schema entity caching.
      * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs.
      * @param SettingsService    $settingsService         Settings service for accessing trail settings.

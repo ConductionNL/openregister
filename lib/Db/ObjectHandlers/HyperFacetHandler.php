@@ -386,6 +386,8 @@ class HyperFacetHandler
      *
      * @psalm-param array<string, mixed> $datasetStats
      *
+     * @return string Optimization strategy name
+     *
      * @psalm-return 'exact_parallel'|'hyperloglog_estimation'|'smart_sampling'
      */
     private function selectOptimizationStrategy(array $datasetStats): string
@@ -589,6 +591,8 @@ class HyperFacetHandler
      *
      * @phpstan-param array<string, mixed> $metadataFacets
      * @phpstan-param array<string, mixed> $baseQuery
+     *
+     * @return Promise Promise that resolves to metadata facet results
      *
      * @phpstan-return PromiseInterface
      *
@@ -843,6 +847,8 @@ class HyperFacetHandler
      * @psalm-param array<string, mixed> $facetConfig
      * @psalm-param array<string, mixed> $baseQuery
      *
+     * @return string Generated cache key
+     *
      * @psalm-return string
      */
     private function generateIntelligentCacheKey(array $facetConfig, array $baseQuery): string
@@ -1086,6 +1092,8 @@ class HyperFacetHandler
 
     // Placeholder methods that would need to be implemented based on specific requirements.
     /**
+     * @return Promise Promise that resolves to JSON facet results
+     *
      * @psalm-return PromiseInterface
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)

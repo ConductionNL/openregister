@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
@@ -565,10 +565,10 @@ class SaveObject
                 if (is_numeric($firstElement) === true) {
                     // Array of file IDs - load first file and get its download URL.
                     try {
-                        $fileNode = null
+                        $fileNode = null;
                         // TODO: fileService->getFile(object: $entity, file: (int) $firstElement);
                         if ($fileNode !== null) {
-                            $fileData = null
+                            $fileData = null;
                             // TODO: fileService->formatFile($fileNode);
                             // IMPORTANT: Object image requires public access.
                             // If file is not published, auto-publish it.
@@ -583,10 +583,10 @@ class SaveObject
                                     ]
                                 );
                                 // Publish the file.
-                                null
+                                null;
                                 // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                                 // Re-fetch file data after publishing.
-                                $fileData = null
+                                $fileData = null;
                                 // TODO: fileService->formatFile($fileNode);
                             }
 
@@ -615,10 +615,10 @@ class SaveObject
             } else if (is_numeric($imageValue) === true) {
                 // Single file ID - load file and get its download URL.
                 try {
-                    $fileNode = null
+                    $fileNode = null;
                     // TODO: fileService->getFile(object: $entity, file: (int) $imageValue);
                     if ($fileNode !== null) {
-                        $fileData = null
+                        $fileData = null;
                         // TODO: fileService->formatFile($fileNode);
                         // IMPORTANT: Object image requires public access.
                         // If file is not published, auto-publish it.
@@ -633,10 +633,10 @@ class SaveObject
                                 ]
                             );
                             // Publish the file.
-                            null
+                            null;
                             // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                             // Re-fetch file data after publishing.
-                            $fileData = null
+                            $fileData = null;
                             // TODO: fileService->formatFile($fileNode);
                         }
 
@@ -1982,7 +1982,7 @@ class SaveObject
         if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
             && isset($selfData['organisation']) === false
         ) {
-            $organisationUuid = null
+            $organisationUuid = null;
             // TODO: organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }

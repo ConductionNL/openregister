@@ -119,7 +119,7 @@ lib/Service/
 ├── SchemaService.php (DOESN'T EXIST - need to create!)
 ├── SchemaFacetCacheService.php (806 lines)
 ├── SchemaPropertyValidatorService.php (332 lines)
-└── SchemaCacheService.php (746 lines - keep or extract?)
+└── SchemaCacheService.php (746 lines - MOVED to Schemas/SchemaCacheHandler.php)
 ```
 
 ### Target Structure
@@ -129,14 +129,14 @@ lib/Service/
 └── Schemas/
     ├── FacetCacheHandler.php (was SchemaFacetCacheService)
     ├── PropertyValidatorHandler.php (was SchemaPropertyValidatorService)
-    └── CacheHandler.php (was SchemaCacheService?)
+    └── SchemaCacheHandler.php (was SchemaCacheService)
 ```
 
 ### Tasks
 - [ ] **Create SchemaService facade** - Central interface for schema operations
-- [ ] Move `SchemaFacetCacheService.php` → `Schemas/FacetCacheHandler.php`
-- [ ] Move `SchemaPropertyValidatorService.php` → `Schemas/PropertyValidatorHandler.php`
-- [ ] Decide: Keep SchemaCacheService or extract to Schemas/CacheHandler.php?
+- [x] Move `SchemaFacetCacheService.php` → `Schemas/FacetCacheHandler.php`
+- [x] Move `SchemaPropertyValidatorService.php` → `Schemas/PropertyValidatorHandler.php`
+- [x] Move `SchemaCacheService.php` → `Schemas/SchemaCacheHandler.php`
 - [ ] Update all usages to go through SchemaService
 - [ ] Document SchemaService as the primary schema interface
 
@@ -156,9 +156,9 @@ Services (flat, inconsistent):
 ├── ObjectService (facade - GOOD!)
 ├── ObjectCacheService
 ├── RevertService
-├── SchemaFacetCacheService
-├── SchemaPropertyValidatorService
-├── SchemaCacheService
+├── SchemaFacetCacheService (MOVED to Schemas/)
+├── SchemaPropertyValidatorService (MOVED to Schemas/)
+├── SchemaCacheService (MOVED to Schemas/)
 ├── GuzzleSolrService (11,728 lines!)
 ├── SolrFileService
 ├── SolrObjectService

@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
@@ -83,7 +83,7 @@ class SchemasController extends Controller
      * @param UploadService       $uploadService           Upload service for file uploads
      * @param AuditTrailMapper    $auditTrailMapper        Audit trail mapper for log statistics
      * @param OrganisationService $organisationService     Organisation service for multi-tenancy
-     * @param SchemaCacheService  $schemaCacheService      Schema cache service for caching operations
+     * @param SchemaCacheHandler  $schemaCacheService      Schema cache handler for caching operations
      * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching
      * @param SchemaService       $schemaService           Schema service for exploration operations
      * @param LoggerInterface     $logger                  Logger for error tracking
@@ -100,7 +100,7 @@ class SchemasController extends Controller
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly OrganisationService $organisationService,
-        private readonly SchemaCacheService $schemaCacheService,
+        private readonly SchemaCacheHandler $schemaCacheService,
         private readonly FacetCacheHandler $schemaFacetCacheService,
         private readonly SchemaService $schemaService,
         private readonly LoggerInterface $logger

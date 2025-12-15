@@ -157,7 +157,7 @@ class ContextRetrievalHandler
             );
         }//end if
 
-        $sources = [];
+        $sources     = [];
         $contextText = '';
 
         try {
