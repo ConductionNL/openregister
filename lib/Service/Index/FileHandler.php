@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Service\Index;
 
 use Exception;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\SettingsService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -56,7 +55,6 @@ class FileHandler
      * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic/etc)
      */
     public function __construct(
-        private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         private readonly ChunkMapper $chunkMapper,
         private readonly SearchBackendInterface $searchBackend
@@ -65,25 +63,6 @@ class FileHandler
     }//end __construct()
 
 
-    /**
-     * Get the file collection name from settings.
-     *
-     * @return string|null Collection name or null if not configured.
-     */
-    private function getFileCollection(): ?string
-    {
-        $config = $this->settingsService->getConfiguration();
-
-        $fileCollection = $config['solr']['fileCollection'] ?? null;
-
-        if ($fileCollection === null || $fileCollection === '') {
-            $this->logger->warning('[FileHandler] fileCollection not configured in SOLR settings');
-            return null;
-        }
-
-        return $fileCollection;
-
-    }//end getFileCollection()
 
 
     /**
@@ -104,18 +83,11 @@ class FileHandler
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
-        $collection = $this->getFileCollection();
-
-        if ($collection === null) {
-            throw new Exception('fileCollection not configured in SOLR settings');
-        }
-
         $this->logger->info(
-                '[FileHandler] Indexing file chunks to fileCollection',
+                '[FileHandler] Indexing file chunks',
                 [
                     'file_id'     => $fileId,
                     'chunk_count' => count($chunks),
-                    'collection'  => $collection,
                 ]
                 );
 
@@ -165,17 +137,8 @@ class FileHandler
      */
     public function getFileStats(): array
     {
-        $collection = $this->getFileCollection();
-
-        if ($collection === null) {
-            return [
-                'available' => false,
-                'error'     => 'fileCollection not configured',
-            ];
-        }
-
         try {
-            // Get document count from search backend.
+            // Get document count from search backend (backend handles collection selection).
             $searchResults = $this->searchBackend->search(
                     [
                         'q'    => '*:*',
@@ -222,17 +185,10 @@ class FileHandler
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
-        $collection = $this->getFileCollection();
-
-        if ($collection === null) {
-            throw new Exception('fileCollection not configured in SOLR settings');
-        }
-
         $this->logger->info(
                 '[FileHandler] Starting chunk indexing',
                 [
-                    'limit'      => $limit,
-                    'collection' => $collection,
+                    'limit' => $limit,
                 ]
                 );
 

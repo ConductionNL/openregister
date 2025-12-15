@@ -320,4 +320,18 @@ interface SearchBackendInterface
     public function addOrUpdateField(array $fieldConfig, bool $force): string;
 
 
+    /**
+     * Reindex all objects in the system.
+     *
+     * Clears the index and reindexes all searchable objects from the database.
+     *
+     * @param int         $maxObjects     Maximum objects to reindex (0 = all).
+     * @param int         $batchSize      Batch size for reindexing.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Reindexing results with statistics.
+     */
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array;
+
+
 }//end interface

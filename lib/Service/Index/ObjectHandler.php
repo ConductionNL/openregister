@@ -23,7 +23,6 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\SettingsService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -61,7 +60,6 @@ class ObjectHandler
      * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic/etc)
      */
     public function __construct(
-        private readonly SettingsService $settingsService,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
@@ -71,25 +69,6 @@ class ObjectHandler
     }//end __construct()
 
 
-    /**
-     * Get the object collection name from settings.
-     *
-     * @return string|null Collection name or null if not configured.
-     */
-    private function getObjectCollection(): ?string
-    {
-        $config = $this->settingsService->getConfiguration();
-
-        $objectCollection = $config['solr']['objectCollection'] ?? null;
-
-        if ($objectCollection === null || $objectCollection === '') {
-            $this->logger->warning('[ObjectHandler] objectCollection not configured in SOLR settings');
-            return null;
-        }
-
-        return $objectCollection;
-
-    }//end getObjectCollection()
 
 
     /**
@@ -112,16 +91,9 @@ class ObjectHandler
         bool $published=false,
         bool $deleted=false
     ): array {
-        $collection = $this->getObjectCollection();
-
-        if ($collection === null) {
-            throw new Exception('objectCollection not configured in SOLR settings');
-        }
-
         $this->logger->debug(
                 '[ObjectHandler] Searching objects',
                 [
-                    'collection'   => $collection,
                     'query'        => $query,
                     'rbac'         => $rbac,
                     'multitenancy' => $multitenancy,
@@ -131,7 +103,7 @@ class ObjectHandler
         // Build Solr query from OpenRegister query.
         $solrQuery = $this->buildSolrQuery(query: $query, rbac: $rbac, multitenancy: $multitenancy, published: $published, deleted: $deleted);
 
-        // Execute search via backend.
+        // Execute search via backend (backend handles collection selection).
         $results = $this->searchBackend->search($solrQuery);
 
         // Convert Solr results to OpenRegister format.
@@ -219,16 +191,10 @@ class ObjectHandler
      */
     public function commit(): bool
     {
-        $collection = $this->getObjectCollection();
-
-        if ($collection === null) {
-            throw new Exception('objectCollection not configured in SOLR settings');
-        }
-
-        $this->logger->debug('[ObjectHandler] Committing to Solr', ['collection' => $collection]);
+        $this->logger->debug('[ObjectHandler] Committing to Solr');
 
         try {
-            // Use search backend to commit.
+            // Use search backend to commit (backend handles collection selection).
             $result = $this->searchBackend->commit();
 
             if ($result === true) {

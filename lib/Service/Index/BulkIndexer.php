@@ -5,8 +5,8 @@ declare(strict_types=1);
 /*
  * BulkIndexer
  *
- * Handles bulk indexing operations for Solr.
- * Extracted from GuzzleSolrService to separate bulk operation logic.
+ * Handles bulk indexing business logic (batching, parallel processing, optimization).
+ * Does NOT contain backend-specific I/O - delegates to SearchBackendInterface.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
@@ -19,14 +19,26 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
- * BulkIndexer for bulk Solr operations
+ * BulkIndexer - Business logic for bulk indexing operations
  *
- * PRAGMATIC APPROACH: Initially delegates to GuzzleSolrService.
- * Methods will be migrated incrementally.
+ * RESPONSIBILITIES:
+ * - Fetch objects from database in batches
+ * - Orchestrate parallel processing
+ * - Optimize memory usage
+ * - Call backend.index() for actual indexing
+ *
+ * DOES NOT:
+ * - Make direct Solr/Elastic API calls (uses SearchBackendInterface)
+ * - Extract text (TextExtractionService handles that)
  *
  * @package OCA\OpenRegister\Service\Index
  */
@@ -34,11 +46,39 @@ class BulkIndexer
 {
 
     /**
-     * Guzzle Solr service (temporary delegation).
+     * Object entity mapper for DB queries.
      *
-     * @var GuzzleSolrService
+     * @var ObjectEntityMapper
      */
-    private readonly GuzzleSolrService $guzzleSolrService;
+    private readonly ObjectEntityMapper $objectMapper;
+
+    /**
+     * Schema mapper for schema validation.
+     *
+     * @var SchemaMapper
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
+     * Document builder for creating Solr documents.
+     *
+     * @var DocumentBuilder
+     */
+    private readonly DocumentBuilder $documentBuilder;
+
+    /**
+     * Search backend interface (Solr/Elastic abstraction).
+     *
+     * @var SearchBackendInterface
+     */
+    private readonly SearchBackendInterface $searchBackend;
+
+    /**
+     * Database connection for direct queries.
+     *
+     * @var IDBConnection
+     */
+    private readonly IDBConnection $db;
 
     /**
      * Logger.
@@ -51,53 +91,72 @@ class BulkIndexer
     /**
      * BulkIndexer constructor
      *
-     * @param GuzzleSolrService $guzzleSolrService Backend implementation
-     * @param LoggerInterface   $logger            Logger
+     * @param ObjectEntityMapper     $objectMapper     DB mapper for objects
+     * @param SchemaMapper           $schemaMapper     DB mapper for schemas
+     * @param DocumentBuilder        $documentBuilder  Document builder
+     * @param SearchBackendInterface $searchBackend    Search backend (Solr/Elastic)
+     * @param IDBConnection          $db               Database connection
+     * @param LoggerInterface        $logger           Logger
      *
      * @return void
      */
     public function __construct(
-        GuzzleSolrService $guzzleSolrService,
+        ObjectEntityMapper $objectMapper,
+        SchemaMapper $schemaMapper,
+        DocumentBuilder $documentBuilder,
+        SearchBackendInterface $searchBackend,
+        IDBConnection $db,
         LoggerInterface $logger
     ) {
-        $this->guzzleSolrService = $guzzleSolrService;
-        $this->logger            = $logger;
+        $this->objectMapper     = $objectMapper;
+        $this->schemaMapper     = $schemaMapper;
+        $this->documentBuilder  = $documentBuilder;
+        $this->searchBackend    = $searchBackend;
+        $this->db               = $db;
+        $this->logger           = $logger;
 
     }//end __construct()
 
 
     /**
-     * Bulk index objects
+     * Bulk index objects (simple batch operation)
+     *
+     * This is a TEMPORARY wrapper that will be replaced with proper implementation.
+     * Currently just logs a warning that this method needs proper extraction.
      *
      * @param array $objects Objects to index
      * @param bool  $commit  Whether to commit
      *
      * @return array Results
+     *
+     * @todo Extract implementation from SolrBackend
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
-        $this->logger->debug(
-                'BulkIndexer: Delegating to GuzzleSolrService',
-                [
-                    'object_count' => count($objects),
-                    'commit'       => $commit,
-                ]
-                );
+        $this->logger->warning('[BulkIndexer] bulkIndexObjects not yet fully extracted - needs implementation');
 
-        return $this->guzzleSolrService->bulkIndexObjects($objects, $commit);
+        return [
+            'success' => false,
+            'message' => 'Method not yet extracted to BulkIndexer',
+        ];
 
     }//end bulkIndexObjects()
 
 
     /**
-     * Bulk index from database
+     * Bulk index objects from database in batches
      *
-     * @param int   $batchSize      Batch size
-     * @param int   $maxObjects     Max objects
-     * @param array $solrFieldTypes Field types
-     * @param array $schemaIds      Schema IDs to filter
+     * BUSINESS LOGIC: Fetches objects from DB, creates documents, sends to backend.
+     * This is the core bulk indexing implementation extracted from SolrBackend.
      *
-     * @return array Results
+     * @param int   $batchSize      Batch size (default: 1000)
+     * @param int   $maxObjects     Max objects to process (0 = all)
+     * @param array $solrFieldTypes Field types for validation
+     * @param array $schemaIds      Schema IDs to filter (empty = all searchable)
+     *
+     * @return array Results with statistics
+     *
+     * @throws \RuntimeException If indexing fails
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,
@@ -105,22 +164,239 @@ class BulkIndexer
         array $solrFieldTypes=[],
         array $schemaIds=[]
     ): array {
-        $this->logger->debug(
-                'BulkIndexer: Delegating bulkIndexFromDatabase',
+        // Ensure schemaIds is always an array.
+        if ($schemaIds === null) {
+            $schemaIds = [];
+        }
+
+        // Check backend availability.
+        if ($this->searchBackend->isAvailable() === false) {
+            return [
+                'success'  => false,
+                'error'    => 'Search backend is not available',
+                'indexed'  => 0,
+                'batches'  => 0,
+            ];
+        }
+
+        try {
+            $totalIndexed = 0;
+            $batchCount   = 0;
+            $offset       = 0;
+            $results      = ['skipped_non_searchable' => 0];
+
+            $this->logger->info('[BulkIndexer] Starting bulk index from database');
+
+            // Get count of searchable objects for planning.
+            $totalObjects = $this->countSearchableObjects($schemaIds);
+            $this->logger->info(
+                '[BulkIndexer] Planning bulk index',
                 [
-                    'batch_size'  => $batchSize,
-                    'max_objects' => $maxObjects,
+                    'totalSearchableObjects' => $totalObjects,
+                    'maxObjects'             => $maxObjects,
+                    'batchSize'              => $batchSize,
+                    'estimatedBatches'       => $maxObjects > 0 ? ceil(min($totalObjects, $maxObjects) / $batchSize) : ceil($totalObjects / $batchSize),
+                    'willProcess'            => $maxObjects > 0 ? min($totalObjects, $maxObjects) : $totalObjects,
                 ]
+            );
+
+            do {
+                // Calculate current batch size (respect maxObjects limit).
+                $currentBatchSize = $batchSize;
+                if ($maxObjects > 0) {
+                    $remaining = $maxObjects - $totalIndexed;
+                    if ($remaining <= 0) {
+                        break;
+                    }
+
+                    $currentBatchSize = min($batchSize, $remaining);
+                }
+
+                // Fetch batch of searchable objects from DB.
+                $fetchStart = microtime(true);
+                $objects    = $this->fetchSearchableObjects($currentBatchSize, $offset, $schemaIds);
+                $objectsCount = count($objects);
+
+                $fetchDuration = round((microtime(true) - $fetchStart) * 1000, 2);
+                $this->logger->info(
+                    '[BulkIndexer] Batch fetched',
+                    [
+                        'batch'        => $batchCount + 1,
+                        'objectsFound' => $objectsCount,
+                        'fetchTime'    => $fetchDuration.'ms',
+                    ]
                 );
 
-        return $this->guzzleSolrService->bulkIndexFromDatabase(
-            $batchSize,
-            $maxObjects,
-            $solrFieldTypes,
-            $schemaIds
-        );
+                if (empty($objects) === true) {
+                    break;
+                }
+
+                // Create documents from objects.
+                $documents = [];
+                foreach ($objects as $object) {
+                    try {
+                        $document     = $this->documentBuilder->createDocument($object, $solrFieldTypes);
+                        $documents[] = $document;
+                    } catch (\RuntimeException $e) {
+                        if (str_contains($e->getMessage(), 'Schema is not searchable') === true) {
+                            $results['skipped_non_searchable']++;
+                            $this->logger->warning(
+                                '[BulkIndexer] Unexpected non-searchable schema',
+                                [
+                                    'objectId' => $object->getId(),
+                                    'error'    => $e->getMessage(),
+                                ]
+                            );
+                            continue;
+                        }
+
+                        throw $e;
+                    } catch (\Exception $e) {
+                        $this->logger->warning(
+                            '[BulkIndexer] Failed to create document',
+                            [
+                                'error'    => $e->getMessage(),
+                                'objectId' => $object->getId(),
+                            ]
+                        );
+                    }//end try
+                }//end foreach
+
+                // Send documents to backend.
+                $indexed = 0;
+                if (empty($documents) === false) {
+                    $indexStart = microtime(true);
+                    $this->searchBackend->index($documents);
+                    $indexed = count($documents);
+
+                    $indexDuration = round((microtime(true) - $indexStart) * 1000, 2);
+                    $this->logger->debug(
+                        '[BulkIndexer] Batch indexed',
+                        [
+                            'documents'  => $indexed,
+                            'indexTime' => $indexDuration.'ms',
+                        ]
+                    );
+                }
+
+                $batchCount++;
+                $totalIndexed += $indexed;
+                $offset       += $currentBatchSize;
+            } while ($objectsCount === $currentBatchSize && ($maxObjects === 0 || $totalIndexed < $maxObjects));
+
+            $this->logger->info(
+                '[BulkIndexer] Bulk indexing completed',
+                [
+                    'totalIndexed' => $totalIndexed,
+                    'totalBatches' => $batchCount,
+                    'batchSize'    => $batchSize,
+                ]
+            );
+
+            return [
+                'success'                => true,
+                'indexed'                => $totalIndexed,
+                'batches'                => $batchCount,
+                'batch_size'             => $batchSize,
+                'skipped_non_searchable' => $results['skipped_non_searchable'] ?? 0,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
+            throw new \RuntimeException(
+                'Bulk indexing failed: '.$e->getMessage().
+                ' (Indexed: '.($totalIndexed ?? 0).', Batches: '.($batchCount ?? 0).')',
+                0,
+                $e
+            );
+        }//end try
 
     }//end bulkIndexFromDatabase()
+
+
+    /**
+     * Count searchable objects in database
+     *
+     * @param array $schemaIds Schema IDs to filter
+     *
+     * @return int Count of searchable objects
+     */
+    private function countSearchableObjects(array $schemaIds=[]): int
+    {
+        // Get searchable schema IDs.
+        $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
+
+        if (empty($searchableSchemaIds) === true) {
+            return 0;
+        }
+
+        // Count objects with searchable schemas.
+        return $this->objectMapper->countBySchemas($searchableSchemaIds);
+
+    }//end countSearchableObjects()
+
+
+    /**
+     * Fetch searchable objects from database
+     *
+     * @param int   $limit     Number of objects to fetch
+     * @param int   $offset    Offset for pagination
+     * @param array $schemaIds Schema IDs to filter
+     *
+     * @return array Array of ObjectEntity objects
+     */
+    private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds=[]): array
+    {
+        // Get searchable schema IDs.
+        $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
+
+        if (empty($searchableSchemaIds) === true) {
+            return [];
+        }
+
+        // Fetch objects with searchable schemas.
+        return $this->objectMapper->findBySchemas($searchableSchemaIds, $limit, $offset);
+
+    }//end fetchSearchableObjects()
+
+
+    /**
+     * Get IDs of searchable schemas
+     *
+     * @param array $schemaIds Schema IDs to filter (empty = all searchable)
+     *
+     * @return array Array of searchable schema IDs
+     */
+    private function getSearchableSchemaIds(array $schemaIds=[]): array
+    {
+        // If specific schemas requested, filter for searchable ones.
+        if (empty($schemaIds) === false) {
+            $searchableIds = [];
+            foreach ($schemaIds as $schemaId) {
+                try {
+                    $schema = $this->schemaMapper->find($schemaId);
+                    if ($schema->getSearchable() === true) {
+                        $searchableIds[] = $schemaId;
+                    }
+                } catch (\Exception $e) {
+                    $this->logger->warning('[BulkIndexer] Schema not found', ['schemaId' => $schemaId]);
+                }
+            }
+
+            return $searchableIds;
+        }
+
+        // Get all searchable schemas.
+        $allSchemas    = $this->schemaMapper->findAll();
+        $searchableIds = [];
+        foreach ($allSchemas as $schema) {
+            if ($schema->getSearchable() === true) {
+                $searchableIds[] = $schema->getId();
+            }
+        }
+
+        return $searchableIds;
+
+    }//end getSearchableSchemaIds()
 
 
 }//end class

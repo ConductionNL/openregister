@@ -19,13 +19,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 use Psr\Log\LoggerInterface;
 
 /**
  * FacetBuilder for Solr facet operations
  *
- * PRAGMATIC APPROACH: Initially delegates to GuzzleSolrService.
+ * PRAGMATIC APPROACH: Initially delegates to SolrBackend.
  * Methods will be migrated incrementally.
  *
  * @package OCA\OpenRegister\Service\Index
@@ -34,11 +34,11 @@ class FacetBuilder
 {
 
     /**
-     * Guzzle Solr service (temporary delegation).
+     * Solr backend service (temporary delegation).
      *
-     * @var GuzzleSolrService
+     * @var SolrBackend
      */
-    private readonly GuzzleSolrService $guzzleSolrService;
+    private readonly SolrBackend $solrBackend;
 
     /**
      * Logger.
@@ -51,17 +51,17 @@ class FacetBuilder
     /**
      * FacetBuilder constructor
      *
-     * @param GuzzleSolrService $guzzleSolrService Backend implementation
-     * @param LoggerInterface   $logger            Logger
+     * @param SolrBackend     $solrBackend Backend implementation
+     * @param LoggerInterface $logger      Logger
      *
      * @return void
      */
     public function __construct(
-        GuzzleSolrService $guzzleSolrService,
+        SolrBackend $solrBackend,
         LoggerInterface $logger
     ) {
-        $this->guzzleSolrService = $guzzleSolrService;
-        $this->logger            = $logger;
+        $this->solrBackend = $solrBackend;
+        $this->logger      = $logger;
 
     }//end __construct()
 
@@ -73,9 +73,9 @@ class FacetBuilder
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
     {
-        $this->logger->debug('FacetBuilder: Delegating to GuzzleSolrService');
+        $this->logger->debug('FacetBuilder: Delegating to SolrBackend');
 
-        return $this->guzzleSolrService->getRawSolrFieldsForFacetConfiguration();
+        return $this->solrBackend->getRawSolrFieldsForFacetConfiguration();
 
     }//end getRawSolrFieldsForFacetConfiguration()
 

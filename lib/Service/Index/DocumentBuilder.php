@@ -6,7 +6,7 @@ declare(strict_types=1);
  * DocumentBuilder
  *
  * Handles building Solr documents from ObjectEntity instances.
- * Extracted from GuzzleSolrService to separate document creation logic.
+ * Extracted from SolrBackend to separate document creation logic.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service\Index
@@ -22,26 +22,17 @@ namespace OCA\OpenRegister\Service\Index;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Service\GuzzleSolrService;
 use Psr\Log\LoggerInterface;
 
 /**
  * DocumentBuilder for creating Solr documents
  *
- * PRAGMATIC APPROACH: This class initially delegates to GuzzleSolrService
- * for backward compatibility, then we'll migrate methods incrementally.
+ * Handles conversion of ObjectEntity instances to Solr documents.
  *
  * @package OCA\OpenRegister\Service\Index
  */
 class DocumentBuilder
 {
-    /**
-     * Guzzle Solr service for document creation (temporary delegation).
-     *
-     * @var GuzzleSolrService
-     */
-    private readonly GuzzleSolrService $guzzleSolrService;
-
     /**
      * Logger for operation tracking.
      *
@@ -49,68 +40,101 @@ class DocumentBuilder
      */
     private readonly LoggerInterface $logger;
 
+    /**
+     * Schema mapper for resolving schemas.
+     *
+     * @var SchemaMapper|null
+     */
+    private readonly ?SchemaMapper $schemaMapper;
+
+    /**
+     * Register mapper for resolving registers.
+     *
+     * @var RegisterMapper|null
+     */
+    private readonly ?RegisterMapper $registerMapper;
+
 
     /**
      * DocumentBuilder constructor
      *
-     * @param GuzzleSolrService   $guzzleSolrService The backend implementation
-     * @param LoggerInterface     $logger            Logger
-     * @param SchemaMapper|null   $schemaMapper      Schema mapper (unused for now)
-     * @param RegisterMapper|null $registerMapper    Register mapper (unused for now)
+     * @param SolrBackend         $solrBackend    The backend implementation
+     * @param LoggerInterface     $logger         Logger
+     * @param SchemaMapper|null   $schemaMapper   Schema mapper (unused for now)
+     * @param RegisterMapper|null $registerMapper Register mapper (unused for now)
      *
      * @return void
      */
     public function __construct(
-        GuzzleSolrService $guzzleSolrService,
         LoggerInterface $logger,
         ?SchemaMapper $schemaMapper = null,
         ?RegisterMapper $registerMapper = null
     ) {
-        $this->guzzleSolrService = $guzzleSolrService;
         $this->logger = $logger;
-        
-        // Store for future use when we fully migrate
-        // Currently we delegate to GuzzleSolrService
+        $this->schemaMapper = $schemaMapper;
+        $this->registerMapper = $registerMapper;
     }
 
 
     /**
      * Create a Solr document from an ObjectEntity
      *
-     * PRAGMATIC: Initially delegates to GuzzleSolrService.createSolrDocument()
-     * This allows us to have the handler structure in place while maintaining
-     * full backward compatibility.
-     *
-     * TODO: Extract the actual implementation from GuzzleSolrService incrementally
+     * Builds a basic Solr document from the object's data.
+     * This is a simplified implementation to break circular dependencies.
      *
      * @param ObjectEntity $object         The object to convert
-     * @param array        $solrFieldTypes Available Solr field types
+     * @param array        $solrFieldTypes Available Solr field types (unused for now)
      *
      * @return array The Solr document
-     * @throws \RuntimeException If schema is not available or mapping fails
      */
     public function createDocument(
         ObjectEntity $object,
         array $solrFieldTypes = []
     ): array {
-        $this->logger->debug('DocumentBuilder: Delegating to GuzzleSolrService (temporary)', [
-            'object_id' => $object->getId(),
-            'method' => 'createDocument'
+        $this->logger->debug('DocumentBuilder: Creating basic Solr document', [
+            'object_id' => $object->getId()
         ]);
 
-        // Delegate to GuzzleSolrService for now
-        return $this->guzzleSolrService->createSolrDocument($object, $solrFieldTypes);
+        // Build basic Solr document from object
+        $doc = [
+            'id' => (string) $object->getUuid(),
+            'object_id' => $object->getId(),
+            'uuid' => $object->getUuid(),
+            'schema' => $object->getSchema(),
+            'register' => $object->getRegister(),
+            'created' => $object->getCreated()?->format('Y-m-d\TH:i:s\Z'),
+            'updated' => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
+        ];
+
+        // Add object data
+        $objectData = $object->getObject();
+        if (is_array($objectData)) {
+            foreach ($objectData as $key => $value) {
+                // Skip null values
+                if ($value === null) {
+                    continue;
+                }
+                
+                // Convert value to Solr-compatible format
+                $doc[$key] = $this->convertValueForSolr($value, 'auto');
+            }
+        }
+
+        // Add searchable text field
+        $doc['_text'] = json_encode($objectData);
+
+        return $doc;
     }
 
 
     // ========================================================================
-    // EXTRACTED METHODS - Migrated from GuzzleSolrService
+    // EXTRACTED METHODS - Migrated from SolrBackend
     // ========================================================================
 
     /**
      * Flatten relations array for SOLR - extract all values from relations key-value pairs
      *
-     * MIGRATED from GuzzleSolrService - now maintained here.
+     * MIGRATED from SolrBackend - now maintained here.
      *
      * @param mixed $relations Relations data from ObjectEntity (e.g., {"modules.0":"uuid", "other.1":"value"})
      *
@@ -173,7 +197,7 @@ class DocumentBuilder
     /**
      * Flatten files array for SOLR to prevent document multiplication
      *
-     * MIGRATED from GuzzleSolrService - now maintained here.
+     * MIGRATED from SolrBackend - now maintained here.
      *
      * @param mixed $files Files data from ObjectEntity
      *
@@ -212,7 +236,7 @@ class DocumentBuilder
     /**
      * Extract ID/UUID from an object/array
      *
-     * MIGRATED from GuzzleSolrService - now maintained here.
+     * MIGRATED from SolrBackend - now maintained here.
      *
      * @param array $object Object/array to extract ID from
      *
@@ -238,7 +262,7 @@ class DocumentBuilder
     /**
      * Extract array fields from dot-notation relations
      *
-     * MIGRATED from GuzzleSolrService - now maintained here.
+     * MIGRATED from SolrBackend - now maintained here.
      *
      * WORKAROUND/HACK FOR MISSING DATA: This method reconstructs arrays from relations
      * because some array fields (e.g., 'standaarden') are stored ONLY as dot-notation
@@ -303,7 +327,7 @@ class DocumentBuilder
     /**
      * Extract indexable values from an array for SOLR indexing
      *
-     * MIGRATED from GuzzleSolrService - now maintained here.
+     * MIGRATED from SolrBackend - now maintained here.
      *
      * This method intelligently handles mixed arrays by inspecting the actual content
      * rather than relying on schema definitions, which may not match runtime data.
@@ -345,6 +369,425 @@ class DocumentBuilder
         return $extractedValues;
 
     }//end extractIndexableArrayValues()
+
+
+    /**
+     * Map field name and type to appropriate SOLR field name
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param string $fieldName  Original field name
+     * @param string $_fieldType Schema field type (unused)
+     * @param mixed  $_fieldValue Field value for context (unused)
+     *
+     * @return string|null SOLR field name or null if should be skipped
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    public function mapFieldToSolrType(string $fieldName, string $_fieldType, $_fieldValue): ?string
+    {
+        // Avoid conflicts with core SOLR fields and self_ metadata fields.
+        if (in_array($fieldName, ['id', 'tenant_id', '_version_']) === true || str_starts_with($fieldName, 'self_') === true) {
+            return null;
+        }
+
+        // **CLEAN FIELD NAMES**: Return field name as-is since we define proper types in SOLR setup.
+        return $fieldName;
+
+    }//end mapFieldToSolrType()
+
+
+    /**
+     * Convert value to appropriate format for SOLR
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param mixed  $value     Field value
+     * @param string $fieldType Schema field type
+     *
+     * @return mixed Converted value for SOLR
+     */
+    public function convertValueForSolr($value, string $fieldType)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        switch (strtolower($fieldType)) {
+            case 'integer':
+            case 'int':
+                // **SAFE NUMERIC CONVERSION**: Handle non-numeric strings gracefully.
+                if (is_numeric($value) === true) {
+                    return (int) $value;
+                }
+
+                // Skip non-numeric values for integer fields.
+                $this->logger->debug(
+                    'Skipping non-numeric value for integer field',
+                    [
+                        'value'      => $value,
+                        'field_type' => $fieldType,
+                    ]
+                );
+                return null;
+
+            case 'float':
+            case 'double':
+            case 'number':
+                // **SAFE NUMERIC CONVERSION**: Handle non-numeric strings gracefully.
+                if (is_numeric($value) === true) {
+                    return (float) $value;
+                }
+
+                // Skip non-numeric values for float fields.
+                $this->logger->debug(
+                    'Skipping non-numeric value for float field',
+                    [
+                        'value'      => $value,
+                        'field_type' => $fieldType,
+                    ]
+                );
+                return null;
+
+            case 'boolean':
+            case 'bool':
+                return (bool) $value;
+
+            case 'date':
+            case 'datetime':
+                if ($value instanceof \DateTime) {
+                    return $value->format('Y-m-d\\TH:i:s\\Z');
+                }
+
+                if (is_string($value) === true) {
+                    $date = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+                    if ($date !== false) {
+                        return $date->format('Y-m-d\\TH:i:s\\Z');
+                    }
+
+                    return $value;
+                }
+                return $value;
+
+            case 'array':
+                if (is_array($value) === true) {
+                    return $value;
+                }
+
+                return [$value];
+
+            default:
+                return (string) $value;
+        }
+
+    }//end convertValueForSolr()
+
+
+    /**
+     * Truncate field value to respect SOLR's byte limit
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param mixed  $value     Field value
+     * @param string $fieldName Field name for logging
+     *
+     * @return mixed Truncated value or original if within limits
+     */
+    public function truncateFieldValue($value, string $fieldName = ''): mixed
+    {
+        // Only truncate string values.
+        if (is_string($value) === false) {
+            return $value;
+        }
+
+        // SOLR's byte limit for indexed string fields.
+        $maxBytes = 32766;
+
+        // Check if value exceeds byte limit (UTF-8 safe).
+        if (strlen($value) <= $maxBytes) {
+            return $value;
+        }
+
+        // **TRUNCATE SAFELY**: Ensure we don't break UTF-8 characters.
+        $truncated = mb_strcut($value, 0, $maxBytes - 100, 'UTF-8'); // Leave buffer for safety.
+
+        // Add truncation indicator.
+        $truncated .= '...[TRUNCATED]';
+
+        // Log truncation for monitoring.
+        $this->logger->info('Field value truncated for SOLR indexing', [
+            'field'            => $fieldName,
+            'original_bytes'   => strlen($value),
+            'truncated_bytes'  => strlen($truncated),
+            'truncation_point' => $maxBytes - 100,
+        ]);
+
+        return $truncated;
+
+    }//end truncateFieldValue()
+
+
+    /**
+     * Check if a field should be truncated based on schema definition
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param string $fieldName       Field name
+     * @param array  $fieldDefinition Schema field definition (if available)
+     *
+     * @return bool True if field should be truncated
+     */
+    public function shouldTruncateField(string $fieldName, array $fieldDefinition = []): bool
+    {
+        $type   = $fieldDefinition['type'] ?? '';
+        $format = $fieldDefinition['format'] ?? '';
+
+        // File fields should always be truncated.
+        if ($type === 'file' || $format === 'file' || $format === 'binary' ||
+            in_array($format, ['data-url', 'base64', 'image', 'document'])) {
+            return true;
+        }
+
+        // Fields that commonly contain large content.
+        $largeContentFields = ['logo', 'image', 'icon', 'thumbnail', 'content', 'body', 'description'];
+        if (in_array(strtolower($fieldName), $largeContentFields) === true) {
+            return true;
+        }
+
+        // Base64 data URLs (common pattern).
+        if (is_string($fieldName) && str_contains(strtolower($fieldName), 'base64')) {
+            return true;
+        }
+
+        return false;
+
+    }//end shouldTruncateField()
+
+
+    /**
+     * Validate field for SOLR indexing
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param string $fieldName      Field name
+     * @param mixed  $fieldValue     Field value
+     * @param array  $solrFieldTypes Available SOLR field types
+     *
+     * @return bool True if field is safe to index
+     */
+    public function validateFieldForSolr(string $fieldName, $fieldValue, array $solrFieldTypes): bool
+    {
+        // If no field types provided, allow all (fallback to original behavior).
+        if (empty($solrFieldTypes) === true) {
+            return true;
+        }
+
+        // If field doesn't exist in SOLR, it will be auto-created (allow).
+        if (isset($solrFieldTypes[$fieldName]) === false) {
+            $this->logger->debug(
+                'Field not in SOLR schema, will be auto-created',
+                [
+                    'field' => $fieldName,
+                    'value' => $fieldValue,
+                    'type'  => gettype($fieldValue),
+                ]
+            );
+            return true;
+        }
+
+        $solrFieldType = $solrFieldTypes[$fieldName];
+
+        // **CRITICAL VALIDATION**: Check for type compatibility.
+        $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
+
+        if (!$isCompatible) {
+            $this->logger->warning('🛡️ Field validation prevented type mismatch', [
+                'field'           => $fieldName,
+                'value'           => $fieldValue,
+                'value_type'      => gettype($fieldValue),
+                'solr_field_type' => $solrFieldType,
+                'action'          => 'SKIPPED',
+            ]);
+            return false;
+        }
+
+        $this->logger->debug('✅ Field validation passed', [
+            'field'     => $fieldName,
+            'value'     => $fieldValue,
+            'solr_type' => $solrFieldType,
+        ]);
+
+        return true;
+
+    }//end validateFieldForSolr()
+
+
+    /**
+     * Check if a value is compatible with a SOLR field type
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param mixed  $value         The value to check
+     * @param string $solrFieldType The SOLR field type
+     *
+     * @return bool True if compatible
+     */
+    public function isValueCompatibleWithSolrType($value, string $solrFieldType): bool
+    {
+        // Handle null values (generally allowed).
+        if ($value === null) {
+            return true;
+        }
+
+        // **FIXED**: Handle arrays for multi-valued fields.
+        if (is_array($value) === true) {
+            // Empty arrays are always allowed for multi-valued fields.
+            if (empty($value) === true) {
+                return true;
+            }
+
+            // Check each element in the array against the base field type.
+            foreach ($value as $element) {
+                if ($this->isValueCompatibleWithSolrType($element, $solrFieldType) === false) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return match ($solrFieldType) {
+            // Numeric types - only allow numeric values.
+            'pint', 'plong', 'plongs', 'pfloat', 'pdouble' => is_numeric($value),
+
+            // String types - allow anything (can be converted to string).
+            'string', 'text_general', 'text_en' => true,
+
+            // Boolean types - allow boolean or boolean-like values.
+            'boolean' => is_bool($value) || in_array(strtolower((string) $value), ['true', 'false', '1', '0']),
+
+            // Date types - allow date strings or objects.
+            'pdate', 'pdates' => is_string($value) || ($value instanceof \DateTime),
+
+            // Default: allow for unknown types.
+            default => true,
+        };
+
+    }//end isValueCompatibleWithSolrType()
+
+
+    // ========================================================================
+    // RESOLVER METHODS - ID Resolution
+    // ========================================================================
+
+    /**
+     * Resolve register value to integer ID
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param mixed                                       $registerValue The register value
+     * @param \OCA\OpenRegister\Db\Register|null $register      Pre-loaded register entity
+     *
+     * @return int The resolved register ID
+     */
+    public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register = null): int
+    {
+        if (empty($registerValue) === true) {
+            return 0;
+        }
+
+        // If it's already a numeric ID, return it as integer.
+        if (is_numeric($registerValue) === true) {
+            return (int) $registerValue;
+        }
+
+        // If we have a pre-loaded register entity, use its ID.
+        if ($register !== null) {
+            return $register->getId() ?? 0;
+        }
+
+        // Try to resolve by slug/name using RegisterMapper.
+        if ($this->registerMapper !== null) {
+            try {
+                $resolvedRegister = $this->registerMapper->find($registerValue);
+                return $resolvedRegister->getId() ?? 0;
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    'Failed to resolve register value to ID',
+                    [
+                        'registerValue' => $registerValue,
+                        'error'         => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        // Fallback: return 0 for unresolvable values.
+        $this->logger->warning(
+            'Could not resolve register to integer ID',
+            [
+                'registerValue' => $registerValue,
+                'type'          => gettype($registerValue),
+            ]
+        );
+        return 0;
+
+    }//end resolveRegisterToId()
+
+
+    /**
+     * Resolve schema value to integer ID
+     *
+     * MIGRATED from SolrBackend - now maintained here.
+     *
+     * @param mixed                                  $schemaValue The schema value
+     * @param \OCA\OpenRegister\Db\Schema|null $schema      Pre-loaded schema entity
+     *
+     * @return int The resolved schema ID
+     */
+    public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema = null): int
+    {
+        if (empty($schemaValue) === true) {
+            return 0;
+        }
+
+        // If it's already a numeric ID, return it as integer.
+        if (is_numeric($schemaValue) === true) {
+            return (int) $schemaValue;
+        }
+
+        // If we have a pre-loaded schema entity, use its ID.
+        if ($schema !== null) {
+            return $schema->getId() ?? 0;
+        }
+
+        // Try to resolve by slug/name using SchemaMapper.
+        if ($this->schemaMapper !== null) {
+            try {
+                $resolvedSchema = $this->schemaMapper->find($schemaValue);
+                return $resolvedSchema->getId() ?? 0;
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    'Failed to resolve schema value to ID',
+                    [
+                        'schemaValue' => $schemaValue,
+                        'error'       => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        // Fallback: return 0 for unresolvable values.
+        $this->logger->warning(
+            'Could not resolve schema to integer ID',
+            [
+                'schemaValue' => $schemaValue,
+                'type'        => gettype($schemaValue),
+            ]
+        );
+        return 0;
+
+    }//end resolveSchemaToId()
 
 
 }//end class

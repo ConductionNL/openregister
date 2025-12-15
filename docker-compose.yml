@@ -5,6 +5,7 @@ volumes:
   config:
   solr:
   zookeeper:
+  elasticsearch:
   ollama:
   presidio-models:
   n8n:
@@ -65,6 +66,35 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Elasticsearch for alternative search backend
+  elasticsearch:
+    image: elasticsearch:8.11.3
+    container_name: openregister-elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=openregister-cluster
+      - node.name=openregister-node-1
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # Ollama for local LLM inference
   # Provides local AI models for chat, RAG, and agent functionality
@@ -188,6 +218,7 @@ services:
     links:
       - db
       - solr
+      - elasticsearch
       - ollama
       - presidio-analyzer
       - n8n

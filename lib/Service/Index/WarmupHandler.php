@@ -19,14 +19,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use Exception;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\SolrSchemaService;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 /**
  * WarmupHandler for Solr warmup operations
  *
- * PRAGMATIC APPROACH: Initially delegates to GuzzleSolrService.
- * Methods will be migrated incrementally.
+ * Handles index warmup logic including:
+ * - Schema mirroring
+ * - Bulk indexing with various modes
+ * - Memory prediction and tracking
+ * - Cache warming queries
  *
  * @package OCA\OpenRegister\Service\Index
  */
@@ -34,11 +41,32 @@ class WarmupHandler
 {
 
     /**
-     * Guzzle Solr service (temporary delegation).
+     * Search backend interface.
      *
-     * @var GuzzleSolrService
+     * @var SearchBackendInterface
      */
-    private readonly GuzzleSolrService $guzzleSolrService;
+    private readonly SearchBackendInterface $searchBackend;
+
+    /**
+     * Bulk indexer.
+     *
+     * @var BulkIndexer
+     */
+    private readonly BulkIndexer $bulkIndexer;
+
+    /**
+     * Object mapper.
+     *
+     * @var ObjectEntityMapper
+     */
+    private readonly ObjectEntityMapper $objectMapper;
+
+    /**
+     * Database connection.
+     *
+     * @var IDBConnection
+     */
+    private readonly IDBConnection $db;
 
     /**
      * Logger.
@@ -51,17 +79,26 @@ class WarmupHandler
     /**
      * WarmupHandler constructor
      *
-     * @param GuzzleSolrService $guzzleSolrService Backend implementation
-     * @param LoggerInterface   $logger            Logger
+     * @param SearchBackendInterface $searchBackend Search backend
+     * @param BulkIndexer            $bulkIndexer   Bulk indexer
+     * @param ObjectEntityMapper     $objectMapper  Object mapper
+     * @param IDBConnection          $db            Database connection
+     * @param LoggerInterface        $logger        Logger
      *
      * @return void
      */
     public function __construct(
-        GuzzleSolrService $guzzleSolrService,
+        SearchBackendInterface $searchBackend,
+        BulkIndexer $bulkIndexer,
+        ObjectEntityMapper $objectMapper,
+        IDBConnection $db,
         LoggerInterface $logger
     ) {
-        $this->guzzleSolrService = $guzzleSolrService;
-        $this->logger            = $logger;
+        $this->searchBackend = $searchBackend;
+        $this->bulkIndexer   = $bulkIndexer;
+        $this->objectMapper  = $objectMapper;
+        $this->db            = $db;
+        $this->logger        = $logger;
 
     }//end __construct()
 
@@ -69,41 +106,66 @@ class WarmupHandler
     /**
      * Warm up the index
      *
-     * @param array  $schemas       Schemas to warm up
-     * @param int    $maxObjects    Max objects
-     * @param string $mode          Warmup mode
-     * @param bool   $collectErrors Collect errors
-     * @param int    $batchSize     Batch size
-     * @param array  $schemaIds     Schema IDs
+     * Delegates to the search backend for index warmup operations.
      *
-     * @return array Results
+     * @param array  $schemas       Schemas to warm up.
+     * @param int    $maxObjects    Max objects to process.
+     * @param string $mode          Warmup mode (serial, parallel, hyper).
+     * @param bool   $collectErrors Whether to collect detailed errors.
+     * @param int    $batchSize     Batch size for processing.
+     * @param array  $schemaIds     Schema IDs to filter.
+     *
+     * @return array Results with statistics and errors.
      */
     public function warmupIndex(
-        array $schemas=[],
-        int $maxObjects=0,
-        string $mode='serial',
-        bool $collectErrors=false,
-        int $batchSize=1000,
-        array $schemaIds=[]
+        array $schemas = [],
+        int $maxObjects = 0,
+        string $mode = 'serial',
+        bool $collectErrors = false,
+        int $batchSize = 1000,
+        array $schemaIds = []
     ): array {
-        $this->logger->debug(
-                'WarmupHandler: Delegating to GuzzleSolrService',
-                [
+        $this->logger->info(
+            '[WarmupHandler] Starting index warmup',
+            [
                     'max_objects' => $maxObjects,
                     'mode'        => $mode,
+                    'batch_size'  => $batchSize,
                 ]
-                );
-
-        return $this->guzzleSolrService->warmupIndex(
-            $schemas,
-            $maxObjects,
-            $mode,
-            $collectErrors,
-            $batchSize,
-            $schemaIds
         );
 
+        try {
+            // Delegate to search backend for warmup operation.
+            $result = $this->searchBackend->warmupIndex(
+                $schemas,
+                $maxObjects,
+                $mode,
+                $collectErrors,
+                $batchSize,
+                $schemaIds
+            );
+
+            $this->logger->info(
+                '[WarmupHandler] Index warmup completed',
+                [
+                    'success'        => $result['success'] ?? false,
+                    'objects_indexed' => $result['operations']['objects_indexed'] ?? 0,
+                ]
+            );
+
+            return $result;
+        } catch (Exception $e) {
+            $this->logger->error(
+                '[WarmupHandler] Index warmup failed',
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
+        }//end try
     }//end warmupIndex()
-
-
 }//end class

@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -115,23 +116,23 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper  $objectEntityMapper      Object entity data mapper.
-     * @param FileService         $fileService             File service for managing files.
-     * @param IUserSession        $userSession             User session service.
-     * @param AuditTrailMapper    $auditTrailMapper        Audit trail mapper for logging changes.
-     * @param SchemaMapper        $schemaMapper            Schema mapper for schema operations.
-     * @param RegisterMapper      $registerMapper          Register mapper for register operations.
-     * @param IURLGenerator       $urlGenerator            URL generator service.
-     * @param OrganisationService $organisationService     Service for organisation operations.
-     * @param CacheHandler        $cacheHandler            Object cache service for entity and query caching.
-     * @param SchemaCacheService  $schemaCacheService      Schema cache service for schema entity caching.
-     * @param FacetCacheHandler   $schemaFacetCacheService Schema facet cache service for facet caching.
-     * @param SettingsService     $settingsService         Settings service for accessing trail settings.
-     * @param LoggerInterface     $logger                  Logger interface for logging operations.
-     * @param ArrayLoader         $arrayLoader             Twig array loader for template rendering.
+     * @param ObjectEntityMapper         $objectEntityMapper         Object entity data mapper.
+     * @param MetadataHydrationHandler   $metadataHydrationHandler   Handler for metadata extraction.
+     * @param FileService                $fileService                File service for managing files.
+     * @param IUserSession               $userSession                User session service.
+     * @param AuditTrailMapper           $auditTrailMapper           Audit trail mapper for logging changes.
+     * @param SchemaMapper               $schemaMapper               Schema mapper for schema operations.
+     * @param RegisterMapper             $registerMapper             Register mapper for register operations.
+     * @param IURLGenerator              $urlGenerator               URL generator service.
+     * @param OrganisationService        $organisationService        Service for organisation operations.
+     * @param CacheHandler               $cacheHandler               Object cache service for entity and query caching.
+     * @param SettingsService            $settingsService            Settings service for accessing trail settings.
+     * @param LoggerInterface            $logger                     Logger interface for logging operations.
+     * @param ArrayLoader                $arrayLoader                Twig array loader for template rendering.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MetadataHydrationHandler $metadataHydrationHandler,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -544,34 +545,13 @@ class SaveObject
         $config     = $schema->getConfiguration();
         $objectData = $entity->getObject();
 
-        // Name field mapping.
-        if (($config['objectNameField'] ?? null) !== null) {
-            $name = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectNameField']);
-            if ($name !== null && trim($name) !== '') {
-                $entity->setName(trim($name));
-            }
-        }
-
-        // Description field mapping.
-        if (($config['objectDescriptionField'] ?? null) !== null) {
-            $description = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectDescriptionField']);
-            if ($description !== null && trim($description) !== '') {
-                $entity->setDescription(trim($description));
-            }
-        }
-
-        // Summary field mapping.
-        if (($config['objectSummaryField'] ?? null) !== null) {
-            $summary = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectSummaryField']);
-            if ($summary !== null && trim($summary) !== '') {
-                $entity->setSummary(trim($summary));
-            }
-        }
+        // Delegate simple metadata extraction (name, description, summary, slug) to handler.
+        $this->metadataHydrationHandler->hydrateObjectMetadata(entity: $entity, schema: $schema);
 
         // Image field mapping.
         if (($config['objectImageField'] ?? null) !== null) {
             // First check if the field points to a file object.
-            $imageValue = $this->getValueFromPath(data: $objectData, path: $config['objectImageField']);
+            $imageValue = $this->metadataHydrationHandler->getValueFromPath(data: $objectData, path: $config['objectImageField']);
 
             // Handle different value types:.
             // 1. Array of file IDs: [123, 124].
@@ -701,21 +681,9 @@ class SaveObject
             }//end if
         }//end if
 
-        // Slug field mapping.
-        if (($config['objectSlugField'] ?? null) !== null) {
-            $slug = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectSlugField']);
-            if ($slug !== null && trim($slug) !== '') {
-                // Generate URL-friendly slug.
-                $generatedSlug = $this->createSlugFromValue(trim($slug));
-                if ($generatedSlug !== null) {
-                    $entity->setSlug($generatedSlug);
-                }
-            }
-        }
-
         // Published field mapping.
         if (($config['objectPublishedField'] ?? null) !== null) {
-            $published = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectPublishedField']);
+            $published = $this->metadataHydrationHandler->extractMetadataValue(data: $objectData, fieldPath: $config['objectPublishedField']);
             if ($published !== null && trim($published) !== '') {
                 try {
                     $publishedDate = new DateTime(trim($published));
@@ -735,7 +703,7 @@ class SaveObject
 
         // Depublished field mapping.
         if (($config['objectDepublishedField'] ?? null) !== null) {
-            $depublished = $this->extractMetadataValue(data: $objectData, fieldPath: $config['objectDepublishedField']);
+            $depublished = $this->metadataHydrationHandler->extractMetadataValue(data: $objectData, fieldPath: $config['objectDepublishedField']);
             if ($depublished !== null && trim($depublished) !== '') {
                 try {
                     $depublishedDate = new DateTime(trim($depublished));
