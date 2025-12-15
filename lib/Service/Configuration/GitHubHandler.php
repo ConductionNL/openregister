@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use RuntimeException;
 use OCP\Http\Client\IClient;
+use OCP\Http\Client\IClientService;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use OCP\IConfig;
@@ -90,12 +91,12 @@ class GitHubHandler
      * @param LoggerInterface $logger       Logger instance
      */
     public function __construct(
-        IClient $client,
+        IClientService $clientService,
         IConfig $config,
         ICacheFactory $cacheFactory,
         LoggerInterface $logger
     ) {
-        $this->client = $client;
+        $this->client = $clientService->newClient();
         $this->config = $config;
         $this->cache  = $cacheFactory->createDistributed('openregister_github_configs');
         $this->logger = $logger;

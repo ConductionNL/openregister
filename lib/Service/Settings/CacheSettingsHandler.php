@@ -25,7 +25,7 @@ use InvalidArgumentException;
 use OCP\ICacheFactory;
 use OCP\AppFramework\IAppContainer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 
 /**
@@ -56,11 +56,11 @@ class CacheSettingsHandler
 private ICacheFactory $cacheFactory;
 
     /**
-     * Schema cache service
+     * Schema cache handler
      *
-     * @var SchemaCacheService
+     * @var SchemaCacheHandler
      */
-private SchemaCacheService $schemaCacheService;
+private SchemaCacheHandler $schemaCacheService;
 
     /**
      * Schema facet cache service
@@ -88,7 +88,7 @@ private ?IAppContainer $container = null;
      * Constructor for CacheSettingsHandler
      *
      * @param ICacheFactory      $cacheFactory            Cache factory.
-     * @param SchemaCacheService $schemaCacheService      Schema cache service.
+     * @param SchemaCacheHandler $schemaCacheService      Schema cache handler.
      * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service.
      * @param CacheHandler|null  $objectCacheService      Object cache service (optional, lazy-loaded).
      * @param IAppContainer|null $container               Container for lazy loading (optional).
@@ -97,7 +97,7 @@ private ?IAppContainer $container = null;
      */
 public function __construct(
     ICacheFactory $cacheFactory,
-    SchemaCacheService $schemaCacheService,
+    SchemaCacheHandler $schemaCacheService,
     FacetCacheHandler $schemaFacetCacheService,
     ?CacheHandler $objectCacheService=null,
     ?IAppContainer $container=null

@@ -120,8 +120,8 @@ class RegisterService
      * Retrieves register entity by ID with optional extended data.
      * Extensions can include related entities like schemas, objects, etc.
      *
-     * @param int|string    $id     The ID of the register to find
-     * @param array<string> $extend Optional array of extension names to include
+     * @param int|string    $id      The ID of the register to find
+     * @param array<string> $_extend Optional array of extension names to include
      *
      * @return Register The found register entity
      *
@@ -148,7 +148,7 @@ class RegisterService
      * @param array<string, mixed>|null $filters          Filters to apply (e.g., ['organisation_id' => 1])
      * @param array<string, mixed>|null $searchConditions Search conditions for advanced filtering
      * @param array<string, mixed>|null $searchParams     Search parameters for query building
-     * @param array<string>             $extend           Optional extensions to include in results
+     * @param array<string>             $_extend          Optional extensions to include in results
      *
      * @return Register[] Array of found register entities
      *

@@ -181,7 +181,7 @@ class ConfigurationCheckJob extends TimedJob
      * Check a single configuration for updates
      *
      * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to check.
-     * @param array                              &$stats        Statistics array (passed by reference).
+     * @param array                              $stats         Statistics array (passed by reference).
      *
      * @return void
      */
@@ -230,7 +230,7 @@ class ConfigurationCheckJob extends TimedJob
      * Handle automatic update of a configuration
      *
      * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to update.
-     * @param array                              &$stats        Statistics array (passed by reference).
+     * @param array                              $stats         Statistics array (passed by reference).
      *
      * @return void
      */

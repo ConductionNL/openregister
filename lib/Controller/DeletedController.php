@@ -33,8 +33,7 @@ use OCP\IUserSession;
  * Class DeletedController
  *
  * Controller for managing soft deleted objects
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
 
@@ -157,6 +156,8 @@ class DeletedController extends Controller
 
     /**
      * Get all soft deleted objects
+     *
+     * @return JSONResponse JSON response containing deleted objects
      *
      * @NoAdminRequired
      *

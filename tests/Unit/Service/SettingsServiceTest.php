@@ -21,7 +21,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectCacheService;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -90,7 +90,7 @@ class SettingsServiceTest extends TestCase
     /** @var ObjectCacheService|MockObject */
     private $objectCacheService;
 
-    /** @var SchemaCacheService|MockObject */
+    /** @var SchemaCacheHandler|MockObject */
     private $schemaCacheService;
 
     /** @var SchemaFacetCacheService|MockObject */
@@ -118,7 +118,7 @@ class SettingsServiceTest extends TestCase
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
         $this->objectCacheService = $this->createMock(ObjectCacheService::class);
-        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
         $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
         $this->cacheFactory = $this->createMock(ICacheFactory::class);
 

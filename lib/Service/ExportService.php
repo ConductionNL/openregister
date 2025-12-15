@@ -71,11 +71,10 @@ class ExportService
     /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper (unused but kept for future use)
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param IUserManager       $userManager        The user manager (unused but kept for future use)
-     * @param IGroupManager      $groupManager       The group manager
-     * @param ObjectService      $objectService      The object service
+     * @param ObjectEntityMapper $_objectEntityMapper The object entity mapper (unused but kept for future use)
+     * @param RegisterMapper     $registerMapper      The register mapper
+     * @param IUserManager       $_userManager        The user manager (unused but kept for future use)
+     * @param IGroupManager      $groupManager        The group manager
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -87,7 +86,7 @@ class ExportService
     ) {
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
-        // REMOVED: ObjectService to break circular dependency
+        // REMOVED: ObjectService to break circular dependency.
         $this->objectService = null;
 
     }//end __construct()
@@ -279,9 +278,8 @@ class ExportService
     /**
      * Get headers for export
      *
-     * @param Register|null $register    Optional register to export
-     * @param Schema|null   $schema      Optional schema to export
-     * @param IUser|null    $currentUser Current user for permission checks
+     * @param Schema|null $schema      Optional schema to export
+     * @param IUser|null  $currentUser Current user for permission checks
      *
      * @return (int|string)[]
      *

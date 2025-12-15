@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
@@ -106,16 +107,17 @@ class TextExtractionService
     /**
      * Constructor
      *
-     * @param FileMapper           $fileMapper           Mapper for Nextcloud files
-     * @param ChunkMapper          $chunkMapper          Mapper for chunks
-     * @param GdprEntityMapper     $entityMapper         Mapper for GDPR entities
-     * @param EntityRelationMapper $entityRelationMapper Mapper for entity relations
-     * @param IRootFolder          $rootFolder           Nextcloud root folder
-     * @param IDBConnection        $db                   Database connection
-     * @param LoggerInterface      $logger               Logger
-     * @param ObjectEntityMapper   $objectEntityMapper   Mapper for object entities
-     * @param SchemaMapper         $schemaMapper         Mapper for schemas
-     * @param RegisterMapper       $registerMapper       Mapper for registers
+     * @param FileMapper               $fileMapper               Mapper for Nextcloud files
+     * @param ChunkMapper              $chunkMapper              Mapper for chunks
+     * @param IRootFolder              $rootFolder               Nextcloud root folder
+     * @param IDBConnection            $db                       Database connection
+     * @param LoggerInterface          $logger                   Logger
+     * @param ObjectEntityMapper       $objectEntityMapper       Mapper for object entities
+     * @param SchemaMapper             $schemaMapper             Mapper for schemas
+     * @param RegisterMapper           $registerMapper           Mapper for registers
+     * @param EntityRecognitionHandler $entityRecognitionHandler Handler for entity recognition
+     * @param GdprEntityMapper         $entityMapper             Mapper for GDPR entities
+     * @param EntityRelationMapper     $entityRelationMapper     Mapper for entity relations
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -125,7 +127,10 @@ class TextExtractionService
         private readonly LoggerInterface $logger,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper
+        private readonly RegisterMapper $registerMapper,
+        private readonly EntityRecognitionHandler $entityRecognitionHandler,
+        private readonly GdprEntityMapper $entityMapper,
+        private readonly EntityRelationMapper $entityRelationMapper
     ) {
 
     }//end __construct()
@@ -159,7 +164,13 @@ class TextExtractionService
         $sourceTimestamp = (int) ($ncFile['mtime'] ?? time());
 
         // Check if chunks are up-to-date.
-        if ($forceReExtract === false && $this->isSourceUpToDate(sourceId: $fileId, sourceType: 'file', sourceTimestamp: $sourceTimestamp, forceReExtract: $forceReExtract) === true) {
+        $isUpToDate = $this->isSourceUpToDate(
+            sourceId: $fileId,
+            sourceType: 'file',
+            sourceTimestamp: $sourceTimestamp,
+            forceReExtract: $forceReExtract
+        );
+        if ($forceReExtract === false && $isUpToDate === true) {
             // File is up-to-date and all chunks are still valid.
             $this->logger->info('[TextExtractionService] File already processed and up-to-date', ['fileId' => $fileId]);
             return;
@@ -186,6 +197,35 @@ class TextExtractionService
             sourceTimestamp: $sourceTimestamp,
             payload: $payload
         );
+
+        // Extract entities from chunks.
+        try {
+            $entityResult = $this->entityRecognitionHandler->processSourceChunks(
+                sourceType: 'file',
+                sourceId: $fileId,
+                options: [
+                    'method'               => 'hybrid',
+                    'confidence_threshold' => 0.5,
+                ]
+            );
+
+            $this->logger->info(
+                    '[TextExtractionService] Entity extraction complete',
+                    [
+                        'fileId'            => $fileId,
+                        'entities_found'    => $entityResult['entities_found'],
+                        'relations_created' => $entityResult['relations_created'],
+                    ]
+                    );
+        } catch (Exception $e) {
+            $this->logger->error(
+                    '[TextExtractionService] Entity extraction failed',
+                    [
+                        'fileId' => $fileId,
+                        'error'  => $e->getMessage(),
+                    ]
+                    );
+        }//end try
 
         $this->logger->info(
                 '[TextExtractionService] File extraction complete',
@@ -223,7 +263,13 @@ class TextExtractionService
         $sourceTimestamp = $object->getUpdated()?->getTimestamp() ?? time();
 
         // Check if chunks are up-to-date.
-        if ($forceReExtract === false && $this->isSourceUpToDate(sourceId: $objectId, sourceType: 'object', sourceTimestamp: $sourceTimestamp, forceReExtract: $forceReExtract) === true) {
+        $isUpToDate = $this->isSourceUpToDate(
+            sourceId: $objectId,
+            sourceType: 'object',
+            sourceTimestamp: $sourceTimestamp,
+            forceReExtract: $forceReExtract
+        );
+        if ($forceReExtract === false && $isUpToDate === true) {
             // Object is up-to-date and all chunks are still valid.
             $this->logger->info('[TextExtractionService] Object already processed and up-to-date', ['objectId' => $objectId]);
             return;
@@ -286,6 +332,35 @@ class TextExtractionService
             sourceTimestamp: $sourceTimestamp,
             payload: $payload
         );
+
+        // Extract entities from chunks.
+        try {
+            $entityResult = $this->entityRecognitionHandler->processSourceChunks(
+                sourceType: 'object',
+                sourceId: $objectId,
+                options: [
+                    'method'               => 'hybrid',
+                    'confidence_threshold' => 0.5,
+                ]
+            );
+
+            $this->logger->info(
+                    '[TextExtractionService] Entity extraction complete',
+                    [
+                        'objectId'          => $objectId,
+                        'entities_found'    => $entityResult['entities_found'],
+                        'relations_created' => $entityResult['relations_created'],
+                    ]
+                    );
+        } catch (Exception $e) {
+            $this->logger->error(
+                    '[TextExtractionService] Entity extraction failed',
+                    [
+                        'objectId' => $objectId,
+                        'error'    => $e->getMessage(),
+                    ]
+                    );
+        }//end try
 
         $this->logger->info(
                 '[TextExtractionService] Object extraction completed',

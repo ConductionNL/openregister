@@ -527,12 +527,12 @@ class SearchQueryHandler
                 // Create the search trail entry using the service with actual execution time.
                 // TODO
                 // $this->searchTrailService->createSearchTrail(
-                    query: $query,
-                    resultCount: $resultCount,
-                    totalResults: $totalResults,
-                    responseTime: $executionTime,
-                    executionType: $executionType
-                );
+                // query: $query,
+                // resultCount: $resultCount,
+                // totalResults: $totalResults,
+                // responseTime: $executionTime,
+                // executionType: $executionType
+                // );
             }
         } catch (Exception $e) {
             // Log the error but don't fail the request.

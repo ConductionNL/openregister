@@ -1,11 +1,11 @@
 <?php
 /**
- * OpenRegister CloudEvent Service
+ * OpenRegister CloudEvent Formatter
  *
- * Service for formatting events as CloudEvents specification compliant payloads.
+ * Formatter for creating CloudEvents specification compliant webhook payloads.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service
+ * @package  OCA\OpenRegister\Service\Webhook
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,17 +18,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Webhook;
 
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * CloudEventService formats events as CloudEvents specification compliant payloads
+ * CloudEventFormatter formats webhook payloads as CloudEvents
  *
- * Formats events according to the CloudEvents specification (https://cloudevents.io/).
- * CloudEvents is a specification for describing event data in a common way, making it
- * easier to integrate services that produce and consume events.
+ * Formats webhook payloads according to the CloudEvents 1.0 specification.
+ * CloudEvents is a specification for describing event data in a common way,
+ * making it easier to integrate services that produce and consume events.
  *
  * CloudEvents provides:
  * - Consistent event structure across systems
@@ -37,7 +37,7 @@ use Symfony\Component\Uid\Uuid;
  * - Extensibility through attributes
  *
  * @category Service
- * @package  OCA\OpenRegister\Service
+ * @package  OCA\OpenRegister\Service\Webhook
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -47,24 +47,73 @@ use Symfony\Component\Uid\Uuid;
  *
  * @link https://www.OpenRegister.app
  */
-class CloudEventService
+class CloudEventFormatter
 {
+
+
+    /**
+     * Format an event payload as a CloudEvent
+     *
+     * Creates a CloudEvent-compliant payload from event data.
+     * This allows external systems to receive standardized event notifications.
+     *
+     * @param string      $eventType Event type (e.g., 'object.created', 'object.updated')
+     * @param array       $payload   Event payload data
+     * @param string|null $source    Event source (defaults to '/apps/openregister')
+     * @param string|null $subject   Event subject (optional)
+     *
+     * @return array CloudEvent-formatted payload
+     */
+    public function formatAsCloudEvent(
+        string $eventType,
+        array $payload,
+        ?string $source=null,
+        ?string $subject=null
+    ): array {
+        // Use default source if not provided.
+        if ($source === null) {
+            $source = '/apps/openregister';
+        }
+
+        // Build CloudEvent payload according to CloudEvents 1.0 specification.
+        return [
+            // Required CloudEvent attributes.
+            'specversion'     => '1.0',
+            'type'            => $eventType,
+            'source'          => $source,
+            'id'              => Uuid::v4()->toRfc4122(),
+            'time'            => date('c'),
+
+            // Optional CloudEvent attributes.
+            'datacontenttype' => 'application/json',
+            'subject'         => $subject,
+            'dataschema'      => null,
+
+            // Event data.
+            'data'            => $payload,
+
+            // OpenRegister-specific extensions.
+            'openregister'    => [
+                'app'     => 'openregister',
+                'version' => $this->getAppVersion(),
+            ],
+        ];
+
+    }//end formatAsCloudEvent()
 
 
     /**
      * Format a request as a CloudEvent
      *
      * Creates a CloudEvent-compliant payload from an HTTP request.
-     * This allows external systems to receive standardized event notifications
-     * before requests are processed by controllers.
+     * This is useful for pre-request webhook interception where the request
+     * itself is the event data.
      *
      * @param IRequest $request   The HTTP request
      * @param string   $eventType The event type (e.g., 'object.creating', 'object.updating')
      * @param array    $data      Additional event data
      *
-     * @return ((array|false|mixed|string)[]|null|string)[] CloudEvent-formatted payload
-     *
-     * @psalm-return array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: string, subject: null|string, dataschema: null, data: array{method: mixed|string, path: false|mixed|string, queryParams: array|mixed, headers: array|mixed, body: array|mixed,...}, openregister: array{app: 'openregister', version: string}}
+     * @return array CloudEvent-formatted payload
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -90,7 +139,7 @@ class CloudEventService
         // Merge parsed body with request params.
         $bodyData = array_merge($parsedBody, $requestBody);
 
-        // Build CloudEvent payload according to CloudEvents 1.0 specification.
+        // Build CloudEvent payload.
         return [
             // Required CloudEvent attributes.
             'specversion'     => '1.0',
@@ -127,7 +176,7 @@ class CloudEventService
 
 
     /**
-     * Get event source
+     * Get event source from request
      *
      * Determines the source identifier for the CloudEvent.
      * The source identifies the context in which the event occurred.
@@ -141,13 +190,12 @@ class CloudEventService
     {
         // Build source URI from request protocol and host.
         // Protocol is determined from server protocol (https or http).
+        $protocol = 'http://';
         if ($request->getServerProtocol() === 'https') {
-            $host = 'https://';
-        } else {
-            $host = 'http://';
+            $protocol = 'https://';
         }
 
-        $host .= $request->getServerHost();
+        $host = $protocol.$request->getServerHost();
 
         // Append OpenRegister app path to source.
         return $host.'/apps/openregister';
@@ -156,7 +204,7 @@ class CloudEventService
 
 
     /**
-     * Get event subject
+     * Get event subject from request
      *
      * Determines the subject identifier for the CloudEvent.
      * The subject identifies the resource that the event relates to.
@@ -191,9 +239,7 @@ class CloudEventService
      *
      * @param IRequest $request The HTTP request
      *
-     * @return string[] Request headers
-     *
-     * @psalm-return array{'X-Requested-With'?: string, 'User-Agent'?: string, Authorization?: string, Accept?: string, 'Content-Type'?: string}
+     * @return array Request headers
      */
     private function getRequestHeaders(IRequest $request): array
     {
@@ -225,11 +271,11 @@ class CloudEventService
      *
      * Returns Content-Type header if present, otherwise defaults to 'application/json'.
      *
-     * @param mixed $request Request object with getHeader method
+     * @param IRequest $request Request object with getHeader method
      *
      * @return string Content type header value
      */
-    private function getContentTypeHeader(mixed $request): string
+    private function getContentTypeHeader(IRequest $request): string
     {
         $contentType = $request->getHeader('Content-Type');
 

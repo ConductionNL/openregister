@@ -31,7 +31,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookInterceptorService;
+use OCA\OpenRegister\Service\WebhookService;
 use RuntimeException;
 use DateTime;
 use DateInterval;
@@ -99,6 +99,8 @@ class ObjectsController extends Controller
      * @param IGroupManager      $groupManager       The group manager
      * @param ExportService      $exportService      The export service
      * @param ImportService      $importService      The import service
+     * @param WebhookService     $webhookService     The webhook service (optional)
+     * @param LoggerInterface    $logger             The logger (optional)
      *
      * @return void
      */
@@ -117,7 +119,7 @@ class ObjectsController extends Controller
         private readonly IGroupManager $groupManager,
         ExportService $exportService,
         ImportService $importService,
-        private readonly ?WebhookInterceptorService $webhookInterceptor=null,
+        private readonly ?WebhookService $webhookService=null,
         private readonly ?LoggerInterface $logger=null
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -613,9 +615,9 @@ class ObjectsController extends Controller
         // Intercept request and send to webhooks before processing.
         // This allows external systems to validate, transform, or enrich the request.
         $object = $this->request->getParams();
-        if ($this->webhookInterceptor !== null) {
+        if ($this->webhookService !== null) {
             try {
-                $object = $this->webhookInterceptor->interceptRequest(
+                $object = $this->webhookService->interceptRequest(
                     request: $this->request,
                     eventType: 'object.creating'
                 );

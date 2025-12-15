@@ -22,12 +22,11 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity\BulkOperationsHandler;
-use OCA\OpenRegister\Db\ObjectEntity\CrudHandler;
 use OCA\OpenRegister\Db\ObjectEntity\FacetsHandler;
-use OCA\OpenRegister\Db\ObjectEntity\LockingHandler;
 use OCA\OpenRegister\Db\ObjectEntity\QueryBuilderHandler;
 use OCA\OpenRegister\Db\ObjectEntity\QueryOptimizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
+// REMOVED: CrudHandler and LockingHandler (dead code - never instantiated, create circular dependencies)
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -36,7 +35,7 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\MySQLJsonService;
+// use OCA\OpenRegister\Service\MySQLJsonService; // REMOVED: Dead code (never used)
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -73,20 +72,29 @@ class ObjectEntityMapper extends QBMapper
     use MultiTenancyTrait;
 
     // Handler instances (delegated responsibilities).
-    // private LockingHandler $lockingHandler; // REMOVED: Circular dependency with LockingHandler.
+    // REMOVED: LockingHandler and CrudHandler
+    // These were dead code that created circular dependencies. The real handlers
+    // exist in Service/Object/ layer where they belong (Service/Object/LockHandler and Service/Object/CrudHandler).
+    // Handlers WITHOUT circular dependencies (only need DB, logger, simple deps).
+    private QueryBuilderHandler $queryBuilderHandler;
 
-    // REMOVED: All handlers create circular dependencies. Handlers should use mappers, not vice versa.
-    // private QueryBuilderHandler $queryBuilderHandler;
-    // private CrudHandler $crudHandler;
-    // private StatisticsHandler $statisticsHandler;
-    // private FacetsHandler $facetsHandler;
-    // private BulkOperationsHandler $bulkOperationsHandler;
-    // private QueryOptimizationHandler $queryOptimizationHandler;
+    // No circular dependency.
+    private StatisticsHandler $statisticsHandler;
 
-    // REMOVED: Services should not be injected into mappers
-    // private OrganisationService $organisationService;
-    // private MySQLJsonService $databaseJsonService;
+    // No circular dependency - only needs DB, logger, tableName.
+    private FacetsHandler $facetsHandler;
 
+    // No circular dependency - only needs logger, schemaMapper.
+    private BulkOperationsHandler $bulkOperationsHandler;
+
+    // No circular dependency (needs QueryBuilderHandler).
+    private QueryOptimizationHandler $queryOptimizationHandler;
+
+    // No circular dependency.
+    // Existing dependencies (kept from original).
+    private OrganisationService $organisationService;
+
+    // REMOVED: MySQLJsonService $databaseJsonService - Never used (dead code)
     private IEventDispatcher $eventDispatcher;
 
     private IUserSession $userSession;
@@ -105,49 +113,47 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Constructor for the ObjectEntityMapper.
      *
-     * @param IDBConnection            $db                       Database connection.
-     * @param MySQLJsonService         $mySQLJsonService         MySQL JSON service.
-     * @param IEventDispatcher         $eventDispatcher          Event dispatcher.
-     * @param IUserSession             $userSession              User session.
-     * @param SchemaMapper             $schemaMapper             Schema mapper.
-     * @param IGroupManager            $groupManager             Group manager.
-     * @param IUserManager             $userManager              User manager.
-     * @param IAppConfig               $appConfig                App configuration.
-     * @param LoggerInterface          $logger                   Logger.
-     * @param OrganisationService      $organisationService      Organisation service for multi-tenancy.
-     * @param LockingHandler           $lockingHandler           REMOVED: Circular dependency.
-     * @param QueryBuilderHandler      $queryBuilderHandler      Query builder handler.
-     * @param CrudHandler              $crudHandler              CRUD handler.
-     * @param StatisticsHandler        $statisticsHandler        Statistics handler.
-     * @param FacetsHandler            $facetsHandler            Facets handler.
-     * @param BulkOperationsHandler    $bulkOperationsHandler    Bulk operations handler.
-     * @param QueryOptimizationHandler $queryOptimizationHandler Query optimization handler.
+     * @param IDBConnection       $db                  Database connection.
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher.
+     * @param IUserSession        $userSession         User session.
+     * @param SchemaMapper        $schemaMapper        Schema mapper.
+     * @param IGroupManager       $groupManager        Group manager.
+     * @param IUserManager        $userManager         User manager.
+     * @param IAppConfig          $appConfig           App configuration.
+     * @param LoggerInterface     $logger              Logger.
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy.
      */
     public function __construct(
         IDBConnection $db,
-        // MySQLJsonService $mySQLJsonService, // REMOVED: Services should not be in mappers
+        // MySQLJsonService $mySQLJsonService, // REMOVED: Dead code (never used)
         IEventDispatcher $eventDispatcher,
         IUserSession $userSession,
         SchemaMapper $schemaMapper,
         IGroupManager $groupManager,
         IUserManager $userManager,
         IAppConfig $appConfig,
-        LoggerInterface $logger
-        // OrganisationService $organisationService // REMOVED: Services should not be in mappers
-        // ALL HANDLERS REMOVED: Handlers should not be in mappers
+        LoggerInterface $logger,
+        OrganisationService $organisationService
     ) {
         parent::__construct($db, 'openregister_objects');
 
-        // Only framework dependencies allowed in mappers.
-        // $this->databaseJsonService = $mySQLJsonService; // REMOVED
-        $this->eventDispatcher     = $eventDispatcher;
-        $this->userSession         = $userSession;
-        $this->schemaMapper        = $schemaMapper;
-        $this->groupManager        = $groupManager;
-        $this->userManager         = $userManager;
-        $this->appConfig           = $appConfig;
-        $this->logger              = $logger;
-        // $this->organisationService = $organisationService; // REMOVED
+        // Existing dependencies.
+        // $this->databaseJsonService = $mySQLJsonService; // REMOVED: Dead code (never used)
+        $this->eventDispatcher = $eventDispatcher;
+        $this->userSession     = $userSession;
+        $this->schemaMapper    = $schemaMapper;
+        $this->groupManager    = $groupManager;
+        $this->userManager     = $userManager;
+        $this->appConfig       = $appConfig;
+        $this->logger          = $logger;
+        $this->organisationService = $organisationService;
+
+        // Initialize handlers (no circular dependencies).
+        $this->queryBuilderHandler      = new QueryBuilderHandler($db, $logger);
+        $this->statisticsHandler        = new StatisticsHandler($db, $logger, 'openregister_objects');
+        $this->facetsHandler            = new FacetsHandler($logger, $schemaMapper);
+        $this->queryOptimizationHandler = new QueryOptimizationHandler($db, $logger, 'openregister_objects');
+        $this->bulkOperationsHandler    = new BulkOperationsHandler($db, $logger, $this->queryBuilderHandler, 'openregister_objects');
 
     }//end __construct()
 
@@ -199,7 +205,7 @@ class ObjectEntityMapper extends QBMapper
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
         // REMOVED: Circular dependency with LockingHandler. Use ObjectService->lockObject() instead.
-        throw new \BadMethodCallException('lockObject() is deprecated. Use LockingHandler directly through ObjectService.');
+        throw new BadMethodCallException('lockObject() is deprecated. Use LockingHandler directly through ObjectService.');
 
     }//end lockObject()
 
@@ -216,7 +222,7 @@ class ObjectEntityMapper extends QBMapper
     public function unlockObject(string $uuid): bool
     {
         // REMOVED: Circular dependency with LockingHandler. Use ObjectService->unlockObject() instead.
-        throw new \BadMethodCallException('unlockObject() is deprecated. Use LockingHandler directly through ObjectService.');
+        throw new BadMethodCallException('unlockObject() is deprecated. Use LockingHandler directly through ObjectService.');
 
     }//end unlockObject()
 
@@ -240,8 +246,8 @@ class ObjectEntityMapper extends QBMapper
         // Dispatch creating event.
         $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
 
-        // Delegate to CRUD handler.
-        $result = $this->crudHandler->insert($entity);
+        // Call parent QBMapper insert directly (CrudHandler has circular dependency).
+        $result = parent::insert($entity);
 
         // Dispatch created event.
         $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
@@ -265,8 +271,8 @@ class ObjectEntityMapper extends QBMapper
         // Dispatch updating event.
         $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity));
 
-        // Delegate to CRUD handler.
-        $result = $this->crudHandler->update($entity);
+        // Call parent QBMapper update directly (CrudHandler has circular dependency).
+        $result = parent::update($entity);
 
         // Dispatch updated event.
         $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result));
@@ -290,8 +296,8 @@ class ObjectEntityMapper extends QBMapper
         // Dispatch deleting event.
         $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent($entity));
 
-        // Delegate to CRUD handler.
-        $result = $this->crudHandler->delete($entity);
+        // Call parent QBMapper delete directly (CrudHandler has circular dependency).
+        $result = parent::delete($entity);
 
         // Dispatch deleted event.
         $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent($result));
@@ -977,7 +983,7 @@ class ObjectEntityMapper extends QBMapper
                         $qb->expr()->gt('depublished', $qb->createNamedParameter($now))
                     )
                 );
-                } else {
+            } else {
                 $qb->andWhere($qb->expr()->isNull('published'));
             }
         }

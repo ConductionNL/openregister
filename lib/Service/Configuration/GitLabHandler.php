@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCP\Http\Client\IClient;
+use OCP\Http\Client\IClientService;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -79,11 +80,11 @@ class GitLabHandler
      * @param LoggerInterface $logger Logger instance
      */
     public function __construct(
-        IClient $client,
+        IClientService $clientService,
         IConfig $config,
         LoggerInterface $logger
     ) {
-        $this->client = $client;
+        $this->client = $clientService->newClient();
         $this->config = $config;
         $this->logger = $logger;
 

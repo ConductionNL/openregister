@@ -48,13 +48,13 @@ class MigrationHandler
     /**
      * Constructor for MigrationHandler.
      *
-     * @param ObjectEntityMapper       $objectMapper         Mapper for object entities.
-     * @param SchemaMapper             $schemaMapper         Mapper for schema entities.
-     * @param RegisterMapper           $registerMapper       Mapper for register entities.
-     * @param SaveObject               $saveHandler          Handler for saving objects.
-     * @param UtilityHandler           $utilityHandler       Handler for utility operations.
-     * @param DataManipulationHandler  $dataManipulationHandler Handler for data manipulation.
-     * @param LoggerInterface          $logger               Logger for logging operations.
+     * @param ObjectEntityMapper      $objectMapper            Mapper for object entities.
+     * @param SchemaMapper            $schemaMapper            Mapper for schema entities.
+     * @param RegisterMapper          $registerMapper          Mapper for register entities.
+     * @param SaveObject              $saveHandler             Handler for saving objects.
+     * @param UtilityHandler          $utilityHandler          Handler for utility operations.
+     * @param DataManipulationHandler $dataManipulationHandler Handler for data manipulation.
+     * @param LoggerInterface         $logger                  Logger for logging operations.
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectMapper,
@@ -155,9 +155,7 @@ class MigrationHandler
                         $actualRegister = $sourceObject->getRegister();
                         $actualSchema   = $sourceObject->getSchema();
                         throw new InvalidArgumentException(
-                            "Object {$objectId} does not belong to the specified source register/schema. "
-                            ."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "
-                            ."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                            "Object {$objectId} does not belong to the specified source register/schema. "."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
                         );
                     }
 
@@ -173,8 +171,8 @@ class MigrationHandler
                     $this->logger->debug(
                         message: 'Object properties mapped',
                         context: [
-                                'mappedData' => $mappedData,
-                            ]
+                            'mappedData' => $mappedData,
+                        ]
                     );
 
                     // Store original files and relations before altering the object.
@@ -247,4 +245,3 @@ class MigrationHandler
 
 
 }//end class
-

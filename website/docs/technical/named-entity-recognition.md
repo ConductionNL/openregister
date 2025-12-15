@@ -16,7 +16,7 @@ keywords:
 
 ## Overview
 
-OpenRegister's NamedEntityRecognitionService extracts entities (persons, organizations, emails, etc.) from text chunks for GDPR compliance and data classification. The service supports multiple detection methods and stores entities in a GDPR register.
+OpenRegister's EntityRecognitionHandler extracts entities (persons, organizations, emails, etc.) from text chunks for GDPR compliance and data classification. The handler is integrated into the TextExtractionService workflow and automatically processes chunks after they are created. It supports multiple detection methods and stores entities in a GDPR register.
 
 ## Architecture
 
@@ -24,37 +24,66 @@ OpenRegister's NamedEntityRecognitionService extracts entities (persons, organiz
 
 ```mermaid
 sequenceDiagram
-    participant Chunk
-    participant NER as NamedEntityRecognitionService
+    participant Source as File/Object Source
+    participant TES as TextExtractionService
+    participant ERH as EntityRecognitionHandler
     participant Detector as Entity Detector
     participant EntityDB as Entity Storage
     participant RelationDB as Relation Storage
     
-    Chunk->>NER: Extract entities
-    NER->>Detector: Detect entities (regex/presidio/llm)
-    Detector->>Detector: Find entities in text
-    Detector->>Detector: Calculate confidence
-    Detector-->>NER: Return detected entities
+    Source->>TES: Extract text
+    TES->>TES: Create chunks
+    TES->>ERH: Process chunks for entities
     
-    loop For each entity
-        NER->>EntityDB: Find or create entity
-        EntityDB-->>NER: Entity ID
-        NER->>RelationDB: Create entity relation
-        RelationDB-->>NER: Relation created
+    loop For each chunk
+        ERH->>Detector: Detect entities (regex/presidio/llm)
+        Detector->>Detector: Find entities in text
+        Detector->>Detector: Calculate confidence
+        Detector-->>ERH: Return detected entities
+        
+        loop For each entity
+            ERH->>EntityDB: Find or create entity
+            EntityDB-->>ERH: Entity ID
+            ERH->>RelationDB: Create entity relation
+            RelationDB-->>ERH: Relation created
+        end
     end
     
-    NER-->>Chunk: Entities extracted
+    ERH-->>TES: Entities extracted
+    TES-->>Source: Extraction complete
 ```
 
 ## Service Implementation
 
-### NamedEntityRecognitionService
+### EntityRecognitionHandler
 
-**Location**: `lib/Service/NamedEntityRecognitionService.php`
+**Location**: `lib/Service/TextExtraction/EntityRecognitionHandler.php`
+
+**Integration**: Automatically invoked by `TextExtractionService` after chunks are created.
 
 **Key Methods**:
 
 ```php
+/**
+ * Process chunks for a source and extract entities.
+ * This method is called after chunks are created to detect and store entities.
+ */
+public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array
+{
+    // Get all chunks for this source (excluding metadata chunks)
+    $chunks = $this->chunkMapper->findBySource($sourceType, $sourceId);
+    
+    foreach ($chunks as $chunk) {
+        $result = $this->extractFromChunk($chunk, $options);
+    }
+    
+    return [
+        'chunks_processed' => $chunksProcessed,
+        'entities_found' => $totalEntities,
+        'relations_created' => $totalRelations,
+    ];
+}
+
 /**
  * Extract entities from a text chunk.
  */
@@ -304,7 +333,7 @@ private function detectWithPresidio(string $text, ?array $entityTypes, float $co
 {
     // TODO: Implement Presidio integration
     // For now, fall back to regex
-    $this->logger->debug('[NamedEntityRecognitionService] Presidio not yet implemented, using regex fallback');
+    $this->logger->debug('[EntityRecognitionHandler] Presidio not yet implemented, using regex fallback');
     return $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
 }
 ```
@@ -330,7 +359,7 @@ private function detectWithLLM(string $text, ?array $entityTypes, float $confide
 {
     // TODO: Implement LLM-based entity extraction
     // For now, fall back to regex
-    $this->logger->debug('[NamedEntityRecognitionService] LLM extraction not yet implemented, using regex fallback');
+    $this->logger->debug('[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback');
     return $this->detectWithRegex($text, $entityTypes, $confidenceThreshold);
 }
 ```

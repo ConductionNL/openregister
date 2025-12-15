@@ -1,13 +1,14 @@
 <?php
 
 /**
- * Named Entity Recognition Service
+ * EntityRecognitionHandler
  *
- * Service for extracting named entities (persons, organizations, locations, etc.)
+ * Handler for extracting named entities (persons, organizations, locations, etc.)
  * from text chunks for GDPR compliance and data classification.
+ * This handler is invoked after chunks are created to detect and store entities.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service
+ * @package  OCA\OpenRegister\Service\TextExtraction
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -16,7 +17,7 @@
  * @link      https://www.OpenRegister.nl
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\TextExtraction;
 
 use DateTime;
 use Exception;
@@ -32,15 +33,21 @@ use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
 /**
- * Named Entity Recognition Service.
+ * Entity Recognition Handler.
  *
  * Extracts named entities from text chunks using multiple detection methods:
- * - Local regex patterns (fast, privacy-friendly)
- * - External services (Presidio, etc.)
- * - LLM-based extraction (context-aware, accurate)
- * - Hybrid approach (combines multiple methods)
+ * - Local regex patterns (fast, privacy-friendly).
+ * - External services (Presidio, etc.).
+ * - LLM-based extraction (context-aware, accurate).
+ * - Hybrid approach (combines multiple methods).
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\TextExtraction
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
-class NamedEntityRecognitionService
+class EntityRecognitionHandler
 {
 
 
@@ -80,14 +87,14 @@ class NamedEntityRecognitionService
     /**
      * Constructor.
      *
+     * @param ChunkMapper          $chunkMapper          Chunk mapper.
      * @param GdprEntityMapper     $entityMapper         Entity mapper.
      * @param EntityRelationMapper $entityRelationMapper Entity relation mapper.
-     * @param ChunkMapper          $chunkMapper          Chunk mapper.
-     * @param SettingsService      $settingsService      Settings service.
      * @param IDBConnection        $db                   Database connection.
      * @param LoggerInterface      $logger               Logger.
      */
     public function __construct(
+        private readonly ChunkMapper $chunkMapper,
         private readonly GdprEntityMapper $entityMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly IDBConnection $db,
@@ -98,25 +105,110 @@ class NamedEntityRecognitionService
 
 
     /**
+     * Process chunks for a source and extract entities.
+     *
+     * This method is called after chunks are created to detect and store entities.
+     *
+     * @param string $sourceType Source type identifier (file, object, etc.).
+     * @param int    $sourceId   Source identifier.
+     * @param array  $options    Processing options:
+     *                           - method: 'regex', 'presidio', 'llm', 'hybrid' (default: 'hybrid').
+     *                           - entity_types: array of entity types to detect (default: all).
+     *                           - confidence_threshold: minimum confidence (default: 0.5).
+     *                           - context_window: characters around entity (default: 50).
+     *
+     * @return array{
+     *     chunks_processed: int,
+     *     entities_found: int,
+     *     relations_created: int
+     * }
+     *
+     * @throws Exception When processing fails.
+     */
+    public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
+    {
+        $this->logger->info(
+                message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
+                context: [
+                    'source_type' => $sourceType,
+                    'source_id'   => $sourceId,
+                ]
+                );
+
+        // Get all chunks for this source (excluding metadata chunks).
+        $chunks = $this->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
+
+        // Filter out metadata chunks (chunk_index = -1).
+        $chunks = array_filter(
+            $chunks,
+            fn($chunk) => $chunk->getChunkIndex() !== -1
+        );
+
+        $chunksProcessed = 0;
+        $totalEntities   = 0;
+        $totalRelations  = 0;
+
+        foreach ($chunks as $chunk) {
+            try {
+                $result = $this->extractFromChunk(chunk: $chunk, options: $options);
+                $chunksProcessed++;
+                $totalEntities  += $result['entities_found'];
+                $totalRelations += $result['relations_created'];
+            } catch (Exception $e) {
+                $this->logger->error(
+                        message: '[EntityRecognitionHandler] Failed to process chunk',
+                        context: [
+                            'chunk_id'    => $chunk->getId(),
+                            'source_type' => $sourceType,
+                            'source_id'   => $sourceId,
+                            'error'       => $e->getMessage(),
+                        ]
+                        );
+            }//end try
+        }//end foreach
+
+        $this->logger->info(
+                message: '[EntityRecognitionHandler] Source processing complete',
+                context: [
+                    'source_type'       => $sourceType,
+                    'source_id'         => $sourceId,
+                    'chunks_processed'  => $chunksProcessed,
+                    'entities_found'    => $totalEntities,
+                    'relations_created' => $totalRelations,
+                ]
+                );
+
+        return [
+            'chunks_processed'  => $chunksProcessed,
+            'entities_found'    => $totalEntities,
+            'relations_created' => $totalRelations,
+        ];
+
+    }//end processSourceChunks()
+
+
+    /**
      * Extract entities from a text chunk.
      *
      * @param Chunk $chunk   Chunk to process.
      * @param array $options Processing options:
-     *                       - method: 'regex', 'presidio', 'llm', 'hybrid' (default: 'hybrid')
-     *                       - entity_types: array of entity types to detect (default: all)
-     *                       - confidence_threshold: minimum confidence (default: 0.5)
-     *                       - context_window: characters around entity (default: 50)
+     *                       - method: 'regex', 'presidio', 'llm', 'hybrid' (default: 'hybrid').
+     *                       - entity_types: array of entity types to detect (default: all).
+     *                       - confidence_threshold: minimum confidence (default: 0.5).
+     *                       - context_window: characters around entity (default: 50).
      *
-     * @return ((float|string)[][]|int)[]
+     * @return array{
+     *     entities_found: int,
+     *     relations_created: int,
+     *     entities: list<array{type: string, value: string, confidence: float}>
+     * }
      *
      * @throws Exception When extraction fails.
-     *
-     * @psalm-return array{entities_found: int<0, max>, relations_created: int<0, max>, entities: list<array{confidence: float, type: string, value: string}>}
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
-        $this->logger->info(
-                message: '[NamedEntityRecognitionService] Extracting entities from chunk',
+        $this->logger->debug(
+                message: '[EntityRecognitionHandler] Extracting entities from chunk',
                 context: [
                     'chunk_id'    => $chunk->getId(),
                     'source_type' => $chunk->getSourceType(),
@@ -124,7 +216,7 @@ class NamedEntityRecognitionService
                 ]
                 );
 
-        $method      = $options['method'] ?? 'hybrid';
+        $method      = $options['method'] ?? self::METHOD_HYBRID;
         $entityTypes = $options['entity_types'] ?? null;
         $confidenceThreshold = (float) ($options['confidence_threshold'] ?? 0.5);
         $contextWindow       = (int) ($options['context_window'] ?? 50);
@@ -172,7 +264,13 @@ class NamedEntityRecognitionService
                 $relation->setPositionEnd($detected['position_end']);
                 $relation->setConfidence($detected['confidence']);
                 $relation->setDetectionMethod($method);
-                $relation->setContext($this->extractContext(text: $text, positionStart: $detected['position_start'], positionEnd: $detected['position_end'], contextWindow: $contextWindow));
+                $context = $this->extractContext(
+                    text: $text,
+                    positionStart: $detected['position_start'],
+                    positionEnd: $detected['position_end'],
+                    contextWindow: $contextWindow
+                );
+                $relation->setContext($context);
                 $relation->setCreatedAt(new DateTime());
 
                 // Set source references based on chunk source type.
@@ -193,7 +291,7 @@ class NamedEntityRecognitionService
                 ];
             } catch (Exception $e) {
                 $this->logger->error(
-                        message: '[NamedEntityRecognitionService] Failed to store entity',
+                        message: '[EntityRecognitionHandler] Failed to store entity',
                         context: [
                             'chunk_id' => $chunk->getId(),
                             'type'     => $detected['type'] ?? 'unknown',
@@ -203,15 +301,6 @@ class NamedEntityRecognitionService
                         );
             }//end try
         }//end foreach
-
-        $this->logger->info(
-                message: '[NamedEntityRecognitionService] Entity extraction complete',
-                context: [
-                    'chunk_id'          => $chunk->getId(),
-                    'entities_found'    => $entitiesFound,
-                    'relations_created' => $relationsCreated,
-                ]
-                );
 
         return [
             'entities_found'    => $entitiesFound,
@@ -259,9 +348,14 @@ class NamedEntityRecognitionService
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return (float|int|string)[][]
-     *
-     * @psalm-return array<int<0, max>, array{type: 'EMAIL'|'IBAN'|'PHONE', value: string, category: 'personal_data'|'sensitive_pii', position_start: int, position_end: int<min, max>, confidence: float}>
+     * @return array<int, array{
+     *     type: string,
+     *     value: string,
+     *     category: string,
+     *     position_start: int,
+     *     position_end: int,
+     *     confidence: float
+     * }>
      */
     private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -333,13 +427,20 @@ class NamedEntityRecognitionService
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
+     * @return array<int, array{
+     *     type: string,
+     *     value: string,
+     *     category: string,
+     *     position_start: int,
+     *     position_end: int,
+     *     confidence: float
+     * }>
      */
     private function detectWithPresidio(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
         // TODO: Implement Presidio integration.
         // For now, fall back to regex.
-        $this->logger->debug(message: '[NamedEntityRecognitionService] Presidio not yet implemented, using regex fallback');
+        $this->logger->debug(message: '[EntityRecognitionHandler] Presidio not yet implemented, using regex fallback');
 
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
@@ -353,13 +454,20 @@ class NamedEntityRecognitionService
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
+     * @return array<int, array{
+     *     type: string,
+     *     value: string,
+     *     category: string,
+     *     position_start: int,
+     *     position_end: int,
+     *     confidence: float
+     * }>
      */
     private function detectWithLLM(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
         // TODO: Implement LLM-based entity extraction.
         // For now, fall back to regex.
-        $this->logger->debug(message: '[NamedEntityRecognitionService] LLM extraction not yet implemented, using regex fallback');
+        $this->logger->debug(message: '[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback');
 
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
@@ -373,7 +481,14 @@ class NamedEntityRecognitionService
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
+     * @return array<int, array{
+     *     type: string,
+     *     value: string,
+     *     category: string,
+     *     position_start: int,
+     *     position_end: int,
+     *     confidence: float
+     * }>
      */
     private function detectWithHybrid(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -410,8 +525,9 @@ class NamedEntityRecognitionService
                 ->setMaxResults(1);
 
             /*
-             * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance
+             * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance.
              */
+
             $existingEntities = $this->entityMapper->findEntities($qb);
             if (empty($existingEntities) === false) {
                 $existing = $existingEntities[0];

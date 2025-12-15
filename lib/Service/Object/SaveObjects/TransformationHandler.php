@@ -179,7 +179,7 @@ class TransformationHandler
             // Set organization using optimized OrganisationService method if not provided.
             if (($selfData['organisation'] ?? null) === null || empty($selfData['organisation']) === true) {
                 // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
-                $selfData['organisation'] = null
+                $selfData['organisation'] = null;
                 // TODO->getOrganisationForNewEntity();
             }
 

@@ -1554,7 +1554,7 @@ sequenceDiagram
     participant Client
     participant API
     participant ObjectService
-    participant FacetService
+    participant FacetHandler
     participant SolrService
     participant Solr
     participant Cache
@@ -1563,13 +1563,13 @@ sequenceDiagram
     API->>ObjectService: findObjects(_facetable=true)
     
     Note over ObjectService: Check if faceting requested
-    ObjectService->>FacetService: getFacetableFields(query)
+    ObjectService->>FacetHandler: getFacetableFields(query)
     
-    Note over FacetService: Analyze schema
-    FacetService->>FacetService: getSchemaFacets()
-    FacetService->>FacetService: discoverObjectFields()
+    Note over FacetHandler: Analyze schema
+    FacetHandler->>FacetHandler: getSchemaFacets()
+    FacetHandler->>FacetHandler: discoverObjectFields()
     
-    FacetService-->>ObjectService: Facetable field definitions
+    FacetHandler-->>ObjectService: Facetable field definitions
     
     ObjectService->>SolrService: searchObjects(query + facets)
     
@@ -1809,10 +1809,10 @@ No Cache:             ~1000ms for 100 individual queries
 #### Building Custom Facet Query
 
 ```php
-use OCA\OpenRegister\Service\FacetService;
+use OCA\OpenRegister\Service\Object\FacetHandler;
 
 // Get facetable fields
-$facetableFields = $facetService->getFacetableFields([
+$facetableFields = $facetHandler->getFacetableFields([
     '@self' => ['register' => 5],
     '_search' => 'budget'
 ], 100);
@@ -1885,4 +1885,30 @@ vendor/bin/phpunit tests/Integration/FacetIntegrationTest.php
 - Alphabetical sorting
 - Date histogram buckets
 - Range aggregations
-- Performance benchmarks 
+- Performance benchmarks
+
+## Architecture Changes (v2.0.0)
+
+**Consolidated Architecture:** As of version 2.0.0, the faceting system has been consolidated into a single handler for improved consistency and maintainability.
+
+**Previous Architecture:**
+- FacetService (standalone service with business logic)
+- FacetHandler (thin wrapper delegating to FacetService)
+- ObjectService used FacetService directly
+
+**Current Architecture:**
+- FacetHandler (unified handler with all faceting logic)
+- ObjectService uses FacetHandler following the established handler pattern
+- All faceting operations go through FacetHandler
+
+**Benefits:**
+- Consistent with ObjectService handler pattern (SaveObject, DeleteObject, etc.)
+- Simplified dependency injection
+- Cleaner architecture with single responsibility
+- Better alignment with other service patterns in OpenRegister
+
+**Migration Impact:**
+- Internal refactoring only - no API changes
+- All public methods remain the same
+- Frontend code requires no changes
+- Existing queries and responses unchanged 

@@ -374,7 +374,7 @@ class FilePropertyHandler
                     foreach ($existingFileIds as $fileId) {
                         if (is_numeric($fileId) === true) {
                             try {
-                                null
+                                null;
                                 // TODO->deleteFile(file: (int) $fileId, object: $objectEntity);
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
@@ -385,7 +385,7 @@ class FilePropertyHandler
                 } else if (is_numeric($existingFileIds) === true) {
                     // Single file ID.
                     try {
-                        null
+                        null;
                         // TODO->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
@@ -564,14 +564,14 @@ class FilePropertyHandler
         $autoPublish = $fileConfig['autoPublish'] ?? false;
 
         // Create the file with validation and tagging.
-        $file = null
+        $file = null;
         // TODO->addFile(
-            objectEntity: $objectEntity,
-            fileName: $filename,
-            content: $fileData['content'],
-            share: $autoPublish,
-            tags: $autoTags
-        );
+        //     objectEntity: $objectEntity,
+        //     fileName: $filename,
+        //     content: $fileData['content'],
+        //     share: $autoPublish,
+        //     tags: $autoTags
+        // );
 
         return $file->getId();
 
@@ -618,7 +618,7 @@ class FilePropertyHandler
             // Validate that the existing file meets the property configuration.
             // Get file info to validate against config.
             try {
-                $existingFile = null
+                $existingFile = null;
                 // TODO->getFile(object: $objectEntity, file: $fileId);
                 if ($existingFile !== null) {
                     // Validate the existing file against current config.
@@ -821,19 +821,19 @@ class FilePropertyHandler
         if (empty($autoTags) === false) {
             // Get existing tags and merge with auto tags.
             try {
-                $formattedFile = null
+                $formattedFile = null;
                 // TODO->formatFile($file);
                 $existingTags = $formattedFile['labels'] ?? [];
                 $allTags      = array_unique(array_merge($existingTags, $autoTags));
 
                 // Update file with merged tags.
-                null
+                null;
                 // TODO->updateFile(
-                    filePath: $file->getId(),
-                    content: null,
-                    // Don't change content.
-                    tags: $allTags
-                );
+                //     filePath: $file->getId(),
+                //     content: null,
+                //     // Don't change content.
+                //     tags: $allTags
+                // );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.
             }

@@ -23,7 +23,7 @@
  * - Multi-level aggregations and drill-down support
  *
  * @category  Handler
- * @package   OCA\OpenRegister\Service\MagicMapperHandlers
+ * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\MagicMapperHandlers;
+namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
 

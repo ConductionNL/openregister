@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ObjectCacheService;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
@@ -92,7 +92,7 @@ class IntegratedFileUploadTest extends TestCase
     /** @var MockObject|ObjectCacheService */
     private $objectCacheService;
 
-    /** @var MockObject|SchemaCacheService */
+    /** @var MockObject|SchemaCacheHandler */
     private $schemaCacheService;
 
     /** @var MockObject|SchemaFacetCacheService */
@@ -135,7 +135,7 @@ class IntegratedFileUploadTest extends TestCase
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->objectCacheService = $this->createMock(ObjectCacheService::class);
-        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
         $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->logger = $this->createMock(LoggerInterface::class);

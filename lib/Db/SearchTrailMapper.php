@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister SearchTrailMapper
  *
  * This file contains the mapper class for SearchTrail entities,
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
