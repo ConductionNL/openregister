@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Service\Index;
 
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\SettingsService;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
@@ -55,7 +54,6 @@ class SchemaHandler
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
-        private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
         private readonly IConfig $config,
         private readonly SearchBackendInterface $searchBackend

@@ -291,11 +291,11 @@ class IndexService
             return $this->searchBackend->isAvailable(forceRefresh: $forceRefresh);
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Failed to check availability',
-                    [
+                '[IndexService] Failed to check availability',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return false;
         }//end try
 
@@ -315,11 +315,11 @@ class IndexService
             return $this->searchBackend->testConnection(includeCollectionTests: $includeCollectionTests);
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Connection test failed',
-                    [
+                '[IndexService] Connection test failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'available' => false,
@@ -341,11 +341,11 @@ class IndexService
             return $this->searchBackend->getStats();
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Failed to get stats',
-                    [
+                '[IndexService] Failed to get stats',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'available' => false,
@@ -378,11 +378,11 @@ class IndexService
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Failed to get dashboard stats',
-                    [
+                '[IndexService] Failed to get dashboard stats',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'available' => false,
@@ -404,11 +404,11 @@ class IndexService
             return $this->searchBackend->optimize();
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Optimization failed',
-                    [
+                '[IndexService] Optimization failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return false;
         }//end try
 
@@ -428,12 +428,12 @@ class IndexService
             return $this->searchBackend->clearIndex(collectionName: $collectionName);
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Failed to clear index',
-                    [
+                '[IndexService] Failed to clear index',
+                [
                         'collection' => $collectionName,
                         'error'      => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'success' => false,
@@ -455,11 +455,11 @@ class IndexService
             return $this->searchBackend->getConfig();
         } catch (Exception $e) {
             $this->logger->error(
-                    '[IndexService] Failed to get config',
-                    [
+                '[IndexService] Failed to get config',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [];
         }//end try
@@ -541,6 +541,40 @@ class IndexService
         return $this->fileHandler->getFileIndexStats();
 
     }//end getFileIndexStats()
+
+
+    /**
+     * Warm up the search index.
+     *
+     * Pre-loads data into cache and performs initial indexing operations.
+     *
+     * @param array  $schemas       Array of schema IDs to warm up.
+     * @param int    $maxObjects    Maximum number of objects to warm up.
+     * @param string $mode          Warmup mode (serial, parallel, hyper).
+     * @param bool   $collectErrors Whether to collect detailed error information.
+     * @param int    $batchSize     Batch size for warmup operations.
+     * @param array  $schemaIds     Schema IDs to filter warmup.
+     *
+     * @return array Warmup results with statistics and errors.
+     */
+    public function warmupIndex(
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
+    ): array {
+        return $this->searchBackend->warmupIndex(
+            schemas: $schemas,
+            maxObjects: $maxObjects,
+            mode: $mode,
+            collectErrors: $collectErrors,
+            batchSize: $batchSize,
+            schemaIds: $schemaIds
+        );
+
+    }//end warmupIndex()
 
 
 }//end class

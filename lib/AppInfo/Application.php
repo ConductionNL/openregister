@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Objects\PerformanceHandler;
 use OCA\OpenRegister\Service\Objects\PermissionHandler;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
 use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
@@ -61,7 +62,13 @@ use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrCollectionManager;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrDocumentIndexer;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrQueryExecutor;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrFacetProcessor;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrSchemaManager;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorEmbeddingService;
@@ -358,12 +365,16 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ValidationOperationsHandler can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        // Register SaveObject with consolidated cache services.
+        // NOTE: MetadataHydrationHandler can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
+        
+        // Register SaveObject with handlers and consolidated cache services.
         $context->registerService(
                  SaveObject::class,
                 function ($container) {
                     return new SaveObject(
                             objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                            metadataHydrationHandler: $container->get(MetadataHydrationHandler::class),
                             fileService: $container->get(FileService::class),
                             userSession: $container->get('OCP\IUserSession'),
                             auditTrailMapper: $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
@@ -409,6 +420,9 @@ class Application extends App implements IBootstrap
                             logger: $container->get('Psr\Log\LoggerInterface'),
                             client: new Client(),
                             objectService: $container->get(ObjectService::class),
+                            githubHandler: $container->get(GitHubHandler::class),
+                            gitlabHandler: $container->get(GitLabHandler::class),
+                            cacheHandler: $container->get(ConfigurationCacheHandler::class),
                             appDataPath: $appDataPath
                             );
                 }
@@ -458,81 +472,27 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register GuzzleSolrService as backend for IndexService.
-        $context->registerService(
-                 GuzzleSolrService::class,
-                function ($container) {
-                    return new GuzzleSolrService(
-                            settingsService: $container->get(SettingsService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            schemaMapper: $container->get(SchemaMapper::class),
-                            registerMapper: $container->get(RegisterMapper::class),
-                            organisationService: $container->get(OrganisationService::class),
-                            organisationMapper: null,
-                            documentBuilder: $container->get(\OCA\OpenRegister\Service\Index\DocumentBuilder::class)
-                            );
-                }
-                );
+        // NOTE: SolrHttpClient, SolrCollectionManager, SolrDocumentIndexer,
+        // SolrQueryExecutor, SolrFacetProcessor, SolrSchemaManager, and SolrBackend
+        // can all be autowired (only type-hinted parameters).
+        // Nextcloud will automatically resolve them via dependency injection.
 
-        // Register GuzzleSolrService as the implementation for SearchBackendInterface.
+        // Register SearchBackendInterface to use SolrBackend implementation.
         $context->registerService(
                  \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
                 function ($container) {
-                    return $container->get(GuzzleSolrService::class);
+                    return $container->get(SolrBackend::class);
                 }
                 );
 
         // ====================================================================
-        // PHASE 3: INDEX HANDLERS (PRAGMATIC DELEGATION PATTERN)
-        // These handlers initially delegate to GuzzleSolrService for backward
-        // compatibility, enabling incremental method migration over time.
+        // PHASE 3: INDEX HANDLERS
+        // All index handlers can be autowired (only type-hinted parameters).
+        // Nextcloud will automatically resolve them via dependency injection.
         // ====================================================================
 
-        // Register DocumentBuilder for document creation.
-        $context->registerService(
-                 \OCA\OpenRegister\Service\Index\DocumentBuilder::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\Index\DocumentBuilder(
-                            guzzleSolrService: $container->get(GuzzleSolrService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            schemaMapper: $container->get(SchemaMapper::class),
-                            registerMapper: $container->get(RegisterMapper::class)
-                            );
-                }
-                );
-
-        // Register BulkIndexer for bulk operations.
-        $context->registerService(
-                 \OCA\OpenRegister\Service\Index\BulkIndexer::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\Index\BulkIndexer(
-                            guzzleSolrService: $container->get(GuzzleSolrService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface')
-                            );
-                }
-                );
-
-        // Register WarmupHandler for index warmup.
-        $context->registerService(
-                 \OCA\OpenRegister\Service\Index\WarmupHandler::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\Index\WarmupHandler(
-                            guzzleSolrService: $container->get(GuzzleSolrService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface')
-                            );
-                }
-                );
-
-        // Register FacetBuilder for facet operations.
-        $context->registerService(
-                 \OCA\OpenRegister\Service\Index\FacetBuilder::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\Index\FacetBuilder(
-                            guzzleSolrService: $container->get(GuzzleSolrService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface')
-                            );
-                }
-                );
+        // NOTE: DocumentBuilder, BulkIndexer, WarmupHandler, and FacetBuilder
+        // can all be autowired. No manual registration needed.
 
         // Register SolrDebugCommand for SOLR debugging.
         // NOTE: Must be registered manually because it depends on SettingsService which has circular dependencies.
@@ -618,17 +578,8 @@ class Application extends App implements IBootstrap
                 }
                 );
 
-        // Register CacheHandler for configuration caching.
-        $context->registerService(
-                CacheHandler::class,
-                function ($container) {
-                    return new CacheHandler(
-                            session: $container->get('OCP\ISession'),
-                            configurationMapper: $container->get(\OCA\OpenRegister\Db\ConfigurationMapper::class),
-                            organisationService: $container->get(\OCA\OpenRegister\Service\OrganisationService::class)
-                            );
-                }
-                );
+        // NOTE: Configuration\CacheHandler can be autowired (only type-hinted parameters).
+        // Nextcloud will automatically resolve it via dependency injection.
 
         // Register Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
