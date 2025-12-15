@@ -166,6 +166,8 @@ class Schema extends Entity implements JsonSerializable
      */
 
     /**
+     * Facets configuration for the schema
+     *
      * @var array|string|null
      */
     protected $facets = null;
@@ -253,6 +255,8 @@ class Schema extends Entity implements JsonSerializable
      */
 
     /**
+     * Configuration data for the schema
+     *
      * @var array|string|null
      */
     protected $configuration = null;

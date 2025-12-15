@@ -262,9 +262,9 @@ if [ "$HTTP_CODE" -eq 200 ]; then
     echo -e "  ${GREEN}→${NC} Found $COUNT objects"
 fi
 
-# Step 8: Update Register.
+# Step 8: Update Register (with multitenancy disabled for admin).
 print_header "Step 8: Update Register"
-RESPONSE=$(api_call "PUT" "/index.php/apps/openregister/api/registers/$REGISTER_ID" "{
+RESPONSE=$(api_call "PUT" "/index.php/apps/openregister/api/registers/$REGISTER_ID?_multitenancy=false" "{
     \"title\": \"CRUD Test Register - Updated\",
     \"description\": \"Register updated during CRUD test\"
 }")
@@ -274,9 +274,9 @@ BODY=$(echo "$RESPONSE" | sed '$d')
 
 assert_status 200 "$HTTP_CODE" "Register update"
 
-# Step 9: Update Schema.
+# Step 9: Update Schema (with multitenancy disabled for admin).
 print_header "Step 9: Update Schema"
-RESPONSE=$(api_call "PUT" "/index.php/apps/openregister/api/schemas/$SCHEMA_ID" "{
+RESPONSE=$(api_call "PUT" "/index.php/apps/openregister/api/schemas/$SCHEMA_ID?_multitenancy=false" "{
     \"title\": \"Person Schema - Updated\",
     \"description\": \"Schema updated during CRUD test\"
 }")

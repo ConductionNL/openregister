@@ -1470,7 +1470,7 @@ class ObjectService
         }
 
         // Use database search.
-        $result = $this->searchObjectsPaginatedDatabase(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted, ids: $ids, uses: $uses);
+        $result = $this->queryHandler->searchObjectsPaginatedDatabase(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted, ids: $ids, uses: $uses);
         $result['@self']['source'] = 'database';
         $result['@self']['query'] = $query;
         $result['@self']['rbac'] =  $_rbac;

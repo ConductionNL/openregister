@@ -36,8 +36,7 @@ use Psr\Log\LoggerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
 

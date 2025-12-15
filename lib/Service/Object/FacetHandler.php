@@ -88,6 +88,7 @@ class FacetHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         /**
+         * Logger for facet operations
          *
          * @psalm-suppress UnusedProperty
          */
