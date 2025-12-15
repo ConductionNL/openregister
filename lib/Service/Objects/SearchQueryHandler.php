@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SearchQueryHandler - Search and Query Operations Handler
  *
  * Handles all search query building, execution, and pagination operations.

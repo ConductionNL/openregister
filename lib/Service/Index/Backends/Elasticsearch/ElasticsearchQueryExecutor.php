@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * ElasticsearchQueryExecutor
  *
  * Manages search queries and execution for Elasticsearch.
@@ -26,9 +26,13 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchQueryExecutor
 {
+
     private readonly ElasticsearchHttpClient $httpClient;
+
     private readonly ElasticsearchIndexManager $indexManager;
+
     private readonly LoggerInterface $logger;
+
 
     /**
      * Constructor
@@ -45,7 +49,9 @@ class ElasticsearchQueryExecutor
         $this->httpClient   = $httpClient;
         $this->indexManager = $indexManager;
         $this->logger       = $logger;
-    }
+
+    }//end __construct()
+
 
     /**
      * Execute a search query.
@@ -62,28 +68,36 @@ class ElasticsearchQueryExecutor
             // Build Elasticsearch query
             $esQuery = $this->buildElasticsearchQuery($query);
 
-            $url = $this->httpClient->buildBaseUrl() . '/' . $index . '/_search';
+            $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_search';
             $result = $this->httpClient->post($url, $esQuery);
 
-            $this->logger->debug('[ElasticsearchQueryExecutor] Search executed', [
-                'index' => $index,
-                'hits' => $result['hits']['total']['value'] ?? 0
-            ]);
+            $this->logger->debug(
+                    '[ElasticsearchQueryExecutor] Search executed',
+                    [
+                        'index' => $index,
+                        'hits'  => $result['hits']['total']['value'] ?? 0,
+                    ]
+                    );
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchQueryExecutor] Search failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchQueryExecutor] Search failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
 
             return [
                 'hits' => [
                     'total' => ['value' => 0],
-                    'hits' => [],
+                    'hits'  => [],
                 ],
             ];
-        }
-    }
+        }//end try
+
+    }//end search()
+
 
     /**
      * Build Elasticsearch query from simple query parameters.
@@ -96,20 +110,21 @@ class ElasticsearchQueryExecutor
     {
         $query = [
             'query' => [
-                'match_all' => new \stdClass() // Empty object
+                'match_all' => new \stdClass(),
+        // Empty object
             ],
-            'from' => 0,
-            'size' => 10,
+            'from'  => 0,
+            'size'  => 10,
         ];
 
         // Handle search text
         if (isset($params['_search']) && $params['_search'] !== '*:*') {
             $query['query'] = [
                 'multi_match' => [
-                    'query' => $params['_search'],
+                    'query'  => $params['_search'],
                     'fields' => ['*'],
-                    'type' => 'best_fields'
-                ]
+                    'type'   => 'best_fields',
+                ],
             ];
         }
 
@@ -119,12 +134,14 @@ class ElasticsearchQueryExecutor
         }
 
         if (isset($params['_page'])) {
-            $page = (int) $params['_page'];
+            $page          = (int) $params['_page'];
             $query['from'] = ($page - 1) * $query['size'];
         }
 
         return $query;
-    }
+
+    }//end buildElasticsearchQuery()
+
 
     /**
      * Get document count.
@@ -136,16 +153,21 @@ class ElasticsearchQueryExecutor
         $index = $this->indexManager->getActiveIndexName();
 
         try {
-            $url = $this->httpClient->buildBaseUrl() . '/' . $index . '/_count';
+            $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_count';
             $result = $this->httpClient->get($url);
 
             return $result['count'] ?? 0;
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchQueryExecutor] Failed to get document count', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchQueryExecutor] Failed to get document count',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return 0;
         }
-    }
-}
 
+    }//end getDocumentCount()
+
+
+}//end class

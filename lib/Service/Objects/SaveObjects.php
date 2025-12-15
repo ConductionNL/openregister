@@ -67,6 +67,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
@@ -115,7 +117,8 @@ class SaveObjects
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
-
+        private readonly BulkValidationHandler $bulkValidationHandler,
+        private readonly BulkRelationHandler $bulkRelationHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger
@@ -1465,68 +1468,9 @@ class SaveObjects
      */
     private function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
-        $config = $schema->getConfiguration();
-        $properties = $schema->getProperties();
+        // Delegate to BulkValidationHandler for schema analysis.
+        return $this->bulkValidationHandler->performComprehensiveSchemaAnalysis($schema);
 
-        $analysis = [
-            'metadataFields' => [],
-            'inverseProperties' => [],
-            'validationRequired' => $schema->getHardValidation(),
-            'properties' => $properties,
-            'configuration' => $config,
-        ];
-
-        // PERFORMANCE OPTIMIZATION: Analyze metadata field mappings once.
-        // COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields.
-        $metadataFieldMap = [
-            'name' => $config['objectNameField'] ?? null,
-            'description' => $config['objectDescriptionField'] ?? null,
-            'summary' => $config['objectSummaryField'] ?? null,
-            'image' => $config['objectImageField'] ?? null,
-            'slug' => $config['objectSlugField'] ?? null,
-        ];
-
-        $analysis['metadataFields'] = array_filter($metadataFieldMap, function($field) {
-            return empty($field) === false;
-        });
-
-        // PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
-        foreach ($properties ?? [] as $propertyName => $propertyConfig) {
-            $items = $propertyConfig['items'] ?? [];
-
-            // Check for inversedBy at property level (single object relations).
-            $inversedBy = $propertyConfig['inversedBy'] ?? null;
-            $rawWriteBack = $propertyConfig['writeBack'] ?? false;
-            $writeBack = $this->castToBoolean($rawWriteBack);
-
-            // Schema analysis: process writeBack boolean casting.
-
-            // Check for inversedBy in array items (array of object relations).
-            // CRITICAL FIX: Preserve property-level writeBack if it's true.
-            if (($inversedBy === false || $inversedBy === null) === true && (($items['inversedBy'] ?? null) !== null) === true) {
-                $inversedBy = $items['inversedBy'];
-                $rawItemsWriteBack = $items['writeBack'] ?? false;
-                $itemsWriteBack = $this->castToBoolean($rawItemsWriteBack);
-
-                // Use the higher value: if property writeBack is true, keep it.
-                $finalWriteBack = $writeBack || $itemsWriteBack;
-
-                // Items logic: combine property and items writeBack values.
-
-                $writeBack = $finalWriteBack;
-            }
-
-            if ($inversedBy !== null && $inversedBy !== '') {
-
-                $analysis['inverseProperties'][$propertyName] = [
-                    'inversedBy' => $inversedBy,
-                    'writeBack' => $writeBack,
-                    'isArray' => $propertyConfig['type'] === 'array',
-                ];
-            }
-        }
-
-        return $analysis;
     }//end performComprehensiveSchemaAnalysis()
 
 
@@ -1541,19 +1485,9 @@ class SaveObjects
      */
     private function castToBoolean($value): bool
     {
-        if (is_bool($value) === true) {
-            return $value;
-        }
+        // Delegate to BulkValidationHandler for boolean casting.
+        return $this->bulkValidationHandler->castToBoolean($value);
 
-        if (is_string($value) === true) {
-            return strtolower(trim($value)) === 'true';
-        }
-
-        if (is_numeric($value) === true) {
-            return (bool) $value;
-        }
-
-        return (bool) $value;
     }//end castToBoolean()
 
 
@@ -1676,13 +1610,9 @@ class SaveObjects
      */
     private function handlePreValidationCascading(array $object, ?string $uuid): array
     {
-        // SIMPLIFIED: For bulk operations, we skip complex cascading for now.
-        // and handle it later in individual object processing if needed.
-        if ($uuid === null) {
-            $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-        }
+        // Delegate to BulkValidationHandler for pre-validation cascading.
+        return $this->bulkValidationHandler->handlePreValidationCascading($object, $uuid);
 
-        return [$object, $uuid];
     }//end handlePreValidationCascading()
 
 

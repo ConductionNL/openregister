@@ -51,8 +51,11 @@ use OCA\OpenRegister\Service\Objects\PerformanceHandler;
 use OCA\OpenRegister\Service\Objects\PermissionHandler;
 use OCA\OpenRegister\Service\Objects\RenderObject;
 use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Objects\SaveObjects;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
 use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
 use OCA\OpenRegister\Service\Objects\ValidateObject;
 use OCA\OpenRegister\Service\Objects\PublishObject;
@@ -367,7 +370,8 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: MetadataHydrationHandler can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        
+        // NOTE: BulkValidationHandler can be autowired (only type-hinted parameters).
+        // Removed manual registration - Nextcloud will autowire it automatically.
         // Register SaveObject with handlers and consolidated cache services.
         $context->registerService(
                  SaveObject::class,
@@ -375,6 +379,7 @@ class Application extends App implements IBootstrap
                     return new SaveObject(
                             objectEntityMapper: $container->get(ObjectEntityMapper::class),
                             metadataHydrationHandler: $container->get(MetadataHydrationHandler::class),
+                            filePropertyHandler: $container->get(FilePropertyHandler::class),
                             fileService: $container->get(FileService::class),
                             userSession: $container->get('OCP\IUserSession'),
                             auditTrailMapper: $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
@@ -476,12 +481,24 @@ class Application extends App implements IBootstrap
         // SolrQueryExecutor, SolrFacetProcessor, SolrSchemaManager, and SolrBackend
         // can all be autowired (only type-hinted parameters).
         // Nextcloud will automatically resolve them via dependency injection.
-
-        // Register SearchBackendInterface to use SolrBackend implementation.
+        // Register SearchBackendInterface - dynamically select backend from configuration
         $context->registerService(
                  \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
                 function ($container) {
-                    return $container->get(SolrBackend::class);
+                    // Read backend configuration from settings
+                    $settingsService = $container->get(SettingsService::class);
+                    $backendConfig   = $settingsService->getSearchBackendConfig();
+                    $activeBackend   = $backendConfig['active'] ?? 'solr';
+
+                    // Select backend based on configuration
+                    switch ($activeBackend) {
+                        case 'elasticsearch':
+                            return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
+
+                        case 'solr':
+                        default:
+                            return $container->get(SolrBackend::class);
+                    }
                 }
                 );
 
@@ -490,10 +507,8 @@ class Application extends App implements IBootstrap
         // All index handlers can be autowired (only type-hinted parameters).
         // Nextcloud will automatically resolve them via dependency injection.
         // ====================================================================
-
         // NOTE: DocumentBuilder, BulkIndexer, WarmupHandler, and FacetBuilder
         // can all be autowired. No manual registration needed.
-
         // Register SolrDebugCommand for SOLR debugging.
         // NOTE: Must be registered manually because it depends on SettingsService which has circular dependencies.
         $context->registerService(
@@ -580,7 +595,6 @@ class Application extends App implements IBootstrap
 
         // NOTE: Configuration\CacheHandler can be autowired (only type-hinted parameters).
         // Nextcloud will automatically resolve it via dependency injection.
-
         // Register Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);

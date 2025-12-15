@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SolrQueryExecutor
  *
  * Handles query execution and search operations for Solr.
@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrQueryExecutor
 {
+
     /**
      * HTTP client.
      *
@@ -71,6 +72,7 @@ class SolrQueryExecutor
         $this->httpClient        = $httpClient;
         $this->collectionManager = $collectionManager;
         $this->logger            = $logger;
+
     }//end __construct()
 
 
@@ -101,17 +103,23 @@ class SolrQueryExecutor
 
             $result = $this->httpClient->get($url);
 
-            $this->logger->debug('[SolrQueryExecutor] Search executed', [
-                'collection' => $collection,
-                'query' => $params['q'] ?? '*:*',
-                'numFound' => $result['response']['numFound'] ?? 0
-            ]);
+            $this->logger->debug(
+                    '[SolrQueryExecutor] Search executed',
+                    [
+                        'collection' => $collection,
+                        'query'      => $params['q'] ?? '*:*',
+                        'numFound'   => $result['response']['numFound'] ?? 0,
+                    ]
+                    );
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error('[SolrQueryExecutor] Search failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrQueryExecutor] Search failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
 
             return [
                 'response' => [
@@ -121,26 +129,27 @@ class SolrQueryExecutor
                 'error'    => $e->getMessage(),
             ];
         }//end try
+
     }//end search()
 
 
     /**
      * Search with pagination.
      *
-     * @param array $query         Query parameters
-     * @param bool  $rbac          Apply RBAC filters
-     * @param bool  $multitenancy  Apply multitenancy filters
-     * @param bool  $published     Filter for published only
-     * @param bool  $deleted       Include deleted items
+     * @param array $query        Query parameters
+     * @param bool  $rbac         Apply RBAC filters
+     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $published    Filter for published only
+     * @param bool  $deleted      Include deleted items
      *
      * @return array Paginated search results
      */
     public function searchPaginated(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         // Build Solr query from OpenRegister query format.
         $solrQuery = $this->buildSolrQuery($query);
@@ -169,6 +178,7 @@ class SolrQueryExecutor
 
         // Convert to OpenRegister paginated format.
         return $this->convertToPaginatedFormat($result, $query);
+
     }//end searchPaginated()
 
 
@@ -198,6 +208,7 @@ class SolrQueryExecutor
         }
 
         return $solrQuery;
+
     }//end buildSolrQuery()
 
 
@@ -216,11 +227,12 @@ class SolrQueryExecutor
 
         $sortParts = [];
         foreach ($order as $field => $direction) {
-            $dir = (strtolower((string) $direction) === 'desc') ? 'desc' : 'asc';
+            $dir         = (strtolower((string) $direction) === 'desc') ? 'desc' : 'asc';
             $sortParts[] = "{$field} {$dir}";
         }
 
         return implode(', ', $sortParts);
+
     }//end translateSortField()
 
 
@@ -250,6 +262,7 @@ class SolrQueryExecutor
             'page'    => $page,
             'pages'   => $limit > 0 ? (int) ceil($numFound / $limit) : 0,
         ];
+
     }//end convertToPaginatedFormat()
 
 
@@ -264,10 +277,10 @@ class SolrQueryExecutor
      * @return array Inspection results
      */
     public function inspectIndex(
-        string $query = '*:*',
-        int $start = 0,
-        int $rows = 20,
-        string $fields = ''
+        string $query='*:*',
+        int $start=0,
+        int $rows=20,
+        string $fields=''
     ): array {
         $params = [
             'q'     => $query,
@@ -281,6 +294,7 @@ class SolrQueryExecutor
         }
 
         return $this->search($params);
+
     }//end inspectIndex()
 
 
@@ -295,7 +309,7 @@ class SolrQueryExecutor
 
         if ($collection === null) {
             return [
-                'available' => false,
+                'available'  => false,
                 'collection' => null,
             ];
         }
@@ -312,10 +326,13 @@ class SolrQueryExecutor
             ];
         } catch (Exception $e) {
             return [
-                'available' => false,
+                'available'  => false,
                 'collection' => $collection,
-                'error' => $e->getMessage(),
+                'error'      => $e->getMessage(),
             ];
         }//end try
+
     }//end getStats()
+
+
 }//end class

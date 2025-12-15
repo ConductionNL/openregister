@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * DocumentBuilder
  *
  * Handles building Solr documents from ObjectEntity instances.
@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
  */
 class DocumentBuilder
 {
+
     /**
      * Logger for operation tracking.
      *
@@ -67,13 +68,14 @@ class DocumentBuilder
      */
     public function __construct(
         LoggerInterface $logger,
-        ?SchemaMapper $schemaMapper = null,
-        ?RegisterMapper $registerMapper = null
+        ?SchemaMapper $schemaMapper=null,
+        ?RegisterMapper $registerMapper=null
     ) {
-        $this->logger = $logger;
-        $this->schemaMapper = $schemaMapper;
+        $this->logger         = $logger;
+        $this->schemaMapper   = $schemaMapper;
         $this->registerMapper = $registerMapper;
-    }
+
+    }//end __construct()
 
 
     /**
@@ -89,21 +91,24 @@ class DocumentBuilder
      */
     public function createDocument(
         ObjectEntity $object,
-        array $solrFieldTypes = []
+        array $solrFieldTypes=[]
     ): array {
-        $this->logger->debug('DocumentBuilder: Creating basic Solr document', [
-            'object_id' => $object->getId()
-        ]);
+        $this->logger->debug(
+                'DocumentBuilder: Creating basic Solr document',
+                [
+                    'object_id' => $object->getId(),
+                ]
+                );
 
         // Build basic Solr document from object
         $doc = [
-            'id' => (string) $object->getUuid(),
+            'id'        => (string) $object->getUuid(),
             'object_id' => $object->getId(),
-            'uuid' => $object->getUuid(),
-            'schema' => $object->getSchema(),
-            'register' => $object->getRegister(),
-            'created' => $object->getCreated()?->format('Y-m-d\TH:i:s\Z'),
-            'updated' => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
+            'uuid'      => $object->getUuid(),
+            'schema'    => $object->getSchema(),
+            'register'  => $object->getRegister(),
+            'created'   => $object->getCreated()?->format('Y-m-d\TH:i:s\Z'),
+            'updated'   => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
         ];
 
         // Add object data
@@ -114,7 +119,7 @@ class DocumentBuilder
                 if ($value === null) {
                     continue;
                 }
-                
+
                 // Convert value to Solr-compatible format
                 $doc[$key] = $this->convertValueForSolr($value, 'auto');
             }
@@ -124,12 +129,14 @@ class DocumentBuilder
         $doc['_text'] = json_encode($objectData);
 
         return $doc;
-    }
+
+    }//end createDocument()
 
 
     // ========================================================================
     // EXTRACTED METHODS - Migrated from SolrBackend
     // ========================================================================
+
 
     /**
      * Flatten relations array for SOLR - extract all values from relations key-value pairs
@@ -145,11 +152,14 @@ class DocumentBuilder
     public function flattenRelationsForSolr($relations): array
     {
         // **DEBUG**: Log what we're processing.
-        $this->logger->debug('Processing relations for SOLR', [
-            'relations_type'  => gettype($relations),
-            'relations_value' => $relations,
-            'is_empty'        => empty($relations),
-        ]);
+        $this->logger->debug(
+                'Processing relations for SOLR',
+                [
+                    'relations_type'  => gettype($relations),
+                    'relations_value' => $relations,
+                    'is_empty'        => empty($relations),
+                ]
+                );
 
         if (empty($relations) === true) {
             return [];
@@ -175,11 +185,14 @@ class DocumentBuilder
                 // Skip arrays, objects, null values, etc.
             }
 
-            $this->logger->debug('Flattened relations result', [
-                'input_count'  => count($relations),
-                'output_count' => count($values),
-                'values'       => $values,
-            ]);
+            $this->logger->debug(
+                    'Flattened relations result',
+                    [
+                        'input_count'  => count($relations),
+                        'output_count' => count($values),
+                        'values'       => $values,
+                    ]
+                    );
 
             return $values;
         }//end if
@@ -214,9 +227,9 @@ class DocumentBuilder
             foreach ($files as $file) {
                 if (is_string($file) === true) {
                     $flattened[] = $file;
-                } elseif (is_array($file) === true && (($file['id'] ?? null) !== null)) {
+                } else if (is_array($file) === true && (($file['id'] ?? null) !== null)) {
                     $flattened[] = (string) $file['id'];
-                } elseif (is_array($file) === true && (($file['uuid'] ?? null) !== null)) {
+                } else if (is_array($file) === true && (($file['uuid'] ?? null) !== null)) {
                     $flattened[] = $file['uuid'];
                 }
             }
@@ -303,8 +316,8 @@ class DocumentBuilder
                         ]
                     );
                 }
-            }
-        }
+            }//end if
+        }//end foreach
 
         // Sort each array by index and re-index to sequential keys.
         foreach ($arrays as $fieldName => &$arrayValues) {
@@ -313,11 +326,14 @@ class DocumentBuilder
             $arrayValues = array_values($arrayValues);
         }
 
-        $this->logger->debug('Extracted arrays from relations', [
-            'field_count'   => count($arrays),
-            'fields'        => array_keys($arrays),
-            'total_values'  => array_sum(array_map('count', $arrays)),
-        ]);
+        $this->logger->debug(
+                'Extracted arrays from relations',
+                [
+                    'field_count'  => count($arrays),
+                    'fields'       => array_keys($arrays),
+                    'total_values' => array_sum(array_map('count', $arrays)),
+                ]
+                );
 
         return $arrays;
 
@@ -345,13 +361,13 @@ class DocumentBuilder
             if (is_string($item) === true) {
                 // Direct string value - use as-is.
                 $extractedValues[] = $item;
-            } elseif (is_array($item) === true) {
+            } else if (is_array($item) === true) {
                 // Object/array - try to extract ID/UUID.
                 $idValue = $this->extractIdFromObject($item);
                 if ($idValue !== null) {
                     $extractedValues[] = $idValue;
                 }
-            } elseif (is_scalar($item) === true) {
+            } else if (is_scalar($item) === true) {
                 // Other scalar values (int, float, bool) - convert to string.
                 $extractedValues[] = (string) $item;
             }
@@ -359,12 +375,15 @@ class DocumentBuilder
             // Skip null values and complex objects.
         }
 
-        $this->logger->debug('Extracted indexable array values', [
-            'field'            => $fieldName,
-            'original_count'   => count($arrayValue),
-            'extracted_count'  => count($extractedValues),
-            'extracted_values' => $extractedValues,
-        ]);
+        $this->logger->debug(
+                'Extracted indexable array values',
+                [
+                    'field'            => $fieldName,
+                    'original_count'   => count($arrayValue),
+                    'extracted_count'  => count($extractedValues),
+                    'extracted_values' => $extractedValues,
+                ]
+                );
 
         return $extractedValues;
 
@@ -376,8 +395,8 @@ class DocumentBuilder
      *
      * MIGRATED from SolrBackend - now maintained here.
      *
-     * @param string $fieldName  Original field name
-     * @param string $_fieldType Schema field type (unused)
+     * @param string $fieldName   Original field name
+     * @param string $_fieldType  Schema field type (unused)
      * @param mixed  $_fieldValue Field value for context (unused)
      *
      * @return string|null SOLR field name or null if should be skipped
@@ -473,12 +492,11 @@ class DocumentBuilder
                 if (is_array($value) === true) {
                     return $value;
                 }
-
                 return [$value];
 
             default:
                 return (string) $value;
-        }
+        }//end switch
 
     }//end convertValueForSolr()
 
@@ -493,7 +511,7 @@ class DocumentBuilder
      *
      * @return mixed Truncated value or original if within limits
      */
-    public function truncateFieldValue($value, string $fieldName = ''): mixed
+    public function truncateFieldValue($value, string $fieldName=''): mixed
     {
         // Only truncate string values.
         if (is_string($value) === false) {
@@ -509,18 +527,21 @@ class DocumentBuilder
         }
 
         // **TRUNCATE SAFELY**: Ensure we don't break UTF-8 characters.
-        $truncated = mb_strcut($value, 0, $maxBytes - 100, 'UTF-8'); // Leave buffer for safety.
-
+        $truncated = mb_strcut($value, 0, $maxBytes - 100, 'UTF-8');
+        // Leave buffer for safety.
         // Add truncation indicator.
         $truncated .= '...[TRUNCATED]';
 
         // Log truncation for monitoring.
-        $this->logger->info('Field value truncated for SOLR indexing', [
-            'field'            => $fieldName,
-            'original_bytes'   => strlen($value),
-            'truncated_bytes'  => strlen($truncated),
-            'truncation_point' => $maxBytes - 100,
-        ]);
+        $this->logger->info(
+                'Field value truncated for SOLR indexing',
+                [
+                    'field'            => $fieldName,
+                    'original_bytes'   => strlen($value),
+                    'truncated_bytes'  => strlen($truncated),
+                    'truncation_point' => $maxBytes - 100,
+                ]
+                );
 
         return $truncated;
 
@@ -537,14 +558,15 @@ class DocumentBuilder
      *
      * @return bool True if field should be truncated
      */
-    public function shouldTruncateField(string $fieldName, array $fieldDefinition = []): bool
+    public function shouldTruncateField(string $fieldName, array $fieldDefinition=[]): bool
     {
         $type   = $fieldDefinition['type'] ?? '';
         $format = $fieldDefinition['format'] ?? '';
 
         // File fields should always be truncated.
-        if ($type === 'file' || $format === 'file' || $format === 'binary' ||
-            in_array($format, ['data-url', 'base64', 'image', 'document'])) {
+        if ($type === 'file' || $format === 'file' || $format === 'binary'
+            || in_array($format, ['data-url', 'base64', 'image', 'document'])
+        ) {
             return true;
         }
 
@@ -601,21 +623,27 @@ class DocumentBuilder
         $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
 
         if (!$isCompatible) {
-            $this->logger->warning('🛡️ Field validation prevented type mismatch', [
-                'field'           => $fieldName,
-                'value'           => $fieldValue,
-                'value_type'      => gettype($fieldValue),
-                'solr_field_type' => $solrFieldType,
-                'action'          => 'SKIPPED',
-            ]);
+            $this->logger->warning(
+                    '🛡️ Field validation prevented type mismatch',
+                    [
+                        'field'           => $fieldName,
+                        'value'           => $fieldValue,
+                        'value_type'      => gettype($fieldValue),
+                        'solr_field_type' => $solrFieldType,
+                        'action'          => 'SKIPPED',
+                    ]
+                    );
             return false;
         }
 
-        $this->logger->debug('✅ Field validation passed', [
-            'field'     => $fieldName,
-            'value'     => $fieldValue,
-            'solr_type' => $solrFieldType,
-        ]);
+        $this->logger->debug(
+                '✅ Field validation passed',
+                [
+                    'field'     => $fieldName,
+                    'value'     => $fieldValue,
+                    'solr_type' => $solrFieldType,
+                ]
+                );
 
         return true;
 
@@ -680,17 +708,18 @@ class DocumentBuilder
     // RESOLVER METHODS - ID Resolution
     // ========================================================================
 
+
     /**
      * Resolve register value to integer ID
      *
      * MIGRATED from SolrBackend - now maintained here.
      *
-     * @param mixed                                       $registerValue The register value
+     * @param mixed                              $registerValue The register value
      * @param \OCA\OpenRegister\Db\Register|null $register      Pre-loaded register entity
      *
      * @return int The resolved register ID
      */
-    public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register = null): int
+    public function resolveRegisterToId($registerValue, ?\OCA\OpenRegister\Db\Register $register=null): int
     {
         if (empty($registerValue) === true) {
             return 0;
@@ -740,12 +769,12 @@ class DocumentBuilder
      *
      * MIGRATED from SolrBackend - now maintained here.
      *
-     * @param mixed                                  $schemaValue The schema value
+     * @param mixed                            $schemaValue The schema value
      * @param \OCA\OpenRegister\Db\Schema|null $schema      Pre-loaded schema entity
      *
      * @return int The resolved schema ID
      */
-    public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema = null): int
+    public function resolveSchemaToId($schemaValue, ?\OCA\OpenRegister\Db\Schema $schema=null): int
     {
         if (empty($schemaValue) === true) {
             return 0;

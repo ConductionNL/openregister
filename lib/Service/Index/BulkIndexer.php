@@ -91,12 +91,12 @@ class BulkIndexer
     /**
      * BulkIndexer constructor
      *
-     * @param ObjectEntityMapper     $objectMapper     DB mapper for objects
-     * @param SchemaMapper           $schemaMapper     DB mapper for schemas
-     * @param DocumentBuilder        $documentBuilder  Document builder
-     * @param SearchBackendInterface $searchBackend    Search backend (Solr/Elastic)
-     * @param IDBConnection          $db               Database connection
-     * @param LoggerInterface        $logger           Logger
+     * @param ObjectEntityMapper     $objectMapper    DB mapper for objects
+     * @param SchemaMapper           $schemaMapper    DB mapper for schemas
+     * @param DocumentBuilder        $documentBuilder Document builder
+     * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic)
+     * @param IDBConnection          $db              Database connection
+     * @param LoggerInterface        $logger          Logger
      *
      * @return void
      */
@@ -108,12 +108,12 @@ class BulkIndexer
         IDBConnection $db,
         LoggerInterface $logger
     ) {
-        $this->objectMapper     = $objectMapper;
-        $this->schemaMapper     = $schemaMapper;
-        $this->documentBuilder  = $documentBuilder;
-        $this->searchBackend    = $searchBackend;
-        $this->db               = $db;
-        $this->logger           = $logger;
+        $this->objectMapper    = $objectMapper;
+        $this->schemaMapper    = $schemaMapper;
+        $this->documentBuilder = $documentBuilder;
+        $this->searchBackend   = $searchBackend;
+        $this->db     = $db;
+        $this->logger = $logger;
 
     }//end __construct()
 
@@ -172,10 +172,10 @@ class BulkIndexer
         // Check backend availability.
         if ($this->searchBackend->isAvailable() === false) {
             return [
-                'success'  => false,
-                'error'    => 'Search backend is not available',
-                'indexed'  => 0,
-                'batches'  => 0,
+                'success' => false,
+                'error'   => 'Search backend is not available',
+                'indexed' => 0,
+                'batches' => 0,
             ];
         }
 
@@ -213,8 +213,8 @@ class BulkIndexer
                 }
 
                 // Fetch batch of searchable objects from DB.
-                $fetchStart = microtime(true);
-                $objects    = $this->fetchSearchableObjects($currentBatchSize, $offset, $schemaIds);
+                $fetchStart   = microtime(true);
+                $objects      = $this->fetchSearchableObjects($currentBatchSize, $offset, $schemaIds);
                 $objectsCount = count($objects);
 
                 $fetchDuration = round((microtime(true) - $fetchStart) * 1000, 2);
@@ -235,7 +235,7 @@ class BulkIndexer
                 $documents = [];
                 foreach ($objects as $object) {
                     try {
-                        $document     = $this->documentBuilder->createDocument($object, $solrFieldTypes);
+                        $document    = $this->documentBuilder->createDocument($object, $solrFieldTypes);
                         $documents[] = $document;
                     } catch (\RuntimeException $e) {
                         if (str_contains($e->getMessage(), 'Schema is not searchable') === true) {
@@ -273,7 +273,7 @@ class BulkIndexer
                     $this->logger->debug(
                         '[BulkIndexer] Batch indexed',
                         [
-                            'documents'  => $indexed,
+                            'documents' => $indexed,
                             'indexTime' => $indexDuration.'ms',
                         ]
                     );
@@ -303,8 +303,7 @@ class BulkIndexer
         } catch (\Exception $e) {
             $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
             throw new \RuntimeException(
-                'Bulk indexing failed: '.$e->getMessage().
-                ' (Indexed: '.($totalIndexed ?? 0).', Batches: '.($batchCount ?? 0).')',
+                'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.($totalIndexed ?? 0).', Batches: '.($batchCount ?? 0).')',
                 0,
                 $e
             );

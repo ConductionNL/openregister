@@ -118,20 +118,20 @@ class WarmupHandler
      * @return array Results with statistics and errors.
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
         $this->logger->info(
             '[WarmupHandler] Starting index warmup',
             [
-                    'max_objects' => $maxObjects,
-                    'mode'        => $mode,
-                    'batch_size'  => $batchSize,
-                ]
+                'max_objects' => $maxObjects,
+                'mode'        => $mode,
+                'batch_size'  => $batchSize,
+            ]
         );
 
         try {
@@ -148,7 +148,7 @@ class WarmupHandler
             $this->logger->info(
                 '[WarmupHandler] Index warmup completed',
                 [
-                    'success'        => $result['success'] ?? false,
+                    'success'         => $result['success'] ?? false,
                     'objects_indexed' => $result['operations']['objects_indexed'] ?? 0,
                 ]
             );
@@ -167,5 +167,8 @@ class WarmupHandler
                 'error'   => $e->getMessage(),
             ];
         }//end try
+
     }//end warmupIndex()
+
+
 }//end class

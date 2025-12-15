@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * DataManipulationHandler - Data Transformation and Manipulation Handler
  *
  * Handles data transformation, property mapping, slug generation, and path-based access.
@@ -175,7 +175,3 @@ class DataManipulationHandler
 
 
 }//end class
-
-
-
-

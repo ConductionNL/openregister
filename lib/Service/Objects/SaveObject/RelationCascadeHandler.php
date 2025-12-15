@@ -227,9 +227,9 @@ class RelationCascadeHandler
             // If schema is provided, check if this property has a $ref.
             $hasRef = false;
             if ($schema !== null) {
-                $properties = $schema->getProperties();
+                $properties   = $schema->getProperties();
                 $propertyPath = explode('.', $currentPath);
-                $propertyDef = $this->getPropertyDefinition($properties, $propertyPath);
+                $propertyDef  = $this->getPropertyDefinition($properties, $propertyPath);
 
                 if (isset($propertyDef['$ref']) === true) {
                     $hasRef = true;
@@ -243,7 +243,7 @@ class RelationCascadeHandler
                 } else {
                     // Recursively scan nested objects.
                     $nestedRelations = $this->scanForRelations($value, $currentPath, $schema);
-                    $relations = array_merge($relations, $nestedRelations);
+                    $relations       = array_merge($relations, $nestedRelations);
                 }
             } else if (is_string($value) === true && $this->isReference($value) === true) {
                 // Single reference value.
@@ -261,7 +261,7 @@ class RelationCascadeHandler
     /**
      * Gets a property definition from properties array by path.
      *
-     * @param array $properties  The properties array.
+     * @param array $properties   The properties array.
      * @param array $propertyPath The property path parts.
      *
      * @return array The property definition or empty array.
@@ -346,8 +346,7 @@ class RelationCascadeHandler
         }
 
         // Check for URL patterns.
-        if (
-            str_contains($value, '/objects/') === true
+        if (str_contains($value, '/objects/') === true
             || str_contains($value, '/api/') === true
         ) {
             return true;
@@ -408,7 +407,7 @@ class RelationCascadeHandler
      */
     private function resolveRelationPath(array &$objectData, string $relationPath): void
     {
-        $parts = explode('.', $relationPath);
+        $parts   = explode('.', $relationPath);
         $current = &$objectData;
 
         // Navigate to the parent of the target property.
@@ -636,4 +635,3 @@ class RelationCascadeHandler
 
 
 }//end class
-

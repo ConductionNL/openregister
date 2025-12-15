@@ -69,8 +69,6 @@ class ObjectHandler
     }//end __construct()
 
 
-
-
     /**
      * Search objects in Solr.
      *

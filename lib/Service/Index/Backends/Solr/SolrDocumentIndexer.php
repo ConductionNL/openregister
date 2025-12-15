@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SolrDocumentIndexer
  *
  * Handles document indexing operations to Solr.
@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrDocumentIndexer
 {
+
     /**
      * HTTP client.
      *
@@ -83,6 +84,7 @@ class SolrDocumentIndexer
         $this->collectionManager = $collectionManager;
         $this->documentBuilder   = $documentBuilder;
         $this->logger            = $logger;
+
     }//end __construct()
 
 
@@ -94,7 +96,7 @@ class SolrDocumentIndexer
      *
      * @return bool True if successful
      */
-    public function indexObject(ObjectEntity $object, bool $commit = false): bool
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         try {
             $collection = $this->collectionManager->getActiveCollectionName();
@@ -112,19 +114,26 @@ class SolrDocumentIndexer
 
             $this->httpClient->post($url, [$document]);
 
-            $this->logger->debug('[SolrDocumentIndexer] Object indexed', [
-                'objectId' => $object->getId(),
-                'commit' => $commit
-            ]);
+            $this->logger->debug(
+                    '[SolrDocumentIndexer] Object indexed',
+                    [
+                        'objectId' => $object->getId(),
+                        'commit'   => $commit,
+                    ]
+                    );
 
             return true;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Failed to index object', [
-                'objectId' => $object->getId(),
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Failed to index object',
+                    [
+                        'objectId' => $object->getId(),
+                        'error'    => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end indexObject()
 
 
@@ -136,7 +145,7 @@ class SolrDocumentIndexer
      *
      * @return array Result with statistics
      */
-    public function bulkIndexObjects(array $objects, bool $commit = true): array
+    public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
         $collection = $this->collectionManager->getActiveCollectionName();
 
@@ -149,9 +158,9 @@ class SolrDocumentIndexer
             ];
         }
 
-        $documents     = [];
-        $successCount  = 0;
-        $failureCount  = 0;
+        $documents    = [];
+        $successCount = 0;
+        $failureCount = 0;
 
         foreach ($objects as $object) {
             try {
@@ -159,10 +168,13 @@ class SolrDocumentIndexer
                 $successCount++;
             } catch (Exception $e) {
                 $failureCount++;
-                $this->logger->warning('[SolrDocumentIndexer] Failed to create document for object', [
-                    'objectId' => $object->getId(),
-                    'error' => $e->getMessage()
-                ]);
+                $this->logger->warning(
+                        '[SolrDocumentIndexer] Failed to create document for object',
+                        [
+                            'objectId' => $object->getId(),
+                            'error'    => $e->getMessage(),
+                        ]
+                        );
             }//end try
         }//end foreach
 
@@ -171,14 +183,20 @@ class SolrDocumentIndexer
                 $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit ? 'true' : 'false');
                 $this->httpClient->post($url, $documents);
 
-                $this->logger->info('[SolrDocumentIndexer] Bulk index completed', [
-                    'indexed' => $successCount,
-                    'failed' => $failureCount
-                ]);
+                $this->logger->info(
+                        '[SolrDocumentIndexer] Bulk index completed',
+                        [
+                            'indexed' => $successCount,
+                            'failed'  => $failureCount,
+                        ]
+                        );
             } catch (Exception $e) {
-                $this->logger->error('[SolrDocumentIndexer] Bulk index failed', [
-                    'error' => $e->getMessage()
-                ]);
+                $this->logger->error(
+                        '[SolrDocumentIndexer] Bulk index failed',
+                        [
+                            'error' => $e->getMessage(),
+                        ]
+                        );
                 return [
                     'success' => false,
                     'indexed' => 0,
@@ -193,6 +211,7 @@ class SolrDocumentIndexer
             'indexed' => $successCount,
             'failed'  => $failureCount,
         ];
+
     }//end bulkIndexObjects()
 
 
@@ -206,7 +225,7 @@ class SolrDocumentIndexer
      *
      * @return bool True if successful
      */
-    public function indexDocuments(array $documents, bool $commit = false): bool
+    public function indexDocuments(array $documents, bool $commit=false): bool
     {
         $collection = $this->collectionManager->getActiveCollectionName();
 
@@ -219,18 +238,25 @@ class SolrDocumentIndexer
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit ? 'true' : 'false');
             $this->httpClient->post($url, $documents);
 
-            $this->logger->info('[SolrDocumentIndexer] Documents indexed', [
-                'count' => count($documents),
-                'commit' => $commit
-            ]);
+            $this->logger->info(
+                    '[SolrDocumentIndexer] Documents indexed',
+                    [
+                        'count'  => count($documents),
+                        'commit' => $commit,
+                    ]
+                    );
 
             return true;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Failed to index documents', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Failed to index documents',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end indexDocuments()
 
 
@@ -242,7 +268,7 @@ class SolrDocumentIndexer
      *
      * @return bool True if successful
      */
-    public function deleteObject(string|int $objectId, bool $commit = false): bool
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         $collection = $this->collectionManager->getActiveCollectionName();
 
@@ -262,19 +288,26 @@ class SolrDocumentIndexer
 
             $this->httpClient->post($url, $deleteCommand);
 
-            $this->logger->debug('[SolrDocumentIndexer] Object deleted', [
-                'objectId' => $objectId,
-                'commit' => $commit
-            ]);
+            $this->logger->debug(
+                    '[SolrDocumentIndexer] Object deleted',
+                    [
+                        'objectId' => $objectId,
+                        'commit'   => $commit,
+                    ]
+                    );
 
             return true;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Failed to delete object', [
-                'objectId' => $objectId,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Failed to delete object',
+                    [
+                        'objectId' => $objectId,
+                        'error'    => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end deleteObject()
 
 
@@ -287,7 +320,7 @@ class SolrDocumentIndexer
      *
      * @return array|bool Results or boolean
      */
-    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): array|bool
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         $collection = $this->collectionManager->getActiveCollectionName();
 
@@ -306,10 +339,13 @@ class SolrDocumentIndexer
 
             $result = $this->httpClient->post($url, $deleteCommand);
 
-            $this->logger->info('[SolrDocumentIndexer] Deleted by query', [
-                'query' => $query,
-                'commit' => $commit
-            ]);
+            $this->logger->info(
+                    '[SolrDocumentIndexer] Deleted by query',
+                    [
+                        'query'  => $query,
+                        'commit' => $commit,
+                    ]
+                    );
 
             if ($returnDetails) {
                 return [
@@ -321,10 +357,13 @@ class SolrDocumentIndexer
 
             return true;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Delete by query failed', [
-                'query' => $query,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Delete by query failed',
+                    [
+                        'query' => $query,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
 
             if ($returnDetails) {
                 return [
@@ -335,6 +374,7 @@ class SolrDocumentIndexer
 
             return false;
         }//end try
+
     }//end deleteByQuery()
 
 
@@ -360,11 +400,15 @@ class SolrDocumentIndexer
 
             return true;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Commit failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Commit failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end commit()
 
 
@@ -375,7 +419,7 @@ class SolrDocumentIndexer
      *
      * @return array Result with statistics
      */
-    public function clearIndex(?string $collectionName = null): array
+    public function clearIndex(?string $collectionName=null): array
     {
         $collection = $collectionName ?? $this->collectionManager->getActiveCollectionName();
 
@@ -405,15 +449,19 @@ class SolrDocumentIndexer
                 'collection' => $collection,
             ];
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Failed to clear index', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Failed to clear index',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
 
             return [
                 'success' => false,
                 'message' => 'Failed to clear index: '.$e->getMessage(),
             ];
         }//end try
+
     }//end clearIndex()
 
 
@@ -441,11 +489,15 @@ class SolrDocumentIndexer
 
             return true;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Optimization failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Optimization failed',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end optimize()
 
 
@@ -468,10 +520,16 @@ class SolrDocumentIndexer
 
             return $data['response']['numFound'] ?? 0;
         } catch (Exception $e) {
-            $this->logger->error('[SolrDocumentIndexer] Failed to get document count', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrDocumentIndexer] Failed to get document count',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return 0;
         }//end try
+
     }//end getDocumentCount()
+
+
 }//end class

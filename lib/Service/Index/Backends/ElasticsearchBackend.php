@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * ElasticsearchBackend
  *
  * Elasticsearch backend implementation for OpenRegister search operations.
@@ -32,20 +32,26 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchBackend implements SearchBackendInterface
 {
+
     private readonly ElasticsearchHttpClient $httpClient;
+
     private readonly ElasticsearchIndexManager $indexManager;
+
     private readonly ElasticsearchDocumentIndexer $indexer;
+
     private readonly ElasticsearchQueryExecutor $queryExecutor;
+
     private readonly LoggerInterface $logger;
+
 
     /**
      * Constructor
      *
-     * @param ElasticsearchHttpClient         $httpClient    HTTP client
-     * @param ElasticsearchIndexManager       $indexManager  Index manager
-     * @param ElasticsearchDocumentIndexer    $indexer       Document indexer
-     * @param ElasticsearchQueryExecutor      $queryExecutor Query executor
-     * @param LoggerInterface                 $logger        Logger
+     * @param ElasticsearchHttpClient      $httpClient    HTTP client
+     * @param ElasticsearchIndexManager    $indexManager  Index manager
+     * @param ElasticsearchDocumentIndexer $indexer       Document indexer
+     * @param ElasticsearchQueryExecutor   $queryExecutor Query executor
+     * @param LoggerInterface              $logger        Logger
      */
     public function __construct(
         ElasticsearchHttpClient $httpClient,
@@ -59,64 +65,79 @@ class ElasticsearchBackend implements SearchBackendInterface
         $this->indexer       = $indexer;
         $this->queryExecutor = $queryExecutor;
         $this->logger        = $logger;
-    }
+
+    }//end __construct()
+
 
     /**
      * Index an object.
      */
-    public function indexObject(ObjectEntity $object, bool $commit = false): bool
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         return $this->indexer->indexObject($object, $commit);
-    }
+
+    }//end indexObject()
+
 
     /**
      * Index multiple objects.
      */
-    public function bulkIndexObjects(array $objects, bool $commit = false): array
+    public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
         return $this->indexer->bulkIndexObjects($objects, $commit);
-    }
+
+    }//end bulkIndexObjects()
+
 
     /**
      * Delete an object.
      */
-    public function deleteObject(string|int $objectId, bool $commit = false): bool
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         return $this->indexer->deleteObject($objectId, $commit);
-    }
+
+    }//end deleteObject()
+
 
     /**
      * Delete objects by query.
      */
-    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): array|bool
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         // Simplified implementation - just return success
         $this->logger->info('[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)');
         return $returnDetails ? ['deleted' => 0] : true;
-    }
+
+    }//end deleteByQuery()
+
 
     /**
      * Search with pagination.
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         $result = $this->queryExecutor->search($query);
 
         // Convert Elasticsearch response to OpenRegister format
         return [
-            'total' => $result['hits']['total']['value'] ?? 0,
-            'results' => array_map(function ($hit) {
-                return $hit['_source'] ?? [];
-            }, $result['hits']['hits'] ?? []),
-            'page' => 1,
-            'limit' => $query['_limit'] ?? 10,
+            'total'   => $result['hits']['total']['value'] ?? 0,
+            'results' => array_map(
+                    function ($hit) {
+                        return $hit['_source'] ?? [];
+                    },
+                    $result['hits']['hits'] ?? []
+                    ),
+            'page'    => 1,
+            'limit'   => $query['_limit'] ?? 10,
         ];
-    }
+
+    }//end searchObjectsPaginated()
+
 
     /**
      * Get document count.
@@ -124,7 +145,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function getDocumentCount(): int
     {
         return $this->queryExecutor->getDocumentCount();
-    }
+
+    }//end getDocumentCount()
+
 
     /**
      * Commit changes (refresh index).
@@ -134,7 +157,9 @@ class ElasticsearchBackend implements SearchBackendInterface
         return $this->indexManager->refreshIndex(
             $this->indexManager->getActiveIndexName()
         );
-    }
+
+    }//end commit()
+
 
     /**
      * Search objects.
@@ -142,69 +167,79 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function search(array $params): array
     {
         return $this->queryExecutor->search($params);
-    }
+
+    }//end search()
+
 
     /**
      * Reindex all objects.
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
         $this->logger->info('[ElasticsearchBackend] reindexAll called (delegates to external handler)');
-        
+
         return [
             'success' => true,
             'indexed' => 0,
-            'message' => 'Reindexing should be called via IndexService'
+            'message' => 'Reindexing should be called via IndexService',
         ];
-    }
+
+    }//end reindexAll()
+
 
     /**
      * Warmup index (ensure it exists).
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
         $index = $this->indexManager->getActiveIndexName();
         $this->indexManager->ensureIndex($index);
 
         return [
             'success' => true,
-            'index' => $index,
-            'message' => 'Index warmed up'
+            'index'   => $index,
+            'message' => 'Index warmed up',
         ];
-    }
+
+    }//end warmupIndex()
+
 
     /**
      * Check if backend is available.
      */
-    public function isAvailable(bool $forceRefresh = false): bool
+    public function isAvailable(bool $forceRefresh=false): bool
     {
         return $this->httpClient->isConfigured();
-    }
+
+    }//end isAvailable()
+
 
     /**
      * Test connection to backend.
      */
-    public function testConnection(bool $includeCollectionTests = true): array
+    public function testConnection(bool $includeCollectionTests=true): array
     {
         try {
             $count = $this->getDocumentCount();
             return [
-                'success' => true,
+                'success'        => true,
                 'document_count' => $count,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ];
         }
-    }
+
+    }//end testConnection()
+
 
     /**
      * Optimize index.
@@ -213,16 +248,20 @@ class ElasticsearchBackend implements SearchBackendInterface
     {
         // Elasticsearch doesn't need manual optimization like Solr
         return true;
-    }
+
+    }//end optimize()
+
 
     /**
      * Clear index.
      */
-    public function clearIndex(?string $collectionName = null): array
+    public function clearIndex(?string $collectionName=null): array
     {
         $this->indexer->clearIndex();
         return ['deleted' => 0];
-    }
+
+    }//end clearIndex()
+
 
     /**
      * Get backend configuration.
@@ -230,7 +269,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function getConfig(): array
     {
         return $this->httpClient->getConfig();
-    }
+
+    }//end getConfig()
+
 
     /**
      * Get backend statistics.
@@ -239,28 +280,34 @@ class ElasticsearchBackend implements SearchBackendInterface
     {
         return [
             'document_count' => $this->getDocumentCount(),
-            'backend' => 'elasticsearch',
+            'backend'        => 'elasticsearch',
         ];
-    }
+
+    }//end getStats()
+
 
     /**
      * Create collection/index.
      */
-    public function createCollection(string $name, array $config = []): array
+    public function createCollection(string $name, array $config=[]): array
     {
         $success = $this->indexManager->createIndex($name, $config);
         return ['success' => $success];
-    }
+
+    }//end createCollection()
+
 
     /**
      * Delete collection/index.
      */
-    public function deleteCollection(?string $collectionName = null): array
+    public function deleteCollection(?string $collectionName=null): array
     {
-        $name = $collectionName ?? $this->indexManager->getActiveIndexName();
+        $name    = $collectionName ?? $this->indexManager->getActiveIndexName();
         $success = $this->indexManager->deleteIndex($name);
         return ['success' => $success];
-    }
+
+    }//end deleteCollection()
+
 
     /**
      * Check if collection exists.
@@ -268,7 +315,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function collectionExists(string $collectionName): bool
     {
         return $this->indexManager->indexExists($collectionName);
-    }
+
+    }//end collectionExists()
+
 
     /**
      * List all collections.
@@ -277,7 +326,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     {
         // Simplified - would need ES API call to list all indices
         return [$this->indexManager->getActiveIndexName()];
-    }
+
+    }//end listCollections()
+
 
     /**
      * Index generic documents.
@@ -285,9 +336,11 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function index(array $documents): bool
     {
         // Simplified implementation
-        $this->logger->info('[ElasticsearchBackend] index() called with ' . count($documents) . ' documents');
+        $this->logger->info('[ElasticsearchBackend] index() called with '.count($documents).' documents');
         return true;
-    }
+
+    }//end index()
+
 
     /**
      * Get field types.
@@ -295,7 +348,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function getFieldTypes(string $collection): array
     {
         return [];
-    }
+
+    }//end getFieldTypes()
+
 
     /**
      * Add field type.
@@ -303,7 +358,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function addFieldType(string $collection, array $fieldType): bool
     {
         return true;
-    }
+
+    }//end addFieldType()
+
 
     /**
      * Get fields.
@@ -311,7 +368,9 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function getFields(string $collection): array
     {
         return [];
-    }
+
+    }//end getFields()
+
 
     /**
      * Add or update field.
@@ -319,6 +378,8 @@ class ElasticsearchBackend implements SearchBackendInterface
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
         return 'skipped';
-    }
-}
 
+    }//end addOrUpdateField()
+
+
+}//end class

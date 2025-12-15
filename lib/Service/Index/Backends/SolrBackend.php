@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SolrBackend
  *
  * Solr backend implementation for OpenRegister search operations.
@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrBackend implements SearchBackendInterface
 {
+
     /**
      * HTTP client for Solr operations.
      *
@@ -119,6 +120,7 @@ class SolrBackend implements SearchBackendInterface
         $this->facetProcessor    = $facetProcessor;
         $this->schemaManager     = $schemaManager;
         $this->logger            = $logger;
+
     }//end __construct()
 
 
@@ -129,9 +131,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return bool True if available
      */
-    public function isAvailable(bool $forceRefresh = false): bool
+    public function isAvailable(bool $forceRefresh=false): bool
     {
         return $this->httpClient->isConfigured();
+
     }//end isAvailable()
 
 
@@ -142,27 +145,28 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Test results
      */
-    public function testConnection(bool $includeCollectionTests = true): array
+    public function testConnection(bool $includeCollectionTests=true): array
     {
         if (!$this->httpClient->isConfigured()) {
             return [
-            'success' => false,
-            'error' => 'Solr is not configured',
+                'success' => false,
+                'error'   => 'Solr is not configured',
             ];
         }
 
         $results = [
-            'success' => true,
+            'success'    => true,
             'configured' => true,
         ];
 
         if ($includeCollectionTests) {
-            $collection = $this->collectionManager->getActiveCollectionName();
+            $collection            = $this->collectionManager->getActiveCollectionName();
             $results['collection'] = $collection;
             $results['collection_exists'] = $collection !== null;
         }
 
         return $results;
+
     }//end testConnection()
 
 
@@ -174,9 +178,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return bool True if successful
      */
-    public function indexObject(ObjectEntity $object, bool $commit = false): bool
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         return $this->indexer->indexObject($object, $commit);
+
     }//end indexObject()
 
 
@@ -188,9 +193,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Result with statistics
      */
-    public function bulkIndexObjects(array $objects, bool $commit = true): array
+    public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
         return $this->indexer->bulkIndexObjects($objects, $commit);
+
     }//end bulkIndexObjects()
 
 
@@ -202,9 +208,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return bool True if successful
      */
-    public function deleteObject(string|int $objectId, bool $commit = false): bool
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         return $this->indexer->deleteObject($objectId, $commit);
+
     }//end deleteObject()
 
 
@@ -217,31 +224,33 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array|bool Results
      */
-    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): array|bool
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
         return $this->indexer->deleteByQuery($query, $commit, $returnDetails);
+
     }//end deleteByQuery()
 
 
     /**
      * Search with pagination.
      *
-     * @param array $query         Query parameters
-     * @param bool  $rbac          Apply RBAC
-     * @param bool  $multitenancy  Apply multitenancy
-     * @param bool  $published     Filter published
-     * @param bool  $deleted       Include deleted
+     * @param array $query        Query parameters
+     * @param bool  $rbac         Apply RBAC
+     * @param bool  $multitenancy Apply multitenancy
+     * @param bool  $published    Filter published
+     * @param bool  $deleted      Include deleted
      *
      * @return array Search results
      */
     public function searchObjectsPaginated(
-        array $query = [],
-        bool $rbac = true,
-        bool $multitenancy = true,
-        bool $published = false,
-        bool $deleted = false
+        array $query=[],
+        bool $rbac=true,
+        bool $multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
     ): array {
         return $this->queryExecutor->searchPaginated($query, $rbac, $multitenancy, $published, $deleted);
+
     }//end searchObjectsPaginated()
 
 
@@ -253,6 +262,7 @@ class SolrBackend implements SearchBackendInterface
     public function getDocumentCount(): int
     {
         return $this->indexer->getDocumentCount();
+
     }//end getDocumentCount()
 
 
@@ -264,6 +274,7 @@ class SolrBackend implements SearchBackendInterface
     public function commit(): bool
     {
         return $this->indexer->commit();
+
     }//end commit()
 
 
@@ -275,6 +286,7 @@ class SolrBackend implements SearchBackendInterface
     public function optimize(): bool
     {
         return $this->indexer->optimize();
+
     }//end optimize()
 
 
@@ -285,9 +297,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function clearIndex(?string $collectionName = null): array
+    public function clearIndex(?string $collectionName=null): array
     {
         return $this->indexer->clearIndex($collectionName);
+
     }//end clearIndex()
 
 
@@ -307,25 +320,29 @@ class SolrBackend implements SearchBackendInterface
      * @return array Results
      */
     public function warmupIndex(
-        array $schemas = [],
-        int $maxObjects = 0,
-        string $mode = 'serial',
-        bool $collectErrors = false,
-        int $batchSize = 1000,
-        array $schemaIds = []
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
     ): array {
         // Simplified warmup - just test connection.
         // Full implementation is 200+ lines in SolrBackend.php.old.
-        $this->logger->info('[SolrBackend] Warmup requested (simplified version)', [
-            'maxObjects' => $maxObjects,
-            'mode' => $mode
-            ]);
+        $this->logger->info(
+                '[SolrBackend] Warmup requested (simplified version)',
+                [
+                    'maxObjects' => $maxObjects,
+                    'mode'       => $mode,
+                ]
+                );
 
         return [
-            'success' => true,
-        'message' => 'Simplified warmup - collection exists',
-        'collection_exists' => $this->collectionManager->getActiveCollectionName() !== null,
+            'success'           => true,
+            'message'           => 'Simplified warmup - collection exists',
+            'collection_exists' => $this->collectionManager->getActiveCollectionName() !== null,
         ];
+
     }//end warmupIndex()
 
 
@@ -337,6 +354,7 @@ class SolrBackend implements SearchBackendInterface
     public function getConfig(): array
     {
         return $this->httpClient->getConfig();
+
     }//end getConfig()
 
 
@@ -348,6 +366,7 @@ class SolrBackend implements SearchBackendInterface
     public function getStats(): array
     {
         return $this->queryExecutor->getStats();
+
     }//end getStats()
 
 
@@ -359,9 +378,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function createCollection(string $name, array $config = []): array
+    public function createCollection(string $name, array $config=[]): array
     {
         return $this->collectionManager->createCollection($name, $config);
+
     }//end createCollection()
 
 
@@ -372,9 +392,10 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function deleteCollection(?string $collectionName = null): array
+    public function deleteCollection(?string $collectionName=null): array
     {
         return $this->collectionManager->deleteCollection($collectionName);
+
     }//end deleteCollection()
 
 
@@ -388,6 +409,7 @@ class SolrBackend implements SearchBackendInterface
     public function collectionExists(string $collectionName): bool
     {
         return $this->collectionManager->collectionExists($collectionName);
+
     }//end collectionExists()
 
 
@@ -399,6 +421,7 @@ class SolrBackend implements SearchBackendInterface
     public function listCollections(): array
     {
         return $this->collectionManager->listCollections();
+
     }//end listCollections()
 
 
@@ -412,6 +435,7 @@ class SolrBackend implements SearchBackendInterface
     public function index(array $documents): bool
     {
         return $this->indexer->indexDocuments($documents);
+
     }//end index()
 
 
@@ -425,6 +449,7 @@ class SolrBackend implements SearchBackendInterface
     public function search(array $params): array
     {
         return $this->queryExecutor->search($params);
+
     }//end search()
 
 
@@ -438,6 +463,7 @@ class SolrBackend implements SearchBackendInterface
     public function getFieldTypes(string $collection): array
     {
         return $this->schemaManager->getFieldTypes($collection);
+
     }//end getFieldTypes()
 
 
@@ -452,6 +478,7 @@ class SolrBackend implements SearchBackendInterface
     public function addFieldType(string $collection, array $fieldType): bool
     {
         return $this->schemaManager->addFieldType($collection, $fieldType);
+
     }//end addFieldType()
 
 
@@ -465,6 +492,7 @@ class SolrBackend implements SearchBackendInterface
     public function getFields(string $collection): array
     {
         return $this->schemaManager->getFields($collection);
+
     }//end getFields()
 
 
@@ -479,6 +507,7 @@ class SolrBackend implements SearchBackendInterface
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
         return $this->schemaManager->addOrUpdateField($fieldConfig, $force);
+
     }//end addOrUpdateField()
 
 
@@ -494,12 +523,15 @@ class SolrBackend implements SearchBackendInterface
      *
      * @return array Results
      */
-    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
+    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
-        $this->logger->info('[SolrBackend] Reindex requested (simplified version)', [
-            'maxObjects' => $maxObjects,
-            'batchSize' => $batchSize
-        ]);
+        $this->logger->info(
+                '[SolrBackend] Reindex requested (simplified version)',
+                [
+                    'maxObjects' => $maxObjects,
+                    'batchSize'  => $batchSize,
+                ]
+                );
 
         // Simplified - clear and return.
         // Full implementation is 300+ lines in SolrBackend.php.old.
@@ -510,5 +542,8 @@ class SolrBackend implements SearchBackendInterface
             'message' => 'Index cleared (simplified reindex)',
             'indexed' => 0,
         ];
+
     }//end reindexAll()
+
+
 }//end class
