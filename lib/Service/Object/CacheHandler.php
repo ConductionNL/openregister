@@ -27,6 +27,7 @@ use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
