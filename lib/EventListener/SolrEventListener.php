@@ -26,7 +26,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
-use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -139,7 +139,7 @@ class SolrEventListener implements IEventListener
         );
 
         // Trigger Solr indexing for the created object.
-        $this->objectCacheService->invalidateForObjectChange(object: $object, operation: 'create');
+        $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'create');
 
     }//end handleObjectCreated()
 
@@ -168,7 +168,7 @@ class SolrEventListener implements IEventListener
         );
 
         // Trigger Solr reindexing for the updated object.
-        $this->objectCacheService->invalidateForObjectChange(object: $newObject, operation: 'update');
+        $this->cacheHandler->invalidateForObjectChange(object: $newObject, operation: 'update');
 
     }//end handleObjectUpdated()
 
@@ -195,7 +195,7 @@ class SolrEventListener implements IEventListener
         );
 
         // Trigger Solr removal for the deleted object.
-        $this->objectCacheService->invalidateForObjectChange(object: $object, operation: 'delete');
+        $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'delete');
 
     }//end handleObjectDeleted()
 

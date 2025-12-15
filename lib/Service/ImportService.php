@@ -290,7 +290,17 @@ class ImportService
 
         // Single schema processing - use batch processing for better performance.
         $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, validation: $validation, events: $events, _rbac: $_rbac, _multitenancy: $_multitenancy, publish: $publish, currentUser: $currentUser);
+        $sheetSummary = $this->processSpreadsheetBatch(
+            spreadsheet: $spreadsheet,
+            register: $register,
+            schema: $schema,
+            validation: $validation,
+            events: $events,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            publish: $publish,
+            currentUser: $currentUser
+        );
 
         // Add schema information to the summary (consistent with multi-sheet Excel import).
         if ($schema !== null) {
@@ -559,7 +569,14 @@ class ImportService
      *
      * @return (((array|int|mixed|string)[]|mixed|null)[]|int|string)[]
      *
-     * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, deduplication_efficiency?: string}
+     * @phpstan-return array{
+     *     found: int,
+     *     created: array<mixed>,
+     *     updated: array<mixed>,
+     *     unchanged: array<mixed>,
+     *     errors: array<mixed>,
+     *     deduplication_efficiency?: string
+     * }
      *
      * @psalm-return array{
      *     found: int<0, max>,
@@ -664,15 +681,32 @@ class ImportService
                 $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
             }
 
-            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, _rbac: $_rbac, _multitenancy: $_multitenancy, validation: $validation, events: $events);
+            $saveResult = $this->objectService->saveObjects(
+                objects: $allObjects,
+                register: $register,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                validation: $validation,
+                events: $events
+            );
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
-            $summary['created'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-            $summary['updated'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+            $summary['created'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['saved'] ?? []
+            );
+            $summary['updated'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['updated'] ?? []
+            );
 
             // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
-            $summary['unchanged'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+            $summary['unchanged'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['unchanged'] ?? []
+            );
 
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
@@ -713,11 +747,59 @@ class ImportService
      *
      * @return (((array|int|mixed|string)[]|float|int|mixed|null)[]|int|string)[]
      *
-     * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, performance?: array{efficiency: float, objectsPerSecond: float, totalFound: int, totalProcessed: int, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: string}
+     * @phpstan-return array{
+     *     found: int,
+     *     created: array<mixed>,
+     *     updated: array<mixed>,
+     *     unchanged: array<mixed>,
+     *     errors: array<mixed>,
+     *     performance?: array{
+     *         efficiency: float,
+     *         objectsPerSecond: float,
+     *         totalFound: int,
+     *         totalProcessed: int,
+     *         totalTime: float,
+     *         totalTimeMs: float
+     *     },
+     *     deduplication_efficiency?: string
+     * }
      *
-     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{object: array<never, never>|mixed, error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}}
+     * @psalm-return array{
+     *     found: int<0, max>,
+     *     created: array<never, mixed|null>,
+     *     updated: array<never, mixed|null>,
+     *     unchanged: array<never, mixed|null>,
+     *     errors: list{
+     *         0?: array{
+     *             object: array<never, never>|mixed,
+     *             error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed,
+     *             type?: 'ValidationException'|mixed,
+     *             row?: 1
+     *         },
+     *         ...
+     *     },
+     *     deduplication_efficiency?: string,
+     *     performance?: array{
+     *         totalTime: float,
+     *         totalTimeMs: float,
+     *         objectsPerSecond: float,
+     *         totalProcessed: int<0, max>,
+     *         totalFound: int<0, max>,
+     *         efficiency: 0|float
+     *     }
+     * }
      */
-    private function processCsvSheet(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, Register $register, Schema $schema, bool $validation=false, bool $events=false, bool $_rbac=true, bool $_multitenancy=true, bool $publish=false, ?IUser $currentUser=null): array
+    private function processCsvSheet(
+        \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+        Register $register,
+        Schema $schema,
+        bool $validation=false,
+        bool $events=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $publish=false,
+        ?IUser $currentUser=null
+    ): array
     {
         $summary = [
             'found'     => 0,
@@ -815,15 +897,32 @@ class ImportService
                 $this->logger->debug(message: 'Publish disabled for CSV import, not adding publish dates');
             }//end if
 
-            $saveResult = $this->objectService->saveObjects(objects: $allObjects, register: $register, schema: $schema, _rbac: $_rbac, _multitenancy: $_multitenancy, validation: $validation, events: $events);
+            $saveResult = $this->objectService->saveObjects(
+                objects: $allObjects,
+                register: $register,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                validation: $validation,
+                events: $events
+            );
 
             // Use the structured return from saveObjects with smart deduplication.
             // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
-            $summary['created'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['saved'] ?? []);
-            $summary['updated'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['updated'] ?? []);
+            $summary['created'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['saved'] ?? []
+            );
+            $summary['updated'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['updated'] ?? []
+            );
 
             // TODO: Handle unchanged objects from smart deduplication (renamed from 'skipped').
-            $summary['unchanged'] = array_map(fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null, $saveResult['unchanged'] ?? []);
+            $summary['unchanged'] = array_map(
+                fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+                $saveResult['unchanged'] ?? []
+            );
 
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
@@ -1222,7 +1321,13 @@ class ImportService
      *
      * @return (array|int)[]
      *
-     * @psalm-return array{found: int<0, max>, created: list<mixed>, updated: list<mixed>, unchanged: array<never, never>, errors: list{0?: mixed,...}}
+     * @psalm-return array{
+     *     found: int<0, max>,
+     *     created: list<mixed>,
+     *     updated: list<mixed>,
+     *     unchanged: array<never, never>,
+     *     errors: list{0?: mixed,...}
+     * }
      */
     private function processChunk(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,

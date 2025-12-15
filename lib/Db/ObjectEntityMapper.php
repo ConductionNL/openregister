@@ -222,8 +222,16 @@ class ObjectEntityMapper extends QBMapper
      */
     public function unlockObject(string $uuid): bool
     {
-        // REMOVED: Circular dependency with LockingHandler. Use ObjectService->unlockObject() instead.
-        throw new BadMethodCallException('unlockObject() is deprecated. Use LockingHandler directly through ObjectService.');
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->update($this->getTableName())
+                ->set('locked', $qb->createNamedParameter(null))
+                ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
+            $qb->executeStatement();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
 
     }//end unlockObject()
 

@@ -924,7 +924,7 @@ class ObjectsController extends Controller
 
             // Unlock the object after saving.
             try {
-                $this->objectEntityMapper->unlockObject($objectEntity->getId());
+                $this->objectService->unlockObject($objectEntity->getUuid());
             } catch (Exception $e) {
                 // Ignore unlock errors since the update was successful.
             }
@@ -1035,7 +1035,7 @@ class ObjectsController extends Controller
 
             // Unlock the object after saving.
             try {
-                $this->objectEntityMapper->unlockObject($objectEntity->getId());
+                $this->objectService->unlockObject($objectEntity->getUuid());
             } catch (Exception $e) {
                 // Ignore unlock errors since the update was successful.
             }

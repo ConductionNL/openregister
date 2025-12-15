@@ -143,7 +143,7 @@ class LockHandler
 
         try {
             // Call the mapper's unlock method.
-            $this->objectEntityMapper->unlockObject(identifier: $identifier);
+            $this->objectEntityMapper->unlockObject(uuid: $identifier);
 
             $this->logger->info(
                 message: '[LockHandler] Object unlocked successfully',
