@@ -270,13 +270,13 @@ class ObjectEntityMapper extends QBMapper
     public function update(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch updating event.
-        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity));
+        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity, $this->find($entity->getId())));
 
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
         $result = parent::update($entity);
 
         // Dispatch updated event.
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result));
+        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
 
         return $result;
 
