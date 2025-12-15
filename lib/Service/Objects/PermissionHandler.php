@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * PermissionHandler - RBAC and Permission Management Handler
  *
  * Handles all permission checking, RBAC enforcement, and multi-tenancy filtering.
@@ -389,7 +389,3 @@ class PermissionHandler
 
 
 }//end class
-
-
-
-

@@ -2003,6 +2003,71 @@ class SettingsController extends Controller
 
 
     /**
+     * Get search backend configuration.
+     *
+     * Returns which search backend is currently active (solr, elasticsearch, etc).
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Backend configuration
+     */
+    public function getSearchBackend(): JSONResponse
+    {
+        try {
+            $data = $this->settingsService->getSearchBackendConfig();
+            return new JSONResponse(data: $data);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
+
+    }//end getSearchBackend()
+
+
+    /**
+     * Update search backend configuration.
+     *
+     * Sets which search backend should be active (requires app reload).
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Updated backend configuration
+     */
+    public function updateSearchBackend(): JSONResponse
+    {
+        try {
+            $data    = $this->request->getParams();
+            $backend = $data['backend'] ?? $data['active'] ?? '';
+
+            if (empty($backend)) {
+                return new JSONResponse(
+                    data: ['error' => 'Backend parameter is required'],
+                    statusCode: 400
+                );
+            }
+
+            $result = $this->settingsService->updateSearchBackendConfig($backend);
+
+            return new JSONResponse(
+                    data: array_merge(
+                    $result,
+                    [
+                        'message'         => 'Backend updated successfully. Please reload the application.',
+                        'reload_required' => true,
+                    ]
+                    )
+                    );
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
+
+    }//end updateSearchBackend()
+
+
+    /**
      * Get SOLR facet configuration
      *
      * @NoAdminRequired

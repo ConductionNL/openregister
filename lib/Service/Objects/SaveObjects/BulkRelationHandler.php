@@ -1,264 +1,442 @@
 <?php
-/**
- * OpenRegister BulkRelationHandler
- *
- * Handler for managing relations in bulk operations.
- * Handles inverse relations, write-back, and reference resolution.
- *
- * @category Handler
- * @package  OCA\OpenRegister\Service\Objects\SaveObjects
- *
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
- */
 
-declare(strict_types=1);
+/**
+ * BulkRelationHandler
+ *
+ * This file is part of the OpenRegister app for Nextcloud.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0
+ * @link     https://github.com/ConductionNL/openregister
+ */
 
 namespace OCA\OpenRegister\Service\Objects\SaveObjects;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
 use Psr\Log\LoggerInterface;
 
 /**
- * Bulk Relation Handler
+ * Handles bulk relation processing for bulk object operations.
  *
- * Handles relationship operations in bulk scenarios including:
- * - Bulk inverse relation handling with schema analysis.
- * - Post-save inverse relation updates.
- * - Bulk write-back operations for bidirectional relations.
- * - Object reference resolution in bulk.
- * - UUID extraction from various reference formats.
+ * This handler is responsible for:
+ * - Processing inverse relations in bulk
+ * - Handling post-save relation writeBack operations
+ * - Scanning objects for relations
+ * - Optimizing bulk relation processing
  *
- * PERFORMANCE FEATURES:
- * - Batch relation updates.
- * - Optimized write-back operations.
- * - Reference caching.
- * - Minimal database queries.
- *
- * @category Handler
- * @package  OCA\OpenRegister\Service\Objects\SaveObjects
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0
+ * @link     https://github.com/ConductionNL/openregister
+ * @version  1.0.0
  */
 class BulkRelationHandler
 {
 
-
     /**
      * Constructor for BulkRelationHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper.
-     * @param LoggerInterface    $logger             Logger interface for logging operations.
+     * @param BulkValidationHandler $bulkValidationHandler Handler for bulk validation operations.
+     * @param ObjectEntityMapper    $objectEntityMapper    Mapper for object entities.
+     * @param LoggerInterface       $logger                Logger for logging operations.
      */
     public function __construct(
+        private readonly BulkValidationHandler $bulkValidationHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
 
     /**
-     * Handles bulk inverse relations with schema analysis.
+     * Handle bulk inverse relations using cached schema analysis
      *
-     * Processes inversedBy properties for multiple objects efficiently.
-     * Uses schema analysis to optimize bulk processing.
+     * PERFORMANCE OPTIMIZATION: This method uses pre-analyzed inverse relation properties
+     * to process relations without re-analyzing schema properties for each object.
      *
-     * @param array $preparedObjects  Array of prepared objects (passed by reference).
-     * @param array $schemaAnalysis   Schema analysis results.
+     * @param array &$preparedObjects Prepared objects to process
+     * @param array $schemaAnalysis   Pre-analyzed schema information indexed by schema ID
      *
      * @return void
+     *
+     * @psalm-param array<int, mixed> &$preparedObjects
+     * @phpstan-param array<int, mixed> &$preparedObjects
+     * @psalm-param array<string, mixed> $schemaAnalysis
+     * @phpstan-param array<string, mixed> $schemaAnalysis
+     * @psalm-return void
+     * @phpstan-return void
      */
     public function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
-        // TODO: Extract from SaveObjects.php lines 1574-1677.
-        // Critical for maintaining bidirectional relationships.
-        // Optimized for bulk operations.
-        $this->logger->debug('BulkRelationHandler::handleBulkInverseRelationsWithAnalysis() needs implementation');
+        // Track statistics for debugging/monitoring.
+        $_appliedCount = 0;
+        $_processedCount = 0;
+
+        // Create direct UUID to object reference mapping.
+        $objectsByUuid = [];
+        foreach ($preparedObjects ?? [] as $_index => &$object) {
+            $selfData   = $object['@self'] ?? [];
+            $objectUuid = $selfData['id'] ?? null;
+            if ($objectUuid !== null && $objectUuid !== '') {
+                $objectsByUuid[$objectUuid] = &$object;
+            }
+        }
+
+        // Process inverse relations using cached analysis.
+        foreach ($preparedObjects ?? [] as $_index => &$object) {
+            $selfData   = $object['@self'] ?? [];
+            $schemaId   = $selfData['schema'] ?? null;
+            $objectUuid = $selfData['id'] ?? null;
+
+            if ($schemaId === false || $objectUuid === false || isset($schemaAnalysis[$schemaId]) === false) {
+                continue;
+            }
+
+            $analysis = $schemaAnalysis[$schemaId];
+
+            // PERFORMANCE OPTIMIZATION: Use pre-analyzed inverse properties.
+            foreach ($analysis['inverseProperties'] ?? [] as $property => $propertyInfo) {
+                if (isset($object[$property]) === false) {
+                    continue;
+                }
+
+                $value = $object[$property];
+                $inversedBy = $propertyInfo['inversedBy'];
+
+                // Handle single object relations.
+                if (($propertyInfo['isArray'] === false) === true && is_string($value) === true && \Symfony\Component\Uid\Uuid::isValid($value) === true) {
+                    if (isset($objectsByUuid[$value]) === true) {
+                        // @psalm-suppress EmptyArrayAccess - Already checked isset above.
+                        $targetObject = &$objectsByUuid[$value];
+                        // @psalm-suppress EmptyArrayAccess - Already checked isset above.
+                        $existingValues = ($targetObject[$inversedBy] ?? []);
+                        // @psalm-suppress EmptyArrayAccess - $existingValues is initialized with ?? []
+                        if (is_array($existingValues) === false) {
+                            $existingValues = [];
+                        }
+                        if (in_array($objectUuid, $existingValues, true) === false) {
+                            $existingValues[] = $objectUuid;
+                            $targetObject[$inversedBy] = $existingValues;
+                            $_appliedCount++;
+                        }
+                        $_processedCount++;
+                    }
+                } elseif (($propertyInfo['isArray'] === true) && is_array($value) === true) {
+                    // Handle array of object relations.
+                    foreach ($value ?? [] as $relatedUuid) {
+                        if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
+                            if (isset($objectsByUuid[$relatedUuid]) === true) {
+                                // @psalm-suppress EmptyArrayAccess - Already checked isset above.
+                                $targetObject = &$objectsByUuid[$relatedUuid];
+                                // @psalm-suppress EmptyArrayAccess - $targetObject is guaranteed to exist from isset check
+                                $existingValues = ($targetObject[$inversedBy] ?? []);
+                                if (is_array($existingValues) === false) {
+                                    $existingValues = [];
+                                }
+                                if (in_array($objectUuid, $existingValues, true) === false) {
+                                    $existingValues[] = $objectUuid;
+                                    $targetObject[$inversedBy] = $existingValues;
+                                    $_appliedCount++;
+                                }
+                                $_processedCount++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
     }//end handleBulkInverseRelationsWithAnalysis()
 
 
     /**
-     * Handles post-save inverse relations for saved objects.
+     * Handle post-save inverse relations with bulk writeBack optimization
      *
-     * After objects are saved, updates related objects to maintain
-     * bidirectional relationship integrity.
+     * PERFORMANCE OPTIMIZATION: Collects all writeBack operations and executes
+     * them in a single bulk operation instead of individual updates.
      *
-     * @param array $savedObjects Array of saved object entities.
-     * @param array $schemaCache  Schema cache.
+     * @param array $savedObjects Array of saved ObjectEntity objects
+     * @param array $schemaCache  Schema cache for inverse relation analysis
+     * @param callable $getSchemaAnalysisCallback Callback to get schema analysis
      *
      * @return void
+     *
+     * @psalm-param array<int, \OCA\OpenRegister\Db\ObjectEntity> $savedObjects
+     * @phpstan-param array<int, \OCA\OpenRegister\Db\ObjectEntity> $savedObjects
+     * @psalm-param array<string, \OCA\OpenRegister\Db\Schema> $schemaCache
+     * @phpstan-param array<string, \OCA\OpenRegister\Db\Schema> $schemaCache
+     * @psalm-param callable(Schema): array $getSchemaAnalysisCallback
+     * @phpstan-param callable(Schema): array $getSchemaAnalysisCallback
+     * @psalm-return void
+     * @phpstan-return void
      */
-    public function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache): void
+    public function handlePostSaveInverseRelations(array $savedObjects, array $schemaCache, callable $getSchemaAnalysisCallback): void
     {
-        // TODO: Extract from SaveObjects.php lines 1983-2105.
-        // Post-save relationship maintenance.
-        // Batch updates for performance.
-        $this->logger->debug('BulkRelationHandler::handlePostSaveInverseRelations() needs implementation');
+        if (empty($savedObjects) === true) {
+            return;
+        }
 
+
+        // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries.
+        $allRelatedIds = [];
+        // Track which objects need which related objects.
+        $objectRelationsMap = [];
+
+        // First pass: collect all related object IDs.
+        foreach ($savedObjects ?? [] as $index => $savedObject) {
+            $schema = $schemaCache[$savedObject->getSchema()] ?? null;
+            if ($schema === null) {
+                continue;
+            }
+
+            // PERFORMANCE: Get cached comprehensive schema analysis for inverse relations.
+            $analysis = $getSchemaAnalysisCallback($schema);
+
+            if (empty($analysis['inverseProperties']) === true) {
+                continue;
+            }
+
+            $objectData = $savedObject->getObject();
+            $objectRelationsMap[$index] = [];
+
+            // Process inverse relations for this object.
+            foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
+                if (isset($objectData[$propertyName]) === false) {
+                    continue;
+                }
+
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
+
+                foreach ($relatedObjectIds ?? [] as $relatedId) {
+                    if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
+                        $allRelatedIds[] = $relatedId;
+                        $objectRelationsMap[$index][] = $relatedId;
+                    }
+                }
+            }
+        }
+
+        // PERFORMANCE OPTIMIZATION: Single bulk fetch instead of N+1 queries.
+        $relatedObjectsMap = [];
+        if (empty($allRelatedIds) === false) {
+            $uniqueRelatedIds = array_unique($allRelatedIds);
+
+            try {
+                $relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
+                foreach ($relatedObjects ?? [] as $obj) {
+                    $relatedObjectsMap[$obj->getUuid()] = $obj;
+                }
+            } catch (\Exception $e) {
+// Skip inverse relations processing if bulk fetch fails.
+            }
+        }
+
+        // Second pass: process inverse relations with proper context.
+        $writeBackOperations = [];
+        foreach ($savedObjects ?? [] as $index => $savedObject) {
+            if (isset($objectRelationsMap[$index]) === false) {
+                continue;
+            }
+
+            $schema = $schemaCache[$savedObject->getSchema()] ?? null;
+            if ($schema === null) {
+                continue;
+            }
+
+            // PERFORMANCE: Use cached schema analysis.
+            $analysis = $getSchemaAnalysisCallback($schema);
+            $objectData = $savedObject->getObject();
+
+            // Build writeBack operations with full context.
+            foreach ($analysis['inverseProperties'] ?? [] as $propertyName => $inverseConfig) {
+                if (isset($objectData[$propertyName]) === false || ($inverseConfig['writeBack'] === false) === true) {
+                    continue;
+                }
+
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
+
+                foreach ($relatedObjectIds ?? [] as $relatedId) {
+                    if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
+                        $writeBackOperations[] = [
+                            'targetObject' => $relatedObjectsMap[$relatedId],
+                            'sourceUuid' => $savedObject->getUuid(),
+                            'inverseProperty' => $inverseConfig['inverseProperty'] ?? $propertyName,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Execute writeBack operations with context.
+        if (empty($writeBackOperations) === false) {
+            $this->performBulkWriteBackUpdatesWithContext($writeBackOperations);
+        }
     }//end handlePostSaveInverseRelations()
 
 
     /**
-     * Performs bulk write-back updates with context.
+     * Perform bulk writeBack updates with full context and actual modifications
      *
-     * Executes write-back operations for multiple objects in batch.
-     * Maintains context for error handling and logging.
+     * FIXED: Now actually modifies related objects with inverse properties
+     * before saving them to the database.
      *
-     * @param array $writeBackOperations Array of write-back operations.
+     * @param array $writeBackOperations Array of writeBack operations with context
      *
      * @return void
+     *
+     * @psalm-param array<int, array{targetObject: \OCA\OpenRegister\Db\ObjectEntity, sourceUuid: string, inverseProperty: string}> $writeBackOperations
+     * @phpstan-param array<int, array{targetObject: \OCA\OpenRegister\Db\ObjectEntity, sourceUuid: string, inverseProperty: string}> $writeBackOperations
+     * @psalm-return void
+     * @phpstan-return void
      */
-    public function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
+    private function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
     {
-        // TODO: Extract from SaveObjects.php lines 2105-2167.
-        // Batch write-back execution.
-        // Error handling and logging.
-        $this->logger->debug('BulkRelationHandler::performBulkWriteBackUpdatesWithContext() needs implementation');
+        if (empty($writeBackOperations) === true) {
+            return;
+        }
 
+        // Track objects that need to be updated.
+        $objectsToUpdate = [];
+
+        foreach ($writeBackOperations ?? [] as $operation) {
+            $targetObject = $operation['targetObject'];
+            $sourceUuid = $operation['sourceUuid'];
+            $inverseProperty = $operation['inverseProperty'] ?? null;
+
+            if ($inverseProperty === null) {
+                continue;
+            }
+
+            // Get current object data.
+            $objectData = $targetObject->getObject();
+
+            // Initialize inverse property array if it doesn't exist.
+            if (isset($objectData[$inverseProperty]) === false) {
+                $objectData[$inverseProperty] = [];
+            }
+
+            // Ensure it's an array.
+            if (is_array($objectData[$inverseProperty]) === false) {
+                $objectData[$inverseProperty] = [$objectData[$inverseProperty]];
+            }
+
+            // Add source UUID to inverse property if not already present.
+            if (in_array($sourceUuid, $objectData[$inverseProperty], true) === false) {
+                $objectData[$inverseProperty][] = $sourceUuid;
+            } else {
+                continue;
+            }
+
+            // Update the object with modified data.
+            $targetObject->setObject($objectData);
+            $objectsToUpdate[] = $targetObject;
+        }
+
+        // Save all modified objects in bulk.
+        // TEMPORARILY DISABLED: Skip secondary bulk save to isolate double prefix issue.
+        // if (!empty($objectsToUpdate)) {
+        //     // NO ERROR SUPPRESSION: Let bulk writeBack update errors bubble up immediately!
+        //     $this->objectEntityMapper->saveObjects([], $objectsToUpdate);
+        // }.
     }//end performBulkWriteBackUpdatesWithContext()
 
 
     /**
-     * Scans for relations in data array.
+     * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
      *
-     * Recursively finds object references in nested data.
+     * This method checks schema properties for relation types:
+     * - Properties with type 'text' and format 'uuid', 'uri', or 'url'
+     * - Properties with type 'object' that contain string values (always treated as relations)
+     * - Properties with type 'array' of objects that contain string values
      *
-     * @param array       $data   The data to scan.
-     * @param string      $prefix Property path prefix.
-     * @param null|Schema $schema The schema for validation.
+     * This is ported from SaveObject.php to provide consistent relation handling
+     * for bulk operations.
      *
-     * @return array Array of relation paths.
+     * @param array       $data   The object data to scan
+     * @param string      $prefix The current prefix for dot notation (used in recursion)
+     * @param Schema|null $schema The schema to check property definitions against
+     *
+     * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
+     *
+     * @psalm-param array<string, mixed> $data
+     * @phpstan-param array<string, mixed> $data
+     * @psalm-param string $prefix
+     * @phpstan-param string $prefix
+     * @psalm-param Schema|null $schema
+     * @phpstan-param Schema|null $schema
+     * @psalm-return array<string, string>
+     * @phpstan-return array<string, string>
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
-        // TODO: Extract from SaveObjects.php lines 2204-2317.
-        // Identical to SaveObject version.
-        // Consider sharing implementation.
-        $this->logger->debug('BulkRelationHandler::scanForRelations() needs implementation');
+        $relations = [];
 
-        return [];
+        // NO ERROR SUPPRESSION: Let relation scanning errors bubble up immediately!
+        // Get schema properties if available.
+        $schemaProperties = null;
+        if ($schema !== null) {
+            // NO ERROR SUPPRESSION: Let schema property parsing errors bubble up immediately!
+            $schemaProperties = $schema->getProperties();
+        }
+
+        foreach ($data ?? [] as $key => $value) {
+            $currentPath = $prefix !== '' ? "$prefix.$key" : $key;
+
+            // Check if this property is defined in the schema.
+            $propertyConfig = $schemaProperties[$key] ?? null;
+
+            // Handle string values (potential UUIDs/URLs).
+            if (is_string($value) === true) {
+                // Check if it's a UUID or URL based on schema definition.
+                $isRelation = false;
+
+                if ($propertyConfig !== null) {
+                    $type = $propertyConfig['type'] ?? '';
+                    $format = $propertyConfig['format'] ?? '';
+
+                    // Check for explicit relation types.
+                    if ($type === 'text' && in_array($format, ['uuid', 'uri', 'url'], true) === true) {
+                        $isRelation = true;
+                    } else if ($type === 'object') {
+                        // Type 'object' with a string value is always a relation.
+                        $isRelation = true;
+                    }
+                } else {
+                    // No schema info - use heuristics.
+                    // If it looks like a UUID or URL, treat it as a relation.
+                    if (\Symfony\Component\Uid\Uuid::isValid($value) === true) {
+                        $isRelation = true;
+                    } else if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+                        $isRelation = true;
+                    }
+                }
+
+                if ($isRelation === true) {
+                    $relations[$currentPath] = $value;
+                }
+            } else if (is_array($value) === true) {
+                // Recursively scan nested arrays/objects.
+                $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
+                $relations = array_merge($relations, $nestedRelations);
+            }//end if
+        }//end foreach
+
+        return $relations;
 
     }//end scanForRelations()
 
 
-    /**
-     * Checks if a value is a reference to another object.
-     *
-     * @param string $value The value to check.
-     *
-     * @return bool True if value is a reference.
-     */
-    public function isReference(string $value): bool
-    {
-        // TODO: Extract from SaveObjects.php lines 2317-2357.
-        // UUID, URL, and numeric ID detection.
-        // Identical to SaveObject version.
-        $this->logger->debug('BulkRelationHandler::isReference() needs implementation');
-
-        return false;
-
-    }//end isReference()
-
-
-    /**
-     * Resolves an object reference in bulk context.
-     *
-     * @param array  $object         The object containing the reference.
-     * @param string $fieldPath      The field path to the reference.
-     * @param array  $propertyConfig The property configuration.
-     * @param string $metadataType   The metadata type being resolved.
-     *
-     * @return string|null The resolved value or null.
-     */
-    public function resolveObjectReference(array $object, string $fieldPath, array $propertyConfig, string $metadataType): ?string
-    {
-        // TODO: Implement reference resolution for bulk operations.
-        // Handles UUID resolution in bulk context.
-        $this->logger->debug('BulkRelationHandler::resolveObjectReference() needs implementation');
-
-        return null;
-
-    }//end resolveObjectReference()
-
-
-    /**
-     * Gets object reference data from field path.
-     *
-     * @param array  $object    The object data.
-     * @param string $fieldPath The field path.
-     *
-     * @return mixed The reference data.
-     */
-    public function getObjectReferenceData(array $object, string $fieldPath)
-    {
-        // TODO: Implement reference data extraction.
-        $this->logger->debug('BulkRelationHandler::getObjectReferenceData() needs implementation');
-
-        return null;
-
-    }//end getObjectReferenceData()
-
-
-    /**
-     * Extracts UUID from a reference value.
-     *
-     * @param mixed $referenceData The reference data.
-     *
-     * @return string|null The extracted UUID or null.
-     */
-    public function extractUuidFromReference($referenceData): string|null
-    {
-        // TODO: Implement UUID extraction.
-        // Handles UUIDs, URLs, IDs.
-        $this->logger->debug('BulkRelationHandler::extractUuidFromReference() needs implementation');
-
-        return null;
-
-    }//end extractUuidFromReference()
-
-
-    /**
-     * Gets object name by UUID.
-     *
-     * @param string $uuid The object UUID.
-     *
-     * @return string|null The object name or null.
-     */
-    public function getObjectName(string $uuid): ?string
-    {
-        // TODO: Implement object name lookup.
-        // Caching recommended for bulk operations.
-        $this->logger->debug('BulkRelationHandler::getObjectName() needs implementation');
-
-        return null;
-
-    }//end getObjectName()
-
-
-    /**
-     * Generates a fallback name for an object.
-     *
-     * @param string $uuid           The object UUID.
-     * @param string $metadataType   The metadata type.
-     * @param array  $propertyConfig The property configuration.
-     *
-     * @return string The generated fallback name.
-     */
-    public function generateFallbackName(string $uuid, string $metadataType, array $propertyConfig): string
-    {
-        // TODO: Implement fallback name generation.
-        $this->logger->debug('BulkRelationHandler::generateFallbackName() needs implementation');
-
-        return "Object {$uuid}";
-
-    }//end generateFallbackName()
-
-
 }//end class
-

@@ -293,8 +293,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to check availability',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -317,8 +317,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Connection test failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -343,8 +343,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to get stats',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -380,8 +380,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to get dashboard stats',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [
@@ -406,8 +406,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Optimization failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -430,9 +430,9 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to clear index',
                 [
-                        'collection' => $collectionName,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'collection' => $collectionName,
+                    'error'      => $e->getMessage(),
+                ]
             );
 
             return [
@@ -457,8 +457,8 @@ class IndexService
             $this->logger->error(
                 '[IndexService] Failed to get config',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return [];

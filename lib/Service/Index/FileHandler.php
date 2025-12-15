@@ -63,8 +63,6 @@ class FileHandler
     }//end __construct()
 
 
-
-
     /**
      * Index file chunks to Solr fileCollection.
      *

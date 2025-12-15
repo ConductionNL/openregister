@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * ElasticsearchHttpClient
  *
  * Handles HTTP client configuration and basic HTTP operations for Elasticsearch.
@@ -28,10 +28,15 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchHttpClient
 {
+
     private GuzzleClient $httpClient;
+
     private array $config = [];
+
     private readonly SettingsService $settingsService;
+
     private readonly LoggerInterface $logger;
+
 
     /**
      * Constructor
@@ -48,7 +53,9 @@ class ElasticsearchHttpClient
 
         $this->initializeConfig();
         $this->initializeHttpClient();
-    }
+
+    }//end __construct()
+
 
     /**
      * Initialize Elasticsearch configuration from settings.
@@ -64,24 +71,30 @@ class ElasticsearchHttpClient
             'index'   => 'openregister',
             'timeout' => 30,
         ];
-    }
+
+    }//end initializeConfig()
+
 
     /**
      * Initialize HTTP client for Elasticsearch requests.
      */
     private function initializeHttpClient(): void
     {
-        $this->httpClient = new GuzzleClient([
-            'timeout'         => $this->config['timeout'],
-            'connect_timeout' => 5,
-            'http_errors'     => false,
-            'verify'          => false,
-            'headers'         => [
-                'Content-Type' => 'application/json',
-                'Accept'       => 'application/json',
-            ],
-        ]);
-    }
+        $this->httpClient = new GuzzleClient(
+                [
+                    'timeout'         => $this->config['timeout'],
+                    'connect_timeout' => 5,
+                    'http_errors'     => false,
+                    'verify'          => false,
+                    'headers'         => [
+                        'Content-Type' => 'application/json',
+                        'Accept'       => 'application/json',
+                    ],
+                ]
+                );
+
+    }//end initializeHttpClient()
+
 
     /**
      * Build Elasticsearch base URL.
@@ -94,15 +107,19 @@ class ElasticsearchHttpClient
             $this->config['host'],
             $this->config['port']
         );
-    }
+
+    }//end buildBaseUrl()
+
 
     /**
      * Build endpoint URL for a specific index.
      */
     public function getEndpointUrl(string $index): string
     {
-        return $this->buildBaseUrl() . '/' . $index;
-    }
+        return $this->buildBaseUrl().'/'.$index;
+
+    }//end getEndpointUrl()
+
 
     /**
      * Execute GET request.
@@ -111,16 +128,21 @@ class ElasticsearchHttpClient
     {
         try {
             $response = $this->httpClient->get($url);
-            $body = (string) $response->getBody();
+            $body     = (string) $response->getBody();
             return json_decode($body, true) ?: [];
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchHttpClient] GET failed', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchHttpClient] GET failed',
+                    [
+                        'url'   => $url,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             throw $e;
         }
-    }
+
+    }//end get()
+
 
     /**
      * Execute POST request.
@@ -128,19 +150,27 @@ class ElasticsearchHttpClient
     public function post(string $url, array $data): array
     {
         try {
-            $response = $this->httpClient->post($url, [
-                'json' => $data
-            ]);
-            $body = (string) $response->getBody();
+            $response = $this->httpClient->post(
+                    $url,
+                    [
+                        'json' => $data,
+                    ]
+                    );
+            $body     = (string) $response->getBody();
             return json_decode($body, true) ?: [];
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchHttpClient] POST failed', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchHttpClient] POST failed',
+                    [
+                        'url'   => $url,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             throw $e;
         }
-    }
+
+    }//end post()
+
 
     /**
      * Execute POST request with raw body (for bulk API).
@@ -148,22 +178,30 @@ class ElasticsearchHttpClient
     public function postRaw(string $url, string $data): array
     {
         try {
-            $response = $this->httpClient->post($url, [
-                'body' => $data,
-                'headers' => [
-                    'Content-Type' => 'application/x-ndjson',
-                ]
-            ]);
-            $body = (string) $response->getBody();
+            $response = $this->httpClient->post(
+                    $url,
+                    [
+                        'body'    => $data,
+                        'headers' => [
+                            'Content-Type' => 'application/x-ndjson',
+                        ],
+                    ]
+                    );
+            $body     = (string) $response->getBody();
             return json_decode($body, true) ?: [];
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchHttpClient] POST (raw) failed', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchHttpClient] POST (raw) failed',
+                    [
+                        'url'   => $url,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             throw $e;
-        }
-    }
+        }//end try
+
+    }//end postRaw()
+
 
     /**
      * Execute PUT request.
@@ -171,19 +209,27 @@ class ElasticsearchHttpClient
     public function put(string $url, array $data): array
     {
         try {
-            $response = $this->httpClient->put($url, [
-                'json' => $data
-            ]);
-            $body = (string) $response->getBody();
+            $response = $this->httpClient->put(
+                    $url,
+                    [
+                        'json' => $data,
+                    ]
+                    );
+            $body     = (string) $response->getBody();
             return json_decode($body, true) ?: [];
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchHttpClient] PUT failed', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchHttpClient] PUT failed',
+                    [
+                        'url'   => $url,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             throw $e;
         }
-    }
+
+    }//end put()
+
 
     /**
      * Execute DELETE request.
@@ -192,16 +238,21 @@ class ElasticsearchHttpClient
     {
         try {
             $response = $this->httpClient->delete($url);
-            $body = (string) $response->getBody();
+            $body     = (string) $response->getBody();
             return json_decode($body, true) ?: [];
         } catch (Exception $e) {
-            $this->logger->error('[ElasticsearchHttpClient] DELETE failed', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[ElasticsearchHttpClient] DELETE failed',
+                    [
+                        'url'   => $url,
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             throw $e;
         }
-    }
+
+    }//end delete()
+
 
     /**
      * Get HTTP client instance.
@@ -209,7 +260,9 @@ class ElasticsearchHttpClient
     public function getHttpClient(): GuzzleClient
     {
         return $this->httpClient;
-    }
+
+    }//end getHttpClient()
+
 
     /**
      * Get Elasticsearch configuration.
@@ -217,7 +270,9 @@ class ElasticsearchHttpClient
     public function getConfig(): array
     {
         return $this->config;
-    }
+
+    }//end getConfig()
+
 
     /**
      * Check if Elasticsearch is configured.
@@ -225,6 +280,8 @@ class ElasticsearchHttpClient
     public function isConfigured(): bool
     {
         return $this->config['enabled'] ?? false;
-    }
-}
 
+    }//end isConfigured()
+
+
+}//end class

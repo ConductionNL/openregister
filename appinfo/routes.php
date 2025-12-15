@@ -33,6 +33,9 @@ return [
         ['name' => 'settings#stats', 'url' => '/api/settings/stats', 'verb' => 'GET'],
         
         // Settings - Focused endpoints for better performance.
+        ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
+        ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PUT'],
+        ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         ['name' => 'settings#getSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'GET'],
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PATCH'],
         ['name' => 'settings#updateSolrSettings', 'url' => '/api/settings/solr', 'verb' => 'PUT'],

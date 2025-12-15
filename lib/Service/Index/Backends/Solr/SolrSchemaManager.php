@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * SolrSchemaManager
  *
  * Manages Solr schema operations.
@@ -32,6 +32,7 @@ use Psr\Log\LoggerInterface;
  */
 class SolrSchemaManager
 {
+
     /**
      * HTTP client.
      *
@@ -71,6 +72,7 @@ class SolrSchemaManager
         $this->httpClient        = $httpClient;
         $this->collectionManager = $collectionManager;
         $this->logger            = $logger;
+
     }//end __construct()
 
 
@@ -95,19 +97,26 @@ class SolrSchemaManager
                 }
             }
 
-            $this->logger->debug('[SolrSchemaManager] Retrieved field types', [
-                'collection' => $collection,
-                'count' => count($fieldTypes)
-            ]);
+            $this->logger->debug(
+                    '[SolrSchemaManager] Retrieved field types',
+                    [
+                        'collection' => $collection,
+                        'count'      => count($fieldTypes),
+                    ]
+                    );
 
             return $fieldTypes;
         } catch (Exception $e) {
-            $this->logger->error('[SolrSchemaManager] Failed to get field types', [
-                'collection' => $collection,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrSchemaManager] Failed to get field types',
+                    [
+                        'collection' => $collection,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
             return [];
         }//end try
+
     }//end getFieldTypes()
 
 
@@ -122,10 +131,13 @@ class SolrSchemaManager
     public function addFieldType(string $collection, array $fieldType): bool
     {
         try {
-            $this->logger->info('[SolrSchemaManager] Adding field type', [
-                'collection' => $collection,
-                'name' => $fieldType['name'] ?? 'unknown'
-            ]);
+            $this->logger->info(
+                    '[SolrSchemaManager] Adding field type',
+                    [
+                        'collection' => $collection,
+                        'name'       => $fieldType['name'] ?? 'unknown',
+                    ]
+                    );
 
             $url = $this->httpClient->getEndpointUrl($collection).'/schema';
 
@@ -138,17 +150,24 @@ class SolrSchemaManager
                 return true;
             }
 
-            $this->logger->warning('[SolrSchemaManager] Field type addition returned non-zero status', [
-                'status' => $result['responseHeader']['status'] ?? 'unknown'
-            ]);
+            $this->logger->warning(
+                    '[SolrSchemaManager] Field type addition returned non-zero status',
+                    [
+                        'status' => $result['responseHeader']['status'] ?? 'unknown',
+                    ]
+                    );
 
             return false;
         } catch (Exception $e) {
-            $this->logger->error('[SolrSchemaManager] Failed to add field type', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrSchemaManager] Failed to add field type',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end addFieldType()
 
 
@@ -173,19 +192,26 @@ class SolrSchemaManager
                 }
             }
 
-            $this->logger->debug('[SolrSchemaManager] Retrieved fields', [
-                'collection' => $collection,
-                'count' => count($fields)
-            ]);
+            $this->logger->debug(
+                    '[SolrSchemaManager] Retrieved fields',
+                    [
+                        'collection' => $collection,
+                        'count'      => count($fields),
+                    ]
+                    );
 
             return $fields;
         } catch (Exception $e) {
-            $this->logger->error('[SolrSchemaManager] Failed to get fields', [
-                'collection' => $collection,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrSchemaManager] Failed to get fields',
+                    [
+                        'collection' => $collection,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
             return [];
         }//end try
+
     }//end getFields()
 
 
@@ -219,9 +245,12 @@ class SolrSchemaManager
 
             if (isset($existingFields[$fieldName])) {
                 if ($force === false) {
-                    $this->logger->debug('[SolrSchemaManager] Field already exists, skipping', [
-                        'field' => $fieldName
-                    ]);
+                    $this->logger->debug(
+                            '[SolrSchemaManager] Field already exists, skipping',
+                            [
+                                'field' => $fieldName,
+                            ]
+                            );
                     return 'skipped';
                 }
 
@@ -241,18 +270,25 @@ class SolrSchemaManager
                 return isset($existingFields[$fieldName]) ? 'updated' : 'created';
             }
 
-            $this->logger->warning('[SolrSchemaManager] Field creation returned non-zero status', [
-                'field' => $fieldName,
-                'status' => $result['responseHeader']['status'] ?? 'unknown'
-            ]);
+            $this->logger->warning(
+                    '[SolrSchemaManager] Field creation returned non-zero status',
+                    [
+                        'field'  => $fieldName,
+                        'status' => $result['responseHeader']['status'] ?? 'unknown',
+                    ]
+                    );
 
             return 'failed';
         } catch (Exception $e) {
-            $this->logger->error('[SolrSchemaManager] Failed to add/update field', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrSchemaManager] Failed to add/update field',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return 'failed';
         }//end try
+
     }//end addOrUpdateField()
 
 
@@ -267,10 +303,13 @@ class SolrSchemaManager
     private function deleteField(string $collection, string $fieldName): bool
     {
         try {
-            $this->logger->info('[SolrSchemaManager] Deleting field', [
-                'collection' => $collection,
-                'field' => $fieldName
-            ]);
+            $this->logger->info(
+                    '[SolrSchemaManager] Deleting field',
+                    [
+                        'collection' => $collection,
+                        'field'      => $fieldName,
+                    ]
+                    );
 
             $url = $this->httpClient->getEndpointUrl($collection).'/schema';
 
@@ -285,11 +324,15 @@ class SolrSchemaManager
 
             return false;
         } catch (Exception $e) {
-            $this->logger->error('[SolrSchemaManager] Failed to delete field', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrSchemaManager] Failed to delete field',
+                    [
+                        'error' => $e->getMessage(),
+                    ]
+                    );
             return false;
         }//end try
+
     }//end deleteField()
 
 
@@ -308,11 +351,17 @@ class SolrSchemaManager
 
             return $data['schema'] ?? [];
         } catch (Exception $e) {
-            $this->logger->error('[SolrSchemaManager] Failed to get schema', [
-                'collection' => $collection,
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                    '[SolrSchemaManager] Failed to get schema',
+                    [
+                        'collection' => $collection,
+                        'error'      => $e->getMessage(),
+                    ]
+                    );
             return [];
         }//end try
+
     }//end getSchema()
+
+
 }//end class

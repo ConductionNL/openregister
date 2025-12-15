@@ -62,64 +62,116 @@ class BulkValidationHandler
      * Performs comprehensive schema analysis for bulk optimization.
      *
      * Analyzes schema to detect:
-     * - Boolean properties (for type casting).
-     * - Relations (for bulk relation handling).
-     * - Default values (for optimization).
-     * - Required fields (for validation).
-     * - File properties (for file handling).
-     * - inversedBy properties (for cascading).
+     * - Metadata field mappings (name, description, summary, image, slug).
+     * - Inverse relation properties (inversedBy, writeBack).
+     * - Validation requirements (hardValidation setting).
      *
-     * This analysis is cached and reused for all objects in a bulk operation.
+     * This analysis is cached and reused for all objects in a bulk operation,
+     * providing significant performance optimization.
      *
      * @param Schema $schema The schema to analyze.
      *
      * @return array Analysis results with:
-     *               - booleanProperties: array of boolean property names.
-     *               - relations: array of relation property names.
-     *               - defaults: array of default values.
-     *               - required: array of required field names.
-     *               - fileProperties: array of file property names.
-     *               - inversedBy: array of inversedBy configurations.
+     *               - metadataFields: Metadata field mappings.
+     *               - inverseProperties: Inverse relation configurations.
+     *               - validationRequired: Whether hard validation is enabled.
+     *               - properties: Schema properties array.
+     *               - configuration: Schema configuration array.
      */
     public function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
-        // TODO: Extract from SaveObjects.php lines 1466-1542.
-        // This is a key optimization method.
-        // Analyzes schema once, applies to all objects.
-        // Returns comprehensive property analysis.
-        $this->logger->debug('BulkValidationHandler::performComprehensiveSchemaAnalysis() needs implementation');
+        $config     = $schema->getConfiguration();
+        $properties = $schema->getProperties();
 
-        return [
-            'booleanProperties' => [],
-            'relations' => [],
-            'defaults' => [],
-            'required' => [],
-            'fileProperties' => [],
-            'inversedBy' => [],
+        $analysis = [
+            'metadataFields'     => [],
+            'inverseProperties'  => [],
+            'validationRequired' => $schema->getHardValidation(),
+            'properties'         => $properties,
+            'configuration'      => $config,
         ];
+
+        // PERFORMANCE OPTIMIZATION: Analyze metadata field mappings once.
+        // COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields.
+        $metadataFieldMap = [
+            'name'        => $config['objectNameField'] ?? null,
+            'description' => $config['objectDescriptionField'] ?? null,
+            'summary'     => $config['objectSummaryField'] ?? null,
+            'image'       => $config['objectImageField'] ?? null,
+            'slug'        => $config['objectSlugField'] ?? null,
+        ];
+
+        $analysis['metadataFields'] = array_filter(
+                $metadataFieldMap,
+                function ($field) {
+                    return empty($field) === false;
+                }
+                );
+
+        // PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
+        foreach ($properties ?? [] as $propertyName => $propertyConfig) {
+            $items = $propertyConfig['items'] ?? [];
+
+            // Check for inversedBy at property level (single object relations).
+            $inversedBy   = $propertyConfig['inversedBy'] ?? null;
+            $rawWriteBack = $propertyConfig['writeBack'] ?? false;
+            $writeBack    = $this->castToBoolean($rawWriteBack);
+
+            // Schema analysis: process writeBack boolean casting.
+            // Check for inversedBy in array items (array of object relations).
+            // CRITICAL FIX: Preserve property-level writeBack if it's true.
+            if (($inversedBy === false || $inversedBy === null) === true && (($items['inversedBy'] ?? null) !== null) === true) {
+                $inversedBy        = $items['inversedBy'];
+                $rawItemsWriteBack = $items['writeBack'] ?? false;
+                $itemsWriteBack    = $this->castToBoolean($rawItemsWriteBack);
+
+                // Use the higher value: if property writeBack is true, keep it.
+                $finalWriteBack = $writeBack || $itemsWriteBack;
+
+                // Items logic: combine property and items writeBack values.
+                $writeBack = $finalWriteBack;
+            }
+
+            if ($inversedBy !== null && $inversedBy !== '') {
+                $analysis['inverseProperties'][$propertyName] = [
+                    'inversedBy' => $inversedBy,
+                    'writeBack'  => $writeBack,
+                    'isArray'    => $propertyConfig['type'] === 'array',
+                ];
+            }
+        }//end foreach
+
+        return $analysis;
 
     }//end performComprehensiveSchemaAnalysis()
 
 
     /**
-     * Casts a value to boolean.
+     * Cast mixed values to proper boolean.
      *
      * Handles various truthy/falsy representations:
-     * - Strings: "true", "false", "1", "0", "yes", "no".
-     * - Numbers: 1, 0.
-     * - Booleans: true, false.
-     * - Null: false.
+     * - String "true"/"false" (case-insensitive).
+     * - Integers 1/0.
+     * - Actual booleans.
+     * - Other values cast to bool.
      *
-     * @param mixed $value The value to cast.
+     * @param mixed $value The value to cast to boolean.
      *
      * @return bool The boolean value.
      */
     public function castToBoolean($value): bool
     {
-        // TODO: Extract from SaveObjects.php lines 1542-1574.
-        // Simple but important for bulk operations.
-        // Handles string representations of booleans.
-        $this->logger->debug('BulkValidationHandler::castToBoolean() needs implementation');
+        if (is_bool($value) === true) {
+            return $value;
+        }
+
+        if (is_string($value) === true) {
+            return strtolower(trim($value)) === 'true';
+        }
+
+        if (is_numeric($value) === true) {
+            return (bool) $value;
+        }
 
         return (bool) $value;
 
@@ -127,27 +179,27 @@ class BulkValidationHandler
 
 
     /**
-     * Handles pre-validation cascading for a single object.
+     * Handles pre-validation cascading for a single object in bulk context.
      *
-     * Creates related objects before main object validation.
-     * Used in bulk operations for inversedBy properties.
+     * SIMPLIFIED: For bulk operations, we skip complex cascading for now
+     * and handle it later in individual object processing if needed.
      *
      * @param array       $object The object data.
      * @param null|string $uuid   The object UUID (for updates).
      *
-     * @return array The updated object data with cascaded UUIDs.
+     * @return array Array with [object, uuid].
      */
     public function handlePreValidationCascading(array $object, ?string $uuid): array
     {
-        // TODO: Extract from SaveObjects.php lines 1677-1702.
-        // Similar to SaveObject cascade but for bulk context.
-        // Needs careful coordination with bulk flow.
-        $this->logger->debug('BulkValidationHandler::handlePreValidationCascading() needs implementation');
+        // SIMPLIFIED: For bulk operations, we skip complex cascading for now.
+        // and handle it later in individual object processing if needed.
+        if ($uuid === null) {
+            $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+        }
 
-        return $object;
+        return [$object, $uuid];
 
     }//end handlePreValidationCascading()
 
 
 }//end class
-
