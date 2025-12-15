@@ -138,8 +138,16 @@ class SolrEventListener implements IEventListener
             ]
         );
 
-        // Trigger Solr indexing for the created object.
-        $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'create');
+        // Trigger Solr indexing for the created object only if indexing is available.
+        try {
+            $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'create');
+        } catch (\Exception $e) {
+            // If Solr/indexing is not configured, log and continue gracefully.
+            $this->logger->debug(
+                'SolrEventListener: Indexing not available, skipping',
+                ['error' => $e->getMessage()]
+            );
+        }
 
     }//end handleObjectCreated()
 
@@ -167,8 +175,16 @@ class SolrEventListener implements IEventListener
             ]
         );
 
-        // Trigger Solr reindexing for the updated object.
-        $this->cacheHandler->invalidateForObjectChange(object: $newObject, operation: 'update');
+        // Trigger Solr reindexing for the updated object only if indexing is available.
+        try {
+            $this->cacheHandler->invalidateForObjectChange(object: $newObject, operation: 'update');
+        } catch (\Exception $e) {
+            // If Solr/indexing is not configured, log and continue gracefully.
+            $this->logger->debug(
+                'SolrEventListener: Indexing not available, skipping',
+                ['error' => $e->getMessage()]
+            );
+        }
 
     }//end handleObjectUpdated()
 
@@ -194,8 +210,16 @@ class SolrEventListener implements IEventListener
             ]
         );
 
-        // Trigger Solr removal for the deleted object.
-        $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'delete');
+        // Trigger Solr removal for the deleted object only if indexing is available.
+        try {
+            $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'delete');
+        } catch (\Exception $e) {
+            // If Solr/indexing is not configured, log and continue gracefully.
+            $this->logger->debug(
+                'SolrEventListener: Indexing not available, skipping',
+                ['error' => $e->getMessage()]
+            );
+        }
 
     }//end handleObjectDeleted()
 

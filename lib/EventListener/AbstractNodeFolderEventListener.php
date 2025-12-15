@@ -32,6 +32,8 @@ use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\Files\FileInfo;
 
 /**
+ * Abstract node folder event listener template
+ *
  * @template-implements IEventListener<Event>
  */
 class AbstractNodeFolderEventListener implements IEventListener

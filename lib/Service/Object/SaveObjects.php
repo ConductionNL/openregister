@@ -416,7 +416,11 @@ class SaveObjects
 
         // Add deduplication efficiency if we have unchanged objects.
         $unchangedCount = count($result['unchanged']);
-        /** @psalm-suppress TypeDoesNotContainType */
+        /**
+         * Suppress type check for unchanged count comparison
+         *
+         * @psalm-suppress TypeDoesNotContainType
+         */
         if ($unchangedCount > 0) {
             $totalProcessed = count($result['saved']) + count($result['updated']) + $unchangedCount;
             $result['performance']['deduplicationEfficiency'] = round(($unchangedCount / $totalProcessed) * 100, 1) . '% operations avoided';
@@ -585,7 +589,11 @@ class SaveObjects
             // Try to find the object using the ObjectEntityMapper.
             $referencedObject = $this->objectEntityMapper->find($uuid);
 
-            /** @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null */
+            /**
+             * Suppress null check - find() throws DoesNotExistException, never returns null
+             *
+             * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
+             */
             if ($referencedObject === null) {
                 return null;
             }

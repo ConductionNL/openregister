@@ -73,10 +73,14 @@ class MagicOrganizationHandler
      */
     public function __construct(
         /**
+         * User session for organization context
+         *
          * @psalm-suppress UnusedProperty
          */
         private readonly IUserSession $userSession,
         /**
+         * Group manager for organization checks
+         *
          * @psalm-suppress UnusedProperty
          */
         private readonly IGroupManager $groupManager,

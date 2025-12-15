@@ -32,8 +32,7 @@ use DateTime;
 
 /**
  * Bulk operations controller for OpenRegister
- */
-/**
+ *
  * @psalm-suppress UnusedClass
  */
 

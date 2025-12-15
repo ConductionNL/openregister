@@ -148,6 +148,8 @@ class Version1Date20240924200009 extends SimpleMigrationStep
 
 
     /**
+     * Performs actions after schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options

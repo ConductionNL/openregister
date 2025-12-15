@@ -67,14 +67,20 @@ class MagicRbacHandler
      */
     public function __construct(
         /**
+         * User session for RBAC checks
+         *
          * @psalm-suppress UnusedProperty
          */
         private readonly IUserSession $userSession,
         /**
+         * Group manager for RBAC checks
+         *
          * @psalm-suppress UnusedProperty
          */
         private readonly IGroupManager $groupManager,
         /**
+         * User manager for RBAC checks
+         *
          * @psalm-suppress UnusedProperty
          */
         private readonly IUserManager $userManager,

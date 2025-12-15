@@ -59,8 +59,8 @@ use OCA\OpenRegister\Service\ImportService;
 use OCP\AppFramework\Http\DataDownloadResponse;
 
 /**
- */
-/**
+ * Objects controller for OpenRegister
+ *
  * @psalm-suppress UnusedClass
  */
 

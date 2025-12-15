@@ -110,7 +110,7 @@ class QueryHandler
         // Count uses the mapper's countSearchObjects.
         return $this->objectEntityMapper->countSearchObjects(
             query: $query,
-            activeOrganisationUuid: $activeOrganisationUuid,
+            _activeOrganisationUuid: $activeOrganisationUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -188,7 +188,7 @@ class QueryHandler
         $mapperStart = microtime(true);
         $result      = $this->objectEntityMapper->searchObjects(
             query: $query,
-            activeOrganisationUuid: $activeOrganisationUuid,
+            _activeOrganisationUuid: $activeOrganisationUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -374,7 +374,7 @@ class QueryHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      */
-    private function searchObjectsPaginatedDatabase(
+    public function searchObjectsPaginatedDatabase(
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,

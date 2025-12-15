@@ -743,7 +743,12 @@ class SaveObject
 
 
     /**
-     * @return mixed
+     * Get value from nested array using dot notation path
+     *
+     * @param array  $data The data array to search
+     * @param string $path The dot notation path (e.g., 'user.profile.name')
+     *
+     * @return mixed The value at the path or null if not found
      */
     private function getValueFromPath(array $data, string $path)
     {

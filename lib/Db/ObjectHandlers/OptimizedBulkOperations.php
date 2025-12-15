@@ -49,16 +49,22 @@ class OptimizedBulkOperations
     private LoggerInterface $logger;
 
     /**
+     * Maximum SQL statement size in bytes (16MB)
+     *
      * @var int Maximum SQL statement size in bytes (16MB)
      */
     private const MAX_QUERY_SIZE = 16777216;
 
     /**
+     * Optimal batch size for memory usage - increased for sub-1-second performance
+     *
      * @var int Optimal batch size for memory usage - increased for sub-1-second performance
      */
     private const OPTIMAL_BATCH_SIZE = 10000;
 
     /**
+     * Maximum parameters per query (MySQL limit)
+     *
      * @var int Maximum parameters per query (MySQL limit)
      */
     private const MAX_PARAMETERS = 32000;
