@@ -45,13 +45,6 @@ class ObjectRetentionHandler
         $this->appName = $appName;
     }
 
-     * Update Object Management settings only
-     *
-     * @param  array $objectData Object management configuration data
-     * @return array Updated object management configuration
-     * @throws \RuntimeException
-     */
-
 
     /**
      * Get focused Object settings only (vectorization config)

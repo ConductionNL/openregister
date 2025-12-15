@@ -118,11 +118,17 @@ public function __construct(
 }//end __construct()
 
 
+    /**
+     * Check if multi-tenancy is enabled
+     *
+     * @return bool True if multi-tenancy is enabled, false otherwise
+     */
+    public function isMultiTenancyEnabled(): bool
     {
         $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
-if (empty($multitenancyConfig) === true) {
-    return false;
-}
+        if (empty($multitenancyConfig) === true) {
+            return false;
+        }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['enabled'] ?? false;
@@ -1018,8 +1024,4 @@ public function updateFileSettingsOnly(array $fileData): array
         throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());
     }//end try
 }//end updateFileSettingsOnly()
-
-
-    /**
-
 }//end class

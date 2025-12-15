@@ -97,6 +97,7 @@ class SolrSettingsHandler
     }//end __construct()
 
 
+    /**
      * Get SOLR configuration settings
      *
      * @return array SOLR configuration array
