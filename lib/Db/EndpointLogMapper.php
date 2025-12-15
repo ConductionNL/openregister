@@ -51,7 +51,7 @@ use OCP\IDBConnection;
  * @method EndpointLog delete(Entity $entity)
  * @method EndpointLog find(int $id)
  * @method EndpointLog findEntity(IQueryBuilder $query)
- * @method EndpointLog[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method EndpointLog[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<EndpointLog> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<EndpointLog>

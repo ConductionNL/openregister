@@ -45,7 +45,7 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail delete(Entity $entity)
  * @method AuditTrail find(int|string $id)
  * @method AuditTrail findEntity(IQueryBuilder $query)
- * @method AuditTrail[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method AuditTrail[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<AuditTrail> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<AuditTrail>
@@ -255,12 +255,12 @@ class AuditTrailMapper extends QBMapper
         }
 
         // Initialize an array to store changed fields.
-        $changed = [];
+        $changed=[];
         if ($action !== 'delete' && $action !== 'read') {
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             } else {
-                $oldArray = [];
+                $oldArray=[];
             }
 
             $newArray = $new->jsonSerialize();
@@ -642,7 +642,7 @@ class AuditTrailMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             // Process results into chart format.
-            $dateData = [];
+            $dateData=[];
             $actions  = ['create', 'update', 'delete','read'];
 
             // Initialize data structure.
@@ -659,7 +659,7 @@ class AuditTrailMapper extends QBMapper
             ksort($dateData);
 
             // Prepare series data.
-            $series = [];
+            $series=[];
             foreach ($actions as $action) {
                 $series[] = [
                     'name' => ucfirst($action),
@@ -830,7 +830,7 @@ class AuditTrailMapper extends QBMapper
 
             // Calculate total for percentages.
             $total      = 0;
-            $actionData = [];
+            $actionData=[];
 
             foreach ($results as $row) {
                 $count        = (int) $row['count'];
@@ -913,7 +913,7 @@ class AuditTrailMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             // Format results.
-            $objects = [];
+            $objects=[];
             foreach ($results as $row) {
                 $objects[] = [
                     'id'    => $row['object'],

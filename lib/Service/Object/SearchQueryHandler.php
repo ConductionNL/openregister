@@ -27,7 +27,6 @@ use Exception;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SearchTrailService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,7 +59,6 @@ class SearchQueryHandler
         private readonly ViewMapper $viewMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly SettingsService $settingsService,
-        private readonly SearchTrailService $searchTrailService,
         private readonly LoggerInterface $logger
     ) {
 
@@ -527,7 +525,8 @@ class SearchQueryHandler
             // Only create search trail if search trails are enabled.
             if ($this->isSearchTrailsEnabled() === true) {
                 // Create the search trail entry using the service with actual execution time.
-                $this->searchTrailService->createSearchTrail(
+                // TODO
+                // $this->searchTrailService->createSearchTrail(
                     query: $query,
                     resultCount: $resultCount,
                     totalResults: $totalResults,

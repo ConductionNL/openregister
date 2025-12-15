@@ -108,7 +108,8 @@ class ExportHandler
         $this->registerMapper      = $registerMapper;
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
-        $this->logger              = $logger;
+        $this->logger = $logger;
+
     }//end __construct()
 
 
@@ -118,8 +119,8 @@ class ExportHandler
      * This method exports a configuration, register, or array to OpenAPI 3.0.0 format,
      * including all associated registers, schemas, and optionally objects.
      *
-     * @param array|Configuration|Register $input          The input to export (Configuration, Register, or array).
-     * @param bool                         $includeObjects Whether to include objects in the export. Defaults to false.
+     * @param array|Configuration|Register $input                The input to export (Configuration, Register, or array).
+     * @param bool                         $includeObjects       Whether to include objects in the export. Defaults to false.
      * @param object|null                  $openConnectorService Optional OpenConnector service for additional export data.
      *
      * @return array The OpenAPI specification array.
@@ -127,9 +128,9 @@ class ExportHandler
      * @throws \OCP\DB\Exception If database operations fail.
      */
     public function exportConfig(
-        array|Configuration|Register $input = [],
-        bool $includeObjects = false,
-        ?object $openConnectorService = null
+        array|Configuration|Register $input=[],
+        bool $includeObjects=false,
+        ?object $openConnectorService=null
     ): array {
         // Reset the maps for this export.
         $this->registersMap = [];
@@ -183,7 +184,7 @@ class ExportHandler
                     'path'   => $input->getGithubPath(),
                 ],
             ];
-        } elseif ($input instanceof Register) {
+        } else if ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
             $registers = [$input];
             // Set the info from the register.
@@ -285,6 +286,7 @@ class ExportHandler
         }//end foreach
 
         return $openApiSpec;
+
     }//end exportConfig()
 
 
@@ -310,6 +312,7 @@ class ExportHandler
         unset($registerArray['id'], $registerArray['uuid'], $registerArray['organisation']);
 
         return $registerArray;
+
     }//end exportRegister()
 
 
@@ -480,6 +483,7 @@ class ExportHandler
         }//end foreach
 
         return $schemaArray;
+
     }//end exportSchema()
 
 
@@ -513,5 +517,8 @@ class ExportHandler
         } else {
             return $url;
         }
+
     }//end getLastNumericSegment()
+
+
 }//end class

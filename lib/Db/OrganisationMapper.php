@@ -53,7 +53,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Organisation delete(Entity $entity)
  * @method Organisation find(int|string $id)
  * @method Organisation findEntity(IQueryBuilder $query)
- * @method Organisation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Organisation[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Organisation> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Organisation>

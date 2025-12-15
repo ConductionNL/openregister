@@ -115,7 +115,7 @@ class WebhookService
     /**
      * Dispatch event to all matching webhooks
      *
-     * @param Event  $event     The event to dispatch
+     * @param Event  $_event    The event to dispatch (unused but provided by event system)
      * @param string $eventName Event class name
      * @param array  $payload   Event payload data
      *
@@ -235,7 +235,7 @@ class WebhookService
         } catch (RequestException $e) {
             // Build detailed error message from Guzzle exception.
             $errorMessage = $e->getMessage();
-            $errorDetails = [];
+            $errorDetails=[];
 
             // Get status code from exception if available.
             if ($e->hasResponse() === true) {
@@ -497,7 +497,7 @@ class WebhookService
      *
      * @param Webhook $webhook   Webhook configuration
      * @param string  $eventName Event name
-     * @param array   $payload   Payload data
+     * @param array   $_payload  Payload data (unused but required for retry tracking)
      * @param int     $attempt   Next attempt number
      *
      * @return void

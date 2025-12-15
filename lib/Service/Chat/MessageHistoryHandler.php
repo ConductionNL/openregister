@@ -85,7 +85,8 @@ class MessageHistoryHandler
     ) {
         $this->messageMapper      = $messageMapper;
         $this->conversationMapper = $conversationMapper;
-        $this->logger             = $logger;
+        $this->logger = $logger;
+
     }//end __construct()
 
 
@@ -111,9 +112,9 @@ class MessageHistoryHandler
         $this->logger->debug(
             message: '[ChatService] Building message history',
             context: [
-                    'conversationId' => $conversationId,
-                    'messageCount'   => count($messages),
-                ]
+                'conversationId' => $conversationId,
+                'messageCount'   => count($messages),
+            ]
         );
 
         $history = [];
@@ -124,11 +125,11 @@ class MessageHistoryHandler
             $this->logger->debug(
                 message: '[ChatService] Adding message to history',
                 context: [
-                        'role'          => $role,
-                        'contentLength' => strlen($content ?? ''),
-                        'hasContent'    => empty($content) === false,
-                        'hasRole'       => empty($role) === false,
-                    ]
+                    'role'          => $role,
+                    'contentLength' => strlen($content ?? ''),
+                    'hasContent'    => empty($content) === false,
+                    'hasRole'       => empty($role) === false,
+                ]
             );
 
             // Only add messages that have both role and content.
@@ -136,9 +137,9 @@ class MessageHistoryHandler
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
-                } elseif ($role === 'assistant') {
+                } else if ($role === 'assistant') {
                     $history[] = LLPhantMessage::assistant($content);
-                } elseif ($role === 'system') {
+                } else if ($role === 'system') {
                     $history[] = LLPhantMessage::system($content);
                 } else {
                     $this->logger->warning(
@@ -162,11 +163,12 @@ class MessageHistoryHandler
         $this->logger->info(
             message: '[ChatService] Message history built',
             context: [
-                    'historyCount' => count($history),
-                ]
+                'historyCount' => count($history),
+            ]
         );
 
         return $history;
+
     }//end buildMessageHistory()
 
 
@@ -186,7 +188,7 @@ class MessageHistoryHandler
         int $conversationId,
         string $role,
         string $content,
-        ?array $sources = null
+        ?array $sources=null
     ): Message {
         $message = new Message();
         $message->setConversationId($conversationId);
@@ -204,13 +206,16 @@ class MessageHistoryHandler
         $this->logger->debug(
             message: '[ChatService] Message stored',
             context: [
-                    'messageId'      => $message->getId(),
-                    'conversationId' => $conversationId,
-                    'role'           => $role,
-                    'hasSources'     => $sources !== null && empty($sources) === false,
-                ]
+                'messageId'      => $message->getId(),
+                'conversationId' => $conversationId,
+                'role'           => $role,
+                'hasSources'     => $sources !== null && empty($sources) === false,
+            ]
         );
 
         return $message;
+
     }//end storeMessage()
+
+
 }//end class

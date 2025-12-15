@@ -148,7 +148,7 @@ public function __construct(
 public function getSettings(): array
 {
     try {
-        $data = [];
+        $data=[];
 
         // Version information.
         $data['version'] = [
@@ -313,7 +313,7 @@ public function getSettings(): array
      */
 private function getAvailableGroups(): array
 {
-    $groups = [];
+    $groups=[];
 
     // Add special "public" group for anonymous users.
     $groups['public'] = 'Public (No restrictions)';
@@ -360,7 +360,7 @@ private function getAvailableOrganisations(): array
      */
 private function getAvailableUsers(): array
 {
-    $users = [];
+    $users=[];
 
     // Get all Nextcloud users (limit to prevent performance issues).
     $nextcloudUsers = $this->userManager->search('', 100);
@@ -489,7 +489,7 @@ public function updatePublishingOptions(array $options): array
             'use_old_style_publishing_view',
         ];
 
-        $updatedOptions = [];
+        $updatedOptions=[];
 
         // Update each publishing option in the configuration.
         foreach ($validOptions as $option) {
@@ -530,7 +530,7 @@ public function getRbacSettingsOnly(): array
     try {
         $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
 
-        $rbacData = [];
+        $rbacData=[];
         if (empty($rbacConfig) === true) {
             $rbacData = [
                 'enabled'             => false,
@@ -610,7 +610,7 @@ public function getOrganisationSettingsOnly(): array
     try {
         $organisationConfig = $this->config->getAppValue($this->appName, 'organisation', '');
 
-        $organisationData = [];
+        $organisationData=[];
         if (empty($organisationConfig) === true) {
             $organisationData = [
                 'default_organisation'             => null,
@@ -746,7 +746,7 @@ public function getMultitenancySettingsOnly(): array
     try {
         $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
 
-        $multitenancyData = [];
+        $multitenancyData=[];
         if (empty($multitenancyConfig) === true) {
             $multitenancyData = [
                 'enabled'                            => false,
@@ -1023,5 +1023,39 @@ public function updateFileSettingsOnly(array $fileData): array
     } catch (Exception $e) {
         throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());
     }//end try
+
 }//end updateFileSettingsOnly()
+
+
+/**
+ * Get only version information.
+ *
+ * Returns version and build information for the application.
+ *
+ * @return array Version information
+ */
+public function getVersionInfoOnly(): array
+{
+    try {
+        $appInfo = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppInfo($this->appName);
+
+        return [
+            'version' => $appInfo['version'] ?? 'unknown',
+            'name' => $appInfo['name'] ?? 'OpenRegister',
+            'description' => $appInfo['description'] ?? '',
+            'author' => $appInfo['author'] ?? 'Conduction',
+            'licence' => $appInfo['licence'] ?? 'AGPL',
+            'timestamp' => time(),
+            'date' => date('Y-m-d H:i:s'),
+        ];
+    } catch (Exception $e) {
+        return [
+            'version' => 'unknown',
+            'error' => 'Failed to retrieve version info: '.$e->getMessage(),
+        ];
+    }
+
+}//end getVersionInfoOnly()
+
+
 }//end class

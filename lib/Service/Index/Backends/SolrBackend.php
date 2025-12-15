@@ -546,4 +546,33 @@ class SolrBackend implements SearchBackendInterface
     }//end reindexAll()
 
 
+    /**
+     * Get raw Solr fields for facet configuration.
+     *
+     * Retrieves available fields from Solr for faceting.
+     * Delegates to facet processor.
+     *
+     * @return array Facetable fields from Solr
+     */
+    public function getRawSolrFieldsForFacetConfiguration(): array
+    {
+        return $this->facetProcessor->getRawSolrFieldsForFacetConfiguration();
+
+    }//end getRawSolrFieldsForFacetConfiguration()
+
+
+    /**
+     * Get HTTP client instance.
+     *
+     * Provides access to the underlying HTTP client for advanced operations.
+     *
+     * @return SolrHttpClient HTTP client instance
+     */
+    public function getHttpClient(): SolrHttpClient
+    {
+        return $this->httpClient;
+
+    }//end getHttpClient()
+
+
 }//end class

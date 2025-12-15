@@ -48,7 +48,7 @@ class OptimizedFacetHandler
      *
      * @var array<string, array>
      */
-    private array $facetCache = [];
+    private array $facetCache=[];
 
 
     /**
@@ -83,7 +83,7 @@ class OptimizedFacetHandler
      */
     public function getBatchedFacets(array $facetConfig, array $baseQuery=[]): array
     {
-        $results = [];
+        $results=[];
 
         // Generate cache key for this facet combination.
         $cacheKey = $this->generateCacheKey($facetConfig, $baseQuery);
@@ -94,7 +94,7 @@ class OptimizedFacetHandler
 
         // Separate metadata facets from JSON field facets.
         $metadataFacets  = [];
-        $jsonFieldFacets = [];
+        $jsonFieldFacets=[];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
@@ -151,7 +151,7 @@ class OptimizedFacetHandler
      */
     private function getBatchedMetadataFacets(array $metadataConfig, array $baseQuery): array
     {
-        $results = [];
+        $results=[];
 
         foreach ($metadataConfig as $field => $config) {
             $type = $config['type'] ?? 'terms';
@@ -206,7 +206,7 @@ class OptimizedFacetHandler
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
-        $buckets = [];
+        $buckets=[];
 
         while (($row = $result->fetch()) !== false) {
             $key   = $row[$field];
@@ -283,7 +283,7 @@ class OptimizedFacetHandler
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
-        $buckets = [];
+        $buckets=[];
 
         while (($row = $result->fetch()) !== false) {
             $key = $row['field_value'];

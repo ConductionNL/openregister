@@ -83,12 +83,12 @@ class ExportService
         ObjectEntityMapper $_objectEntityMapper,
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
-        IGroupManager $groupManager,
-        ObjectService $objectService
+        IGroupManager $groupManager
     ) {
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
-        $this->objectService  = $objectService;
+        // REMOVED: ObjectService to break circular dependency
+        $this->objectService = null;
 
     }//end __construct()
 

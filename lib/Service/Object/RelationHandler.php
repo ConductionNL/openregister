@@ -425,4 +425,186 @@ class RelationHandler
     }//end loadRelationshipChunkOptimized()
 
 
+    /**
+     * Get object contracts.
+     *
+     * This method retrieves contracts associated with an object.
+     * Contracts are typically stored as relations in the object's data.
+     *
+     * @param string $objectId Object ID or UUID.
+     * @param array  $filters  Optional filters for pagination.
+     *
+     * @return array Contracts data with pagination info.
+     */
+    public function getContracts(string $objectId, array $filters=[]): array
+    {
+        try {
+            // Find the object.
+            $object     = $this->objectEntityMapper->find(identifier: $objectId);
+            $objectData = $object->getObject();
+
+            // Extract contracts from object data (typically stored in 'contracts' property).
+            $contracts = $objectData['contracts'] ?? [];
+
+            // Apply pagination.
+            $limit  = $filters['_limit'] ?? 30;
+            $offset = $filters['_offset'] ?? 0;
+            $total  = is_array($contracts) === true ? count($contracts) : 0;
+
+            if (is_array($contracts) === true) {
+                $contracts = array_slice($contracts, $offset, $limit);
+            }
+
+            return [
+                'results' => $contracts,
+                'total'   => $total,
+                'limit'   => $limit,
+                'offset'  => $offset,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: 'Failed to get contracts',
+                context: [
+                    'error'    => $e->getMessage(),
+                    'objectId' => $objectId,
+                ]
+            );
+            return [
+                'results' => [],
+                'total'   => 0,
+                'limit'   => $filters['_limit'] ?? 30,
+                'offset'  => $filters['_offset'] ?? 0,
+            ];
+        }//end try
+
+    }//end getContracts()
+
+
+    /**
+     * Get objects that this object uses (outgoing relations).
+     *
+     * This method finds all objects that are referenced by the given object.
+     *
+     * @param string $objectId Object ID or UUID.
+     * @param array  $query    Search query parameters.
+     * @param bool   $rbac     Apply RBAC filters.
+     * @param bool   $multi    Apply multitenancy filters.
+     *
+     * @return array Paginated results with related objects.
+     */
+    public function getUses(string $objectId, array $query=[], bool $rbac=true, bool $multi=true): array
+    {
+        try {
+            // Find the object.
+            $object     = $this->objectEntityMapper->find(identifier: $objectId);
+            $objectData = $object->getObject();
+
+            // Extract all relationship IDs from the object.
+            $relationshipIds = $this->extractAllRelationshipIds(objects: [$objectData], _extend: []);
+
+            if (empty($relationshipIds) === true) {
+                return [
+                    'results' => [],
+                    'total'   => 0,
+                    'limit'   => $query['_limit'] ?? 30,
+                    'offset'  => $query['_offset'] ?? 0,
+                ];
+            }
+
+            // Load the related objects.
+            $relatedObjects = $this->objectEntityMapper->findMultiple(ids: array_unique($relationshipIds));
+
+            // Apply pagination.
+            $limit  = $query['_limit'] ?? 30;
+            $offset = $query['_offset'] ?? 0;
+            $total  = count($relatedObjects);
+
+            $relatedObjects = array_slice($relatedObjects, $offset, $limit);
+
+            return [
+                'results' => $relatedObjects,
+                'total'   => $total,
+                'limit'   => $limit,
+                'offset'  => $offset,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: 'Failed to get uses',
+                context: [
+                    'error'    => $e->getMessage(),
+                    'objectId' => $objectId,
+                ]
+            );
+            return [
+                'results' => [],
+                'total'   => 0,
+                'limit'   => $query['_limit'] ?? 30,
+                'offset'  => $query['_offset'] ?? 0,
+            ];
+        }//end try
+
+    }//end getUses()
+
+
+    /**
+     * Get objects that use this object (incoming relations).
+     *
+     * This method finds all objects that reference the given object.
+     *
+     * @param string $objectId Object ID or UUID.
+     * @param array  $query    Search query parameters.
+     * @param bool   $rbac     Apply RBAC filters.
+     * @param bool   $multi    Apply multitenancy filters.
+     *
+     * @return array Paginated results with referencing objects.
+     */
+    public function getUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $multi=true): array
+    {
+        try {
+            // Find the object.
+            $object     = $this->objectEntityMapper->find(identifier: $objectId);
+            $targetUuid = $object->getUuid();
+
+            // This requires searching all objects for references to this UUID.
+            // This is an expensive operation - ideally would be done with a dedicated index.
+            // For now, return empty results with a note in the logs.
+            $this->logger->info(
+                message: 'getUsedBy called - this operation requires full table scan',
+                context: [
+                    'objectId'   => $objectId,
+                    'targetUuid' => $targetUuid,
+                ]
+            );
+
+            // TODO: Implement efficient reverse relationship lookup.
+            // This would require either:
+            // 1. A dedicated relationship table with indexes.
+            // 2. A cache of reverse relationships.
+            // 3. Full text search on JSON fields (expensive).
+            return [
+                'results' => [],
+                'total'   => 0,
+                'limit'   => $query['_limit'] ?? 30,
+                'offset'  => $query['_offset'] ?? 0,
+                'message' => 'Reverse relationship lookup not yet implemented',
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: 'Failed to get used by',
+                context: [
+                    'error'    => $e->getMessage(),
+                    'objectId' => $objectId,
+                ]
+            );
+            return [
+                'results' => [],
+                'total'   => 0,
+                'limit'   => $query['_limit'] ?? 30,
+                'offset'  => $query['_offset'] ?? 0,
+            ];
+        }//end try
+
+    }//end getUsedBy()
+
+
 }//end class

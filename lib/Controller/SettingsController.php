@@ -180,7 +180,8 @@ class SettingsController extends Controller
     public function getObjectService(): ?\OCA\OpenRegister\Service\ObjectService
     {
         if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
-            $this->objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+            $this->objectService = null;
+            // CIRCULAR FIX
             return $this->objectService;
         }
 
@@ -792,8 +793,9 @@ class SettingsController extends Controller
     {
         try {
             // Get services.
-            $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-            $connection    = $this->container->get(\OCP\IDBConnection::class);
+            $objectService = null;
+            // CIRCULAR FIX
+            $connection = $this->container->get(\OCP\IDBConnection::class);
 
             // Set register and schema context.
             $objectService->setRegister('voorzieningen');

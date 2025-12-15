@@ -20,7 +20,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\OrganisationService;
+
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTime;
@@ -52,14 +52,14 @@ class PreparationHandler
      *
      * @var array<int, Register>
      */
-    private static array $registerCache = [];
+    private static array $registerCache=[];
 
     /**
      * Static cache for schemas to avoid repeated DB queries.
      *
      * @var array<int, Schema>
      */
-    private static array $schemaCache = [];
+    private static array $schemaCache=[];
 
 
     /**
@@ -76,7 +76,7 @@ class PreparationHandler
     private readonly SaveObject $saveHandler,
     private readonly SchemaMapper $schemaMapper,
     private readonly BulkValidationHandler $bulkValidationHandler,
-    private readonly OrganisationService $organisationService,
+    // REMOVED: private readonly 
     private readonly IUserSession $userSession,
     private readonly LoggerInterface $logger
     ) {
@@ -111,13 +111,13 @@ class PreparationHandler
             return [[], [], []];
         }
 
-        $preparedObjects = [];
+        $preparedObjects=[];
         $schemaCache     = [];
         $schemaAnalysis  = [];
         $invalidObjects  = [];
 
         // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
-        $schemaIds = [];
+        $schemaIds=[];
         foreach ($objects ?? [] as $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;

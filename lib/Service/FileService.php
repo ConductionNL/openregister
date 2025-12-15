@@ -57,7 +57,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\File\FileCrudHandler;
 use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -204,6 +206,20 @@ class FileService
     private FileOwnershipHandler $fileOwnershipHandler;
 
     /**
+     * File CRUD handler
+     *
+     * @var FileCrudHandler
+     */
+    private FileCrudHandler $fileCrudHandler;
+
+    /**
+     * File sharing handler
+     *
+     * @var FileSharingHandler
+     */
+    private FileSharingHandler $fileSharingHandler;
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var            string
@@ -243,22 +259,24 @@ class FileService
     /**
      * Constructor
      *
-     * @param IConfig                  $config                  Configuration service
-     * @param FileMapper               $fileMapper              File mapper
-     * @param IGroupManager            $groupManager            Group manager
-     * @param LoggerInterface          $logger                  Logger
-     * @param ObjectEntityMapper       $objectEntityMapper      Object entity mapper
-     * @param RegisterMapper           $registerMapper          Register mapper
-     * @param IRootFolder              $rootFolder              Root folder
-     * @param IManager                 $shareManager            Share manager
-     * @param ISystemTagManager        $systemTagManager        System tag manager
-     * @param ISystemTagObjectMapper   $systemTagMapper         System tag mapper
-     * @param IURLGenerator            $urlGenerator            URL generator
-     * @param IUserManager             $userManager             User manager
-     * @param IUserSession             $userSession             User session
-     * @param FileValidationHandler    $fileValidationHandler   File validation handler
-     * @param FolderManagementHandler  $folderManagementHandler Folder management handler
-     * @param FileOwnershipHandler     $fileOwnershipHandler    File ownership handler
+     * @param IConfig                 $config                  Configuration service
+     * @param FileMapper              $fileMapper              File mapper
+     * @param IGroupManager           $groupManager            Group manager
+     * @param LoggerInterface         $logger                  Logger
+     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper
+     * @param RegisterMapper          $registerMapper          Register mapper
+     * @param IRootFolder             $rootFolder              Root folder
+     * @param IManager                $shareManager            Share manager
+     * @param ISystemTagManager       $systemTagManager        System tag manager
+     * @param ISystemTagObjectMapper  $systemTagMapper         System tag mapper
+     * @param IURLGenerator           $urlGenerator            URL generator
+     * @param IUserManager            $userManager             User manager
+     * @param IUserSession            $userSession             User session
+     * @param FileCrudHandler         $fileCrudHandler         File CRUD handler
+     * @param FileValidationHandler   $fileValidationHandler   File validation handler
+     * @param FolderManagementHandler $folderManagementHandler Folder management handler
+     * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler
+     * @param FileSharingHandler      $fileSharingHandler      File sharing handler
      */
     public function __construct(
         IConfig $config,
@@ -274,9 +292,11 @@ class FileService
         IURLGenerator $urlGenerator,
         IUserManager $userManager,
         IUserSession $userSession,
+        FileCrudHandler $fileCrudHandler,
         FileValidationHandler $fileValidationHandler,
         FolderManagementHandler $folderManagementHandler,
-        FileOwnershipHandler $fileOwnershipHandler
+        FileOwnershipHandler $fileOwnershipHandler,
+        FileSharingHandler $fileSharingHandler
     ) {
         $this->config                  = $config;
         $this->fileMapper              = $fileMapper;
@@ -291,9 +311,11 @@ class FileService
         $this->urlGenerator            = $urlGenerator;
         $this->userManager             = $userManager;
         $this->userSession             = $userSession;
+        $this->fileCrudHandler         = $fileCrudHandler;
         $this->fileValidationHandler   = $fileValidationHandler;
         $this->folderManagementHandler = $folderManagementHandler;
         $this->fileOwnershipHandler    = $fileOwnershipHandler;
+        $this->fileSharingHandler      = $fileSharingHandler;
 
     }//end __construct()
 
@@ -571,7 +593,7 @@ class FileService
         ?IUser $currentUser=null,
         int|string|null $registerId=null
     ): Node {
-        $folderProperty = null;
+        $folderProperty=null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();
         }
@@ -602,7 +624,7 @@ class FileService
         }//end if
 
         // Ensure register folder exists first.
-        $register = null;
+        $register=null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $register = $this->registerMapper->find($objectEntity->getRegister());
             if ($register === null) {
@@ -804,7 +826,7 @@ class FileService
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
-        $folderProperty = null;
+        $folderProperty=null;
         if ($objectEntity instanceof ObjectEntity === true) {
             $folderProperty = $objectEntity->getFolder();
         }
@@ -1037,7 +1059,7 @@ class FileService
 
         // Process labels that contain ':' to add as separate metadata fields.
         // Exclude labels starting with 'object:' as they are internal system labels.
-        $remainingLabels = [];
+        $remainingLabels=[];
         foreach ($metadata['labels'] as $label) {
             // Skip internal object labels - these should not be exposed in the API.
             if (str_starts_with($label, 'object:') === true) {
@@ -1128,7 +1150,7 @@ class FileService
         $filters = $this->extractFilterParameters($requestParams);
 
         // Format ALL files first (before filtering and pagination).
-        $formattedFiles = [];
+        $formattedFiles=[];
         foreach ($files as $file) {
             $formattedFiles[] = $this->formatFile($file);
         }
@@ -1143,7 +1165,7 @@ class FileService
         $paginatedFiles = array_slice($filteredFiles, $offset, $limit);
 
         // Calculate pages based on filtered total.
-        $pages = 1;
+        $pages=1;
         if ($limit !== null) {
             $pages = ceil($totalFiltered / $limit);
         }
@@ -1184,7 +1206,7 @@ class FileService
      */
     private function extractFilterParameters(array $requestParams): array
     {
-        $filters = [];
+        $filters=[];
 
         // Labels filtering (business logic filters prefixed with underscore).
         if (($requestParams['_hasLabels'] ?? null) !== null) {
@@ -1284,11 +1306,11 @@ class FileService
             // Filter by specific labels.
             if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
                 $fileLabels = $file['labels'] ?? [];
-                $hasMatchingLabel = false;
+                $hasMatchingLabel=false;
 
                 foreach ($filters['labels'] as $requiredLabel) {
                     if (in_array($requiredLabel, $fileLabels, true) === true) {
-                        $hasMatchingLabel = true;
+                        $hasMatchingLabel=true;
                         break;
                     }
                 }
@@ -1309,11 +1331,11 @@ class FileService
             // Filter by multiple extensions.
             if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
                 $fileExtension = $file['extension'] ?? '';
-                $hasMatchingExtension = false;
+                $hasMatchingExtension=false;
 
                 foreach ($filters['extensions'] as $allowedExtension) {
                     if (strcasecmp($fileExtension, $allowedExtension) === 0) {
-                        $hasMatchingExtension = true;
+                        $hasMatchingExtension=true;
                         break;
                     }
                 }
@@ -1476,7 +1498,7 @@ class FileService
      * @phpstan-return IShare|null
      * @psalm-suppress UnusedReturnValue - Return value may be used by callers
      */
-    private function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare
+    private function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
     {
         try {
             // Check if user exists.
@@ -1595,7 +1617,7 @@ class FileService
      *
      * @throws \Exception If sharing fails
      */
-    private function shareFileWithUser(File $file, string $userId, int $permissions = 31): void
+    private function shareFileWithUser(File $file, string $userId, int $permissions=31): void
     {
         try {
             // Check if a share already exists with this user.
@@ -1713,9 +1735,9 @@ class FileService
     {
         $path = trim(string: $path, characters: '/');
         if ($permissions === null) {
-            $permissions = 31;
+            $permissions=31;
             if ($shareType === 3) {
-                $permissions = 1;
+                $permissions=1;
             }
         }
 
@@ -1828,13 +1850,13 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object = null): File
+    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
         // Debug logging - original file path.
         $originalFilePath = $filePath;
         $this->logger->info(message: "updateFile: Original file path received: '$originalFilePath'");
 
-        $file = null;
+        $file=null;
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
@@ -2026,7 +2048,7 @@ class FileService
      * @psalm-param ObjectEntity|null $object
      * @phpstan-param ObjectEntity|null $object
      */
-    public function deleteFile(Node | string | int $file, ?ObjectEntity $object = null): bool
+    public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
         if ($file instanceof Node === false) {
             $fileName = (string) $file;
@@ -2069,13 +2091,13 @@ class FileService
         // Get all existing tags for the file and convert to array of just the IDs.
         $oldTagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: $this::FILE_TAG_TYPE);
         if (isset($oldTagIds[$fileId]) === false || empty($oldTagIds[$fileId]) === true) {
-            $oldTagIds = [];
+            $oldTagIds=[];
         } else {
             $oldTagIds = $oldTagIds[$fileId];
         }
 
         // Create new tags if they don't exist.
-        $newTagIds = [];
+        $newTagIds=[];
         foreach ($tags as $tagName) {
             // Skip empty tag names.
             if (empty($tagName) === true) {
@@ -2157,7 +2179,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [], int | string | Schema | null $_schema = null, int | string | Register | null $_register = null, int|string|null $registerId = null): File
+    public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[], int | string | Schema | null $_schema=null, int | string | Register | null $_register=null, int|string|null $registerId=null): File
     {
 		try {
 			// Ensure we have an ObjectEntity instance.
@@ -2252,7 +2274,7 @@ class FileService
      * @phpstan-param array<int, string> $tags
      * @psalm-param array<int, string> $tags
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[]): File
     {
 		try {
             // Check if the file already exists for this object.
@@ -2350,7 +2372,7 @@ class FileService
      * @psalm-return list<\OCP\Files\Node>
      * @phpstan-return array<int, Node>
      */
-    public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly = false): array
+    public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
         // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
@@ -2385,7 +2407,7 @@ class FileService
      * @psalm-return   File|null
      * @phpstan-return File|null
      */
-    public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File
+    public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
     {
 
         // If string ID provided for object, try to find the object entity.
@@ -2785,7 +2807,7 @@ class FileService
      * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
      */
-    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName = null): array
+    public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
         // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
@@ -2831,8 +2853,8 @@ class FileService
             throw new Exception("Cannot create ZIP file: " . $this->getZipErrorMessage($result));
         }
 
-        $addedFiles = 0;
-        $skippedFiles = 0;
+        $addedFiles=0;
+        $skippedFiles=0;
 
         // Add each file to the ZIP archive.
         foreach ($files as $file) {
@@ -2998,7 +3020,7 @@ class FileService
             }
 
             $files = $objectFolder->getDirectoryListing();
-            $fileList = [];
+            $fileList=[];
 
             foreach ($files as $file) {
                 $fileInfo = [
@@ -3120,7 +3142,7 @@ class FileService
      * @psalm-return int|null
      * @phpstan-return int|null
      */
-    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser = null): int
+    public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
         // Ensure register folder exists first.
         $register = $this->registerMapper->find($objectEntity->getRegister());
@@ -3294,7 +3316,7 @@ class FileService
      * @phpstan-return Node
      * @psalm-return Node
      */
-    public function replaceWords(Node $node, array $replacements, ?string $outputName = null): Node
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): Node
     {
         if ($node->getType() !== \OCP\Files\FileInfo::TYPE_FILE) {
             throw new Exception('Node must be a file');
@@ -3537,7 +3559,7 @@ class FileService
     public function anonymizeDocument(Node $node, array $entities): Node
     {
         // Build replacements array from entities.
-        $replacements = [];
+        $replacements=[];
         foreach ($entities as $entity) {
             $originalText = $entity['text'] ?? '';
             $entityType   = $entity['entityType'] ?? 'UNKNOWN';

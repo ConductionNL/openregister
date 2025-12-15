@@ -45,7 +45,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Source delete(Entity $entity)
  * @method Source find(int|string $id)
  * @method Source findEntity(IQueryBuilder $query)
- * @method Source[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Source[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
@@ -59,7 +59,8 @@ class SourceMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    private OrganisationService $organisationService;
+    // REMOVED: Services should not be in mappers
+    //     private OrganisationService $organisationService;
 
     /**
      * User session for current user
@@ -94,13 +95,15 @@ class SourceMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_sources', Source::class);
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->eventDispatcher     = $eventDispatcher;

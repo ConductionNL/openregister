@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  * @method DataAccessProfile delete(Entity $entity)
  * @method DataAccessProfile find(int|string $id)
  * @method DataAccessProfile findEntity(\OCP\DB\QueryBuilder\IQueryBuilder $query)
- * @method DataAccessProfile[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method DataAccessProfile[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<DataAccessProfile> findEntities(\OCP\DB\QueryBuilder\IQueryBuilder $query)
  *
  * @template-extends QBMapper<DataAccessProfile>

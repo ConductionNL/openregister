@@ -399,4 +399,192 @@ class BulkOperationsHandler
     }//end depublishObjects()
 
 
+    /**
+     * Publish all objects belonging to a specific schema.
+     *
+     * @param int  $schemaId   The ID of the schema whose objects should be published.
+     * @param bool $publishAll Whether to publish all objects (default: false).
+     *
+     * @return array Result array with published count, uuids, and schema ID.
+     *
+     * @throws \Exception If the publishing operation fails.
+     *
+     * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{published_count: int<min, max>, published_uuids: array<int, string>, schema_id: int}
+     */
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
+    {
+        // Use the mapper's schema publishing operation.
+        $result = $this->objectEntityMapper->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk publish operations.
+        if ($result['published_count'] > 0) {
+            try {
+                $this->logger->debug(
+                    message: 'Schema objects publishing cache invalidation starting',
+                    context: [
+                        'publishedCount' => $result['published_count'],
+                        'schemaId'       => $schemaId,
+                        'operation'      => 'schema_publish',
+                        'publishAll'     => $publishAll,
+                    ]
+                );
+
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_publish',
+                    registerId: null,
+                    schemaId: $schemaId
+                );
+
+                $this->logger->debug(
+                    message: 'Schema objects publishing cache invalidation completed',
+                    context: [
+                        'publishedCount' => $result['published_count'],
+                        'schemaId'       => $schemaId,
+                        'publishAll'     => $publishAll,
+                    ]
+                );
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: 'Schema objects publishing cache invalidation failed',
+                    context: [
+                        'error'          => $e->getMessage(),
+                        'schemaId'       => $schemaId,
+                        'publishedCount' => $result['published_count'],
+                        'publishAll'     => $publishAll,
+                    ]
+                );
+            }//end try
+        }//end if
+
+        return $result;
+
+    }//end publishObjectsBySchema()
+
+
+    /**
+     * Delete all objects belonging to a specific schema.
+     *
+     * @param int  $schemaId   The ID of the schema whose objects should be deleted.
+     * @param bool $hardDelete Whether to force hard delete (default: false).
+     *
+     * @return array Result array with deleted count, uuids, and schema ID.
+     *
+     * @throws \Exception If the deletion operation fails.
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
+     * @psalm-return   array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
+     */
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
+    {
+        // Use the mapper's schema deletion operation.
+        $result = $this->objectEntityMapper->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
+        if ($result['deleted_count'] > 0) {
+            try {
+                $this->logger->debug(
+                    message: 'Schema objects deletion cache invalidation starting',
+                    context: [
+                        'deletedCount' => $result['deleted_count'],
+                        'schemaId'     => $schemaId,
+                        'operation'    => 'schema_delete',
+                        'hardDelete'   => $hardDelete,
+                    ]
+                );
+
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_delete',
+                    registerId: null,
+                    schemaId: $schemaId
+                );
+
+                $this->logger->debug(
+                    message: 'Schema objects deletion cache invalidation completed',
+                    context: [
+                        'deletedCount' => $result['deleted_count'],
+                        'schemaId'     => $schemaId,
+                        'hardDelete'   => $hardDelete,
+                    ]
+                );
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: 'Schema objects deletion cache invalidation failed',
+                    context: [
+                        'error'        => $e->getMessage(),
+                        'schemaId'     => $schemaId,
+                        'deletedCount' => $result['deleted_count'],
+                        'hardDelete'   => $hardDelete,
+                    ]
+                );
+            }//end try
+        }//end if
+
+        return $result;
+
+    }//end deleteObjectsBySchema()
+
+
+    /**
+     * Delete all objects belonging to a specific register.
+     *
+     * @param int $registerId The ID of the register whose objects should be deleted.
+     *
+     * @return array Result array with deleted count, uuids, and register ID.
+     *
+     * @throws \Exception If the deletion operation fails.
+     *
+     * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int}
+     * @psalm-return   array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, register_id: int}
+     */
+    public function deleteObjectsByRegister(int $registerId): array
+    {
+        // Use the mapper's register deletion operation.
+        $result = $this->objectEntityMapper->deleteObjectsByRegister($registerId);
+
+        // **BULK CACHE INVALIDATION**: Clear collection caches after bulk delete operations.
+        if ($result['deleted_count'] > 0) {
+            try {
+                $this->logger->debug(
+                    message: 'Register objects deletion cache invalidation starting',
+                    context: [
+                        'deletedCount' => $result['deleted_count'],
+                        'registerId'   => $registerId,
+                        'operation'    => 'register_delete',
+                    ]
+                );
+
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_delete',
+                    registerId: $registerId,
+                    schemaId: null
+                );
+
+                $this->logger->debug(
+                    message: 'Register objects deletion cache invalidation completed',
+                    context: [
+                        'deletedCount' => $result['deleted_count'],
+                        'registerId'   => $registerId,
+                    ]
+                );
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: 'Register objects deletion cache invalidation failed',
+                    context: [
+                        'error'        => $e->getMessage(),
+                        'registerId'   => $registerId,
+                        'deletedCount' => $result['deleted_count'],
+                    ]
+                );
+            }//end try
+        }//end if
+
+        return $result;
+
+    }//end deleteObjectsByRegister()
+
+
 }//end class

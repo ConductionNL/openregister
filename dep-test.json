@@ -1,0 +1,2407 @@
+{
+    "generated": "2025-12-15 20:34:06",
+    "total_classes": 282,
+    "circular_dependencies": 0,
+    "dependencies": {
+        "OCA\\OpenRegister\\AppInfo\\for": {
+            "class": "OCA\\OpenRegister\\AppInfo\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\AppInfo",
+            "dependencies": [],
+            "file": "AppInfo\/Application.php"
+        },
+        "OCA\\OpenRegister\\BackgroundJob\\CronFileTextExtractionJob": {
+            "class": "OCA\\OpenRegister\\BackgroundJob\\CronFileTextExtractionJob",
+            "shortName": "CronFileTextExtractionJob",
+            "namespace": "OCA\\OpenRegister\\BackgroundJob",
+            "dependencies": [],
+            "file": "BackgroundJob\/CronFileTextExtractionJob.php"
+        },
+        "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob": {
+            "class": "OCA\\OpenRegister\\BackgroundJob\\FileTextExtractionJob",
+            "shortName": "FileTextExtractionJob",
+            "namespace": "OCA\\OpenRegister\\BackgroundJob",
+            "dependencies": [],
+            "file": "BackgroundJob\/FileTextExtractionJob.php"
+        },
+        "OCA\\OpenRegister\\BackgroundJob\\ObjectTextExtractionJob": {
+            "class": "OCA\\OpenRegister\\BackgroundJob\\ObjectTextExtractionJob",
+            "shortName": "ObjectTextExtractionJob",
+            "namespace": "OCA\\OpenRegister\\BackgroundJob",
+            "dependencies": [],
+            "file": "BackgroundJob\/ObjectTextExtractionJob.php"
+        },
+        "OCA\\OpenRegister\\BackgroundJob\\SolrNightlyWarmupJob": {
+            "class": "OCA\\OpenRegister\\BackgroundJob\\SolrNightlyWarmupJob",
+            "shortName": "SolrNightlyWarmupJob",
+            "namespace": "OCA\\OpenRegister\\BackgroundJob",
+            "dependencies": [],
+            "file": "BackgroundJob\/SolrNightlyWarmupJob.php"
+        },
+        "OCA\\OpenRegister\\BackgroundJob\\SolrWarmupJob": {
+            "class": "OCA\\OpenRegister\\BackgroundJob\\SolrWarmupJob",
+            "shortName": "SolrWarmupJob",
+            "namespace": "OCA\\OpenRegister\\BackgroundJob",
+            "dependencies": [],
+            "file": "BackgroundJob\/SolrWarmupJob.php"
+        },
+        "OCA\\OpenRegister\\BackgroundJob\\WebhookDeliveryJob": {
+            "class": "OCA\\OpenRegister\\BackgroundJob\\WebhookDeliveryJob",
+            "shortName": "WebhookDeliveryJob",
+            "namespace": "OCA\\OpenRegister\\BackgroundJob",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\WebhookMapper",
+                "OCA\\OpenRegister\\Service\\WebhookService"
+            ],
+            "file": "BackgroundJob\/WebhookDeliveryJob.php"
+        },
+        "OCA\\OpenRegister\\Command\\SolrDebugCommand": {
+            "class": "OCA\\OpenRegister\\Command\\SolrDebugCommand",
+            "shortName": "SolrDebugCommand",
+            "namespace": "OCA\\OpenRegister\\Command",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Command\/SolrDebugCommand.php"
+        },
+        "OCA\\OpenRegister\\Command\\SolrManagementCommand": {
+            "class": "OCA\\OpenRegister\\Command\\SolrManagementCommand",
+            "shortName": "SolrManagementCommand",
+            "namespace": "OCA\\OpenRegister\\Command",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Command\/SolrManagementCommand.php"
+        },
+        "OCA\\OpenRegister\\Controller\\AgentsController": {
+            "class": "OCA\\OpenRegister\\Controller\\AgentsController",
+            "shortName": "AgentsController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\AgentMapper",
+                "OCA\\OpenRegister\\Service\\OrganisationService",
+                "OCA\\OpenRegister\\Service\\ToolRegistry"
+            ],
+            "file": "Controller\/AgentsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\ApplicationsController": {
+            "class": "OCA\\OpenRegister\\Controller\\ApplicationsController",
+            "shortName": "ApplicationsController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ApplicationService",
+                "OCA\\OpenRegister\\Db\\ApplicationMapper"
+            ],
+            "file": "Controller\/ApplicationsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\AuditTrailController": {
+            "class": "OCA\\OpenRegister\\Controller\\AuditTrailController",
+            "shortName": "AuditTrailController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\LogService",
+                "OCA\\OpenRegister\\Db\\AuditTrailMapper"
+            ],
+            "file": "Controller\/AuditTrailController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\BulkController": {
+            "class": "OCA\\OpenRegister\\Controller\\BulkController",
+            "shortName": "BulkController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Controller\/BulkController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\ChatController": {
+            "class": "OCA\\OpenRegister\\Controller\\ChatController",
+            "shortName": "ChatController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ChatService",
+                "OCA\\OpenRegister\\Db\\ConversationMapper",
+                "OCA\\OpenRegister\\Db\\MessageMapper",
+                "OCA\\OpenRegister\\Db\\FeedbackMapper",
+                "OCA\\OpenRegister\\Db\\AgentMapper",
+                "OCA\\OpenRegister\\Service\\OrganisationService"
+            ],
+            "file": "Controller\/ChatController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\for": {
+            "class": "OCA\\OpenRegister\\Controller\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Configuration\\GitHubHandler"
+            ],
+            "file": "Controller\/UserSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\ConversationController": {
+            "class": "OCA\\OpenRegister\\Controller\\ConversationController",
+            "shortName": "ConversationController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ConversationMapper",
+                "OCA\\OpenRegister\\Db\\MessageMapper",
+                "OCA\\OpenRegister\\Db\\FeedbackMapper",
+                "OCA\\OpenRegister\\Db\\AgentMapper",
+                "OCA\\OpenRegister\\Service\\OrganisationService",
+                "OCA\\OpenRegister\\Service\\ChatService"
+            ],
+            "file": "Controller\/ConversationController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\DashboardController": {
+            "class": "OCA\\OpenRegister\\Controller\\DashboardController",
+            "shortName": "DashboardController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\DashboardService"
+            ],
+            "file": "Controller\/DashboardController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\DeletedController": {
+            "class": "OCA\\OpenRegister\\Controller\\DeletedController",
+            "shortName": "DeletedController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Controller\/DeletedController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\EndpointsController": {
+            "class": "OCA\\OpenRegister\\Controller\\EndpointsController",
+            "shortName": "EndpointsController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\EndpointMapper",
+                "OCA\\OpenRegister\\Db\\EndpointLogMapper",
+                "OCA\\OpenRegister\\Service\\EndpointService"
+            ],
+            "file": "Controller\/EndpointsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\FileExtractionController": {
+            "class": "OCA\\OpenRegister\\Controller\\FileExtractionController",
+            "shortName": "FileExtractionController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\TextExtractionService",
+                "OCA\\OpenRegister\\Service\\VectorizationService",
+                "OCA\\OpenRegister\\Db\\ChunkMapper"
+            ],
+            "file": "Controller\/FileExtractionController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\FileSearchController": {
+            "class": "OCA\\OpenRegister\\Controller\\FileSearchController",
+            "shortName": "FileSearchController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\IndexService",
+                "OCA\\OpenRegister\\Service\\VectorizationService",
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/FileSearchController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\FileTextController": {
+            "class": "OCA\\OpenRegister\\Controller\\FileTextController",
+            "shortName": "FileTextController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\TextExtractionService"
+            ],
+            "file": "Controller\/FileTextController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\FilesController": {
+            "class": "OCA\\OpenRegister\\Controller\\FilesController",
+            "shortName": "FilesController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\FileService",
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Controller\/FilesController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\NamesController": {
+            "class": "OCA\\OpenRegister\\Controller\\NamesController",
+            "shortName": "NamesController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Objects\\CacheHandler"
+            ],
+            "file": "Controller\/NamesController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\OasController": {
+            "class": "OCA\\OpenRegister\\Controller\\OasController",
+            "shortName": "OasController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\OasService"
+            ],
+            "file": "Controller\/OasController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\ObjectsController": {
+            "class": "OCA\\OpenRegister\\Controller\\ObjectsController",
+            "shortName": "ObjectsController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+                "OCA\\OpenRegister\\Service\\ObjectService",
+                "OCA\\OpenRegister\\Service\\ExportService",
+                "OCA\\OpenRegister\\Service\\ImportService"
+            ],
+            "file": "Controller\/ObjectsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\OrganisationController": {
+            "class": "OCA\\OpenRegister\\Controller\\OrganisationController",
+            "shortName": "OrganisationController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\OrganisationService",
+                "OCA\\OpenRegister\\Db\\OrganisationMapper"
+            ],
+            "file": "Controller\/OrganisationController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\RegistersController": {
+            "class": "OCA\\OpenRegister\\Controller\\RegistersController",
+            "shortName": "RegistersController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\RegisterService",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Service\\UploadService",
+                "OCA\\OpenRegister\\Service\\ConfigurationService",
+                "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+                "OCA\\OpenRegister\\Service\\ExportService",
+                "OCA\\OpenRegister\\Service\\ImportService",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper",
+                "OCA\\OpenRegister\\Service\\Configuration\\GitHubHandler",
+                "OCA\\OpenRegister\\Service\\OasService"
+            ],
+            "file": "Controller\/RegistersController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\RevertController": {
+            "class": "OCA\\OpenRegister\\Controller\\RevertController",
+            "shortName": "RevertController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Objects\\RevertHandler"
+            ],
+            "file": "Controller\/RevertController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\SchemasController": {
+            "class": "OCA\\OpenRegister\\Controller\\SchemasController",
+            "shortName": "SchemasController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Service\\DownloadService",
+                "OCA\\OpenRegister\\Service\\UploadService",
+                "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+                "OCA\\OpenRegister\\Service\\OrganisationService",
+                "OCA\\OpenRegister\\Service\\SchemaCacheService",
+                "OCA\\OpenRegister\\Service\\Schemas\\FacetCacheHandler",
+                "OCA\\OpenRegister\\Service\\SchemaService"
+            ],
+            "file": "Controller\/SchemasController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\SearchController": {
+            "class": "OCA\\OpenRegister\\Controller\\SearchController",
+            "shortName": "SearchController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Controller\/SearchController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\SearchTrailController": {
+            "class": "OCA\\OpenRegister\\Controller\\SearchTrailController",
+            "shortName": "SearchTrailController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SearchTrailService"
+            ],
+            "file": "Controller\/SearchTrailController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\ApiTokenSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\ApiTokenSettingsController",
+            "shortName": "ApiTokenSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/Settings\/ApiTokenSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\CacheSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\CacheSettingsController",
+            "shortName": "CacheSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/Settings\/CacheSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\ConfigurationSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\ConfigurationSettingsController",
+            "shortName": "ConfigurationSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/Settings\/ConfigurationSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\FileSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\FileSettingsController",
+            "shortName": "FileSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/Settings\/FileSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\LlmSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\LlmSettingsController",
+            "shortName": "LlmSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\VectorizationService"
+            ],
+            "file": "Controller\/Settings\/LlmSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\SolrManagementController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\SolrManagementController",
+            "shortName": "SolrManagementController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Controller\/Settings\/SolrManagementController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\SolrOperationsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\SolrOperationsController",
+            "shortName": "SolrOperationsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Controller\/Settings\/SolrOperationsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\SolrSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\SolrSettingsController",
+            "shortName": "SolrSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/Settings\/SolrSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\ValidationSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\ValidationSettingsController",
+            "shortName": "ValidationSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Controller\/Settings\/ValidationSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\Settings\\VectorSettingsController": {
+            "class": "OCA\\OpenRegister\\Controller\\Settings\\VectorSettingsController",
+            "shortName": "VectorSettingsController",
+            "namespace": "OCA\\OpenRegister\\Controller\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\VectorizationService"
+            ],
+            "file": "Controller\/Settings\/VectorSettingsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\SolrController": {
+            "class": "OCA\\OpenRegister\\Controller\\SolrController",
+            "shortName": "SolrController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [],
+            "file": "Controller\/SolrController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\SourcesController": {
+            "class": "OCA\\OpenRegister\\Controller\\SourcesController",
+            "shortName": "SourcesController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SourceMapper"
+            ],
+            "file": "Controller\/SourcesController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\TablesController": {
+            "class": "OCA\\OpenRegister\\Controller\\TablesController",
+            "shortName": "TablesController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [],
+            "file": "Controller\/TablesController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\TagsController": {
+            "class": "OCA\\OpenRegister\\Controller\\TagsController",
+            "shortName": "TagsController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            "file": "Controller\/TagsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\UiController": {
+            "class": "OCA\\OpenRegister\\Controller\\UiController",
+            "shortName": "UiController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [],
+            "file": "Controller\/UiController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\ViewsController": {
+            "class": "OCA\\OpenRegister\\Controller\\ViewsController",
+            "shortName": "ViewsController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ViewService"
+            ],
+            "file": "Controller\/ViewsController.php"
+        },
+        "OCA\\OpenRegister\\Controller\\WebhooksController": {
+            "class": "OCA\\OpenRegister\\Controller\\WebhooksController",
+            "shortName": "WebhooksController",
+            "namespace": "OCA\\OpenRegister\\Controller",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\WebhookMapper",
+                "OCA\\OpenRegister\\Db\\WebhookLogMapper",
+                "OCA\\OpenRegister\\Service\\WebhookService"
+            ],
+            "file": "Controller\/WebhooksController.php"
+        },
+        "OCA\\OpenRegister\\Cron\\for": {
+            "class": "OCA\\OpenRegister\\Cron\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Cron",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ConfigurationMapper",
+                "OCA\\OpenRegister\\Service\\ConfigurationService",
+                "OCA\\OpenRegister\\Service\\Configuration\\GitHubHandler",
+                "OCA\\OpenRegister\\Service\\Configuration\\GitLabHandler"
+            ],
+            "file": "Cron\/SyncConfigurationsJob.php"
+        },
+        "OCA\\OpenRegister\\Cron\\LogCleanUpTask": {
+            "class": "OCA\\OpenRegister\\Cron\\LogCleanUpTask",
+            "shortName": "LogCleanUpTask",
+            "namespace": "OCA\\OpenRegister\\Cron",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\AuditTrailMapper"
+            ],
+            "file": "Cron\/LogCleanUpTask.php"
+        },
+        "OCA\\OpenRegister\\Cron\\WebhookRetryJob": {
+            "class": "OCA\\OpenRegister\\Cron\\WebhookRetryJob",
+            "shortName": "WebhookRetryJob",
+            "namespace": "OCA\\OpenRegister\\Cron",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\WebhookMapper",
+                "OCA\\OpenRegister\\Db\\WebhookLogMapper",
+                "OCA\\OpenRegister\\Service\\WebhookService"
+            ],
+            "file": "Cron\/WebhookRetryJob.php"
+        },
+        "OCA\\OpenRegister\\Db\\for": {
+            "class": "OCA\\OpenRegister\\Db\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\OrganisationService",
+                "OCA\\OpenRegister\\Service\\Configuration\\CacheHandler"
+            ],
+            "file": "Db\/ViewMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\Chunk": {
+            "class": "OCA\\OpenRegister\\Db\\Chunk",
+            "shortName": "Chunk",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/Chunk.php"
+        },
+        "OCA\\OpenRegister\\Db\\ChunkMapper": {
+            "class": "OCA\\OpenRegister\\Db\\ChunkMapper",
+            "shortName": "ChunkMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/ChunkMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\EndpointLogMapper": {
+            "class": "OCA\\OpenRegister\\Db\\EndpointLogMapper",
+            "shortName": "EndpointLogMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/EndpointLogMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\EndpointMapper": {
+            "class": "OCA\\OpenRegister\\Db\\EndpointMapper",
+            "shortName": "EndpointMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\OrganisationService"
+            ],
+            "file": "Db\/EndpointMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\EntityRelation": {
+            "class": "OCA\\OpenRegister\\Db\\EntityRelation",
+            "shortName": "EntityRelation",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/EntityRelation.php"
+        },
+        "OCA\\OpenRegister\\Db\\EntityRelationMapper": {
+            "class": "OCA\\OpenRegister\\Db\\EntityRelationMapper",
+            "shortName": "EntityRelationMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/EntityRelationMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\Feedback": {
+            "class": "OCA\\OpenRegister\\Db\\Feedback",
+            "shortName": "Feedback",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/Feedback.php"
+        },
+        "OCA\\OpenRegister\\Db\\FeedbackMapper": {
+            "class": "OCA\\OpenRegister\\Db\\FeedbackMapper",
+            "shortName": "FeedbackMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/FeedbackMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\GdprEntity": {
+            "class": "OCA\\OpenRegister\\Db\\GdprEntity",
+            "shortName": "GdprEntity",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/GdprEntity.php"
+        },
+        "OCA\\OpenRegister\\Db\\GdprEntityMapper": {
+            "class": "OCA\\OpenRegister\\Db\\GdprEntityMapper",
+            "shortName": "GdprEntityMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/GdprEntityMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\has": {
+            "class": "OCA\\OpenRegister\\Db\\has",
+            "shortName": "has",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\MySQLJsonService",
+                "OCA\\OpenRegister\\Service\\OrganisationService",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\LockingHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\QueryBuilderHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\CrudHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\StatisticsHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\FacetsHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\BulkOperationsHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntity\\QueryOptimizationHandler"
+            ],
+            "file": "Db\/ObjectEntityMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\BulkOperationsHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\BulkOperationsHandler",
+            "shortName": "BulkOperationsHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [],
+            "file": "Db\/ObjectEntity\/BulkOperationsHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\CrudHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\CrudHandler",
+            "shortName": "CrudHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Db\/ObjectEntity\/CrudHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\FacetsHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\FacetsHandler",
+            "shortName": "FacetsHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Db\/ObjectEntity\/FacetsHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\LockingHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\LockingHandler",
+            "shortName": "LockingHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Db\/ObjectEntity\/LockingHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\QueryBuilderHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\QueryBuilderHandler",
+            "shortName": "QueryBuilderHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [],
+            "file": "Db\/ObjectEntity\/QueryBuilderHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\QueryOptimizationHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\QueryOptimizationHandler",
+            "shortName": "QueryOptimizationHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [],
+            "file": "Db\/ObjectEntity\/QueryOptimizationHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectEntity\\StatisticsHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectEntity\\StatisticsHandler",
+            "shortName": "StatisticsHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectEntity",
+            "dependencies": [],
+            "file": "Db\/ObjectEntity\/StatisticsHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectHandlers\\HyperFacetHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectHandlers\\HyperFacetHandler",
+            "shortName": "HyperFacetHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectHandlers",
+            "dependencies": [],
+            "file": "Db\/ObjectHandlers\/HyperFacetHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectHandlers\\MariaDbFacetHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectHandlers\\MariaDbFacetHandler",
+            "shortName": "MariaDbFacetHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectHandlers",
+            "dependencies": [],
+            "file": "Db\/ObjectHandlers\/MariaDbFacetHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectHandlers\\for": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectHandlers\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectHandlers",
+            "dependencies": [],
+            "file": "Db\/ObjectHandlers\/MariaDbSearchHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectHandlers\\MetaDataFacetHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectHandlers\\MetaDataFacetHandler",
+            "shortName": "MetaDataFacetHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectHandlers",
+            "dependencies": [],
+            "file": "Db\/ObjectHandlers\/MetaDataFacetHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectHandlers\\OptimizedBulkOperations": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectHandlers\\OptimizedBulkOperations",
+            "shortName": "OptimizedBulkOperations",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectHandlers",
+            "dependencies": [],
+            "file": "Db\/ObjectHandlers\/OptimizedBulkOperations.php"
+        },
+        "OCA\\OpenRegister\\Db\\ObjectHandlers\\OptimizedFacetHandler": {
+            "class": "OCA\\OpenRegister\\Db\\ObjectHandlers\\OptimizedFacetHandler",
+            "shortName": "OptimizedFacetHandler",
+            "namespace": "OCA\\OpenRegister\\Db\\ObjectHandlers",
+            "dependencies": [],
+            "file": "Db\/ObjectHandlers\/OptimizedFacetHandler.php"
+        },
+        "OCA\\OpenRegister\\Db\\Webhook": {
+            "class": "OCA\\OpenRegister\\Db\\Webhook",
+            "shortName": "Webhook",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/Webhook.php"
+        },
+        "OCA\\OpenRegister\\Db\\WebhookLog": {
+            "class": "OCA\\OpenRegister\\Db\\WebhookLog",
+            "shortName": "WebhookLog",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/WebhookLog.php"
+        },
+        "OCA\\OpenRegister\\Db\\WebhookLogMapper": {
+            "class": "OCA\\OpenRegister\\Db\\WebhookLogMapper",
+            "shortName": "WebhookLogMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [],
+            "file": "Db\/WebhookLogMapper.php"
+        },
+        "OCA\\OpenRegister\\Db\\WebhookMapper": {
+            "class": "OCA\\OpenRegister\\Db\\WebhookMapper",
+            "shortName": "WebhookMapper",
+            "namespace": "OCA\\OpenRegister\\Db",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\OrganisationService"
+            ],
+            "file": "Db\/WebhookMapper.php"
+        },
+        "OCA\\OpenRegister\\Event\\dispatched": {
+            "class": "OCA\\OpenRegister\\Event\\dispatched",
+            "shortName": "dispatched",
+            "namespace": "OCA\\OpenRegister\\Event",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\View"
+            ],
+            "file": "Event\/ViewUpdatedEvent.php"
+        },
+        "OCA\\OpenRegister\\Event\\that": {
+            "class": "OCA\\OpenRegister\\Event\\that",
+            "shortName": "that",
+            "namespace": "OCA\\OpenRegister\\Event",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\Organisation"
+            ],
+            "file": "Event\/OrganisationCreatedEvent.php"
+        },
+        "OCA\\OpenRegister\\Event\\ToolRegistrationEvent": {
+            "class": "OCA\\OpenRegister\\Event\\ToolRegistrationEvent",
+            "shortName": "ToolRegistrationEvent",
+            "namespace": "OCA\\OpenRegister\\Event",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ToolRegistry"
+            ],
+            "file": "Event\/ToolRegistrationEvent.php"
+        },
+        "OCA\\OpenRegister\\EventListener\\dispatched": {
+            "class": "OCA\\OpenRegister\\EventListener\\dispatched",
+            "shortName": "dispatched",
+            "namespace": "OCA\\OpenRegister\\EventListener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            "file": "EventListener\/AbstractNodeFolderEventListener.php"
+        },
+        "OCA\\OpenRegister\\EventListener\\AbstractNodesFolderEventListener": {
+            "class": "OCA\\OpenRegister\\EventListener\\AbstractNodesFolderEventListener",
+            "shortName": "AbstractNodesFolderEventListener",
+            "namespace": "OCA\\OpenRegister\\EventListener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService",
+                "OCA\\OpenRegister\\Service\\FileService"
+            ],
+            "file": "EventListener\/AbstractNodesFolderEventListener.php"
+        },
+        "OCA\\OpenRegister\\EventListener\\SolrEventListener": {
+            "class": "OCA\\OpenRegister\\EventListener\\SolrEventListener",
+            "shortName": "SolrEventListener",
+            "namespace": "OCA\\OpenRegister\\EventListener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Objects\\CacheHandler"
+            ],
+            "file": "EventListener\/SolrEventListener.php"
+        },
+        "OCA\\OpenRegister\\Exception\\for": {
+            "class": "OCA\\OpenRegister\\Exception\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Exception",
+            "dependencies": [],
+            "file": "Exception\/ValidationException.php"
+        },
+        "OCA\\OpenRegister\\Exception\\RegisterNotFoundException": {
+            "class": "OCA\\OpenRegister\\Exception\\RegisterNotFoundException",
+            "shortName": "RegisterNotFoundException",
+            "namespace": "OCA\\OpenRegister\\Exception",
+            "dependencies": [],
+            "file": "Exception\/RegisterNotFoundException.php"
+        },
+        "OCA\\OpenRegister\\Exception\\SchemaNotFoundException": {
+            "class": "OCA\\OpenRegister\\Exception\\SchemaNotFoundException",
+            "shortName": "SchemaNotFoundException",
+            "namespace": "OCA\\OpenRegister\\Exception",
+            "dependencies": [],
+            "file": "Exception\/SchemaNotFoundException.php"
+        },
+        "OCA\\OpenRegister\\Formats\\for": {
+            "class": "OCA\\OpenRegister\\Formats\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Formats",
+            "dependencies": [],
+            "file": "Formats\/BsnFormat.php"
+        },
+        "OCA\\OpenRegister\\Formats\\SemVerFormat": {
+            "class": "OCA\\OpenRegister\\Formats\\SemVerFormat",
+            "shortName": "SemVerFormat",
+            "namespace": "OCA\\OpenRegister\\Formats",
+            "dependencies": [],
+            "file": "Formats\/SemVerFormat.php"
+        },
+        "OCA\\OpenRegister\\Listener\\FileChangeListener": {
+            "class": "OCA\\OpenRegister\\Listener\\FileChangeListener",
+            "shortName": "FileChangeListener",
+            "namespace": "OCA\\OpenRegister\\Listener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\TextExtractionService",
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Listener\/FileChangeListener.php"
+        },
+        "OCA\\OpenRegister\\Listener\\ObjectChangeListener": {
+            "class": "OCA\\OpenRegister\\Listener\\ObjectChangeListener",
+            "shortName": "ObjectChangeListener",
+            "namespace": "OCA\\OpenRegister\\Listener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\TextExtractionService",
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Listener\/ObjectChangeListener.php"
+        },
+        "OCA\\OpenRegister\\Listener\\ToolRegistrationListener": {
+            "class": "OCA\\OpenRegister\\Listener\\ToolRegistrationListener",
+            "shortName": "ToolRegistrationListener",
+            "namespace": "OCA\\OpenRegister\\Listener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Tool\\RegisterTool",
+                "OCA\\OpenRegister\\Tool\\SchemaTool",
+                "OCA\\OpenRegister\\Tool\\ObjectsTool",
+                "OCA\\OpenRegister\\Tool\\ApplicationTool",
+                "OCA\\OpenRegister\\Tool\\AgentTool"
+            ],
+            "file": "Listener\/ToolRegistrationListener.php"
+        },
+        "OCA\\OpenRegister\\Listener\\WebhookEventListener": {
+            "class": "OCA\\OpenRegister\\Listener\\WebhookEventListener",
+            "shortName": "WebhookEventListener",
+            "namespace": "OCA\\OpenRegister\\Listener",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\WebhookService"
+            ],
+            "file": "Listener\/WebhookEventListener.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version002003000Date20251013000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version002003000Date20251013000000",
+            "shortName": "Version002003000Date20251013000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version002003000Date20251013000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version002004000Date20251013000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version002004000Date20251013000000",
+            "shortName": "Version002004000Date20251013000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version002004000Date20251013000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version002005000Date20251013000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version002005000Date20251013000000",
+            "shortName": "Version002005000Date20251013000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version002005000Date20251013000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version002006000Date20251013000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version002006000Date20251013000000",
+            "shortName": "Version002006000Date20251013000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version002006000Date20251013000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20240924200009": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20240924200009",
+            "shortName": "Version1Date20240924200009",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20240924200009.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241019205009": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241019205009",
+            "shortName": "Version1Date20241019205009",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241019205009.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241020231700": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241020231700",
+            "shortName": "Version1Date20241020231700",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241020231700.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241022135300": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241022135300",
+            "shortName": "Version1Date20241022135300",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241022135300.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241030131427": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241030131427",
+            "shortName": "Version1Date20241030131427",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241030131427.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241128221000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241128221000",
+            "shortName": "Version1Date20241128221000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241128221000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241216094112": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241216094112",
+            "shortName": "Version1Date20241216094112",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241216094112.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20241227153853": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20241227153853",
+            "shortName": "Version1Date20241227153853",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20241227153853.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250102000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250102000000",
+            "shortName": "Version1Date20250102000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250102000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250102000001": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250102000001",
+            "shortName": "Version1Date20250102000001",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250102000001.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250115230511": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250115230511",
+            "shortName": "Version1Date20250115230511",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250115230511.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250123120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250123120000",
+            "shortName": "Version1Date20250123120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250123120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250125000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250125000000",
+            "shortName": "Version1Date20250125000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250125000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250126000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250126000000",
+            "shortName": "Version1Date20250126000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250126000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250321061615": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250321061615",
+            "shortName": "Version1Date20250321061615",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250321061615.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250410070338": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250410070338",
+            "shortName": "Version1Date20250410070338",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250410070338.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250430083916": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250430083916",
+            "shortName": "Version1Date20250430083916",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250430083916.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250607093617": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250607093617",
+            "shortName": "Version1Date20250607093617",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250607093617.php"
+        },
+        "OCA\\OpenRegister\\Migration\\for": {
+            "class": "OCA\\OpenRegister\\Migration\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250622212509.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250626031231": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250626031231",
+            "shortName": "Version1Date20250626031231",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250626031231.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250712080102": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250712080102",
+            "shortName": "Version1Date20250712080102",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250712080102.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250723110323": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250723110323",
+            "shortName": "Version1Date20250723110323",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250723110323.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250801000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250801000000",
+            "shortName": "Version1Date20250801000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250801000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250813140000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250813140000",
+            "shortName": "Version1Date20250813140000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250813140000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250828120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250828120000",
+            "shortName": "Version1Date20250828120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250828120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250829120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250829120000",
+            "shortName": "Version1Date20250829120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250829120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250830120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250830120000",
+            "shortName": "Version1Date20250830120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250830120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250830130000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250830130000",
+            "shortName": "Version1Date20250830130000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250830130000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250831120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250831120000",
+            "shortName": "Version1Date20250831120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250831120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250831130000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250831130000",
+            "shortName": "Version1Date20250831130000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250831130000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250901120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250901120000",
+            "shortName": "Version1Date20250901120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250901120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250902130000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250902130000",
+            "shortName": "Version1Date20250902130000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250902130000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250902140000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250902140000",
+            "shortName": "Version1Date20250902140000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250902140000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250902150000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250902150000",
+            "shortName": "Version1Date20250902150000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250902150000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250903170000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250903170000",
+            "shortName": "Version1Date20250903170000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250903170000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250904170000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250904170000",
+            "shortName": "Version1Date20250904170000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250904170000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250908174500": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250908174500",
+            "shortName": "Version1Date20250908174500",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250908174500.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250908180000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250908180000",
+            "shortName": "Version1Date20250908180000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250908180000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20250929120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20250929120000",
+            "shortName": "Version1Date20250929120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20250929120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251101120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251101120000",
+            "shortName": "Version1Date20251101120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251101120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251102130000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251102130000",
+            "shortName": "Version1Date20251102130000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251102130000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251102140000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251102140000",
+            "shortName": "Version1Date20251102140000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251102140000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251102150000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251102150000",
+            "shortName": "Version1Date20251102150000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251102150000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251102160000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251102160000",
+            "shortName": "Version1Date20251102160000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251102160000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251102170000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251102170000",
+            "shortName": "Version1Date20251102170000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251102170000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251102180000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251102180000",
+            "shortName": "Version1Date20251102180000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251102180000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251103120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251103120000",
+            "shortName": "Version1Date20251103120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251103120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251103130000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251103130000",
+            "shortName": "Version1Date20251103130000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251103130000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251105140000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251105140000",
+            "shortName": "Version1Date20251105140000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251105140000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251105150000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251105150000",
+            "shortName": "Version1Date20251105150000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251105150000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251106000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251106000000",
+            "shortName": "Version1Date20251106000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251106000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251106000001": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251106000001",
+            "shortName": "Version1Date20251106000001",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251106000001.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251106120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251106120000",
+            "shortName": "Version1Date20251106120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251106120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107000000",
+            "shortName": "Version1Date20251107000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107120000",
+            "shortName": "Version1Date20251107120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107140000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107140000",
+            "shortName": "Version1Date20251107140000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107140000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107150000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107150000",
+            "shortName": "Version1Date20251107150000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107150000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107160000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107160000",
+            "shortName": "Version1Date20251107160000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107160000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107170000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107170000",
+            "shortName": "Version1Date20251107170000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107170000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107180000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107180000",
+            "shortName": "Version1Date20251107180000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107180000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251107190000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251107190000",
+            "shortName": "Version1Date20251107190000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251107190000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251110000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251110000000",
+            "shortName": "Version1Date20251110000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251110000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251111000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251111000000",
+            "shortName": "Version1Date20251111000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251111000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251114120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251114120000",
+            "shortName": "Version1Date20251114120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251114120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251114130000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251114130000",
+            "shortName": "Version1Date20251114130000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251114130000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251115000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251115000000",
+            "shortName": "Version1Date20251115000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251115000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251116000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251116000000",
+            "shortName": "Version1Date20251116000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251116000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251117000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251117000000",
+            "shortName": "Version1Date20251117000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251117000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251118000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251118000000",
+            "shortName": "Version1Date20251118000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251118000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251120210000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251120210000",
+            "shortName": "Version1Date20251120210000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251120210000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251127000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251127000000",
+            "shortName": "Version1Date20251127000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251127000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251128120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251128120000",
+            "shortName": "Version1Date20251128120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251128120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251201120000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251201120000",
+            "shortName": "Version1Date20251201120000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251201120000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251202000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251202000000",
+            "shortName": "Version1Date20251202000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251202000000.php"
+        },
+        "OCA\\OpenRegister\\Migration\\Version1Date20251216000000": {
+            "class": "OCA\\OpenRegister\\Migration\\Version1Date20251216000000",
+            "shortName": "Version1Date20251216000000",
+            "namespace": "OCA\\OpenRegister\\Migration",
+            "dependencies": [],
+            "file": "Migration\/Version1Date20251216000000.php"
+        },
+        "OCA\\OpenRegister\\Notification\\for": {
+            "class": "OCA\\OpenRegister\\Notification\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Notification",
+            "dependencies": [],
+            "file": "Notification\/Notifier.php"
+        },
+        "OCA\\OpenRegister\\Search\\for": {
+            "class": "OCA\\OpenRegister\\Search\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Search",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Search\/ObjectsProvider.php"
+        },
+        "OCA\\OpenRegister\\Sections\\OpenRegisterAdmin": {
+            "class": "OCA\\OpenRegister\\Sections\\OpenRegisterAdmin",
+            "shortName": "OpenRegisterAdmin",
+            "namespace": "OCA\\OpenRegister\\Sections",
+            "dependencies": [],
+            "file": "Sections\/OpenRegisterAdmin.php"
+        },
+        "OCA\\OpenRegister\\Service\\for": {
+            "class": "OCA\\OpenRegister\\Service\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ViewMapper"
+            ],
+            "file": "Service\/ViewService.php"
+        },
+        "OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler",
+            "shortName": "ContextRetrievalHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Chat",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Vectorization\\VectorEmbeddings",
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Service\/Chat\/ContextRetrievalHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler",
+            "shortName": "ConversationManagementHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Chat",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ConversationMapper",
+                "OCA\\OpenRegister\\Db\\MessageMapper",
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\Chat\\ResponseGenerationHandler"
+            ],
+            "file": "Service\/Chat\/ConversationManagementHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Chat\\MessageHistoryHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Chat\\MessageHistoryHandler",
+            "shortName": "MessageHistoryHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Chat",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\MessageMapper",
+                "OCA\\OpenRegister\\Db\\ConversationMapper"
+            ],
+            "file": "Service\/Chat\/MessageHistoryHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Chat\\ResponseGenerationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Chat\\ResponseGenerationHandler",
+            "shortName": "ResponseGenerationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Chat",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\Chat\\ToolManagementHandler"
+            ],
+            "file": "Service\/Chat\/ResponseGenerationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Chat\\ToolManagementHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Chat\\ToolManagementHandler",
+            "shortName": "ToolManagementHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Chat",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\AgentMapper",
+                "OCA\\OpenRegister\\Service\\ToolRegistry"
+            ],
+            "file": "Service\/Chat\/ToolManagementHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\ChatService": {
+            "class": "OCA\\OpenRegister\\Service\\ChatService",
+            "shortName": "ChatService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ConversationMapper",
+                "OCA\\OpenRegister\\Db\\MessageMapper",
+                "OCA\\OpenRegister\\Db\\AgentMapper",
+                "OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler",
+                "OCA\\OpenRegister\\Service\\Chat\\ResponseGenerationHandler",
+                "OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler",
+                "OCA\\OpenRegister\\Service\\Chat\\MessageHistoryHandler",
+                "OCA\\OpenRegister\\Service\\Chat\\ToolManagementHandler"
+            ],
+            "file": "Service\/ChatService.php"
+        },
+        "OCA\\OpenRegister\\Service\\CloudEventService": {
+            "class": "OCA\\OpenRegister\\Service\\CloudEventService",
+            "shortName": "CloudEventService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [],
+            "file": "Service\/CloudEventService.php"
+        },
+        "OCA\\OpenRegister\\Service\\Configuration\\CacheHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Configuration\\CacheHandler",
+            "shortName": "CacheHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Configuration",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ConfigurationMapper",
+                "OCA\\OpenRegister\\Service\\OrganisationService"
+            ],
+            "file": "Service\/Configuration\/CacheHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Configuration\\for": {
+            "class": "OCA\\OpenRegister\\Service\\Configuration\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service\\Configuration",
+            "dependencies": [],
+            "file": "Service\/Configuration\/UploadHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\EndpointService": {
+            "class": "OCA\\OpenRegister\\Service\\EndpointService",
+            "shortName": "EndpointService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [],
+            "file": "Service\/EndpointService.php"
+        },
+        "OCA\\OpenRegister\\Service\\FacetService": {
+            "class": "OCA\\OpenRegister\\Service\\FacetService",
+            "shortName": "FacetService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/FacetService.php"
+        },
+        "OCA\\OpenRegister\\Service\\File\\FileCrudHandler": {
+            "class": "OCA\\OpenRegister\\Service\\File\\FileCrudHandler",
+            "shortName": "FileCrudHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\File",
+            "dependencies": [],
+            "file": "Service\/File\/FileCrudHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\File\\FileOwnershipHandler": {
+            "class": "OCA\\OpenRegister\\Service\\File\\FileOwnershipHandler",
+            "shortName": "FileOwnershipHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\File",
+            "dependencies": [],
+            "file": "Service\/File\/FileOwnershipHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\File\\FileSharingHandler": {
+            "class": "OCA\\OpenRegister\\Service\\File\\FileSharingHandler",
+            "shortName": "FileSharingHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\File",
+            "dependencies": [],
+            "file": "Service\/File\/FileSharingHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\File\\FileValidationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\File\\FileValidationHandler",
+            "shortName": "FileValidationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\File",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\FileMapper"
+            ],
+            "file": "Service\/File\/FileValidationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\File\\FolderManagementHandler": {
+            "class": "OCA\\OpenRegister\\Service\\File\\FolderManagementHandler",
+            "shortName": "FolderManagementHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\File",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper"
+            ],
+            "file": "Service\/File\/FolderManagementHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Handler\\for": {
+            "class": "OCA\\OpenRegister\\Service\\Handler\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service\\Handler",
+            "dependencies": [],
+            "file": "Service\/Handler\/ViewHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchDocumentIndexer": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchDocumentIndexer",
+            "shortName": "ElasticsearchDocumentIndexer",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Index\\DocumentBuilder"
+            ],
+            "file": "Service\/Index\/Backends\/Elasticsearch\/ElasticsearchDocumentIndexer.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchHttpClient": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchHttpClient",
+            "shortName": "ElasticsearchHttpClient",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Service\/Index\/Backends\/Elasticsearch\/ElasticsearchHttpClient.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchIndexManager": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchIndexManager",
+            "shortName": "ElasticsearchIndexManager",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch",
+            "dependencies": [],
+            "file": "Service\/Index\/Backends\/Elasticsearch\/ElasticsearchIndexManager.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchQueryExecutor": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchQueryExecutor",
+            "shortName": "ElasticsearchQueryExecutor",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch",
+            "dependencies": [],
+            "file": "Service\/Index\/Backends\/Elasticsearch\/ElasticsearchQueryExecutor.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\ElasticsearchBackend": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\ElasticsearchBackend",
+            "shortName": "ElasticsearchBackend",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchHttpClient",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchIndexManager",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchDocumentIndexer",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Elasticsearch\\ElasticsearchQueryExecutor"
+            ],
+            "file": "Service\/Index\/Backends\/ElasticsearchBackend.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrCollectionManager": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrCollectionManager",
+            "shortName": "SolrCollectionManager",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr",
+            "dependencies": [],
+            "file": "Service\/Index\/Backends\/Solr\/SolrCollectionManager.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrDocumentIndexer": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrDocumentIndexer",
+            "shortName": "SolrDocumentIndexer",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Index\\DocumentBuilder"
+            ],
+            "file": "Service\/Index\/Backends\/Solr\/SolrDocumentIndexer.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrFacetProcessor": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrFacetProcessor",
+            "shortName": "SolrFacetProcessor",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr",
+            "dependencies": [],
+            "file": "Service\/Index\/Backends\/Solr\/SolrFacetProcessor.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrHttpClient": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrHttpClient",
+            "shortName": "SolrHttpClient",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Service\/Index\/Backends\/Solr\/SolrHttpClient.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrQueryExecutor": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrQueryExecutor",
+            "shortName": "SolrQueryExecutor",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr",
+            "dependencies": [],
+            "file": "Service\/Index\/Backends\/Solr\/SolrQueryExecutor.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrSchemaManager": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrSchemaManager",
+            "shortName": "SolrSchemaManager",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr",
+            "dependencies": [],
+            "file": "Service\/Index\/Backends\/Solr\/SolrSchemaManager.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\Backends\\under": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\Backends\\under",
+            "shortName": "under",
+            "namespace": "OCA\\OpenRegister\\Service\\Index\\Backends",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrHttpClient",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrCollectionManager",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrDocumentIndexer",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrQueryExecutor",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrFacetProcessor",
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\Solr\\SolrSchemaManager"
+            ],
+            "file": "Service\/Index\/Backends\/SolrBackend.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\BulkIndexer": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\BulkIndexer",
+            "shortName": "BulkIndexer",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/Index\/BulkIndexer.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\ConfigurationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\ConfigurationHandler",
+            "shortName": "ConfigurationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Service\/Index\/ConfigurationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\DocumentBuilder": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\DocumentBuilder",
+            "shortName": "DocumentBuilder",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [],
+            "file": "Service\/Index\/DocumentBuilder.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\FacetBuilder": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\FacetBuilder",
+            "shortName": "FacetBuilder",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Index\\Backends\\SolrBackend"
+            ],
+            "file": "Service\/Index\/FacetBuilder.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\FileHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\FileHandler",
+            "shortName": "FileHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ChunkMapper"
+            ],
+            "file": "Service\/Index\/FileHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\ObjectHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\ObjectHandler",
+            "shortName": "ObjectHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper"
+            ],
+            "file": "Service\/Index\/ObjectHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\SchemaHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\SchemaHandler",
+            "shortName": "SchemaHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/Index\/SchemaHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\SchemaMapper": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\SchemaMapper",
+            "shortName": "SchemaMapper",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [],
+            "file": "Service\/Index\/SchemaMapper.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\for": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Service\/Index\/SetupHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Index\\WarmupHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Index\\WarmupHandler",
+            "shortName": "WarmupHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Index",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Index\/WarmupHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\IndexService": {
+            "class": "OCA\\OpenRegister\\Service\\IndexService",
+            "shortName": "IndexService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Index\\FileHandler",
+                "OCA\\OpenRegister\\Service\\Index\\ObjectHandler",
+                "OCA\\OpenRegister\\Service\\Index\\SchemaHandler",
+                "OCA\\OpenRegister\\Service\\Index\\SearchBackendInterface"
+            ],
+            "file": "Service\/IndexService.php"
+        },
+        "OCA\\OpenRegister\\Service\\MagicMapper": {
+            "class": "OCA\\OpenRegister\\Service\\MagicMapper",
+            "shortName": "MagicMapper",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper",
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Service\/MagicMapper.php"
+        },
+        "OCA\\OpenRegister\\Service\\MagicMapperHandlers\\provides": {
+            "class": "OCA\\OpenRegister\\Service\\MagicMapperHandlers\\provides",
+            "shortName": "provides",
+            "namespace": "OCA\\OpenRegister\\Service\\MagicMapperHandlers",
+            "dependencies": [],
+            "file": "Service\/MagicMapperHandlers\/MagicSearchHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\MetricsService": {
+            "class": "OCA\\OpenRegister\\Service\\MetricsService",
+            "shortName": "MetricsService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [],
+            "file": "Service\/MetricsService.php"
+        },
+        "OCA\\OpenRegister\\Service\\NamedEntityRecognitionService": {
+            "class": "OCA\\OpenRegister\\Service\\NamedEntityRecognitionService",
+            "shortName": "NamedEntityRecognitionService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\GdprEntityMapper",
+                "OCA\\OpenRegister\\Db\\EntityRelationMapper"
+            ],
+            "file": "Service\/NamedEntityRecognitionService.php"
+        },
+        "OCA\\OpenRegister\\Service\\OasService": {
+            "class": "OCA\\OpenRegister\\Service\\OasService",
+            "shortName": "OasService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [],
+            "file": "Service\/OasService.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\AuditHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\AuditHandler",
+            "shortName": "AuditHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\AuditTrailMapper",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/AuditHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\BulkOperationsHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\BulkOperationsHandler",
+            "shortName": "BulkOperationsHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Service\\Object\\PermissionHandler",
+                "OCA\\OpenRegister\\Service\\Object\\CacheHandler"
+            ],
+            "file": "Service\/Object\/BulkOperationsHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\responsible": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\responsible",
+            "shortName": "responsible",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/Object\/ValidateObject.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\CrudHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\CrudHandler",
+            "shortName": "CrudHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/CrudHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\DataManipulationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\DataManipulationHandler",
+            "shortName": "DataManipulationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [],
+            "file": "Service\/Object\/DataManipulationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\for": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [],
+            "file": "Service\/Object\/RevertHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\ExportHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\ExportHandler",
+            "shortName": "ExportHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/Object\/ExportHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\FacetHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\FacetHandler",
+            "shortName": "FacetHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\FacetService"
+            ],
+            "file": "Service\/Object\/FacetHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\LockHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\LockHandler",
+            "shortName": "LockHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/LockHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\MergeHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\MergeHandler",
+            "shortName": "MergeHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/MergeHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\MetadataHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\MetadataHandler",
+            "shortName": "MetadataHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [],
+            "file": "Service\/Object\/MetadataHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\NewFacetingExample": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\NewFacetingExample",
+            "shortName": "NewFacetingExample",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Service\/Object\/NewFacetingExample.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\provides": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\provides",
+            "shortName": "provides",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Service\/Object\/ObjectServiceFacetExample.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\PerformanceHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\PerformanceHandler",
+            "shortName": "PerformanceHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\CacheHandler"
+            ],
+            "file": "Service\/Object\/PerformanceHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\PerformanceOptimizationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\PerformanceOptimizationHandler",
+            "shortName": "PerformanceOptimizationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [],
+            "file": "Service\/Object\/PerformanceOptimizationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\PermissionHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\PermissionHandler",
+            "shortName": "PermissionHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/PermissionHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\PublishHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\PublishHandler",
+            "shortName": "PublishHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/PublishHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\QueryHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\QueryHandler",
+            "shortName": "QueryHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Service\\Object\\GetObject",
+                "OCA\\OpenRegister\\Service\\Object\\RenderObject",
+                "OCA\\OpenRegister\\Service\\Object\\SearchQueryHandler",
+                "OCA\\OpenRegister\\Service\\Object\\FacetHandler",
+                "OCA\\OpenRegister\\Service\\Object\\PerformanceOptimizationHandler"
+            ],
+            "file": "Service\/Object\/QueryHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\RelationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\RelationHandler",
+            "shortName": "RelationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Service\\Object\\PerformanceHandler"
+            ],
+            "file": "Service\/Object\/RelationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\RelationshipOptimizationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\RelationshipOptimizationHandler",
+            "shortName": "RelationshipOptimizationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/RelationshipOptimizationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObject\\FilePropertyHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObject\\FilePropertyHandler",
+            "shortName": "FilePropertyHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObject",
+            "dependencies": [],
+            "file": "Service\/Object\/SaveObject\/FilePropertyHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObject\\MetadataHydrationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObject\\MetadataHydrationHandler",
+            "shortName": "MetadataHydrationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObject",
+            "dependencies": [],
+            "file": "Service\/Object\/SaveObject\/MetadataHydrationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObject\\RelationCascadeHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObject\\RelationCascadeHandler",
+            "shortName": "RelationCascadeHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObject",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper"
+            ],
+            "file": "Service\/Object\/SaveObject\/RelationCascadeHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkRelationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkRelationHandler",
+            "shortName": "BulkRelationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkValidationHandler",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/SaveObjects\/BulkRelationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkValidationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkValidationHandler",
+            "shortName": "BulkValidationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+            "dependencies": [],
+            "file": "Service\/Object\/SaveObjects\/BulkValidationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\ChunkProcessingHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\ChunkProcessingHandler",
+            "shortName": "ChunkProcessingHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/SaveObjects\/ChunkProcessingHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\PreparationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\PreparationHandler",
+            "shortName": "PreparationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\SaveObject",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkValidationHandler"
+            ],
+            "file": "Service\/Object\/SaveObjects\/PreparationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\TransformationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\TransformationHandler",
+            "shortName": "TransformationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\SaveObject\\RelationCascadeHandler"
+            ],
+            "file": "Service\/Object\/SaveObjects\/TransformationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SaveObjects": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SaveObjects",
+            "shortName": "SaveObjects",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObject",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkValidationHandler",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\BulkRelationHandler",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\TransformationHandler",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\PreparationHandler",
+                "OCA\\OpenRegister\\Service\\Object\\SaveObjects\\ChunkProcessingHandler"
+            ],
+            "file": "Service\/Object\/SaveObjects.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\SearchQueryHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\SearchQueryHandler",
+            "shortName": "SearchQueryHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ViewMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Service\/Object\/SearchQueryHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\UtilityHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\UtilityHandler",
+            "shortName": "UtilityHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\RegisterMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/Object\/UtilityHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\ValidationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\ValidationHandler",
+            "shortName": "ValidationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\ValidateObject",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/ValidationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Object\\VectorizationHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Object\\VectorizationHandler",
+            "shortName": "VectorizationHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Object",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper"
+            ],
+            "file": "Service\/Object\/VectorizationHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Schemas\\for": {
+            "class": "OCA\\OpenRegister\\Service\\Schemas\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service\\Schemas",
+            "dependencies": [],
+            "file": "Service\/Schemas\/PropertyValidatorHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Settings\\for": {
+            "class": "OCA\\OpenRegister\\Service\\Settings\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Service\\Settings",
+            "dependencies": [],
+            "file": "Service\/Settings\/SolrSettingsHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Settings\\ObjectRetentionHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Settings\\ObjectRetentionHandler",
+            "shortName": "ObjectRetentionHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Settings",
+            "dependencies": [],
+            "file": "Service\/Settings\/ObjectRetentionHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Settings\\ValidationOperationsHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Settings\\ValidationOperationsHandler",
+            "shortName": "ValidationOperationsHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Settings",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Object\\ValidateObject",
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Service\/Settings\/ValidationOperationsHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\TextExtraction\\FileHandler": {
+            "class": "OCA\\OpenRegister\\Service\\TextExtraction\\FileHandler",
+            "shortName": "FileHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\TextExtraction",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\FileMapper",
+                "OCA\\OpenRegister\\Db\\ChunkMapper"
+            ],
+            "file": "Service\/TextExtraction\/FileHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\TextExtraction\\ObjectHandler": {
+            "class": "OCA\\OpenRegister\\Service\\TextExtraction\\ObjectHandler",
+            "shortName": "ObjectHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\TextExtraction",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\ChunkMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper"
+            ],
+            "file": "Service\/TextExtraction\/ObjectHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\TextExtractionService": {
+            "class": "OCA\\OpenRegister\\Service\\TextExtractionService",
+            "shortName": "TextExtractionService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\FileMapper",
+                "OCA\\OpenRegister\\Db\\ChunkMapper",
+                "OCA\\OpenRegister\\Db\\ObjectEntityMapper",
+                "OCA\\OpenRegister\\Db\\SchemaMapper",
+                "OCA\\OpenRegister\\Db\\RegisterMapper"
+            ],
+            "file": "Service\/TextExtractionService.php"
+        },
+        "OCA\\OpenRegister\\Service\\ToolRegistry": {
+            "class": "OCA\\OpenRegister\\Service\\ToolRegistry",
+            "shortName": "ToolRegistry",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [],
+            "file": "Service\/ToolRegistry.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\EmbeddingGeneratorHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\EmbeddingGeneratorHandler",
+            "shortName": "EmbeddingGeneratorHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers",
+            "dependencies": [],
+            "file": "Service\/Vectorization\/Handlers\/EmbeddingGeneratorHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorSearchHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorSearchHandler",
+            "shortName": "VectorSearchHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Service\/Vectorization\/Handlers\/VectorSearchHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStatsHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStatsHandler",
+            "shortName": "VectorStatsHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Service\/Vectorization\/Handlers\/VectorStatsHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStorageHandler": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStorageHandler",
+            "shortName": "VectorStorageHandler",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization\\Handlers",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\IndexService"
+            ],
+            "file": "Service\/Vectorization\/Handlers\/VectorStorageHandler.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\FileVectorizationStrategy": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\FileVectorizationStrategy",
+            "shortName": "FileVectorizationStrategy",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization\\Strategies",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ChunkMapper"
+            ],
+            "file": "Service\/Vectorization\/Strategies\/FileVectorizationStrategy.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\ObjectVectorizationStrategy": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\ObjectVectorizationStrategy",
+            "shortName": "ObjectVectorizationStrategy",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization\\Strategies",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService",
+                "OCA\\OpenRegister\\Service\\SettingsService"
+            ],
+            "file": "Service\/Vectorization\/Strategies\/ObjectVectorizationStrategy.php"
+        },
+        "OCA\\OpenRegister\\Service\\Vectorization\\VectorEmbeddings": {
+            "class": "OCA\\OpenRegister\\Service\\Vectorization\\VectorEmbeddings",
+            "shortName": "VectorEmbeddings",
+            "namespace": "OCA\\OpenRegister\\Service\\Vectorization",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\SettingsService",
+                "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\EmbeddingGeneratorHandler",
+                "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStorageHandler",
+                "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorSearchHandler",
+                "OCA\\OpenRegister\\Service\\Vectorization\\Handlers\\VectorStatsHandler"
+            ],
+            "file": "Service\/Vectorization\/VectorEmbeddings.php"
+        },
+        "OCA\\OpenRegister\\Service\\VectorizationService": {
+            "class": "OCA\\OpenRegister\\Service\\VectorizationService",
+            "shortName": "VectorizationService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\Vectorization\\VectorEmbeddings"
+            ],
+            "file": "Service\/VectorizationService.php"
+        },
+        "OCA\\OpenRegister\\Service\\WebhookInterceptorService": {
+            "class": "OCA\\OpenRegister\\Service\\WebhookInterceptorService",
+            "shortName": "WebhookInterceptorService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [],
+            "file": "Service\/WebhookInterceptorService.php"
+        },
+        "OCA\\OpenRegister\\Service\\WebhookService": {
+            "class": "OCA\\OpenRegister\\Service\\WebhookService",
+            "shortName": "WebhookService",
+            "namespace": "OCA\\OpenRegister\\Service",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\WebhookMapper",
+                "OCA\\OpenRegister\\Db\\WebhookLogMapper"
+            ],
+            "file": "Service\/WebhookService.php"
+        },
+        "OCA\\OpenRegister\\Settings\\OpenRegisterAdmin": {
+            "class": "OCA\\OpenRegister\\Settings\\OpenRegisterAdmin",
+            "shortName": "OpenRegisterAdmin",
+            "namespace": "OCA\\OpenRegister\\Settings",
+            "dependencies": [],
+            "file": "Settings\/OpenRegisterAdmin.php"
+        },
+        "OCA\\OpenRegister\\Tool\\for": {
+            "class": "OCA\\OpenRegister\\Tool\\for",
+            "shortName": "for",
+            "namespace": "OCA\\OpenRegister\\Tool",
+            "dependencies": [],
+            "file": "Tool\/AbstractTool.php"
+        },
+        "OCA\\OpenRegister\\Tool\\AgentTool": {
+            "class": "OCA\\OpenRegister\\Tool\\AgentTool",
+            "shortName": "AgentTool",
+            "namespace": "OCA\\OpenRegister\\Tool",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\AgentMapper"
+            ],
+            "file": "Tool\/AgentTool.php"
+        },
+        "OCA\\OpenRegister\\Tool\\ApplicationTool": {
+            "class": "OCA\\OpenRegister\\Tool\\ApplicationTool",
+            "shortName": "ApplicationTool",
+            "namespace": "OCA\\OpenRegister\\Tool",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\ApplicationMapper"
+            ],
+            "file": "Tool\/ApplicationTool.php"
+        },
+        "OCA\\OpenRegister\\Tool\\ObjectsTool": {
+            "class": "OCA\\OpenRegister\\Tool\\ObjectsTool",
+            "shortName": "ObjectsTool",
+            "namespace": "OCA\\OpenRegister\\Tool",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\ObjectService"
+            ],
+            "file": "Tool\/ObjectsTool.php"
+        },
+        "OCA\\OpenRegister\\Tool\\RegisterTool": {
+            "class": "OCA\\OpenRegister\\Tool\\RegisterTool",
+            "shortName": "RegisterTool",
+            "namespace": "OCA\\OpenRegister\\Tool",
+            "dependencies": [
+                "OCA\\OpenRegister\\Service\\RegisterService"
+            ],
+            "file": "Tool\/RegisterTool.php"
+        },
+        "OCA\\OpenRegister\\Tool\\SchemaTool": {
+            "class": "OCA\\OpenRegister\\Tool\\SchemaTool",
+            "shortName": "SchemaTool",
+            "namespace": "OCA\\OpenRegister\\Tool",
+            "dependencies": [
+                "OCA\\OpenRegister\\Db\\SchemaMapper"
+            ],
+            "file": "Tool\/SchemaTool.php"
+        }
+    },
+    "circular": []
+}

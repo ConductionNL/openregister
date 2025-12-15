@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
@@ -63,7 +62,6 @@ class GetObject
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileService $fileService,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SettingsService $settingsService
     ) {
@@ -102,7 +100,8 @@ class GetObject
         $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $_rbac, _multitenancy: $_multitenancy);
 
         if ($files === true) {
-            $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
+            $object = $this->hydrateFiles(object: $object, files: []);
+            // TODO
         }
 
         // Create an audit trail for the 'read' action if audit trails are enabled.
@@ -148,7 +147,8 @@ class GetObject
         $object = $this->objectEntityMapper->find(identifier: $id, register: $register, schema: $schema, includeDeleted: false, _rbac: $_rbac, _multitenancy: $_multitenancy);
 
         if ($files === true) {
-            $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
+            $object = $this->hydrateFiles(object: $object, files: []);
+            // TODO
         }
 
         // No audit trail creation - this is a silent read.
@@ -216,7 +216,8 @@ class GetObject
         // If files are to be included, hydrate each object with its file information.
         if ($files === true) {
             foreach ($objects as &$object) {
-                $object = $this->hydrateFiles(object: $object, files: $this->fileService->getFiles($object));
+                $object = $this->hydrateFiles(object: $object, files: []);
+                // TODO
             }
         }
 

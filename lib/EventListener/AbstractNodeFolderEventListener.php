@@ -87,14 +87,7 @@ class AbstractNodeFolderEventListener implements IEventListener
     /**
      * Handle node created event
      *
-     * @param NodeCreatedEvent $event The node created event
-     *
-     * @return void
-     */
-    /**
-     * Handle node created event
-     *
-     * @param NodeCreatedEvent $event The node created event
+     * @param NodeCreatedEvent $_event The node created event (unused but required by interface)
      *
      * @return void
      *
@@ -113,7 +106,7 @@ class AbstractNodeFolderEventListener implements IEventListener
     /**
      * Handle node deleted event
      *
-     * @param NodeDeletedEvent $event The node deleted event
+     * @param NodeDeletedEvent $_event The node deleted event (unused but required by interface)
      *
      * @return void
      *
@@ -151,7 +144,7 @@ class AbstractNodeFolderEventListener implements IEventListener
     /**
      * Handle node written event
      *
-     * @param NodeWrittenEvent $event The node written event
+     * @param NodeWrittenEvent $_event The node written event (unused but required by interface)
      *
      * @return void
      *

@@ -67,9 +67,9 @@ class ToolManagementHandler
     /**
      * Constructor
      *
-     * @param AgentMapper     $agentMapper   Agent mapper.
-     * @param ToolRegistry    $toolRegistry  Tool registry.
-     * @param LoggerInterface $logger        Logger.
+     * @param AgentMapper     $agentMapper  Agent mapper.
+     * @param ToolRegistry    $toolRegistry Tool registry.
+     * @param LoggerInterface $logger       Logger.
      *
      * @return void
      */
@@ -81,6 +81,7 @@ class ToolManagementHandler
         $this->agentMapper  = $agentMapper;
         $this->toolRegistry = $toolRegistry;
         $this->logger       = $logger;
+
     }//end __construct()
 
 
@@ -97,7 +98,7 @@ class ToolManagementHandler
      *
      * @psalm-return list<ToolInterface>
      */
-    public function getAgentTools(?Agent $agent, array $selectedTools = []): array
+    public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
     {
         if ($agent === null) {
             return [];
@@ -114,10 +115,10 @@ class ToolManagementHandler
             $this->logger->info(
                 message: '[ChatService] Filtering tools',
                 context: [
-                        'agentTools'    => count($agent->getTools()),
-                        'selectedTools' => count($selectedTools),
-                        'filteredTools' => count($enabledToolIds),
-                    ]
+                    'agentTools'    => count($agent->getTools()),
+                    'selectedTools' => count($selectedTools),
+                    'filteredTools' => count($enabledToolIds),
+                ]
             );
         }
 
@@ -148,6 +149,7 @@ class ToolManagementHandler
         }//end foreach
 
         return $tools;
+
     }//end getAgentTools()
 
 
@@ -174,6 +176,7 @@ class ToolManagementHandler
         }
 
         return $functions;
+
     }//end convertToolsToFunctions()
 
 
@@ -213,13 +216,13 @@ class ToolManagementHandler
                     if ($type === 'object') {
                         // For object types, pass the properties definition (empty array if not specified).
                         $itemsOrProperties = $paramDef['properties'] ?? [];
-                    } elseif ($type === 'array') {
+                    } else if ($type === 'array') {
                         // For array types, pass the items definition (empty array if not specified).
                         $itemsOrProperties = $paramDef['items'] ?? [];
                     }
 
                     // Create parameter using constructor.
-                    // Constructor: __construct(string $name, string $type, string $description, array $enum = [], ?string $format = null, array|string|null $itemsOrProperties = null).
+                    // Constructor: __construct(string $name, string $type, string $description, array $enum=[], ?string $format=null, array|string|null $itemsOrProperties=null).
                     $parameters[] = new Parameter($paramName, $type, $description, $enum, $format, $itemsOrProperties);
                 }//end foreach
             }//end if
@@ -255,5 +258,8 @@ class ToolManagementHandler
         }//end foreach
 
         return $functionInfoObjects;
+
     }//end convertFunctionsToFunctionInfo()
+
+
 }//end class

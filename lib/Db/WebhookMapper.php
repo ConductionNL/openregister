@@ -55,7 +55,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Webhook delete(Entity $entity)
  * @method Webhook find(int $id)
  * @method Webhook findEntity(IQueryBuilder $query)
- * @method Webhook[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Webhook[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Webhook> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Webhook>
@@ -107,7 +107,8 @@ class WebhookMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager
     ) {
@@ -115,7 +116,8 @@ class WebhookMapper extends QBMapper
         parent::__construct($db, 'openregister_webhooks', Webhook::class);
 
         // Store dependencies for use in mapper methods.
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
 

@@ -6,11 +6,11 @@
  * Handler for query optimization and additional bulk operations on ObjectEntity.
  * Extracted from ObjectEntityMapper to follow Single Responsibility Principle.
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 
 namespace OCA\OpenRegister\Db\ObjectEntity;
@@ -35,14 +35,15 @@ use RuntimeException;
  * - Query hints and ORDER BY optimizations
  * - JSON filter detection
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 class QueryOptimizationHandler
 {
+
     /**
      * Database connection.
      *
@@ -64,6 +65,7 @@ class QueryOptimizationHandler
      */
     private string $tableName;
 
+
     /**
      * Constructor.
      *
@@ -74,12 +76,14 @@ class QueryOptimizationHandler
     public function __construct(
         IDBConnection $db,
         LoggerInterface $logger,
-        string $tableName = 'openregister_objects'
+        string $tableName='openregister_objects'
     ) {
-        $this->db = $db;
-        $this->logger = $logger;
+        $this->db        = $db;
+        $this->logger    = $logger;
         $this->tableName = $tableName;
-    }
+
+    }//end __construct()
+
 
     /**
      * Detect and separate extremely large objects for individual processing.
@@ -89,9 +93,9 @@ class QueryOptimizationHandler
      *
      * @return array Array with 'large' and 'normal' keys containing separated objects.
      */
-    public function separateLargeObjects(array $objects, int $maxSafeSize = 1000000): array
+    public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
-        $largeObjects = [];
+        $largeObjects  = [];
         $normalObjects = [];
 
         foreach ($objects as $object) {
@@ -105,10 +109,12 @@ class QueryOptimizationHandler
         }
 
         return [
-            'large' => $largeObjects,
+            'large'  => $largeObjects,
             'normal' => $normalObjects,
         ];
-    }
+
+    }//end separateLargeObjects()
+
 
     /**
      * Process large objects individually to prevent packet size errors.
@@ -138,8 +144,8 @@ class QueryOptimizationHandler
                 $columns = array_keys($objectData);
 
                 // Build single INSERT statement.
-                $placeholders = ':' . implode(', :', $columns);
-                $sql = "INSERT INTO {$this->tableName} (" . implode(', ', $columns) . ") VALUES ({$placeholders})";
+                $placeholders = ':'.implode(', :', $columns);
+                $sql          = "INSERT INTO {$this->tableName} (".implode(', ', $columns).") VALUES ({$placeholders})";
 
                 // Prepare parameters.
                 $parameters = [];
@@ -151,11 +157,11 @@ class QueryOptimizationHandler
                         $value = json_encode($value);
                     }
 
-                    $parameters[':' . $column] = $value;
+                    $parameters[':'.$column] = $value;
                 }
 
                 // Execute single insert.
-                $stmt = $this->db->prepare($sql);
+                $stmt   = $this->db->prepare($sql);
                 $result = $stmt->execute($parameters);
 
                 // Check if execution was successful and UUID exists.
@@ -173,11 +179,13 @@ class QueryOptimizationHandler
                 if (strpos($e->getMessage(), 'max_allowed_packet') === false) {
                     throw $e;
                 }
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $processedIds;
-    }
+
+    }//end processLargeObjectsIndividually()
+
 
     /**
      * Bulk assign default owner and organization to objects that don't have them assigned.
@@ -192,22 +200,22 @@ class QueryOptimizationHandler
      *
      * @throws \Exception If the bulk operation fails.
      */
-    public function bulkOwnerDeclaration(?string $defaultOwner = null, ?string $defaultOrganisation = null, int $batchSize = 1000): array
+    public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
         if ($defaultOwner === null && $defaultOrganisation === null) {
             throw new InvalidArgumentException('At least one of defaultOwner or defaultOrganisation must be provided');
         }
 
         $results = [
-            'totalProcessed' => 0,
-            'ownersAssigned' => 0,
+            'totalProcessed'        => 0,
+            'ownersAssigned'        => 0,
             'organisationsAssigned' => 0,
-            'errors' => [],
-            'startTime' => new DateTime(),
+            'errors'                => [],
+            'startTime'             => new DateTime(),
         ];
 
         try {
-            $offset = 0;
+            $offset         = 0;
             $hasMoreRecords = true;
 
             while ($hasMoreRecords === true) {
@@ -238,7 +246,7 @@ class QueryOptimizationHandler
                     $qb->where($qb->expr()->orX(...$conditions));
                 }
 
-                $result = $qb->executeQuery();
+                $result  = $qb->executeQuery();
                 $objects = $result->fetchAll();
 
                 if (empty($objects) === true) {
@@ -249,8 +257,8 @@ class QueryOptimizationHandler
                 $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
 
                 // Update statistics.
-                $results['totalProcessed'] += count($objects);
-                $results['ownersAssigned'] += $batchResults['ownersAssigned'];
+                $results['totalProcessed']        += count($objects);
+                $results['ownersAssigned']        += $batchResults['ownersAssigned'];
                 $results['organisationsAssigned'] += $batchResults['organisationsAssigned'];
                 $results = array_merge_recursive($results, ['errors' => $batchResults['errors']]);
 
@@ -260,17 +268,19 @@ class QueryOptimizationHandler
                 if (count($objects) < $batchSize) {
                     $hasMoreRecords = false;
                 }
-            }
+            }//end while
 
-            $results['endTime'] = new DateTime();
+            $results['endTime']  = new DateTime();
             $results['duration'] = $results['endTime']->diff($results['startTime'])->format('%H:%I:%S');
 
             return $results;
         } catch (Exception $e) {
             $this->logger->error('Error during bulk owner declaration', ['exception' => $e->getMessage()]);
-            throw new RuntimeException('Bulk owner declaration failed: ' . $e->getMessage());
-        }
-    }
+            throw new RuntimeException('Bulk owner declaration failed: '.$e->getMessage());
+        }//end try
+
+    }//end bulkOwnerDeclaration()
+
 
     /**
      * Set expiry dates for objects based on retention period in milliseconds.
@@ -308,10 +318,12 @@ class QueryOptimizationHandler
             // Execute the update and return number of affected rows.
             return $qb->executeStatement();
         } catch (Exception $e) {
-            $this->logger->error('Failed to set expiry dates for objects: ' . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('Failed to set expiry dates for objects: '.$e->getMessage(), ['exception' => $e]);
             throw $e;
-        }
-    }
+        }//end try
+
+    }//end setExpiryDate()
+
 
     /**
      * Apply optimizations for composite indexes.
@@ -325,8 +337,8 @@ class QueryOptimizationHandler
     {
         // INDEX OPTIMIZATION: If we have schema + register + published filters,
         // ensure they're applied in the optimal order for the composite index.
-        $hasSchema = isset($filters['schema']) || isset($filters['schema_id']);
-        $hasRegister = isset($filters['registers']) || isset($filters['register']);
+        $hasSchema    = isset($filters['schema']) || isset($filters['schema_id']);
+        $hasRegister  = isset($filters['registers']) || isset($filters['register']);
         $hasPublished = ($filters['published'] ?? null) !== null;
 
         if ($hasSchema === true && $hasRegister === true && $hasPublished === true) {
@@ -339,7 +351,9 @@ class QueryOptimizationHandler
         if ($hasSchema === true && $hasOrganisation === true) {
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using composite index for schema+organisation');
         }
-    }
+
+    }//end applyCompositeIndexOptimizations()
+
 
     /**
      * Optimize ORDER BY clauses to use indexes.
@@ -360,7 +374,9 @@ class QueryOptimizationHandler
 
             $this->logger->debug('🚀 QUERY OPTIMIZATION: Using indexed columns for ORDER BY');
         }
-    }
+
+    }//end optimizeOrderBy()
+
 
     /**
      * Add database-specific query hints for better performance.
@@ -388,7 +404,9 @@ class QueryOptimizationHandler
         if (($filters['object'] ?? null) !== null || $this->hasJsonFilters($filters) === true) {
             $this->logger->debug('🚀 QUERY OPTIMIZATION: JSON queries detected - using JSON indexes');
         }
-    }
+
+    }//end addQueryHints()
+
 
     /**
      * Check if filters contain JSON-based queries.
@@ -407,7 +425,9 @@ class QueryOptimizationHandler
         }
 
         return false;
-    }
+
+    }//end hasJsonFilters()
+
 
     /**
      * Process a batch of objects for bulk owner declaration.
@@ -421,20 +441,20 @@ class QueryOptimizationHandler
     private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
     {
         $batchResults = [
-            'ownersAssigned' => 0,
+            'ownersAssigned'        => 0,
             'organisationsAssigned' => 0,
-            'errors' => [],
+            'errors'                => [],
         ];
 
         foreach ($objects as $objectData) {
             try {
                 $needsUpdate = false;
-                $updateData = [];
+                $updateData  = [];
 
                 // Check if owner needs to be assigned.
                 if ($defaultOwner !== null && (empty($objectData['owner']) === true || $objectData['owner'] === null)) {
                     $updateData['owner'] = $defaultOwner;
-                    $needsUpdate = true;
+                    $needsUpdate         = true;
                     $batchResults['ownersAssigned']++;
                 }
 
@@ -450,13 +470,15 @@ class QueryOptimizationHandler
                     $this->updateObjectOwnership((int) $objectData['id'], $updateData);
                 }
             } catch (Exception $e) {
-                $error = 'Error updating object ' . $objectData['uuid'] . ': ' . $e->getMessage();
+                $error = 'Error updating object '.$objectData['uuid'].': '.$e->getMessage();
                 $batchResults['errors'][] = $error;
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $batchResults;
-    }
+
+    }//end processBulkOwnerDeclarationBatch()
+
 
     /**
      * Update ownership information for a specific object.
@@ -482,7 +504,9 @@ class QueryOptimizationHandler
         $qb->set('modified', $qb->createNamedParameter(new DateTime(), IQueryBuilder::PARAM_DATE));
 
         $qb->executeStatement();
-    }
+
+    }//end updateObjectOwnership()
+
 
     /**
      * Estimate the size of an object in bytes for size calculations.
@@ -508,7 +532,7 @@ class QueryOptimizationHandler
 
             return $size;
         } else if (is_object($object) === true && $object instanceof ObjectEntity) {
-            $size = 0;
+            $size       = 0;
             $reflection = new \ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
                 $property->setAccessible(true);
@@ -524,9 +548,11 @@ class QueryOptimizationHandler
             }
 
             return $size;
-        }
+        }//end if
 
         return 0;
-    }
-}
 
+    }//end estimateObjectSize()
+
+
+}//end class

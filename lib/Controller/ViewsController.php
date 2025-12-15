@@ -102,7 +102,7 @@ class ViewsController extends Controller
     public function index(): JSONResponse
     {
         try {
-            $user   = $this->userSession->getUser();
+            $user = $this->userSession->getUser();
             $userId = '';
             if ($user !== null) {
                 $userId = $user->getUID();
@@ -191,7 +191,7 @@ class ViewsController extends Controller
     public function show(string $id): JSONResponse
     {
         try {
-            $user   = $this->userSession->getUser();
+            $user = $this->userSession->getUser();
             $userId = '';
             if ($user !== null) {
                 $userId = $user->getUID();
@@ -252,7 +252,7 @@ class ViewsController extends Controller
     public function create(): JSONResponse
     {
         try {
-            $user   = $this->userSession->getUser();
+            $user = $this->userSession->getUser();
             $userId = '';
             if ($user !== null) {
                 $userId = $user->getUID();
@@ -351,7 +351,7 @@ class ViewsController extends Controller
     public function update(string $id): JSONResponse
     {
         try {
-            $user   = $this->userSession->getUser();
+            $user = $this->userSession->getUser();
             $userId = '';
             if ($user !== null) {
                 $userId = $user->getUID();
@@ -461,7 +461,7 @@ class ViewsController extends Controller
     public function patch(string $id): JSONResponse
     {
         try {
-            $user   = $this->userSession->getUser();
+            $user = $this->userSession->getUser();
             $userId = '';
             if ($user !== null) {
                 $userId = $user->getUID();
@@ -570,7 +570,7 @@ class ViewsController extends Controller
     public function destroy(string $id): JSONResponse
     {
         try {
-            $user   = $this->userSession->getUser();
+            $user = $this->userSession->getUser();
             $userId = '';
             if ($user !== null) {
                 $userId = $user->getUID();

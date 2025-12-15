@@ -131,15 +131,15 @@ class ChatService
     /**
      * Constructor
      *
-     * @param ConversationMapper            $conversationMapper Conversation mapper.
-     * @param MessageMapper                 $messageMapper      Message mapper.
-     * @param AgentMapper                   $agentMapper        Agent mapper.
-     * @param ContextRetrievalHandler       $contextHandler     Context handler.
-     * @param ResponseGenerationHandler     $responseHandler    Response handler.
+     * @param ConversationMapper            $conversationMapper  Conversation mapper.
+     * @param MessageMapper                 $messageMapper       Message mapper.
+     * @param AgentMapper                   $agentMapper         Agent mapper.
+     * @param ContextRetrievalHandler       $contextHandler      Context handler.
+     * @param ResponseGenerationHandler     $responseHandler     Response handler.
      * @param ConversationManagementHandler $conversationHandler Conversation handler.
-     * @param MessageHistoryHandler         $historyHandler     History handler.
-     * @param ToolManagementHandler         $toolHandler        Tool handler.
-     * @param LoggerInterface               $logger             Logger.
+     * @param MessageHistoryHandler         $historyHandler      History handler.
+     * @param ToolManagementHandler         $toolHandler         Tool handler.
+     * @param LoggerInterface               $logger              Logger.
      *
      * @return void
      */
@@ -162,7 +162,8 @@ class ChatService
         $this->conversationHandler = $conversationHandler;
         $this->historyHandler      = $historyHandler;
         $this->toolHandler         = $toolHandler;
-        $this->logger              = $logger;
+        $this->logger = $logger;
+
     }//end __construct()
 
 
@@ -188,17 +189,17 @@ class ChatService
         int $conversationId,
         string $userId,
         string $userMessage,
-        array $selectedViews = [],
-        array $selectedTools = [],
-        array $ragSettings = []
+        array $selectedViews=[],
+        array $selectedTools=[],
+        array $ragSettings=[]
     ): array {
         $this->logger->info(
             message: '[ChatService] Processing message',
             context: [
-                    'conversationId' => $conversationId,
-                    'userId'         => $userId,
-                    'messageLength'  => strlen($userMessage),
-                ]
+                'conversationId' => $conversationId,
+                'userId'         => $userId,
+                'messageLength'  => strlen($userMessage),
+            ]
         );
 
         try {
@@ -239,12 +240,12 @@ class ChatService
             $this->historyHandler->storeMessage($conversationId, Message::ROLE_ASSISTANT, $aiResponse, $context['sources']);
 
             // Generate title if this is first exchange.
-            $messageCount = $this->messageMapper->countByConversation($conversationId);
-            $currentTitle = $conversation->getTitle();
+            $messageCount        = $this->messageMapper->countByConversation($conversationId);
+            $currentTitle        = $conversation->getTitle();
             $shouldGenerateTitle = $messageCount <= 2 && ($currentTitle === null || strpos($currentTitle, 'New Conversation') === 0);
 
             if ($shouldGenerateTitle === true) {
-                $title = $this->conversationHandler->generateConversationTitle($userMessage);
+                $title   = $this->conversationHandler->generateConversationTitle($userMessage);
                 $agentId = $conversation->getAgentId();
                 if ($agentId !== null) {
                     $title = $this->conversationHandler->ensureUniqueTitle($title, $conversation->getUserId(), $agentId);
@@ -271,11 +272,12 @@ class ChatService
             $this->logger->error(
                 message: '[ChatService] Message processing failed',
                 context: [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             throw $e;
         }//end try
+
     }//end processMessage()
 
 
@@ -291,6 +293,7 @@ class ChatService
     public function generateConversationTitle(string $firstMessage): string
     {
         return $this->conversationHandler->generateConversationTitle($firstMessage);
+
     }//end generateConversationTitle()
 
 
@@ -308,6 +311,7 @@ class ChatService
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
         return $this->conversationHandler->ensureUniqueTitle($baseTitle, $userId, $agentId);
+
     }//end ensureUniqueTitle()
 
 
@@ -323,14 +327,14 @@ class ChatService
      *
      * @return array Test results with success status
      */
-    public function testChat(string $provider, array $config, string $testMessage = 'Hello! Please respond with a brief greeting.'): array
+    public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
     {
         $this->logger->info(
             message: '[ChatService] Testing chat functionality',
             context: [
-                    'provider' => $provider,
-                    'model'    => $config['chatModel'] ?? $config['model'] ?? 'unknown',
-                ]
+                'provider' => $provider,
+                'model'    => $config['chatModel'] ?? $config['model'] ?? 'unknown',
+            ]
         );
 
         // Simplified test method for facade.
@@ -345,8 +349,8 @@ class ChatService
             $this->logger->error(
                 message: '[ChatService] Chat test failed',
                 context: [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return [
                 'success' => false,
@@ -354,5 +358,8 @@ class ChatService
                 'message' => 'Failed to test chat: '.$e->getMessage(),
             ];
         }//end try
+
     }//end testChat()
+
+
 }//end class

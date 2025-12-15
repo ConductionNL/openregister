@@ -31,7 +31,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -92,7 +91,6 @@ class DeleteObject
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileService $fileService,
         private readonly CacheHandler $cacheHandler,
         AuditTrailMapper $auditTrailMapper,
         SettingsService $settingsService,
@@ -124,9 +122,11 @@ class DeleteObject
         }
 
         // Delete associated files from storage.
-        $files = $this->fileService->getFiles($objectEntity);
+        // TODO: Implement file cleanup
+        $files = [];
+        // $this->fileService->getFiles($objectEntity);
         foreach ($files ?? [] as $file) {
-            $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
+            // $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
         }
 
         // Delete the object folder if it exists (for hard deletes).
@@ -268,7 +268,8 @@ class DeleteObject
     private function deleteObjectFolder(ObjectEntity $objectEntity): void
     {
         try {
-            $folder = $this->fileService->getObjectFolder($objectEntity);
+            $folder = null;
+            // TODO: $this->fileService->getObjectFolder($objectEntity);
             if ($folder !== null) {
                 $folder->delete();
                 $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());

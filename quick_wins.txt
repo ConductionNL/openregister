@@ -1,0 +1,13 @@
+Looking at large methods that can be extracted:
+
+1. migrateObjects (179 lines) - migrate operations → MigrationHandler (NEW)
+2. saveObject (162 lines) - already delegated to SaveObject handler?
+3. getPerformanceRecommendations (119 lines) → PerformanceOptimizationHandler  
+4. getFacetableFields (117 lines) → FacetHandler
+5. findAll (114 lines) - core method, check if needed
+6. bulkLoadRelationshipsBatched (108 lines) → PerformanceOptimizationHandler
+7. bulkLoadRelationshipsParallel (107 lines) → PerformanceOptimizationHandler
+8. handlePreValidationCascading (99 lines) → CascadingHandler (NEW)
+9. extractAllRelationshipIds (92 lines) → PerformanceOptimizationHandler
+
+Target: ~600 lines from these 9 methods

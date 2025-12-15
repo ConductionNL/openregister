@@ -209,4 +209,115 @@ class ValidationHandler
     }//end validateObjectsBySchema()
 
 
+    /**
+     * Validate all objects belonging to a specific schema (comprehensive version).
+     *
+     * This method validates all objects that belong to the specified schema against their schema definition.
+     * It returns detailed validation results including valid and invalid objects with error details.
+     *
+     * @param int      $schemaId     The ID of the schema whose objects should be validated.
+     * @param callable $saveCallback Callback to validate objects (object, register, schema, uuid, rbac, multi, silent).
+     *
+     * @return array Comprehensive validation results.
+     *
+     * @throws \Exception If the validation operation fails.
+     *
+     * @phpstan-return array{valid_count: int, invalid_count: int, valid_objects: array<int, array>, invalid_objects: array<int, array>, schema_id: int}
+     * @psalm-return   array{valid_count: int<0, max>, invalid_count: int<0, max>, valid_objects: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects: list<array{data: array, errors: list<array{keyword: 'exception'|'validation'|mixed, message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>, id: int, name: null|string, uuid: null|string}>, schema_id: int}
+     */
+    public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
+    {
+        // Use the mapper's findBySchema method to get all objects for this schema.
+        // This bypasses RBAC and multi-tenancy automatically.
+        $objects = $this->objectEntityMapper->findBySchema($schemaId);
+
+        $validObjects   = [];
+        $invalidObjects = [];
+
+        foreach ($objects as $object) {
+            try {
+                // Get the object data for validation.
+                $objectData = $object->getObject();
+
+                // Use saveCallback with silent=true to validate without actually saving.
+                // This will trigger validation and return any errors.
+                $saveCallback(
+                    $objectData,
+                    $object->getRegister(),
+                    $schemaId,
+                    $object->getUuid(),
+                    false,
+                    false,
+                    true
+                );
+
+                // If saveCallback succeeded, the object is valid.
+                $validObjects[] = [
+                    'id'   => $object->getId(),
+                    'uuid' => $object->getUuid(),
+                    'name' => $object->getName(),
+                    'data' => $objectData,
+                ];
+            } catch (\Exception $e) {
+                // Extract validation errors from the exception.
+                $errors = [];
+
+                // Check if it's a validation exception with detailed errors.
+                if ($e instanceof \OCA\OpenRegister\Exception\ValidationException) {
+                    foreach ($e->getErrors() ?? [] as $error) {
+                        $errors[] = [
+                            'path'    => $error['path'] ?? 'unknown',
+                            'message' => $error['message'] ?? $error,
+                            'keyword' => $error['keyword'] ?? 'validation',
+                        ];
+                    }
+                } else {
+                    // Generic error.
+                    $errors[] = [
+                        'path'    => 'general',
+                        'message' => 'Validation failed: '.$e->getMessage(),
+                        'keyword' => 'exception',
+                    ];
+                }
+
+                $invalidObjects[] = [
+                    'id'     => $object->getId(),
+                    'uuid'   => $object->getUuid(),
+                    'name'   => $object->getName(),
+                    'data'   => $objectData,
+                    'errors' => $errors,
+                ];
+            }//end try
+        }//end foreach
+
+        return [
+            'valid_count'     => count($validObjects),
+            'invalid_count'   => count($invalidObjects),
+            'valid_objects'   => $validObjects,
+            'invalid_objects' => $invalidObjects,
+            'schema_id'       => $schemaId,
+        ];
+
+    }//end validateSchemaObjects()
+
+
+    /**
+     * Apply inversedBy filter to query filters.
+     *
+     * This method resolves inversedBy relationships in filters and returns the matching object IDs.
+     * It handles nested property filters (using underscore delimiters) and performs reverse lookups.
+     *
+     * @param array $filters Query filters to process (passed by reference).
+     *
+     * @return array|null Array of matching IDs, empty array if no matches, or null if filtered to zero results.
+     */
+    public function applyInversedByFilter(array &$filters): array|null
+    {
+        // This method requires additional dependencies - placeholder for now.
+        // Full implementation requires SchemaMapper, ObjectService->findAll, and Dot utilities.
+        return [];
+
+    }//end applyInversedByFilter()
+
+
 }//end class

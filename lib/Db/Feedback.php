@@ -27,6 +27,8 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Feedback entity for storing user feedback on AI messages
  *
+ * @method int getId()
+ * @method void setId(int $id)
  * @method string getUuid()
  * @method void setUuid(string $uuid)
  * @method int getMessageId()

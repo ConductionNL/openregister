@@ -40,7 +40,7 @@ use OCP\IDBConnection;
  * @method Feedback delete(Entity $entity)
  * @method Feedback find(int|string $id)
  * @method Feedback findEntity(IQueryBuilder $query)
- * @method Feedback[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Feedback[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Feedback> findEntities(IQueryBuilder $query)
  *
  * @extends QBMapper<Feedback>

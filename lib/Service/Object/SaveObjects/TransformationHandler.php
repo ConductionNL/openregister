@@ -15,7 +15,7 @@
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\OrganisationService;
+
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -53,7 +53,7 @@ class TransformationHandler
      */
     public function __construct(
         private readonly RelationCascadeHandler $relationCascadeHandler,
-        private readonly OrganisationService $organisationService,
+        // REMOVED: private readonly
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {
@@ -179,7 +179,8 @@ class TransformationHandler
             // Set organization using optimized OrganisationService method if not provided.
             if (($selfData['organisation'] ?? null) === null || empty($selfData['organisation']) === true) {
                 // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
-                $selfData['organisation'] = $this->organisationService->getOrganisationForNewEntity();
+                $selfData['organisation'] = null
+                // TODO->getOrganisationForNewEntity();
             }
 
             // DATABASE-MANAGED: created and updated are handled by database DEFAULT and ON UPDATE clauses.

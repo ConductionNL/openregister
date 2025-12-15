@@ -16,7 +16,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Service\FileService;
 use OCP\IUserSession;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use InvalidArgumentException;
@@ -51,7 +50,6 @@ class MergeHandler
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly FileService $fileService,
         private readonly IUserSession $userSession
     ) {
 

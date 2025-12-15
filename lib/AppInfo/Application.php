@@ -30,6 +30,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\ObjectEntity\LockingHandler;
+use OCA\OpenRegister\Db\ObjectEntity\QueryBuilderHandler;
+use OCA\OpenRegister\Db\ObjectEntity\CrudHandler;
+use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
+use OCA\OpenRegister\Db\ObjectEntity\FacetsHandler;
+use OCA\OpenRegister\Db\ObjectEntity\BulkOperationsHandler;
+use OCA\OpenRegister\Db\ObjectEntity\QueryOptimizationHandler;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -44,42 +51,44 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
-use OCA\OpenRegister\Service\Objects\DeleteObject;
-use OCA\OpenRegister\Service\Objects\GetObject;
-use OCA\OpenRegister\Service\Objects\PerformanceHandler;
-use OCA\OpenRegister\Service\Objects\PermissionHandler;
-use OCA\OpenRegister\Service\Objects\RenderObject;
-use OCA\OpenRegister\Service\Objects\SaveObject;
-use OCA\OpenRegister\Service\Objects\SaveObject\FilePropertyHandler;
-use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
-use OCA\OpenRegister\Service\Objects\SaveObjects;
-use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
+use OCA\OpenRegister\Service\Object\DataManipulationHandler;
+use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\PerformanceHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
+use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService\FacetHandler;
 use OCA\OpenRegister\Service\ObjectService\MetadataHandler;
-use OCA\OpenRegister\Service\ObjectService\BulkOperationsHandler;
+use OCA\OpenRegister\Service\ObjectService\BulkOperationsHandler as ServiceBulkOperationsHandler;
 use OCA\OpenRegister\Service\ObjectService\RelationHandler;
 use OCA\OpenRegister\Service\ObjectService\QueryHandler;
 use OCA\OpenRegister\Service\ObjectService\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\ObjectService\MergeHandler;
 use OCA\OpenRegister\Service\ObjectService\UtilityHandler;
+use OCA\OpenRegister\Service\Object\CascadingHandler;
+use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PublishObject;
 use OCA\OpenRegister\Service\Object\DepublishObject;
-use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
-use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
-use OCA\OpenRegister\Service\Object\Handlers\PublishHandler as PublishHandlerNew;
-use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
-use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
-use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
-use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
-use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
+use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\AuditHandler;
+use OCA\OpenRegister\Service\Object\PublishHandler as PublishHandlerNew;
+use OCA\OpenRegister\Service\Object\RelationHandler as RelationHandlerNew;
+use OCA\OpenRegister\Service\Object\MergeHandler as MergeHandlerNew;
+use OCA\OpenRegister\Service\Object\ExportHandler;
+use OCA\OpenRegister\Service\Object\VectorizationHandler;
+use OCA\OpenRegister\Service\Object\CrudHandler as ServiceCrudHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FacetService;
-use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
@@ -320,21 +329,22 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies.
+        // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies + 7 handlers.
         $context->registerService(
             ObjectEntityMapper::class,
             function ($container) {
                 return new ObjectEntityMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    mySQLJsonService: $container->get(MySQLJsonService::class),
+                    // mySQLJsonService: $container->get(MySQLJsonService::class), // REMOVED: No services in mappers
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     userSession: $container->get('OCP\IUserSession'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     groupManager: $container->get('OCP\IGroupManager'),
                     userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface'),
-                    organisationService: $container->get(OrganisationService::class)
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                    // organisationService: REMOVED - No services in mappers
+                    // ALL HANDLERS REMOVED: No handlers in mappers
                 );
             }
         );
@@ -429,13 +439,11 @@ class Application extends App implements IBootstrap
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     metadataHydrationHandler: $container->get(MetadataHydrationHandler::class),
                     filePropertyHandler: $container->get(FilePropertyHandler::class),
-                    fileService: $container->get(FileService::class),
                     userSession: $container->get('OCP\IUserSession'),
                     auditTrailMapper: $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     urlGenerator: $container->get('OCP\IURLGenerator'),
-                    organisationService: $container->get(OrganisationService::class),
                     cacheHandler: $container->get(CacheHandler::class),
                     settingsService: $container->get(SettingsService::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
@@ -473,7 +481,8 @@ class Application extends App implements IBootstrap
                     appConfig: $container->get('OCP\IAppConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     client: new Client(),
-                    objectService: $container->get(ObjectService::class),
+                    objectService: null,
+                // CIRCULAR FIX
                     githubHandler: $container->get(GitHubHandler::class),
                     gitlabHandler: $container->get(GitLabHandler::class),
                     cacheHandler: $container->get(ConfigurationCacheHandler::class),
@@ -712,7 +721,6 @@ class Application extends App implements IBootstrap
 
         // NOTE: ChatService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         // Register Chat handlers explicitly (used by ChatService facade).
         // While these could autowire, explicit registration ensures proper DI chain.
         $context->registerService(

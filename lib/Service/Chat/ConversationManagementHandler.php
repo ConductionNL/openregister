@@ -121,7 +121,8 @@ class ConversationManagementHandler
         $this->messageMapper      = $messageMapper;
         $this->settingsService    = $settingsService;
         $this->responseHandler    = $responseHandler;
-        $this->logger             = $logger;
+        $this->logger = $logger;
+
     }//end __construct()
 
 
@@ -177,7 +178,7 @@ class ConversationManagementHandler
                     $config->apiKey = $openaiConfig['apiKey'];
                     $config->model  = 'gpt-4o-mini';
                     // Use fast model for titles.
-                } elseif ($chatProvider === 'fireworks') {
+                } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
                         return $this->generateFallbackTitle($firstMessage);
@@ -210,9 +211,9 @@ class ConversationManagementHandler
             if ($chatProvider === 'fireworks') {
                 // Use ResponseGenerationHandler's Fireworks method.
                 $reflectionClass = new \ReflectionClass($this->responseHandler);
-                $method = $reflectionClass->getMethod('callFireworksChatAPI');
+                $method          = $reflectionClass->getMethod('callFireworksChatAPI');
                 $method->setAccessible(true);
-                
+
                 /*
                  * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
                  */
@@ -223,7 +224,7 @@ class ConversationManagementHandler
                     $config->url,
                     $prompt
                 );
-            } elseif ($chatProvider === 'ollama') {
+            } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat.
                 $chat  = new OllamaChat($config);
                 $title = $chat->generateText($prompt);
@@ -231,7 +232,7 @@ class ConversationManagementHandler
                 // OpenAI chat.
                 $chat  = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
-            }
+            }//end if
 
             $title = trim($title, '"\'');
 
@@ -245,12 +246,13 @@ class ConversationManagementHandler
             $this->logger->warning(
                 message: '[ChatService] Failed to generate title, using fallback',
                 context: [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
 
             return $this->generateFallbackTitle($firstMessage);
         }//end try
+
     }//end generateConversationTitle()
 
 
@@ -279,6 +281,7 @@ class ConversationManagementHandler
         }
 
         return $title;
+
     }//end generateFallbackTitle()
 
 
@@ -299,10 +302,10 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ChatService] Ensuring unique title',
             context: [
-                    'baseTitle' => $baseTitle,
-                    'userId'    => $userId,
-                    'agentId'   => $agentId,
-                ]
+                'baseTitle' => $baseTitle,
+                'userId'    => $userId,
+                'agentId'   => $agentId,
+            ]
         );
 
         // Find all existing titles that match this pattern.
@@ -340,13 +343,14 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ChatService] Generated unique title',
             context: [
-                    'baseTitle'   => $baseTitle,
-                    'uniqueTitle' => $uniqueTitle,
-                    'foundTitles' => count($existingTitles),
-                ]
+                'baseTitle'   => $baseTitle,
+                'uniqueTitle' => $uniqueTitle,
+                'foundTitles' => count($existingTitles),
+            ]
         );
 
         return $uniqueTitle;
+
     }//end ensureUniqueTitle()
 
 
@@ -385,9 +389,9 @@ class ConversationManagementHandler
         $this->logger->info(
             message: '[ChatService] Triggering conversation summarization',
             context: [
-                    'conversationId' => $conversation->getId(),
-                    'tokenCount'     => $tokenCount,
-                ]
+                'conversationId' => $conversation->getId(),
+                'tokenCount'     => $tokenCount,
+            ]
         );
 
         try {
@@ -414,18 +418,19 @@ class ConversationManagementHandler
             $this->logger->info(
                 message: '[ChatService] Conversation summarized',
                 context: [
-                        'conversationId' => $conversation->getId(),
-                        'summaryLength'  => strlen($summary),
-                    ]
+                    'conversationId' => $conversation->getId(),
+                    'summaryLength'  => strlen($summary),
+                ]
             );
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[ChatService] Failed to summarize conversation',
                 context: [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
         }//end try
+
     }//end checkAndSummarize()
 
 
@@ -486,7 +491,7 @@ class ConversationManagementHandler
 
                 $config->apiKey = $openaiConfig['apiKey'];
                 $config->model  = 'gpt-4o-mini';
-            } elseif ($chatProvider === 'fireworks') {
+            } else if ($chatProvider === 'fireworks') {
                 $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                 if (empty($fireworksConfig['apiKey']) === true) {
                     throw new Exception('Fireworks AI API key not configured');
@@ -512,9 +517,9 @@ class ConversationManagementHandler
         if ($chatProvider === 'fireworks') {
             // Use ResponseGenerationHandler's Fireworks method via reflection.
             $reflectionClass = new \ReflectionClass($this->responseHandler);
-            $method = $reflectionClass->getMethod('callFireworksChatAPI');
+            $method          = $reflectionClass->getMethod('callFireworksChatAPI');
             $method->setAccessible(true);
-            
+
             /*
              * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
              */
@@ -525,7 +530,7 @@ class ConversationManagementHandler
                 $config->url,
                 $prompt
             );
-        } elseif ($chatProvider === 'ollama') {
+        } else if ($chatProvider === 'ollama') {
             // Use native Ollama chat.
             $chat = new OllamaChat($config);
             return $chat->generateText($prompt);
@@ -533,6 +538,9 @@ class ConversationManagementHandler
             // OpenAI chat.
             $chat = new OpenAIChat($config);
             return $chat->generateText($prompt);
-        }
+        }//end if
+
     }//end generateSummary()
+
+
 }//end class

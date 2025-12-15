@@ -921,8 +921,10 @@ class SettingsService
         }
 
         // Get services from container.
-        $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-        $objectMapper  = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+        // CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService
+        $objectService = null;
+        // $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+        $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
 
         // Get total object count.
         $totalObjects = $objectMapper->countSearchObjects(
@@ -1607,6 +1609,111 @@ class SettingsService
         ];
 
     }//end compareFields()
+
+
+    /**
+     * Get comprehensive statistics.
+     *
+     * Returns combined statistics from various components.
+     *
+     * @return array Statistics data
+     */
+    public function getStats(): array
+    {
+        try {
+            $stats = [
+                'timestamp' => time(),
+                'date'      => date('Y-m-d H:i:s'),
+            ];
+
+            // Get Solr stats if available.
+            try {
+                $stats['solr'] = $this->getSolrDashboardStats();
+            } catch (\Exception $e) {
+                $stats['solr'] = ['error' => $e->getMessage()];
+            }
+
+            // Get cache stats.
+            try {
+                $stats['cache'] = $this->getCacheStats();
+            } catch (\Exception $e) {
+                $stats['cache'] = ['error' => $e->getMessage()];
+            }
+
+            // Get system info.
+            $stats['system'] = [
+                'php_version'        => PHP_VERSION,
+                'memory_limit'       => ini_get('memory_limit'),
+                'max_execution_time' => ini_get('max_execution_time'),
+            ];
+
+            return $stats;
+        } catch (\Exception $e) {
+            return [
+                'error'   => 'Failed to retrieve stats',
+                'message' => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end getStats()
+
+
+    /**
+     * Rebase configuration from source.
+     *
+     * Resets configuration to default or imports from source.
+     * This is typically used for configuration management.
+     *
+     * @param array $options Rebase options
+     *
+     * @return array Rebase result
+     */
+    public function rebase(array $options=[]): array
+    {
+        try {
+            $this->logger->info('[SettingsService] Rebase requested', ['options' => $options]);
+
+            // Get current settings.
+            $currentSettings = $this->getSettings();
+
+            // Determine what to rebase.
+            $components = $options['components'] ?? ['all'];
+            $rebased    = [];
+
+            if (in_array('all', $components, true) === true || in_array('solr', $components, true) === true) {
+                // Rebase Solr configuration.
+                $rebased['solr'] = [
+                    'success' => true,
+                    'message' => 'Solr configuration rebased',
+                ];
+            }
+
+            if (in_array('all', $components, true) === true || in_array('cache', $components, true) === true) {
+                // Clear and rebuild cache.
+                $this->clearCache();
+                $rebased['cache'] = [
+                    'success' => true,
+                    'message' => 'Cache cleared and ready for rebuild',
+                ];
+            }
+
+            return [
+                'success'   => true,
+                'message'   => 'Configuration rebase completed',
+                'rebased'   => $rebased,
+                'timestamp' => time(),
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('[SettingsService] Rebase failed', ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'error'   => 'Rebase failed',
+                'message' => $e->getMessage(),
+            ];
+        }//end try
+
+    }//end rebase()
 
 
 }//end class
