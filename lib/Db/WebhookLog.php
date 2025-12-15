@@ -30,6 +30,8 @@ use OCP\AppFramework\Db\Entity;
  * Stores logs of webhook delivery attempts, including success/failure status,
  * response data, and retry information.
  *
+ * @method int getId()
+ * @method void setId(int $id)
  * @method int getWebhook()
  * @method void setWebhook(int $webhook)
  * @method string getEventClass()

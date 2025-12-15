@@ -57,7 +57,7 @@ use OCP\IUserSession;
  * @method Application delete(Entity $entity)
  * @method Application find(int|string $id)
  * @method Application findEntity(IQueryBuilder $query)
- * @method Application[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Application[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Application> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Application>
@@ -121,7 +121,8 @@ class ApplicationMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
@@ -130,7 +131,8 @@ class ApplicationMapper extends QBMapper
         parent::__construct($db, 'openregister_applications', Application::class);
 
         // Store dependencies for use in mapper methods.
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->eventDispatcher     = $eventDispatcher;

@@ -577,4 +577,262 @@ class IndexService
     }//end warmupIndex()
 
 
+    // ========================================================================
+    // BACKEND ACCESS & DELEGATION METHODS (Restored for compatibility)
+    // ========================================================================
+
+
+    /**
+     * Get the search backend instance.
+     *
+     * Provides direct access to the backend for advanced operations.
+     *
+     * @return SearchBackendInterface Search backend instance
+     */
+    public function getBackend(): SearchBackendInterface
+    {
+        return $this->searchBackend;
+
+    }//end getBackend()
+
+
+    /**
+     * Search objects with pagination.
+     *
+     * Delegates to search backend.
+     *
+     * @param array       $query        Search query parameters
+     * @param int         $limit        Maximum results per page
+     * @param int         $offset       Offset for pagination
+     * @param array       $facets       Facet configuration
+     * @param string|null $collection   Collection name
+     * @param bool        $includeTotal Whether to include total count
+     *
+     * @return array Search results with pagination info
+     */
+    public function searchObjectsPaginated(
+        array $query=[],
+        int $limit=30,
+        int $offset=0,
+        array $facets=[],
+        ?string $collection=null,
+        bool $includeTotal=true
+    ): array {
+        return $this->searchBackend->searchObjectsPaginated(
+            query: $query,
+            limit: $limit,
+            offset: $offset,
+            facets: $facets,
+            collection: $collection,
+            includeTotal: $includeTotal
+        );
+
+    }//end searchObjectsPaginated()
+
+
+    /**
+     * Get document count in the index.
+     *
+     * Returns the total number of documents currently indexed.
+     *
+     * @return int Document count
+     */
+    public function getDocumentCount(): int
+    {
+        return $this->searchBackend->getDocumentCount();
+
+    }//end getDocumentCount()
+
+
+    /**
+     * Check if a collection exists.
+     *
+     * @param string $collectionName Collection name to check
+     *
+     * @return bool True if collection exists
+     */
+    public function collectionExists(string $collectionName): bool
+    {
+        return $this->searchBackend->collectionExists($collectionName);
+
+    }//end collectionExists()
+
+
+    /**
+     * Create a new collection.
+     *
+     * @param string $name   Collection name
+     * @param array  $config Configuration options
+     *
+     * @return array Creation result
+     */
+    public function createCollection(string $name, array $config=[]): array
+    {
+        return $this->searchBackend->createCollection($name, $config);
+
+    }//end createCollection()
+
+
+    /**
+     * Test connectivity only (without collection tests).
+     *
+     * Quick connectivity check without full collection validation.
+     *
+     * @return array Connection test results
+     */
+    public function testConnectivityOnly(): array
+    {
+        return $this->testConnection(includeCollectionTests: false);
+
+    }//end testConnectivityOnly()
+
+
+    // ========================================================================
+    // SOLR-SPECIFIC METHODS (Restored for compatibility)
+    // ========================================================================
+
+
+    /**
+     * Ensure tenant-specific collection exists.
+     *
+     * Creates collection if it doesn't exist, for multi-tenancy support.
+     * Only works with Solr backend.
+     *
+     * @param string|null $tenant Tenant identifier
+     *
+     * @return array Collection info
+     *
+     * @throws Exception If backend is not Solr
+     */
+    public function ensureTenantCollection(?string $tenant=null): array
+    {
+        $collectionName = $this->getTenantSpecificCollectionName($tenant);
+
+        if ($this->collectionExists($collectionName) === false) {
+            $this->createCollection($collectionName);
+        }
+
+        return [
+            'collection' => $collectionName,
+            'exists'     => true,
+            'tenant'     => $tenant,
+        ];
+
+    }//end ensureTenantCollection()
+
+
+    /**
+     * Get tenant-specific collection name.
+     *
+     * Generates collection name based on tenant for multi-tenancy.
+     *
+     * @param string|null $tenant Tenant identifier (null for default)
+     *
+     * @return string Collection name
+     */
+    public function getTenantSpecificCollectionName(?string $tenant=null): string
+    {
+        $baseName = $this->getConfig()['collection'] ?? 'openregister';
+
+        if ($tenant !== null && empty($tenant) === false) {
+            return $baseName.'_'.$tenant;
+        }
+
+        return $baseName;
+
+    }//end getTenantSpecificCollectionName()
+
+
+    /**
+     * Get Solr endpoint URL.
+     *
+     * Returns the base URL for Solr API endpoints.
+     * Only works with Solr backend.
+     *
+     * @return string Endpoint URL
+     *
+     * @throws Exception If backend is not Solr
+     */
+    public function getEndpointUrl(): string
+    {
+        $config = $this->getSolrConfig();
+        return $config['endpoint'] ?? '';
+
+    }//end getEndpointUrl()
+
+
+    /**
+     * Build Solr base URL.
+     *
+     * Constructs the base URL for Solr operations.
+     * Only works with Solr backend.
+     *
+     * @param string|null $collection Optional collection name
+     *
+     * @return string Solr base URL
+     *
+     * @throws Exception If backend is not Solr
+     */
+    public function buildSolrBaseUrl(?string $collection=null): string
+    {
+        $config  = $this->getSolrConfig();
+        $baseUrl = rtrim($config['endpoint'] ?? '', '/');
+
+        if ($collection !== null) {
+            return $baseUrl.'/solr/'.$collection;
+        }
+
+        return $baseUrl.'/solr';
+
+    }//end buildSolrBaseUrl()
+
+
+    /**
+     * Get Solr-specific configuration.
+     *
+     * Returns configuration specific to Solr backend.
+     * Only works with Solr backend.
+     *
+     * @return array Solr configuration
+     *
+     * @throws Exception If backend is not Solr
+     */
+    public function getSolrConfig(): array
+    {
+        $config = $this->getConfig();
+
+        // Extract Solr-specific config.
+        return [
+            'endpoint'   => $config['endpoint'] ?? '',
+            'collection' => $config['collection'] ?? 'openregister',
+            'username'   => $config['username'] ?? '',
+            'password'   => $config['password'] ?? '',
+            'timeout'    => $config['timeout'] ?? 30,
+        ];
+
+    }//end getSolrConfig()
+
+
+    /**
+     * Get HTTP client for Solr operations.
+     *
+     * Returns the HTTP client used for Solr communication.
+     * Only works with Solr backend.
+     *
+     * @return object HTTP client instance
+     *
+     * @throws Exception If backend is not Solr or client not available
+     */
+    public function getHttpClient(): object
+    {
+        // Check if backend is Solr and has getHttpClient method.
+        if (method_exists($this->searchBackend, 'getHttpClient') === true) {
+            return $this->searchBackend->getHttpClient();
+        }
+
+        throw new Exception('HTTP client not available for current backend');
+
+    }//end getHttpClient()
+
+
 }//end class

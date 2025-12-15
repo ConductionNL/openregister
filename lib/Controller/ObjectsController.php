@@ -1131,7 +1131,7 @@ class ObjectsController extends Controller
 
         // Get request parameters for filtering.
         $requestParams = $this->request->getParams();
-        
+
         // Extract specific parameters.
         $limit = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
 

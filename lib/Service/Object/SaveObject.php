@@ -37,8 +37,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
@@ -136,13 +134,11 @@ class SaveObject
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly MetadataHydrationHandler $metadataHydrationHandler,
         private readonly FilePropertyHandler $filePropertyHandler,
-        private readonly FileService $fileService,
         private readonly IUserSession $userSession,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
-        private readonly OrganisationService $organisationService,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
@@ -569,10 +565,11 @@ class SaveObject
                 if (is_numeric($firstElement) === true) {
                     // Array of file IDs - load first file and get its download URL.
                     try {
-                        $fileNode = $this->fileService->getFile(object: $entity, file: (int) $firstElement);
+                        $fileNode = null
+                        // TODO: fileService->getFile(object: $entity, file: (int) $firstElement);
                         if ($fileNode !== null) {
-                            $fileData = $this->fileService->formatFile($fileNode);
-
+                            $fileData = null
+                            // TODO: fileService->formatFile($fileNode);
                             // IMPORTANT: Object image requires public access.
                             // If file is not published, auto-publish it.
                             if (empty($fileData['downloadUrl']) === true) {
@@ -586,9 +583,11 @@ class SaveObject
                                     ]
                                 );
                                 // Publish the file.
-                                $this->fileService->publishFile(object: $entity, file: $fileNode->getId());
+                                null
+                                // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                                 // Re-fetch file data after publishing.
-                                $fileData = $this->fileService->formatFile($fileNode);
+                                $fileData = null
+                                // TODO: fileService->formatFile($fileNode);
                             }
 
                             if (($fileData['downloadUrl'] ?? null) !== null) {
@@ -616,10 +615,11 @@ class SaveObject
             } else if (is_numeric($imageValue) === true) {
                 // Single file ID - load file and get its download URL.
                 try {
-                    $fileNode = $this->fileService->getFile(object: $entity, file: (int) $imageValue);
+                    $fileNode = null
+                    // TODO: fileService->getFile(object: $entity, file: (int) $imageValue);
                     if ($fileNode !== null) {
-                        $fileData = $this->fileService->formatFile($fileNode);
-
+                        $fileData = null
+                        // TODO: fileService->formatFile($fileNode);
                         // IMPORTANT: Object image requires public access.
                         // If file is not published, auto-publish it.
                         if (empty($fileData['downloadUrl']) === true) {
@@ -633,9 +633,11 @@ class SaveObject
                                 ]
                             );
                             // Publish the file.
-                            $this->fileService->publishFile(object: $entity, file: $fileNode->getId());
+                            null
+                            // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                             // Re-fetch file data after publishing.
-                            $fileData = $this->fileService->formatFile($fileNode);
+                            $fileData = null
+                            // TODO: fileService->formatFile($fileNode);
                         }
 
                         if (($fileData['downloadUrl'] ?? null) !== null) {
@@ -1980,7 +1982,8 @@ class SaveObject
         if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
             && isset($selfData['organisation']) === false
         ) {
-            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $organisationUuid = null
+            // TODO: organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }
 

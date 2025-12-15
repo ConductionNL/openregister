@@ -74,11 +74,11 @@ class BulkRelationHandler
     public function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
         // Track statistics for debugging/monitoring.
-        $_appliedCount = 0;
-        $_processedCount = 0;
+        $_appliedCount=0;
+        $_processedCount=0;
 
         // Create direct UUID to object reference mapping.
-        $objectsByUuid = [];
+        $objectsByUuid=[];
         foreach ($preparedObjects ?? [] as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
@@ -117,7 +117,7 @@ class BulkRelationHandler
                         $existingValues = ($targetObject[$inversedBy] ?? []);
                         // @psalm-suppress EmptyArrayAccess - $existingValues is initialized with ?? []
                         if (is_array($existingValues) === false) {
-                            $existingValues = [];
+                            $existingValues=[];
                         }
                         if (in_array($objectUuid, $existingValues, true) === false) {
                             $existingValues[] = $objectUuid;
@@ -136,7 +136,7 @@ class BulkRelationHandler
                                 // @psalm-suppress EmptyArrayAccess - $targetObject is guaranteed to exist from isset check
                                 $existingValues = ($targetObject[$inversedBy] ?? []);
                                 if (is_array($existingValues) === false) {
-                                    $existingValues = [];
+                                    $existingValues=[];
                                 }
                                 if (in_array($objectUuid, $existingValues, true) === false) {
                                     $existingValues[] = $objectUuid;
@@ -182,9 +182,9 @@ class BulkRelationHandler
 
 
         // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries.
-        $allRelatedIds = [];
+        $allRelatedIds=[];
         // Track which objects need which related objects.
-        $objectRelationsMap = [];
+        $objectRelationsMap=[];
 
         // First pass: collect all related object IDs.
         foreach ($savedObjects ?? [] as $index => $savedObject) {
@@ -225,7 +225,7 @@ class BulkRelationHandler
         }
 
         // PERFORMANCE OPTIMIZATION: Single bulk fetch instead of N+1 queries.
-        $relatedObjectsMap = [];
+        $relatedObjectsMap=[];
         if (empty($allRelatedIds) === false) {
             $uniqueRelatedIds = array_unique($allRelatedIds);
 
@@ -240,7 +240,7 @@ class BulkRelationHandler
         }
 
         // Second pass: process inverse relations with proper context.
-        $writeBackOperations = [];
+        $writeBackOperations=[];
         foreach ($savedObjects ?? [] as $index => $savedObject) {
             if (isset($objectRelationsMap[$index]) === false) {
                 continue;
@@ -308,7 +308,7 @@ class BulkRelationHandler
         }
 
         // Track objects that need to be updated.
-        $objectsToUpdate = [];
+        $objectsToUpdate=[];
 
         foreach ($writeBackOperations ?? [] as $operation) {
             $targetObject = $operation['targetObject'];
@@ -379,13 +379,13 @@ class BulkRelationHandler
      * @psalm-return array<string, string>
      * @phpstan-return array<string, string>
      */
-    public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array
+    public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
-        $relations = [];
+        $relations=[];
 
         // NO ERROR SUPPRESSION: Let relation scanning errors bubble up immediately!
         // Get schema properties if available.
-        $schemaProperties = null;
+        $schemaProperties=null;
         if ($schema !== null) {
             // NO ERROR SUPPRESSION: Let schema property parsing errors bubble up immediately!
             $schemaProperties = $schema->getProperties();
@@ -400,7 +400,7 @@ class BulkRelationHandler
             // Handle string values (potential UUIDs/URLs).
             if (is_string($value) === true) {
                 // Check if it's a UUID or URL based on schema definition.
-                $isRelation = false;
+                $isRelation=false;
 
                 if ($propertyConfig !== null) {
                     $type = $propertyConfig['type'] ?? '';
@@ -408,18 +408,18 @@ class BulkRelationHandler
 
                     // Check for explicit relation types.
                     if ($type === 'text' && in_array($format, ['uuid', 'uri', 'url'], true) === true) {
-                        $isRelation = true;
+                        $isRelation=true;
                     } elseif ($type === 'object') {
                         // Type 'object' with a string value is always a relation.
-                        $isRelation = true;
+                        $isRelation=true;
                     }
                 } else {
                     // No schema info - use heuristics.
                     // If it looks like a UUID or URL, treat it as a relation.
                     if (\Symfony\Component\Uid\Uuid::isValid($value) === true) {
-                        $isRelation = true;
+                        $isRelation=true;
                     } elseif (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-                        $isRelation = true;
+                        $isRelation=true;
                     }
                 }
 

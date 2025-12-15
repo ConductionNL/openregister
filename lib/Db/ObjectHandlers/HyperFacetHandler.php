@@ -86,21 +86,21 @@ class HyperFacetHandler
      *
      * @var IMemcache|null
      */
-    private ?IMemcache $facetCache = null;
+    private ?IMemcache $facetCache=null;
 
     /**
      * Fragment cache for query fragments.
      *
      * @var IMemcache|null
      */
-    private ?IMemcache $fragmentCache = null;
+    private ?IMemcache $fragmentCache=null;
 
     /**
      * Cardinality cache for field cardinality estimates.
      *
      * @var IMemcache|null
      */
-    private ?IMemcache $cardinalityCache = null;
+    private ?IMemcache $cardinalityCache=null;
 
     /**
      * Cache TTL constants for different data types
@@ -443,7 +443,7 @@ class HyperFacetHandler
         // **OPTIMIZATION**: Separate metadata facets from JSON facets for optimal processing.
         [$metadataFacets, $jsonFacets] = $this->separateFacetTypes($facetConfig);
 
-        $promises = [];
+        $promises=[];
 
         // **PARALLEL EXECUTION**: Process metadata facets concurrently.
         if (empty($metadataFacets) === false) {
@@ -460,7 +460,7 @@ class HyperFacetHandler
         $results = \React\Async\await(\React\Promise\all($promises));
 
         // Combine results from different facet types.
-        $combinedFacets = [];
+        $combinedFacets=[];
         if (($results['metadata'] ?? null) !== null) {
             $combinedFacets = array_merge($combinedFacets, $results['metadata']);
         }
@@ -518,7 +518,7 @@ class HyperFacetHandler
         ]);
 
         // **STATISTICAL EXTRAPOLATION**: Scale up sample results.
-        $extrapolationFactor = 1 / $sampleRate;
+        $extrapolationFactor=1 / $sampleRate;
         $extrapolatedFacets = $this->extrapolateFacetResults(sampleFacets: $sampleFacets, factor: $extrapolationFactor, sampleSize: $sampleSize, totalSize: $totalSize);
 
         return $extrapolatedFacets;
@@ -561,7 +561,7 @@ class HyperFacetHandler
         // **HYPERLOGLOG OPTIMIZATION**: Use simplified cardinality estimation.
         // For each facet field, estimate unique value count and distribution.
 
-        $approximateFacets = [];
+        $approximateFacets=[];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self') {
@@ -601,7 +601,7 @@ class HyperFacetHandler
         return new Promise(function ($resolve, $reject) use ($metadataFacets, $baseQuery) {
             try {
                 $startTime = microtime(true);
-                $results = [];
+                $results=[];
 
                 // **BATCH OPTIMIZATION**: Combine multiple metadata facets in minimal queries.
                 $batchableFields = ['register', 'schema', 'organisation', 'owner'];
@@ -660,10 +660,10 @@ class HyperFacetHandler
     private function getBatchedMetadataFacets(array $fields, array $facetConfig, array $baseQuery): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $results = [];
+        $results=[];
 
         // **SINGLE QUERY OPTIMIZATION**: Get all terms facets in one query.
-        $selectFields = [];
+        $selectFields=[];
         foreach ($fields as $field) {
             if (($facetConfig[$field] ?? null) !== null && ($facetConfig[$field]['type'] ?? '') === 'terms') {
                 $selectFields[] = $field;
@@ -943,7 +943,7 @@ class HyperFacetHandler
      */
     private function calculateComplexityScore(array $baseQuery): int
     {
-        $score = 0;
+        $score=0;
 
         // Add complexity for each filter type.
         if (($baseQuery['_search'] ?? null) !== null) {
@@ -1022,8 +1022,8 @@ class HyperFacetHandler
      */
     private function separateFacetTypes(array $facetConfig): array
     {
-        $metadataFacets = [];
-        $jsonFacets = [];
+        $metadataFacets=[];
+        $jsonFacets=[];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self') {

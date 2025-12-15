@@ -6,11 +6,11 @@
  * Handler for object statistics and chart data generation.
  * Extracted from ObjectEntityMapper to follow Single Responsibility Principle.
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 
 namespace OCA\OpenRegister\Db\ObjectEntity;
@@ -30,14 +30,15 @@ use Psr\Log\LoggerInterface;
  * - Schema-based chart data
  * - Size distribution chart data
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 class StatisticsHandler
 {
+
     /**
      * Database connection.
      *
@@ -59,6 +60,7 @@ class StatisticsHandler
      */
     private string $tableName;
 
+
     /**
      * Constructor.
      *
@@ -69,12 +71,14 @@ class StatisticsHandler
     public function __construct(
         IDBConnection $db,
         LoggerInterface $logger,
-        string $tableName = 'openregister_objects'
+        string $tableName='openregister_objects'
     ) {
-        $this->db = $db;
-        $this->logger = $logger;
+        $this->db        = $db;
+        $this->logger    = $logger;
         $this->tableName = $tableName;
-    }
+
+    }//end __construct()
+
 
     /**
      * Get statistics for objects.
@@ -88,10 +92,10 @@ class StatisticsHandler
      *
      * @return array Array containing statistics: total, size, invalid, deleted, locked, published.
      */
-    public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array
+    public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
         try {
-            $qb = $this->db->getQueryBuilder();
+            $qb  = $this->db->getQueryBuilder();
             $now = (new DateTime())->format('Y-m-d H:i:s');
             $qb->select(
                 $qb->createFunction('COUNT(id) as total'),
@@ -101,7 +105,7 @@ class StatisticsHandler
                 $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
                 // Only count as published if published <= now and (depublished is null or depublished > now).
                 $qb->createFunction(
-                    "COUNT(CASE WHEN published IS NOT NULL AND published <= '" . $now . "' AND (depublished IS NULL OR depublished > '" . $now . "') THEN 1 END) as published"
+                    "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."' AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published"
                 )
             )
                 ->from($this->tableName);
@@ -146,30 +150,32 @@ class StatisticsHandler
                         $qb->andWhere($orConditions);
                     }
                 }
-            }
+            }//end if
 
             $result = $qb->executeQuery()->fetch();
 
             return [
-                'total' => (int) ($result['total'] ?? 0),
-                'size' => (int) ($result['size'] ?? 0),
-                'invalid' => (int) ($result['invalid'] ?? 0),
-                'deleted' => (int) ($result['deleted'] ?? 0),
-                'locked' => (int) ($result['locked'] ?? 0),
+                'total'     => (int) ($result['total'] ?? 0),
+                'size'      => (int) ($result['size'] ?? 0),
+                'invalid'   => (int) ($result['invalid'] ?? 0),
+                'deleted'   => (int) ($result['deleted'] ?? 0),
+                'locked'    => (int) ($result['locked'] ?? 0),
                 'published' => (int) ($result['published'] ?? 0),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting statistics: ' . $e->getMessage());
+            $this->logger->error('Error getting statistics: '.$e->getMessage());
             return [
-                'total' => 0,
-                'size' => 0,
-                'invalid' => 0,
-                'deleted' => 0,
-                'locked' => 0,
+                'total'     => 0,
+                'size'      => 0,
+                'invalid'   => 0,
+                'deleted'   => 0,
+                'locked'    => 0,
                 'published' => 0,
             ];
-        }
-    }
+        }//end try
+
+    }//end getStatistics()
+
 
     /**
      * Get chart data for objects grouped by register.
@@ -179,7 +185,7 @@ class StatisticsHandler
      *
      * @return array Array containing chart data with 'labels' and 'series' keys.
      */
-    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -221,13 +227,15 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting register chart data: ' . $e->getMessage());
+            $this->logger->error('Error getting register chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getRegisterChartData()
+
 
     /**
      * Get chart data for objects grouped by schema.
@@ -237,7 +245,7 @@ class StatisticsHandler
      *
      * @return array Array containing chart data with 'labels' and 'series' keys.
      */
-    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -279,13 +287,15 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting schema chart data: ' . $e->getMessage());
+            $this->logger->error('Error getting schema chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
-        }
-    }
+        }//end try
+
+    }//end getSchemaChartData()
+
 
     /**
      * Get chart data for objects grouped by size ranges.
@@ -295,7 +305,7 @@ class StatisticsHandler
      *
      * @return array Array containing chart data with 'labels' and 'series' keys.
      */
-    public function getSizeDistributionChartData(?int $registerId = null, ?int $schemaId = null): array
+    public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             // Define size ranges in bytes.
@@ -332,12 +342,12 @@ class StatisticsHandler
                     $qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
                 }
 
-                $count = $qb->executeQuery()->fetchOne();
+                $count     = $qb->executeQuery()->fetchOne();
                 $results[] = [
                     'label' => $range['label'],
                     'count' => (int) $count,
                 ];
-            }
+            }//end foreach
 
             return [
                 'labels' => array_map(
@@ -354,12 +364,14 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting size distribution chart data: ' . $e->getMessage());
+            $this->logger->error('Error getting size distribution chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
-        }
-    }
-}
+        }//end try
 
+    }//end getSizeDistributionChartData()
+
+
+}//end class

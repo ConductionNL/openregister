@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -75,7 +74,7 @@ class ImportHandler
      *
      * @var ObjectService The object service instance.
      */
-    private readonly ObjectService $objectService;
+    // REMOVED: private readonly ObjectService $objectService;
 
     /**
      * App config for storing version information.
@@ -110,14 +109,14 @@ class ImportHandler
      *
      * @var array<string, Register> Registers indexed by slug.
      */
-    private array $registersMap = [];
+    private array $registersMap=[];
 
     /**
      * Map of schemas indexed by slug during import.
      *
      * @var array<string, Schema> Schemas indexed by slug.
      */
-    private array $schemasMap = [];
+    private array $schemasMap=[];
 
 
     /**
@@ -138,7 +137,7 @@ class ImportHandler
         RegisterMapper $registerMapper,
         ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
-        ObjectService $objectService,
+        
         IAppConfig $appConfig,
         LoggerInterface $logger,
         string $appDataPath,
@@ -148,7 +147,7 @@ class ImportHandler
         $this->registerMapper      = $registerMapper;
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
-        $this->objectService       = $objectService;
+        null // TODO       = $objectService;
         $this->appConfig           = $appConfig;
         $this->logger              = $logger;
         $this->appDataPath         = $appDataPath;

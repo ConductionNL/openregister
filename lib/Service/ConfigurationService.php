@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -243,6 +244,7 @@ class ConfigurationService
         GitLabHandler $gitlabHandler,
         CacheHandler $cacheHandler,
         ExportHandler $exportHandler,
+        ImportHandler $importHandler,
         UploadHandler $uploadHandler,
         string $appDataPath
     ) {
@@ -261,8 +263,10 @@ class ConfigurationService
         $this->gitlabHandler = $gitlabHandler;
         $this->cacheHandler  = $cacheHandler;
         $this->exportHandler = $exportHandler;
+        $this->importHandler = $importHandler;
         $this->uploadHandler = $uploadHandler;
         $this->appDataPath   = $appDataPath;
+
     }//end __construct()
 
 
@@ -286,6 +290,7 @@ class ConfigurationService
         }
 
         return false;
+
     }//end getOpenConnector()
 
 
@@ -302,11 +307,11 @@ class ConfigurationService
      * @phpstan-param array<string, mixed>|Configuration|Register $input
      * @psalm-param   array<string, mixed>|Configuration|Register $input
      */
-    public function exportConfig(array | Configuration | Register $input = [], bool $includeObjects = false): array
+    public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
         // Delegate to ExportHandler for the actual export logic.
         $openConnectorService = null;
-        $openConnector = $this->getOpenConnector();
+        $openConnector        = $this->getOpenConnector();
         if ($openConnector === true) {
             $openConnectorService = $this->openConnectorConfigurationService;
         }
@@ -316,6 +321,7 @@ class ConfigurationService
             includeObjects: $includeObjects,
             openConnectorService: $openConnectorService
         );
+
     }//end exportConfig()
 
 
@@ -335,6 +341,7 @@ class ConfigurationService
     {
         // Delegate to UploadHandler for processing uploaded JSON data.
         return $this->uploadHandler->getUploadedJson($data, $uploadedFiles);
+
     }//end getUploadedJson()
 
 
@@ -377,6 +384,7 @@ class ConfigurationService
         $phpArray = $this->ensureArrayStructure($phpArray);
 
         return $phpArray;
+
     }//end decode()
 
 
@@ -396,13 +404,14 @@ class ConfigurationService
             foreach ($data as $key => $value) {
                 if (is_object($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
-                } elseif (is_array($value) === true) {
+                } else if (is_array($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
                 }
             }
         }
 
         return $data;
+
     }//end ensureArrayStructure()
 
 
@@ -423,7 +432,7 @@ class ConfigurationService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
         // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
@@ -442,6 +451,7 @@ class ConfigurationService
         }
 
         return $phpArray;
+
     }//end getJSONfromFile()
 
 
@@ -478,6 +488,7 @@ class ConfigurationService
         }
 
         return $phpArray;
+
     }//end getJSONfromURL()
 
 
@@ -513,6 +524,7 @@ class ConfigurationService
         $phpArray = $this->ensureArrayStructure($phpArray);
 
         return $phpArray;
+
     }//end getJSONfromBody()
 
 
@@ -551,7 +563,7 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromJson(array $data, ?Configuration $configuration = null, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force = false): array
+    public function importFromJson(array $data, ?Configuration $configuration=null, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): array
     {
         // ⚠️ CRITICAL: Configuration entity is required for proper tracking.
         if ($configuration === null) {
@@ -622,19 +634,19 @@ class ConfigurationService
             $this->logger->info(
                 message: 'Starting schema import process',
                 context: [
-                        'totalSchemas' => count($data['components']['schemas']),
-                        'schemaKeys'   => array_keys($data['components']['schemas']),
-                    ]
+                    'totalSchemas' => count($data['components']['schemas']),
+                    'schemaKeys'   => array_keys($data['components']['schemas']),
+                ]
             );
 
             foreach ($data['components']['schemas'] as $key => $schemaData) {
                 $this->logger->info(
                     'Processing schema',
                     [
-                            'schemaKey'   => $key,
-                            'schemaTitle' => $schemaData['title'] ?? 'no title',
-                            'schemaSlug'  => $schemaData['slug'] ?? 'no slug',
-                        ]
+                        'schemaKey'   => $key,
+                        'schemaTitle' => $schemaData['title'] ?? 'no title',
+                        'schemaSlug'  => $schemaData['slug'] ?? 'no slug',
+                    ]
                 );
 
                 if (isset($schemaData['title']) === true && is_string($key) === true) {
@@ -650,28 +662,28 @@ class ConfigurationService
                         $this->logger->info(
                             'Successfully imported schema',
                             [
-                                    'schemaKey'  => $key,
-                                    'schemaSlug' => $schema->getSlug(),
-                                    'schemaId'   => $schema->getId(),
-                                ]
+                                'schemaKey'  => $key,
+                                'schemaSlug' => $schema->getSlug(),
+                                'schemaId'   => $schema->getId(),
+                            ]
                         );
                     } else {
                         $this->logger->warning(
                             'Schema import returned null',
                             [
-                                    'schemaKey'  => $key,
-                                    'schemaData' => array_keys($schemaData),
-                                ]
+                                'schemaKey'  => $key,
+                                'schemaData' => array_keys($schemaData),
+                            ]
                         );
                     }//end if
                 } catch (Exception $e) {
                     $this->logger->error(
                         'Failed to import schema',
                         [
-                                'schemaKey' => $key,
-                                'error'     => $e->getMessage(),
-                                'trace'     => $e->getTraceAsString(),
-                            ]
+                            'schemaKey' => $key,
+                            'error'     => $e->getMessage(),
+                            'trace'     => $e->getTraceAsString(),
+                        ]
                     );
                     // Continue with other schemas instead of failing the entire import.
                 }//end try
@@ -680,9 +692,9 @@ class ConfigurationService
             $this->logger->info(
                 'Schema import process completed',
                 [
-                        'importedCount'   => count($result['schemas']),
-                        'importedSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas']),
-                    ]
+                    'importedCount'   => count($result['schemas']),
+                    'importedSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas']),
+                ]
             );
         }//end if
 
@@ -822,12 +834,12 @@ class ConfigurationService
                         $this->logger->info(
                             'Skipped object update: imported version not higher',
                             [
-                                    'slug'            => $slug,
-                                    'register'        => $registerId,
-                                    'schema'          => $schemaId,
-                                    'importedVersion' => $importedVersion,
-                                    'existingVersion' => $existingVersion,
-                                ]
+                                'slug'            => $slug,
+                                'register'        => $registerId,
+                                'schema'          => $schemaId,
+                                'importedVersion' => $importedVersion,
+                                'existingVersion' => $existingVersion,
+                            ]
                         );
                         continue;
                     }//end if
@@ -864,6 +876,7 @@ class ConfigurationService
         }
 
         return $result;
+
     }//end importFromJson()
 
 
@@ -885,7 +898,7 @@ class ConfigurationService
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration
+    private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -1030,6 +1043,7 @@ class ConfigurationService
             $this->logger->error(message: "Failed to create or update configuration for app {$appId}: ".$e->getMessage());
             throw new Exception("Failed to create or update configuration: ".$e->getMessage());
         }//end try
+
     }//end createOrUpdateConfiguration()
 
 
@@ -1041,7 +1055,7 @@ class ConfigurationService
      *
      * @return Register The imported register or null if skipped.
      */
-    private function importRegister(array $data, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force = false): Register
+    private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -1096,6 +1110,7 @@ class ConfigurationService
             $this->logger->error(message: 'Failed to import register: '.$e->getMessage());
             throw new Exception('Failed to import register: '.$e->getMessage());
         }//end try
+
     }//end importRegister()
 
 
@@ -1116,7 +1131,7 @@ class ConfigurationService
      *
      * @return Schema The imported schema or null if skipped
      */
-    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force = false): Schema
+    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Schema
     {
         try {
             // Remove id, uuid, and organisation from the data.
@@ -1190,7 +1205,7 @@ class ConfigurationService
                     if (($property['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
-                        } elseif (($this->schemasMap[$property['$ref']] ?? null) !== null) {
+                        } else if (($this->schemasMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
                         }
                     }
@@ -1198,7 +1213,7 @@ class ConfigurationService
                     if (($property['items']['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
-                        } elseif (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
+                        } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
@@ -1213,7 +1228,7 @@ class ConfigurationService
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } elseif ($registerSlug !== null) {
+                        } else if ($registerSlug !== null) {
                             // Try to find existing register in database.
                             // Note: May fail due to organisation filtering during cross-instance import.
                             try {
@@ -1275,7 +1290,7 @@ class ConfigurationService
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } elseif ($registerSlug !== null) {
+                        } else if ($registerSlug !== null) {
                             // Try to find existing register in database.
                             // Note: May fail due to organisation filtering during cross-instance import.
                             try {
@@ -1325,7 +1340,7 @@ class ConfigurationService
                     if (($property['register'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $slugsAndIdsMap[$property['register']];
-                        } elseif (($this->registersMap[$property['register']] ?? null) !== null) {
+                        } else if (($this->registersMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $this->registersMap[$property['register']]->getId();
                         }
                     }
@@ -1333,7 +1348,7 @@ class ConfigurationService
                     if (is_array($property['items'] ?? []) && isset($property['items']['register'])) {
                         if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
-                        } elseif (($this->registersMap[$property['items']['register']] ?? null) !== null) {
+                        } else if (($this->registersMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
@@ -1389,6 +1404,7 @@ class ConfigurationService
             $this->logger->error(message: 'Failed to import schema: '.$e->getMessage());
             throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
+
     }//end importSchema()
 
 
@@ -1417,7 +1433,7 @@ class ConfigurationService
      *
      * @psalm-return array{registers: array<Register>, schemas: array<Schema>, objects: array<ObjectEntity>, endpoints: array, sources: array, mappings: array, jobs: array, synchronizations: array, rules: array}
      */
-    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array
+    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
         try {
             // Resolve the file path relative to Nextcloud root.
@@ -1473,12 +1489,13 @@ class ConfigurationService
             $this->logger->error(
                 'Failed to import configuration from file: '.$e->getMessage(),
                 [
-                        'appId'    => $appId,
-                        'filePath' => $filePath,
-                    ]
+                    'appId'    => $appId,
+                    'filePath' => $filePath,
+                ]
             );
             throw new Exception('Failed to import configuration from file: '.$e->getMessage());
         }//end try
+
     }//end importFromFilePath()
 
 
@@ -1511,7 +1528,7 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromApp(string $appId, array $data, string $version, bool $force = false): array
+    public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -1531,10 +1548,10 @@ class ConfigurationService
                         $this->logger->info(
                             "Found existing configuration by sourceUrl",
                             [
-                                    'sourceUrl'       => $sourceUrl,
-                                    'configurationId' => $configuration->getId(),
-                                    'currentVersion'  => $configuration->getVersion(),
-                                ]
+                                'sourceUrl'       => $sourceUrl,
+                                'configurationId' => $configuration->getId(),
+                                'currentVersion'  => $configuration->getVersion(),
+                            ]
                         );
                     }
                 } catch (Exception $e) {
@@ -1552,9 +1569,9 @@ class ConfigurationService
                         $this->logger->info(
                             "Found existing configuration for app {$appId}",
                             [
-                                    'configurationId' => $configuration->getId(),
-                                    'currentVersion'  => $configuration->getVersion(),
-                                ]
+                                'configurationId' => $configuration->getId(),
+                                'currentVersion'  => $configuration->getVersion(),
+                            ]
                         );
                     }
                 } catch (Exception $e) {
@@ -1644,9 +1661,9 @@ class ConfigurationService
                 $this->logger->info(
                     "Created new configuration for app {$appId}",
                     [
-                            'configurationId' => $configuration->getId(),
-                            'version'         => $version,
-                        ]
+                        'configurationId' => $configuration->getId(),
+                        'version'         => $version,
+                    ]
                 );
             }//end if
 
@@ -1698,13 +1715,13 @@ class ConfigurationService
                 // Standard OAS properties from info section.
                 if (($info['title'] ?? null) !== null) {
                     $configuration->setTitle($info['title']);
-                } elseif (($xOpenregister['title'] ?? null) !== null) {
+                } else if (($xOpenregister['title'] ?? null) !== null) {
                     $configuration->setTitle($xOpenregister['title']);
                 }
 
                 if (($info['description'] ?? null) !== null) {
                     $configuration->setDescription($info['description']);
-                } elseif (($xOpenregister['description'] ?? null) !== null) {
+                } else if (($xOpenregister['description'] ?? null) !== null) {
                     $configuration->setDescription($xOpenregister['description']);
                 }
 
@@ -1750,11 +1767,11 @@ class ConfigurationService
                 $this->logger->info(
                     "Updated configuration entity for app {$appId}",
                     [
-                            'configurationId' => $configuration->getId(),
-                            'totalRegisters'  => count($existingRegisterIds ?? []),
-                            'totalSchemas'    => count($existingSchemaIds ?? []),
-                            'totalObjects'    => count($existingObjectIds ?? []),
-                        ]
+                        'configurationId' => $configuration->getId(),
+                        'totalRegisters'  => count($existingRegisterIds ?? []),
+                        'totalSchemas'    => count($existingSchemaIds ?? []),
+                        'totalObjects'    => count($existingObjectIds ?? []),
+                    ]
                 );
             }//end if
 
@@ -1763,6 +1780,7 @@ class ConfigurationService
             $this->logger->error(message: "Failed to import configuration for app {$appId}: ".$e->getMessage());
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
+
     }//end importFromApp()
 
 
@@ -1795,6 +1813,7 @@ class ConfigurationService
 
         $this->logger->error(message: $errorMessage);
         throw new Exception($errorMessage);
+
     }//end handleDuplicateSchemaError()
 
 
@@ -1843,6 +1862,7 @@ class ConfigurationService
         } catch (Exception $e) {
             return "Unable to retrieve duplicate information: ".$e->getMessage();
         }//end try
+
     }//end getDuplicateSchemaInfo()
 
 
@@ -1875,6 +1895,7 @@ class ConfigurationService
 
         $this->logger->error(message: $errorMessage);
         throw new Exception($errorMessage);
+
     }//end handleDuplicateRegisterError()
 
 
@@ -1923,6 +1944,7 @@ class ConfigurationService
         } catch (Exception $e) {
             return "Unable to retrieve duplicate information: ".$e->getMessage();
         }//end try
+
     }//end getDuplicateRegisterInfo()
 
 
@@ -1983,6 +2005,7 @@ class ConfigurationService
             $this->logger->error(message: "Unexpected error checking remote version: ".$e->getMessage());
             return null;
         }//end try
+
     }//end checkRemoteVersion()
 
 
@@ -2045,13 +2068,14 @@ class ConfigurationService
         if ($comparison > 0) {
             $result['hasUpdate'] = true;
             $result['message']   = "Update available: {$localVersion} → {$remoteVersion}";
-        } elseif ($comparison === 0) {
+        } else if ($comparison === 0) {
             $result['message'] = 'Local version is up to date';
         } else {
             $result['message'] = 'Local version is newer than remote version';
         }
 
         return $result;
+
     }//end compareVersions()
 
 
@@ -2106,6 +2130,7 @@ class ConfigurationService
                 statusCode: 500
             );
         }//end try
+
     }//end fetchRemoteConfiguration()
 
 
@@ -2210,6 +2235,7 @@ class ConfigurationService
         ];
 
         return $preview;
+
     }//end previewConfigurationChanges()
 
 
@@ -2279,6 +2305,7 @@ class ConfigurationService
         }
 
         return $preview;
+
     }//end previewRegisterChange()
 
 
@@ -2348,6 +2375,7 @@ class ConfigurationService
         }
 
         return $preview;
+
     }//end previewSchemaChange()
 
 
@@ -2450,6 +2478,7 @@ class ConfigurationService
         }//end if
 
         return $preview;
+
     }//end previewObjectChange()
 
 
@@ -2464,7 +2493,7 @@ class ConfigurationService
      *
      * @phpstan-return array<array{field: string, current: mixed, proposed: mixed}>
      */
-    private function compareArrays(array $current, array $proposed, string $prefix = ''): array
+    private function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
         $changes = [];
 
@@ -2509,7 +2538,7 @@ class ConfigurationService
                     $nestedChanges = $this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $fieldName);
                     $changes       = array_merge($changes, $nestedChanges);
                 }
-            } elseif ($proposedValue !== $currentValue) {
+            } else if ($proposedValue !== $currentValue) {
                 // Values are different.
                 $changes[] = [
                     'field'    => $fieldName,
@@ -2520,6 +2549,7 @@ class ConfigurationService
         }//end foreach
 
         return $changes;
+
     }//end compareArrays()
 
 
@@ -2539,6 +2569,7 @@ class ConfigurationService
         }
 
         return true;
+
     }//end isSimpleArray()
 
 
@@ -2695,14 +2726,15 @@ class ConfigurationService
         $this->logger->info(
             "Selective import completed",
             [
-                    'configurationId'   => $configuration->getId(),
-                    'registersImported' => count($result['registers']),
-                    'schemasImported'   => count($result['schemas']),
-                    'objectsImported'   => count($result['objects']),
-                ]
+                'configurationId'   => $configuration->getId(),
+                'registersImported' => count($result['registers']),
+                'schemasImported'   => count($result['schemas']),
+                'objectsImported'   => count($result['objects']),
+            ]
         );
 
         return $result;
+
     }//end importConfigurationWithSelection()
 
 
@@ -2748,6 +2780,7 @@ class ConfigurationService
 
             return null;
         }//end try
+
     }//end getConfiguredAppVersion()
 
 
@@ -2793,6 +2826,7 @@ class ConfigurationService
                 ]
             );
         }//end try
+
     }//end setConfiguredAppVersion()
 
 
@@ -2808,9 +2842,10 @@ class ConfigurationService
      * @return array Search results
      * @throws Exception If search fails
      */
-    public function searchGitHub(string $search = '', int $page = 1, int $perPage = 30): array
+    public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
         return $this->githubHandler->searchConfigurations($search, $page, $perPage);
+
     }//end searchGitHub()
 
 
@@ -2826,9 +2861,10 @@ class ConfigurationService
      * @return array Search results
      * @throws Exception If search fails
      */
-    public function searchGitLab(string $search = '', int $page = 1, int $perPage = 30): array
+    public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
         return $this->gitlabHandler->searchConfigurations($search, $page, $perPage);
+
     }//end searchGitLab()
 
 
@@ -2840,6 +2876,7 @@ class ConfigurationService
     public function getGitHubHandler(): GitHubHandler
     {
         return $this->githubHandler;
+
     }//end getGitHubHandler()
 
 
@@ -2851,6 +2888,7 @@ class ConfigurationService
     public function getGitLabHandler(): GitLabHandler
     {
         return $this->gitlabHandler;
+
     }//end getGitLabHandler()
 
 
@@ -2862,5 +2900,8 @@ class ConfigurationService
     public function getCacheHandler(): CacheHandler
     {
         return $this->cacheHandler;
+
     }//end getCacheHandler()
+
+
 }//end class

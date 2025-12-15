@@ -56,7 +56,7 @@ use Symfony\Component\Uid\Uuid;
  * @method View delete(Entity $entity)
  * @method View find(int|string $id)
  * @method View findEntity(IQueryBuilder $query)
- * @method View[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method View[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<View> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<View>
@@ -128,20 +128,23 @@ class ViewMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        CacheHandler $configurationCacheService,
+        // REMOVED: Handlers should not be in mappers
+        //         CacheHandler $configurationCacheService,
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_views', View::class);
 
         // Store dependencies for use in mapper methods.
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
-        $this->configurationCacheService = $configurationCacheService;
+        //         $this->configurationCacheService = $configurationCacheService; // REMOVED
         $this->eventDispatcher           = $eventDispatcher;
 
     }//end __construct()

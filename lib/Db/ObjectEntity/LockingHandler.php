@@ -100,6 +100,7 @@ class LockingHandler
         $this->userSession     = $userSession;
         $this->eventDispatcher = $eventDispatcher;
         $this->logger          = $logger;
+
     }//end __construct()
 
 
@@ -118,7 +119,7 @@ class LockingHandler
      *
      * @return ObjectEntity The locked object
      */
-    public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
+    public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
     {
         // Find the object.
         $object = $this->mapper->find($identifier);
@@ -136,10 +137,10 @@ class LockingHandler
         $this->logger->debug(
             message: '[LockingHandler] Locking object',
             context: [
-                    'identifier' => $identifier,
-                    'process'    => $process,
-                    'duration'   => $duration,
-                ]
+                'identifier' => $identifier,
+                'process'    => $process,
+                'duration'   => $duration,
+            ]
         );
 
         // Attempt to lock the object.
@@ -154,11 +155,12 @@ class LockingHandler
         $this->logger->info(
             message: '[LockingHandler] Object locked successfully',
             context: [
-                    'objectId' => $object->getId(),
-                ]
+                'objectId' => $object->getId(),
+            ]
         );
 
         return $object;
+
     }//end lockObject()
 
 
@@ -188,8 +190,8 @@ class LockingHandler
         $this->logger->debug(
             message: '[LockingHandler] Unlocking object',
             context: [
-                    'identifier' => $identifier,
-                ]
+                'identifier' => $identifier,
+            ]
         );
 
         // Attempt to unlock the object.
@@ -204,10 +206,13 @@ class LockingHandler
         $this->logger->info(
             message: '[LockingHandler] Object unlocked successfully',
             context: [
-                    'objectId' => $object->getId(),
-                ]
+                'objectId' => $object->getId(),
+            ]
         );
 
         return $object;
+
     }//end unlockObject()
+
+
 }//end class

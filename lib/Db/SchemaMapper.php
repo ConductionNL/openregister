@@ -65,7 +65,7 @@ use OCA\OpenRegister\Db\ObjectEntityMapper;
  * @method Schema delete(Entity $entity)
  * @method Schema find(int|string $id)
  * @method Schema findEntity(IQueryBuilder $query)
- * @method Schema[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Schema>
@@ -119,7 +119,7 @@ class SchemaMapper extends QBMapper
      */
     private readonly IGroupManager $groupManager;
 
-    // Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig = null)
+    // Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
     // We assign it in the constructor to make it available to the trait methods.
 
 
@@ -142,8 +142,10 @@ class SchemaMapper extends QBMapper
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        PropertyValidatorHandler $validator,
-        OrganisationService $organisationService,
+        // REMOVED: Handlers should not be in mappers
+        //         PropertyValidatorHandler $validator,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -153,8 +155,9 @@ class SchemaMapper extends QBMapper
 
         // Store dependencies for use in mapper methods.
         $this->eventDispatcher     = $eventDispatcher;
-        $this->validator           = $validator;
-        $this->organisationService = $organisationService;
+        //         $this->validator           = $validator; // REMOVED
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         // Assign appConfig to trait's protected property.

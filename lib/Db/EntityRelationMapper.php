@@ -31,7 +31,7 @@ use OCP\IDBConnection;
  * @method EntityRelation delete(Entity $entity)
  * @method EntityRelation find(int|string $id)
  * @method EntityRelation findEntity(IQueryBuilder $query)
- * @method EntityRelation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method EntityRelation[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<EntityRelation> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<EntityRelation>

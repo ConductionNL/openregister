@@ -16,6 +16,8 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Webhook entity
  *
+ * @method int getId()
+ * @method void setId(int $id)
  * @method string getUuid()
  * @method void setUuid(string $uuid)
  * @method string getName()

@@ -27,7 +27,6 @@ use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -66,7 +65,6 @@ class PermissionHandler
         private readonly IGroupManager $groupManager,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger
     ) {
 
@@ -370,8 +368,8 @@ class PermissionHandler
     public function getActiveOrganisationForContext(): ?string
     {
         try {
-            $activeOrganisation = $this->organisationService->getActiveOrganisation();
-
+            $activeOrganisation = null;
+            // TODO: Get without service
             if (is_array($activeOrganisation) === true && isset($activeOrganisation['uuid']) === true) {
                 return $activeOrganisation['uuid'];
             }

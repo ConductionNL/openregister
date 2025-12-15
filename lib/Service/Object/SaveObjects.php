@@ -73,7 +73,6 @@ use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -87,33 +86,36 @@ class SaveObjects
      *
      * @var array<int|string, Schema>
      */
-    private static array $schemaCache = [];
+    private static array $schemaCache=[];
 
     /**
      * Static schema analysis cache for comprehensive schema data
      *
      * @var array<int|string, array>
      */
-    private static array $schemaAnalysisCache = [];
+    private static array $schemaAnalysisCache=[];
 
     /**
      * Static register cache to avoid repeated database lookups
      *
      * @var array<int|string, Register>
      */
-    private static array $registerCache = [];
+    private static array $registerCache=[];
 
     /**
      * Constructor for SaveObjects handler
      *
-     * @param ObjectEntityMapper  $objectEntityMapper  Mapper for object entity database operations
-     * @param SchemaMapper        $schemaMapper        Mapper for schema operations
-     * @param RegisterMapper      $registerMapper      Mapper for register operations
-     * @param SaveObject          $saveHandler         Handler for individual object operations
-     * @param ValidateObject      $validateHandler     Handler for object validation
-     * @param IUserSession        $userSession         User session for getting current user
-     * @param OrganisationService $organisationService Service for organisation operations
-     * @param LoggerInterface     $logger              Logger for error and debug logging
+     * @param ObjectEntityMapper      $objectEntityMapper      Mapper for object entity database operations
+     * @param SchemaMapper            $schemaMapper            Mapper for schema operations
+     * @param RegisterMapper          $registerMapper          Mapper for register operations
+     * @param SaveObject              $saveHandler             Handler for individual object operations
+     * @param BulkValidationHandler   $bulkValidationHandler   Handler for bulk validation operations
+     * @param BulkRelationHandler     $bulkRelationHandler     Handler for bulk relation operations
+     * @param TransformationHandler   $transformationHandler   Handler for data transformation
+     * @param PreparationHandler      $preparationHandler      Handler for data preparation
+     * @param ChunkProcessingHandler  $chunkProcessingHandler  Handler for chunk processing
+     * @param IUserSession            $userSession             User session for getting current user
+     * @param LoggerInterface         $logger                  Logger for error and debug logging
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -126,7 +128,6 @@ class SaveObjects
         private readonly PreparationHandler $preparationHandler,
         private readonly ChunkProcessingHandler $chunkProcessingHandler,
         private readonly IUserSession $userSession,
-        private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger
     ) {
 
@@ -258,9 +259,9 @@ class SaveObjects
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         // Only log for large operations or when debugging is needed.
         if ($isMixedSchemaOperation === true) {
-            $logThreshold = 1000;
+            $logThreshold=1000;
         } else {
-            $logThreshold = 10000;
+            $logThreshold=10000;
         }
         if (count($objects) > $logThreshold) {
             if ($isMixedSchemaOperation === true) {
@@ -400,7 +401,7 @@ class SaveObjects
         if (count($processedObjects) > 0) {
             $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
         } else {
-            $efficiency = 0;
+            $efficiency=0;
         }
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
@@ -708,14 +709,14 @@ class SaveObjects
             return [[], []];
         }
 
-        $preparedObjects = [];
+        $preparedObjects=[];
         $schemaCache     = [];
         $schemaAnalysis  = [];
         $invalidObjects  = [];
 // PERFORMANCE OPTIMIZATION: Comprehensive schema analysis cache.
 
         // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
-        $schemaIds = [];
+        $schemaIds=[];
         foreach ($objects ?? [] as $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
@@ -933,18 +934,18 @@ class SaveObjects
         if ($currentUser !== null) {
             $defaultOwner = $currentUser->getUID();
         } else {
-            $defaultOwner = null;
+            $defaultOwner=null;
         }
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
-        $defaultOrganisation = $this->organisationService->getOrganisationForNewEntity();
+        $defaultOrganisation=null; // TODO
 
         $now = new DateTime();
         $now->format('c');
 
         // PERFORMANCE OPTIMIZATION: Process all objects with pre-calculated values.
-        $preparedObjects = [];
-        $invalidObjects = [];
+        $preparedObjects=[];
+        $invalidObjects=[];
 
         foreach ($objects ?? [] as $_index => $object) {
             // NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
@@ -1285,7 +1286,7 @@ class SaveObjects
 
         // STEP 3: DIRECT BULK PROCESSING - No categorization needed upfront.
         // All objects are treated as "potential inserts" - MySQL will handle duplicates.
-        $unchangedObjects = [];
+        $unchangedObjects=[];
         // Empty - classification happens after bulk save.
         // Will be populated from timestamp analysis.
 
@@ -1312,11 +1313,11 @@ class SaveObjects
         // Bulk save completed successfully.
 
         // ENHANCED PROCESSING: Handle complete objects with timestamp-based classification.
-        $savedObjectIds = [];
-        $createdObjects = [];
-        $updatedObjects = [];
-        $unchangedObjects = [];
-        $reconstructedObjects = [];
+        $savedObjectIds=[];
+        $createdObjects=[];
+        $updatedObjects=[];
+        $unchangedObjects=[];
+        $reconstructedObjects=[];
 
         if (is_array($bulkResult) === true) {
             // Check if we got complete objects (new approach) or just UUIDs (fallback).
@@ -1433,7 +1434,7 @@ class SaveObjects
 
         } else {
             // FALLBACK: Use traditional object reconstruction.
-            $updateObjects = [];
+            $updateObjects=[];
             $savedObjects = $this->reconstructSavedObjects(insertObjects: $transformedObjects, updateObjects: $updateObjects, _savedObjectIds: $savedObjectIds, _existingObjects: []);
 
             // Fallback classification (less precise).
@@ -1514,11 +1515,11 @@ class SaveObjects
     private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {
         // Track statistics for debugging/monitoring.
-        $_appliedCount = 0;
-        $_processedCount = 0;
+        $_appliedCount=0;
+        $_processedCount=0;
 
         // Create direct UUID to object reference mapping.
-        $objectsByUuid = [];
+        $objectsByUuid=[];
         foreach ($preparedObjects ?? [] as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
@@ -1557,7 +1558,7 @@ class SaveObjects
                         $existingValues = ($targetObject[$inversedBy] ?? []);
                         // @psalm-suppress EmptyArrayAccess - $existingValues is initialized with ?? []
                         if (is_array($existingValues) === false) {
-                            $existingValues = [];
+                            $existingValues=[];
                         }
                         if (in_array($objectUuid, $existingValues, true) === false) {
                             $existingValues[] = $objectUuid;
@@ -1576,7 +1577,7 @@ class SaveObjects
                                 // @psalm-suppress EmptyArrayAccess - $targetObject is guaranteed to exist from isset check
                                 $existingValues = ($targetObject[$inversedBy] ?? []);
                                 if (is_array($existingValues) === false) {
-                                    $existingValues = [];
+                                    $existingValues=[];
                                 }
                                 if (in_array($objectUuid, $existingValues, true) === false) {
                                     $existingValues[] = $objectUuid;
@@ -1637,8 +1638,8 @@ class SaveObjects
      */
     private function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
-        $transformedObjects = [];
-        $invalidObjects = [];
+        $transformedObjects=[];
+        $invalidObjects=[];
 
         foreach ($objects ?? [] as $index => &$object) {
 
@@ -1871,7 +1872,7 @@ class SaveObjects
      */
     private function reconstructSavedObjects(array $insertObjects, array $updateObjects, array $_savedObjectIds, array $_existingObjects): array
     {
-        $savedObjects = [];
+        $savedObjects=[];
 
         // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
         // Instead, create ObjectEntity and hydrate without inserting.
@@ -1924,9 +1925,9 @@ class SaveObjects
 
 
         // PERFORMANCE FIX: Collect all related IDs first to avoid N+1 queries.
-        $allRelatedIds = [];
+        $allRelatedIds=[];
         // Track which objects need which related objects.
-        $objectRelationsMap = [];
+        $objectRelationsMap=[];
 
         // First pass: collect all related object IDs.
         foreach ($savedObjects ?? [] as $index => $savedObject) {
@@ -1967,7 +1968,7 @@ class SaveObjects
         }
 
         // PERFORMANCE OPTIMIZATION: Single bulk fetch instead of N+1 queries.
-        $relatedObjectsMap = [];
+        $relatedObjectsMap=[];
         if (empty($allRelatedIds) === false) {
             $uniqueRelatedIds = array_unique($allRelatedIds);
 
@@ -1982,7 +1983,7 @@ class SaveObjects
         }
 
         // Second pass: process inverse relations with proper context.
-        $writeBackOperations = [];
+        $writeBackOperations=[];
         foreach ($savedObjects ?? [] as $index => $savedObject) {
             if (isset($objectRelationsMap[$index]) === false) {
                 continue;
@@ -2045,7 +2046,7 @@ class SaveObjects
         }
 
         // Track objects that need to be updated.
-        $objectsToUpdate = [];
+        $objectsToUpdate=[];
 
         foreach ($writeBackOperations ?? [] as $operation) {
             $targetObject = $operation['targetObject'];
@@ -2139,11 +2140,11 @@ class SaveObjects
      */
     private function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
-        $relations = [];
+        $relations=[];
 
         // NO ERROR SUPPRESSION: Let relation scanning errors bubble up immediately!
         // Get schema properties if available.
-        $schemaProperties = null;
+        $schemaProperties=null;
         if ($schema !== null) {
             // NO ERROR SUPPRESSION: Let schema property parsing errors bubble up immediately!
             $schemaProperties = $schema->getProperties();
@@ -2204,7 +2205,7 @@ class SaveObjects
                     }
                 }
             } elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-                $shouldTreatAsRelation = false;
+                $shouldTreatAsRelation=false;
 
                 // Check schema property configuration first.
                 if ($schemaProperties !== null && (($schemaProperties[$key] ?? null) !== null) === true) {
@@ -2214,10 +2215,10 @@ class SaveObjects
 
                     // Check for explicit relation types.
                     if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url'], true) === true) {
-                        $shouldTreatAsRelation = true;
+                        $shouldTreatAsRelation=true;
                     } elseif ($propertyType === 'object') {
                         // Object properties with string values are always relations.
-                        $shouldTreatAsRelation = true;
+                        $shouldTreatAsRelation=true;
                     }
                 }
 

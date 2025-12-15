@@ -31,7 +31,7 @@ use OCP\IDBConnection;
  * @method GdprEntity delete(Entity $entity)
  * @method GdprEntity find(int|string $id)
  * @method GdprEntity findEntity(IQueryBuilder $query)
- * @method GdprEntity[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method GdprEntity[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<GdprEntity> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<GdprEntity>

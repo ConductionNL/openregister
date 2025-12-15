@@ -55,7 +55,7 @@ use Symfony\Component\Uid\Uuid;
  * @method Endpoint delete(Entity $entity)
  * @method Endpoint find(int $id)
  * @method Endpoint findEntity(IQueryBuilder $query)
- * @method Endpoint[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Endpoint[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Endpoint> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Endpoint>
@@ -107,7 +107,8 @@ class EndpointMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager
     ) {
@@ -115,7 +116,8 @@ class EndpointMapper extends QBMapper
         parent::__construct($db, 'openregister_endpoints', Endpoint::class);
 
         // Store dependencies for use in mapper methods.
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
 

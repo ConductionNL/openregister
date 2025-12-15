@@ -59,7 +59,7 @@ use OCA\OpenRegister\Service\FileService;
  * @method Register delete(Entity $entity)
  * @method Register find(int|string $id)
  * @method Register findEntity(IQueryBuilder $query)
- * @method Register[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method Register[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Register> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Register>
@@ -143,7 +143,8 @@ class RegisterMapper extends QBMapper
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
         ObjectEntityMapper $objectEntityMapper,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -157,7 +158,8 @@ class RegisterMapper extends QBMapper
         $this->objectEntityMapper = $objectEntityMapper;
 
         // Initialize multi-tenancy trait dependencies.
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->appConfig           = $appConfig;

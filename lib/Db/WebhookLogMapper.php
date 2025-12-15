@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  * @method WebhookLog delete(Entity $entity)
  * @method WebhookLog find(int $id)
  * @method WebhookLog findEntity(IQueryBuilder $query)
- * @method WebhookLog[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method WebhookLog[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<WebhookLog> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<WebhookLog>

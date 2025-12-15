@@ -31,10 +31,15 @@ use Psr\Log\LoggerInterface;
  */
 class CrudHandler
 {
+
     private ObjectEntityMapper $mapper;
+
     private IDBConnection $db;
+
     private IEventDispatcher $eventDispatcher;
+
     private LoggerInterface $logger;
+
 
     public function __construct(
         ObjectEntityMapper $mapper,
@@ -43,10 +48,12 @@ class CrudHandler
         LoggerInterface $logger
     ) {
         $this->mapper = $mapper;
-        $this->db = $db;
+        $this->db     = $db;
         $this->eventDispatcher = $eventDispatcher;
-        $this->logger = $logger;
-    }
+        $this->logger          = $logger;
+
+    }//end __construct()
+
 
     /**
      * Insert a new object entity
@@ -57,23 +64,25 @@ class CrudHandler
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
-        
+
         $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
-        
+
         // Delegate to parent mapper.
         $entity = $this->mapper->insertEntity($entity);
-        
+
         $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($entity));
-        
+
         $this->logger->info('[CrudHandler] Object inserted', ['id' => $entity->getId()]);
-        
+
         return $entity;
-    }
+
+    }//end insert()
+
 
     /**
      * Update an existing object entity
      */
-    public function update(Entity $entity, bool $includeDeleted = false): Entity
+    public function update(Entity $entity, bool $includeDeleted=false): Entity
     {
         // Find old object for event.
         $qb = $this->db->getQueryBuilder();
@@ -91,17 +100,19 @@ class CrudHandler
         $object = $entity->getObject();
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
-        
+
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatingEvent($entity, $oldObject));
-        
+
         $entity = $this->mapper->updateEntity($entity);
-        
+
         $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($entity, $oldObject));
-        
+
         $this->logger->info('[CrudHandler] Object updated', ['id' => $entity->getId()]);
-        
+
         return $entity;
-    }
+
+    }//end update()
+
 
     /**
      * Delete an object entity
@@ -109,13 +120,16 @@ class CrudHandler
     public function delete(Entity $entity): ObjectEntity
     {
         $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent($entity));
-        
+
         $result = $this->mapper->deleteEntity($entity);
-        
+
         $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($entity));
-        
+
         $this->logger->info('[CrudHandler] Object deleted', ['id' => $entity->getId()]);
-        
+
         return $result;
-    }
-}
+
+    }//end delete()
+
+
+}//end class

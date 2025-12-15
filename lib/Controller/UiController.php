@@ -409,4 +409,46 @@ class UiController extends Controller
     }//end entities()
 
 
+    /**
+     * Render endpoints UI
+     *
+     * Serves the Single Page Application template for the endpoints management interface.
+     * This route is used when users navigate to the endpoints section of the application.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     */
+    public function endpoints(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end endpoints()
+
+
+    /**
+     * Render endpoint logs UI
+     *
+     * Serves the Single Page Application template for the endpoint logs interface.
+     * This route is used when users navigate to the endpoint logs section.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return TemplateResponse The template response.
+     *
+     * @phpstan-return TemplateResponse
+     * @psalm-return   TemplateResponse
+     */
+    public function endpointLogs(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+
+    }//end endpointLogs()
+
+
 }//end class

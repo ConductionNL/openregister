@@ -13,11 +13,11 @@
  * - max_allowed_packet error prevention
  * - Database connection health monitoring
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 
 namespace OCA\OpenRegister\Db\ObjectEntity;
@@ -43,14 +43,15 @@ use RuntimeException;
  * - Publish/depublish bulk operations
  * - Schema/register-based bulk operations
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 class BulkOperationsHandler
 {
+
     /**
      * Database connection.
      *
@@ -77,7 +78,8 @@ class BulkOperationsHandler
      *
      * @var float
      */
-    private float $maxPacketSizeBuffer = 0.25; // Use 25% of max_allowed_packet for safety.
+    private float $maxPacketSizeBuffer = 0.25;
+    // Use 25% of max_allowed_packet for safety.
 
     /**
      * Query builder handler for max_allowed_packet queries.
@@ -86,25 +88,28 @@ class BulkOperationsHandler
      */
     private QueryBuilderHandler $queryBuilderHandler;
 
+
     /**
      * Constructor.
      *
-     * @param IDBConnection        $db                    Database connection.
-     * @param LoggerInterface      $logger                Logger instance.
-     * @param QueryBuilderHandler  $queryBuilderHandler   Query builder handler.
-     * @param string               $tableName             Table name for objects.
+     * @param IDBConnection       $db                  Database connection.
+     * @param LoggerInterface     $logger              Logger instance.
+     * @param QueryBuilderHandler $queryBuilderHandler Query builder handler.
+     * @param string              $tableName           Table name for objects.
      */
     public function __construct(
         IDBConnection $db,
         LoggerInterface $logger,
         QueryBuilderHandler $queryBuilderHandler,
-        string $tableName = 'openregister_objects'
+        string $tableName='openregister_objects'
     ) {
-        $this->db = $db;
+        $this->db     = $db;
         $this->logger = $logger;
         $this->queryBuilderHandler = $queryBuilderHandler;
-        $this->tableName = $tableName;
-    }
+        $this->tableName           = $tableName;
+
+    }//end __construct()
+
 
     /**
      * ULTRA PERFORMANCE: Memory-intensive unified bulk save operation.
@@ -117,7 +122,7 @@ class BulkOperationsHandler
      *
      * @return array Array of processed UUIDs.
      */
-    public function ultraFastBulkSave(array $insertObjects = [], array $updateObjects = []): array
+    public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
         $optimizedHandler = new OptimizedBulkOperations(
             $this->db,
@@ -125,7 +130,9 @@ class BulkOperationsHandler
         );
 
         return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
-    }
+
+    }//end ultraFastBulkSave()
+
 
     /**
      * Perform bulk delete operations on objects by UUID.
@@ -137,13 +144,13 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
+    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
-        $deletedObjectIds = [];
+        $deletedObjectIds   = [];
         $transactionStarted = false;
 
         try {
@@ -154,7 +161,7 @@ class BulkOperationsHandler
             }
 
             // Bulk delete objects with hard delete flag.
-            $deletedIds = $this->bulkDelete($uuids, $hardDelete);
+            $deletedIds       = $this->bulkDelete($uuids, $hardDelete);
             $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
 
             // Commit transaction only if we started it.
@@ -168,10 +175,12 @@ class BulkOperationsHandler
             }
 
             throw $e;
-        }
+        }//end try
 
         return $deletedObjectIds;
-    }
+
+    }//end deleteObjects()
+
 
     /**
      * Perform bulk publish operations on objects by UUID.
@@ -181,7 +190,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of published objects.
      */
-    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -196,7 +205,7 @@ class BulkOperationsHandler
                 $transactionStarted = true;
             }
 
-            $publishedIds = $this->bulkPublish($uuids, $datetime);
+            $publishedIds       = $this->bulkPublish($uuids, $datetime);
             $publishedObjectIds = array_merge($publishedObjectIds, $publishedIds);
 
             if ($transactionStarted === true) {
@@ -211,7 +220,9 @@ class BulkOperationsHandler
         }
 
         return $publishedObjectIds;
-    }
+
+    }//end publishObjects()
+
 
     /**
      * Perform bulk depublish operations on objects by UUID.
@@ -221,14 +232,14 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
+    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
         }
 
         $depublishedObjectIds = [];
-        $transactionStarted = false;
+        $transactionStarted   = false;
 
         try {
             if ($this->db->inTransaction() === false) {
@@ -236,7 +247,7 @@ class BulkOperationsHandler
                 $transactionStarted = true;
             }
 
-            $depublishedIds = $this->bulkDepublish($uuids, $datetime);
+            $depublishedIds       = $this->bulkDepublish($uuids, $datetime);
             $depublishedObjectIds = array_merge($depublishedObjectIds, $depublishedIds);
 
             if ($transactionStarted === true) {
@@ -251,7 +262,9 @@ class BulkOperationsHandler
         }
 
         return $depublishedObjectIds;
-    }
+
+    }//end depublishObjects()
+
 
     /**
      * Publish all objects belonging to a specific schema.
@@ -263,7 +276,7 @@ class BulkOperationsHandler
      *
      * @throws \Exception If the publishing operation fails.
      */
-    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
         // First, get all UUIDs for objects belonging to this schema.
         $qb = $this->db->getQueryBuilder();
@@ -277,7 +290,7 @@ class BulkOperationsHandler
         }
 
         $result = $qb->executeQuery();
-        $uuids = [];
+        $uuids  = [];
         while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['uuid'];
         }
@@ -288,16 +301,18 @@ class BulkOperationsHandler
             return [
                 'published_count' => 0,
                 'published_uuids' => [],
-                'schema_id' => $schemaId,
+                'schema_id'       => $schemaId,
             ];
         }
 
         return [
             'published_count' => count($uuids),
             'published_uuids' => $uuids,
-            'schema_id' => $schemaId,
+            'schema_id'       => $schemaId,
         ];
-    }
+
+    }//end publishObjectsBySchema()
+
 
     /**
      * Delete all objects belonging to a specific schema.
@@ -309,7 +324,7 @@ class BulkOperationsHandler
      *
      * @throws \Exception If the deletion operation fails.
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
         // First, get all UUIDs for objects belonging to this schema.
         $qb = $this->db->getQueryBuilder();
@@ -323,7 +338,7 @@ class BulkOperationsHandler
         }
 
         $result = $qb->executeQuery();
-        $uuids = [];
+        $uuids  = [];
         while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['uuid'];
         }
@@ -334,7 +349,7 @@ class BulkOperationsHandler
             return [
                 'deleted_count' => 0,
                 'deleted_uuids' => [],
-                'schema_id' => $schemaId,
+                'schema_id'     => $schemaId,
             ];
         }
 
@@ -344,9 +359,11 @@ class BulkOperationsHandler
         return [
             'deleted_count' => count($deletedUuids),
             'deleted_uuids' => $deletedUuids,
-            'schema_id' => $schemaId,
+            'schema_id'     => $schemaId,
         ];
-    }
+
+    }//end deleteObjectsBySchema()
+
 
     /**
      * Delete all objects belonging to a specific register.
@@ -367,7 +384,7 @@ class BulkOperationsHandler
             ->andWhere($qb->expr()->isNull('deleted'));
 
         $result = $qb->executeQuery();
-        $uuids = [];
+        $uuids  = [];
         while (($row = $result->fetch()) !== false) {
             $uuids[] = $row['uuid'];
         }
@@ -378,7 +395,7 @@ class BulkOperationsHandler
             return [
                 'deleted_count' => 0,
                 'deleted_uuids' => [],
-                'register_id' => $registerId,
+                'register_id'   => $registerId,
             ];
         }
 
@@ -388,9 +405,11 @@ class BulkOperationsHandler
         return [
             'deleted_count' => count($deletedUuids),
             'deleted_uuids' => $deletedUuids,
-            'register_id' => $registerId,
+            'register_id'   => $registerId,
         ];
-    }
+
+    }//end deleteObjectsByRegister()
+
 
     /**
      * Process a single chunk of insert objects within a transaction.
@@ -432,8 +451,10 @@ class BulkOperationsHandler
             }
 
             throw $e;
-        }
-    }
+        }//end try
+
+    }//end processInsertChunk()
+
 
     /**
      * Process a single chunk of update objects within a transaction.
@@ -475,8 +496,10 @@ class BulkOperationsHandler
             }
 
             throw $e;
-        }
-    }
+        }//end try
+
+    }//end processUpdateChunk()
+
 
     /**
      * Calculate optimal chunk size based on actual data size to prevent max_allowed_packet errors.
@@ -492,7 +515,7 @@ class BulkOperationsHandler
         $baseChunkSize = 25;
 
         // Sample objects to estimate data size.
-        $sampleSize = min(20, max(5, count($insertObjects) + count($updateObjects)));
+        $sampleSize    = min(20, max(5, count($insertObjects) + count($updateObjects)));
         $sampleObjects = array_merge(
             array_slice($insertObjects, 0, intval($sampleSize / 2)),
             array_slice($updateObjects, 0, intval($sampleSize / 2))
@@ -503,13 +526,13 @@ class BulkOperationsHandler
         }
 
         // Calculate average object size in bytes.
-        $totalSize = 0;
-        $objectCount = 0;
+        $totalSize     = 0;
+        $objectCount   = 0;
         $maxObjectSize = 0;
 
         foreach ($sampleObjects as $object) {
-            $objectSize = $this->estimateObjectSize($object);
-            $totalSize += $objectSize;
+            $objectSize    = $this->estimateObjectSize($object);
+            $totalSize    += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
         }
@@ -544,7 +567,9 @@ class BulkOperationsHandler
         }
 
         return $optimalChunkSize;
-    }
+
+    }//end calculateOptimalChunkSize()
+
 
     /**
      * Estimate the size of an object in bytes for chunk size calculation.
@@ -572,7 +597,7 @@ class BulkOperationsHandler
             return $size;
         } else if (is_object($object) === true) {
             // For ObjectEntity objects (update case).
-            $size = 0;
+            $size       = 0;
             $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
                 $property->setAccessible(true);
@@ -588,10 +613,12 @@ class BulkOperationsHandler
             }
 
             return $size;
-        }
+        }//end if
 
         return 0;
-    }
+
+    }//end estimateObjectSize()
+
 
     /**
      * Calculate optimal batch size for bulk insert operations based on actual data size.
@@ -607,7 +634,7 @@ class BulkOperationsHandler
         $baseBatchSize = 25;
 
         // Sample objects to estimate data size.
-        $sampleSize = min(20, max(5, count($insertObjects)));
+        $sampleSize    = min(20, max(5, count($insertObjects)));
         $sampleObjects = array_slice($insertObjects, 0, $sampleSize);
 
         if (empty($sampleObjects) === true) {
@@ -615,13 +642,13 @@ class BulkOperationsHandler
         }
 
         // Calculate average and maximum object size in bytes.
-        $totalSize = 0;
-        $objectCount = 0;
+        $totalSize     = 0;
+        $objectCount   = 0;
         $maxObjectSize = 0;
 
         foreach ($sampleObjects as $object) {
-            $objectSize = $this->estimateObjectSize($object);
-            $totalSize += $objectSize;
+            $objectSize    = $this->estimateObjectSize($object);
+            $totalSize    += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
         }
@@ -653,7 +680,9 @@ class BulkOperationsHandler
         }
 
         return $optimalBatchSize;
-    }
+
+    }//end calculateOptimalBatchSize()
+
 
     /**
      * Perform true bulk insert of objects using single SQL statement.
@@ -675,10 +704,10 @@ class BulkOperationsHandler
 
         // Get the first object to determine column structure.
         $firstObject = $insertObjects[0];
-        $columns = array_keys($firstObject);
+        $columns     = array_keys($firstObject);
 
         // Calculate optimal batch size based on actual data size.
-        $batchSize = $this->calculateOptimalBatchSize($insertObjects, $columns);
+        $batchSize   = $this->calculateOptimalBatchSize($insertObjects, $columns);
         $insertedIds = [];
         $objectCount = count($insertObjects);
 
@@ -694,14 +723,14 @@ class BulkOperationsHandler
 
             // Build VALUES clause for this batch.
             $valuesClause = [];
-            $parameters = [];
-            $paramIndex = 0;
+            $parameters   = [];
+            $paramIndex   = 0;
 
             foreach ($batch as $objectData) {
                 $rowValues = [];
                 foreach ($columns as $column) {
-                    $paramName = 'param_' . $paramIndex . '_' . $column;
-                    $rowValues[] = ':' . $paramName;
+                    $paramName   = 'param_'.$paramIndex.'_'.$column;
+                    $rowValues[] = ':'.$paramName;
 
                     $value = $objectData[$column] ?? null;
 
@@ -714,20 +743,20 @@ class BulkOperationsHandler
                     $paramIndex++;
                 }
 
-                $valuesClause[] = '(' . implode(', ', $rowValues) . ')';
+                $valuesClause[] = '('.implode(', ', $rowValues).')';
             }
 
             // Build the complete INSERT statement for this batch.
-            $batchSql = "INSERT INTO {$this->tableName} (" . implode(', ', $columns) . ") VALUES " . implode(', ', $valuesClause);
+            $batchSql = "INSERT INTO {$this->tableName} (".implode(', ', $columns).") VALUES ".implode(', ', $valuesClause);
 
             // Execute the batch insert with retry logic.
             $maxBatchRetries = 3;
             $batchRetryCount = 0;
-            $batchSuccess = false;
+            $batchSuccess    = false;
 
             while ($batchRetryCount <= $maxBatchRetries && $batchSuccess === false) {
                 try {
-                    $stmt = $this->db->prepare($batchSql);
+                    $stmt   = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
 
                     if ($result !== false) {
@@ -745,7 +774,7 @@ class BulkOperationsHandler
                         throw $e;
                     }
                 }
-            }
+            }//end while
 
             // Collect UUIDs from the inserted objects for return.
             foreach ($batch as $objectData) {
@@ -757,10 +786,12 @@ class BulkOperationsHandler
             // Clear batch variables to free memory.
             unset($batch, $valuesClause, $parameters, $batchSql);
             gc_collect_cycles();
-        }
+        }//end for
 
         return $insertedIds;
-    }
+
+    }//end bulkInsert()
+
 
     /**
      * Perform bulk update of objects using optimized SQL.
@@ -816,10 +847,12 @@ class BulkOperationsHandler
             if ($uuid !== null) {
                 $updatedIds[] = $uuid;
             }
-        }
+        }//end foreach
 
         return $updatedIds;
-    }
+
+    }//end bulkUpdate()
+
 
     /**
      * Perform bulk delete operations on objects by UUID.
@@ -831,7 +864,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    private function bulkDelete(array $uuids, bool $hardDelete = false): array
+    private function bulkDelete(array $uuids, bool $hardDelete=false): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -841,7 +874,7 @@ class BulkOperationsHandler
 
         // Process deletes in smaller chunks.
         $chunkSize = 500;
-        $chunks = array_chunk($uuids, $chunkSize);
+        $chunks    = array_chunk($uuids, $chunkSize);
 
         foreach ($chunks as $uuidChunk) {
             // Check database connection health.
@@ -878,15 +911,17 @@ class BulkOperationsHandler
             // Perform soft deletes (set deleted timestamp).
             if (empty($softDeleteIds) === false) {
                 $currentTime = (new DateTime())->format('Y-m-d H:i:s');
-                $qb = $this->db->getQueryBuilder();
+                $qb          = $this->db->getQueryBuilder();
                 $qb->update($this->tableName)
                     ->set(
                         'deleted',
                         $qb->createNamedParameter(
-                            json_encode([
-                                'timestamp' => $currentTime,
-                                'reason' => 'bulk_delete',
-                            ])
+                            json_encode(
+                                    [
+                                        'timestamp' => $currentTime,
+                                        'reason'    => 'bulk_delete',
+                                    ]
+                                    )
                         )
                     )
                     ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
@@ -905,10 +940,12 @@ class BulkOperationsHandler
 
             unset($uuidChunk, $objects, $softDeleteIds, $hardDeleteIds);
             gc_collect_cycles();
-        }
+        }//end foreach
 
         return $deletedIds;
-    }
+
+    }//end bulkDelete()
+
 
     /**
      * Perform bulk publish operations on objects by UUID.
@@ -918,7 +955,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of published objects.
      */
-    private function bulkPublish(array $uuids, \DateTime|bool $datetime = true): array
+    private function bulkPublish(array $uuids, \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -934,8 +971,8 @@ class BulkOperationsHandler
         }
 
         // Process publishes in smaller chunks.
-        $chunkSize = 500;
-        $chunks = array_chunk($uuids, $chunkSize);
+        $chunkSize    = 500;
+        $chunks       = array_chunk($uuids, $chunkSize);
         $publishedIds = [];
 
         foreach ($chunks as $uuidChunk) {
@@ -951,8 +988,8 @@ class BulkOperationsHandler
                 ->from($this->tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->executeQuery()->fetchAll();
-            $objectIds = array_column($objects, 'id');
+            $objects           = $qb->executeQuery()->fetchAll();
+            $objectIds         = array_column($objects, 'id');
             $chunkPublishedIds = array_column($objects, 'uuid');
 
             if (empty($objectIds) === false) {
@@ -975,10 +1012,12 @@ class BulkOperationsHandler
 
             unset($uuidChunk, $objects, $objectIds, $chunkPublishedIds);
             gc_collect_cycles();
-        }
+        }//end foreach
 
         return $publishedIds;
-    }
+
+    }//end bulkPublish()
+
 
     /**
      * Perform bulk depublish operations on objects by UUID.
@@ -988,7 +1027,7 @@ class BulkOperationsHandler
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    private function bulkDepublish(array $uuids, \DateTime|bool $datetime = true): array
+    private function bulkDepublish(array $uuids, \DateTime|bool $datetime=true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -1004,8 +1043,8 @@ class BulkOperationsHandler
         }
 
         // Process depublishes in smaller chunks.
-        $chunkSize = 500;
-        $chunks = array_chunk($uuids, $chunkSize);
+        $chunkSize      = 500;
+        $chunks         = array_chunk($uuids, $chunkSize);
         $depublishedIds = [];
 
         foreach ($chunks as $uuidChunk) {
@@ -1021,7 +1060,7 @@ class BulkOperationsHandler
                 ->from($this->tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->executeQuery()->fetchAll();
+            $objects   = $qb->executeQuery()->fetchAll();
             $objectIds = array_column($objects, 'id');
             $chunkDepublishedIds = array_column($objects, 'uuid');
 
@@ -1045,10 +1084,12 @@ class BulkOperationsHandler
 
             unset($uuidChunk, $objects, $objectIds, $chunkDepublishedIds);
             gc_collect_cycles();
-        }
+        }//end foreach
 
         return $depublishedIds;
-    }
+
+    }//end bulkDepublish()
+
 
     /**
      * Get all column names from an entity for bulk operations.
@@ -1061,7 +1102,7 @@ class BulkOperationsHandler
     {
         // Get all field types to determine which fields are database columns.
         $fieldTypes = $entity->getFieldTypes();
-        $columns = [];
+        $columns    = [];
 
         foreach ($fieldTypes as $fieldName => $fieldType) {
             // Skip virtual fields and schemaVersion.
@@ -1071,7 +1112,9 @@ class BulkOperationsHandler
         }
 
         return $columns;
-    }
+
+    }//end getEntityColumns()
+
 
     /**
      * Get the value of a specific column from an entity.
@@ -1094,7 +1137,7 @@ class BulkOperationsHandler
             $value = $property->getValue($entity);
         } catch (\ReflectionException $e) {
             // Try getter method.
-            $getterMethod = 'get' . ucfirst($column);
+            $getterMethod = 'get'.ucfirst($column);
             if (method_exists($entity, $getterMethod) === true) {
                 $value = $entity->$getterMethod();
             } else {
@@ -1128,6 +1171,8 @@ class BulkOperationsHandler
         }
 
         return $value;
-    }
-}
 
+    }//end getEntityValue()
+
+
+}//end class

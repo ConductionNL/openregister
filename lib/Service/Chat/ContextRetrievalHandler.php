@@ -80,6 +80,7 @@ class ContextRetrievalHandler
         $this->vectorService = $vectorService;
         $this->solrService   = $solrService;
         $this->logger        = $logger;
+
     }//end __construct()
 
 
@@ -98,7 +99,7 @@ class ContextRetrievalHandler
      *
      * @psalm-return array{text: string, sources: list<array>}
      */
-    public function retrieveContext(string $query, ?Agent $agent, array $selectedViews = [], array $ragSettings = []): array
+    public function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
     {
         $this->logger->info(
             message: '[ChatService] Retrieving context',
@@ -145,7 +146,7 @@ class ContextRetrievalHandler
                     ]
                 );
             }
-        } elseif (empty($selectedViews) === false) {
+        } else if (empty($selectedViews) === false) {
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
@@ -156,7 +157,7 @@ class ContextRetrievalHandler
             );
         }//end if
 
-        $sources     = [];
+        $sources = [];
         $contextText = '';
 
         try {
@@ -188,7 +189,7 @@ class ContextRetrievalHandler
                     filters: $vectorFilters
                     // Pass filters array instead of 0.7.
                 );
-            } elseif ($searchMode === 'hybrid') {
+            } else if ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
                     query: $query,
                     solrFilters: ['vector_filters' => $vectorFilters],
@@ -294,7 +295,7 @@ class ContextRetrievalHandler
                 // Increment the appropriate counter.
                 if ($isFile === true) {
                     $fileSourceCount++;
-                } elseif ($isObject === true) {
+                } else if ($isObject === true) {
                     $objectSourceCount++;
                 }
 
@@ -353,6 +354,7 @@ class ContextRetrievalHandler
                 'sources' => [],
             ];
         }//end try
+
     }//end retrieveContext()
 
 
@@ -391,6 +393,7 @@ class ContextRetrievalHandler
         }
 
         return $transformed;
+
     }//end searchKeywordOnly()
 
 
@@ -454,5 +457,8 @@ class ContextRetrievalHandler
 
         // Final fallback.
         return 'Unknown Source';
+
     }//end extractSourceName()
+
+
 }//end class

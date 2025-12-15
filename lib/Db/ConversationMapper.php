@@ -54,7 +54,7 @@ use OCP\IDBConnection;
  * @method           Conversation delete(Entity $entity)
  * @method           Conversation find(int|string $id)
  * @method           Conversation findEntity(IQueryBuilder $query)
- * @method           Conversation[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method           Conversation[] findAll(int|null $limit=null, int|null $offset=null)
  * @method           list<Conversation> findEntities(IQueryBuilder $query)
  */
 class ConversationMapper extends QBMapper

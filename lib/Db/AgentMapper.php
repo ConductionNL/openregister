@@ -49,7 +49,7 @@ use Symfony\Component\Uid\Uuid;
  * @method           Agent delete(Entity $entity)
  * @method           Agent find(int|string $id)
  * @method           Agent findEntity(IQueryBuilder $query)
- * @method           Agent[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method           Agent[] findAll(int|null $limit=null, int|null $offset=null)
  * @method           list<Agent> findEntities(IQueryBuilder $query)
  */
 class AgentMapper extends QBMapper
@@ -61,7 +61,8 @@ class AgentMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    private OrganisationService $organisationService;
+    // REMOVED: Services should not be in mappers
+    //     private OrganisationService $organisationService;
 
     /**
      * User session for current user
@@ -96,13 +97,15 @@ class AgentMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_agents', Agent::class);
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->eventDispatcher     = $eventDispatcher;

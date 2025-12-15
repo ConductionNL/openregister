@@ -48,7 +48,7 @@ use OCP\IUserSession;
  * @method           Configuration delete(Entity $entity)
  * @method           Configuration find(int|string $id)
  * @method           Configuration findEntity(IQueryBuilder $query)
- * @method           Configuration[] findAll(int|null $limit = null, int|null $offset = null)
+ * @method           Configuration[] findAll(int|null $limit=null, int|null $offset=null)
  * @method           list<Configuration> findEntities(IQueryBuilder $query)
  *
  * @extends QBMapper<Configuration>
@@ -62,7 +62,8 @@ class ConfigurationMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    private OrganisationService $organisationService;
+    // REMOVED: Services should not be in mappers
+    //     private OrganisationService $organisationService;
 
     /**
      * User session for current user
@@ -105,14 +106,16 @@ class ConfigurationMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers
+        //         OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         ISession $session,
         IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
-        $this->organisationService = $organisationService;
+        // REMOVED: Services should not be in mappers
+        //         $this->organisationService = $organisationService;
         $this->userSession         = $userSession;
         $this->groupManager        = $groupManager;
         $this->session         = $session;

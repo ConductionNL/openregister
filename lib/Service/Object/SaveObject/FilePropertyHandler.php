@@ -18,7 +18,7 @@ use Exception;
 use finfo;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FileService;
+
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 
@@ -52,7 +52,7 @@ class FilePropertyHandler
      * @param LoggerInterface $logger      Logger for logging operations.
      */
     public function __construct(
-        private readonly FileService $fileService,
+        // REMOVED: private readonly
         private readonly LoggerInterface $logger
     ) {
 
@@ -374,7 +374,8 @@ class FilePropertyHandler
                     foreach ($existingFileIds as $fileId) {
                         if (is_numeric($fileId) === true) {
                             try {
-                                $this->fileService->deleteFile(file: (int) $fileId, object: $objectEntity);
+                                null
+                                // TODO->deleteFile(file: (int) $fileId, object: $objectEntity);
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
                                 $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
@@ -384,7 +385,8 @@ class FilePropertyHandler
                 } else if (is_numeric($existingFileIds) === true) {
                     // Single file ID.
                     try {
-                        $this->fileService->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
+                        null
+                        // TODO->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
                         $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
@@ -562,7 +564,8 @@ class FilePropertyHandler
         $autoPublish = $fileConfig['autoPublish'] ?? false;
 
         // Create the file with validation and tagging.
-        $file = $this->fileService->addFile(
+        $file = null
+        // TODO->addFile(
             objectEntity: $objectEntity,
             fileName: $filename,
             content: $fileData['content'],
@@ -615,7 +618,8 @@ class FilePropertyHandler
             // Validate that the existing file meets the property configuration.
             // Get file info to validate against config.
             try {
-                $existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileId);
+                $existingFile = null
+                // TODO->getFile(object: $objectEntity, file: $fileId);
                 if ($existingFile !== null) {
                     // Validate the existing file against current config.
                     $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
@@ -817,12 +821,14 @@ class FilePropertyHandler
         if (empty($autoTags) === false) {
             // Get existing tags and merge with auto tags.
             try {
-                $formattedFile = $this->fileService->formatFile($file);
-                $existingTags  = $formattedFile['labels'] ?? [];
-                $allTags       = array_unique(array_merge($existingTags, $autoTags));
+                $formattedFile = null
+                // TODO->formatFile($file);
+                $existingTags = $formattedFile['labels'] ?? [];
+                $allTags      = array_unique(array_merge($existingTags, $autoTags));
 
                 // Update file with merged tags.
-                $this->fileService->updateFile(
+                null
+                // TODO->updateFile(
                     filePath: $file->getId(),
                     content: null,
                     // Don't change content.

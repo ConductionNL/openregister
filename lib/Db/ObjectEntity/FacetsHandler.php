@@ -6,11 +6,11 @@
  * Handler for facet operations on ObjectEntity.
  * Extracted from ObjectEntityMapper to follow Single Responsibility Principle.
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 
 namespace OCA\OpenRegister\Db\ObjectEntity;
@@ -28,14 +28,15 @@ use Psr\Log\LoggerInterface;
  * - Facetable field discovery from schemas
  * - Facet configuration generation
  *
- * @category   Nextcloud
- * @package    OpenRegister
- * @author     Conduction BV <info@conduction.nl>
- * @license    EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
- * @link       https://www.conduction.nl
+ * @category Nextcloud
+ * @package  OpenRegister
+ * @author   Conduction BV <info@conduction.nl>
+ * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+ * @link     https://www.conduction.nl
  */
 class FacetsHandler
 {
+
     /**
      * Logger instance.
      *
@@ -64,25 +65,28 @@ class FacetsHandler
      */
     private SchemaMapper $schemaMapper;
 
+
     /**
      * Constructor.
      *
-     * @param LoggerInterface           $logger                Logger instance.
-     * @param SchemaMapper              $schemaMapper          Schema mapper instance.
-     * @param MetaDataFacetHandler|null $metaDataFacetHandler  Metadata facet handler (optional).
-     * @param MariaDbFacetHandler|null  $mariaDbFacetHandler   MariaDB facet handler (optional).
+     * @param LoggerInterface           $logger               Logger instance.
+     * @param SchemaMapper              $schemaMapper         Schema mapper instance.
+     * @param MetaDataFacetHandler|null $metaDataFacetHandler Metadata facet handler (optional).
+     * @param MariaDbFacetHandler|null  $mariaDbFacetHandler  MariaDB facet handler (optional).
      */
     public function __construct(
         LoggerInterface $logger,
         SchemaMapper $schemaMapper,
-        ?MetaDataFacetHandler $metaDataFacetHandler = null,
-        ?MariaDbFacetHandler $mariaDbFacetHandler = null
+        ?MetaDataFacetHandler $metaDataFacetHandler=null,
+        ?MariaDbFacetHandler $mariaDbFacetHandler=null
     ) {
-        $this->logger = $logger;
+        $this->logger       = $logger;
         $this->schemaMapper = $schemaMapper;
         $this->metaDataFacetHandler = $metaDataFacetHandler;
-        $this->mariaDbFacetHandler = $mariaDbFacetHandler;
-    }
+        $this->mariaDbFacetHandler  = $mariaDbFacetHandler;
+
+    }//end __construct()
+
 
     /**
      * Get simple facets using the new handlers.
@@ -99,7 +103,7 @@ class FacetsHandler
      *
      * @return array Simple facet data using the new handlers.
      */
-    public function getSimpleFacets(array $query = []): array
+    public function getSimpleFacets(array $query=[]): array
     {
         // Check if handlers are available.
         if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
@@ -151,16 +155,18 @@ class FacetsHandler
             if ($type === 'terms') {
                 $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
             } else if ($type === 'date_histogram') {
-                $interval = $config['interval'] ?? 'month';
+                $interval       = $config['interval'] ?? 'month';
                 $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
             } else if ($type === 'range') {
-                $ranges = $config['ranges'] ?? [];
+                $ranges         = $config['ranges'] ?? [];
                 $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
             }
         }
 
         return $facets;
-    }
+
+    }//end getSimpleFacets()
+
 
     /**
      * Get facetable fields from schemas.
@@ -176,7 +182,7 @@ class FacetsHandler
      *
      * @return array Facetable fields with their configuration based on schema definitions.
      */
-    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
+    public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
         $facetableFields = [];
 
@@ -213,10 +219,12 @@ class FacetsHandler
                     }
                 }
             }
-        }
+        }//end foreach
 
         return $facetableFields;
-    }
+
+    }//end getFacetableFieldsFromSchemas()
+
 
     /**
      * Get schemas for query context.
@@ -253,7 +261,9 @@ class FacetsHandler
             // Get specific schemas.
             return $this->schemaMapper->findMultiple($schemaFilters);
         }
-    }
+
+    }//end getSchemasForQuery()
+
 
     /**
      * Check if a property is facetable.
@@ -265,7 +275,9 @@ class FacetsHandler
     private function isPropertyFacetable(array $property): bool
     {
         return isset($property['facetable']) && $property['facetable'] === true;
-    }
+
+    }//end isPropertyFacetable()
+
 
     /**
      * Generate field configuration from property definition.
@@ -277,11 +289,11 @@ class FacetsHandler
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array|null
     {
-        $type = $property['type'] ?? 'string';
-        $format = $property['format'] ?? '';
-        $title = $property['title'] ?? $propertyKey;
+        $type        = $property['type'] ?? 'string';
+        $format      = $property['format'] ?? '';
+        $title       = $property['title'] ?? $propertyKey;
         $description = $property['description'] ?? "Schema field: $propertyKey";
-        $example = $property['example'] ?? null;
+        $example     = $property['example'] ?? null;
 
         // Determine appropriate facet types based on property type and format.
         $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
@@ -291,12 +303,12 @@ class FacetsHandler
         }
 
         $config = [
-            'type' => $type,
-            'format' => $format,
-            'title' => $title,
+            'type'        => $type,
+            'format'      => $format,
+            'title'       => $title,
             'description' => $description,
             'facet_types' => $facetTypes,
-            'source' => 'schema',
+            'source'      => 'schema',
         ];
 
         // Add example if available.
@@ -333,10 +345,12 @@ class FacetsHandler
             case 'array':
                 $config['cardinality'] = 'array';
                 break;
-        }
+        }//end switch
 
         return $config;
-    }
+
+    }//end generateFieldConfigFromProperty()
+
 
     /**
      * Determine facet types based on property type and format.
@@ -370,8 +384,10 @@ class FacetsHandler
 
             default:
                 return ['terms'];
-        }
-    }
+        }//end switch
+
+    }//end determineFacetTypesFromProperty()
+
 
     /**
      * Merge field configurations from multiple schemas.
@@ -385,7 +401,7 @@ class FacetsHandler
     {
         // Merge facet types.
         $existingFacetTypes = $existing['facet_types'] ?? [];
-        $newFacetTypes = $new['facet_types'] ?? [];
+        $newFacetTypes      = $new['facet_types'] ?? [];
         $merged = $existing;
 
         $merged['facet_types'] = array_unique(array_merge($existingFacetTypes, $newFacetTypes));
@@ -405,6 +421,8 @@ class FacetsHandler
         }
 
         return $merged;
-    }
-}
 
+    }//end mergeFieldConfigs()
+
+
+}//end class

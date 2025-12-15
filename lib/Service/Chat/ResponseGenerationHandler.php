@@ -85,6 +85,7 @@ class ResponseGenerationHandler
         $this->settingsService = $settingsService;
         $this->toolHandler     = $toolHandler;
         $this->logger          = $logger;
+
     }//end __construct()
 
 
@@ -115,18 +116,18 @@ class ResponseGenerationHandler
         array $context,
         array $messageHistory,
         ?Agent $agent,
-        array $selectedTools = []
+        array $selectedTools=[]
     ): string {
         $startTime = microtime(true);
 
         $this->logger->info(
             message: '[ChatService] Generating response',
             context: [
-                    'messageLength' => strlen($userMessage),
-                    'contextLength' => strlen($context['text']),
-                    'historyCount'  => count($messageHistory),
-                    'selectedTools' => count($selectedTools),
-                ]
+                'messageLength' => strlen($userMessage),
+                'contextLength' => strlen($context['text']),
+                'historyCount'  => count($messageHistory),
+                'selectedTools' => count($selectedTools),
+            ]
         );
 
         // Get enabled tools for agent, filtered by selectedTools.
@@ -137,9 +138,9 @@ class ResponseGenerationHandler
             $this->logger->info(
                 message: '[ChatService] Agent has tools enabled',
                 context: [
-                        'toolCount' => count($tools),
-                        'tools'     => array_map(fn($tool) => $tool->getName(), $tools),
-                    ]
+                    'toolCount' => count($tools),
+                    'tools'     => array_map(fn($tool) => $tool->getName(), $tools),
+                ]
             );
         }
 
@@ -156,10 +157,10 @@ class ResponseGenerationHandler
         $this->logger->info(
             message: '[ChatService] Using chat provider',
             context: [
-                    'provider'  => $chatProvider,
-                    'llmConfig' => $llmConfig,
-                    'hasTools'  => empty($tools) === false,
-                ]
+                'provider'  => $chatProvider,
+                'llmConfig' => $llmConfig,
+                'hasTools'  => empty($tools) === false,
+            ]
         );
 
         try {
@@ -211,7 +212,7 @@ class ResponseGenerationHandler
                          */
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
-                } elseif ($chatProvider === 'fireworks') {
+                } else if ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
                         throw new Exception('Fireworks AI API key is not configured');
@@ -282,7 +283,7 @@ class ResponseGenerationHandler
                     $functions
                     // Pass functions.
                 );
-            } elseif ($chatProvider === 'ollama') {
+            } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat with LLPhant's built-in tool support.
                 $chat = new OllamaChat($config);
 
@@ -319,16 +320,16 @@ class ResponseGenerationHandler
             $this->logger->info(
                 message: '[ChatService] Response generated - PERFORMANCE',
                 context: [
-                        'provider'       => $chatProvider,
-                        'model'          => $config->model,
-                        'responseLength' => strlen($response),
-                        'timings'        => [
-                            'total'         => round($totalTime, 2).'s',
-                            'toolsLoading'  => round($toolsTime, 3).'s',
-                            'llmGeneration' => round($llmTime, 2).'s',
-                            'overhead'      => round($totalTime - $llmTime - $toolsTime, 3).'s',
-                        ],
-                    ]
+                    'provider'       => $chatProvider,
+                    'model'          => $config->model,
+                    'responseLength' => strlen($response),
+                    'timings'        => [
+                        'total'         => round($totalTime, 2).'s',
+                        'toolsLoading'  => round($toolsTime, 3).'s',
+                        'llmGeneration' => round($llmTime, 2).'s',
+                        'overhead'      => round($totalTime - $llmTime - $toolsTime, 3).'s',
+                    ],
+                ]
             );
 
             return $response;
@@ -336,12 +337,13 @@ class ResponseGenerationHandler
             $this->logger->error(
                 message: '[ChatService] Failed to generate response',
                 context: [
-                        'provider' => $chatProvider ?? 'unknown',
-                        'error'    => $e->getMessage(),
-                    ]
+                    'provider' => $chatProvider ?? 'unknown',
+                    'error'    => $e->getMessage(),
+                ]
             );
             throw new Exception('Failed to generate response: '.$e->getMessage());
         }//end try
+
     }//end generateResponse()
 
 
@@ -367,9 +369,9 @@ class ResponseGenerationHandler
         $this->logger->debug(
             message: '[ChatService] Calling Fireworks chat API directly',
             context: [
-                    'url'   => $url,
-                    'model' => $model,
-                ]
+                'url'   => $url,
+                'model' => $model,
+            ]
         );
 
         $payload = [
@@ -389,9 +391,9 @@ class ResponseGenerationHandler
             $ch,
             CURLOPT_HTTPHEADER,
             [
-                    'Authorization: Bearer '.$apiKey,
-                    'Content-Type: application/json',
-                ]
+                'Authorization: Bearer '.$apiKey,
+                'Content-Type: application/json',
+            ]
         );
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -413,9 +415,9 @@ class ResponseGenerationHandler
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
                 throw new Exception('Authentication failed. Please check your Fireworks API key.');
-            } elseif ($httpCode === 404) {
+            } else if ($httpCode === 404) {
                 throw new Exception("Model not found: {$model}. Please check the model name.");
-            } elseif ($httpCode === 429) {
+            } else if ($httpCode === 429) {
                 throw new Exception('Rate limit exceeded. Please try again later.');
             } else {
                 throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
@@ -439,6 +441,7 @@ class ResponseGenerationHandler
         }
 
         return $data['choices'][0]['message']['content'];
+
     }//end callFireworksChatAPI()
 
 
@@ -458,7 +461,7 @@ class ResponseGenerationHandler
      *
      * @throws \Exception If API call fails
      */
-    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory, array $functions = []): string
+    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory, array $functions=[]): string
     {
         $url = rtrim($baseUrl, '/').'/chat/completions';
 
@@ -468,18 +471,18 @@ class ResponseGenerationHandler
             $this->logger->warning(
                 message: '[ChatService] Function calling not yet supported for Fireworks AI. Tools will be ignored.',
                 context: [
-                        'functionCount' => count($functions),
-                    ]
+                    'functionCount' => count($functions),
+                ]
             );
         }
 
         $this->logger->debug(
             message: '[ChatService] Calling Fireworks chat API with history',
             context: [
-                    'url'          => $url,
-                    'model'        => $model,
-                    'historyCount' => count($messageHistory),
-                ]
+                'url'          => $url,
+                'model'        => $model,
+                'historyCount' => count($messageHistory),
+            ]
         );
 
         // Convert LLPhant messages to API format.
@@ -500,8 +503,8 @@ class ResponseGenerationHandler
         $this->logger->debug(
             message: '[ChatService] Prepared messages for API',
             context: [
-                    'messageCount' => count($messages),
-                ]
+                'messageCount' => count($messages),
+            ]
         );
 
         $payload = [
@@ -516,9 +519,9 @@ class ResponseGenerationHandler
             $ch,
             CURLOPT_HTTPHEADER,
             [
-                    'Authorization: Bearer '.$apiKey,
-                    'Content-Type: application/json',
-                ]
+                'Authorization: Bearer '.$apiKey,
+                'Content-Type: application/json',
+            ]
         );
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
@@ -540,9 +543,9 @@ class ResponseGenerationHandler
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
                 throw new Exception('Authentication failed. Please check your Fireworks API key.');
-            } elseif ($httpCode === 404) {
+            } else if ($httpCode === 404) {
                 throw new Exception("Model not found: {$model}. Please check the model name.");
-            } elseif ($httpCode === 429) {
+            } else if ($httpCode === 429) {
                 throw new Exception('Rate limit exceeded. Please try again later.');
             } else {
                 throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
@@ -566,6 +569,7 @@ class ResponseGenerationHandler
         }
 
         return $data['choices'][0]['message']['content'];
+
     }//end callFireworksChatAPIWithHistory()
 
 
@@ -585,5 +589,8 @@ class ResponseGenerationHandler
         }
 
         return 'default';
+
     }//end getLlphantUrl()
+
+
 }//end class

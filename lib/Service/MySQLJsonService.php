@@ -231,7 +231,7 @@ class MySQLJsonService implements IDatabaseJsonService
      */
     private function getMultipleContains(array $values, string $filter, IQueryBuilder $builder): string
     {
-        $orString = '';
+        $conditions = '';
         foreach ($values as $key => $value) {
             // Create parameter for each value.
             $builder->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_STR, placeHolder: ":value$filter$key");

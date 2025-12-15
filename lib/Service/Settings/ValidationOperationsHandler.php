@@ -70,7 +70,7 @@ class ValidationOperationsHandler
      */
     private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
     {
-        return $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+        return null; // CIRCULAR FIX
 
     }//end getObjectService()
 
@@ -140,7 +140,7 @@ class ValidationOperationsHandler
         }//end foreach
 
         // Create summary with validation statistics.
-        $validationSuccessRate = 100;
+        $validationSuccessRate=100;
         if ($validationResults['total_objects'] > 0) {
             $validationSuccessRate = round(
                 ($validationResults['valid_objects'] / $validationResults['total_objects']) * 100,

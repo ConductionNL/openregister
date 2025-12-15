@@ -61,6 +61,7 @@ class QueryBuilderHandler
     ) {
         $this->db     = $db;
         $this->logger = $logger;
+
     }//end __construct()
 
 
@@ -74,6 +75,7 @@ class QueryBuilderHandler
     public function getQueryBuilder(): IQueryBuilder
     {
         return $this->db->getQueryBuilder();
+
     }//end getQueryBuilder()
 
 
@@ -94,13 +96,13 @@ class QueryBuilderHandler
 
             if (($result !== null) === true && ($result['Value'] ?? null) !== null) {
                 $packetSize = (int) $result['Value'];
-                
+
                 $this->logger->debug(
                     message: '[QueryBuilderHandler] Retrieved max_allowed_packet',
                     context: [
-                            'size'       => $packetSize,
-                            'sizeMB'     => round($packetSize / 1048576, 2),
-                        ]
+                        'size'   => $packetSize,
+                        'sizeMB' => round($packetSize / 1048576, 2),
+                    ]
                 );
 
                 return $packetSize;
@@ -109,12 +111,15 @@ class QueryBuilderHandler
             $this->logger->debug(
                 message: '[QueryBuilderHandler] Failed to get max_allowed_packet, using fallback',
                 context: [
-                        'exception' => $e->getMessage(),
-                    ]
+                    'exception' => $e->getMessage(),
+                ]
             );
         }//end try
 
         // Default fallback value (16MB).
         return 16777216;
+
     }//end getMaxAllowedPacketSize()
+
+
 }//end class

@@ -62,7 +62,7 @@ class OasService
      *
      * @var array<string, mixed> OpenAPI specification array
      */
-    private array $oas = [];
+    private array $oas=[];
 
     /**
      * Register mapper
@@ -120,7 +120,7 @@ class OasService
 
         // Step 3: Extract unique schema IDs from all registers.
         // Multiple registers may share schemas, so we deduplicate.
-        $schemaIds = [];
+        $schemaIds=[];
         foreach ($registers ?? [] as $register) {
             $schemaIds = array_merge($schemaIds, $register->getSchemas());
         }
@@ -130,7 +130,7 @@ class OasService
 
         // Step 4: Get all schemas using unique schema IDs and index by schema ID.
         // Indexing by ID allows fast lookup when processing registers.
-        $schemas = [];
+        $schemas=[];
         foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) ?? [] as $schema) {
             $schemas[$schema->getId()] = $schema;
         }
@@ -326,7 +326,7 @@ class OasService
         }
 
         // Start with a clean definition.
-        $cleanDef = [];
+        $cleanDef=[];
 
         // Standard OpenAPI schema keywords that are allowed.
         $allowedSchemaKeywords = [
@@ -390,7 +390,7 @@ class OasService
                 unset($cleanDef['allOf']);
             } else {
                 // Validate each allOf element.
-                $validAllOfItems = [];
+                $validAllOfItems=[];
                 foreach ($cleanDef['allOf'] ?? [] as $item) {
                     // Each allOf item must be an object/array.
                     if (is_array($item) === true && empty($item) === false) {
@@ -1361,7 +1361,7 @@ class OasService
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
             } else {
-                $validAllOfItems = [];
+                $validAllOfItems=[];
                 foreach ($schema['allOf'] ?? [] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
                     } else {
