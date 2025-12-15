@@ -1129,15 +1129,9 @@ class ObjectsController extends Controller
         $objectService->setSchema(schema: $schema);
         $objectService->setRegister(register: $register);
 
-        // Note: $id is a route parameter for API consistency (/api/objects/{register}/{schema}/{id}/contracts)
-        // Currently returns empty array as contract functionality is not yet implemented.
-        $objectId = $id;
-        // Reserved for future use when contract functionality is implemented.
-        unset($objectId);
-
-        // Get request parameters for filtering and searching.
+        // Get request parameters for filtering.
         $requestParams = $this->request->getParams();
-
+        
         // Extract specific parameters.
         $limit = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
 
@@ -1159,11 +1153,21 @@ class ObjectsController extends Controller
             $page = null;
         }
 
+        // Build filters array.
+        $filters = [
+            'limit'  => $limit,
+            'offset' => $offset,
+            'page'   => $page,
+        ];
+
+        // Use ObjectService delegation to handler.
+        $result = $objectService->getObjectContracts(objectId: $id, filters: $filters);
+
         // Return empty paginated response.
         return new JSONResponse(
                 data: $this->paginate(
-                        results: [],
-                        total: 0,
+                        results: $result['results'] ?? [],
+                        total: $result['total'] ?? 0,
                         limit: $limit,
                         offset: $offset,
                         page: $page
@@ -1197,30 +1201,20 @@ class ObjectsController extends Controller
         $objectService->setRegister(register: $register);
         $objectService->setSchema(schema: $schema);
 
-        // Get the relations for the object.
-        $object         = $objectService->find(id: $id);
-        $relationsArray = $object ? $object->getRelations() : null;
-        $relations      = array_values($relationsArray ?? []);
-
-        // Build search query using ObjectService searchObjectsPaginated directly.
+        // Build search query from request parameters.
         $queryParams = $this->request->getParams();
         $searchQuery = $queryParams;
 
         // Clean up unwanted parameters.
         unset($searchQuery['id'], $searchQuery['_route']);
 
-        // Use ObjectService searchObjectsPaginated directly - pass ids as named parameter.
-        $result = $objectService->searchObjectsPaginated(
+        // Use ObjectService delegation to handler.
+        $result = $objectService->getObjectUses(
+            objectId: $id,
             query: $searchQuery,
-            _rbac: true,
-            _multitenancy: true,
-            published: true,
-            deleted: false,
-            ids: $relations
+            rbac: true,
+            multi: true
         );
-
-        // Add relations being searched for debugging.
-        $result['relations'] = $relations;
 
         // Return the result directly from ObjectService.
         return new JSONResponse(data: $result);
@@ -1252,25 +1246,20 @@ class ObjectsController extends Controller
         $objectService->setSchema(schema: $schema);
         $objectService->setRegister(register: $register);
 
-        // Build search query using ObjectService searchObjectsPaginated directly.
+        // Build search query from request parameters.
         $queryParams = $this->request->getParams();
         $searchQuery = $queryParams;
 
         // Clean up unwanted parameters.
         unset($searchQuery['id'], $searchQuery['_route']);
 
-        // Use ObjectService searchObjectsPaginated directly - pass uses as named parameter.
-        $result = $objectService->searchObjectsPaginated(
+        // Use ObjectService delegation to handler.
+        $result = $objectService->getObjectUsedBy(
+            objectId: $id,
             query: $searchQuery,
-            _rbac: true,
-            _multitenancy: true,
-            published: true,
-            deleted: false,
-            uses: $id
+            rbac: true,
+            multi: true
         );
-
-        // Add what we're searching for in debugging.
-        $result['uses'] = $id;
 
         // Return the result directly from ObjectService.
         return new JSONResponse(data: $result);
@@ -1402,7 +1391,7 @@ class ObjectsController extends Controller
             $duration = (int) $data['duration'];
         }
 
-        $object = $this->objectEntityMapper->lockObject(
+        $object = $objectService->lockObject(
             identifier: $id,
             process: $process,
             duration: $duration
@@ -1468,51 +1457,21 @@ class ObjectsController extends Controller
         $registerEntity = $this->registerMapper->find($register);
         $schemaEntity   = $this->schemaMapper->find($schema);
 
-        // Handle different export types.
-        switch ($type) {
-            case 'csv':
-                $csv = $this->exportService->exportToCsv(register: $registerEntity, schema: $schemaEntity, filters: $filters, currentUser: $this->userSession->getUser());
+        // Use ObjectService delegation to ExportHandler.
+        $result = $objectService->exportObjects(
+            register: $registerEntity,
+            schema: $schemaEntity,
+            filters: $filters,
+            type: $type,
+            currentUser: $this->userSession->getUser()
+        );
 
-                // Generate filename.
-                $filename = sprintf(
-                    '%s_%s_%s.csv',
-                        $registerEntity->getSlug() ?? 'register',
-                    $schemaEntity->getSlug() ?? 'schema',
-                    (new DateTime())->format('Y-m-d_His')
-                );
-
-                return new DataDownloadResponse(
-                            $csv,
-                            $filename,
-                            'text/csv'
-                );
-
-            case 'excel':
-            default:
-                $spreadsheet = $this->exportService->exportToExcel(register: $registerEntity, schema: $schemaEntity, filters: $filters, currentUser: $this->userSession->getUser());
-
-                // Create Excel writer.
-                $writer = new Xlsx($spreadsheet);
-
-                // Generate filename.
-                $filename = sprintf(
-                    '%s_%s_%s.xlsx',
-                        $registerEntity->getSlug() ?? 'register',
-                    $schemaEntity->getSlug() ?? 'schema',
-                    (new DateTime())->format('Y-m-d_His')
-                );
-
-                // Get Excel content.
-                ob_start();
-                $writer->save('php://output');
-                $content = ob_get_clean();
-
-                return new DataDownloadResponse(
-                            $content,
-                            $filename,
-                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                );
-        }//end switch
+        // Return download response.
+        return new DataDownloadResponse(
+            data: $result['content'],
+            filename: $result['filename'],
+            contentType: $result['mimetype']
+        );
 
     }//end export()
 
@@ -1542,77 +1501,36 @@ class ObjectsController extends Controller
             // Find the register.
             $registerEntity = $this->registerMapper->find($register);
 
-            // Determine file type from extension.
-            $filename  = $uploadedFile['name'];
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            // Get optional schema for CSV (can be null, handler will auto-resolve).
+            $schemaId = $this->request->getParam(key: 'schema');
+            $schema   = ($schemaId !== null && $schemaId !== '') ? $this->schemaMapper->find($schemaId) : null;
 
-            // Handle different file types.
-            switch ($extension) {
-                case 'xlsx':
-                case 'xls':
+            // Get optional parameters with sensible defaults.
+            $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
+            $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
+            $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
+            $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
+            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
 
-                    // Get optional validation and events parameters.
-                    $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
-                    $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
-
-                    $summary = $this->importService->importFromExcel(
-                        filePath: $uploadedFile['tmp_name'],
-                        register: $registerEntity,
-                        schema: null,
-                        validation: $validation,
-                        events: $events,
-                        _rbac: true,
-                        _multitenancy: true,
-                        publish: false,
-                        currentUser: $this->userSession->getUser()
-                    );
-                    break;
-
-                case 'csv':
-
-                    // For CSV, schema can be specified in the request.
-                    $schemaId = $this->request->getParam(key: 'schema');
-
-                    if ($schemaId === null || $schemaId === '') {
-                        // If no schema specified, get the first available schema from the register.
-                        $schemas = $registerEntity->getSchemas();
-                        if (empty($schemas) === true) {
-                            return new JSONResponse(data: ['error' => 'No schema found for register'], statusCode: 400);
-                        }
-
-                        // $schemas is always an array from getSchemas(), but handle both cases for type safety.
-                        $schemaId = reset($schemas);
-                    }
-
-                    $schema = $this->schemaMapper->find($schemaId);
-
-                    // Get optional parameters with sensible defaults.
-                    $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
-                    $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
-                    $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
-                    $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-                    $summary    = $this->importService->importFromCsv(
-                        filePath: $uploadedFile['tmp_name'],
-                        register: $registerEntity,
-                        schema: $schema,
-                        validation: $validation,
-                        events: $events,
-                        _rbac: $rbac,
-                        _multitenancy: $multi
-                    );
-                    break;
-
-                default:
-
-                    return new JSONResponse(data: ['error' => "Unsupported file type: $extension"], statusCode: 400);
-            }//end switch
+            // Use ObjectService delegation to ExportHandler.
+            $result = $this->objectService->importObjects(
+                register: $registerEntity,
+                uploadedFile: $uploadedFile,
+                schema: $schema,
+                validation: $validation,
+                events: $events,
+                rbac: $rbac,
+                multitenancy: $multi,
+                publish: $publish,
+                currentUser: $this->userSession->getUser()
+            );
 
             return new JSONResponse(
-                    data: [
-                        'message' => 'Import successful',
-                        'summary' => $summary,
-                    ]
-                    );
+                data: [
+                    'message' => 'Import successful',
+                    'summary' => $result,
+                ]
+            );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
@@ -1956,19 +1874,11 @@ class ObjectsController extends Controller
             $views     = $data['views'] ?? null;
             $batchSize = (int) ($data['batchSize'] ?? 25);
 
-            // Get unified VectorizationService from container.
-            $vectorizationService = $this->container->get(\OCA\OpenRegister\Service\VectorizationService::class);
-
-            // Use unified vectorization service with 'object' entity type.
-            $result = $vectorizationService->vectorizeBatch(
-                    entityType: 'object',
-                    options: [
-                        'views'      => $views,
-                        'batch_size' => $batchSize,
-                        'mode'       => 'serial',
-            // Objects use serial mode by default.
-                    ]
-                    );
+            // Use ObjectService delegation to handler.
+            $result = $this->objectService->vectorizeBatchObjects(
+                views: $views,
+                batchSize: $batchSize
+            );
 
             return new JSONResponse(
                     data: [
@@ -2009,27 +1919,13 @@ class ObjectsController extends Controller
                 $views = json_decode($views, true);
             }
 
-            // Get ObjectService from container for view-aware counting.
-            $objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-
-            // Count objects with view filter support.
-            $totalObjects = $objectService->searchObjects(
-                query: [
-                    '_count'  => true,
-                    '_source' => 'database',
-                ],
-                _rbac: false,
-                _multitenancy: false,
-                ids: null,
-                uses: null,
-                views: $views
-            );
+            // Use ObjectService delegation to handler.
+            $stats = $this->objectService->getVectorizationStatistics(views: $views);
 
             return new JSONResponse(
                     data: [
-                        'success'       => true,
-                        'total_objects' => $totalObjects,
-                        'views'         => $views,
+                        'success' => true,
+                        'stats'   => $stats,
                     ]
                     );
         } catch (Exception $e) {
@@ -2059,8 +1955,14 @@ class ObjectsController extends Controller
     public function getObjectVectorizationCount(): JSONResponse
     {
         try {
-            // TODO: Implement proper counting logic with schemas parameter.
-            $count = 0;
+            // Get schemas parameter if provided.
+            $schemas = $this->request->getParam(key: 'schemas');
+            if (is_string($schemas) === true) {
+                $schemas = json_decode($schemas, true);
+            }
+
+            // Use ObjectService delegation to handler.
+            $count = $this->objectService->getVectorizationCount(schemas: $schemas);
 
             return new JSONResponse(
                     data: [

@@ -36,14 +36,18 @@ use OCP\IConfig;
  */
 class ObjectRetentionHandler
 {
+
     private IConfig $config;
+
     private string $appName;
 
-    public function __construct(IConfig $config, string $appName = "openregister")
+
+    public function __construct(IConfig $config, string $appName="openregister")
     {
-        $this->config = $config;
+        $this->config  = $config;
         $this->appName = $appName;
-    }
+
+    }//end __construct()
 
 
     /**
@@ -91,6 +95,7 @@ class ObjectRetentionHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
         }//end try
+
     }//end getObjectSettingsOnly()
 
 
@@ -126,6 +131,7 @@ class ObjectRetentionHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
         }
+
     }//end updateObjectSettingsOnly()
 
 
@@ -181,6 +187,7 @@ class ObjectRetentionHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
         }//end try
+
     }//end getRetentionSettingsOnly()
 
 
@@ -215,6 +222,7 @@ class ObjectRetentionHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update Retention settings: '.$e->getMessage());
         }
+
     }//end updateRetentionSettingsOnly()
 
 
@@ -237,6 +245,7 @@ class ObjectRetentionHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve version information: '.$e->getMessage());
         }
+
     }//end getVersionInfoOnly()
 
 
@@ -262,5 +271,8 @@ class ObjectRetentionHandler
         }
 
         return (bool) $value;
+
     }//end convertToBoolean()
+
+
 }//end class

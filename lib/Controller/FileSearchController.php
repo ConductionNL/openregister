@@ -45,12 +45,12 @@ class FileSearchController extends Controller
     /**
      * Constructor
      *
-     * @param string                 $appName         App name
-     * @param IRequest               $request         Request object
-     * @param IndexService           $indexService    Index service
+     * @param string               $appName         App name
+     * @param IRequest             $request         Request object
+     * @param IndexService         $indexService    Index service
      * @param VectorizationService $vectorService   Vectorization service
-     * @param SettingsService        $settingsService Settings service
-     * @param LoggerInterface        $logger          Logger
+     * @param SettingsService      $settingsService Settings service
+     * @param LoggerInterface      $logger          Logger
      */
     public function __construct(
         string $appName,

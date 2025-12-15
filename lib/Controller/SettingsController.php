@@ -145,15 +145,15 @@ class SettingsController extends Controller
     /**
      * SettingsController constructor.
      *
-     * @param string                 $appName                The name of the app.
-     * @param IRequest               $request                The request object.
-     * @param IAppConfig             $config                 The app configuration.
-     * @param IDBConnection          $db                     The database connection.
-     * @param ContainerInterface     $container              The container.
-     * @param IAppManager            $appManager             The app manager.
-     * @param SettingsService        $settingsService        The settings service.
-     * @param VectorizationService   $vectorizationService   The vectorization service.
-     * @param LoggerInterface        $logger                 The logger.
+     * @param string               $appName              The name of the app.
+     * @param IRequest             $request              The request object.
+     * @param IAppConfig           $config               The app configuration.
+     * @param IDBConnection        $db                   The database connection.
+     * @param ContainerInterface   $container            The container.
+     * @param IAppManager          $appManager           The app manager.
+     * @param SettingsService      $settingsService      The settings service.
+     * @param VectorizationService $vectorizationService The vectorization service.
+     * @param LoggerInterface      $logger               The logger.
      */
     public function __construct(
         $appName,

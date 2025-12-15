@@ -67,10 +67,11 @@ class LlmSettingsHandler
      */
     public function __construct(
         IConfig $config,
-        string $appName = 'openregister'
+        string $appName='openregister'
     ) {
         $this->config  = $config;
         $this->appName = $appName;
+
     }//end __construct()
 
 
@@ -147,6 +148,7 @@ class LlmSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
         }//end try
+
     }//end getLLMSettingsOnly()
 
 
@@ -198,5 +200,8 @@ class LlmSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update LLM settings: '.$e->getMessage());
         }//end try
+
     }//end updateLLMSettingsOnly()
+
+
 }//end class

@@ -67,10 +67,11 @@ class FileSettingsHandler
      */
     public function __construct(
         IConfig $config,
-        string $appName = 'openregister'
+        string $appName='openregister'
     ) {
         $this->config  = $config;
         $this->appName = $appName;
+
     }//end __construct()
 
 
@@ -116,6 +117,7 @@ class FileSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve File Management settings: '.$e->getMessage());
         }//end try
+
     }//end getFileSettingsOnly()
 
 
@@ -158,5 +160,8 @@ class FileSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update File Management settings: '.$e->getMessage());
         }//end try
+
     }//end updateFileSettingsOnly()
+
+
 }//end class

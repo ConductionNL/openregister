@@ -431,7 +431,7 @@ class VectorSearchHandler
         float $vectorWeight=0.5,
         float $solrWeight=0.5
     ): array {
-        $k              = 60;
+        $k = 60;
         $combinedScores = [];
 
         // Process vector results.
@@ -455,7 +455,7 @@ class VectorSearchHandler
                 ];
             }
 
-            $rrfScore                               = $vectorWeight / ($k + (int) $rank + 1);
+            $rrfScore = $vectorWeight / ($k + (int) $rank + 1);
             $combinedScores[$key]['combined_score'] += $rrfScore;
             $combinedScores[$key]['in_vector']       = true;
             $combinedScores[$key]['vector_rank']     = (int) $rank + 1;
@@ -482,7 +482,7 @@ class VectorSearchHandler
                 ];
             }
 
-            $rrfScore                               = $solrWeight / ($k + (int) $rank + 1);
+            $rrfScore = $solrWeight / ($k + (int) $rank + 1);
             $combinedScores[$key]['combined_score'] += $rrfScore;
             $combinedScores[$key]['in_solr']         = true;
             $combinedScores[$key]['solr_rank']       = (int) $rank + 1;
@@ -688,4 +688,3 @@ class VectorSearchHandler
 
 
 }//end class
-

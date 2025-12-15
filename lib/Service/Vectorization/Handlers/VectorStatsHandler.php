@@ -318,4 +318,3 @@ class VectorStatsHandler
 
 
 }//end class
-

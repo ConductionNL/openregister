@@ -97,7 +97,6 @@ class CacheHandler
         $this->session = $session;
         $this->configurationMapper = $configurationMapper;
         $this->organisationService = $organisationService;
-
     }//end __construct()
 
 
@@ -139,8 +138,5 @@ class CacheHandler
 
         // Step 6: Return fetched configurations.
         return $configurations;
-
     }//end getConfigurationsForActiveOrganisation()
-
-
 }//end class

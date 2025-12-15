@@ -45,13 +45,13 @@ class LlmSettingsController extends Controller
     /**
      * Constructor.
      *
-     * @param string                 $appName                The app name.
-     * @param IRequest               $request                The request.
-     * @param IDBConnection          $db                     Database connection.
-     * @param ContainerInterface     $container              DI container.
-     * @param SettingsService        $settingsService        Settings service.
-     * @param VectorizationService   $vectorizationService   Vectorization service.
-     * @param LoggerInterface        $logger                 Logger.
+     * @param string               $appName              The app name.
+     * @param IRequest             $request              The request.
+     * @param IDBConnection        $db                   Database connection.
+     * @param ContainerInterface   $container            DI container.
+     * @param SettingsService      $settingsService      Settings service.
+     * @param VectorizationService $vectorizationService Vectorization service.
+     * @param LoggerInterface      $logger               Logger.
      */
     public function __construct(
         $appName,

@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
@@ -293,29 +293,29 @@ class SettingsService
     /**
      * Constructor for SettingsService
      *
-     * @param IConfig                        $config                        Configuration service
-     * @param AuditTrailMapper               $auditTrailMapper              Audit trail mapper
-     * @param ICacheFactory                  $cacheFactory                  Cache factory
-     * @param IGroupManager                  $groupManager                  Group manager
-     * @param LoggerInterface                $logger                        Logger
-     * @param ObjectEntityMapper             $objectEntityMapper            Object entity mapper
-     * @param OrganisationMapper             $organisationMapper            Organisation mapper
-     * @param SchemaCacheService             $schemaCacheService            Schema cache service
-     * @param FacetCacheHandler              $schemaFacetCacheService       Schema facet cache service
-     * @param SearchTrailMapper              $searchTrailMapper             Search trail mapper
-     * @param IUserManager                   $userManager                   User manager
-     * @param IDBConnection                  $db                            Database connection
-     * @param CacheHandler|null              $objectCacheService            Object cache service (optional, lazy-loaded)
-     * @param IAppContainer|null             $container                     Container for lazy loading (optional)
-     * @param string                         $appName                       Application name
-     * @param ValidationOperationsHandler    $validationOperationsHandler   Validation operations handler
-     * @param SearchBackendHandler           $searchBackendHandler          Search backend handler
-     * @param LlmSettingsHandler             $llmSettingsHandler            LLM settings handler
-     * @param FileSettingsHandler            $fileSettingsHandler           File settings handler
-     * @param ObjectRetentionHandler         $objectRetentionHandler        Object and retention handler
-     * @param CacheSettingsHandler           $cacheSettingsHandler          Cache settings handler
-     * @param SolrSettingsHandler            $solrSettingsHandler           SOLR settings handler
-     * @param ConfigurationSettingsHandler   $configurationSettingsHandler  Configuration settings handler
+     * @param IConfig                      $config                       Configuration service
+     * @param AuditTrailMapper             $auditTrailMapper             Audit trail mapper
+     * @param ICacheFactory                $cacheFactory                 Cache factory
+     * @param IGroupManager                $groupManager                 Group manager
+     * @param LoggerInterface              $logger                       Logger
+     * @param ObjectEntityMapper           $objectEntityMapper           Object entity mapper
+     * @param OrganisationMapper           $organisationMapper           Organisation mapper
+     * @param SchemaCacheService           $schemaCacheService           Schema cache service
+     * @param FacetCacheHandler            $schemaFacetCacheService      Schema facet cache service
+     * @param SearchTrailMapper            $searchTrailMapper            Search trail mapper
+     * @param IUserManager                 $userManager                  User manager
+     * @param IDBConnection                $db                           Database connection
+     * @param CacheHandler|null            $objectCacheService           Object cache service (optional, lazy-loaded)
+     * @param IAppContainer|null           $container                    Container for lazy loading (optional)
+     * @param string                       $appName                      Application name
+     * @param ValidationOperationsHandler  $validationOperationsHandler  Validation operations handler
+     * @param SearchBackendHandler         $searchBackendHandler         Search backend handler
+     * @param LlmSettingsHandler           $llmSettingsHandler           LLM settings handler
+     * @param FileSettingsHandler          $fileSettingsHandler          File settings handler
+     * @param ObjectRetentionHandler       $objectRetentionHandler       Object and retention handler
+     * @param CacheSettingsHandler         $cacheSettingsHandler         Cache settings handler
+     * @param SolrSettingsHandler          $solrSettingsHandler          SOLR settings handler
+     * @param ConfigurationSettingsHandler $configurationSettingsHandler Configuration settings handler
      *
      * @return void
      */
@@ -332,44 +332,541 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
-        ?CacheHandler $objectCacheService = null,
-        ?IAppContainer $container = null,
-        string $appName = 'openregister',
-        ?ValidationOperationsHandler $validationOperationsHandler = null,
-        ?SearchBackendHandler $searchBackendHandler = null,
-        ?LlmSettingsHandler $llmSettingsHandler = null,
-        ?FileSettingsHandler $fileSettingsHandler = null,
-        ?ObjectRetentionHandler $objectRetentionHandler = null,
-        ?CacheSettingsHandler $cacheSettingsHandler = null,
-        ?SolrSettingsHandler $solrSettingsHandler = null,
-        ?ConfigurationSettingsHandler $configurationSettingsHandler = null
+        ?CacheHandler $objectCacheService=null,
+        ?IAppContainer $container=null,
+        string $appName='openregister',
+        ?ValidationOperationsHandler $validationOperationsHandler=null,
+        ?SearchBackendHandler $searchBackendHandler=null,
+        ?LlmSettingsHandler $llmSettingsHandler=null,
+        ?FileSettingsHandler $fileSettingsHandler=null,
+        ?ObjectRetentionHandler $objectRetentionHandler=null,
+        ?CacheSettingsHandler $cacheSettingsHandler=null,
+        ?SolrSettingsHandler $solrSettingsHandler=null,
+        ?ConfigurationSettingsHandler $configurationSettingsHandler=null
     ) {
-        $this->config                  = $config;
-        $this->auditTrailMapper        = $auditTrailMapper;
-        $this->cacheFactory            = $cacheFactory;
-        $this->groupManager            = $groupManager;
-        $this->logger                  = $logger;
+        $this->config           = $config;
+        $this->auditTrailMapper = $auditTrailMapper;
+        $this->cacheFactory     = $cacheFactory;
+        $this->groupManager     = $groupManager;
+        $this->logger           = $logger;
         $this->objectEntityMapper      = $objectEntityMapper;
         $this->organisationMapper      = $organisationMapper;
         $this->schemaCacheService      = $schemaCacheService;
         $this->schemaFacetCacheService = $schemaFacetCacheService;
         $this->searchTrailMapper       = $searchTrailMapper;
-        $this->userManager             = $userManager;
-        $this->db                      = $db;
-        $this->objectCacheService      = $objectCacheService;
-        $this->container               = $container;
-        $this->appName                 = $appName;
+        $this->userManager = $userManager;
+        $this->db          = $db;
+        $this->objectCacheService = $objectCacheService;
+        $this->container          = $container;
+        $this->appName            = $appName;
 
         // Initialize handlers (lazy-load if not provided).
-        $this->validationOperationsHandler = $validationOperationsHandler;
-        $this->searchBackendHandler        = $searchBackendHandler;
-        $this->llmSettingsHandler          = $llmSettingsHandler;
-        $this->fileSettingsHandler         = $fileSettingsHandler;
-        $this->objectRetentionHandler      = $objectRetentionHandler;
-        $this->cacheSettingsHandler        = $cacheSettingsHandler;
-        $this->solrSettingsHandler         = $solrSettingsHandler;
+        $this->validationOperationsHandler  = $validationOperationsHandler;
+        $this->searchBackendHandler         = $searchBackendHandler;
+        $this->llmSettingsHandler           = $llmSettingsHandler;
+        $this->fileSettingsHandler          = $fileSettingsHandler;
+        $this->objectRetentionHandler       = $objectRetentionHandler;
+        $this->cacheSettingsHandler         = $cacheSettingsHandler;
+        $this->solrSettingsHandler          = $solrSettingsHandler;
         $this->configurationSettingsHandler = $configurationSettingsHandler;
+
     }//end __construct()
+
+
+    // ============================================
+    // DELEGATION METHODS TO HANDLERS
+    // ============================================
+    // SearchBackendHandler methods (2)
+
+
+    /**
+     * Get search backend configuration
+     *
+     * @return array Search backend configuration
+     */
+    public function getSearchBackendConfig(): array
+    {
+        // Direct implementation to avoid circular dependency during DI initialization.
+        // The handler might not be initialized yet when Application.php needs this method.
+        try {
+            $backendConfig = $this->config->getAppValue($this->appName, 'search_backend', '');
+
+            if (empty($backendConfig) === true) {
+                return [
+                    'active'    => 'solr',
+                    'available' => ['solr', 'elasticsearch'],
+                ];
+            }
+
+            return json_decode($backendConfig, true);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to retrieve search backend configuration: '.$e->getMessage());
+            return [
+                'active'    => 'solr',
+                'available' => ['solr', 'elasticsearch'],
+            ];
+        }
+
+    }//end getSearchBackendConfig()
+
+
+    /**
+     * Update search backend configuration
+     *
+     * @param  array $data Search backend configuration data
+     * @return array Updated configuration
+     */
+    public function updateSearchBackendConfig(array $data): array
+    {
+        return $this->searchBackendHandler->updateSearchBackendConfig($data);
+
+    }//end updateSearchBackendConfig()
+
+
+    // LlmSettingsHandler methods (2)
+
+
+    /**
+     * Get LLM settings only
+     *
+     * @return array LLM settings
+     */
+    public function getLLMSettingsOnly(): array
+    {
+        return $this->llmSettingsHandler->getLLMSettingsOnly();
+
+    }//end getLLMSettingsOnly()
+
+
+    /**
+     * Update LLM settings only
+     *
+     * @param  array $data LLM settings data
+     * @return array Updated LLM settings
+     */
+    public function updateLLMSettingsOnly(array $data): array
+    {
+        return $this->llmSettingsHandler->updateLLMSettingsOnly($data);
+
+    }//end updateLLMSettingsOnly()
+
+
+    // FileSettingsHandler methods (2)
+
+
+    /**
+     * Get file settings only
+     *
+     * @return array File settings
+     */
+    public function getFileSettingsOnly(): array
+    {
+        return $this->fileSettingsHandler->getFileSettingsOnly();
+
+    }//end getFileSettingsOnly()
+
+
+    /**
+     * Update file settings only
+     *
+     * @param  array $data File settings data
+     * @return array Updated file settings
+     */
+    public function updateFileSettingsOnly(array $data): array
+    {
+        return $this->fileSettingsHandler->updateFileSettingsOnly($data);
+
+    }//end updateFileSettingsOnly()
+
+
+    // ObjectRetentionHandler methods (4)
+
+
+    /**
+     * Get object settings only
+     *
+     * @return array Object settings
+     */
+    public function getObjectSettingsOnly(): array
+    {
+        return $this->objectRetentionHandler->getObjectSettingsOnly();
+
+    }//end getObjectSettingsOnly()
+
+
+    /**
+     * Update object settings only
+     *
+     * @param  array $data Object settings data
+     * @return array Updated object settings
+     */
+    public function updateObjectSettingsOnly(array $data): array
+    {
+        return $this->objectRetentionHandler->updateObjectSettingsOnly($data);
+
+    }//end updateObjectSettingsOnly()
+
+
+    /**
+     * Get retention settings only
+     *
+     * @return array Retention settings
+     */
+    public function getRetentionSettingsOnly(): array
+    {
+        return $this->objectRetentionHandler->getRetentionSettingsOnly();
+
+    }//end getRetentionSettingsOnly()
+
+
+    /**
+     * Update retention settings only
+     *
+     * @param  array $data Retention settings data
+     * @return array Updated retention settings
+     */
+    public function updateRetentionSettingsOnly(array $data): array
+    {
+        return $this->objectRetentionHandler->updateRetentionSettingsOnly($data);
+
+    }//end updateRetentionSettingsOnly()
+
+
+    // CacheSettingsHandler methods (3 main ones)
+
+
+    /**
+     * Get cache statistics
+     *
+     * @return array Cache statistics
+     */
+    public function getCacheStats(): array
+    {
+        return $this->cacheSettingsHandler->getCacheStats();
+
+    }//end getCacheStats()
+
+
+    /**
+     * Clear cache
+     *
+     * @param  string|null $cacheType Type of cache to clear
+     * @return array Operation result
+     */
+    public function clearCache(?string $cacheType=null): array
+    {
+        return $this->cacheSettingsHandler->clearCache($cacheType);
+
+    }//end clearCache()
+
+
+    /**
+     * Warmup names cache
+     *
+     * @return array Warmup result
+     */
+    public function warmupNamesCache(): array
+    {
+        return $this->cacheSettingsHandler->warmupNamesCache();
+
+    }//end warmupNamesCache()
+
+
+    // SolrSettingsHandler methods (7 main ones)
+
+
+    /**
+     * Get SOLR settings
+     *
+     * @return array SOLR settings
+     */
+    public function getSolrSettings(): array
+    {
+        return $this->solrSettingsHandler->getSolrSettings();
+
+    }//end getSolrSettings()
+
+
+    /**
+     * Get SOLR settings only
+     *
+     * @return array SOLR settings
+     */
+    public function getSolrSettingsOnly(): array
+    {
+        return $this->solrSettingsHandler->getSolrSettingsOnly();
+
+    }//end getSolrSettingsOnly()
+
+
+    /**
+     * Update SOLR settings only
+     *
+     * @param  array $data SOLR settings data
+     * @return array Updated SOLR settings
+     */
+    public function updateSolrSettingsOnly(array $data): array
+    {
+        return $this->solrSettingsHandler->updateSolrSettingsOnly($data);
+
+    }//end updateSolrSettingsOnly()
+
+
+    /**
+     * Get SOLR dashboard statistics
+     *
+     * @return array SOLR dashboard stats
+     */
+    public function getSolrDashboardStats(): array
+    {
+        return $this->solrSettingsHandler->getSolrDashboardStats();
+
+    }//end getSolrDashboardStats()
+
+
+    /**
+     * Get SOLR facet configuration
+     *
+     * @return array Facet configuration
+     */
+    public function getSolrFacetConfiguration(): array
+    {
+        return $this->solrSettingsHandler->getSolrFacetConfiguration();
+
+    }//end getSolrFacetConfiguration()
+
+
+    /**
+     * Update SOLR facet configuration
+     *
+     * @param  array $data Facet configuration data
+     * @return array Updated facet configuration
+     */
+    public function updateSolrFacetConfiguration(array $data): array
+    {
+        return $this->solrSettingsHandler->updateSolrFacetConfiguration($data);
+
+    }//end updateSolrFacetConfiguration()
+
+
+    /**
+     * Warmup SOLR index
+     *
+     * @param  array  $schemas       Schemas to warmup
+     * @param  int    $maxObjects    Maximum objects to process
+     * @param  string $mode          Processing mode
+     * @param  bool   $collectErrors Whether to collect errors
+     * @param  int    $batchSize     Batch size
+     * @param  array  $schemaIds     Schema IDs to process
+     * @return array Warmup result
+     */
+    public function warmupSolrIndex(
+        array $schemas=[],
+        int $maxObjects=0,
+        string $mode='serial',
+        bool $collectErrors=false,
+        int $batchSize=1000,
+        array $schemaIds=[]
+    ): array {
+        return $this->solrSettingsHandler->warmupSolrIndex(
+            $schemas,
+            $maxObjects,
+            $mode,
+            $collectErrors,
+            $batchSize,
+            $schemaIds
+        );
+
+    }//end warmupSolrIndex()
+
+
+    // ConfigurationSettingsHandler methods (15 main ones)
+
+
+    /**
+     * Get settings
+     *
+     * @return array Application settings
+     */
+    public function getSettings(): array
+    {
+        return $this->configurationSettingsHandler->getSettings();
+
+    }//end getSettings()
+
+
+    /**
+     * Update settings
+     *
+     * @param  array $data Settings data
+     * @return array Updated settings
+     */
+    public function updateSettings(array $data): array
+    {
+        return $this->configurationSettingsHandler->updateSettings($data);
+
+    }//end updateSettings()
+
+
+    /**
+     * Update publishing options
+     *
+     * @param  array $data Publishing options data
+     * @return array Updated settings
+     */
+    public function updatePublishingOptions(array $data): array
+    {
+        return $this->configurationSettingsHandler->updatePublishingOptions($data);
+
+    }//end updatePublishingOptions()
+
+
+    /**
+     * Check if multi-tenancy is enabled
+     *
+     * @return bool True if enabled
+     */
+    public function isMultiTenancyEnabled(): bool
+    {
+        return $this->configurationSettingsHandler->isMultiTenancyEnabled();
+
+    }//end isMultiTenancyEnabled()
+
+
+    /**
+     * Get RBAC settings only
+     *
+     * @return array RBAC settings
+     */
+    public function getRbacSettingsOnly(): array
+    {
+        return $this->configurationSettingsHandler->getRbacSettingsOnly();
+
+    }//end getRbacSettingsOnly()
+
+
+    /**
+     * Update RBAC settings only
+     *
+     * @param  array $data RBAC settings data
+     * @return array Updated RBAC settings
+     */
+    public function updateRbacSettingsOnly(array $data): array
+    {
+        return $this->configurationSettingsHandler->updateRbacSettingsOnly($data);
+
+    }//end updateRbacSettingsOnly()
+
+
+    /**
+     * Get organisation settings only
+     *
+     * @return array Organisation settings
+     */
+    public function getOrganisationSettingsOnly(): array
+    {
+        return $this->configurationSettingsHandler->getOrganisationSettingsOnly();
+
+    }//end getOrganisationSettingsOnly()
+
+
+    /**
+     * Update organisation settings only
+     *
+     * @param  array $data Organisation settings data
+     * @return array Updated organisation settings
+     */
+    public function updateOrganisationSettingsOnly(array $data): array
+    {
+        return $this->configurationSettingsHandler->updateOrganisationSettingsOnly($data);
+
+    }//end updateOrganisationSettingsOnly()
+
+
+    /**
+     * Get default organisation UUID
+     *
+     * @return string|null Organisation UUID
+     */
+    public function getDefaultOrganisationUuid(): ?string
+    {
+        return $this->configurationSettingsHandler->getDefaultOrganisationUuid();
+
+    }//end getDefaultOrganisationUuid()
+
+
+    /**
+     * Set default organisation UUID
+     *
+     * @param  string|null $uuid Organisation UUID
+     * @return void
+     */
+    public function setDefaultOrganisationUuid(?string $uuid): void
+    {
+        $this->configurationSettingsHandler->setDefaultOrganisationUuid($uuid);
+
+    }//end setDefaultOrganisationUuid()
+
+
+    /**
+     * Get tenant ID
+     *
+     * @return string|null Tenant ID
+     */
+    public function getTenantId(): ?string
+    {
+        return $this->configurationSettingsHandler->getTenantId();
+
+    }//end getTenantId()
+
+
+    /**
+     * Get organisation ID
+     *
+     * @return string|null Organisation ID
+     */
+    public function getOrganisationId(): ?string
+    {
+        return $this->configurationSettingsHandler->getOrganisationId();
+
+    }//end getOrganisationId()
+
+
+    /**
+     * Get multitenancy settings only
+     *
+     * @return array Multitenancy settings
+     */
+    public function getMultitenancySettingsOnly(): array
+    {
+        return $this->configurationSettingsHandler->getMultitenancySettingsOnly();
+
+    }//end getMultitenancySettingsOnly()
+
+
+    /**
+     * Update multitenancy settings only
+     *
+     * @param  array $data Multitenancy settings data
+     * @return array Updated multitenancy settings
+     */
+    public function updateMultitenancySettingsOnly(array $data): array
+    {
+        return $this->configurationSettingsHandler->updateMultitenancySettingsOnly($data);
+
+    }//end updateMultitenancySettingsOnly()
+
+
+    /**
+     * Get version info only
+     *
+     * @return array Version information
+     */
+    public function getVersionInfoOnly(): array
+    {
+        return $this->configurationSettingsHandler->getVersionInfoOnly();
+
+    }//end getVersionInfoOnly()
 
 
     /**
@@ -385,6 +882,7 @@ class SettingsService
     public function validateAllObjects(): array
     {
         return $this->validationOperationsHandler->validateAllObjects();
+
     }//end validateAllObjects()
 
 
@@ -404,10 +902,10 @@ class SettingsService
      * @throws Exception If mass validation operation fails.
      */
     public function massValidateObjects(
-        int $maxObjects = 0,
-        int $batchSize = 1000,
-        string $mode = 'serial',
-        bool $collectErrors = false
+        int $maxObjects=0,
+        int $batchSize=1000,
+        string $mode='serial',
+        bool $collectErrors=false
     ): array {
         $startTime   = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -571,6 +1069,7 @@ class SettingsService
         );
 
         return $results;
+
     }//end massValidateObjects()
 
 
@@ -599,6 +1098,7 @@ class SettingsService
         }
 
         return $batchJobs;
+
     }//end createBatchJobs()
 
 
@@ -723,6 +1223,7 @@ class SettingsService
             // Clear objects from memory.
             unset($objects);
         }//end foreach
+
     }//end processJobsSerial()
 
 
@@ -797,6 +1298,7 @@ class SettingsService
             // Memory cleanup after each chunk.
             gc_collect_cycles();
         }//end foreach
+
     }//end processJobsParallel()
 
 
@@ -881,6 +1383,7 @@ class SettingsService
             'errors'     => $batchErrors,
             'duration'   => $batchDuration,
         ];
+
     }//end processBatchDirectly()
 
 
@@ -892,7 +1395,7 @@ class SettingsService
      *
      * @return string Formatted string.
      */
-    private function formatBytes(int $bytes, int $precision = 2): string
+    private function formatBytes(int $bytes, int $precision=2): string
     {
         $units     = ['B', 'KB', 'MB', 'GB', 'TB'];
         $unitCount = count($units);
@@ -902,6 +1405,7 @@ class SettingsService
         }
 
         return round($bytes, $precision).' '.$units[$i];
+
     }//end formatBytes()
 
 
@@ -930,6 +1434,7 @@ class SettingsService
         }
 
         return $value;
+
     }//end convertToBytes()
 
 
@@ -953,6 +1458,7 @@ class SettingsService
         $middle = str_repeat('*', min(20, strlen($token) - 8));
 
         return $start.$middle.$end;
+
     }//end maskToken()
 
 
@@ -962,7 +1468,7 @@ class SettingsService
      * Returns field definitions for SOLR schema comparison, combining
      * core metadata fields with user-defined schema fields.
      *
-     * @param \OCA\OpenRegister\Db\SchemaMapper $schemaMapper Schema mapper for database access.
+     * @param \OCA\OpenRegister\Db\SchemaMapper      $schemaMapper      Schema mapper for database access.
      * @param \OCA\OpenRegister\Service\IndexService $solrSchemaService Index service for field analysis.
      *
      * @return array Expected field configuration.
@@ -999,6 +1505,7 @@ class SettingsService
             // Return at least the core metadata fields even if schema analysis fails.
             return \OCA\OpenRegister\Service\Index\SetupHandler::getObjectEntityFieldDefinitions();
         }//end try
+
     }//end getExpectedSchemaFields()
 
 
@@ -1098,5 +1605,8 @@ class SettingsService
                 'total_differences' => count($missing) + count($extra) + count($mismatched),
             ],
         ];
+
     }//end compareFields()
+
+
 }//end class

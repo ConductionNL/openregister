@@ -153,7 +153,6 @@ class ImportHandler
         $this->logger              = $logger;
         $this->appDataPath         = $appDataPath;
         $this->uploadHandler       = $uploadHandler;
-
     }//end __construct()
 
 
@@ -174,9 +173,5 @@ class ImportHandler
     private function placeholder(): void
     {
         // This method will be removed once all import methods are extracted.
-
     }//end placeholder()
-
-
 }//end class
-
