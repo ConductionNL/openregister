@@ -59,8 +59,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
+use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -260,6 +262,20 @@ class FileService
     private FileFormattingHandler $fileFormattingHandler;
 
     /**
+     * Document processing handler (Single Responsibility: Document manipulation and anonymization)
+     *
+     * @var DocumentProcessingHandler
+     */
+    private DocumentProcessingHandler $documentProcessingHandler;
+
+    /**
+     * File publishing handler (Single Responsibility: File publishing and ZIP archiving)
+     *
+     * @var FilePublishingHandler
+     */
+    private FilePublishingHandler $filePublishingHandler;
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var            string
@@ -319,9 +335,11 @@ class FileService
      * @param CreateFileHandler       $createFileHandler       Create file handler
      * @param ReadFileHandler         $readFileHandler         Read file handler
      * @param UpdateFileHandler       $updateFileHandler       Update file handler
-     * @param DeleteFileHandler       $deleteFileHandler       Delete file handler
-     * @param TaggingHandler          $taggingHandler          Tagging handler
-     * @param FileFormattingHandler   $fileFormattingHandler   File formatting handler
+     * @param DeleteFileHandler         $deleteFileHandler         Delete file handler
+     * @param TaggingHandler            $taggingHandler            Tagging handler
+     * @param FileFormattingHandler     $fileFormattingHandler     File formatting handler
+     * @param DocumentProcessingHandler $documentProcessingHandler Document processing handler
+     * @param FilePublishingHandler     $filePublishingHandler     File publishing handler
      */
     public function __construct(
         IConfig $config,
@@ -346,7 +364,9 @@ class FileService
         UpdateFileHandler $updateFileHandler,
         DeleteFileHandler $deleteFileHandler,
         TaggingHandler $taggingHandler,
-        FileFormattingHandler $fileFormattingHandler
+        FileFormattingHandler $fileFormattingHandler,
+        DocumentProcessingHandler $documentProcessingHandler,
+        FilePublishingHandler $filePublishingHandler
     ) {
         $this->config       = $config;
         $this->fileMapper   = $fileMapper;
@@ -368,9 +388,11 @@ class FileService
         $this->createFileHandler       = $createFileHandler;
         $this->readFileHandler         = $readFileHandler;
         $this->updateFileHandler       = $updateFileHandler;
-        $this->deleteFileHandler       = $deleteFileHandler;
-        $this->taggingHandler          = $taggingHandler;
-        $this->fileFormattingHandler   = $fileFormattingHandler;
+        $this->deleteFileHandler         = $deleteFileHandler;
+        $this->taggingHandler            = $taggingHandler;
+        $this->fileFormattingHandler     = $fileFormattingHandler;
+        $this->documentProcessingHandler = $documentProcessingHandler;
+        $this->filePublishingHandler     = $filePublishingHandler;
 
         // Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
         $this->folderManagementHandler->setFileService($this);
@@ -386,6 +408,12 @@ class FileService
 
         // Break circular dependency: FileFormattingHandler needs FileService for utility methods (shares, tags, etc.).
         $this->fileFormattingHandler->setFileService($this);
+
+        // Break circular dependency: DocumentProcessingHandler needs FileService for cross-handler coordination.
+        $this->documentProcessingHandler->setFileService($this);
+
+        // Break circular dependency: FilePublishingHandler needs FileService for file operations and utilities.
+        $this->filePublishingHandler->setFileService($this);
 
     }//end __construct()
 
@@ -406,7 +434,7 @@ class FileService
      * @psalm-return   array{cleanPath: string, fileName: string}
      * @phpstan-return array{cleanPath: string, fileName: string}
      */
-    private function extractFileNameFromPath(string $filePath): array
+    public function extractFileNameFromPath(string $filePath): array
     {
         // Clean and decode the file path.
         $cleanPath = trim(string: $filePath, characters: '/');
@@ -1059,7 +1087,7 @@ class FileService
      * @psalm-return   IUser
      * @phpstan-return IUser
      */
-    private function getUser(): IUser
+    public function getUser(): IUser
     {
         return $this->fileOwnershipHandler->getUser();
 
@@ -1105,7 +1133,7 @@ class FileService
      * @psalm-return   void
      * @phpstan-return void
      */
-    private function checkOwnership(Node $file): void
+    public function checkOwnership(Node $file): void
     {
         $this->fileValidationHandler->checkOwnership($file);
 
@@ -1149,212 +1177,6 @@ class FileService
     }//end formatFiles()
 
 
-    /**
-     * Extract and normalize filter parameters from request parameters.
-     *
-     * This method extracts filter-specific parameters from the request, excluding
-     * pagination and other control parameters. It normalizes string parameters
-     * to arrays where appropriate for consistent filtering logic.
-     *
-     * @param array $requestParams The request parameters array
-     *
-     * @return array{
-     *     _hasLabels?: bool,
-     *     _noLabels?: bool,
-     *     labels?: array<string>,
-     *     extension?: string,
-     *     extensions?: array<string>,
-     *     minSize?: int,
-     *     maxSize?: int,
-     *     title?: string,
-     *     search?: string
-     * } Normalized filter parameters
-     *
-     * @psalm-param   array<string, mixed> $requestParams
-     * @phpstan-param array<string, mixed> $requestParams
-     */
-    private function extractFilterParameters(array $requestParams): array
-    {
-        $filters = [];
-
-        // Labels filtering (business logic filters prefixed with underscore).
-        if (($requestParams['_hasLabels'] ?? null) !== null) {
-            $filters['_hasLabels'] = (bool) $requestParams['_hasLabels'];
-        }
-
-        if (($requestParams['_noLabels'] ?? null) !== null) {
-            $filters['_noLabels'] = (bool) $requestParams['_noLabels'];
-        }
-
-        if (($requestParams['labels'] ?? null) !== null) {
-            $labels = $requestParams['labels'];
-            if (is_string($labels) === true) {
-                $filters['labels'] = array_map('trim', explode(',', $labels));
-            } else if (is_array($labels) === true) {
-                $filters['labels'] = $labels;
-            }
-        }
-
-        // Extension filtering.
-        if (($requestParams['extension'] ?? null) !== null) {
-            $filters['extension'] = trim($requestParams['extension']);
-        }
-
-        if (($requestParams['extensions'] ?? null) !== null) {
-            $extensions = $requestParams['extensions'];
-            if (is_string($extensions) === true) {
-                $filters['extensions'] = array_map('trim', explode(',', $extensions));
-            } else if (is_array($extensions) === true) {
-                $filters['extensions'] = $extensions;
-            }
-        }
-
-        // Size filtering.
-        if (($requestParams['minSize'] ?? null) !== null) {
-            $filters['minSize'] = (int) $requestParams['minSize'];
-        }
-
-        if (($requestParams['maxSize'] ?? null) !== null) {
-            $filters['maxSize'] = (int) $requestParams['maxSize'];
-        }
-
-        // Title/search filtering.
-        if (($requestParams['title'] ?? null) !== null) {
-            $filters['title'] = trim($requestParams['title']);
-        }
-
-        if (($requestParams['search'] ?? null) !== null || (($requestParams['_search'] ?? null) !== null) === true) {
-            $filters['search'] = trim($requestParams['search'] ?? $requestParams['_search']);
-        }
-
-        return $filters;
-
-    }//end extractFilterParameters()
-
-
-    /**
-     * Apply filters to an array of formatted file metadata.
-     *
-     * This method applies various filters to the formatted file metadata based on
-     * the provided filter parameters. Filters are applied in sequence and files
-     * must match ALL specified criteria to be included in the results.
-     *
-     * @param array $formattedFiles Array of formatted file metadata
-     * @param array $filters        Filter parameters to apply
-     *
-     * @return array Filtered array of file metadata
-     *
-     * @psalm-param    array<int, array<string, mixed>> $formattedFiles
-     * @phpstan-param  array<int, array<string, mixed>> $formattedFiles
-     * @psalm-param    array<string, mixed> $filters
-     * @phpstan-param  array<string, mixed> $filters
-     * @psalm-return   array<int, array<string, mixed>>
-     * @phpstan-return array<int, array<string, mixed>>
-     */
-    private function applyFileFilters(array $formattedFiles, array $filters): array
-    {
-        if (empty($filters) === true) {
-            return $formattedFiles;
-        }
-
-        return array_filter(
-                $formattedFiles,
-                function (array $file) use ($filters): bool {
-                    // Filter by label presence (business logic filter).
-                    if (($filters['_hasLabels'] ?? null) !== null) {
-                        $hasLabels = empty($file['labels']) === false;
-                        if ($filters['_hasLabels'] !== $hasLabels) {
-                            return false;
-                        }
-                    }
-
-                    // Filter for files without labels (business logic filter).
-                    if (($filters['_noLabels'] ?? null) !== null && $filters['_noLabels'] === true) {
-                        $hasLabels = empty($file['labels']) === false;
-                        if ($hasLabels === true) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by specific labels.
-                    if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
-                        $fileLabels       = $file['labels'] ?? [];
-                        $hasMatchingLabel = false;
-
-                        foreach ($filters['labels'] as $requiredLabel) {
-                            if (in_array($requiredLabel, $fileLabels, true) === true) {
-                                $hasMatchingLabel = true;
-                                break;
-                            }
-                        }
-
-                        if ($hasMatchingLabel === false) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by single extension.
-                    if (($filters['extension'] ?? null) !== null) {
-                        $fileExtension = $file['extension'] ?? '';
-                        if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by multiple extensions.
-                    if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
-                        $fileExtension        = $file['extension'] ?? '';
-                        $hasMatchingExtension = false;
-
-                        foreach ($filters['extensions'] as $allowedExtension) {
-                            if (strcasecmp($fileExtension, $allowedExtension) === 0) {
-                                $hasMatchingExtension = true;
-                                break;
-                            }
-                        }
-
-                        if ($hasMatchingExtension === false) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by file size range.
-                    if (($filters['minSize'] ?? null) !== null) {
-                        $fileSize = $file['size'] ?? 0;
-                        if ($fileSize < $filters['minSize']) {
-                            return false;
-                        }
-                    }
-
-                    if (($filters['maxSize'] ?? null) !== null) {
-                        $fileSize = $file['size'] ?? 0;
-                        if ($fileSize > $filters['maxSize']) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by title/filename content.
-                    if (($filters['title'] ?? null) !== null && empty($filters['title']) === false) {
-                        $fileTitle = $file['title'] ?? '';
-                        if (stripos($fileTitle, $filters['title']) === false) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by search term (searches in title).
-                    if (($filters['search'] ?? null) !== null && empty($filters['search']) === false) {
-                        $fileTitle = $file['title'] ?? '';
-                        if (stripos($fileTitle, $filters['search']) === false) {
-                            return false;
-                        }
-                    }
-
-                    // File passed all filters.
-                    return true;
-                }
-                );
-
-    }//end applyFileFilters()
 
 
     /**
@@ -1369,7 +1191,7 @@ class FileService
      * @phpstan-return array<int, string>
      * @psalm-return   list<string>
      */
-    private function getFileTags(string $fileId): array
+    public function getFileTags(string $fileId): array
     {
         return $this->taggingHandler->getFileTags($fileId);
 
@@ -2117,112 +1939,7 @@ class FileService
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
-        // If string ID provided, try to find the object entity.
-        if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
-        }
-
-        // Debug logging - original file parameter.
-        $originalFile = $file;
-        $this->logger->info(message: "publishFile: Original file parameter received: '$originalFile'");
-
-        // If $file is an integer (file ID), try to find the file directly by ID.
-        if (is_int($file) === true) {
-            $this->logger->info(message: "publishFile: File ID provided: $file");
-
-            // Try to find the file in the object's folder by ID.
-            $fileNode = $this->getFile(object: $object, file: $file);
-            if ($fileNode !== null) {
-                $this->logger->info(message: "publishFile: Found file by ID: ".$fileNode->getName()." (ID: ".$fileNode->getId().")");
-            } else {
-                $this->logger->error(message: "publishFile: No file found with ID: $file");
-                throw new Exception("File with ID $file does not exist");
-            }
-        } else {
-            // Handle string file paths (existing logic).
-            // Clean file path and extract filename using utility method.
-            $pathInfo = $this->extractFileNameFromPath($file);
-            $filePath = $pathInfo['cleanPath'];
-            $fileName = $pathInfo['fileName'];
-
-            $this->logger->info(message: "publishFile: After cleaning: '$filePath'");
-            if ($fileName !== $filePath) {
-                $this->logger->info(message: "publishFile: Extracted filename from path: '$fileName' (from '$filePath')");
-            }
-
-            // Get the object folder (this is where the files actually are).
-            $objectFolder = $this->getObjectFolder($object);
-
-            if ($objectFolder === null) {
-                $this->logger->error(message: "publishFile: Could not get object folder for object: ".$object->getId());
-                throw new Exception('Object folder not found.');
-            }
-
-            $this->logger->info(message: "publishFile: Object folder path: ".$objectFolder->getPath());
-
-            // Debug: List all files in the object folder.
-            try {
-                $objectFiles     = $objectFolder->getDirectoryListing();
-                $objectFileNames = array_map(
-                        function ($file) {
-                            return $file->getName();
-                        },
-                        $objectFiles
-                        );
-                $this->logger->info(message: "publishFile: Files in object folder: ".json_encode($objectFileNames));
-            } catch (Exception $e) {
-                $this->logger->error(message: "publishFile: Error listing object folder contents: ".$e->getMessage());
-            }
-
-            try {
-                $this->logger->info(message: "publishFile: Attempting to get file '$fileName' from object folder");
-                $fileNode = $objectFolder->get($fileName);
-                $this->logger->info(message: "publishFile: Successfully found file: ".$fileNode->getName()." at ".$fileNode->getPath());
-            } catch (NotFoundException $e) {
-                // Try with full path if filename didn't work.
-                try {
-                    $this->logger->info(message: "publishFile: Attempting to get file '$filePath' (full path) from object folder");
-                    $fileNode = $objectFolder->get($filePath);
-                    $this->logger->info(message: "publishFile: Successfully found file using full path: ".$fileNode->getName()." at ".$fileNode->getPath());
-                } catch (NotFoundException $e2) {
-                    $this->logger->error(message: "publishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage());
-                    throw new Exception('File not found.');
-                }
-            } catch (Exception $e) {
-                $this->logger->error(message: "publishFile: Unexpected error getting file from object folder: ".$e->getMessage());
-                throw new Exception('File not found.');
-            }
-        }//end if
-
-        // Verify file exists and is a File instance.
-        if ($fileNode instanceof File === false) {
-            $this->logger->error(message: "publishFile: Found node is not a File instance, it's a: ".get_class($fileNode));
-            throw new Exception('File not found.');
-        }
-
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($fileNode);
-
-        $this->logger->info(message: "publishFile: Creating share link for file: ".$fileNode->getPath());
-
-        // Use FileMapper to create the share directly in the database.
-        try {
-            $openRegisterUser = $this->getUser();
-            $shareInfo        = $this->fileMapper->publishFile(
-                    fileId: $fileNode->getId(),
-                    sharedBy: $openRegisterUser->getUID(),
-                    shareOwner: $openRegisterUser->getUID(),
-            // Read only.
-            );
-
-            $this->logger->info(message: "publishFile: Successfully created public share via FileMapper - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
-        } catch (Exception $e) {
-            $this->logger->error(message: "publishFile: Failed to create share via FileMapper: ".$e->getMessage());
-            throw new Exception('Failed to create share link: '.$e->getMessage());
-        }
-
-        $this->logger->info(message: "publishFile: Successfully published file: ".$fileNode->getName());
-        return $fileNode;
+        return $this->filePublishingHandler->publishFile($object, $file);
 
     }//end publishFile()
 
@@ -2244,110 +1961,7 @@ class FileService
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
-        // If string ID provided, try to find the object entity.
-        if (is_string($object) === true) {
-            $object = $this->objectEntityMapper->find($object);
-        }
-
-        // Debug logging - original file path.
-        $originalFilePath = $filePath;
-        $this->logger->info(message: "unpublishFile: Original file path received: '$originalFilePath'");
-
-        // If $filePath is an integer (file ID), try to find the file directly by ID.
-        if (is_int($filePath) === true) {
-            $this->logger->info(message: "unpublishFile: File ID provided: $filePath");
-
-            // Try to find the file in the object's folder by ID.
-            $file = $this->getFile(object: $object, file: $filePath);
-            if ($file !== null) {
-                $this->logger->info(message: "unpublishFile: Found file by ID: ".$file->getName()." (ID: ".$file->getId().")");
-            } else {
-                $this->logger->error(message: "unpublishFile: No file found with ID: $filePath");
-                throw new Exception("File with ID $filePath does not exist");
-            }
-        } else {
-            // Handle string file paths (existing logic).
-            // Clean file path and extract filename using utility method.
-            $pathInfo = $this->extractFileNameFromPath($filePath);
-            $filePath = $pathInfo['cleanPath'];
-            $fileName = $pathInfo['fileName'];
-
-            $this->logger->info(message: "unpublishFile: After cleaning: '$filePath'");
-            if ($fileName !== $filePath) {
-                $this->logger->info(message: "unpublishFile: Extracted filename from path: '$fileName' (from '$filePath')");
-            }
-
-            // Get the object folder (this is where the files actually are).
-            $objectFolder = $this->getObjectFolder($object);
-
-            if ($objectFolder === null) {
-                $this->logger->error(message: "unpublishFile: Could not get object folder for object: ".$object->getId());
-                throw new Exception('Object folder not found.');
-            }
-
-            $this->logger->info(message: "unpublishFile: Object folder path: ".$objectFolder->getPath());
-
-            // Debug: List all files in the object folder.
-            try {
-                $objectFiles     = $objectFolder->getDirectoryListing();
-                $objectFileNames = array_map(
-                        function ($file) {
-                            return $file->getName();
-                        },
-                        $objectFiles
-                        );
-                $this->logger->info(message: "unpublishFile: Files in object folder: ".json_encode($objectFileNames));
-            } catch (Exception $e) {
-                $this->logger->error(message: "unpublishFile: Error listing object folder contents: ".$e->getMessage());
-            }
-
-            try {
-                $this->logger->info(message: "unpublishFile: Attempting to get file '$fileName' from object folder");
-                $file = $objectFolder->get($fileName);
-                $this->logger->info(message: "unpublishFile: Successfully found file: ".$file->getName()." at ".$file->getPath());
-            } catch (NotFoundException $e) {
-                // Try with full path if filename didn't work.
-                try {
-                    $this->logger->info(message: "unpublishFile: Attempting to get file '$filePath' (full path) from object folder");
-                    $file = $objectFolder->get($filePath);
-                    $this->logger->info(message: "unpublishFile: Successfully found file using full path: ".$file->getName()." at ".$file->getPath());
-                } catch (NotFoundException $e2) {
-                    $this->logger->error(message: "unpublishFile: File '$fileName' and '$filePath' not found in object folder. NotFoundException: ".$e2->getMessage());
-                    throw new Exception('File not found.');
-                }
-            } catch (Exception $e) {
-                $this->logger->error(message: "unpublishFile: Unexpected error getting file from object folder: ".$e->getMessage());
-                throw new Exception('File not found.');
-            }
-        }//end if
-
-        // Verify file exists and is a File instance.
-        if ($file instanceof File === false) {
-            $this->logger->error(message: "unpublishFile: Found node is not a File instance, it's a: ".get_class($file));
-            throw new Exception('File not found.');
-        }
-
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($file);
-
-        $this->logger->info(message: "unpublishFile: Removing share links for file: ".$file->getPath());
-
-        // Use FileMapper to remove all public shares directly from the database.
-        try {
-            $deletionInfo = $this->fileMapper->depublishFile($file->getId());
-
-            $this->logger->info(message: "unpublishFile: Successfully removed public shares via FileMapper - Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}");
-
-            if ($deletionInfo['deleted_shares'] === 0) {
-                $this->logger->info(message: "unpublishFile: No public shares were found to delete for file: ".$file->getName());
-            }
-        } catch (Exception $e) {
-            $this->logger->error(message: "unpublishFile: Failed to remove shares via FileMapper: ".$e->getMessage());
-            throw new Exception('Failed to remove share links: '.$e->getMessage());
-        }
-
-        $this->logger->info(message: "unpublishFile: Successfully unpublished file: ".$file->getName());
-        return $file;
+        return $this->filePublishingHandler->unpublishFile($object, $filePath);
 
     }//end unpublishFile()
 
@@ -2373,157 +1987,12 @@ class FileService
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
-        // If string ID provided, try to find the object entity.
-        if (is_string($object) === true) {
-            try {
-                $object = $this->objectEntityMapper->find($object);
-            } catch (Exception $e) {
-                throw new Exception("Object not found: ".$e->getMessage());
-            }
-        }
-
-        $this->logger->info(message: "Creating ZIP archive for object: ".$object->getId());
-
-        // Check if ZipArchive extension is available.
-        if (class_exists('ZipArchive') === false) {
-            throw new Exception('PHP ZipArchive extension is not available');
-        }
-
-        // Get all files for the object.
-        $files = $this->getFiles($object);
-
-        if (empty($files) === true) {
-            throw new Exception('No files found for this object');
-        }
-
-        $this->logger->info(message: "Found ".count($files)." files for object ".$object->getId());
-
-        // Generate ZIP filename.
-        if ($zipName === null) {
-            $objectIdentifier = $object->getUuid() ?? (string) $object->getId();
-            $zipName          = 'object_'.$objectIdentifier.'_files_'.date('Y-m-d_H-i-s').'.zip';
-        } else if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
-            $zipName .= '.zip';
-        }
-
-        // Create temporary file for the ZIP.
-        $tempZipPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$zipName;
-
-        // Create new ZIP archive.
-        $zip    = new ZipArchive();
-        $result = $zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
-        if ($result !== true) {
-            throw new Exception("Cannot create ZIP file: ".$this->getZipErrorMessage($result));
-        }
-
-        $addedFiles   = 0;
-        $skippedFiles = 0;
-
-        // Add each file to the ZIP archive.
-        foreach ($files as $file) {
-            try {
-                if ($file instanceof \OCP\Files\File === false) {
-                    $this->logger->warning(message: "Skipping non-file node: ".$file->getName());
-                    $skippedFiles++;
-                    continue;
-                }
-
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-                $this->checkOwnership($file);
-
-                // Get file content.
-                $fileContent = $file->getContent();
-                $fileName    = $file->getName();
-
-                // Add file to ZIP with its original name.
-                $added = $zip->addFromString($fileName, $fileContent);
-
-                if ($added === false) {
-                    $this->logger->error(message: "Failed to add file to ZIP: ".$fileName);
-                    $skippedFiles++;
-                    continue;
-                }
-
-                $addedFiles++;
-                $this->logger->debug(message: "Added file to ZIP: ".$fileName);
-            } catch (Exception $e) {
-                $this->logger->error(message: "Error processing file ".$file->getName().": ".$e->getMessage());
-                $skippedFiles++;
-                continue;
-            }//end try
-        }//end foreach
-
-        // Close the ZIP archive.
-        $closeResult = $zip->close();
-        if ($closeResult === false) {
-            throw new Exception("Failed to finalize ZIP archive");
-        }
-
-        $this->logger->info(message: "ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files");
-
-        // Check if ZIP file was created successfully.
-        if (file_exists($tempZipPath) === false) {
-            throw new Exception("ZIP file was not created successfully");
-        }
-
-        $fileSize = filesize($tempZipPath);
-        if ($fileSize === false) {
-            throw new Exception("Cannot determine ZIP file size");
-        }
-
-        return [
-            'path'     => $tempZipPath,
-            'filename' => $zipName,
-            'size'     => $fileSize,
-            'mimeType' => 'application/zip',
-        ];
+        return $this->filePublishingHandler->createObjectFilesZip($object, $zipName);
 
     }//end createObjectFilesZip()
 
 
     /**
-     * Get a human-readable error message for ZipArchive error codes.
-     *
-     * @param int $errorCode The ZipArchive error code
-     *
-     * @return string Error message for the given ZIP error code
-     *
-     * @psalm-return   string
-     * @phpstan-return string
-     */
-    private function getZipErrorMessage(int $errorCode): string
-    {
-        return match ($errorCode) {
-            \ZipArchive::ER_OK => 'No error',
-            \ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
-            \ZipArchive::ER_RENAME => 'Renaming temporary file failed',
-            \ZipArchive::ER_CLOSE => 'Closing zip archive failed',
-            \ZipArchive::ER_SEEK => 'Seek error',
-            \ZipArchive::ER_READ => 'Read error',
-            \ZipArchive::ER_WRITE => 'Write error',
-            \ZipArchive::ER_CRC => 'CRC error',
-            \ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
-            \ZipArchive::ER_NOENT => 'No such file',
-            \ZipArchive::ER_EXISTS => 'File already exists',
-            \ZipArchive::ER_OPEN => 'Can\'t open file',
-            \ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
-            \ZipArchive::ER_ZLIB => 'Zlib error',
-            \ZipArchive::ER_MEMORY => 'Memory allocation failure',
-            \ZipArchive::ER_CHANGED => 'Entry has been changed',
-            \ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
-            \ZipArchive::ER_EOF => 'Premature EOF',
-            \ZipArchive::ER_INVAL => 'Invalid argument',
-            \ZipArchive::ER_NOZIP => 'Not a zip archive',
-            \ZipArchive::ER_INTERNAL => 'Internal error',
-            \ZipArchive::ER_INCONS => 'Zip archive inconsistent',
-            \ZipArchive::ER_REMOVE => 'Can\'t remove file',
-            \ZipArchive::ER_DELETED => 'Entry has been deleted',
-            default => "Unknown error code: $errorCode"
-        };//end match
-
-    }//end getZipErrorMessage()
-
 
     /**
      * Debug method to find a file by its ID anywhere in the OpenRegister folder structure
@@ -2913,241 +2382,23 @@ class FileService
      */
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null): Node
     {
-        if ($node->getType() !== \OCP\Files\FileInfo::TYPE_FILE) {
-            throw new Exception('Node must be a file');
-        }
-
-        $fileName      = $node->getName();
-        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
-
-        // Generate output file name if not provided.
-        if ($outputName === null) {
-            $outputName = $fileNameWithoutExtension.'_replaced';
-            if (empty($fileExtension) === false) {
-                $outputName .= '.'.$fileExtension;
-            }
-        }
-
-        // Process based on file type.
-        if (in_array($fileExtension, ['doc', 'docx'], true) === true) {
-            return $this->replaceWordsInWordDocument($node, $replacements, $outputName);
-        }
-
-        return $this->replaceWordsInTextDocument($node, $replacements, $outputName);
+        return $this->documentProcessingHandler->replaceWords($node, $replacements, $outputName);
 
     }//end replaceWords()
 
 
     /**
-     * Replace words in a Word document
-     *
-     * @param Node   $node         The file node to process
-     * @param array  $replacements Array of replacement mappings
-     * @param string $outputName   Name for the output file
-     *
-     * @return File The new file node with replaced content
-     *
-     * @throws Exception If replacement fails
-     *
-     * @phpstan-param  array<string, string> $replacements
-     * @psalm-param    array<string, string> $replacements
-     * @phpstan-return File
-     * @psalm-return   File
-     */
-    private function replaceWordsInWordDocument(
-        Node $node,
-        array $replacements,
-        string $outputName
-    ): File {
-        // Get the file content as a stream and save to a temp file.
-        $stream   = $node->fopen('r');
-        $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
-        if ($tempFile === false) {
-            throw new Exception('Failed to create temporary file');
-        }
-
-        $tempStream = fopen($tempFile, 'w');
-        if ($tempStream === false) {
-            unlink($tempFile);
-            throw new Exception('Failed to open temporary file for writing');
-        }
-
-        stream_copy_to_stream($stream, $tempStream);
-        fclose($tempStream);
-        fclose($stream);
-
-        try {
-            // Load the document.
-            $phpWord = \PhpOffice\PhpWord\IOFactory::load($tempFile);
-
-            // Helper: Replace text in all elements recursively.
-            $replaceInElements = function (array $elements, array $replacements) use (&$replaceInElements): void {
-                foreach ($elements as $element) {
-                    // Replace in text runs.
-                    if (method_exists($element, 'getText') === true && method_exists($element, 'setText') === true) {
-                        $text = $element->getText();
-                        foreach ($replacements as $original => $replacement) {
-                            $text = str_ireplace($original, $replacement, $text);
-                        }
-
-                        $element->setText($text);
-                    }
-
-                    // Replace in tables.
-                    if (method_exists($element, 'getRows') === true) {
-                        foreach ($element->getRows() as $row) {
-                            foreach ($row->getCells() as $cell) {
-                                $replaceInElements($cell->getElements(), $replacements);
-                            }
-                        }
-                    }
-
-                    // Replace in lists.
-                    if (method_exists($element, 'getItems') === true) {
-                        foreach ($element->getItems() as $item) {
-                            $replaceInElements($item->getElements(), $replacements);
-                        }
-                    }
-
-                    // Replace in nested elements.
-                    if (method_exists($element, 'getElements') === true) {
-                        $replaceInElements($element->getElements(), $replacements);
-                    }
-                }//end foreach
-            };
-
-            // Replace in headers.
-            foreach ($phpWord->getSections() as $section) {
-                foreach ($section->getHeaders() as $header) {
-                    $replaceInElements($header->getElements(), $replacements);
-                }
-            }
-
-            // Replace in main content.
-            foreach ($phpWord->getSections() as $section) {
-                $replaceInElements($section->getElements(), $replacements);
-            }
-
-            // Replace in footers.
-            foreach ($phpWord->getSections() as $section) {
-                foreach ($section->getFooters() as $footer) {
-                    $replaceInElements($footer->getElements(), $replacements);
-                }
-            }
-
-            // Save the modified document to a new temp file.
-            $outputTempFile = tempnam(sys_get_temp_dir(), 'openregister_word_output_');
-            \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($outputTempFile);
-
-            // Get the parent folder and create the new file.
-            $parentFolder = $node->getParent();
-            if ($parentFolder->nodeExists($outputName) === true) {
-                $parentFolder->get($outputName)->delete();
-            }
-
-            $outputStream = fopen($outputTempFile, 'r');
-            $newFile      = $parentFolder->newFile($outputName, $outputStream);
-            // Do NOT call fclose($outputStream) here; Nextcloud handles the stream lifecycle internally.
-            // Clean up temp files.
-            unlink($tempFile);
-            unlink($outputTempFile);
-
-            $this->logger->debug(
-                'Words replaced in Word document',
-                [
-                    'originalFile' => $node->getPath(),
-                    'outputFile'   => $newFile->getPath(),
-                    'replacements' => count($replacements),
-                ]
-            );
-
-            return $newFile;
-        } catch (Exception $e) {
-            // Clean up temp file if it exists.
-            if (isset($tempFile) === true && file_exists($tempFile) === true) {
-                unlink($tempFile);
-            }
-
-            $this->logger->error(
-                'Failed to replace words in Word document: '.$e->getMessage(),
-                [
-                    'exception' => $e,
-                ]
-            );
-            throw new Exception('Failed to replace words in Word document: '.$e->getMessage(), 0, $e);
-        }//end try
-
-    }//end replaceWordsInWordDocument()
-
-
-    /**
-     * Replace words in a text-based document
-     *
-     * @param Node   $node         The file node to process
-     * @param array  $replacements Array of replacement mappings
-     * @param string $outputName   Name for the output file
-     *
-     * @return File The new file node with replaced content
-     *
-     * @throws Exception If replacement fails
-     *
-     * @phpstan-param  array<string, string> $replacements
-     * @psalm-param    array<string, string> $replacements
-     * @phpstan-return File
-     * @psalm-return   File
-     */
-    private function replaceWordsInTextDocument(
-        Node $node,
-        array $replacements,
-        string $outputName
-    ): File {
-        // Get file content.
-        $content = $node->getContent();
-        if ($content === false) {
-            throw new Exception('Failed to get content from file: '.$node->getPath());
-        }
-
-        // Apply replacements.
-        $modifiedContent = $content;
-        foreach ($replacements as $original => $replacement) {
-            $modifiedContent = str_ireplace($original, $replacement, $modifiedContent);
-        }
-
-        // Create output file.
-        $parentFolder = $node->getParent();
-        if ($parentFolder->nodeExists($outputName) === true) {
-            $parentFolder->get($outputName)->delete();
-        }
-
-        $newFile = $parentFolder->newFile($outputName, $modifiedContent);
-
-        $this->logger->debug(
-            'Words replaced in text document',
-            [
-                'originalFile' => $node->getPath(),
-                'outputFile'   => $newFile->getPath(),
-                'replacements' => count($replacements),
-            ]
-        );
-
-        return $newFile;
-
-    }//end replaceWordsInTextDocument()
-
-
-    /**
-     * Anonymize a document by replacing detected entities
+     * Anonymize a document by replacing detected entities (DELEGATED to DocumentProcessingHandler).
      *
      * This is a convenience method that creates replacement mappings
      * from entity detection results and applies them to a document.
      *
-     * @param Node  $node     The file node to anonymize
-     * @param array $entities Array of detected entities with 'text' and 'key' fields
+     * @param Node  $node     The file node to anonymize.
+     * @param array $entities Array of detected entities with 'text' and 'key' fields.
      *
-     * @return Node The anonymized file node
+     * @return Node The anonymized file node.
      *
-     * @throws Exception If anonymization fails
+     * @throws Exception If anonymization fails.
      *
      * @phpstan-param  array<int, array{text?: string, entityType?: string, key?: string}> $entities
      * @psalm-param    array<int, array{text?: string, entityType?: string, key?: string}> $entities
@@ -3156,29 +2407,7 @@ class FileService
      */
     public function anonymizeDocument(Node $node, array $entities): Node
     {
-        // Build replacements array from entities.
-        $replacements = [];
-        foreach ($entities as $entity) {
-            $originalText = $entity['text'] ?? '';
-            $entityType   = $entity['entityType'] ?? 'UNKNOWN';
-            $key          = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-
-            if (empty($originalText) === false) {
-                $replacements[$originalText] = '['.$entityType.': '.$key.']';
-            }
-        }
-
-        // Generate anonymized file name.
-        $fileName      = $node->getName();
-        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
-
-        $anonymizedFileName = $fileNameWithoutExtension.'_anonymized';
-        if (empty($fileExtension) === false) {
-            $anonymizedFileName .= '.'.$fileExtension;
-        }
-
-        return $this->replaceWords($node, $replacements, $anonymizedFileName);
+        return $this->documentProcessingHandler->anonymizeDocument($node, $entities);
 
     }//end anonymizeDocument()
 

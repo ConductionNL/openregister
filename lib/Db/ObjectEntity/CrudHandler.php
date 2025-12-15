@@ -57,6 +57,8 @@ class CrudHandler
 
     /**
      * Insert a new object entity
+     *
+     * @return Entity The inserted entity
      */
     public function insert(Entity $entity): Entity
     {
@@ -81,6 +83,8 @@ class CrudHandler
 
     /**
      * Update an existing object entity
+     *
+     * @return Entity The updated entity
      */
     public function update(Entity $entity, bool $includeDeleted=false): Entity
     {
@@ -116,6 +120,8 @@ class CrudHandler
 
     /**
      * Delete an object entity
+     *
+     * @return ObjectEntity The deleted entity
      */
     public function delete(Entity $entity): ObjectEntity
     {

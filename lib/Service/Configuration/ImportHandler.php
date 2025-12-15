@@ -147,7 +147,6 @@ class ImportHandler
         $this->registerMapper      = $registerMapper;
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
-        null // TODO       = $objectService;
         $this->appConfig           = $appConfig;
         $this->logger              = $logger;
         $this->appDataPath         = $appDataPath;

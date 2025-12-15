@@ -149,6 +149,8 @@ class DashboardController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing dashboard data
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{error?: string, registers?: list{0: array{id: 'orphaned'|'totals'|mixed, title: 'Orphaned Items'|'System Totals'|mixed, description: 'Items that reference non-existent registers, schemas, or invalid register-schema combinations'|'Total statistics across all registers and schemas'|mixed, stats: array, schemas: list<mixed>,...}, 1?: array{stats: array, schemas: list<mixed>, id: 'orphaned'|'totals'|mixed, title: 'Orphaned Items'|'System Totals'|mixed, description: 'Items that reference non-existent registers, schemas, or invalid register-schema combinations'|'Total statistics across all registers and schemas'|mixed,...},...}}, array<never, never>>
@@ -191,6 +193,8 @@ class DashboardController extends Controller
      * @param int|null $schemaId   Optional schema ID to filter calculations by
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing calculation results
      *
      * @NoCSRFRequired
      *

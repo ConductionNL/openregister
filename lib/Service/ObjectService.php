@@ -364,8 +364,8 @@ class ObjectService
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
             // When deriving register from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its register.
-            $registers = $this->getCachedEntities([$register], function ($ids) {
-                return [$this->registerMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
+            $registers = $this->performanceHandler->getCachedEntities([$register], function ($ids) {
+                return [$this->registerMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
             });
             $registerExists = isset($registers[0]) === true;
             $isRegisterInstance = $registerExists === true && $registers[0] instanceof Register;
@@ -395,8 +395,8 @@ class ObjectService
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
             // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its schema.
-            $schemas = $this->getCachedEntities([$schema], function ($ids) {
-                return [$this->schemaMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
+            $schemas = $this->performanceHandler->getCachedEntities([$schema], function ($ids) {
+                return [$this->schemaMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
             });
             $schemaExists = isset($schemas[0]) === true;
             $isSchemaInstance = $schemaExists === true && $schemas[0] instanceof Schema;
@@ -488,11 +488,14 @@ class ObjectService
             _extend: $_extend,
             files: $files,
             _rbac: $_rbac,
-            multi: $multi
+            _multitenancy: $_multitenancy
         );
 
         // If the object is not found, return null.
-        /** @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null */
+        /** Suppress type check - GetObject::find() may return null
+         *
+         * @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null
+         */
         if ($object === null) {
             return null;
         }
@@ -527,7 +530,7 @@ class ObjectService
             registers: $registers,
             schemas: $schemas,
             _rbac: $_rbac,
-            _multi: $multi
+            _multitenancy: $_multitenancy
         );
     }//end find()
 
@@ -579,7 +582,7 @@ class ObjectService
             _extend: $_extend,
             files: $files,
             _rbac: $_rbac,
-            multi: $multi
+            _multitenancy: $_multitenancy
         );
     }//end findSilent()
 
@@ -645,7 +648,7 @@ class ObjectService
             ids: $config['ids'] ?? null,
             published: $config['published'] ?? false,
             _rbac: $_rbac,
-            multi: $multi
+            _multitenancy: $_multitenancy
         );
 
         // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
@@ -686,9 +689,12 @@ class ObjectService
                             registers: $registers,
                             schemas: $schemas,
                             _rbac: $_rbac,
-                            _multi: $multi
+                            _multitenancy: $_multitenancy
                         );
-                        /** @var callable(mixed): void $resolve */
+                        /** Type annotation for resolve callback
+                         *
+                         * @var callable(mixed): void $resolve
+                         */
                         $resolve($renderedObject);
                     } catch (\Throwable $e) {
                         $reject($e);
@@ -697,7 +703,10 @@ class ObjectService
             );
         }
 
-        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+        /** Suppress undefined function check - React\Async\await is from external library
+         *
+         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
+         */
         $objects = Async\await(all($promises));
 
         return $objects;
@@ -923,7 +932,7 @@ class ObjectService
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         // ARCHITECTURAL DELEGATION: Delegate to CascadingHandler for all cascading logic.
-        [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(object: $object, schema: $parentSchema, uuid: $uuid, currentRegister: $this->currentRegister);
+        [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(object: $object, schema: $parentSchema, uuid: $uuid, currentRegister: $this->currentRegister->getId());
 
         // Restore the parent object's register and schema context after cascading.
         $this->currentRegister = $parentRegister;
@@ -993,7 +1002,7 @@ class ObjectService
             registers: $registers,
             schemas: $schemas,
             _rbac: $_rbac,
-            _multi: $multi
+            _multitenancy: $_multitenancy
         );
     }//end saveObject()
 
@@ -1037,7 +1046,7 @@ class ObjectService
             uuid: $uuid,
             originalObjectId: null,
             _rbac: $_rbac,
-            _multi: $multi
+            _multitenancy: $_multitenancy
         );
     }//end deleteObject()
 
@@ -1588,7 +1597,10 @@ class ObjectService
 
         // Use React's await functionality to get the result synchronously.
         // Note: The async version already logs the search trail, so we don't need to log again.
-        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+        /** Suppress undefined function check - React\Async\await is from external library
+         *
+         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
+         */
         return \React\Async\await($promise);
     }//end searchObjectsPaginatedSync()
 
@@ -1663,7 +1675,7 @@ class ObjectService
             fields: $fields,
             unset: $unset,
             _rbac: $_rbac,
-            _multi: $multi
+            _multitenancy: $_multitenancy
         )->jsonSerialize();
     }//end renderEntity()
 

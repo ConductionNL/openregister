@@ -249,7 +249,7 @@ class QueryHandler
             _fields: $query['_fields'] ?? null,
             _unset: $query['_unset'] ?? null,
             _rbac: $_rbac,
-            _multi: $_multitenancy
+            _multitenancy: $_multitenancy
         );
 
     }//end searchObjects()

@@ -88,6 +88,8 @@ class UserSettingsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing GitHub token status
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to get token status'|'User not authenticated', hasToken?: bool, isValid?: bool, message?: 'No GitHub token configured'|'Token is invalid or expired'|'Token is valid'}, array<never, never>>
@@ -138,6 +140,8 @@ class UserSettingsController extends Controller
      * Set GitHub personal access token for the current user.
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing token save result
      *
      * @NoCSRFRequired
      *

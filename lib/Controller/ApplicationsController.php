@@ -144,6 +144,8 @@ class ApplicationsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing list of applications
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve applications', results?: array<\OCA\OpenRegister\Db\Application>}, array<never, never>>
@@ -216,6 +218,8 @@ class ApplicationsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing application details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<404, array{error: 'Application not found'}, array<never, never>>
@@ -258,6 +262,8 @@ class ApplicationsController extends Controller
      * Validates input and returns created application or error.
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing created application
      *
      * @NoCSRFRequired
      *
@@ -307,6 +313,8 @@ class ApplicationsController extends Controller
      * @param int $id Application database ID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing updated application
      *
      * @NoCSRFRequired
      *
@@ -362,6 +370,8 @@ class ApplicationsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing patched application
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
@@ -383,6 +393,8 @@ class ApplicationsController extends Controller
      * @param int $id Application database ID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing deletion result
      *
      * @NoCSRFRequired
      *

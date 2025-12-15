@@ -29,14 +29,21 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
+/**
+ * Migration step for adding uuid and version columns to sources and schemas tables
+ */
 class Version1Date20241019205009 extends SimpleMigrationStep
 {
 
 
     /**
+     * Execute actions before schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -47,11 +54,13 @@ class Version1Date20241019205009 extends SimpleMigrationStep
 
 
     /**
+     * Apply schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return ISchemaWrapper
+     * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -103,9 +112,13 @@ class Version1Date20241019205009 extends SimpleMigrationStep
 
 
     /**
+     * Execute actions after schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */

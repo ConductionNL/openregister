@@ -157,6 +157,8 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing file details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array<string, mixed>, array<never, never>>

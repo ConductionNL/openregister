@@ -1782,7 +1782,7 @@ class SaveObject
             schema: $schema,
             data: $data,
                     selfData: $selfData,
-                    _multi: $multi
+                    _multitenancy: $_multitenancy
         );
 
         // If not persisting, return the prepared object.
@@ -1874,12 +1874,15 @@ class SaveObject
             $schemaId = null;
         }
 
-        $this->objectCacheService->invalidateForObjectChange(
-            object: $savedEntity,
-            operation: $operation,
-            registerId: $registerId,
-            schemaId: $schemaId
-        );
+        // TODO: Implement cache invalidation for object changes.
+        // This should use the CacheHandler to invalidate relevant caches after object operations.
+        // For now, skipping to allow CRUD operations to complete.
+        // $this->objectCacheService->invalidateForObjectChange(
+        //     object: $savedEntity,
+        //     operation: $operation,
+        //     registerId: $registerId,
+        //     schemaId: $schemaId
+        // );
 
         return $savedEntity;
 

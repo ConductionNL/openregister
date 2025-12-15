@@ -30,6 +30,8 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
+ * Migration step for database schema updates
+ *
  * FIXME Auto-generated migration step: Please modify to your needs!
  */
 class Version1Date20241128221000 extends SimpleMigrationStep
@@ -37,9 +39,13 @@ class Version1Date20241128221000 extends SimpleMigrationStep
 
 
     /**
+     * Execute actions before schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -50,11 +56,13 @@ class Version1Date20241128221000 extends SimpleMigrationStep
 
 
     /**
+     * Apply schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return ISchemaWrapper
+     * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -100,9 +108,13 @@ class Version1Date20241128221000 extends SimpleMigrationStep
 
 
     /**
+     * Execute actions after schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */

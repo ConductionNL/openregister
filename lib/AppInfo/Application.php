@@ -79,7 +79,7 @@ use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
 use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
@@ -383,6 +383,39 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ObjectService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+        
+        // Register UploadHandler with Client dependency.
+        $context->registerService(
+            ConfigurationUploadHandler::class,
+            function ($container) {
+                return new ConfigurationUploadHandler(
+                    client: new Client(),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+        
+        // Register ImportHandler with appDataPath and UploadHandler dependencies.
+        $context->registerService(
+            ConfigurationImportHandler::class,
+            function ($container) {
+                // Get the app data directory path.
+                $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+                $appDataPath = $dataDir.'/appdata_openregister';
+                
+                return new ConfigurationImportHandler(
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    appDataPath: $appDataPath,
+                    uploadHandler: $container->get(ConfigurationUploadHandler::class)
+                );
+            }
+        );
+        
         // Register ConfigurationService with appDataPath parameter.
         $context->registerService(
             ConfigurationService::class,

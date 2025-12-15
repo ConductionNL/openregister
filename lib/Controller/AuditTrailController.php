@@ -155,6 +155,8 @@ class AuditTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing list of audit trails
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\AuditTrail>, total: int<0, max>, page: int|null, pages: float, limit: int, offset: int|null}, array<never, never>>
@@ -227,6 +229,8 @@ class AuditTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing audit trails for specific object
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: string, results?: array<\OCA\OpenRegister\Db\AuditTrail>, total?: int<0, max>, page?: int|null, pages?: float, limit?: int, offset?: int|null}, array<never, never>>
@@ -272,6 +276,8 @@ class AuditTrailController extends Controller
      * Export audit trail logs in specified format
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing exported audit trail data
      *
      * @NoCSRFRequired
      *
@@ -337,6 +343,8 @@ class AuditTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing deletion result
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Audit trail deleted successfully'}, array<never, never>>
@@ -385,6 +393,8 @@ class AuditTrailController extends Controller
      * Delete multiple audit trail logs based on filters or specific IDs
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing bulk deletion results
      *
      * @NoCSRFRequired
      *
@@ -441,6 +451,8 @@ class AuditTrailController extends Controller
      * Clear all audit trail logs
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing clear all operation result
      *
      * @NoCSRFRequired
      *

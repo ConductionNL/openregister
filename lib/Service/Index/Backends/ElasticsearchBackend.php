@@ -71,6 +71,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Index an object.
+     *
+     * @return bool True on success, false on failure
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
@@ -81,6 +83,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Index multiple objects.
+     *
+     * @return array Results of bulk indexing operation
      */
     public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
@@ -91,6 +95,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Delete an object.
+     *
+     * @return bool True on success, false on failure
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
@@ -101,6 +107,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Delete objects by query.
+     *
+     * @return array|bool Array with details if $returnDetails is true, otherwise bool
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -113,6 +121,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Search with pagination.
+     *
+     * @return array Search results with pagination metadata
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -141,6 +151,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get document count.
+     *
+     * @return int Number of documents in the index
      */
     public function getDocumentCount(): int
     {
@@ -151,6 +163,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Commit changes (refresh index).
+     *
+     * @return bool True on success, false on failure
      */
     public function commit(): bool
     {
@@ -163,6 +177,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Search objects.
+     *
+     * @return array Search results
      */
     public function search(array $params): array
     {
@@ -173,6 +189,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Reindex all objects.
+     *
+     * @return array Reindexing results
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -189,6 +207,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Warmup index (ensure it exists).
+     *
+     * @return array Warmup results
      */
     public function warmupIndex(
         array $schemas=[],
@@ -212,6 +232,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Check if backend is available.
+     *
+     * @return bool True if backend is available
      */
     public function isAvailable(bool $forceRefresh=false): bool
     {
@@ -222,6 +244,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Test connection to backend.
+     *
+     * @return array Connection test results
      */
     public function testConnection(bool $includeCollectionTests=true): array
     {
@@ -243,6 +267,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Optimize index.
+     *
+     * @return bool True on success
      */
     public function optimize(): bool
     {
@@ -254,6 +280,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Clear index.
+     *
+     * @return array Clear operation results
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -265,6 +293,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get backend configuration.
+     *
+     * @return array Backend configuration
      */
     public function getConfig(): array
     {
@@ -275,6 +305,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get backend statistics.
+     *
+     * @return array Backend statistics
      */
     public function getStats(): array
     {
@@ -288,6 +320,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Create collection/index.
+     *
+     * @return array Creation results
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -299,6 +333,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Delete collection/index.
+     *
+     * @return array Deletion results
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -311,6 +347,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Check if collection exists.
+     *
+     * @return bool True if collection exists
      */
     public function collectionExists(string $collectionName): bool
     {
@@ -321,6 +359,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * List all collections.
+     *
+     * @return array List of collection names
      */
     public function listCollections(): array
     {
@@ -332,6 +372,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Index generic documents.
+     *
+     * @return bool True on success
      */
     public function index(array $documents): bool
     {
@@ -344,6 +386,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get field types.
+     *
+     * @return array Field types
      */
     public function getFieldTypes(string $collection): array
     {
@@ -354,6 +398,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Add field type.
+     *
+     * @return bool True on success
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -364,6 +410,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Get fields.
+     *
+     * @return array Field definitions
      */
     public function getFields(string $collection): array
     {
@@ -374,6 +422,8 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     /**
      * Add or update field.
+     *
+     * @return string Status message
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {

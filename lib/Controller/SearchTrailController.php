@@ -286,6 +286,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing search trail entries
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string}, array<never, never>>
@@ -330,6 +332,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing search trail entry
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\SearchTrail, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
@@ -355,6 +359,8 @@ class SearchTrailController extends Controller
      * Get search statistics for a given period
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing search statistics
      *
      * @NoCSRFRequired
      *
@@ -383,6 +389,8 @@ class SearchTrailController extends Controller
      * Get popular search terms
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing popular search terms
      *
      * @NoCSRFRequired
      *
@@ -430,6 +438,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing search activity data
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{error?: string, activity?: array, insights?: array, interval?: string, period?: array{from: null|string, to: null|string}}, array<never, never>>
@@ -459,6 +469,8 @@ class SearchTrailController extends Controller
      * Get search statistics by register and schema
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing register and schema statistics
      *
      * @NoCSRFRequired
      *
@@ -505,6 +517,8 @@ class SearchTrailController extends Controller
      * Get user agent statistics
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing user agent statistics
      *
      * @NoCSRFRequired
      *
@@ -583,6 +597,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing cleanup operation results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: bool, deleted?: 0|1, message?: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries', cleanup_date?: string}, array<never, never>>
@@ -616,6 +632,8 @@ class SearchTrailController extends Controller
      * Export search trail logs in specified format
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing export data
      *
      * @NoCSRFRequired
      *
@@ -722,6 +740,8 @@ class SearchTrailController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing deletion result
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Search trail deletion not implemented yet'}, array<never, never>>
@@ -763,6 +783,8 @@ class SearchTrailController extends Controller
      * Delete multiple search trail logs based on filters or specific IDs
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing multiple deletion results
      *
      * @NoCSRFRequired
      *

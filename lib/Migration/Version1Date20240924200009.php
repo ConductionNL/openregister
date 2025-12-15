@@ -37,9 +37,13 @@ class Version1Date20240924200009 extends SimpleMigrationStep
 
 
     /**
+     * Execute actions before schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -50,11 +54,13 @@ class Version1Date20240924200009 extends SimpleMigrationStep
 
 
     /**
+     * Apply schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return ISchemaWrapper
+     * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -147,6 +153,8 @@ class Version1Date20240924200009 extends SimpleMigrationStep
      * @param array                     $options
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {

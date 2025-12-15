@@ -119,6 +119,8 @@ class SchemasController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing list of schemas
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, array{results: array<array<string, mixed>>}, array<never, never>>
@@ -262,6 +264,8 @@ class SchemasController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing created schema
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<201, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
@@ -348,6 +352,8 @@ class SchemasController extends Controller
      * @param int $id The ID of the schema to update
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing updated schema
      *
      * @NoCSRFRequired
      *

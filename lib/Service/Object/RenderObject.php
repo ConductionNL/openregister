@@ -129,6 +129,8 @@ class RenderObject
      *
      * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
      *
+     * @return void
+     *
      * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
      * @psalm-param   array<string, ObjectEntity> $ultraPreloadCache
      */
@@ -329,6 +331,8 @@ class RenderObject
      * @param string $fileId The ID of the file
      *
      * @return string[]
+     *
+     * @return array List of file tags
      *
      * @phpstan-return array<int, string>
      *

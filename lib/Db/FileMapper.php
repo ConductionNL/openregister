@@ -390,6 +390,10 @@ class FileMapper extends QBMapper
      *
      * @param string $token The share token
      *
+     * @param string $token Share token
+     *
+     * @return string Generated share URL
+     *
      * @phpstan-param string $token
      *
      * @phpstan-return string
@@ -410,6 +414,10 @@ class FileMapper extends QBMapper
      *
      * @param int $fileId The file ID
      *
+     * @param int $fileId File ID
+     *
+     * @return string Generated authenticated access URL
+     *
      * @phpstan-param int $fileId
      *
      * @phpstan-return string
@@ -429,6 +437,10 @@ class FileMapper extends QBMapper
      * the user to be authenticated to download the file.
      *
      * @param int $fileId The file ID
+     *
+     * @param int $fileId File ID
+     *
+     * @return string Generated authenticated download URL
      *
      * @phpstan-param int $fileId
      *

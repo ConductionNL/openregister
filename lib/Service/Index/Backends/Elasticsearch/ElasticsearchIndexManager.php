@@ -52,6 +52,8 @@ class ElasticsearchIndexManager
 
     /**
      * Check if index exists.
+     *
+     * @return bool True if index exists
      */
     public function indexExists(string $indexName): bool
     {
@@ -69,6 +71,8 @@ class ElasticsearchIndexManager
 
     /**
      * Create index with mapping.
+     *
+     * @return bool True on success
      */
     public function createIndex(string $indexName, array $mapping=[]): bool
     {
@@ -116,6 +120,8 @@ class ElasticsearchIndexManager
 
     /**
      * Delete index.
+     *
+     * @return bool True on success
      */
     public function deleteIndex(string $indexName): bool
     {
@@ -151,6 +157,8 @@ class ElasticsearchIndexManager
 
     /**
      * Ensure index exists, create if not.
+     *
+     * @return bool True on success
      */
     public function ensureIndex(string $indexName): bool
     {
@@ -171,6 +179,8 @@ class ElasticsearchIndexManager
 
     /**
      * Get active index name.
+     *
+     * @return string Active index name
      */
     public function getActiveIndexName(): string
     {
@@ -181,6 +191,8 @@ class ElasticsearchIndexManager
 
     /**
      * Get index stats.
+     *
+     * @return array Index statistics
      */
     public function getIndexStats(string $indexName): array
     {
@@ -203,6 +215,8 @@ class ElasticsearchIndexManager
 
     /**
      * Refresh index to make documents searchable.
+     *
+     * @return bool True on success
      */
     public function refreshIndex(string $indexName): bool
     {

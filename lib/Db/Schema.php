@@ -1283,6 +1283,8 @@ class Schema extends Entity implements JsonSerializable
      *
      * @psalm-param array<string, mixed> $property
      *
+     * @return string The facet type
+     *
      * @phpstan-return string|null
      *
      * @psalm-return 'date_histogram'|'range'|'terms'

@@ -73,6 +73,8 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing file extraction data
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array<never, never>, message?: 'This endpoint needs to be updated for chunk-based architecture'}, array<never, never>>
@@ -108,6 +110,8 @@ class FileExtractionController extends Controller
      * @param int $id Nextcloud file ID from oc_filecache
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing file extraction information
      *
      * @NoCSRFRequired
      *
@@ -161,6 +165,8 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing extraction result
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|404|500, array{success: bool, error?: 'Extraction failed'|'File not found in Nextcloud', message: string}, array<never, never>>
@@ -210,6 +216,8 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing file discovery results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'File discovery failed', message: string, data?: array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}}, array<never, never>>
@@ -250,6 +258,8 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing batch extraction results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Batch extraction failed', message: string, data?: array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}}, array<never, never>>
@@ -287,6 +297,8 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing retry operation results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Retry failed', message: string, data?: array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}}, array<never, never>>
@@ -321,6 +333,8 @@ class FileExtractionController extends Controller
      * Get extraction statistics
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing extraction statistics
      *
      * @NoCSRFRequired
      *
@@ -358,6 +372,8 @@ class FileExtractionController extends Controller
      * This helps maintain database integrity and remove orphaned records.
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing cleanup operation results
      *
      * @NoCSRFRequired
      *
@@ -399,6 +415,8 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing file type statistics
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Failed to retrieve file types', message?: string, data?: array<never, never>}, array<never, never>>
@@ -436,6 +454,8 @@ class FileExtractionController extends Controller
      * Supports serial and parallel processing modes.
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing vectorization batch results
      *
      * @NoCSRFRequired
      *
