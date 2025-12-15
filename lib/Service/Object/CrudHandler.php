@@ -68,7 +68,7 @@ class CrudHandler
      *
      * @param array       $query     Search query parameters
      * @param bool        $rbac      Apply RBAC filters
-     * @param bool        $multi     Apply multitenancy filters
+     * @param bool        $_multitenancy     Apply multitenancy filters
      * @param bool        $published Only return published objects
      * @param bool        $deleted   Include deleted objects
      * @param array|null  $ids       Optional array of object IDs to filter
@@ -82,7 +82,7 @@ class CrudHandler
     public function list(
         array $query=[],
         bool $rbac=true,
-        bool $multi=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false,
         ?array $ids=null,
@@ -94,7 +94,7 @@ class CrudHandler
             context: [
                 'query_params' => array_keys($query),
                 'rbac'         => $rbac,
-                'multi'        => $multi,
+                '_multitenancy' => $_multitenancy,
                 'published'    => $published,
                 'deleted'      => $deleted,
             ]
@@ -142,20 +142,20 @@ class CrudHandler
      *
      * @param string $objectId Object ID or UUID
      * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $multi    Apply multitenancy filters
+     * @param bool   $_multitenancy    Apply multitenancy filters
      *
      * @return ObjectEntity|null Object entity or null if not found
      *
      * @throws \Exception If retrieval fails
      */
-    public function get(string $objectId, bool $rbac=true, bool $multi=true): ?ObjectEntity
+    public function get(string $objectId, bool $rbac=true, bool $_multitenancy=true): ?ObjectEntity
     {
         $this->logger->debug(
             message: '[CrudHandler] Getting object',
             context: [
                 'object_id' => $objectId,
                 'rbac'      => $rbac,
-                'multi'     => $multi,
+                '_multitenancy' => $_multitenancy,
             ]
         );
 
@@ -204,20 +204,20 @@ class CrudHandler
      *
      * @param array $data  Object data
      * @param bool  $rbac  Apply RBAC filters
-     * @param bool  $multi Apply multitenancy filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Created object
      *
      * @throws \Exception If creation fails
      */
-    public function create(array $data, bool $rbac=true, bool $multi=true): ObjectEntity
+    public function create(array $data, bool $rbac=true, bool $_multitenancy=true): ObjectEntity
     {
         $this->logger->info(
             message: '[CrudHandler] Creating object',
             context: [
                 'data_keys' => array_keys($data),
                 'rbac'      => $rbac,
-                'multi'     => $multi,
+                '_multitenancy' => $_multitenancy,
             ]
         );
 
@@ -260,7 +260,7 @@ class CrudHandler
      * @param string $objectId Object ID or UUID
      * @param array  $data     Object data
      * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $multi    Apply multitenancy filters
+     * @param bool   $_multitenancy    Apply multitenancy filters
      *
      * @return ObjectEntity Updated object
      *
@@ -270,7 +270,7 @@ class CrudHandler
         string $objectId,
         array $data,
         bool $rbac=true,
-        bool $multi=true
+        bool $_multitenancy=true
     ): ObjectEntity {
         $this->logger->info(
             message: '[CrudHandler] Updating object',
@@ -278,7 +278,7 @@ class CrudHandler
                 'object_id' => $objectId,
                 'data_keys' => array_keys($data),
                 'rbac'      => $rbac,
-                'multi'     => $multi,
+                '_multitenancy' => $_multitenancy,
             ]
         );
 
@@ -321,7 +321,7 @@ class CrudHandler
      * @param string $objectId Object ID or UUID
      * @param array  $data     Partial object data
      * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $multi    Apply multitenancy filters
+     * @param bool   $_multitenancy    Apply multitenancy filters
      *
      * @return ObjectEntity Patched object
      *
@@ -331,7 +331,7 @@ class CrudHandler
         string $objectId,
         array $data,
         bool $rbac=true,
-        bool $multi=true
+        bool $_multitenancy=true
     ): ObjectEntity {
         $this->logger->info(
             message: '[CrudHandler] Patching object',
@@ -339,13 +339,13 @@ class CrudHandler
                 'object_id' => $objectId,
                 'data_keys' => array_keys($data),
                 'rbac'      => $rbac,
-                'multi'     => $multi,
+                '_multitenancy' => $_multitenancy,
             ]
         );
 
         try {
             // Get existing object.
-            $object = $this->get($objectId, $rbac, $multi);
+            $object = $this->get($objectId, $rbac, $_multitenancy);
 
             if ($object === null) {
                 throw new \Exception("Object not found: {$objectId}");
@@ -391,20 +391,20 @@ class CrudHandler
      *
      * @param string $objectId Object ID or UUID
      * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $multi    Apply multitenancy filters
+     * @param bool   $_multitenancy    Apply multitenancy filters
      *
      * @return bool True if deleted successfully
      *
      * @throws \Exception If deletion fails
      */
-    public function delete(string $objectId, bool $rbac=true, bool $multi=true): bool
+    public function delete(string $objectId, bool $rbac=true, bool $_multitenancy=true): bool
     {
         $this->logger->info(
             message: '[CrudHandler] Deleting object',
             context: [
                 'object_id' => $objectId,
                 'rbac'      => $rbac,
-                'multi'     => $multi,
+                '_multitenancy' => $_multitenancy,
             ]
         );
 

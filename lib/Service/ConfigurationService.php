@@ -151,6 +151,13 @@ class ConfigurationService
     private readonly UploadHandler $uploadHandler;
 
     /**
+     * Import handler for configuration import operations.
+     *
+     * @var ImportHandler The import handler instance.
+     */
+    private readonly ImportHandler $importHandler;
+
+    /**
      * Map of registers indexed by slug during import, by id during export.
      *
      * @var array<string|int, Register> Registers indexed by slug during import, by id during export.
@@ -356,61 +363,20 @@ class ConfigurationService
      */
     private function decode(string $data, ?string $type): ?array
     {
-        switch ($type) {
-            case 'application/json':
-                $phpArray = json_decode(json: $data, associative: true);
-                break;
-            case 'application/yaml':
-                $phpArray = Yaml::parse(input: $data);
-                break;
-            default:
-                // If Content-Type is not specified or not recognized, try to parse as JSON first, then YAML.
-                $phpArray = json_decode(json: $data, associative: true);
-                if ($phpArray === null || $phpArray === false) {
-                    try {
-                        $phpArray = Yaml::parse(input: $data);
-                    } catch (Exception $exception) {
-                        $phpArray = null;
-                    }
-                }
-                break;
-        }
-
-        if ($phpArray === null || $phpArray === false) {
-            return null;
-        }
-
-        // Ensure all data is consistently arrays by converting any stdClass objects.
-        $phpArray = $this->ensureArrayStructure($phpArray);
-
-        return $phpArray;
+        return $this->importHandler->decode($data, $type);
 
     }//end decode()
 
 
     /**
-     * Recursively converts stdClass objects to arrays to ensure consistent data structure
+     * Recursively converts stdClass objects to arrays to ensure consistent data structure (DELEGATED).
      *
-     * @param  mixed $data The data to convert
-     * @return array The converted array data
+     * @param  mixed $data The data to convert.
+     * @return array The converted array data.
      */
     private function ensureArrayStructure(mixed $data): array
     {
-        if (is_object($data) === true) {
-            $data = (array) $data;
-        }
-
-        if (is_array($data) === true) {
-            foreach ($data as $key => $value) {
-                if (is_object($value) === true) {
-                    $data[$key] = $this->ensureArrayStructure($value);
-                } else if (is_array($value) === true) {
-                    $data[$key] = $this->ensureArrayStructure($value);
-                }
-            }
-        }
-
-        return $data;
+        return $this->importHandler->ensureArrayStructure($data);
 
     }//end ensureArrayStructure()
 
@@ -426,7 +392,7 @@ class ConfigurationService
 
 
     /**
-     * Get JSON data from uploaded file
+     * Get JSON data from uploaded file (DELEGATED).
      *
      * @return JSONResponse|array
      *
@@ -436,29 +402,13 @@ class ConfigurationService
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
-        // Check for upload errors.
-        if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-            return new JSONResponse(data: ['error' => 'File upload error: '.$uploadedFile['error']], statusCode: 400);
-        }
-
-        $fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
-        $fileContent   = file_get_contents(filename: $uploadedFile['tmp_name']);
-
-        $phpArray = $this->decode(data: $fileContent, type: $fileExtension);
-        if ($phpArray === null) {
-            return new JSONResponse(
-                data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
-                statusCode: 400
-            );
-        }
-
-        return $phpArray;
+        return $this->importHandler->getJSONfromFile($uploadedFile, $_type);
 
     }//end getJSONfromFile()
 
 
     /**
-     * Uses Guzzle to call the given URL and returns response as PHP array.
+     * Uses Guzzle to call the given URL and returns response as PHP array (DELEGATED).
      *
      * @param string $url The URL to call.
      *
@@ -470,26 +420,7 @@ class ConfigurationService
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
-        try {
-            $response = $this->client->request('GET', $url);
-        } catch (GuzzleException $e) {
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
-        }
-
-        $responseBody = $response->getBody()->getContents();
-
-        // Use Content-Type header to determine the format.
-        $contentType = $response->getHeaderLine('Content-Type');
-        $phpArray    = $this->decode(data: $responseBody, type: $contentType);
-
-        if ($phpArray === null) {
-            return new JSONResponse(
-                data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
-                statusCode: 400
-            );
-        }
-
-        return $phpArray;
+        return $this->importHandler->getJSONfromURL($url);
 
     }//end getJSONfromURL()
 
@@ -505,7 +436,7 @@ class ConfigurationService
 
 
     /**
-     * Get JSON data from request body
+     * Get JSON data from request body (DELEGATED).
      *
      * @return JSONResponse|array
      *
@@ -513,21 +444,7 @@ class ConfigurationService
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
-        if (is_string($phpArray) === true) {
-            $phpArray = json_decode($phpArray, associative: true);
-        }
-
-        if ($phpArray === null || $phpArray === false) {
-            return new JSONResponse(
-                data: ['error' => 'Failed to decode JSON input'],
-                statusCode: 400
-            );
-        }
-
-        // Ensure all data is consistently arrays by converting any stdClass objects.
-        $phpArray = $this->ensureArrayStructure($phpArray);
-
-        return $phpArray;
+        return $this->importHandler->getJSONfromBody($phpArray);
 
     }//end getJSONfromBody()
 
@@ -567,12 +484,21 @@ class ConfigurationService
      *     rules: array
      * }
      */
-    public function importFromJson(array $data, ?Configuration $configuration=null, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): array
+    public function importFromJson(
+        array $data,
+        ?Configuration $configuration=null,
+        ?string $owner=null,
+        ?string $appId=null,
+        ?string $version=null,
+        bool $force=false
+    ): array
     {
         // ⚠️ CRITICAL: Configuration entity is required for proper tracking.
         if ($configuration === null) {
             throw new Exception(
-                'importFromJson must be called with a Configuration entity. '.'Direct imports without a Configuration are not allowed to ensure proper entity tracking. '.'Please create a Configuration entity first before importing.'
+                'importFromJson must be called with a Configuration entity. '
+                .'Direct imports without a Configuration are not allowed to ensure proper entity tracking. '
+                .'Please create a Configuration entity first before importing.'
             );
         }
 
@@ -594,7 +520,10 @@ class ConfigurationService
 
             // If we have a stored version, compare it with the current version.
             if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
-                $this->logger->info(message: "Skipping import for app {$appId} - current version {$version} is not newer than stored version {$storedVersion}");
+                $this->logger->info(
+                    message: "Skipping import for app {$appId} - current version {$version} "
+                    ."is not newer than stored version {$storedVersion}"
+                );
 
                 // Return empty result to indicate no import was performed.
                 return [
@@ -658,7 +587,14 @@ class ConfigurationService
                 }
 
                 try {
-                    $schema = $this->importSchema(data: $schemaData, slugsAndIdsMap: $slugsAndIdsMap, owner: $owner, appId: $appId, version: $version, force: $force);
+                    $schema = $this->importSchema(
+                        data: $schemaData,
+                        slugsAndIdsMap: $slugsAndIdsMap,
+                        owner: $owner,
+                        appId: $appId,
+                        version: $version,
+                        force: $force
+                    );
                     if ($schema !== null) {
                         // Store schema in map by slug for reference.
                         $this->schemasMap[$schema->getSlug()] = $schema;
@@ -723,7 +659,11 @@ class ConfigurationService
                                 $this->schemasMap[$schemaSlug] = $existingSchema;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
-                                    sprintf('Schema with slug %s not found in current organisation context during register import (will be created if defined in import).', $schemaSlug)
+                                    sprintf(
+                                        'Schema with slug %s not found in current organisation context '
+                                        .'during register import (will be created if defined in import).',
+                                        $schemaSlug
+                                    )
                                 );
                             }
                         }
@@ -869,7 +809,12 @@ class ConfigurationService
         }
 
         // Create or update configuration entity to track imported data.
-        if ($appId !== null && $version !== null && (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0)) {
+        if ($appId !== null
+            && $version !== null
+            && (count($result['registers']) > 0
+                || count($result['schemas']) > 0
+                || count($result['objects']) > 0)
+        ) {
             $this->createOrUpdateConfiguration(data: $data, appId: $appId, version: $version, result: $result, owner: $owner);
         }
 
@@ -926,7 +871,10 @@ class ConfigurationService
 
             // Standard OAS properties from info section.
             $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-            $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
+            $description = $info['description']
+                ?? $xOpenregister['description']
+                ?? $data['description']
+                ?? "Imported configuration for application {$appId}";
 
             // OpenRegister-specific properties.
             $type = $xOpenregister['type'] ?? $data['type'] ?? 'imported';
@@ -1135,7 +1083,14 @@ class ConfigurationService
      *
      * @return Schema The imported schema or null if skipped
      */
-    private function importSchema(array $data, array $slugsAndIdsMap, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Schema
+    private function importSchema(
+        array $data,
+        array $slugsAndIdsMap,
+        ?string $owner=null,
+        ?string $appId=null,
+        ?string $version=null,
+        bool $force=false
+    ): Schema
     {
         try {
             // Remove id, uuid, and organisation from the data.
@@ -1143,9 +1098,11 @@ class ConfigurationService
             unset($data['id'], $data['uuid'], $data['organisation']);
 
             // @todo this shouldnt be necessary if we fully supported oas.
-            // if properties is oneOf or allOf (which we dont support yet) it wont have a type, this is a hacky fix so it doesnt break the whole process.
+            // if properties is oneOf or allOf (which we dont support yet) it wont have a type,
+            // this is a hacky fix so it doesnt break the whole process.
             // sets type to string if no type.
-            // defaults title to its key in the oas so we dont have whitespaces (which is seen sometimes in defined titles in properties) in the property key.
+            // defaults title to its key in the oas so we dont have whitespaces
+            // (which is seen sometimes in defined titles in properties) in the property key.
             // removes format if format is string.
             if (($data['properties'] ?? null) !== null) {
                 foreach ($data['properties'] as $key => &$property) {
@@ -1197,11 +1154,19 @@ class ConfigurationService
                         $property['type'] = 'string';
                     }
 
-                    if (($property['format'] ?? null) !== null && ($property['format'] === 'string' || $property['format'] === 'binary' || $property['format'] === 'byte')) {
+                    if (($property['format'] ?? null) !== null
+                        && ($property['format'] === 'string'
+                            || $property['format'] === 'binary'
+                            || $property['format'] === 'byte')
+                    ) {
                         unset($property['format']);
                     }
 
-                    if (($property['items']['format'] ?? null) !== null && ($property['items']['format'] === 'string' || $property['items']['format'] === 'binary' || $property['items']['format'] === 'byte')) {
+                    if (($property['items']['format'] ?? null) !== null
+                        && ($property['items']['format'] === 'string'
+                            || $property['items']['format'] === 'binary'
+                            || $property['items']['format'] === 'byte')
+                    ) {
                         unset($property['items']['format']);
                     }
 
@@ -1242,7 +1207,11 @@ class ConfigurationService
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
-                                    sprintf('Register with slug %s not found in current organisation context during schema property import (will be resolved after registers are imported).', $registerSlug)
+                                    sprintf(
+                                        'Register with slug %s not found in current organisation context '
+                                        .'during schema property import (will be resolved after registers are imported).',
+                                        $registerSlug
+                                    )
                                 );
                                 // Remove the register reference if not found - will be resolved in second pass if register is imported.
                                 unset($property['objectConfiguration']['register']);
@@ -1267,7 +1236,11 @@ class ConfigurationService
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
-                                        sprintf('Schema with slug %s not found in current organisation context during schema property import (will be resolved after schemas are imported).', $schemaSlug)
+                                        sprintf(
+                                            'Schema with slug %s not found in current organisation context '
+                                            .'during schema property import (will be resolved after schemas are imported).',
+                                            $schemaSlug
+                                        )
                                     );
                                     // Remove the schema reference if not found - will be resolved in second pass if schema is imported.
                                     unset($property['objectConfiguration']['schema']);
@@ -1284,13 +1257,19 @@ class ConfigurationService
                             $property['items'] = (array) $property['items'];
                         }
 
-                        if (is_array($property['items']) && ($property['items']['objectConfiguration'] ?? null) !== null && is_object($property['items']['objectConfiguration']) === true) {
+                        if (is_array($property['items'])
+                            && ($property['items']['objectConfiguration'] ?? null) !== null
+                            && is_object($property['items']['objectConfiguration']) === true
+                        ) {
                             $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
                         }
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure).
-                    if (is_array($property['items'] ?? []) && is_array($property['items']['objectConfiguration'] ?? []) && isset($property['items']['objectConfiguration']['register'])) {
+                    if (is_array($property['items'] ?? [])
+                        && is_array($property['items']['objectConfiguration'] ?? [])
+                        && isset($property['items']['objectConfiguration']['register'])
+                    ) {
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
@@ -1304,7 +1283,12 @@ class ConfigurationService
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
-                                    sprintf('Register with slug %s not found in current organisation context during array items schema property import (will be resolved after registers are imported).', $registerSlug)
+                                    sprintf(
+                                        'Register with slug %s not found in current organisation context '
+                                        .'during array items schema property import '
+                                        .'(will be resolved after registers are imported).',
+                                        $registerSlug
+                                    )
                                 );
                                 // Remove the register reference if not found - will be resolved in second pass if register is imported.
                                 unset($property['items']['objectConfiguration']['register']);
@@ -1313,7 +1297,10 @@ class ConfigurationService
                     }//end if
 
                     // Handle schema slug/ID in array items objectConfiguration (new structure).
-                    if (is_array($property['items'] ?? []) && is_array($property['items']['objectConfiguration'] ?? []) && isset($property['items']['objectConfiguration']['schema'])) {
+                    if (is_array($property['items'] ?? [])
+                        && is_array($property['items']['objectConfiguration'] ?? [])
+                        && isset($property['items']['objectConfiguration']['schema'])
+                    ) {
                         $schemaSlug = $property['items']['objectConfiguration']['schema'];
                         // Only process non-empty schema slugs.
                         if (empty($schemaSlug) === false) {
@@ -1329,7 +1316,12 @@ class ConfigurationService
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
-                                        sprintf('Schema with slug %s not found in current organisation context during array items schema property import (will be resolved after schemas are imported).', $schemaSlug)
+                                        sprintf(
+                                            'Schema with slug %s not found in current organisation context '
+                                            .'during array items schema property import '
+                                            .'(will be resolved after schemas are imported).',
+                                            $schemaSlug
+                                        )
                                     );
                                     // Remove the schema reference if not found - will be resolved in second pass if schema is imported.
                                     unset($property['items']['objectConfiguration']['schema']);
@@ -1435,7 +1427,17 @@ class ConfigurationService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      *
-     * @psalm-return array{registers: array<Register>, schemas: array<Schema>, objects: array<ObjectEntity>, endpoints: array, sources: array, mappings: array, jobs: array, synchronizations: array, rules: array}
+     * @psalm-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
+     * }
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -1594,7 +1596,10 @@ class ConfigurationService
 
                 // Standard OAS properties from info section.
                 $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-                $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
+                $description = $info['description']
+                    ?? $xOpenregister['description']
+                    ?? $data['description']
+                    ?? "Configuration imported by application {$appId}";
 
                 // OpenRegister-specific properties.
                 $type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
@@ -1808,7 +1813,10 @@ class ConfigurationService
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate schema detected during import from app '%s' (version %s). "."Schema with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            "Duplicate schema detected during import from app '%s' (version %s). "
+            ."Schema with slug '%s' has multiple entries in the database: %s. "
+            ."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "
+            ."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -1890,7 +1898,10 @@ class ConfigurationService
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate register detected during import from app '%s' (version %s). "."Register with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "."You can identify duplicates by checking registers with the same slug, uuid, or id.",
+            "Duplicate register detected during import from app '%s' (version %s). "
+            ."Register with slug '%s' has multiple entries in the database: %s. "
+            ."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "
+            ."You can identify duplicates by checking registers with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -2123,7 +2134,9 @@ class ConfigurationService
             }
 
             $this->logger->info(
-                "Successfully fetched remote configuration with ".count($remoteData['components']['schemas'] ?? [])." schemas and ".count($remoteData['components']['registers'] ?? [])." registers"
+                "Successfully fetched remote configuration with "
+                .count($remoteData['components']['schemas'] ?? [])." schemas and "
+                .count($remoteData['components']['registers'] ?? [])." registers"
             );
 
             return $remoteData;
@@ -2165,7 +2178,36 @@ class ConfigurationService
      *     metadata?: array
      * }|JSONResponse
      *
-     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects: list<array{action: string, changes: array, current: array|null, proposed: array, register: string, schema: string, slug: string, title: string, type: string}>, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
+     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{
+     *     registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>,
+     *     schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>,
+     *     objects: list<array{
+     *         action: string,
+     *         changes: array,
+     *         current: array|null,
+     *         proposed: array,
+     *         register: string,
+     *         schema: string,
+     *         slug: string,
+     *         title: string,
+     *         type: string
+     *     }>,
+     *     endpoints: array<never, never>,
+     *     sources: array<never, never>,
+     *     mappings: array<never, never>,
+     *     jobs: array<never, never>,
+     *     synchronizations: array<never, never>,
+     *     rules: array<never, never>,
+     *     metadata: array{
+     *         configurationId: int,
+     *         configurationTitle: null|string,
+     *         sourceUrl: null|string,
+     *         remoteVersion: mixed|null,
+     *         localVersion: null|string,
+     *         previewedAt: string,
+     *         totalChanges: int<0, max>
+     *     }
+     * }
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -2221,7 +2263,11 @@ class ConfigurationService
             }
 
             foreach ($remoteData['components']['objects'] as $objectData) {
-                $preview['objects'][] = $this->previewObjectChange(objectData: $objectData, registerSlugToId: $registerSlugToId, schemaSlugToId: $schemaSlugToId);
+                $preview['objects'][] = $this->previewObjectChange(
+                    objectData: $objectData,
+                    registerSlugToId: $registerSlugToId,
+                    schemaSlugToId: $schemaSlugToId
+                );
             }
         }
 
@@ -2609,7 +2655,17 @@ class ConfigurationService
      *
      * @return (ObjectEntity|Register|Schema|mixed)[][]
      *
-     * @psalm-return array{registers: array<Register>, schemas: array<Schema>, objects: array<ObjectEntity>, endpoints: array, sources: array, mappings: array, jobs: array, synchronizations: array, rules: array}
+     * @psalm-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
+     * }
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {

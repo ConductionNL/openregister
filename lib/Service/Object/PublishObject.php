@@ -55,7 +55,7 @@ class PublishObject
         string $uuid,
         ?DateTime $date=null,
         bool $_rbac=true,
-        bool $_multi=true
+        bool $_multitenancy=true
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);
