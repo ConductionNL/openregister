@@ -463,6 +463,8 @@ class Webhook extends Entity implements JsonSerializable
      * Hydrate entity from array
      *
      * @param array $object Object data
+     *
+     * @return static The hydrated entity
      */
     public function hydrate(array $object): static
     {

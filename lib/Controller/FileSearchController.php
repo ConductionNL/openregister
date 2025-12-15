@@ -199,6 +199,8 @@ class FileSearchController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing semantic search results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array<int, array<string, mixed>>, search_type?: 'semantic'}, array<never, never>>
@@ -259,6 +261,8 @@ class FileSearchController extends Controller
      * Hybrid search - Combines keyword (SOLR) and semantic (vector) search
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing hybrid search results
      *
      * @NoCSRFRequired
      *

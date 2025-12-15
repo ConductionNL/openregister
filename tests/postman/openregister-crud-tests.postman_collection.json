@@ -1,0 +1,604 @@
+{
+	"info": {
+		"_postman_id": "openregister-crud-core-tests",
+		"name": "OpenRegister - Core CRUD Integration Tests",
+		"description": "Comprehensive CRUD lifecycle tests for OpenRegister core functionality.\n\nThis collection tests:\n1. Create Register\n2. Create Schema\n3. Create Objects\n4. Read Objects\n5. Update Objects\n6. List Objects\n7. Update Register\n8. Update Schema\n9. Delete Objects\n10. Delete Schema\n11. Delete Register\n12. Cascade Protection Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "1. Create Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Response has register ID', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.collectionVariables.set('registerId', jsonData.id);",
+							"    console.log('✅ Register created with ID: ' + jsonData.id);",
+							"});",
+							"",
+							"pm.test('Register has correct title', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.title).to.eql('CRUD Test Register');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"slug\": \"crud-test-register-{{$timestamp}}\",\n    \"title\": \"CRUD Test Register\",\n    \"description\": \"Register for testing complete CRUD lifecycle\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "registers"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Create Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Response has schema ID', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.collectionVariables.set('schemaId', jsonData.id);",
+							"    pm.collectionVariables.set('schemaSlug', jsonData.slug);",
+							"    console.log('✅ Schema created with ID: ' + jsonData.id);",
+							"    console.log('   Schema slug: ' + jsonData.slug);",
+							"});",
+							"",
+							"pm.test('Schema has correct properties', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.properties).to.have.property('name');",
+							"    pm.expect(jsonData.properties).to.have.property('age');",
+							"    pm.expect(jsonData.properties).to.have.property('active');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"register\": {{registerId}},\n    \"slug\": \"person-{{$timestamp}}\",\n    \"title\": \"Person Schema\",\n    \"description\": \"Schema for testing CRUD operations\",\n    \"properties\": {\n        \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Person name\"\n        },\n        \"age\": {\n            \"type\": \"integer\",\n            \"description\": \"Person age\"\n        },\n        \"active\": {\n            \"type\": \"boolean\",\n            \"description\": \"Is person active\"\n        }\n    },\n    \"required\": [\"name\"]\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Create Object 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Response has object UUID', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('uuid');",
+							"    pm.collectionVariables.set('object1Uuid', jsonData.uuid);",
+							"    console.log('✅ Object 1 created with UUID: ' + jsonData.uuid);",
+							"});",
+							"",
+							"pm.test('Object has correct data', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.eql('John Doe');",
+							"    pm.expect(jsonData.age).to.eql(30);",
+							"    pm.expect(jsonData.active).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"John Doe\",\n    \"age\": 30,\n    \"active\": true\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{schemaSlug}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{schemaSlug}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Create Object 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Response has object UUID', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('uuid');",
+							"    pm.collectionVariables.set('object2Uuid', jsonData.uuid);",
+							"    console.log('✅ Object 2 created with UUID: ' + jsonData.uuid);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Jane Smith\",\n    \"age\": 25,\n    \"active\": true\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{schemaSlug}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{schemaSlug}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Read Object 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Object data is correct', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.eql('John Doe');",
+							"    pm.expect(jsonData.age).to.eql(30);",
+							"    console.log('✅ Object 1 read successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Update Object 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Object updated correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.eql('John Doe Updated');",
+							"    pm.expect(jsonData.age).to.eql(31);",
+							"    pm.expect(jsonData.active).to.be.false;",
+							"    console.log('✅ Object 1 updated successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"age\": 31,\n    \"active\": false\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. List Objects",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('List contains at least 2 objects', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"    pm.expect(jsonData.results.length).to.be.at.least(2);",
+							"    console.log('✅ Objects listed successfully (' + jsonData.results.length + ' objects)');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{schemaSlug}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{schemaSlug}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. Update Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Register updated correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.title).to.eql('CRUD Test Register - Updated');",
+							"    console.log('✅ Register updated successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"CRUD Test Register - Updated\",\n    \"description\": \"Register updated during CRUD test\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "registers", "{{registerId}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "9. Update Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Schema updated correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.title).to.eql('Person Schema - Updated');",
+							"    console.log('✅ Schema updated successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"Person Schema - Updated\",\n    \"description\": \"Schema updated during CRUD test\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas", "{{schemaId}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "10. Test Cascade Protection - Cannot Delete Schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Cannot delete schema with objects (should fail)', function () {",
+							"    pm.expect(pm.response.code).to.not.equal(204);",
+							"    console.log('✅ Cascade protection works - schema deletion blocked');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas", "{{schemaId}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "11. Delete Object 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 204', function () {",
+							"    pm.response.to.have.status(204);",
+							"    console.log('✅ Object 1 deleted successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "12. Verify Object 1 Deleted",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Deleted object returns 404', function () {",
+							"    pm.response.to.have.status(404);",
+							"    console.log('✅ Object 1 deletion verified');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "13. Delete Object 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 204', function () {",
+							"    pm.response.to.have.status(204);",
+							"    console.log('✅ Object 2 deleted successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object2Uuid}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object2Uuid}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "14. Delete Schema (After Objects Removed)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 204', function () {",
+							"    pm.response.to.have.status(204);",
+							"    console.log('✅ Schema deleted successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas", "{{schemaId}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "15. Delete Register (After Schema Removed)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 204', function () {",
+							"    pm.response.to.have.status(204);",
+							"    console.log('✅ Register deleted successfully');",
+							"    console.log('');",
+							"    console.log('🎉 Complete CRUD lifecycle test passed!');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["index.php", "apps", "openregister", "api", "registers", "{{registerId}}"]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "registerId",
+			"value": ""
+		},
+		{
+			"key": "schemaId",
+			"value": ""
+		},
+		{
+			"key": "schemaSlug",
+			"value": ""
+		},
+		{
+			"key": "object1Uuid",
+			"value": ""
+		},
+		{
+			"key": "object2Uuid",
+			"value": ""
+		}
+	]
+}
+

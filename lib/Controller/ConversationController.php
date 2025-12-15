@@ -247,6 +247,8 @@ class ConversationController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing conversation details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string, messageCount?: int}, array<never, never>>
@@ -316,6 +318,8 @@ class ConversationController extends Controller
      * @param string $uuid Conversation UUID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing conversation messages
      *
      * @NoCSRFRequired
      *
@@ -500,6 +504,8 @@ class ConversationController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing updated conversation
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to update conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
@@ -585,6 +591,8 @@ class ConversationController extends Controller
      * @param string $uuid Conversation UUID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing deletion result
      *
      * @NoCSRFRequired
      *
@@ -699,6 +707,8 @@ class ConversationController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing restored conversation
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to restore conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
@@ -769,6 +779,8 @@ class ConversationController extends Controller
      * @param string $uuid Conversation UUID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing permanent deletion result
      *
      * @NoCSRFRequired
      *

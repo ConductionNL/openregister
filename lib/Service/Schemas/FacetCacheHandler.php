@@ -319,6 +319,8 @@ class FacetCacheHandler
     /**
      * Clean expired facet cache entries
      *
+     * @return int Number of cleaned entries
+     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @psalm-return int<min, max>

@@ -70,6 +70,8 @@ class UiController extends Controller
      * configured to allow API connections. Used by all UI route methods to serve the SPA.
      * Returns error template if rendering fails.
      *
+     * @return TemplateResponse Template response for SPA page
+     *
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>

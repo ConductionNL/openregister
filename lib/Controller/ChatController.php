@@ -220,6 +220,8 @@ class ChatController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing sent message details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, message: array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}|string, title?: null|string, conversation?: null|string}, array<never, never>>
@@ -393,6 +395,8 @@ class ChatController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing conversation history
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: list<array{content: null|string, conversationId: int|null, created: null|string, id: int, role: null|string, sources: array|null, uuid: null|string}>, total?: int, conversationId?: int}, array<never, never>>
@@ -478,6 +482,8 @@ class ChatController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing clear history operation result
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>
@@ -560,6 +566,8 @@ class ChatController extends Controller
      * @param int    $messageId        Message ID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing feedback submission result
      *
      * @NoCSRFRequired
      *

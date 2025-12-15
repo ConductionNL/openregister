@@ -184,6 +184,8 @@ class ViewsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing view details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
@@ -244,6 +246,8 @@ class ViewsController extends Controller
      * Create a new view
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing created view
      *
      * @NoCSRFRequired
      *
@@ -343,6 +347,8 @@ class ViewsController extends Controller
      * @param string $id The view ID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing updated view
      *
      * @NoCSRFRequired
      *
@@ -454,6 +460,8 @@ class ViewsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing patched view
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
@@ -562,6 +570,8 @@ class ViewsController extends Controller
      * @param string $id The view ID
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing deletion result
      *
      * @NoCSRFRequired
      *

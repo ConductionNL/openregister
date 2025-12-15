@@ -331,6 +331,8 @@ class Endpoint extends Entity implements JsonSerializable
      * Get the slug for the endpoint.
      * If the slug is not set, generate one from the name.
      *
+     * @return string The slug
+     *
      * @phpstan-return non-empty-string
      *
      * @psalm-return non-empty-string

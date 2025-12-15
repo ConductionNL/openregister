@@ -260,6 +260,8 @@ class AgentsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing agent details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<403|404, array{error: 'Access denied to this agent'|'Agent not found'}, array<never, never>>
@@ -474,6 +476,8 @@ class AgentsController extends Controller
      * @param int $id The ID of the agent to patch
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing patched agent
      *
      * @NoCSRFRequired
      *

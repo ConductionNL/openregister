@@ -150,17 +150,17 @@ class ImportService
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
         SchemaMapper $schemaMapper,
+        ObjectService $objectService,
         LoggerInterface $logger,
         IGroupManager $groupManager,
         IJobList $jobList
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
-        // REMOVED: ObjectService to break circular dependency
-        $this->objectService = null;
-        $this->logger        = $logger;
-        $this->groupManager  = $groupManager;
-        $this->jobList       = $jobList;
+        $this->objectService      = $objectService;
+        $this->logger             = $logger;
+        $this->groupManager       = $groupManager;
+        $this->jobList            = $jobList;
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];

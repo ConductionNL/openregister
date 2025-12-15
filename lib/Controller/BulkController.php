@@ -87,6 +87,8 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
+     * @return JSONResponse JSON response containing bulk delete operation results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|403|500, array{error?: string, success?: true, message?: 'Bulk delete operation completed successfully', deleted_count?: int<0, max>, deleted_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>}, array<never, never>>
@@ -137,6 +139,8 @@ class BulkController extends Controller
      *
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
+     *
+     * @return JSONResponse JSON response containing bulk publish operation results
      *
      * @NoCSRFRequired
      *
@@ -210,6 +214,8 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
+     * @return JSONResponse JSON response containing bulk depublish operation results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|403|500, array{error?: string, success: true, message: 'Bulk depublish operation completed successfully', depublished_count: int<0, max>, depublished_uuids: array<int, string>, requested_count: int<0, max>, skipped_count: int<min, max>, datetime_used: bool|null|string}, array<never, never>>|JSONResponse<400|403|500, array{error: string}, array<never, never>>
@@ -281,6 +287,8 @@ class BulkController extends Controller
      *
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
+     *
+     * @return JSONResponse JSON response containing bulk save operation results
      *
      * @NoCSRFRequired
      *
@@ -359,6 +367,8 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
+     * @return JSONResponse JSON response containing schema publishing results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|403|404|500, array{error?: string, success?: true, message?: 'Schema objects publishing completed successfully', published_count?: int, published_uuids?: array<int, string>, schema_id?: int, publish_all?: bool}, array<never, never>>
@@ -410,6 +420,8 @@ class BulkController extends Controller
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
+     * @return JSONResponse JSON response containing schema deletion results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|403|404|500, array{error?: string, success?: true, message?: 'Schema objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, schema_id?: int, hard_delete?: bool}, array<never, never>>
@@ -460,6 +472,8 @@ class BulkController extends Controller
      *
      * @param string $register The register identifier
      *
+     * @return JSONResponse JSON response containing register deletion results
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|403|404|500, array{error?: string, success?: true, message?: 'Register objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, register_id?: int}, array<never, never>>
@@ -503,6 +517,8 @@ class BulkController extends Controller
      * Validate all objects belonging to a specific schema
      *
      * @param string $schema The schema identifier
+     *
+     * @return JSONResponse JSON response containing schema validation results
      *
      * @NoCSRFRequired
      *

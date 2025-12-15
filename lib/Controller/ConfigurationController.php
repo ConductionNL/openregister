@@ -195,6 +195,8 @@ class ConfigurationController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing enriched configuration details
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, title?: mixed|string, description?: ''|mixed, version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed, openregister?: mixed|null}, array<never, never>>
@@ -928,6 +930,8 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response containing import result from GitHub
+     *
      * @since 0.2.10
      *
      * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
@@ -1060,6 +1064,8 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response containing import result from GitLab
      *
      * @since 0.2.10
      *
@@ -1200,6 +1206,8 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response containing import result from URL
      *
      * @since 0.2.10
      *

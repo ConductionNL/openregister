@@ -29,14 +29,21 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
+/**
+ * Migration step for creating audit trails table
+ */
 class Version1Date20241020231700 extends SimpleMigrationStep
 {
 
 
     /**
+     * Execute actions before schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -47,11 +54,13 @@ class Version1Date20241020231700 extends SimpleMigrationStep
 
 
     /**
+     * Apply schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
      *
-     * @return ISchemaWrapper
+     * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -97,9 +106,13 @@ class Version1Date20241020231700 extends SimpleMigrationStep
 
 
     /**
+     * Execute actions after schema changes
+     *
      * @param IOutput                   $output
      * @param Closure(): ISchemaWrapper $schemaClosure
      * @param array                     $options
+     *
+     * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */

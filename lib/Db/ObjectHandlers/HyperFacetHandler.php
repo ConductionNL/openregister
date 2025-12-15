@@ -458,7 +458,10 @@ class HyperFacetHandler
         }
 
         // Execute all facet calculations in parallel.
-        /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
+        /** Suppress undefined function check - React\Async\await is from external library
+         *
+         * @psalm-suppress UndefinedFunction - React\Async\await is from external library
+         */
         $results = \React\Async\await(\React\Promise\all($promises));
 
         // Combine results from different facet types.
@@ -627,7 +630,10 @@ class HyperFacetHandler
                     'batchOptimization' => 'enabled'
                 ]);
 
-                /** @var callable(mixed): void $resolve */
+                /** Type annotation for resolve callback
+                 *
+                 * @var callable(mixed): void $resolve
+                 */
                 $resolve($results);
             } catch (\Throwable $e) {
                 $reject($e);
@@ -1092,6 +1098,8 @@ class HyperFacetHandler
 
     // Placeholder methods that would need to be implemented based on specific requirements.
     /**
+     * Process JSON facets in parallel
+     *
      * @return Promise Promise that resolves to JSON facet results
      *
      * @psalm-return PromiseInterface
@@ -1102,7 +1110,10 @@ class HyperFacetHandler
     {
         return new Promise(function ($resolve) {
             // Simplified for now.
-            /** @var callable(mixed): void $resolve */
+            /** Type annotation for resolve callback
+             *
+             * @var callable(mixed): void $resolve
+             */
             $resolve([]);
         });
     }

@@ -426,6 +426,8 @@ class ConfigurationService
 
 
     /**
+     * Get JSON data from uploaded file
+     *
      * @return JSONResponse|array
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
@@ -503,6 +505,8 @@ class ConfigurationService
 
 
     /**
+     * Get JSON data from request body
+     *
      * @return JSONResponse|array
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
@@ -2601,6 +2605,8 @@ class ConfigurationService
 
 
     /**
+     * Import configuration with selective import
+     *
      * @return (ObjectEntity|Register|Schema|mixed)[][]
      *
      * @psalm-return array{registers: array<Register>, schemas: array<Schema>, objects: array<ObjectEntity>, endpoints: array, sources: array, mappings: array, jobs: array, synchronizations: array, rules: array}

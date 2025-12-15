@@ -327,6 +327,8 @@ class RegistersController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing created register
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
@@ -371,6 +373,8 @@ class RegistersController extends Controller
      * @param int $id The ID of the register to update
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing updated register
      *
      * @NoCSRFRequired
      *
@@ -524,6 +528,8 @@ class RegistersController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing objects for register and schema
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200, int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
@@ -616,6 +622,8 @@ class RegistersController extends Controller
      * @param int $id The ID of the register to publish
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing GitHub publish operation result
      *
      * @NoCSRFRequired
      *

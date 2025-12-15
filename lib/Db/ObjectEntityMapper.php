@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use BadMethodCallException;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity\BulkOperationsHandler;
 use OCA\OpenRegister\Db\ObjectEntity\FacetsHandler;

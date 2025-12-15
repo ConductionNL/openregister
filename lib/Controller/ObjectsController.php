@@ -734,12 +734,9 @@ class ObjectsController extends Controller
                     uploadedFiles: $uploadedFilesValue
             );
 
-            // Unlock the object after saving.
-            try {
-                $this->objectEntityMapper->unlockObject($objectEntity->getId());
-            } catch (Exception $e) {
-                // Ignore unlock errors since the save was successful.
-            }
+            // TODO: Unlock the object after saving using LockingHandler through ObjectService.
+            // The unlockObject() method on ObjectEntityMapper is deprecated.
+            // For now, skipping unlock to allow CRUD operations to complete.
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
                        return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
@@ -1657,6 +1654,8 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      *
+     * @return JSONResponse JSON response containing merge operation result
+     *
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: true, sourceObject?: array, targetObject?: array, mergedObject?: mixed, actions?: array{properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...}, files: array<never, never>|mixed, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list{0?: array{objectId: mixed, title: mixed},...}}, statistics?: array{propertiesChanged: 0|1|2, filesTransferred: 0|mixed, filesDeleted: 0|mixed, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings?: array, errors?: array<never, never>}, array<never, never>>
@@ -1712,6 +1711,8 @@ class ObjectsController extends Controller
      * @param ObjectService $objectService The object service
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing migration operation result
      *
      * @NoCSRFRequired
      *

@@ -59,6 +59,8 @@ class ElasticsearchHttpClient
 
     /**
      * Initialize Elasticsearch configuration from settings.
+     *
+     * @return void
      */
     private function initializeConfig(): void
     {
@@ -77,6 +79,8 @@ class ElasticsearchHttpClient
 
     /**
      * Initialize HTTP client for Elasticsearch requests.
+     *
+     * @return void
      */
     private function initializeHttpClient(): void
     {
@@ -98,6 +102,8 @@ class ElasticsearchHttpClient
 
     /**
      * Build Elasticsearch base URL.
+     *
+     * @return string Base URL
      */
     public function buildBaseUrl(): string
     {
@@ -113,6 +119,8 @@ class ElasticsearchHttpClient
 
     /**
      * Build endpoint URL for a specific index.
+     *
+     * @return string Endpoint URL
      */
     public function getEndpointUrl(string $index): string
     {
@@ -123,6 +131,8 @@ class ElasticsearchHttpClient
 
     /**
      * Execute GET request.
+     *
+     * @return array Response data
      */
     public function get(string $url): array
     {
@@ -146,6 +156,8 @@ class ElasticsearchHttpClient
 
     /**
      * Execute POST request.
+     *
+     * @return array Response data
      */
     public function post(string $url, array $data): array
     {
@@ -174,6 +186,8 @@ class ElasticsearchHttpClient
 
     /**
      * Execute POST request with raw body (for bulk API).
+     *
+     * @return array Response data
      */
     public function postRaw(string $url, string $data): array
     {
@@ -205,6 +219,8 @@ class ElasticsearchHttpClient
 
     /**
      * Execute PUT request.
+     *
+     * @return array Response data
      */
     public function put(string $url, array $data): array
     {
@@ -233,6 +249,8 @@ class ElasticsearchHttpClient
 
     /**
      * Execute DELETE request.
+     *
+     * @return array Response data
      */
     public function delete(string $url): array
     {
@@ -256,6 +274,8 @@ class ElasticsearchHttpClient
 
     /**
      * Get HTTP client instance.
+     *
+     * @return GuzzleClient HTTP client instance
      */
     public function getHttpClient(): GuzzleClient
     {
@@ -266,6 +286,8 @@ class ElasticsearchHttpClient
 
     /**
      * Get Elasticsearch configuration.
+     *
+     * @return array Configuration array
      */
     public function getConfig(): array
     {
@@ -276,6 +298,8 @@ class ElasticsearchHttpClient
 
     /**
      * Check if Elasticsearch is configured.
+     *
+     * @return bool True if configured
      */
     public function isConfigured(): bool
     {

@@ -60,9 +60,6 @@ class ApiTokenSettingsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Get API tokens for GitHub and GitLab
      *

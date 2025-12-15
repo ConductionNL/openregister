@@ -75,6 +75,7 @@ class ExportService
      * @param RegisterMapper     $registerMapper      The register mapper
      * @param IUserManager       $_userManager        The user manager (unused but kept for future use)
      * @param IGroupManager      $groupManager        The group manager
+     * @param ObjectService      $objectService       The object service
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -82,12 +83,12 @@ class ExportService
         ObjectEntityMapper $_objectEntityMapper,
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        ObjectService $objectService
     ) {
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
-        // REMOVED: ObjectService to break circular dependency.
-        $this->objectService = null;
+        $this->objectService  = $objectService;
 
     }//end __construct()
 
