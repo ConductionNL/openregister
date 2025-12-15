@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
+use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -142,6 +143,13 @@ class ConfigurationService
     private readonly ExportHandler $exportHandler;
 
     /**
+     * Upload handler for file upload and JSON parsing operations.
+     *
+     * @var UploadHandler The upload handler instance.
+     */
+    private readonly UploadHandler $uploadHandler;
+
+    /**
      * Map of registers indexed by slug during import, by id during export.
      *
      * @var array<string|int, Register> Registers indexed by slug during import, by id during export.
@@ -235,6 +243,7 @@ class ConfigurationService
         GitLabHandler $gitlabHandler,
         CacheHandler $cacheHandler,
         ExportHandler $exportHandler,
+        UploadHandler $uploadHandler,
         string $appDataPath
     ) {
         // Store dependencies for use in service methods.
@@ -252,6 +261,7 @@ class ConfigurationService
         $this->gitlabHandler = $gitlabHandler;
         $this->cacheHandler  = $cacheHandler;
         $this->exportHandler = $exportHandler;
+        $this->uploadHandler = $uploadHandler;
         $this->appDataPath   = $appDataPath;
     }//end __construct()
 
@@ -323,34 +333,8 @@ class ConfigurationService
      */
     public function getUploadedJson(array $data, ?array $uploadedFiles): array | JSONResponse
     {
-        // Define the allowed keys for input validation.
-        $allowedKeys = ['url', 'json'];
-
-        // Find which of the allowed keys are in the array for processing.
-        $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
-
-        // Check if there is no matching key or no input provided.
-        if (count($matchingKeys) === 0 && empty($uploadedFiles) === true) {
-            $errorMessage = 'Missing required keys in POST body: url, json, or file in form-data.';
-            return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
-        }
-
-        // Process uploaded files if present.
-        if (empty($uploadedFiles) === false) {
-            if (count($uploadedFiles) === 1) {
-                return $this->getJSONfromFile(uploadedFile: $uploadedFiles[array_key_first($uploadedFiles)]);
-            }
-
-            return new JSONResponse(data: ['message' => 'Expected only 1 file.'], statusCode: 400);
-        }
-
-        // Process URL if provided in the post body.
-        if (empty($data['url']) === false) {
-            return $this->getJSONfromURL(url: $data['url']);
-        }
-
-        // Process JSON blob from the post body.
-        return $this->getJSONfromBody($data['json']);
+        // Delegate to UploadHandler for processing uploaded JSON data.
+        return $this->uploadHandler->getUploadedJson($data, $uploadedFiles);
     }//end getUploadedJson()
 
 
