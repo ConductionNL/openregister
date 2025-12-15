@@ -714,7 +714,7 @@ class RenderObject
         ?array $objects=[],
         ?array $visitedIds=[],
         bool $_rbac=true,
-        bool $_multi=true
+        bool $_multitenancy=true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds ?? [], true) === true) {
             // @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
@@ -1381,7 +1381,7 @@ class RenderObject
      * @param array|null        $_fields  Specific fields to include in the response.
      * @param array|null        $_unset   Fields to exclude from the response.
      * @param bool              $_rbac    Whether to apply RBAC checks (default: true).
-     * @param bool              $_multi   Whether to apply multitenancy filtering (default: true).
+     * @param bool              $_multitenancy   Whether to apply multitenancy filtering (default: true).
      *
      * @return array<int, ObjectEntity> Array of rendered ObjectEntity instances.
      */
@@ -1392,7 +1392,7 @@ class RenderObject
         ?array $_fields=null,
         ?array $_unset=null,
         bool $_rbac=true,
-        bool $_multi=true
+        bool $_multitenancy=true
     ): array {
         $renderedEntities = [];
 
@@ -1406,7 +1406,7 @@ class RenderObject
                 fields: $_fields,
                 unset: $_unset,
                 _rbac: $_rbac,
-                _multi: $_multi
+                _multitenancy: $_multitenancy
             );
         }
 

@@ -492,7 +492,7 @@ class RelationHandler
      *
      * @return array Paginated results with related objects.
      */
-    public function getUses(string $objectId, array $query=[], bool $rbac=true, bool $multi=true): array
+    public function getUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         try {
             // Find the object.
@@ -558,7 +558,7 @@ class RelationHandler
      *
      * @return array Paginated results with referencing objects.
      */
-    public function getUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $multi=true): array
+    public function getUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
         try {
             // Find the object.

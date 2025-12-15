@@ -201,7 +201,7 @@ class DeleteObject
         string $uuid,
         ?string $originalObjectId=null,
         bool $_rbac=true,
-        bool $_multi=true
+        bool $_multitenancy=true
     ): bool {
         try {
             $object = $this->objectEntityMapper->find($uuid, null, null, true);

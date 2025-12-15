@@ -2220,15 +2220,15 @@ class ObjectService
      * @param string $objectId Object ID or UUID
      * @param array  $query    Search query parameters
      * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $multi    Apply multitenancy filters
+     * @param bool   $_multitenancy    Apply multitenancy filters
      *
      * @return array Paginated results with related objects
      *
      * @throws \Exception If retrieval fails
      */
-    public function getObjectUses(string $objectId, array $query=[], bool $rbac=true, bool $multi=true): array
+    public function getObjectUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
-        return $this->relationHandler->getUses(objectId: $objectId, query: $query, rbac: $rbac, multi: $multi);
+        return $this->relationHandler->getUses(objectId: $objectId, query: $query, rbac: $rbac, _multitenancy: $_multitenancy);
     }//end getObjectUses()
 
 
@@ -2238,15 +2238,15 @@ class ObjectService
      * @param string $objectId Object ID or UUID
      * @param array  $query    Search query parameters
      * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $multi    Apply multitenancy filters
+     * @param bool   $_multitenancy    Apply multitenancy filters
      *
      * @return array Paginated results with referencing objects
      *
      * @throws \Exception If retrieval fails
      */
-    public function getObjectUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $multi=true): array
+    public function getObjectUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
-        return $this->relationHandler->getUsedBy(objectId: $objectId, query: $query, rbac: $rbac, multi: $multi);
+        return $this->relationHandler->getUsedBy(objectId: $objectId, query: $query, rbac: $rbac, _multitenancy: $_multitenancy);
     }//end getObjectUsedBy()
 
 
@@ -2305,7 +2305,7 @@ class ObjectService
      *
      * @param array       $query     Search query parameters
      * @param bool        $rbac      Apply RBAC filters
-     * @param bool        $multi     Apply multitenancy filters
+     * @param bool        $_multitenancy     Apply multitenancy filters
      * @param bool        $published Only return published objects
      * @param bool        $deleted   Include deleted objects
      * @param array|null  $ids       Optional array of object IDs to filter
@@ -2319,7 +2319,7 @@ class ObjectService
     public function listObjects(
         array $query=[],
         bool $rbac=true,
-        bool $multi=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false,
         ?array $ids=null,
@@ -2329,7 +2329,7 @@ class ObjectService
         return $this->crudHandler->list(
             query: $query,
             rbac: $rbac,
-            multi: $multi,
+            _multitenancy: $_multitenancy,
             published: $published,
             deleted: $deleted,
             ids: $ids,
@@ -2344,15 +2344,15 @@ class ObjectService
      *
      * @param array $data  Object data
      * @param bool  $rbac  Apply RBAC checks
-     * @param bool  $multi Apply multitenancy filtering
+     * @param bool  $_multitenancy Apply multitenancy filtering
      *
      * @return ObjectEntity Created object entity
      *
      * @throws \Exception If creation fails
      */
-    public function createObject(array $data, bool $rbac=true, bool $multi=true): ObjectEntity
+    public function createObject(array $data, bool $rbac=true, bool $_multitenancy=true): ObjectEntity
     {
-        return $this->crudHandler->create(data: $data, rbac: $rbac, multi: $multi);
+        return $this->crudHandler->create(data: $data, rbac: $rbac, _multitenancy: $_multitenancy);
     }//end createObject()
 
 
@@ -2362,7 +2362,7 @@ class ObjectService
      * @param string $objectId Object ID or UUID
      * @param array  $data     New object data
      * @param bool   $rbac     Apply RBAC checks
-     * @param bool   $multi    Apply multitenancy filtering
+     * @param bool   $_multitenancy    Apply multitenancy filtering
      *
      * @return ObjectEntity Updated object entity
      *
@@ -2372,13 +2372,13 @@ class ObjectService
         string $objectId,
         array $data,
         bool $rbac=true,
-        bool $multi=true
+        bool $_multitenancy=true
     ): ObjectEntity {
         return $this->crudHandler->update(
             objectId: $objectId,
             data: $data,
             rbac: $rbac,
-            multi: $multi
+            _multitenancy: $_multitenancy
         );
     }//end updateObject()
 
@@ -2389,7 +2389,7 @@ class ObjectService
      * @param string $objectId Object ID or UUID
      * @param array  $data     Partial object data
      * @param bool   $rbac     Apply RBAC checks
-     * @param bool   $multi    Apply multitenancy filtering
+     * @param bool   $_multitenancy    Apply multitenancy filtering
      *
      * @return ObjectEntity Patched object entity
      *
@@ -2399,13 +2399,13 @@ class ObjectService
         string $objectId,
         array $data,
         bool $rbac=true,
-        bool $multi=true
+        bool $_multitenancy=true
     ): ObjectEntity {
         return $this->crudHandler->patch(
             objectId: $objectId,
             data: $data,
             rbac: $rbac,
-            multi: $multi
+            _multitenancy: $_multitenancy
         );
     }//end patchObject()
 
