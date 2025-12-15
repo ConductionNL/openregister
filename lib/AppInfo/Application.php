@@ -73,7 +73,6 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FacetService;
 use OCA\OpenRegister\Service\Objects\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
-use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
 use OCA\OpenRegister\Service\Index\Backends\Solr\SolrCollectionManager;
@@ -91,6 +90,14 @@ use OCA\OpenRegister\Service\NamedEntityRecognitionService;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
+use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
+use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Command\SolrDebugCommand;
@@ -154,6 +161,7 @@ use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
+
 /**
  * Class Application
  *
@@ -185,7 +193,6 @@ class Application extends App implements IBootstrap
     public function __construct()
     {
         parent::__construct(self::APP_ID);
-
     }//end __construct()
 
 
@@ -238,14 +245,14 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire them automatically.
         // Register AuditTrailMapper with required dependencies.
         $context->registerService(
-                AuditTrailMapper::class,
-                function ($container) {
-                    return new AuditTrailMapper(
-                            $container->get('OCP\IDBConnection'),
-                            $container->get(ObjectEntityMapper::class)
-                            );
-                }
+            AuditTrailMapper::class,
+            function ($container) {
+                return new AuditTrailMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(ObjectEntityMapper::class)
                 );
+            }
+        );
 
         // NOTE: WebhookLogMapper can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
@@ -256,84 +263,84 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register OrganisationMapper with required dependencies (needed by SchemaMapper).
         $context->registerService(
-                OrganisationMapper::class,
-                function ($container) {
-                    return new OrganisationMapper(
-                            $container->get('OCP\IDBConnection'),
-                            $container->get('Psr\Log\LoggerInterface'),
-                            $container->get('OCP\EventDispatcher\IEventDispatcher')
-                            );
-                }
+            OrganisationMapper::class,
+            function ($container) {
+                return new OrganisationMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher')
                 );
+            }
+        );
 
         // Register OrganisationService (needed by SchemaMapper, MUST be before SchemaMapper).
         $context->registerService(
-                 OrganisationService::class,
-                function ($container) {
-                    return new OrganisationService(
-                            organisationMapper: $container->get(OrganisationMapper::class),
-                            userSession: $container->get('OCP\IUserSession'),
-                            session: $container->get('OCP\ISession'),
-                            config: $container->get('OCP\IConfig'),
-                            appConfig: $container->get('OCP\IAppConfig'),
-                            groupManager: $container->get('OCP\IGroupManager'),
-                            userManager: $container->get('OCP\IUserManager'),
-                            logger: $container->get('Psr\Log\LoggerInterface')
-                            );
-                }
+            OrganisationService::class,
+            function ($container) {
+                return new OrganisationService(
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    session: $container->get('OCP\ISession'),
+                    config: $container->get('OCP\IConfig'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
 
         // Register SchemaMapper with required dependencies (MUST be before ObjectEntityMapper).
         $context->registerService(
-                 SchemaMapper::class,
-                function ($container) {
-                    return new SchemaMapper(
-                            db: $container->get('OCP\IDBConnection'),
-                            eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                            validator: $container->get(PropertyValidatorHandler::class),
-                            organisationService: $container->get(OrganisationService::class),
-                            userSession: $container->get('OCP\IUserSession'),
-                            groupManager: $container->get('OCP\IGroupManager'),
-                            appConfig: $container->get('OCP\IAppConfig')
-                            );
-                }
+            SchemaMapper::class,
+            function ($container) {
+                return new SchemaMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    validator: $container->get(PropertyValidatorHandler::class),
+                    organisationService: $container->get(OrganisationService::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
+            }
+        );
 
         // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies.
         $context->registerService(
-                 ObjectEntityMapper::class,
-                function ($container) {
-                    return new ObjectEntityMapper(
-                            db: $container->get('OCP\IDBConnection'),
-                            mySQLJsonService: $container->get(MySQLJsonService::class),
-                            eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                            userSession: $container->get('OCP\IUserSession'),
-                            schemaMapper: $container->get(SchemaMapper::class),
-                            groupManager: $container->get('OCP\IGroupManager'),
-                            userManager: $container->get('OCP\IUserManager'),
-                            appConfig: $container->get('OCP\IAppConfig'),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            organisationService: $container->get(OrganisationService::class)
-                            );
-                }
+            ObjectEntityMapper::class,
+            function ($container) {
+                return new ObjectEntityMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    mySQLJsonService: $container->get(MySQLJsonService::class),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class)
                 );
+            }
+        );
 
         // Register RegisterMapper with required dependencies (MUST be after ObjectEntityMapper).
         $context->registerService(
-                 RegisterMapper::class,
-                function ($container) {
-                    return new RegisterMapper(
-                            db: $container->get('OCP\IDBConnection'),
-                            schemaMapper: $container->get(SchemaMapper::class),
-                            eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                            objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                            organisationService: $container->get(OrganisationService::class),
-                            userSession: $container->get('OCP\IUserSession'),
-                            groupManager: $container->get('OCP\IGroupManager'),
-                            appConfig: $container->get('OCP\IAppConfig')
-                            );
-                }
+            RegisterMapper::class,
+            function ($container) {
+                return new RegisterMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    organisationService: $container->get(OrganisationService::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
+            }
+        );
 
         // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
@@ -358,18 +365,18 @@ class Application extends App implements IBootstrap
         // NOTE: CacheHandler uses IAppContainer for lazy loading IndexService to break circular dependency.
         // This breaks the circular dependency: CacheHandler <-> IndexService.
         $context->registerService(
-                 CacheHandler::class,
-                function ($container) {
-                    return new CacheHandler(
-                            objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                            organisationMapper: $container->get(OrganisationMapper::class),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            cacheFactory: $container->get('OCP\ICacheFactory'),
-                            userSession: $container->get('OCP\IUserSession'),
-                            container: $container
-                            );
-                }
+            CacheHandler::class,
+            function ($container) {
+                return new CacheHandler(
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container
                 );
+            }
+        );
 
         // NOTE: FacetService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
@@ -392,26 +399,26 @@ class Application extends App implements IBootstrap
         // All removed manual registration - Nextcloud will autowire them automatically.
         // Register SaveObject with handlers and consolidated cache services.
         $context->registerService(
-                 SaveObject::class,
-                function ($container) {
-                    return new SaveObject(
-                            objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                            metadataHydrationHandler: $container->get(MetadataHydrationHandler::class),
-                            filePropertyHandler: $container->get(FilePropertyHandler::class),
-                            fileService: $container->get(FileService::class),
-                            userSession: $container->get('OCP\IUserSession'),
-                            auditTrailMapper: $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
-                            schemaMapper: $container->get(SchemaMapper::class),
-                            registerMapper: $container->get(RegisterMapper::class),
-                            urlGenerator: $container->get('OCP\IURLGenerator'),
-                            organisationService: $container->get(OrganisationService::class),
-                            cacheHandler: $container->get(CacheHandler::class),
-                            settingsService: $container->get(SettingsService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            arrayLoader: new ArrayLoader([])
-                            );
-                }
+            SaveObject::class,
+            function ($container) {
+                return new SaveObject(
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    metadataHydrationHandler: $container->get(MetadataHydrationHandler::class),
+                    filePropertyHandler: $container->get(FilePropertyHandler::class),
+                    fileService: $container->get(FileService::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    auditTrailMapper: $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    organisationService: $container->get(OrganisationService::class),
+                    cacheHandler: $container->get(CacheHandler::class),
+                    settingsService: $container->get(SettingsService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    arrayLoader: new ArrayLoader([])
                 );
+            }
+        );
 
         // NOTE: DeleteObject can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
@@ -426,30 +433,30 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register ConfigurationService with appDataPath parameter.
         $context->registerService(
-                ConfigurationService::class,
-                function ($container) {
-                    // Get the app data directory path.
-                    $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                    $appDataPath = $dataDir.'/appdata_openregister';
+            ConfigurationService::class,
+            function ($container) {
+                // Get the app data directory path.
+                $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+                $appDataPath = $dataDir.'/appdata_openregister';
 
-                    return new ConfigurationService(
-                            schemaMapper: $container->get(SchemaMapper::class),
-                            registerMapper: $container->get(RegisterMapper::class),
-                            objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                            configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-                            appManager: $container->get('OCP\App\IAppManager'),
-                            container: $container,
-                            appConfig: $container->get('OCP\IAppConfig'),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            client: new Client(),
-                            objectService: $container->get(ObjectService::class),
-                            githubHandler: $container->get(GitHubHandler::class),
-                            gitlabHandler: $container->get(GitLabHandler::class),
-                            cacheHandler: $container->get(ConfigurationCacheHandler::class),
-                            appDataPath: $appDataPath
-                            );
-                }
+                return new ConfigurationService(
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    client: new Client(),
+                    objectService: $container->get(ObjectService::class),
+                    githubHandler: $container->get(GitHubHandler::class),
+                    gitlabHandler: $container->get(GitLabHandler::class),
+                    cacheHandler: $container->get(ConfigurationCacheHandler::class),
+                    appDataPath: $appDataPath
                 );
+            }
+        );
 
         // NOTE: ImportService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
@@ -466,34 +473,52 @@ class Application extends App implements IBootstrap
         // Register ObjectsProvider as a search provider for Nextcloud search.
         $context->registerSearchProvider(ObjectsProvider::class);
 
+        // ====================================================================
+        // SETTINGS HANDLERS
+        // Handler-based architecture for SettingsService to break down God Object.
+        // ====================================================================
+        // NOTE: All Settings handlers can be autowired except those requiring the container.
+        // ValidationOperationsHandler, SearchBackendHandler, LlmSettingsHandler,
+        // FileSettingsHandler, ObjectRetentionHandler can be autowired.
+        // CacheSettingsHandler, SolrSettingsHandler require container for lazy loading.
         // Register SettingsService BEFORE IndexService to break circular dependency.
         // NOTE: SettingsService no longer depends on IndexService (removed to break circular dependency).
         // IndexService operations are now handled directly in the controller.
-        // SettingsService only uses IAppContainer for lazy loading SchemaMapper and CacheHandler.
+        // SettingsService uses IAppContainer for lazy loading SchemaMapper and CacheHandler.
+        // SettingsService now delegates to 8 specialized handlers following handler-based architecture.
         $context->registerService(
-                 SettingsService::class,
-                function ($container) {
-                    // CacheHandler is not available yet (will be lazy-loaded via container if needed).
-                    return new SettingsService(
-                            config: $container->get('OCP\IConfig'),
-                            auditTrailMapper: $container->get(AuditTrailMapper::class),
-                            cacheFactory: $container->get('OCP\ICacheFactory'),
-                            groupManager: $container->get('OCP\IGroupManager'),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                            organisationMapper: $container->get(OrganisationMapper::class),
-                            schemaCacheService: $container->get(SchemaCacheService::class),
-                            schemaFacetCacheService: $container->get(FacetCacheHandler::class),
-                            searchTrailMapper: $container->get(SearchTrailMapper::class),
-                            userManager: $container->get('OCP\IUserManager'),
-                            db: $container->get('OCP\IDBConnection'),
-                            objectCacheService: null,
-                            // CacheHandler - lazy-loaded via container.
-                            container: $container,
-                            appName: 'openregister'
-                            );
-                }
+            SettingsService::class,
+            function ($container) {
+                // CacheHandler is not available yet (will be lazy-loaded via container if needed).
+                return new SettingsService(
+                    $container->get('OCP\IConfig'),
+                    $container->get(AuditTrailMapper::class),
+                    $container->get('OCP\ICacheFactory'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(OrganisationMapper::class),
+                    $container->get(SchemaCacheService::class),
+                    $container->get(FacetCacheHandler::class),
+                    $container->get(SearchTrailMapper::class),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IDBConnection'),
+                    null,
+                    // CacheHandler - lazy-loaded via container.
+                    $container,
+                    'openregister',
+                    // Settings handlers - delegated business logic.
+                    $container->get(\OCA\OpenRegister\Service\Settings\ValidationOperationsHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\SearchBackendHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\LlmSettingsHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\FileSettingsHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\ObjectRetentionHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\CacheSettingsHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\SolrSettingsHandler::class),
+                    $container->get(\OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler::class)
                 );
+            }
+        );
 
         // NOTE: SolrHttpClient, SolrCollectionManager, SolrDocumentIndexer,
         // SolrQueryExecutor, SolrFacetProcessor, SolrSchemaManager, and SolrBackend
@@ -501,24 +526,24 @@ class Application extends App implements IBootstrap
         // Nextcloud will automatically resolve them via dependency injection.
         // Register SearchBackendInterface - dynamically select backend from configuration
         $context->registerService(
-                 \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
-                function ($container) {
-                    // Read backend configuration from settings
-                    $settingsService = $container->get(SettingsService::class);
-                    $backendConfig   = $settingsService->getSearchBackendConfig();
-                    $activeBackend   = $backendConfig['active'] ?? 'solr';
+            \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
+            function ($container) {
+                // Read backend configuration from settings
+                $settingsService = $container->get(SettingsService::class);
+                $backendConfig   = $settingsService->getSearchBackendConfig();
+                $activeBackend   = $backendConfig['active'] ?? 'solr';
 
-                    // Select backend based on configuration
-                    switch ($activeBackend) {
-                        case 'elasticsearch':
-                            return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
+                // Select backend based on configuration
+                switch ($activeBackend) {
+                    case 'elasticsearch':
+                        return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
 
-                        case 'solr':
-                        default:
-                            return $container->get(SolrBackend::class);
-                    }
+                    case 'solr':
+                    default:
+                        return $container->get(SolrBackend::class);
                 }
-                );
+            }
+        );
 
         // ====================================================================
         // PHASE 3: INDEX HANDLERS
@@ -530,16 +555,16 @@ class Application extends App implements IBootstrap
         // Register SolrDebugCommand for SOLR debugging.
         // NOTE: Must be registered manually because it depends on SettingsService which has circular dependencies.
         $context->registerService(
-                 SolrDebugCommand::class,
-                function ($container) {
-                    return new SolrDebugCommand(
-                            settingsService: $container->get(SettingsService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface'),
-                            config: $container->get('OCP\IConfig'),
-                            clientService: $container->get('OCP\Http\Client\IClientService')
-                            );
-                }
+            SolrDebugCommand::class,
+            function ($container) {
+                return new SolrDebugCommand(
+                    settingsService: $container->get(SettingsService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    config: $container->get('OCP\IConfig'),
+                    clientService: $container->get('OCP\Http\Client\IClientService')
                 );
+            }
+        );
 
         // NOTE: IndexService and handlers can be autowired.
         // Removed manual registration - Nextcloud will autowire them automatically.
@@ -553,20 +578,20 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register unified VectorizationService with strategies.
         $context->registerService(
-                 VectorizationService::class,
-                function ($container) {
-                    $service = new VectorizationService(
-                            vectorService: $container->get(VectorEmbeddingService::class),
-                            logger: $container->get('Psr\Log\LoggerInterface')
-                            );
-
-                    // Register strategies.
-                    $service->registerStrategy(entityType: 'file', strategy: $container->get(FileVectorizationStrategy::class));
-                    $service->registerStrategy(entityType: 'object', strategy: $container->get(ObjectVectorizationStrategy::class));
-
-                    return $service;
-                }
+            VectorizationService::class,
+            function ($container) {
+                $service = new VectorizationService(
+                    vectorService: $container->get(VectorEmbeddingService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+
+                // Register strategies.
+                $service->registerStrategy(entityType: 'file', strategy: $container->get(FileVectorizationStrategy::class));
+                $service->registerStrategy(entityType: 'object', strategy: $container->get(ObjectVectorizationStrategy::class));
+
+                return $service;
+            }
+        );
 
         // NOTE: ChatService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
@@ -585,31 +610,31 @@ class Application extends App implements IBootstrap
         // WebhookService creates GuzzleHttp\Client directly.
         // Register GitHubHandler for GitHub API operations.
         $context->registerService(
-                 GitHubHandler::class,
-                function ($container) {
-                    return new GitHubHandler(
-                            client: $container->get('OCP\Http\Client\IClientService')->newClient(),
-                            config: $container->get('OCP\IConfig'),
-                            cacheFactory: $container->get('OCP\ICacheFactory'),
-                            logger: $container->get('Psr\Log\LoggerInterface')
-                            );
-                }
+            GitHubHandler::class,
+            function ($container) {
+                return new GitHubHandler(
+                    client: $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    config: $container->get('OCP\IConfig'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
 
         // NOTE: DashboardService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         // Register GitLabHandler for GitLab API operations.
         // NOTE: Must be registered manually because it requires IClientService->newClient() factory call.
         $context->registerService(
-                GitLabHandler::class,
-                function ($container) {
-                    return new GitLabHandler(
-                            $container->get('OCP\Http\Client\IClientService')->newClient(),
-                            $container->get(id: 'OCP\IConfig'),
-                            $container->get(id: 'Psr\Log\LoggerInterface')
-                            );
-                }
+            GitLabHandler::class,
+            function ($container) {
+                return new GitLabHandler(
+                    $container->get('OCP\Http\Client\IClientService')->newClient(),
+                    $container->get(id: 'OCP\IConfig'),
+                    $container->get(id: 'Psr\Log\LoggerInterface')
                 );
+            }
+        );
 
         // NOTE: Configuration\CacheHandler can be autowired (only type-hinted parameters).
         // Nextcloud will automatically resolve it via dependency injection.
@@ -668,7 +693,6 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(OrganisationCreatedEvent::class, WebhookEventListener::class);
         $context->registerEventListener(OrganisationUpdatedEvent::class, WebhookEventListener::class);
         $context->registerEventListener(OrganisationDeletedEvent::class, WebhookEventListener::class);
-
     }//end register()
 
 
@@ -688,12 +712,12 @@ class Application extends App implements IBootstrap
 
         // Log boot process.
         $logger->info(
-                'OpenRegister boot: Registering event listeners',
-                [
+            'OpenRegister boot: Registering event listeners',
+            [
                     'app'       => 'openregister',
                     'timestamp' => date('Y-m-d H:i:s'),
                 ]
-                );
+        );
 
         try {
             $logger->info('OpenRegister boot: Event listeners registered successfully');
@@ -705,12 +729,12 @@ class Application extends App implements IBootstrap
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === false) {
                 $jobList->add(SolrNightlyWarmupJob::class);
                 $logger->info(
-                        '🌙 SOLR Nightly Warmup Job registered successfully',
-                        [
+                    '🌙 SOLR Nightly Warmup Job registered successfully',
+                    [
                             'job_class' => SolrNightlyWarmupJob::class,
                             'interval'  => '24 hours (daily at 00:00)',
                         ]
-                        );
+                );
             } else {
                 $logger->debug('SOLR Nightly Warmup Job already registered');
             }
@@ -719,12 +743,12 @@ class Application extends App implements IBootstrap
             if ($jobList->has(CronFileTextExtractionJob::class, null) === false) {
                 $jobList->add(CronFileTextExtractionJob::class);
                 $logger->info(
-                        '🔄 Cron File Text Extraction Job registered successfully',
-                        [
+                    '🔄 Cron File Text Extraction Job registered successfully',
+                    [
                             'job_class' => CronFileTextExtractionJob::class,
                             'interval'  => '15 minutes',
                         ]
-                        );
+                );
             } else {
                 $logger->debug('Cron File Text Extraction Job already registered');
             }
@@ -734,26 +758,23 @@ class Application extends App implements IBootstrap
             if ($jobList->has($webhookRetryJobClass, null) === false) {
                 $jobList->add($webhookRetryJobClass);
                 $logger->info(
-                        '🔄 Webhook Retry Job registered successfully',
-                        [
+                    '🔄 Webhook Retry Job registered successfully',
+                    [
                             'job_class' => $webhookRetryJobClass,
                             'interval'  => '5 minutes',
                         ]
-                        );
+                );
             } else {
                 $logger->debug('Webhook Retry Job already registered');
             }
         } catch (\Exception $e) {
             $logger->error(
-                    'OpenRegister boot: Failed to register event listeners and background jobs',
-                    [
+                'OpenRegister boot: Failed to register event listeners and background jobs',
+                [
                         'exception' => $e->getMessage(),
                         'trace'     => $e->getTraceAsString(),
                     ]
-                    );
+            );
         }//end try
-
     }//end boot()
-
-
 }//end class

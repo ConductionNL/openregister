@@ -110,18 +110,17 @@ public function __construct(
 }//end __construct()
 
 
+    /**
      * Get comprehensive cache statistics from actual cache systems(not database)
      *
      * Provides detailed insights into cache usage and performance by querying
      * the actual cache backends rather than database tables for better performance.
      *
-     * @return (array|string) {
-    [] Comprehensive cache statistics from cache systems
+     * @return array Comprehensive cache statistics from cache systems
      *
-     * @psalm-return arrayoverview: array{totalCacheSize: 0|mixed, totalCacheEntries: 0|mixed, overallHitRate: float, averageResponseTime: float|mixed, cacheEfficiency: float}, services: array{object: array{entries: 0|mixed, hits: 0|mixed, requests: 0|mixed, memoryUsage: 0|mixed}, schema: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}, facet: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}}, names: array{cache_size: 0|mixed, hit_rate: float|mixed, hits: 0|mixed, misses: 0|mixed, warmups: 0|mixed, enabled: bool}, distributed: array, performance: array, lastUpdated: string, error?: string
-     }
+     * @throws \RuntimeException If cache statistics retrieval fails
      */
-     public function getCacheStats(): array
+    public function getCacheStats(): array
      {
          try {
              // Get basic distributed cache info.
@@ -682,8 +681,4 @@ public function __construct(
              ];
          }
      }//end clearDistributedCache()
-
-
-    /**
-
 }//end class

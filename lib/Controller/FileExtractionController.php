@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\Vectorization\VectorizationService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
