@@ -408,6 +408,7 @@ class Application extends App implements IBootstrap
                     registerMapper: $container->get(RegisterMapper::class),
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    client: new \GuzzleHttp\Client(),
                     appConfig: $container->get('OCP\IAppConfig'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     appDataPath: $appDataPath,

@@ -465,4 +465,86 @@ class ImportHandler
     }//end getDuplicateRegisterInfo()
 
 
+    /**
+     * Handle duplicate schema error during import.
+     *
+     * @param string $slug    The schema slug that has duplicates.
+     * @param string $appId   The application ID attempting the import.
+     * @param string $version The version being imported.
+     *
+     * @return void
+     *
+     * @throws Exception Always throws with duplicate schema information.
+     */
+    private function handleDuplicateSchemaError(string $slug, string $appId, string $version): void
+    {
+        // Get details about the duplicate schemas.
+        $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
+
+        $errorMessage = sprintf(
+            "Duplicate schema detected during import from app '%s' (version %s). "
+            ."Schema with slug '%s' has multiple entries in the database: %s. "
+            ."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "
+            ."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            $appId,
+            $version,
+            $slug,
+            $duplicateInfo
+        );
+
+        $this->logger->error(message: $errorMessage);
+        throw new Exception($errorMessage);
+
+    }//end handleDuplicateSchemaError()
+
+
+    /**
+     * Get detailed information about duplicate schemas.
+     *
+     * @param string $slug The schema slug to check for duplicates.
+     *
+     * @return string Formatted string with duplicate schema information.
+     */
+    private function getDuplicateSchemaInfo(string $slug): string
+    {
+        try {
+            // Try to get all schemas with this slug to provide detailed info.
+            $schemas    = $this->schemaMapper->findAll();
+            $duplicates = array_filter(
+                $schemas,
+                function ($schema) use ($slug) {
+                    return strtolower($schema->getSlug() ?? '') === strtolower($slug);
+                }
+            );
+
+            if (count($duplicates) <= 1) {
+                return "Unable to retrieve detailed duplicate information";
+            }
+
+            $info = [];
+            foreach ($duplicates as $schema) {
+                // Format created date.
+                if ($schema->getCreated() !== null) {
+                    $createdDate = $schema->getCreated()->format('Y-m-d H:i:s');
+                } else {
+                    $createdDate = 'unknown';
+                }
+
+                $info[] = sprintf(
+                    "ID: %s, UUID: %s, Title: '%s', Created: %s",
+                    $schema->getId(),
+                    $schema->getUuid() ?? '',
+                    $schema->getTitle() ?? '',
+                    $createdDate
+                );
+            }
+
+            return implode('; ', $info);
+        } catch (Exception $e) {
+            return "Unable to retrieve duplicate information: ".$e->getMessage();
+        }//end try
+
+    }//end getDuplicateSchemaInfo()
+
+
 }//end class

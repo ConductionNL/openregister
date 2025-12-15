@@ -233,11 +233,39 @@ class ImportService
      *
      * @return (array|int|null|string)[][]
      *
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, debug?: array, schema?: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string}>
+     * @phpstan-return array<string, array{
+     *     found: int,
+     *     created: array<mixed>,
+     *     updated: array<mixed>,
+     *     unchanged: array<mixed>,
+     *     errors: array<mixed>,
+     *     debug?: array,
+     *     schema?: array{id: int, slug: null|string, title: null|string},
+     *     deduplication_efficiency?: string
+     * }>
      *
-     * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged?: array, updated: array, deduplication_efficiency?: string, schema?: array{id: int, title: null|string, slug: null|string}|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}}>
+     * @psalm-return array<string, array{
+     *     created: array,
+     *     errors: array,
+     *     found: int,
+     *     unchanged?: array,
+     *     updated: array,
+     *     deduplication_efficiency?: string,
+     *     schema?: array{id: int, title: null|string, slug: null|string}|null,
+     *     debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}
+     * }>
      */
-    public function importFromExcel(string $filePath, ?Register $register=null, ?Schema $schema=null, bool $validation=false, bool $events=false, bool $_rbac=true, bool $_multitenancy=true, bool $publish=false, ?IUser $currentUser=null): array
+    public function importFromExcel(
+        string $filePath,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $validation=false,
+        bool $events=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $publish=false,
+        ?IUser $currentUser=null
+    ): array
     {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -248,7 +276,16 @@ class ImportService
 
         // If we have a register but no schema, process each sheet as a different schema.
         if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, register: $register, validation: $validation, events: $events, _rbac: $_rbac, _multitenancy: $_multitenancy, publish: $publish, currentUser: $currentUser);
+            return $this->processMultiSchemaSpreadsheetAsync(
+                spreadsheet: $spreadsheet,
+                register: $register,
+                validation: $validation,
+                events: $events,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                publish: $publish,
+                currentUser: $currentUser
+            );
         }
 
         // Single schema processing - use batch processing for better performance.
@@ -290,9 +327,34 @@ class ImportService
      *
      * @return (array|int|string)[][]
      *
-     * @phpstan-return array<string, array{created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, found?: int, schema?: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string, performance?: array}>
+     * @phpstan-return array<string, array{
+     *     created: array<mixed>,
+     *     updated: array<mixed>,
+     *     unchanged: array<mixed>,
+     *     errors: array<mixed>,
+     *     found?: int,
+     *     schema?: array{id: int, slug: null|string, title: null|string},
+     *     deduplication_efficiency?: string,
+     *     performance?: array
+     * }>
      *
-     * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged: array, updated: array, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}, deduplication_efficiency?: string, schema: array{id: int, title: null|string, slug: null|string}}>
+     * @psalm-return array<string, array{
+     *     created: array,
+     *     errors: array,
+     *     found: int,
+     *     unchanged: array,
+     *     updated: array,
+     *     performance?: array{
+     *         efficiency: 0|float,
+     *         objectsPerSecond: float,
+     *         totalFound: int<0, max>,
+     *         totalProcessed: int<0, max>,
+     *         totalTime: float,
+     *         totalTimeMs: float
+     *     },
+     *     deduplication_efficiency?: string,
+     *     schema: array{id: int, title: null|string, slug: null|string}
+     * }>
      */
     public function importFromCsv(
         string $filePath,
@@ -361,10 +423,41 @@ class ImportService
      * @param bool        $events      Whether to dispatch object lifecycle events
      *
      * @return         array<string, array> Summary of import with sheet-based results
-     * @phpstan-return array<string, array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, schema?: array{id: int, slug: null|string, title: null|string}, debug?: array, deduplication_efficiency?: string}>
-     * @psalm-return   array<string, array{created: array<array-key, mixed>, errors: array<array-key, mixed>, found: int, unchanged?: array<array-key, mixed>, updated: array<array-key, mixed>, debug: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, deduplication_efficiency?: non-empty-lowercase-string, schema: array{id: int, slug: null|string, title: null|string}|null}>
+     * @phpstan-return array<string, array{
+     *     found: int,
+     *     created: array<mixed>,
+     *     updated: array<mixed>,
+     *     unchanged: array<mixed>,
+     *     errors: array<mixed>,
+     *     schema?: array{id: int, slug: null|string, title: null|string},
+     *     debug?: array,
+     *     deduplication_efficiency?: string
+     * }>
+     * @psalm-return   array<string, array{
+     *     created: array<array-key, mixed>,
+     *     errors: array<array-key, mixed>,
+     *     found: int,
+     *     unchanged?: array<array-key, mixed>,
+     *     updated: array<array-key, mixed>,
+     *     debug: array{
+     *         headers: array<never, never>,
+     *         processableHeaders: array<never, never>,
+     *         schemaProperties: list<array-key>
+     *     },
+     *     deduplication_efficiency?: non-empty-lowercase-string,
+     *     schema: array{id: int, slug: null|string, title: null|string}|null
+     * }>
      */
-    private function processMultiSchemaSpreadsheetAsync(Spreadsheet $spreadsheet, Register $register, bool $validation=false, bool $events=false, bool $_rbac=true, bool $_multitenancy=true, bool $publish=false, ?IUser $currentUser=null): array
+    private function processMultiSchemaSpreadsheetAsync(
+        Spreadsheet $spreadsheet,
+        Register $register,
+        bool $validation=false,
+        bool $events=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $publish=false,
+        ?IUser $currentUser=null
+    ): array
     {
         $summary = [];
 
@@ -416,7 +509,17 @@ class ImportService
 
             // Set the worksheet as active and process using batch saving for better performance.
             $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($worksheet));
-            $sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, register: $register, schema: $schema, validation: $validation, events: $events, _rbac: $_rbac, _multitenancy: $_multitenancy, publish: $publish, currentUser: $currentUser);
+            $sheetSummary = $this->processSpreadsheetBatch(
+                spreadsheet: $spreadsheet,
+                register: $register,
+                schema: $schema,
+                validation: $validation,
+                events: $events,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                publish: $publish,
+                currentUser: $currentUser
+            );
 
             // Merge the sheet summary with the existing summary (preserve debug info).
             $summary[$schemaSlug] = array_merge($summary[$schemaSlug], $sheetSummary);
@@ -458,7 +561,23 @@ class ImportService
      *
      * @phpstan-return array{found: int, created: array<mixed>, updated: array<mixed>, unchanged: array<mixed>, errors: array<mixed>, deduplication_efficiency?: string}
      *
-     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{sheet: string, object: array<never, never>|mixed, error: 'No data rows found in sheet'|'No valid headers found in sheet'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string}
+     * @psalm-return array{
+     *     found: int<0, max>,
+     *     created: array<never, mixed|null>,
+     *     updated: array<never, mixed|null>,
+     *     unchanged: array<never, mixed|null>,
+     *     errors: list{
+     *         0?: array{
+     *             sheet: string,
+     *             object: array<never, never>|mixed,
+     *             error: 'No data rows found in sheet'|'No valid headers found in sheet'|'Validation failed'|mixed,
+     *             type?: 'ValidationException'|mixed,
+     *             row?: 1
+     *         },
+     *         ...
+     *     },
+     *     deduplication_efficiency?: string
+     * }
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
