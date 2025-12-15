@@ -42,22 +42,30 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FacetService;
-use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\SchemaCacheService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
-use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
-use OCA\OpenRegister\Service\Objects\DeleteObject;
-use OCA\OpenRegister\Service\Objects\GetObject;
-use OCA\OpenRegister\Service\Objects\PerformanceHandler;
-use OCA\OpenRegister\Service\Objects\PermissionHandler;
-use OCA\OpenRegister\Service\Objects\RenderObject;
-use OCA\OpenRegister\Service\Objects\SaveObject;
-use OCA\OpenRegister\Service\Objects\SaveObjects;
-use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
-use OCA\OpenRegister\Service\Objects\ValidateObject;
-use OCA\OpenRegister\Service\Objects\PublishObject;
-use OCA\OpenRegister\Service\Objects\DepublishObject;
+use OCA\OpenRegister\Service\Object\DataManipulationHandler;
+use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\PerformanceHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SearchQueryHandler;
+use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\PublishObject;
+use OCA\OpenRegister\Service\Object\DepublishObject;
+use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
+use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
+use OCA\OpenRegister\Service\Object\Handlers\PublishHandler;
+use OCA\OpenRegister\Service\Object\Handlers\RelationHandler;
+use OCA\OpenRegister\Service\Object\Handlers\MergeHandler;
+use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
+use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
+use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -163,6 +171,14 @@ class ObjectService
      * @param ValidateObject          $validateHandler         Handler for object validation.
      * @param PublishObject           $publishHandler          Handler for object publication.
      * @param DepublishObject         $depublishHandler        Handler for object depublication.
+     * @param LockHandler             $lockHandler             Handler for object locking.
+     * @param AuditHandler            $auditHandler            Handler for audit trail operations.
+     * @param PublishHandler          $publishHandlerNew       Handler for publication workflow.
+     * @param RelationHandler         $relationHandler         Handler for object relationships.
+     * @param MergeHandler            $mergeHandler            Handler for merge and migration.
+     * @param ExportHandler           $exportHandler           Handler for export/import operations.
+     * @param VectorizationHandler    $vectorizationHandler    Handler for vectorization operations.
+     * @param CrudHandler             $crudHandler             Handler for CRUD operations.
      * @param RegisterMapper          $registerMapper          Mapper for register operations.
      * @param SchemaMapper            $schemaMapper            Mapper for schema operations.
      * @param ViewMapper              $viewMapper              Mapper for view operations.
@@ -175,9 +191,9 @@ class ObjectService
      * @param OrganisationService     $organisationService     Service for organisation operations.
      * @param LoggerInterface         $logger                  Logger for performance monitoring.
      * @param FacetService            $facetService            Service for facet operations.
-     * @param CacheHandler      $cacheHandler      Object cache service for entity and query caching.
+     * @param CacheHandler            $cacheHandler            Object cache service for entity and query caching.
      * @param SchemaCacheService      $schemaCacheService      Schema cache service for schema entity caching.
-     * @param FacetCacheHandler $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param FacetCacheHandler       $schemaFacetCacheService Schema facet cache service for facet caching.
      * @param SettingsService         $settingsService         Service for settings operations.
      * @param IAppContainer           $container               Application container.
      */
@@ -194,6 +210,14 @@ class ObjectService
         private readonly ValidateObject $validateHandler,
         private readonly PublishObject $publishHandler,
         private readonly DepublishObject $depublishHandler,
+        private readonly LockHandler $lockHandler,
+        private readonly AuditHandler $auditHandler,
+        private readonly PublishHandler $publishHandlerNew,
+        private readonly RelationHandler $relationHandler,
+        private readonly MergeHandler $mergeHandler,
+        private readonly ExportHandler $exportHandler,
+        private readonly VectorizationHandler $vectorizationHandler,
+        private readonly CrudHandler $crudHandler,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ViewMapper $viewMapper,
@@ -207,8 +231,6 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly FacetService $facetService,
         private readonly CacheHandler $cacheHandler,
-
-
         private readonly SettingsService $settingsService,
         private readonly IAppContainer $container
     ) {
@@ -242,7 +264,7 @@ class ObjectService
      *
      * @throws \Exception If user session is invalid or user groups cannot be determined
      */
-    private function hasPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true): bool
+    private function hasPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true): bool
     {
         return $this->permissionHandler->hasPermission(
             schema: $schema,
@@ -251,7 +273,6 @@ class ObjectService
             objectOwner: $objectOwner,
             rbac: $_rbac
         );
-
     }//end hasPermission()
 
 
@@ -268,7 +289,7 @@ class ObjectService
      *
      * @throws \Exception If permission is not granted
      */
-    private function checkPermission(Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null, bool $_rbac=true): void
+    private function checkPermission(Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true): void
     {
         $this->permissionHandler->checkPermission(
             schema: $schema,
@@ -277,7 +298,6 @@ class ObjectService
             objectOwner: $objectOwner,
             rbac: $_rbac
         );
-
     }//end checkPermission()
 
 
@@ -322,7 +342,6 @@ class ObjectService
                 // The object can still function without a folder.
             }
         }
-
     }//end ensureObjectFolderExists()
 
 
@@ -338,7 +357,7 @@ class ObjectService
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
             // When deriving register from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its register.
-            $registers = $this->getCachedEntities([$register], function($ids) {
+            $registers = $this->getCachedEntities([$register], function ($ids) {
                 return [$this->registerMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
             });
             $registerExists = isset($registers[0]) === true;
@@ -353,7 +372,6 @@ class ObjectService
 
         $this->currentRegister = $register;
         return $this;
-
     }//end setRegister()
 
 
@@ -368,7 +386,7 @@ class ObjectService
             // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
             // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its schema.
-            $schemas = $this->getCachedEntities([$schema], function($ids) {
+            $schemas = $this->getCachedEntities([$schema], function ($ids) {
                 return [$this->schemaMapper->find(id: $ids[0], published: null, rbac: false, multi: false)];
             });
             $schemaExists = isset($schemas[0]) === true;
@@ -383,7 +401,6 @@ class ObjectService
 
         $this->currentSchema = $schema;
         return $this;
-
     }//end setSchema()
 
 
@@ -401,7 +418,6 @@ class ObjectService
 
         $this->currentObject = $object;
         return $this;
-
     }//end setObject()
 
 
@@ -414,7 +430,6 @@ class ObjectService
     {
         // Return the current object context.
         return $this->currentObject;
-
     }//end getObject()
 
 
@@ -437,12 +452,12 @@ class ObjectService
      */
     public function find(
         int | string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?array $_extend = [],
+        bool $files = false,
+        Register | string | int | null $register = null,
+        Schema | string | int | null $schema = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): ?ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -456,11 +471,11 @@ class ObjectService
 
         // Retrieve the object using the current register, schema, ID, extend properties, and file information.
         $object = $this->getHandler->find(
-                id: $id,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _extend: $_extend,
-                files: $files,
+            id: $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _extend: $_extend,
+            files: $files,
             _rbac: $_rbac,
             multi: $multi
         );
@@ -496,14 +511,13 @@ class ObjectService
         $schemas = [$this->currentSchema->getId() => $this->currentSchema];
 
         return $this->renderHandler->renderEntity(
-                entity: $object,
-                _extend: $_extend,
+            entity: $object,
+            _extend: $_extend,
             registers: $registers,
             schemas: $schemas,
             _rbac: $_rbac,
             _multi: $multi
         );
-
     }//end find()
 
 
@@ -529,12 +543,12 @@ class ObjectService
      */
     public function findSilent(
         string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?array $_extend = [],
+        bool $files = false,
+        Register | string | int | null $register = null,
+        Schema | string | int | null $schema = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -548,15 +562,14 @@ class ObjectService
 
         // Use the silent find method from the GetObject handler.
         return $this->getHandler->findSilent(
-                id: $id,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _extend: $_extend,
-                files: $files,
+            id: $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _extend: $_extend,
+            files: $files,
             _rbac: $_rbac,
             multi: $multi
         );
-
     }//end findSilent()
 
 
@@ -587,7 +600,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
+    public function findAll(array $config = [], bool $_rbac = true, bool $_multitenancy = true): array
     {
 
         // Convert extend to an array if it's a string.
@@ -611,11 +624,11 @@ class ObjectService
 
         // Delegate the findAll operation to the handler.
         $objects = $this->getHandler->findAll(
-                limit: $config['limit'] ?? null,
-                offset: $config['offset'] ?? null,
-                filters: $config['filters'] ?? [],
-                sort: $config['sort'] ?? [],
-                search: $config['search'] ?? null,
+            limit: $config['limit'] ?? null,
+            offset: $config['offset'] ?? null,
+            filters: $config['filters'] ?? [],
+            sort: $config['sort'] ?? [],
+            search: $config['search'] ?? null,
             files: $config['files'] ?? false,
             uses: $config['uses'] ?? null,
             ids: $config['ids'] ?? null,
@@ -655,9 +668,9 @@ class ObjectService
                 function ($resolve, $reject) use ($object, $config, $registers, $schemas, $_rbac, $_multitenancy) {
                     try {
                         $renderedObject = $this->renderHandler->renderEntity(
-                                entity: $object,
-                                extend: $config['extend'] ?? [],
-                                filter: $config['unset'] ?? null,
+                            entity: $object,
+                            extend: $config['extend'] ?? [],
+                            filter: $config['unset'] ?? null,
                             fields: $config['fields'] ?? null,
                             registers: $registers,
                             schemas: $schemas,
@@ -666,7 +679,7 @@ class ObjectService
                         );
                         /** @var callable(mixed): void $resolve */
                         $resolve($renderedObject);
-                    } catch(\Throwable $e) {
+                    } catch (\Throwable $e) {
                         $reject($e);
                     }
                 }
@@ -677,7 +690,6 @@ class ObjectService
         $objects = Async\await(all($promises));
 
         return $objects;
-
     }//end findAll()
 
 
@@ -704,7 +716,7 @@ class ObjectService
      * @throws \Exception If register or schema is not set
      */
     public function count(
-        array $config=[]
+        array $config = []
     ): int {
         // Add register and schema IDs to filters// Ensure we have both register and schema set.
         if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
@@ -720,13 +732,12 @@ class ObjectService
         unset($config['limit']);
 
         return $this->objectEntityMapper->countAll(
-                filters: $config['filters'] ?? [],
-                search: $config['search'] ?? null,
-                ids: $config['ids'] ?? null,
+            filters: $config['filters'] ?? [],
+            search: $config['search'] ?? null,
+            ids: $config['ids'] ?? null,
             uses: $config['uses'] ?? null,
             published: $config['published'] ?? false
         );
-
     }//end count()
 
 
@@ -738,11 +749,10 @@ class ObjectService
      *
      * @return array An array of ObjectEntities that have the specified URI/UUID in their relations
      */
-    public function findByRelations(string $search, bool $partialMatch=true): array
+    public function findByRelations(string $search, bool $partialMatch = true): array
     {
         // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
         return $this->objectEntityMapper->findByRelation(search: $search, partialMatch: $partialMatch);
-
     }//end findByRelations()
 
 
@@ -760,14 +770,13 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function getLogs(string $uuid, array $filters=[], bool $_rbac=true, bool $_multitenancy=true): array
+    public function getLogs(string $uuid, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array
     {
         // Get logs for the specified object.
         $object = $this->objectEntityMapper->find($uuid);
         $logs   = $this->getHandler->findLogs(object: $object, filters: $filters);
 
         return $logs;
-
     }//end getLogs()
 
 
@@ -829,14 +838,14 @@ class ObjectService
      */
     public function saveObject(
         array | ObjectEntity $object,
-        ?array $extend=[],
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        ?string $uuid=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $silent=false,
-        ?array $uploadedFiles=null
+        ?array $extend = [],
+        Register | string | int | null $register = null,
+        Schema | string | int | null $schema = null,
+        ?string $uuid = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $silent = false,
+        ?array $uploadedFiles = null
     ): ObjectEntity {
         // Check if a register is provided and set the current register context.
         if ($register !== null) {
@@ -946,9 +955,9 @@ class ObjectService
         // Let SaveObject handle the UUID logic completely.
 
         $savedObject = $this->saveHandler->saveObject(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                data: $object,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
             uuid: $uuid,
             folderId: $folderId,
             _rbac: $_rbac,
@@ -967,14 +976,13 @@ class ObjectService
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
-                entity: $savedObject,
-                _extend: $_extend,
-                registers: $registers,
+            entity: $savedObject,
+            _extend: $_extend,
+            registers: $registers,
             schemas: $schemas,
             _rbac: $_rbac,
             _multi: $multi
         );
-
     }//end saveObject()
 
 
@@ -991,7 +999,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
+    public function deleteObject(string $uuid, bool $_rbac = true, bool $_multitenancy = true): bool
     {
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
@@ -1012,14 +1020,13 @@ class ObjectService
         }
 
         return $this->deleteHandler->deleteObject(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                uuid: $uuid,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            uuid: $uuid,
             originalObjectId: null,
             _rbac: $_rbac,
             _multi: $multi
         );
-
     }//end deleteObject()
 
 
@@ -1044,15 +1051,15 @@ class ObjectService
         $schema = $this->schemaMapper->find($filters['schema']);
 
         $filterKeysWithSub = array_filter(
-                array_keys($filters),
-                function ($filter) {
-                    if (str_contains($filter, '_') === true) {
-                        return true;
-                    }
-
-                    return false;
+            array_keys($filters),
+            function ($filter) {
+                if (str_contains($filter, '_') === true) {
+                    return true;
                 }
-                );
+
+                return false;
+            }
+        );
 
         $filtersWithSub = array_intersect_key(array: $filters, array2: array_flip(array: $filterKeysWithSub));
 
@@ -1084,20 +1091,20 @@ class ObjectService
 
             $objects  = $this->findAll(config: ['filters' => $value]);
             $foundIds = array_map(
-                    function (ObjectEntity $object) use ($property, $key) {
-                        $serialized = $object->jsonSerialize();
-                        $idRaw = is_array($property) && is_array($serialized) && isset($property['inversedBy']) ? $serialized[$property['inversedBy']] : null;
+                function (ObjectEntity $object) use ($property, $key) {
+                    $serialized = $object->jsonSerialize();
+                    $idRaw = is_array($property) && is_array($serialized) && isset($property['inversedBy']) ? $serialized[$property['inversedBy']] : null;
 
-                        if (Uuid::isValid($idRaw) === true) {
-                            return $idRaw;
-                        } else if (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
-                            $path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
+                    if (Uuid::isValid($idRaw) === true) {
+                        return $idRaw;
+                    } elseif (filter_var($idRaw, FILTER_VALIDATE_URL) !== false) {
+                        $path = explode(separator: '/', string: parse_url($idRaw, PHP_URL_PATH));
 
-                            return end($path);
-                        }
-                    },
-                    $objects
-                    );
+                        return end($path);
+                    }
+                },
+                $objects
+            );
 
             if ($ids === []) {
                 $ids = $foundIds;
@@ -1115,7 +1122,6 @@ class ObjectService
         }
 
         return $ids;
-
     }//end applyInversedByFilter()
 
 
@@ -1145,7 +1151,6 @@ class ObjectService
         }
 
         return null;
-
     }//end getActiveOrganisationForContext()
 
 
@@ -1185,9 +1190,9 @@ class ObjectService
      */
     public function buildSearchQuery(
         array $requestParams,
-        int | string | array | null $register=null,
-        int | string | array | null $schema=null,
-        ?array $ids=null
+        int | string | array | null $register = null,
+        int | string | array | null $schema = null,
+        ?array $ids = null
     ): array {
         return $this->searchQueryHandler->buildSearchQuery(
             requestParams: $requestParams,
@@ -1195,7 +1200,6 @@ class ObjectService
             schema: $schema,
             ids: $ids
         );
-
     }//end buildSearchQuery()
 
 
@@ -1213,7 +1217,6 @@ class ObjectService
     private function applyViewsToQuery(array $query, array $viewIds): array
     {
         return $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $viewIds);
-
     }//end applyViewsToQuery()
 
 
@@ -1249,12 +1252,12 @@ class ObjectService
      * @throws \OCP\DB\Exception If a database error occurs
      */
     public function searchObjects(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
+        array $query = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        ?array $ids = null,
+        ?string $uses = null,
+        ?array $views = null
     ): array|int {
         // Apply view filters if provided.
         if ($views !== null && empty($views) === false) {
@@ -1410,7 +1413,7 @@ class ObjectService
                         // Skip invalid register data.
                         continue;
                     }
-                } else if ($register instanceof \OCA\OpenRegister\Db\Register === true) {
+                } elseif ($register instanceof \OCA\OpenRegister\Db\Register === true) {
                     $validRegisters[] = $register;
                 }
             }
@@ -1434,7 +1437,7 @@ class ObjectService
                         // Skip invalid schema data.
                         continue;
                     }
-                } else if ($schema instanceof \OCA\OpenRegister\Db\Schema === true) {
+                } elseif ($schema instanceof \OCA\OpenRegister\Db\Schema === true) {
                     $validSchemas[] = $schema;
                 }
             }
@@ -1565,16 +1568,16 @@ class ObjectService
             }
 
             $objects[$key] = $this->renderHandler->renderEntity(
-                    entity: $object,
-                    // Use limited extends if available.
+                entity: $object,
+                // Use limited extends if available.
                     extend: $limitedExtends ?? $extend,
-             filter: $filter,
-             fields: $fields,
-             unset: $unset,
-             registers: $registers,
-             schemas: $schemas,
-             _rbac: $_rbac,
-             _multi: $multi
+                filter: $filter,
+                fields: $fields,
+                unset: $unset,
+                registers: $registers,
+                schemas: $schemas,
+                _rbac: $_rbac,
+                _multi: $multi
             );
         }
 
@@ -1588,7 +1591,6 @@ class ObjectService
         ]);
 
         return $objects;
-
     }//end searchObjects()
 
 
@@ -1619,7 +1621,7 @@ class ObjectService
      *
      * @return int The number of objects matching the criteria
      */
-    public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int
+    public function countSearchObjects(array $query = [], bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null, ?string $uses = null): int
     {
         // Get active organization context for multi-tenancy (only if multi is enabled).
         $activeOrganisationUuid = null;
@@ -1629,7 +1631,6 @@ class ObjectService
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
         return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $_rbac, _multitenancy: $_multitenancy, ids: $ids, uses: $uses);
-
     }//end countSearchObjects()
 
 
@@ -1655,12 +1656,11 @@ class ObjectService
      *
      * @return array The facets for objects matching the criteria
      */
-    public function getFacetsForObjects(array $query=[]): array
+    public function getFacetsForObjects(array $query = []): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService.
         // This provides clean separation of concerns and centralized faceting logic.
         return $this->facetService->getFacetsForQuery($query);
-
     }//end getFacetsForObjects()
 
 
@@ -1692,11 +1692,10 @@ class ObjectService
      *
      * @return array Comprehensive facetable field information from schemas
      */
-    public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
+    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
     {
         // **ARCHITECTURAL IMPROVEMENT**: Delegate to dedicated FacetService.
         return $this->facetService->getFacetableFields(baseQuery: $baseQuery, _limit: $sampleSize);
-
     }//end getFacetableFields()
 
 
@@ -1812,14 +1811,14 @@ class ObjectService
      *                              - prev: URL for previous page (if available)
      */
     public function searchObjectsPaginated(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $published=false,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
+        array $query = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $published = false,
+        bool $deleted = false,
+        ?array $ids = null,
+        ?string $uses = null,
+        ?array $views = null
     ): array {
         // Apply view filters if provided.
         if ($views !== null && empty($views) === false) {
@@ -1839,8 +1838,7 @@ class ObjectService
         $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
         $isSolrEnabled = $this->isSolrAvailable() === true;
         $isNotDatabase = $requestedSource !== 'database';
-        if (
-            (
+        if ((
                 $isSolrRequested === true &&
                 $hasIdsParam === false && $hasUsesParam === false &&
                 $hasIds === false && $hasUses === false
@@ -1853,7 +1851,6 @@ class ObjectService
                 $hasIds === false && $hasUses === false
             )
         ) {
-
             // Forward to Index service - let it handle availability checks and error handling.
             $indexService = $this->container->get(IndexService::class);
             $result = $indexService->searchObjects(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted);
@@ -1886,7 +1883,6 @@ class ObjectService
     private function isSolrAvailable(): bool
     {
         return $this->searchQueryHandler->isSolrAvailable();
-
     }
 
     /**
@@ -1903,13 +1899,13 @@ class ObjectService
      * @return array<string, mixed> Search results with pagination
      */
     private function searchObjectsPaginatedDatabase(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $published=false,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null
+        array $query = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $published = false,
+        bool $deleted = false,
+        ?array $ids = null,
+        ?string $uses = null
     ): array {
         // **VALIDATION**: Database mode now supports facetable functionality.
         $query['_facetable'] ?? false;
@@ -1997,12 +1993,12 @@ class ObjectService
 
         // **PERFORMANCE OPTIMIZATION**: Prepare optimized queries.
         $paginatedQuery = array_merge(
-                $query,
-                [
+            $query,
+            [
                     '_limit'  => $limit,
                     '_offset' => $offset,
                 ]
-                );
+        );
 
         // Remove page parameter from the query as we use offset internally.
         unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
@@ -2114,7 +2110,6 @@ class ObjectService
         }
 
         return $paginatedResults;
-
     }//end searchObjectsPaginated()
 
 
@@ -2148,7 +2143,7 @@ class ObjectService
                     'Implement pagination with smaller page sizes'
                 ]
             ];
-        } else if ($totalTime > 500) {
+        } elseif ($totalTime > 500) {
             $recommendations[] = [
                 'type' => 'warning',
                 'issue' => 'Slow response time',
@@ -2254,7 +2249,6 @@ class ObjectService
     private function optimizeRequestForPerformance(array &$query, array &$perfTimings): void
     {
         $this->performanceHandler->optimizeRequestForPerformance(query: $query, perfTimings: $perfTimings);
-
     }
 
     /**
@@ -2279,7 +2273,6 @@ class ObjectService
             page: $page,
             pages: $pages
         );
-
     }//end addPaginationUrls()
 
 
@@ -2327,11 +2320,11 @@ class ObjectService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function searchObjectsPaginatedAsync(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_published=false,
-        bool $_deleted=false
+        array $query = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $_published = false,
+        bool $_deleted = false
     ): PromiseInterface {
         // Start timing execution.
         $startTime = microtime(true);
@@ -2361,12 +2354,12 @@ class ObjectService
 
         // Prepare queries for different operations.
         $paginatedQuery = array_merge(
-                $query,
-                [
+            $query,
+            [
                     '_limit'  => $limit,
                     '_offset' => $offset,
                 ]
-                );
+        );
         unset($paginatedQuery['_page']);
 
         $countQuery = $query;
@@ -2382,132 +2375,131 @@ class ObjectService
             $sampleSize = (int) ($query['_sample_size'] ?? 100);
 
             $promises['facetable'] = new Promise(
-                    function ($resolve, $reject) use ($baseQuery, $sampleSize) {
-                        try {
-                            $result = $this->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
-                            /** @var callable(mixed): void $resolve */
-                            /** @var callable(mixed): void $resolve */
+                function ($resolve, $reject) use ($baseQuery, $sampleSize) {
+                    try {
+                        $result = $this->getFacetableFields(baseQuery: $baseQuery, sampleSize: $sampleSize);
+                        /** @var callable(mixed): void $resolve */
+                        /** @var callable(mixed): void $resolve */
                         $resolve($result);
-                        } catch (\Throwable $e) {
-                            $this->logger->error(message: '❌ FACETABLE PROMISE ERROR', context: [
-                                'error' => $e->getMessage(),
-                                'trace' => $e->getTraceAsString()
-                            ]);
-                            $reject($e);
-                        }
+                    } catch (\Throwable $e) {
+                        $this->logger->error(message: '❌ FACETABLE PROMISE ERROR', context: [
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                        $reject($e);
                     }
-                    );
+                }
+            );
         }
 
         // 2. Search results (~10ms).
         $promises['search'] = new Promise(
-                function ($resolve, $reject) use ($paginatedQuery, $_rbac, $_multitenancy) {
-                    try {
-                        $searchStart = microtime(true);
-                        $result = $this->searchObjects(query: $paginatedQuery, _rbac: $_rbac, _multitenancy: $_multitenancy, ids: null, uses: null);
-                        $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
-                        $this->logger->debug(message: 'Search objects completed', context: [
-                            'searchTime' => $searchTime . 'ms',
-                            'resultCount' => count($result),
-                            'limit' => $paginatedQuery['_limit'] ?? 20
-                        ]);
-                        /** @var callable(mixed): void $resolve */
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
+            function ($resolve, $reject) use ($paginatedQuery, $_rbac, $_multitenancy) {
+                try {
+                    $searchStart = microtime(true);
+                    $result = $this->searchObjects(query: $paginatedQuery, _rbac: $_rbac, _multitenancy: $_multitenancy, ids: null, uses: null);
+                    $searchTime = round((microtime(true) - $searchStart) * 1000, 2);
+                    $this->logger->debug(message: 'Search objects completed', context: [
+                        'searchTime' => $searchTime . 'ms',
+                        'resultCount' => count($result),
+                        'limit' => $paginatedQuery['_limit'] ?? 20
+                    ]);
+                    /** @var callable(mixed): void $resolve */
+                    $resolve($result);
+                } catch (\Throwable $e) {
+                    $reject($e);
                 }
-                );
+            }
+        );
 
         // 3. Facets (~10ms).
         $promises['facets'] = new Promise(
-                function ($resolve, $reject) use ($countQuery) {
-                    try {
-                        $result = $this->getFacetsForObjects($countQuery);
-                        /** @var callable(mixed): void $resolve */
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
+            function ($resolve, $reject) use ($countQuery) {
+                try {
+                    $result = $this->getFacetsForObjects($countQuery);
+                    /** @var callable(mixed): void $resolve */
+                    $resolve($result);
+                } catch (\Throwable $e) {
+                    $reject($e);
                 }
-                );
+            }
+        );
 
         // 4. Count (~5ms).
         $promises['count'] = new Promise(
-                function ($resolve, $reject) use ($countQuery, $_rbac, $_multitenancy) {
-                    try {
-                        $result = $this->countSearchObjects(query: $countQuery, _rbac: $_rbac, _multitenancy: $_multitenancy);
-                        /** @var callable(mixed): void $resolve */
-                        $resolve($result);
-                    } catch (\Throwable $e) {
-                        $reject($e);
-                    }
+            function ($resolve, $reject) use ($countQuery, $_rbac, $_multitenancy) {
+                try {
+                    $result = $this->countSearchObjects(query: $countQuery, _rbac: $_rbac, _multitenancy: $_multitenancy);
+                    /** @var callable(mixed): void $resolve */
+                    $resolve($result);
+                } catch (\Throwable $e) {
+                    $reject($e);
                 }
-                );
+            }
+        );
 
         // Execute all promises concurrently and combine results.
         return \React\Promise\all($promises)->then(
-                function ($results) use ($page, $limit, $offset, $query, $startTime) {
-                    // Extract results from promises.
-                    $searchResults   = $results['search'];
-                    $total           = $results['count'];
-                    $facets          = $results['facets'];
-                    $facetableFields = $results['facetable'] ?? null;
+            function ($results) use ($page, $limit, $offset, $query, $startTime) {
+                // Extract results from promises.
+                $searchResults   = $results['search'];
+                $total           = $results['count'];
+                $facets          = $results['facets'];
+                $facetableFields = $results['facetable'] ?? null;
 
-                    // Calculate total pages.
-                    $pages = max(1, ceil($total / $limit));
+                // Calculate total pages.
+                $pages = max(1, ceil($total / $limit));
 
-                    // Build the paginated results structure.
-                    $paginatedResults = [
-                        'results' => $searchResults,
-                        'total'   => $total,
-                        'page'    => $page,
-                        'pages'   => $pages,
-                        'limit'   => $limit,
-                        'offset'  => $offset,
-                        'facets'  => $facets,
-                    ];
+                // Build the paginated results structure.
+                $paginatedResults = [
+                    'results' => $searchResults,
+                    'total'   => $total,
+                    'page'    => $page,
+                    'pages'   => $pages,
+                    'limit'   => $limit,
+                    'offset'  => $offset,
+                    'facets'  => $facets,
+                ];
 
-                    // Add facetable field discovery if it was requested.
-                    if ($facetableFields !== null) {
-                        $paginatedResults['facetable'] = $facetableFields;
-                    }
-
-                    // Add next/prev page URLs if applicable.
-                    $currentUrl = $_SERVER['REQUEST_URI'];
-
-                    // Add next page link if there are more pages.
-                    if ($page < $pages) {
-                        $nextPage = ($page + 1);
-                        $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
-                        if (strpos($nextUrl, 'page=') === false) {
-                            $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
-                        }
-
-                        $paginatedResults['next'] = $nextUrl;
-                    }
-
-                    // Add previous page link if not on first page.
-                    if ($page > 1) {
-                        $prevPage = ($page - 1);
-                        $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
-                        if (strpos($prevUrl, 'page=') === false) {
-                            $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
-                        }
-
-                        $paginatedResults['prev'] = $prevUrl;
-                    }
-
-                    // Calculate execution time in milliseconds.
-                    $executionTime = (microtime(true) - $startTime) * 1000;
-
-                    // Log the search trail with actual execution time.
-                    $this->logSearchTrail(query: $query, resultCount: count($searchResults), totalResults: $total, executionTime: $executionTime, executionType: 'async');
-
-                    return $paginatedResults;
+                // Add facetable field discovery if it was requested.
+                if ($facetableFields !== null) {
+                    $paginatedResults['facetable'] = $facetableFields;
                 }
-                );
 
+                // Add next/prev page URLs if applicable.
+                $currentUrl = $_SERVER['REQUEST_URI'];
+
+                // Add next page link if there are more pages.
+                if ($page < $pages) {
+                    $nextPage = ($page + 1);
+                    $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
+                    if (strpos($nextUrl, 'page=') === false) {
+                        $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
+                    }
+
+                    $paginatedResults['next'] = $nextUrl;
+                }
+
+                // Add previous page link if not on first page.
+                if ($page > 1) {
+                    $prevPage = ($page - 1);
+                    $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
+                    if (strpos($prevUrl, 'page=') === false) {
+                        $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
+                    }
+
+                    $paginatedResults['prev'] = $prevUrl;
+                }
+
+                // Calculate execution time in milliseconds.
+                $executionTime = (microtime(true) - $startTime) * 1000;
+
+                // Log the search trail with actual execution time.
+                $this->logSearchTrail(query: $query, resultCount: count($searchResults), totalResults: $total, executionTime: $executionTime, executionType: 'async');
+
+                return $paginatedResults;
+            }
+        );
     }//end searchObjectsPaginatedAsync()
 
 
@@ -2532,7 +2524,7 @@ class ObjectService
      *
      * @return array<string, mixed> The same structure as searchObjectsPaginated
      */
-    public function searchObjectsPaginatedSync(array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $published=false, bool $deleted=false): array
+    public function searchObjectsPaginatedSync(array $query = [], bool $_rbac = true, bool $_multitenancy = true, bool $published = false, bool $deleted = false): array
     {
         // Execute the async version and wait for the result.
         $promise = $this->searchObjectsPaginatedAsync(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, _published: $published, _deleted: $deleted);
@@ -2541,7 +2533,6 @@ class ObjectService
         // Note: The async version already logs the search trail, so we don't need to log again.
         /** @psalm-suppress UndefinedFunction - React\Async\await is from external library */
         return \React\Async\await($promise);
-
     }//end searchObjectsPaginatedSync()
 
 
@@ -2561,7 +2552,6 @@ class ObjectService
             throw new RuntimeException('Schema not set in ObjectService.');
         }
         return $this->currentSchema->getId();
-
     }//end getSchema()
 
 
@@ -2578,7 +2568,6 @@ class ObjectService
             throw new RuntimeException('Register not set in ObjectService.');
         }
         return $this->currentRegister->getId();
-
     }//end getRegister()
 
 
@@ -2601,25 +2590,24 @@ class ObjectService
      */
     public function renderEntity(
         ObjectEntity $entity,
-        ?array $_extend=[],
-        ?int $depth=0,
-        ?array $filter=[],
-        ?array $fields=[],
-        ?array $unset=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?array $_extend = [],
+        ?int $depth = 0,
+        ?array $filter = [],
+        ?array $fields = [],
+        ?array $unset = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): array {
         return $this->renderHandler->renderEntity(
-                entity: $entity,
-                _extend: $_extend,
-                depth: $depth,
+            entity: $entity,
+            _extend: $_extend,
+            depth: $depth,
             filter: $filter,
             fields: $fields,
             unset: $unset,
             _rbac: $_rbac,
             _multi: $multi
         )->jsonSerialize();
-
     }//end renderEntity()
 
 
@@ -2637,7 +2625,6 @@ class ObjectService
     public function handleValidationException(ValidationException|CustomValidationException $exception)
     {
         return $this->validateHandler->handleValidationException($exception);
-
     }//end handleValidationException()
 
 
@@ -2655,17 +2642,16 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function publish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    public function publish(string $uuid = null, ?\DateTime $date = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity
     {
 
         // Use the publish handler to publish the object.
         return $this->publishHandler->publish(
-                uuid: $uuid,
-                date: $date,
-                _rbac: $_rbac,
-            _multi: $multi
+            uuid: $uuid,
+            date: $date,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
         );
-
     }//end publish()
 
 
@@ -2683,36 +2669,52 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function depublish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    public function depublish(string $uuid = null, ?\DateTime $date = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity
     {
         // Use the depublish handler to depublish the object.
         return $this->depublishHandler->depublish(
-                uuid: $uuid,
-                date: $date,
-                _rbac: $_rbac,
-            _multi: $multi
+            uuid: $uuid,
+            date: $date,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
         );
-
     }//end depublish()
 
 
 
     /**
-     * Unlocks an object
+     * Lock an object
+     *
+     * Locks an object to prevent concurrent modifications.
+     *
+     * @param string      $identifier Object ID or UUID
+     * @param string|null $process    Process ID (for tracking who locked it)
+     * @param int|null    $duration   Lock duration in seconds
+     *
+     * @return array The locked object data
+     *
+     * @throws \Exception If lock operation fails
+     */
+    public function lockObject(string $identifier, ?string $process = null, ?int $duration = null): array
+    {
+        return $this->lockHandler->lock(identifier: $identifier, process: $process, duration: $duration);
+    }//end lockObject()
+
+
+    /**
+     * Unlock an object
+     *
+     * Removes the lock from an object, allowing other processes to modify it.
      *
      * @param string|int $identifier The object to unlock
      *
-     * @return ObjectEntity The unlocked objectEntity
-     * @throws \OCP\AppFramework\Db\DoesNotExistException
+     * @return bool True if unlocked successfully
      *
-     * @deprecated
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
+     * @throws \Exception If unlock operation fails
      */
-    public function unlockObject(string|int $identifier): ObjectEntity
+    public function unlockObject(string|int $identifier): bool
     {
-        return $this->objectEntityMapper->unlockObject(identifier: $identifier);
-
+        return $this->lockHandler->unlock(identifier: (string) $identifier);
     }//end unlockObject()
 
 
@@ -2774,12 +2776,12 @@ class ObjectService
      */
     public function saveObjects(
         array $objects,
-        Register|string|int|null $register=null,
-        Schema|string|int|null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $validation=false,
-        bool $events=false
+        Register|string|int|null $register = null,
+        Schema|string|int|null $schema = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $validation = false,
+        bool $events = false
     ): array {
 
         // Set register and schema context if provided.
@@ -2795,9 +2797,9 @@ class ObjectService
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations.
         // This provides better separation of concerns and optimized bulk processing.
         $bulkResult = $this->saveObjectsHandler->saveObjects(
-                objects: $objects,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
+            objects: $objects,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             validation: $validation,
@@ -2824,8 +2826,8 @@ class ObjectService
                 // **BULK CACHE COORDINATION**: Invalidate collection caches for affected contexts.
                 // This ensures that GET collection calls immediately see the bulk imported objects.
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null, // Bulk operation affects multiple objects.
-                        operation: 'bulk_save',
+                    object: null, // Bulk operation affects multiple objects.
+                    operation: 'bulk_save',
                     registerId: $this->currentRegister?->getId(),
                     schemaId: $this->currentSchema?->getId()
                 );
@@ -2844,7 +2846,6 @@ class ObjectService
         }
 
         return $bulkResult;
-
     }//end saveObjects()
 
 
@@ -2972,7 +2973,6 @@ class ObjectService
             rbac: $_rbac,
             multitenancy: $_multitenancy
         );
-
     }//end filterObjectsForPermissions()
 
 
@@ -3011,7 +3011,6 @@ class ObjectService
                 }
             }
         }
-
     }//end validateRequiredFields()
 
 
@@ -3178,7 +3177,7 @@ class ObjectService
                 } catch (Exception $e) {
                     $mergeReport['warnings'][] = 'Failed to transfer files: '.$e->getMessage();
                 }
-            } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+            } elseif ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
                 try {
                     $deleteResult = $this->deleteObjectFiles($sourceObject);
                     $mergeReport['actions']['files']           = $deleteResult['files'];
@@ -3269,7 +3268,6 @@ class ObjectService
         }//end try
 
         return $mergeReport;
-
     }//end mergeObjects()
 
 
@@ -3313,8 +3311,8 @@ class ObjectService
 
                     // Create new file in target object folder.
                     $this->fileService->addFile(
-                            objectEntity: $targetObject,
-                            fileName: $fileName,
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
                         content: $fileContent,
                         share: false,
                         tags: []
@@ -3344,7 +3342,6 @@ class ObjectService
         }//end try
 
         return $result;
-
     }//end transferObjectFiles()
 
 
@@ -3404,7 +3401,6 @@ class ObjectService
         }//end try
 
         return $result;
-
     }//end deleteObjectFiles()
 
 
@@ -3494,7 +3490,7 @@ class ObjectService
 
                             // If creation failed, keep original item to avoid empty array.
                             $createdUuids[] = $createdUuid ?? $item;
-                        } else if (is_string($item) === true && $this->isUuid($item) === true) {
+                        } elseif (is_string($item) === true && $this->isUuid($item) === true) {
                             // This is already a UUID, keep it.
                             $createdUuids[] = $item;
                         }
@@ -3502,7 +3498,7 @@ class ObjectService
 
                     $object[$propertyName] = $createdUuids;
                 }
-            } else if (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
+            } elseif (isset($definition['inversedBy']) === true && $definition['type'] !== 'array') {
                 // Handle single object properties.
                 if (is_array($propertyValue) === true && $this->isUuid($propertyValue) === false) {
                     // This is a nested object, create it first.
@@ -3515,7 +3511,6 @@ class ObjectService
         }//end foreach
 
         return [$object, $uuid];
-
     }//end handlePreValidationCascading()
 
 
@@ -3574,16 +3569,16 @@ class ObjectService
 
             // Create the object.
             $createdObject = $this->saveHandler->saveObject(
-                    register: $targetRegister,
-                    schema: $targetSchema,
+                register: $targetRegister,
+                schema: $targetSchema,
                 data: $objectData,
                 uuid: null,
-            // Let it generate a new UUID.
+                // Let it generate a new UUID.
                 folderId: null,
                 _rbac: true,
-            // Use default RBAC for internal cascading operations.
+                // Use default RBAC for internal cascading operations.
                 multi: true
-            // Use default multitenancy for internal cascading operations.
+                // Use default multitenancy for internal cascading operations.
             );
 
             return $createdObject->getUuid();
@@ -3591,7 +3586,6 @@ class ObjectService
             // Log error but don't expose details.
             return null;
         }//end try
-
     }//end createRelatedObject()
 
 
@@ -3616,7 +3610,6 @@ class ObjectService
             includeRelated: $includeRelated,
             includeRelatedNames: $includeRelatedNames
         );
-
     }//end extractRelatedData()
 
 
@@ -3634,7 +3627,6 @@ class ObjectService
         }
 
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
-
     }//end isUuid()
 
 
@@ -3715,11 +3707,11 @@ class ObjectService
 
                 // Remove this object from the remaining list (it was found) - do this BEFORE try-catch.
                 $remainingObjectIds = array_filter(
-                        $remainingObjectIds,
-                        function ($id) use ($sourceObject) {
-                            return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
-                        }
-                        );
+                    $remainingObjectIds,
+                    function ($id) use ($sourceObject) {
+                        return $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId();
+                    }
+                );
 
                 try {
                     $objectDetail['objectTitle'] = $sourceObject->getName() ?? $sourceObject->getUuid();
@@ -3747,11 +3739,11 @@ class ObjectService
 
                     // Log the mapping result for debugging.
                     $this->logger->debug(
-                            message: 'Object properties mapped',
-                            context: [
+                        message: 'Object properties mapped',
+                        context: [
                                 'mappedData' => $mappedData,
                             ]
-                            );
+                    );
 
                     // Store original files and relations before altering the object.
                     $originalFiles     = $sourceObject->getFolder();
@@ -3818,7 +3810,6 @@ class ObjectService
         }//end try
 
         return $migrationReport;
-
     }//end migrateObjects()
 
 
@@ -3846,7 +3837,6 @@ class ObjectService
             sourceData: $sourceData,
             mapping: $mapping
         );
-
     }//end mapObjectProperties()
 
 
@@ -3867,24 +3857,23 @@ class ObjectService
      *
      * @return void
      */
-    private function logSearchTrail(array $query, int $resultCount, int $totalResults, float $executionTime, string $executionType='sync'): void
+    private function logSearchTrail(array $query, int $resultCount, int $totalResults, float $executionTime, string $executionType = 'sync'): void
     {
         try {
             // Only create search trail if search trails are enabled.
             if ($this->isSearchTrailsEnabled() === true) {
                 // Create the search trail entry using the service with actual execution time.
                 $this->searchTrailService->createSearchTrail(
-                        query: $query,
-                        resultCount: $resultCount,
-            totalResults: $totalResults,
-            responseTime: $executionTime,
-            executionType: $executionType
-        );
+                    query: $query,
+                    resultCount: $resultCount,
+                    totalResults: $totalResults,
+                    responseTime: $executionTime,
+                    executionType: $executionType
+                );
             }
         } catch (Exception $e) {
             // Log the error but don't fail the request.
         }
-
     }//end logSearchTrail()
 
 
@@ -3945,7 +3934,6 @@ class ObjectService
         }//end foreach
 
         return $newParameters;
-
     }//end cleanQuery()
 
 
@@ -3968,7 +3956,7 @@ class ObjectService
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
+    public function deleteObjects(array $uuids = [], bool $_rbac = true, bool $_multitenancy = true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -3993,7 +3981,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null, // Bulk operation affects multiple objects.
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_delete',
                     registerId: null, // Affects multiple registers potentially.
                     schemaId: null   // Affects multiple schemas potentially.
@@ -4012,7 +4000,6 @@ class ObjectService
         }
 
         return $deletedObjectIds;
-
     }//end deleteObjects()
 
 
@@ -4035,7 +4022,7 @@ class ObjectService
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
+    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true, bool $_rbac = true, bool $_multitenancy = true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -4060,7 +4047,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null, // Bulk operation affects multiple objects.
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_publish',
                     registerId: null, // Affects multiple registers potentially.
                     schemaId: null   // Affects multiple schemas potentially.
@@ -4079,7 +4066,6 @@ class ObjectService
         }
 
         return $publishedObjectIds;
-
     }//end publishObjects()
 
 
@@ -4102,7 +4088,7 @@ class ObjectService
      * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
      */
-    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
+    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true, bool $_rbac = true, bool $_multitenancy = true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -4127,10 +4113,10 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null, // Bulk operation affects multiple objects.
+                    object: null, // Bulk operation affects multiple objects.
                     operation: 'bulk_depublish',
-// Affects multiple registers potentially.
-// Affects multiple schemas potentially.
+                    // Affects multiple registers potentially.
+                    // Affects multiple schemas potentially.
                 );
 
                 $this->logger->debug(message: 'Bulk depublish cache invalidation completed', context: [
@@ -4146,7 +4132,6 @@ class ObjectService
         }
 
         return $depublishedObjectIds;
-
     }//end depublishObjects()
 
 
@@ -4183,7 +4168,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null,
+                    object: null,
                     operation: 'bulk_publish',
                     registerId: null,
                     schemaId: $schemaId
@@ -4205,7 +4190,6 @@ class ObjectService
         }
 
         return $result;
-
     }//end publishObjectsBySchema()
 
 
@@ -4242,7 +4226,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null,
+                    object: null,
                     operation: 'bulk_delete',
                     registerId: null,
                     schemaId: $schemaId
@@ -4264,7 +4248,6 @@ class ObjectService
         }
 
         return $result;
-
     }//end deleteObjectsBySchema()
 
 
@@ -4299,7 +4282,7 @@ class ObjectService
                 ]);
 
                 $this->objectCacheService->invalidateForObjectChange(
-                        object: null,
+                    object: null,
                     operation: 'bulk_delete',
                     registerId: $registerId,
                     schemaId: null
@@ -4319,7 +4302,6 @@ class ObjectService
         }
 
         return $result;
-
     }//end deleteObjectsByRegister()
 
 
@@ -4357,9 +4339,9 @@ class ObjectService
                 // Use saveObject with silent=true to validate without actually saving.
                 // This will trigger validation and return any errors.
                 $this->saveObject(
-                        object: $objectData,
-                        register: $object->getRegister(),
-                        schema: $schemaId,
+                    object: $objectData,
+                    register: $object->getRegister(),
+                    schema: $schemaId,
                     uuid: $object->getUuid(),
                     rbac: false,
                     multi: false,
@@ -4373,7 +4355,6 @@ class ObjectService
                     'name' => $object->getName(),
                     'data' => $objectData,
                 ];
-
             } catch (Exception $e) {
                 // Extract validation errors from the exception.
                 $errors = [];
@@ -4413,7 +4394,6 @@ class ObjectService
             'invalid_objects' => $invalidObjects,
             'schema_id' => $schemaId,
         ];
-
     }//end validateObjectsBySchema()
 
 
@@ -4438,7 +4418,6 @@ class ObjectService
             rbac: $_rbac,
             multitenancy: $_multitenancy
         );
-
     }//end filterUuidsForPermissions()
 
 
@@ -4472,7 +4451,6 @@ class ObjectService
         }
 
         return $value;
-
     }//end getMemoryLimitInBytes()
 
 
@@ -4499,9 +4477,9 @@ class ObjectService
         // Base batch size calculation based on dataset size.
         if ($totalObjects <= 50) {
             return 10; // Small datasets: small batches for quick turnaround.
-        } else if ($totalObjects <= 200) {
+        } elseif ($totalObjects <= 200) {
             return 25; // Medium datasets: balanced batches.
-        } else if ($totalObjects <= 500) {
+        } elseif ($totalObjects <= 500) {
             return 50; // Large datasets: bigger batches for efficiency.
         } else {
             return 100; // Very large datasets: maximum efficiency batches.
@@ -4510,7 +4488,6 @@ class ObjectService
         // Note: PHP's ReactPHP doesn't provide true parallelism (due to GIL-like behavior)
         // but it does provide excellent concurrency for I/O bound operations.
         // which is what we have with database queries and object processing.
-
     }//end calculateOptimalBatchSize()
 
 
@@ -4599,8 +4576,7 @@ class ObjectService
                                 'reason' => 'prevent_timeout'
                             ]);
                         }
-
-                    } else if (is_string($value) === true && empty($value) === false) {
+                    } elseif (is_string($value) === true && empty($value) === false) {
                         // Handle single relationship ID.
                         $allIds[] = $value;
                         $extractedCount++;
@@ -4625,7 +4601,6 @@ class ObjectService
         ]);
 
         return $uniqueIds;
-
     }//end extractAllRelationshipIds()
 
 
@@ -4716,7 +4691,6 @@ class ObjectService
                         'loadedInBatch' => count($relatedObjects)
                     ]);
                 }
-
             } catch (Exception $e) {
                 $this->logger->error(message: '❌ BATCH ERROR: Failed to load relationship batch', context: [
                     'batchIndex' => $batchIndex,
@@ -4790,7 +4764,6 @@ class ObjectService
                     // **OPTIMIZED QUERY**: Use selective fields to reduce data transfer.
                     $chunkResults = $this->loadRelationshipChunkOptimized($chunk);
                     $results[$chunkIndex] = $chunkResults;
-
                 } catch (Exception $e) {
                     $this->logger->error(message: '❌ PARALLEL ERROR: Chunk failed', context: [
                         'groupIndex' => $groupIndex,
@@ -4842,7 +4815,6 @@ class ObjectService
         ]);
 
         return $lookupMap;
-
     }//end bulkLoadRelationshipsParallel()
 
 
@@ -4875,23 +4847,21 @@ class ObjectService
         $qb = $this->objectEntityMapper->getQueryBuilder();
 
         $qb->select(
-                'o.id',
-                'o.uuid',
-                'o.slug',
+            'o.id',
+            'o.uuid',
+            'o.slug',
             'o.name',
             // **500MS OPTIMIZATION**: Minimal fields for relationships - description/summary often large.
             $qb->createFunction('
                 CASE
                     WHEN LENGTH(o.description) <= 200 THEN o.description
                     ELSE CONCAT(SUBSTRING(o.description, 1, 200), "...")
-                END AS description'
-            ),
+                END AS description'),
             $qb->createFunction('
                 CASE
                     WHEN LENGTH(o.summary) <= 100 THEN o.summary
                     ELSE CONCAT(SUBSTRING(o.summary, 1, 100), "...")
-                END AS summary'
-            ),
+                END AS summary'),
             'o.organisation',
             'o.published',
             'o.created',
@@ -4901,8 +4871,7 @@ class ObjectService
                 CASE
                     WHEN LENGTH(o.object) <= 500 THEN o.object
                     ELSE CONCAT("{\"_lightweight\": true, \"id\": ", o.id, ", \"name\": \"", COALESCE(o.name, "Unknown"), "\"}")
-                END AS object'
-            )
+                END AS object')
         )
         ->from('openregister_objects', 'o')
         ->where($qb->expr()->in('o.id', $qb->createNamedParameter($relationshipIds, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)))
@@ -4919,7 +4888,6 @@ class ObjectService
                 if ($object !== null) {
                     $results[] = $object;
                 }
-
             } catch (Exception $e) {
                 $this->logger->debug(message: 'Skipped invalid relationship object', context: [
                     'id' => $row['id'] ?? 'unknown',
@@ -4931,7 +4899,6 @@ class ObjectService
         $stmt->closeCursor();
 
         return $results;
-
     }//end loadRelationshipChunkOptimized()
 
 
@@ -5012,12 +4979,10 @@ class ObjectService
             }
 
             return $object;
-
         } catch (Exception $e) {
             // Return null for failed lightweight creation.
             return null;
         }
-
     }//end createLightweightObjectEntity()
 
 
@@ -5047,7 +5012,6 @@ class ObjectService
     private function getCachedEntities(mixed $ids, callable $fallbackFunc): array
     {
         return $this->performanceHandler->getCachedEntities(ids: $ids, fallbackFunc: $fallbackFunc);
-
     }//end getCachedEntities()
 
 
@@ -5075,7 +5039,7 @@ class ObjectService
                 return $this->getCachedEntities(ids: $schemaFilter, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             } else {
                 try {
-                    return $this->getCachedEntities(ids: [$schemaFilter], fallbackFunc: function($ids) {
+                    return $this->getCachedEntities(ids: [$schemaFilter], fallbackFunc: function ($ids) {
                         return [$this->schemaMapper->find($ids[0])];
                     });
                 } catch (Exception $e) {
@@ -5086,11 +5050,10 @@ class ObjectService
 
         // No specific schema filter - get all schemas (for global facetable discovery).
         // **PERFORMANCE OPTIMIZATION**: Cache all schemas when doing global queries.
-        return $this->getCachedEntities(ids: 'all', /** @SuppressWarnings(PHPMD.UnusedFormalParameter) */ fallbackFunc: function($_ids) {
+        return $this->getCachedEntities(ids: 'all', /** @SuppressWarnings(PHPMD.UnusedFormalParameter) */ fallbackFunc: function ($_ids) {
             // **TYPE SAFETY**: Convert 'all' to proper null limit for SchemaMapper::findAll().
             // null = no limit (get all).
         });
-
     }//end getSchemasForQuery()
 
 
@@ -5155,7 +5118,6 @@ class ObjectService
                 'queryParameter' => '@self[organisation]'
             ]
         ];
-
     }//end getMetadataFacetableFields()
 
 
@@ -5167,7 +5129,6 @@ class ObjectService
     private function isSearchTrailsEnabled(): bool
     {
         return $this->searchQueryHandler->isSearchTrailsEnabled();
-
     }//end isSearchTrailsEnabled()
 
     /**
@@ -5199,7 +5160,6 @@ class ObjectService
     private function getFacetCount(bool $hasFacets, array $query): int
     {
         return $this->performanceHandler->getFacetCount(hasFacets: $hasFacets, query: $query);
-
     }
 
     /**
@@ -5213,7 +5173,6 @@ class ObjectService
     private function calculateTotalPages(int $total, int $limit): int
     {
         return $this->performanceHandler->calculateTotalPages(total: $total, limit: $limit);
-
     }
 
     /**
@@ -5230,7 +5189,6 @@ class ObjectService
     private function calculateExtendCount(mixed $extend): int
     {
         return $this->performanceHandler->calculateExtendCount(extend: $extend);
-
     }
 
     /**
@@ -5302,4 +5260,325 @@ class ObjectService
     }
 
 
+    // =========================================================================
+    // NEW HANDLER DELEGATION METHODS
+    // =========================================================================
+
+    /**
+     * Get object contracts
+     *
+     * @param string $objectId Object ID or UUID
+     * @param array  $filters  Optional filters for pagination
+     *
+     * @return array Contracts data
+     */
+    public function getObjectContracts(string $objectId, array $filters = []): array
+    {
+        return $this->relationHandler->getContracts(objectId: $objectId, filters: $filters);
+    }//end getObjectContracts()
+
+
+    /**
+     * Get objects that this object uses (outgoing relations)
+     *
+     * @param string $objectId Object ID or UUID
+     * @param array  $query    Search query parameters
+     * @param bool   $rbac     Apply RBAC filters
+     * @param bool   $multi    Apply multitenancy filters
+     *
+     * @return array Paginated results with related objects
+     *
+     * @throws \Exception If retrieval fails
+     */
+    public function getObjectUses(string $objectId, array $query = [], bool $rbac = true, bool $multi = true): array
+    {
+        return $this->relationHandler->getUses(objectId: $objectId, query: $query, rbac: $rbac, multi: $multi);
+    }//end getObjectUses()
+
+
+    /**
+     * Get objects that use this object (incoming relations)
+     *
+     * @param string $objectId Object ID or UUID
+     * @param array  $query    Search query parameters
+     * @param bool   $rbac     Apply RBAC filters
+     * @param bool   $multi    Apply multitenancy filters
+     *
+     * @return array Paginated results with referencing objects
+     *
+     * @throws \Exception If retrieval fails
+     */
+    public function getObjectUsedBy(string $objectId, array $query = [], bool $rbac = true, bool $multi = true): array
+    {
+        return $this->relationHandler->getUsedBy(objectId: $objectId, query: $query, rbac: $rbac, multi: $multi);
+    }//end getObjectUsedBy()
+
+
+    /**
+     * Vectorize objects in batch
+     *
+     * @param array|null $views     Optional view filters
+     * @param int        $batchSize Number of objects to process per batch
+     *
+     * @return array Vectorization results
+     *
+     * @throws \Exception If vectorization fails
+     */
+    public function vectorizeBatchObjects(?array $views = null, int $batchSize = 25): array
+    {
+        return $this->vectorizationHandler->vectorizeBatch(views: $views, batchSize: $batchSize);
+    }//end vectorizeBatchObjects()
+
+
+    /**
+     * Get vectorization statistics
+     *
+     * @param array|null $views Optional view filters
+     *
+     * @return array Statistics data
+     *
+     * @throws \Exception If stats retrieval fails
+     */
+    public function getVectorizationStatistics(?array $views = null): array
+    {
+        return $this->vectorizationHandler->getStatistics(views: $views);
+    }//end getVectorizationStatistics()
+
+
+    /**
+     * Get count of objects available for vectorization
+     *
+     * @param array|null $schemas Optional schema filters
+     *
+     * @return int Object count
+     *
+     * @throws \Exception If count fails
+     */
+    public function getVectorizationCount(?array $schemas = null): int
+    {
+        return $this->vectorizationHandler->getCount(schemas: $schemas);
+    }//end getVectorizationCount()
+
+
+    // =========================================================================
+    // CRUD HANDLER DELEGATION METHODS
+    // =========================================================================
+
+    /**
+     * List objects with filtering and pagination
+     *
+     * @param array       $query     Search query parameters
+     * @param bool        $rbac      Apply RBAC filters
+     * @param bool        $multi     Apply multitenancy filters
+     * @param bool        $published Only return published objects
+     * @param bool        $deleted   Include deleted objects
+     * @param array|null  $ids       Optional array of object IDs to filter
+     * @param string|null $uses      Optional object ID that results must use
+     * @param array|null  $views     Optional view filters
+     *
+     * @return array Paginated results with objects
+     *
+     * @throws \Exception If listing fails
+     */
+    public function listObjects(
+        array $query = [],
+        bool $rbac = true,
+        bool $multi = true,
+        bool $published = false,
+        bool $deleted = false,
+        ?array $ids = null,
+        ?string $uses = null,
+        ?array $views = null
+    ): array {
+        return $this->crudHandler->list(
+            query: $query,
+            rbac: $rbac,
+            multi: $multi,
+            published: $published,
+            deleted: $deleted,
+            ids: $ids,
+            uses: $uses,
+            views: $views
+        );
+    }//end listObjects()
+
+
+    /**
+     * Create new object
+     *
+     * @param array $data  Object data
+     * @param bool  $rbac  Apply RBAC checks
+     * @param bool  $multi Apply multitenancy filtering
+     *
+     * @return ObjectEntity Created object entity
+     *
+     * @throws \Exception If creation fails
+     */
+    public function createObject(array $data, bool $rbac = true, bool $multi = true): ObjectEntity
+    {
+        return $this->crudHandler->create(data: $data, rbac: $rbac, multi: $multi);
+    }//end createObject()
+
+
+    /**
+     * Update existing object (full update)
+     *
+     * @param string $objectId Object ID or UUID
+     * @param array  $data     New object data
+     * @param bool   $rbac     Apply RBAC checks
+     * @param bool   $multi    Apply multitenancy filtering
+     *
+     * @return ObjectEntity Updated object entity
+     *
+     * @throws \Exception If update fails
+     */
+    public function updateObject(
+        string $objectId,
+        array $data,
+        bool $rbac = true,
+        bool $multi = true
+    ): ObjectEntity {
+        return $this->crudHandler->update(
+            objectId: $objectId,
+            data: $data,
+            rbac: $rbac,
+            multi: $multi
+        );
+    }//end updateObject()
+
+
+    /**
+     * Patch existing object (partial update)
+     *
+     * @param string $objectId Object ID or UUID
+     * @param array  $data     Partial object data
+     * @param bool   $rbac     Apply RBAC checks
+     * @param bool   $multi    Apply multitenancy filtering
+     *
+     * @return ObjectEntity Patched object entity
+     *
+     * @throws \Exception If patch fails
+     */
+    public function patchObject(
+        string $objectId,
+        array $data,
+        bool $rbac = true,
+        bool $multi = true
+    ): ObjectEntity {
+        return $this->crudHandler->patch(
+            objectId: $objectId,
+            data: $data,
+            rbac: $rbac,
+            multi: $multi
+        );
+    }//end patchObject()
+
+
+    /**
+     * Build search query from request parameters
+     *
+     * @param array $params Request parameters
+     *
+     * @return array Normalized search query
+     */
+    public function buildObjectSearchQuery(array $params): array
+    {
+        return $this->crudHandler->buildSearchQuery(params: $params);
+    }//end buildObjectSearchQuery()
+
+
+    // =========================================================================
+    // EXPORT/IMPORT HANDLER DELEGATION METHODS
+    // =========================================================================
+
+    /**
+     * Export objects to specified format
+     *
+     * @param \OCA\OpenRegister\Db\Register $register    Register entity
+     * @param \OCA\OpenRegister\Db\Schema   $schema      Schema entity
+     * @param array                          $filters     Optional filters
+     * @param string                         $type        Export type (csv, excel)
+     * @param \OCP\IUser|null                $currentUser Current user
+     *
+     * @return array Export result with content, filename, and mimetype
+     *
+     * @throws \Exception If export fails
+     */
+    public function exportObjects(
+        \OCA\OpenRegister\Db\Register $register,
+        \OCA\OpenRegister\Db\Schema $schema,
+        array $filters = [],
+        string $type = 'excel',
+        ?\OCP\IUser $currentUser = null
+    ): array {
+        return $this->exportHandler->export(
+            register: $register,
+            schema: $schema,
+            filters: $filters,
+            type: $type,
+            currentUser: $currentUser
+        );
+    }//end exportObjects()
+
+
+    /**
+     * Import objects from file
+     *
+     * @param \OCA\OpenRegister\Db\Register  $register      Register entity
+     * @param array                           $uploadedFile  Uploaded file data
+     * @param \OCA\OpenRegister\Db\Schema|null $schema       Schema entity (optional)
+     * @param bool                            $validation    Enable validation
+     * @param bool                            $events        Enable events
+     * @param bool                            $rbac          Apply RBAC checks
+     * @param bool                            $multitenancy  Apply multitenancy filtering
+     * @param bool                            $publish       Publish imported objects
+     * @param \OCP\IUser|null                 $currentUser   Current user
+     *
+     * @return array Import result with statistics
+     *
+     * @throws \Exception If import fails
+     */
+    public function importObjects(
+        \OCA\OpenRegister\Db\Register $register,
+        array $uploadedFile,
+        ?\OCA\OpenRegister\Db\Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $rbac = true,
+        bool $multitenancy = true,
+        bool $publish = false,
+        ?\OCP\IUser $currentUser = null
+    ): array {
+        return $this->exportHandler->import(
+            register: $register,
+            uploadedFile: $uploadedFile,
+            schema: $schema,
+            validation: $validation,
+            events: $events,
+            rbac: $rbac,
+            multitenancy: $multitenancy,
+            publish: $publish,
+            currentUser: $currentUser
+        );
+    }//end importObjects()
+
+
+    /**
+     * Download files associated with an object
+     *
+     * @param string $objectId Object ID or UUID
+     *
+     * @return array Download result with file paths
+     *
+     * @throws \Exception If download fails
+     */
+    public function downloadObjectFiles(string $objectId): array
+    {
+        return $this->exportHandler->downloadObjectFiles(objectId: $objectId);
+    }//end downloadObjectFiles()
+
+
+    // =========================================================================
+    // MERGE/MIGRATE HANDLER DELEGATION METHODS
+    // =========================================================================
 }//end class

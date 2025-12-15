@@ -23,7 +23,7 @@ use RuntimeException;
 use InvalidArgumentException;
 use OCP\IConfig;
 use OCP\AppFramework\IAppContainer;
-use OCA\OpenRegister\Service\Objects\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 
 /**
  * Handler for SOLR settings and operations.
@@ -86,14 +86,15 @@ class SolrSettingsHandler
      */
     public function __construct(
         IConfig $config,
-        ?CacheHandler $objectCacheService = null,
-        ?IAppContainer $container = null,
-        string $appName = 'openregister'
+        ?CacheHandler $objectCacheService=null,
+        ?IAppContainer $container=null,
+        string $appName='openregister'
     ) {
-        $this->config             = $config;
+        $this->config = $config;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
         $this->appName            = $appName;
+
     }//end __construct()
 
 
@@ -133,6 +134,7 @@ class SolrSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
         }//end try
+
     }//end getSolrSettings()
 
 
@@ -176,6 +178,7 @@ class SolrSettingsHandler
         throw new RuntimeException(
             'SettingsService::warmupSolrIndex() is deprecated. Use IndexService->warmupIndex() directly via controller.'
         );
+
     }//end warmupSolrIndex()
 
 
@@ -253,6 +256,7 @@ class SolrSettingsHandler
                 'error'        => $e->getMessage(),
             ];
         }//end try
+
     }//end getSolrDashboardStats()
 
 
@@ -398,6 +402,7 @@ class SolrSettingsHandler
             ],
             'generated_at' => date('c'),
         ];
+
     }//end transformSolrStatsToDashboard()
 
 
@@ -419,6 +424,7 @@ class SolrSettingsHandler
         $factor = min($factor, count($units) - 1);
 
         return round($bytes / pow(1024, $factor), 2).' '.$units[$factor];
+
     }//end formatBytesForDashboard()
 
 
@@ -487,6 +493,7 @@ class SolrSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve SOLR settings: '.$e->getMessage());
         }//end try
+
     }//end getSolrSettingsOnly()
 
 
@@ -533,6 +540,7 @@ class SolrSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update SOLR settings: '.$e->getMessage());
         }//end try
+
     }//end updateSolrSettingsOnly()
 
 
@@ -562,6 +570,7 @@ class SolrSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve search backend configuration: '.$e->getMessage());
         }
+
     }//end getSearchBackendConfig()
 
 
@@ -598,15 +607,16 @@ class SolrSettingsHandler
             $this->logger->info(
                 'Search backend changed to: '.$backend,
                 [
-                        'app'     => 'openregister',
-                        'backend' => $backend,
-                    ]
+                    'app'     => 'openregister',
+                    'backend' => $backend,
+                ]
             );
 
             return $backendConfig;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update search backend configuration: '.$e->getMessage());
         }//end try
+
     }//end updateSearchBackendConfig()
 
 
@@ -640,6 +650,7 @@ class SolrSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve SOLR facet configuration: '.$e->getMessage());
         }
+
     }//end getSolrFacetConfiguration()
 
 
@@ -686,6 +697,7 @@ class SolrSettingsHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update SOLR facet configuration: '.$e->getMessage());
         }
+
     }//end updateSolrFacetConfiguration()
 
 
@@ -748,5 +760,8 @@ class SolrSettingsHandler
         }
 
         return $validatedConfig;
+
     }//end validateFacetConfiguration()
+
+
 }//end class

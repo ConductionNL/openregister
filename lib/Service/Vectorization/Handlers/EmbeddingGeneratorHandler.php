@@ -371,4 +371,3 @@ class EmbeddingGeneratorHandler
 
 
 }//end class
-

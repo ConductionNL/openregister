@@ -20,7 +20,7 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddingService;
+use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use Psr\Log\LoggerInterface;
 
@@ -47,11 +47,11 @@ class VectorizationService
 {
 
     /**
-     * Vector embedding service
+     * Vector embeddings coordinator
      *
-     * @var VectorEmbeddingService
+     * @var VectorEmbeddings
      */
-    private VectorEmbeddingService $vectorService;
+    private VectorEmbeddings $vectorService;
 
     /**
      * Logger
@@ -71,11 +71,11 @@ class VectorizationService
     /**
      * Constructor
      *
-     * @param VectorEmbeddingService $vectorService Vector embedding service
-     * @param LoggerInterface        $logger        Logger
+     * @param VectorEmbeddings $vectorService Vector embeddings coordinator
+     * @param LoggerInterface  $logger        Logger
      */
     public function __construct(
-        VectorEmbeddingService $vectorService,
+        VectorEmbeddings $vectorService,
         LoggerInterface $logger
     ) {
         $this->vectorService = $vectorService;
@@ -402,10 +402,11 @@ class VectorizationService
     // VectorEmbeddingService directly.
     // =============================================================================
 
+
     /**
      * Generate embedding for a single text
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @param string      $text     Text to embed
      * @param string|null $provider Embedding provider (null = use default from settings)
@@ -424,7 +425,7 @@ class VectorizationService
     /**
      * Perform semantic similarity search
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @param string      $query    Query text to search for
      * @param int         $limit    Maximum number of results
@@ -449,7 +450,7 @@ class VectorizationService
     /**
      * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @param string      $query       Query text
      * @param array       $solrFilters SOLR-specific filters
@@ -476,7 +477,7 @@ class VectorizationService
     /**
      * Get vector statistics
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @return array Statistics about stored vectors
      */
@@ -490,7 +491,7 @@ class VectorizationService
     /**
      * Test embedding generation with custom configuration
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
      * @param array  $config   Provider-specific configuration
@@ -508,7 +509,7 @@ class VectorizationService
     /**
      * Check if embedding model has changed since vectors were created
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @return array Model mismatch information
      */
@@ -522,7 +523,7 @@ class VectorizationService
     /**
      * Clear all embeddings from the database
      *
-     * Delegates to VectorEmbeddingService.
+     * Delegates to VectorEmbeddings.
      *
      * @return array Deletion results
      */

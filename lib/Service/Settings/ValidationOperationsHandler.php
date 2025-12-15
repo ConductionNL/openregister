@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use OCA\OpenRegister\Service\Objects\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 use OCP\AppFramework\IAppContainer;
@@ -59,6 +59,7 @@ class ValidationOperationsHandler
         IAppContainer $container
     ) {
         $this->container = $container;
+
     }//end __construct()
 
 
@@ -70,6 +71,7 @@ class ValidationOperationsHandler
     private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
     {
         return $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+
     }//end getObjectService()
 
 
@@ -153,5 +155,8 @@ class ValidationOperationsHandler
         ];
 
         return $validationResults;
+
     }//end validateAllObjects()
+
+
 }//end class

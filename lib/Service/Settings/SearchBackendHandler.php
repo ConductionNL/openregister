@@ -69,20 +69,21 @@ class SearchBackendHandler
     /**
      * Constructor for SearchBackendHandler
      *
-     * @param IConfig           $config  Configuration service.
-     * @param LoggerInterface   $logger  Logger.
-     * @param string            $appName Application name.
+     * @param IConfig         $config  Configuration service.
+     * @param LoggerInterface $logger  Logger.
+     * @param string          $appName Application name.
      *
      * @return void
      */
     public function __construct(
         IConfig $config,
         LoggerInterface $logger,
-        string $appName = 'openregister'
+        string $appName='openregister'
     ) {
         $this->config  = $config;
         $this->logger  = $logger;
         $this->appName = $appName;
+
     }//end __construct()
 
 
@@ -112,6 +113,7 @@ class SearchBackendHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve search backend configuration: '.$e->getMessage());
         }
+
     }//end getSearchBackendConfig()
 
 
@@ -157,5 +159,8 @@ class SearchBackendHandler
         } catch (Exception $e) {
             throw new RuntimeException('Failed to update search backend configuration: '.$e->getMessage());
         }//end try
+
     }//end updateSearchBackendConfig()
+
+
 }//end class

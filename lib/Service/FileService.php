@@ -57,6 +57,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileValidationHandler;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -180,6 +183,27 @@ class FileService
     private IUserSession $userSession;
 
     /**
+     * File validation handler
+     *
+     * @var FileValidationHandler
+     */
+    private FileValidationHandler $fileValidationHandler;
+
+    /**
+     * Folder management handler
+     *
+     * @var FolderManagementHandler
+     */
+    private FolderManagementHandler $folderManagementHandler;
+
+    /**
+     * File ownership handler
+     *
+     * @var FileOwnershipHandler
+     */
+    private FileOwnershipHandler $fileOwnershipHandler;
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var            string
@@ -219,19 +243,22 @@ class FileService
     /**
      * Constructor
      *
-     * @param IConfig                $config             Configuration service
-     * @param FileMapper             $fileMapper         File mapper
-     * @param IGroupManager          $groupManager       Group manager
-     * @param LoggerInterface        $logger             Logger
-     * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper
-     * @param RegisterMapper         $registerMapper     Register mapper
-     * @param IRootFolder            $rootFolder         Root folder
-     * @param IManager               $shareManager       Share manager
-     * @param ISystemTagManager      $systemTagManager   System tag manager
-     * @param ISystemTagObjectMapper $systemTagMapper    System tag mapper
-     * @param IURLGenerator          $urlGenerator       URL generator
-     * @param IUserManager           $userManager        User manager
-     * @param IUserSession           $userSession        User session
+     * @param IConfig                  $config                  Configuration service
+     * @param FileMapper               $fileMapper              File mapper
+     * @param IGroupManager            $groupManager            Group manager
+     * @param LoggerInterface          $logger                  Logger
+     * @param ObjectEntityMapper       $objectEntityMapper      Object entity mapper
+     * @param RegisterMapper           $registerMapper          Register mapper
+     * @param IRootFolder              $rootFolder              Root folder
+     * @param IManager                 $shareManager            Share manager
+     * @param ISystemTagManager        $systemTagManager        System tag manager
+     * @param ISystemTagObjectMapper   $systemTagMapper         System tag mapper
+     * @param IURLGenerator            $urlGenerator            URL generator
+     * @param IUserManager             $userManager             User manager
+     * @param IUserSession             $userSession             User session
+     * @param FileValidationHandler    $fileValidationHandler   File validation handler
+     * @param FolderManagementHandler  $folderManagementHandler Folder management handler
+     * @param FileOwnershipHandler     $fileOwnershipHandler    File ownership handler
      */
     public function __construct(
         IConfig $config,
@@ -246,21 +273,27 @@ class FileService
         ISystemTagObjectMapper $systemTagMapper,
         IURLGenerator $urlGenerator,
         IUserManager $userManager,
-        IUserSession $userSession
+        IUserSession $userSession,
+        FileValidationHandler $fileValidationHandler,
+        FolderManagementHandler $folderManagementHandler,
+        FileOwnershipHandler $fileOwnershipHandler
     ) {
-        $this->config             = $config;
-        $this->fileMapper         = $fileMapper;
-        $this->groupManager       = $groupManager;
-        $this->logger             = $logger;
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->registerMapper     = $registerMapper;
-        $this->rootFolder         = $rootFolder;
-        $this->shareManager       = $shareManager;
-        $this->systemTagManager   = $systemTagManager;
-        $this->systemTagMapper    = $systemTagMapper;
-        $this->urlGenerator       = $urlGenerator;
-        $this->userManager        = $userManager;
-        $this->userSession        = $userSession;
+        $this->config                  = $config;
+        $this->fileMapper              = $fileMapper;
+        $this->groupManager            = $groupManager;
+        $this->logger                  = $logger;
+        $this->objectEntityMapper      = $objectEntityMapper;
+        $this->registerMapper          = $registerMapper;
+        $this->rootFolder              = $rootFolder;
+        $this->shareManager            = $shareManager;
+        $this->systemTagManager        = $systemTagManager;
+        $this->systemTagMapper         = $systemTagMapper;
+        $this->urlGenerator            = $urlGenerator;
+        $this->userManager             = $userManager;
+        $this->userSession             = $userSession;
+        $this->fileValidationHandler   = $fileValidationHandler;
+        $this->folderManagementHandler = $folderManagementHandler;
+        $this->fileOwnershipHandler    = $fileOwnershipHandler;
 
     }//end __construct()
 
@@ -642,14 +675,7 @@ class FileService
      */
     private function getOpenRegisterUserFolder(): Folder
     {
-        try {
-            $user       = $this->getUser();
-            $userFolder = $this->rootFolder->getUserFolder($user->getUID());
-            return $userFolder;
-        } catch (Exception $e) {
-            $this->logger->error(message: "Failed to get OpenRegister user folder: ".$e->getMessage());
-            throw new Exception("Cannot access OpenRegister user folder: ".$e->getMessage());
-        }
+        return $this->folderManagementHandler->getOpenRegisterUserFolder();
 
     }//end getOpenRegisterUserFolder()
 
@@ -657,27 +683,18 @@ class FileService
     /**
      * Get a Node by its ID.
      *
-     * @param int $nodeId The ID of the node to retrieve
+     * Delegates to FolderManagementHandler.
      *
-     * @return Node|null The Node if found, null otherwise
+     * @param int $nodeId The ID of the node to retrieve.
+     *
+     * @return Node|null The Node if found, null otherwise.
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
      */
     private function getNodeById(int $nodeId): ?Node
     {
-        try {
-            $userFolder = $this->getOpenRegisterUserFolder();
-            $nodes      = $userFolder->getById($nodeId);
-            if (empty($nodes) === false) {
-                return $nodes[0];
-            }
-
-            return null;
-        } catch (Exception $e) {
-            $this->logger->error(message: "Failed to get node by ID $nodeId: ".$e->getMessage());
-            return null;
-        }
+        return $this->folderManagementHandler->getNodeById($nodeId);
 
     }//end getNodeById()
 
@@ -916,44 +933,20 @@ class FileService
 
 
     /**
-     * Gets or creates the OpenCatalogi user for file operations.
+     * Gets or creates the OpenRegister user for file operations.
      *
-     * @throws Exception If OpenCatalogi user cannot be created
+     * Delegates to FileOwnershipHandler.
      *
-     * @return IUser The OpenCatalogi user
+     * @throws Exception If OpenRegister user cannot be created.
+     *
+     * @return IUser The OpenRegister user.
+     *
+     * @psalm-return   IUser
+     * @phpstan-return IUser
      */
     private function getUser(): IUser
     {
-        $openCatalogiUser = $this->userManager->get(self::APP_USER);
-
-        if ($openCatalogiUser === null) {
-            // Create OpenCatalogi user if it doesn't exist.
-            $password         = bin2hex(random_bytes(16));
-            $openCatalogiUser = $this->userManager->createUser(self::APP_USER, $password);
-
-            if ($openCatalogiUser === false) {
-                throw new Exception('Failed to create OpenCatalogi user account.');
-            }
-
-            // Add user to OpenCatalogi group.
-            $group = $this->groupManager->get(self::APP_GROUP);
-            if ($group === null) {
-                $group = $this->groupManager->createGroup(self::APP_GROUP);
-            }
-
-            // Get the current user from the session.
-            $currentUser = $this->userSession->getUser();
-
-            // Add the current user to the group.
-            if ($currentUser !== null) {
-                $group->addUser($currentUser);
-            }
-
-            // Add the OpenCatalogi user to the group.
-            $group->addUser($openCatalogiUser);
-        }//end if
-
-        return $openCatalogiUser;
+        return $this->fileOwnershipHandler->getUser();
 
     }//end getUser()
 
@@ -976,26 +969,7 @@ class FileService
      */
     private function ownFile(Node $file): bool
     {
-        try {
-            $openRegisterUser = $this->getUser();
-            $userId           = $openRegisterUser->getUID();
-            $fileId           = $file->getId();
-
-            $this->logger->info(message: "ownFile: Attempting to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
-
-            $result = $this->fileMapper->setFileOwnership(fileId: $fileId, userId: $userId);
-
-            if ($result === true) {
-                $this->logger->info(message: "ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
-            } else {
-                $this->logger->warning(message: "ownFile: Failed to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId");
-            }
-
-            return $result;
-        } catch (Exception $e) {
-            $this->logger->error(message: "ownFile: Error setting ownership of file {$file->getName()}: ".$e->getMessage());
-            throw new Exception("Failed to set file ownership: ".$e->getMessage());
-        }
+        return $this->fileValidationHandler->ownFile($file);
 
     }//end ownFile()
 
@@ -1018,90 +992,7 @@ class FileService
      */
     private function checkOwnership(Node $file): void
     {
-        try {
-            // Try to read the file to trigger any potential access issues.
-            if ($file instanceof File) {
-                $file->getContent();
-            } elseif ($file instanceof Folder) {
-                // For folders, try to list contents.
-                $file->getDirectoryListing();
-            }
-
-            // If we get here, the file is accessible.
-            $this->logger->debug(message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible, no ownership fix needed");
-        } catch (NotFoundException $e) {
-            // File exists but we can't access it - likely an ownership issue.
-            $this->logger->warning(
-                    message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) exists but not accessible, checking ownership"
-                    );
-
-            try {
-                $fileOwner        = $file->getOwner();
-                $openRegisterUser = $this->getUser();
-
-                if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
-                    $this->logger->info(
-                            message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has incorrect owner, attempting to fix"
-                            );
-
-                    // Try to fix the ownership.
-                    $ownershipFixed = $this->ownFile($file);
-
-                    if ($ownershipFixed === true) {
-                        $this->logger->info(
-                                message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} (ID: {$file->getId()})"
-                                );
-                    } else {
-                        $this->logger->error(
-                                message: "checkOwnership: Failed to fix ownership for file {$file->getName()} (ID: {$file->getId()})"
-                                );
-                        throw new Exception("Failed to fix file ownership for file: ".$file->getName());
-                    }
-                } else {
-                    $this->logger->info(
-                            message: "checkOwnership: File {$file->getName()} (ID: {$file->getId()}) already has correct owner, but still not accessible"
-                            );
-                }//end if
-            } catch (Exception $ownershipException) {
-                $this->logger->error(
-                        message: "checkOwnership: Error checking/fixing ownership for file {$file->getName()}: ".$ownershipException->getMessage()
-                        );
-                throw new Exception("Ownership check failed for file: ".$file->getName());
-            }//end try
-        } catch (NotPermittedException $e) {
-            // Permission denied - likely an ownership issue.
-            $this->logger->warning(
-                    message: "checkOwnership: Permission denied for file {$file->getName()} (ID: {$file->getId()}), attempting ownership fix"
-                    );
-
-            try {
-                $ownershipFixed = $this->ownFile($file);
-
-                if ($ownershipFixed === true) {
-                    $this->logger->info(
-                            message: "checkOwnership: Successfully fixed ownership for file {$file->getName()} "
-                                ."(ID: {$file->getId()}) after permission error"
-                            );
-                } else {
-                    $this->logger->error(
-                            message: "checkOwnership: Failed to fix ownership for file {$file->getName()} "
-                                ."(ID: {$file->getId()}) after permission error"
-                            );
-                    throw new Exception("Failed to fix file ownership after permission error:".$file->getName());
-                }
-            } catch (Exception $ownershipException) {
-                $this->logger->error(
-                        message: "checkOwnership: Error fixing ownership after permission error for file {$file->getName()}: "
-                            .$ownershipException->getMessage()
-                );
-                throw new Exception("Ownership fix failed after permission error:".$file->getName());
-            }//end try
-        } catch (Exception $e) {
-            // Other exceptions - log but don't necessarily fix ownership.
-            $this->logger->debug(
-                    message: "checkOwnership: Other exception while checking file {$file->getName()}: ".$e->getMessage()
-                    );
-        }//end try
+        $this->fileValidationHandler->checkOwnership($file);
 
     }//end checkOwnership()
 
@@ -1615,17 +1506,17 @@ class FileService
     /**
      * Get the currently active user (not the OpenRegister system user).
      *
-     * This method returns the user who is currently logged in and making the request,
-     * which is different from the OpenRegister system user used for file operations.
+     * Delegates to FileOwnershipHandler.
      *
-     * @return IUser|null The currently active user or null if no user is logged in
+     * @return IUser|null The currently active user or null if no user is logged in.
      *
      * @psalm-return   IUser|null
      * @phpstan-return IUser|null
      */
     private function getCurrentUser(): ?IUser
     {
-        return $this->userSession->getUser();
+        return $this->fileOwnershipHandler->getCurrentUser();
+
     }//end getCurrentUser()
 
     /**
@@ -3133,60 +3024,22 @@ class FileService
     /**
      * Blocks executable files from being uploaded for security.
      *
-     * This method checks both file extensions and magic bytes to detect executables.
-     * This is the central security check for ALL file uploads in OpenRegister.
+     * Delegates to FileValidationHandler.
      *
-     * @param string $fileName    The filename to check
-     * @param string $fileContent The file content to check
+     * @param string $fileName    The filename to check.
+     * @param string $fileContent The file content to check.
      *
      * @return void
      *
-     * @throws Exception If an executable file is detected
+     * @throws Exception If an executable file is detected.
+     *
+     * @psalm-return   void
+     * @phpstan-return void
      */
     private function blockExecutableFile(string $fileName, string $fileContent): void
     {
-        // List of dangerous executable extensions.
-        $dangerousExtensions = [
-            // Windows executables.
-            'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll',
-            // Unix/Linux executables.
-            'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm',
-            // Scripts and code.
-            'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar',
-            'py', 'pyc', 'pyo', 'pyw',
-            'pl', 'pm', 'cgi',
-            'rb', 'rbw',
-            'jar', 'war', 'ear', 'class',
-            // Containers and packages.
-            'appimage', 'snap', 'flatpak',
-            // MacOS.
-            'dmg', 'pkg', 'command',
-            // Android.
-            'apk',
-            // Other dangerous.
-            'elf', 'out', 'o', 'so', 'dylib',
-        ];
+        $this->fileValidationHandler->blockExecutableFile(fileName: $fileName, fileContent: $fileContent);
 
-        // Check file extension.
-        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        if (in_array($extension, $dangerousExtensions, true) === true) {
-            $this->logger->warning(message: 'Executable file upload blocked', context: [
-                'app' => 'openregister',
-                'filename' => $fileName,
-                'extension' => $extension,
-            ]);
-
-            throw new Exception(
-                "File '$fileName' is an executable file (.$extension). "
-                ."Executable files are blocked for security reasons. "
-                ."Allowed formats: documents, images, archives, data files."
-            );
-        }
-
-        // Check magic bytes (file signatures) in content.
-        if (empty($fileContent) === false) {
-            $this->detectExecutableMagicBytes(content: $fileContent, fileName: $fileName);
-        }
     }//end blockExecutableFile()
 
 
