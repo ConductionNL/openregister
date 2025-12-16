@@ -263,16 +263,16 @@ class ObjectsProvider implements IFilteringProvider
         $searchQuery = [];
 
         // Add search term if provided.
-        if (empty($search) === FALSE) {
+        if (empty($search) === false) {
             $searchQuery['_search'] = $search;
         }
 
         // Add filters to @self metadata section.
-        if (empty($register) === FALSE) {
+        if (empty($register) === false) {
             $searchQuery['@self']['register'] = (int) $register;
         }
 
-        if (empty($schema) === FALSE) {
+        if (empty($schema) === false) {
             $searchQuery['@self']['schema'] = (int) $schema;
         }
 
@@ -315,7 +315,7 @@ class ObjectsProvider implements IFilteringProvider
                 'OpenRegister search requested',
                 [
                     'search_query' => $searchQuery,
-                    'has_search'   => empty($search) === FALSE,
+                    'has_search'   => empty($search) === false,
                 ]
                 );
 
@@ -324,7 +324,7 @@ class ObjectsProvider implements IFilteringProvider
 
         // Convert results to SearchResultEntry format.
         $searchResultEntries = [];
-        if (empty($searchResults['results']) === FALSE) {
+        if (empty($searchResults['results']) === false) {
             foreach ($searchResults['results'] as $result) {
                 // Generate URLs for the object.
                 $objectUrl = $this->urlGenerator->linkToRoute(
@@ -374,18 +374,18 @@ class ObjectsProvider implements IFilteringProvider
         $parts = [];
 
         // Add schema/register information if available.
-        if (empty($object['schema']) === FALSE) {
+        if (empty($object['schema']) === false) {
             $parts[] = $this->l10n->t(text: 'Schema: %s', args: [$object['schema']]);
         }
 
-        if (empty($object['register']) === FALSE) {
+        if (empty($object['register']) === false) {
             $parts[] = $this->l10n->t(text: 'Register: %s', args: [$object['register']]);
         }
 
         // Add summary/description if available.
-        if (empty($object['summary']) === FALSE) {
+        if (empty($object['summary']) === false) {
             $parts[] = $object['summary'];
-        } else if (empty($object['description']) === FALSE) {
+        } else if (empty($object['description']) === false) {
             $descriptionPart = substr($object['description'], 0, 100);
             if (strlen($object['description']) > 100) {
                 $descriptionPart .= '...';
@@ -395,7 +395,7 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         // Add last updated info if available.
-        if (empty($object['updated']) === FALSE) {
+        if (empty($object['updated']) === false) {
             $parts[] = $this->l10n->t(text: 'Updated: %s', args: [date('Y-m-d H:i', strtotime($object['updated']))]);
         }
 

@@ -385,7 +385,7 @@ class VectorizationService
      */
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
-        if (!isset($this->strategies[$entityType])) {
+        if (isset($this->strategies[$entityType]) === false) {
             throw new Exception("No vectorization strategy registered for entity type: {$entityType}");
         }
 

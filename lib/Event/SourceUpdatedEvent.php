@@ -64,4 +64,40 @@ class SourceUpdatedEvent extends Event
     }//end __construct()
 
 
+    /**
+     * Get the updated source.
+     *
+     * @return Source The source after update.
+     */
+    public function getSource(): Source
+    {
+        return $this->newSource;
+
+    }//end getSource()
+
+
+    /**
+     * Get the new source state.
+     *
+     * @return Source The source after update.
+     */
+    public function getNewSource(): Source
+    {
+        return $this->newSource;
+
+    }//end getNewSource()
+
+
+    /**
+     * Get the old source state.
+     *
+     * @return Source The source before update.
+     */
+    public function getOldSource(): Source
+    {
+        return $this->oldSource;
+
+    }//end getOldSource()
+
+
 }//end class

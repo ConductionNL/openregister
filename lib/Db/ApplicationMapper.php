@@ -122,7 +122,7 @@ class ApplicationMapper extends QBMapper
     public function __construct(
         IDBConnection $db,
         // REMOVED: Services should not be in mappers
-        // OrganisationService $organisationService,
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
@@ -132,10 +132,10 @@ class ApplicationMapper extends QBMapper
 
         // Store dependencies for use in mapper methods.
         // REMOVED: Services should not be in mappers
-        // $this->organisationService = $organisationService;
-        $this->userSession     = $userSession;
-        $this->groupManager    = $groupManager;
-        $this->eventDispatcher = $eventDispatcher;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->eventDispatcher    = $eventDispatcher;
 
     }//end __construct()
 

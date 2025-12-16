@@ -61,7 +61,7 @@ class ElasticsearchIndexManager
             $url      = $this->httpClient->buildBaseUrl().'/'.$indexName;
             $response = $this->httpClient->get($url);
 
-            return !isset($response['error']);
+            return isset($response['error']) === false;
         } catch (Exception $e) {
             return false;
         }
@@ -86,7 +86,7 @@ class ElasticsearchIndexManager
                 ],
             ];
 
-            if (!empty($mapping)) {
+            if (empty($mapping) === false) {
                 $settings['mappings'] = $mapping;
             }
 
@@ -224,7 +224,7 @@ class ElasticsearchIndexManager
             $url      = $this->httpClient->buildBaseUrl().'/'.$indexName.'/_refresh';
             $response = $this->httpClient->post($url, []);
 
-            return !isset($response['error']);
+            return isset($response['error']) === false;
         } catch (Exception $e) {
             $this->logger->error(
                     '[ElasticsearchIndexManager] Failed to refresh index',

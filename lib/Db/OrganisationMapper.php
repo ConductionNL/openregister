@@ -32,8 +32,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-
-
+use OCP\IAppConfig;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -68,11 +67,13 @@ class OrganisationMapper extends QBMapper
      * @param IDBConnection    $db              Database connection
      * @param LoggerInterface  $logger          Logger interface
      * @param IEventDispatcher $eventDispatcher Event dispatcher
+     * @param IAppConfig       $appConfig       App configuration for reading default org
      */
     public function __construct(
         IDBConnection $db,
         private readonly LoggerInterface $logger,
-        private readonly IEventDispatcher $eventDispatcher
+        private readonly IEventDispatcher $eventDispatcher,
+        private readonly IAppConfig $appConfig
     ) {
         parent::__construct($db, 'openregister_organisations', Organisation::class);
 
@@ -880,6 +881,216 @@ class OrganisationMapper extends QBMapper
         return \OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_');
 
     }//end getTablePrefix()
+
+
+    /**
+     * Get active organisation UUID for a user from preferences
+     *
+     * This retrieves the user's currently active organisation from user preferences.
+     * Returns null if no active organisation is set.
+     *
+     * @param string $userId The user ID
+     *
+     * @return string|null The active organisation UUID or null
+     */
+    public function getActiveOrganisationUuidForUser(string $userId): ?string
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        // Query the preferences table for active organisation.
+        $qb->select('configvalue')
+            ->from('preferences')
+            ->where($qb->expr()->eq('userid', $qb->createNamedParameter($userId)))
+            ->andWhere($qb->expr()->eq('appid', $qb->createNamedParameter('openregister')))
+            ->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
+
+        try {
+            $result = $qb->executeQuery();
+            $row    = $result->fetch();
+            $result->closeCursor();
+
+            if ($row !== false && isset($row['configvalue']) === true) {
+                return $row['configvalue'];
+            }
+        } catch (Exception $e) {
+            $this->logger->warning(
+                'Failed to get active organisation for user: '.$e->getMessage(),
+                ['userId' => $userId]
+            );
+        }
+
+        return null;
+
+    }//end getActiveOrganisationUuidForUser()
+
+
+    /**
+     * Get active organisation with fallback to default and set on session
+     *
+     * This method retrieves the active organisation for a user from preferences.
+     * If no active organisation is set, it falls back to the default organisation
+     * from configuration and sets it as the active organisation in preferences.
+     *
+     * This consolidates the logic of getting an organisation UUID with proper fallbacks,
+     * ensuring users always have an organisation context.
+     *
+     * @param string $userId The user ID
+     *
+     * @return string|null The organisation UUID (active or default) or null if neither exists
+     */
+    public function getActiveOrganisationWithFallback(string $userId): ?string
+    {
+        // First try to get active organisation from preferences.
+        $activeOrgUuid = $this->getActiveOrganisationUuidForUser($userId);
+        if ($activeOrgUuid !== null) {
+            $this->logger->debug(
+                'Found active organisation for user in preferences',
+                [
+                    'userId'           => $userId,
+                    'organisationUuid' => $activeOrgUuid,
+                ]
+            );
+            return $activeOrgUuid;
+        }
+
+        // No active organisation, fall back to default from config.
+        $defaultOrgUuid = $this->getDefaultOrganisationFromConfig();
+        if ($defaultOrgUuid === null) {
+            $this->logger->warning(
+                'No active or default organisation found for user',
+                ['userId' => $userId]
+            );
+            return null;
+        }
+
+        // Set the default organisation as active in preferences for future requests.
+        try {
+            $this->setActiveOrganisationForUser($userId, $defaultOrgUuid);
+            $this->logger->info(
+                'Set default organisation as active for user',
+                [
+                    'userId'           => $userId,
+                    'organisationUuid' => $defaultOrgUuid,
+                ]
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                'Failed to set active organisation in preferences: '.$e->getMessage(),
+                [
+                    'userId'           => $userId,
+                    'organisationUuid' => $defaultOrgUuid,
+                ]
+            );
+        }
+
+        return $defaultOrgUuid;
+
+    }//end getActiveOrganisationWithFallback()
+
+
+    /**
+     * Set active organisation for a user in preferences
+     *
+     * @param string $userId           The user ID
+     * @param string $organisationUuid The organisation UUID to set as active
+     *
+     * @return void
+     *
+     * @throws Exception If the database operation fails
+     */
+    public function setActiveOrganisationForUser(string $userId, string $organisationUuid): void
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        // First check if preference already exists.
+        $qb->select('userid')
+            ->from('preferences')
+            ->where($qb->expr()->eq('userid', $qb->createNamedParameter($userId)))
+            ->andWhere($qb->expr()->eq('appid', $qb->createNamedParameter('openregister')))
+            ->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
+
+        $result = $qb->executeQuery();
+        $exists = $result->fetch();
+        $result->closeCursor();
+
+        if ($exists !== false) {
+            // Update existing preference.
+            $qb = $this->db->getQueryBuilder();
+            $qb->update('preferences')
+                ->set('configvalue', $qb->createNamedParameter($organisationUuid))
+                ->where($qb->expr()->eq('userid', $qb->createNamedParameter($userId)))
+                ->andWhere($qb->expr()->eq('appid', $qb->createNamedParameter('openregister')))
+                ->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
+            $qb->executeStatement();
+        } else {
+            // Insert new preference.
+            $qb = $this->db->getQueryBuilder();
+            $qb->insert('preferences')
+                ->values(
+                    [
+                        'userid'      => $qb->createNamedParameter($userId),
+                        'appid'       => $qb->createNamedParameter('openregister'),
+                        'configkey'   => $qb->createNamedParameter('active_organisation'),
+                        'configvalue' => $qb->createNamedParameter($organisationUuid),
+                    ]
+                );
+            $qb->executeStatement();
+        }//end if
+
+    }//end setActiveOrganisationForUser()
+
+
+    /**
+     * Get default organisation UUID from configuration
+     *
+     * @return string|null The default organisation UUID or null if not configured
+     */
+    public function getDefaultOrganisationFromConfig(): ?string
+    {
+        // Try direct config key (newer format).
+        $defaultOrg = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
+        if (empty($defaultOrg) === false) {
+            return $defaultOrg;
+        }
+
+        // Try nested organisation config (legacy format).
+        $organisationConfig = $this->appConfig->getValueString('openregister', 'organisation', '');
+        if (empty($organisationConfig) === false) {
+            $storedData = json_decode($organisationConfig, true);
+            if (isset($storedData['default_organisation']) === true) {
+                return $storedData['default_organisation'];
+            }
+        }
+
+        return null;
+
+    }//end getDefaultOrganisationFromConfig()
+
+
+    /**
+     * Get organisation hierarchy (organisation + all parents)
+     *
+     * Returns an array of organisation UUIDs including the given organisation
+     * and all its parent organisations up the hierarchy.
+     *
+     * @param string $organisationUuid The organisation UUID
+     *
+     * @return string[] Array of organisation UUIDs (current + parents)
+     */
+    public function getOrganisationHierarchy(string $organisationUuid): array
+    {
+        // Start with the current organisation.
+        $hierarchy = [$organisationUuid];
+
+        // Add all parent organisations.
+        $parents = $this->findParentChain($organisationUuid);
+        if (empty($parents) === false) {
+            $hierarchy = array_merge($hierarchy, $parents);
+        }
+
+        return $hierarchy;
+
+    }//end getOrganisationHierarchy()
 
 
 }//end class

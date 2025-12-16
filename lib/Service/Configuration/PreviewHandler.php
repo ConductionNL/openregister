@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -37,8 +38,8 @@ use Psr\Log\LoggerInterface;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
- * @author   Conduction Development Team <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author  Conduction Development Team <info@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.OpenRegister.app
  */
@@ -73,15 +74,15 @@ class PreviewHandler
      *
      * @var ConfigurationService|null The configuration service.
      */
-    private ?ConfigurationService $configurationService=null;
+    private ?ConfigurationService $configurationService = null;
 
 
     /**
      * Constructor for PreviewHandler.
      *
-     * @param RegisterMapper  $registerMapper  The register mapper.
-     * @param SchemaMapper    $schemaMapper    The schema mapper.
-     * @param LoggerInterface $logger          The logger interface.
+     * @param RegisterMapper  $registerMapper The register mapper.
+     * @param SchemaMapper    $schemaMapper   The schema mapper.
+     * @param LoggerInterface $logger         The logger interface.
      */
     public function __construct(
         RegisterMapper $registerMapper,
@@ -196,7 +197,7 @@ class PreviewHandler
                     schemaSlugToId: $schemaSlugToId
                 );
             }
-        }
+        }//end if
 
         // Add metadata about the preview.
         $preview['metadata'] = [
@@ -365,9 +366,9 @@ class PreviewHandler
     /**
      * Placeholder method - will be populated with extracted method.
      *
-     * @param array $objectData        The object data.
-     * @param array $registerSlugToId  Register slug to ID map.
-     * @param array $schemaSlugToId    Schema slug to ID map.
+     * @param array $objectData       The object data.
+     * @param array $registerSlugToId Register slug to ID map.
+     * @param array $schemaSlugToId   Schema slug to ID map.
      *
      * @return array Preview information.
      */
@@ -415,4 +416,3 @@ class PreviewHandler
 
 
 }//end class
-

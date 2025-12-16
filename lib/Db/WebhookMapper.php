@@ -71,7 +71,7 @@ class WebhookMapper extends QBMapper
      *
      * @var OrganisationService Organisation service instance
      */
-    private readonly OrganisationService $organisationService;
+    private readonly OrganisationMapper $organisationMapper;
 
     /**
      * User session for current user
@@ -98,17 +98,17 @@ class WebhookMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session for RBAC
-     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IDBConnection      $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation service for multi-tenancy
+     * @param IUserSession       $userSession        User session for RBAC
+     * @param IGroupManager      $groupManager       Group manager for RBAC
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
         // REMOVED: Services should not be in mappers
-        // OrganisationService $organisationService,
+        // OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager
     ) {
@@ -117,7 +117,7 @@ class WebhookMapper extends QBMapper
 
         // Store dependencies for use in mapper methods.
         // REMOVED: Services should not be in mappers
-        // $this->organisationService = $organisationService;
+        // $this->organisationMapper = $organisationService;
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
 

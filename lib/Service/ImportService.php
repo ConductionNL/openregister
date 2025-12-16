@@ -158,9 +158,9 @@ class ImportService
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
-        $this->logger             = $logger;
-        $this->groupManager       = $groupManager;
-        $this->jobList            = $jobList;
+        $this->logger       = $logger;
+        $this->groupManager = $groupManager;
+        $this->jobList      = $jobList;
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];
@@ -265,8 +265,7 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null
-    ): array
-    {
+    ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
 
@@ -467,8 +466,7 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null
-    ): array
-    {
+    ): array {
         $summary = [];
 
         foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
@@ -799,8 +797,7 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null
-    ): array
-    {
+    ): array {
         $summary = [
             'found'     => 0,
             'created'   => [],
@@ -1257,7 +1254,7 @@ class ImportService
         }
 
         // Add @self array to object data if we have self properties.
-        if (!empty($selfData)) {
+        if (empty($selfData) === false) {
             $objectData['@self'] = $selfData;
         }
 
@@ -1793,7 +1790,7 @@ class ImportService
     {
         foreach ($objects as &$object) {
             // Ensure @self section exists.
-            if (!isset($object['@self'])) {
+            if (isset($object['@self']) === false) {
                 $object['@self'] = [];
             }
 

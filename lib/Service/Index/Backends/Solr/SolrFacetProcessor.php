@@ -106,7 +106,7 @@ class SolrFacetProcessor
             foreach ($fields as $field) {
                 // Fields with _s, _ss, _i suffixes are typically facetable.
                 $name = $field['name'] ?? '';
-                if (str_ends_with($name, '_s') || str_ends_with($name, '_ss') || str_ends_with($name, '_i')) {
+                if (str_ends_with($name, '_s') === TRUE || str_ends_with($name, '_ss') === TRUE || str_ends_with($name, '_i') === TRUE) {
                     $facetable[] = [
                         'name' => $name,
                         'type' => $field['type'] ?? 'unknown',
@@ -144,7 +144,7 @@ class SolrFacetProcessor
      */
     public function buildFacetQuery(array $facetFields): array
     {
-        if (empty($facetFields)) {
+        if (empty($facetFields) === TRUE) {
             return [];
         }
 
@@ -176,7 +176,7 @@ class SolrFacetProcessor
 
             // Solr returns facets as [value1, count1, value2, count2, ...].
             for ($i = 0; $i < count($values); $i += 2) {
-                if (isset($values[$i], $values[$i + 1])) {
+                if (isset($values[$i], $values[$i + 1]) === TRUE) {
                     $items[] = [
                         'value' => $values[$i],
                         'count' => $values[$i + 1],
@@ -184,7 +184,7 @@ class SolrFacetProcessor
                 }
             }
 
-            if (!empty($items)) {
+            if (empty($items) === false) {
                 $processed[$fieldName] = [
                     'field' => $fieldName,
                     'items' => $items,

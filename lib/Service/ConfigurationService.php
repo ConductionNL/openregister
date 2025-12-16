@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -1000,24 +1001,12 @@ class ConfigurationService
     private function isSimpleArray(array $array): bool
     {
         foreach ($array as $value) {
-        return $this->previewHandler->importConfigurationWithSelection($configuration, $selection);
-            version: $remoteData['version'] ?? $remoteData['info']['version'] ?? $configuration->getVersion(),
-            force: false
-        );
-
-        // Update configuration's local version and tracking arrays.
-        $remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
-        if ($remoteVersion !== null) {
-            $configuration->setLocalVersion($remoteVersion);
-        }
-
-        // Update register IDs.
-        $existingRegisterIds = $configuration->getRegisters();
-        foreach ($result['registers'] as $register) {
-            if (in_array($register->getId(), $existingRegisterIds, true) === false) {
-                $existingRegisterIds[] = $register->getId();
+            if (is_array($value) === true) {
+                return false;
             }
         }
+
+        return true;
 
         $configuration->setRegisters($existingRegisterIds);
 

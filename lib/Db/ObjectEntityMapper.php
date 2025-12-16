@@ -93,7 +93,7 @@ class ObjectEntityMapper extends QBMapper
 
     // No circular dependency.
     // Existing dependencies (kept from original).
-    private OrganisationService $organisationService;
+    private OrganisationMapper $organisationMapper;
 
     // REMOVED: MySQLJsonService $databaseJsonService - Never used (dead code)
     private IEventDispatcher $eventDispatcher;
@@ -114,15 +114,15 @@ class ObjectEntityMapper extends QBMapper
     /**
      * Constructor for the ObjectEntityMapper.
      *
-     * @param IDBConnection       $db                  Database connection.
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher.
-     * @param IUserSession        $userSession         User session.
-     * @param SchemaMapper        $schemaMapper        Schema mapper.
-     * @param IGroupManager       $groupManager        Group manager.
-     * @param IUserManager        $userManager         User manager.
-     * @param IAppConfig          $appConfig           App configuration.
-     * @param LoggerInterface     $logger              Logger.
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy.
+     * @param IDBConnection      $db                 Database connection.
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher.
+     * @param IUserSession       $userSession        User session.
+     * @param SchemaMapper       $schemaMapper       Schema mapper.
+     * @param IGroupManager      $groupManager       Group manager.
+     * @param IUserManager       $userManager        User manager.
+     * @param IAppConfig         $appConfig          App configuration.
+     * @param LoggerInterface    $logger             Logger.
+     * @param OrganisationMapper $organisationMapper Organisation service for multi-tenancy.
      */
     public function __construct(
         IDBConnection $db,
@@ -134,20 +134,20 @@ class ObjectEntityMapper extends QBMapper
         IUserManager $userManager,
         IAppConfig $appConfig,
         LoggerInterface $logger,
-        OrganisationService $organisationService
+        OrganisationMapper $organisationMapper
     ) {
         parent::__construct($db, 'openregister_objects');
 
         // Existing dependencies.
         // $this->databaseJsonService = $mySQLJsonService; // REMOVED: Dead code (never used)
-        $this->eventDispatcher = $eventDispatcher;
-        $this->userSession     = $userSession;
-        $this->schemaMapper    = $schemaMapper;
-        $this->groupManager    = $groupManager;
-        $this->userManager     = $userManager;
-        $this->appConfig       = $appConfig;
-        $this->logger          = $logger;
-        $this->organisationService = $organisationService;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->userSession        = $userSession;
+        $this->schemaMapper       = $schemaMapper;
+        $this->groupManager       = $groupManager;
+        $this->userManager        = $userManager;
+        $this->appConfig          = $appConfig;
+        $this->logger             = $logger;
+        $this->organisationMapper = $organisationMapper;
 
         // Initialize handlers (no circular dependencies).
         $this->queryBuilderHandler      = new QueryBuilderHandler($db, $logger);

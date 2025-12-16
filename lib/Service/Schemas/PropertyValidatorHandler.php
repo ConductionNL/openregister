@@ -117,7 +117,7 @@ class PropertyValidatorHandler
         }
 
         // Type is required.
-        if (isset($property['type']) === FALSE) {
+        if (isset($property['type']) === false) {
             throw new Exception("Property at '$path' must have a 'type' field");
         }
 
@@ -138,7 +138,7 @@ class PropertyValidatorHandler
         }
 
         // Validate array items if type is array.
-        if ($property['type'] === 'array' && (($property['items'] ?? null) !== null) && isset($property['items']['$ref']) === FALSE) {
+        if ($property['type'] === 'array' && (($property['items'] ?? null) !== null) && isset($property['items']['$ref']) === false) {
             $this->validateProperty($property['items'], $path.'/items');
         }
 

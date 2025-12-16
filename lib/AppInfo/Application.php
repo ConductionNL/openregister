@@ -176,6 +176,7 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
+use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 
 /**
@@ -383,7 +384,6 @@ class Application extends App implements IBootstrap
         // Removed manual registration - Nextcloud will autowire it automatically.
         // NOTE: ObjectService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-        
         // Register UploadHandler with Client dependency.
         $context->registerService(
             ConfigurationUploadHandler::class,
@@ -394,7 +394,7 @@ class Application extends App implements IBootstrap
                 );
             }
         );
-        
+
         // Register ImportHandler with appDataPath and UploadHandler dependencies.
         $context->registerService(
             ConfigurationImportHandler::class,
@@ -402,7 +402,7 @@ class Application extends App implements IBootstrap
                 // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
                 $appDataPath = $dataDir.'/appdata_openregister';
-                
+
                 return new ConfigurationImportHandler(
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
@@ -416,7 +416,7 @@ class Application extends App implements IBootstrap
                 );
             }
         );
-        
+
         // Register ConfigurationService with appDataPath parameter.
         $context->registerService(
             ConfigurationService::class,
@@ -439,6 +439,7 @@ class Application extends App implements IBootstrap
                     githubHandler: $container->get(GitHubHandler::class),
                     gitlabHandler: $container->get(GitLabHandler::class),
                     cacheHandler: $container->get(ConfigurationCacheHandler::class),
+                    previewHandler: $container->get(PreviewHandler::class),
                     exportHandler: $container->get(ConfigurationExportHandler::class),
                     importHandler: $container->get(ConfigurationImportHandler::class),
                     uploadHandler: $container->get(ConfigurationUploadHandler::class),

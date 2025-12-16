@@ -73,7 +73,7 @@ class Version1Date20241022135300 extends SimpleMigrationStep
 
         // rename the register column to regsiter.
         $table = $schema->getTable('openregister_audit_trails');
-        if (!$table->hasColumn('register')) {
+        if ($table->hasColumn('register') === false) {
             $table->addColumn('register', Types::INTEGER, ['notnull' => false]);
         }
 

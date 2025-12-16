@@ -1244,7 +1244,7 @@ class Schema extends Entity implements JsonSerializable
         // Analyze each property for facetable configuration.
         foreach ($properties as $propertyKey => $property) {
             // Skip properties that are not marked as facetable.
-            if (!isset($property['facetable']) === false || $property['facetable'] !== true) {
+            if (isset($property['facetable']) === false || $property['facetable'] !== true) {
                 continue;
             }
 

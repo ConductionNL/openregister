@@ -155,18 +155,18 @@ class SolrQueryExecutor
         $solrQuery = $this->buildSolrQuery($query);
 
         // Apply filters.
-        if ($rbac || $multitenancy || $published || $deleted === FALSE) {
+        if ($rbac === TRUE || $multitenancy === TRUE || $published === TRUE || $deleted === false) {
             $filters = [];
 
-            if ($published) {
+            if ($published === TRUE) {
                 $filters[] = 'published:true';
             }
 
-            if ($deleted === FALSE) {
+            if ($deleted === false) {
                 $filters[] = '-deleted:true';
             }
 
-            if (empty($filters) === FALSE) {
+            if (empty($filters) === false) {
                 $solrQuery['fq'] = array_merge($solrQuery['fq'] ?? [], $filters);
             }
         }
@@ -203,8 +203,8 @@ class SolrQueryExecutor
         }
 
         // Handle field selection.
-        if (isset($query['_fields']) === true) {
-            $solrQuery['fl'] = is_array($query['_fields']) ? implode(',', $query['_fields']) : $query['_fields'];
+        if (isset($query['_fields']) === TRUE) {
+            $solrQuery['fl'] = is_array($query['_fields']) === TRUE ? implode(',', $query['_fields']) : $query['_fields'];
         }
 
         return $solrQuery;
@@ -221,7 +221,7 @@ class SolrQueryExecutor
      */
     private function translateSortField(array|string $order): string
     {
-        if (is_string($order)) {
+        if (is_string($order) === TRUE) {
             return $order;
         }
 
@@ -289,7 +289,7 @@ class SolrQueryExecutor
             'wt'    => 'json',
         ];
 
-        if (empty($fields) === FALSE) {
+        if (empty($fields) === false) {
             $params['fl'] = $fields;
         }
 

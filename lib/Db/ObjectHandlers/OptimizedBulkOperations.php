@@ -289,7 +289,7 @@ class OptimizedBulkOperations
         // Query all affected objects to get complete data with timestamps AND operation timing for classification.
         $uuids = array_filter($processedUUIDs);
         // Remove empty UUIDs.
-        if (empty($uuids) === FALSE) {
+        if (empty($uuids) === false) {
             $placeholders = implode(',', array_fill(0, count($uuids), '?'));
             $selectSql    = "
                 SELECT *,
@@ -438,7 +438,7 @@ class OptimizedBulkOperations
         foreach ($insertObjects as $insertObj) {
             if (is_array($insertObj) === true) {
                 // Ensure required UUID field only.
-                if (isset($insertObj['uuid']) === FALSE) {
+                if (isset($insertObj['uuid']) === false) {
                     $insertObj['uuid'] = (string) \Symfony\Component\Uid\Uuid::v4();
                 }
 
@@ -540,7 +540,7 @@ class OptimizedBulkOperations
         // Ensure required columns are present.
         $requiredColumns = ['uuid', 'register', 'schema'];
         foreach ($requiredColumns as $required) {
-            if (in_array($required, $mappedColumns) === FALSE) {
+            if (in_array($required, $mappedColumns) === false) {
                 $mappedColumns[] = $required;
             }
         }
@@ -549,7 +549,7 @@ class OptimizedBulkOperations
         $metadataColumns = ['name'];
         // We extract name from nested object.naam field.
         foreach ($metadataColumns as $metadataCol) {
-            if (in_array($metadataCol, $mappedColumns) === FALSE) {
+            if (in_array($metadataCol, $mappedColumns) === false) {
                 $mappedColumns[] = $metadataCol;
             }
         }
@@ -593,14 +593,14 @@ class OptimizedBulkOperations
                 // The objectData structure should be: {id, register, schema, object: {actual_data...}}
                 // We only want to store the 'object' property contents in the database object column.
                 // VALIDATION: object property MUST be set and MUST be an array.
-                if (isset($objectData['object']) === FALSE) {
+                if (isset($objectData['object']) === false) {
                     throw new InvalidArgumentException("Object data is missing required 'object' property. Available keys: ".json_encode(array_keys($objectData)));
                 }
 
                 $objectContent = $objectData['object'];
 
                 // VALIDATION: object content must be an array, not a string or other type.
-                if (is_array($objectContent) === FALSE) {
+                if (is_array($objectContent) === false) {
                     throw new InvalidArgumentException("Object content must be an array, got ".gettype($objectContent).". This suggests double JSON encoding or malformed CSV parsing.");
                 }
 
@@ -674,7 +674,7 @@ class OptimizedBulkOperations
      */
     private function convertDateTimeToMySQLFormat($value): string
     {
-        if ($value === FALSE || is_string($value) === FALSE) {
+        if ($value === false || is_string($value) === false) {
             return date('Y-m-d H:i:s');
             // Fallback to current time.
         }

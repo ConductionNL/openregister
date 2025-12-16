@@ -590,7 +590,7 @@ class SolrSettingsHandler
         try {
             $availableBackends = ['solr', 'elasticsearch'];
 
-            if (!in_array($backend, $availableBackends)) {
+            if (in_array($backend, $availableBackends) === false) {
                 throw new \InvalidArgumentException(
                     "Invalid backend '$backend'. Must be one of: ".implode(', ', $availableBackends)
                 );

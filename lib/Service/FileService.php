@@ -27,7 +27,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * @phpstan-type FileArray array{
  *     id: string,
  *     name: string,
@@ -317,26 +317,26 @@ class FileService
     /**
      * Constructor
      *
-     * @param IConfig                 $config                  Configuration service
-     * @param FileMapper              $fileMapper              File mapper
-     * @param IGroupManager           $groupManager            Group manager
-     * @param LoggerInterface         $logger                  Logger
-     * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper
-     * @param RegisterMapper          $registerMapper          Register mapper
-     * @param IRootFolder             $rootFolder              Root folder
-     * @param IManager                $shareManager            Share manager
-     * @param ISystemTagManager       $systemTagManager        System tag manager
-     * @param ISystemTagObjectMapper  $systemTagMapper         System tag mapper
-     * @param IURLGenerator           $urlGenerator            URL generator
-     * @param IUserManager            $userManager             User manager
-     * @param IUserSession            $userSession             User session
-     * @param FileValidationHandler   $fileValidationHandler   File validation handler
-     * @param FolderManagementHandler $folderManagementHandler Folder management handler
-     * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler
-     * @param FileSharingHandler      $fileSharingHandler      File sharing handler
-     * @param CreateFileHandler       $createFileHandler       Create file handler
-     * @param ReadFileHandler         $readFileHandler         Read file handler
-     * @param UpdateFileHandler       $updateFileHandler       Update file handler
+     * @param IConfig                   $config                    Configuration service
+     * @param FileMapper                $fileMapper                File mapper
+     * @param IGroupManager             $groupManager              Group manager
+     * @param LoggerInterface           $logger                    Logger
+     * @param ObjectEntityMapper        $objectEntityMapper        Object entity mapper
+     * @param RegisterMapper            $registerMapper            Register mapper
+     * @param IRootFolder               $rootFolder                Root folder
+     * @param IManager                  $shareManager              Share manager
+     * @param ISystemTagManager         $systemTagManager          System tag manager
+     * @param ISystemTagObjectMapper    $systemTagMapper           System tag mapper
+     * @param IURLGenerator             $urlGenerator              URL generator
+     * @param IUserManager              $userManager               User manager
+     * @param IUserSession              $userSession               User session
+     * @param FileValidationHandler     $fileValidationHandler     File validation handler
+     * @param FolderManagementHandler   $folderManagementHandler   Folder management handler
+     * @param FileOwnershipHandler      $fileOwnershipHandler      File ownership handler
+     * @param FileSharingHandler        $fileSharingHandler        File sharing handler
+     * @param CreateFileHandler         $createFileHandler         Create file handler
+     * @param ReadFileHandler           $readFileHandler           Read file handler
+     * @param UpdateFileHandler         $updateFileHandler         Update file handler
      * @param DeleteFileHandler         $deleteFileHandler         Delete file handler
      * @param TaggingHandler            $taggingHandler            Tagging handler
      * @param FileFormattingHandler     $fileFormattingHandler     File formatting handler
@@ -384,12 +384,12 @@ class FileService
         $this->userManager           = $userManager;
         $this->userSession           = $userSession;
         $this->fileValidationHandler = $fileValidationHandler;
-        $this->folderManagementHandler = $folderManagementHandler;
-        $this->fileOwnershipHandler    = $fileOwnershipHandler;
-        $this->fileSharingHandler      = $fileSharingHandler;
-        $this->createFileHandler       = $createFileHandler;
-        $this->readFileHandler         = $readFileHandler;
-        $this->updateFileHandler       = $updateFileHandler;
+        $this->folderManagementHandler   = $folderManagementHandler;
+        $this->fileOwnershipHandler      = $fileOwnershipHandler;
+        $this->fileSharingHandler        = $fileSharingHandler;
+        $this->createFileHandler         = $createFileHandler;
+        $this->readFileHandler           = $readFileHandler;
+        $this->updateFileHandler         = $updateFileHandler;
         $this->deleteFileHandler         = $deleteFileHandler;
         $this->taggingHandler            = $taggingHandler;
         $this->fileFormattingHandler     = $fileFormattingHandler;
@@ -927,8 +927,6 @@ class FileService
         return $this->fileFormattingHandler->formatFiles($files, $requestParams);
 
     }//end formatFiles()
-
-
 
 
     /**
@@ -1604,7 +1602,6 @@ class FileService
 
 
     /**
-
     /**
      * Debug method to find a file by its ID anywhere in the OpenRegister folder structure
      *

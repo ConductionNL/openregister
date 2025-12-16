@@ -93,13 +93,13 @@ class SchemaMapper extends QBMapper
     private readonly PropertyValidatorHandler $validator;
 
     /**
-     * Organisation service for multi-tenancy
+     * Organisation mapper for multi-tenancy
      *
      * Used to get active organisation and apply organisation filters.
      *
-     * @var OrganisationService Organisation service instance
+     * @var OrganisationMapper Organisation mapper instance
      */
-    private readonly OrganisationService $organisationService;
+    protected readonly OrganisationMapper $organisationMapper;
 
     /**
      * App configuration for multi-tenancy settings
@@ -152,7 +152,7 @@ class SchemaMapper extends QBMapper
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
         PropertyValidatorHandler $validator,
-        OrganisationService $organisationService,
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -161,11 +161,11 @@ class SchemaMapper extends QBMapper
         parent::__construct($db, 'openregister_schemas', Schema::class);
 
         // Store dependencies for use in mapper methods.
-        $this->eventDispatcher     = $eventDispatcher;
-        $this->validator           = $validator;
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->validator          = $validator;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
         // Assign appConfig to trait's protected property.
         $this->appConfig = $appConfig;
 

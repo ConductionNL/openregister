@@ -255,7 +255,7 @@ class VectorSearchHandler
 
                     $responseData = json_decode((string) $response->getBody(), true);
 
-                    if (isset($responseData['response']['docs']) === FALSE) {
+                    if (isset($responseData['response']['docs']) === false) {
                         continue;
                     }
 
@@ -438,7 +438,7 @@ class VectorSearchHandler
         foreach ($vectorResults as $rank => $result) {
             $key = $result['entity_type'].'_'.$result['entity_id'];
 
-            if (!isset($combinedScores[$key])) {
+            if (isset($combinedScores[$key]) === false) {
                 $combinedScores[$key] = [
                     'entity_type'       => $result['entity_type'],
                     'entity_id'         => $result['entity_id'],
@@ -465,7 +465,7 @@ class VectorSearchHandler
         foreach ($solrResults as $rank => $result) {
             $key = $result['entity_type'].'_'.$result['entity_id'];
 
-            if (!isset($combinedScores[$key])) {
+            if (isset($combinedScores[$key]) === false) {
                 $combinedScores[$key] = [
                     'entity_type'       => $result['entity_type'],
                     'entity_id'         => $result['entity_id'],

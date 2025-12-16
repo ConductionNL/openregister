@@ -1883,12 +1883,11 @@ class SaveObject
         // This should use the CacheHandler to invalidate relevant caches after object operations.
         // For now, skipping to allow CRUD operations to complete.
         // $this->objectCacheService->invalidateForObjectChange(
-        //     object: $savedEntity,
-        //     operation: $operation,
-        //     registerId: $registerId,
-        //     schemaId: $schemaId
+        // object: $savedEntity,
+        // operation: $operation,
+        // registerId: $registerId,
+        // schemaId: $schemaId
         // );
-
         return $savedEntity;
 
     }//end saveObject()

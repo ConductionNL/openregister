@@ -113,7 +113,7 @@ class DocumentBuilder
 
         // Add object data
         $objectData = $object->getObject();
-        if (is_array($objectData)) {
+        if (is_array($objectData) === TRUE) {
             foreach ($objectData as $key => $value) {
                 // Skip null values
                 if ($value === null) {
@@ -298,7 +298,7 @@ class DocumentBuilder
                 $index     = $parts[1];
 
                 // Initialize array if not exists.
-                if (isset($arrays[$fieldName]) === FALSE) {
+                if (isset($arrays[$fieldName]) === false) {
                     $arrays[$fieldName] = [];
                 }
 
@@ -565,7 +565,7 @@ class DocumentBuilder
 
         // File fields should always be truncated.
         if ($type === 'file' || $format === 'file' || $format === 'binary'
-            || in_array($format, ['data-url', 'base64', 'image', 'document'])
+            || in_array($format, ['data-url', 'base64', 'image', 'document']) === TRUE
         ) {
             return true;
         }
@@ -577,7 +577,7 @@ class DocumentBuilder
         }
 
         // Base64 data URLs (common pattern).
-        if (is_string($fieldName) && str_contains(strtolower($fieldName), 'base64')) {
+        if (is_string($fieldName) === TRUE && str_contains(strtolower($fieldName), 'base64') === TRUE) {
             return true;
         }
 
@@ -622,7 +622,7 @@ class DocumentBuilder
         // **CRITICAL VALIDATION**: Check for type compatibility.
         $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
 
-        if ($isCompatible === FALSE) {
+        if ($isCompatible === false) {
             $this->logger->warning(
                     '🛡️ Field validation prevented type mismatch',
                     [

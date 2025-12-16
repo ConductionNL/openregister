@@ -64,4 +64,40 @@ class AgentUpdatedEvent extends Event
     }//end __construct()
 
 
+    /**
+     * Get the updated agent.
+     *
+     * @return Agent The agent after update.
+     */
+    public function getAgent(): Agent
+    {
+        return $this->newAgent;
+
+    }//end getAgent()
+
+
+    /**
+     * Get the new agent state.
+     *
+     * @return Agent The agent after update.
+     */
+    public function getNewAgent(): Agent
+    {
+        return $this->newAgent;
+
+    }//end getNewAgent()
+
+
+    /**
+     * Get the old agent state.
+     *
+     * @return Agent The agent before update.
+     */
+    public function getOldAgent(): Agent
+    {
+        return $this->oldAgent;
+
+    }//end getOldAgent()
+
+
 }//end class

@@ -160,7 +160,7 @@ class MariaDbSearchHandler
                                     $values = $operatorValue;
                                 }
 
-                                if (!empty($values)) {
+                                if (empty($values) === false) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
                                         if (in_array($field, $textFields) === true) {
@@ -326,7 +326,7 @@ class MariaDbSearchHandler
                                     $values = $operatorValue;
                                 }
 
-                                if (!empty($values)) {
+                                if (empty($values) === false) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
                                         $orConditions->add(

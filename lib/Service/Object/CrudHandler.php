@@ -66,14 +66,14 @@ class CrudHandler
     /**
      * List objects with filters and pagination
      *
-     * @param array       $query     Search query parameters
-     * @param bool        $rbac      Apply RBAC filters
-     * @param bool        $_multitenancy     Apply multitenancy filters
-     * @param bool        $published Only return published objects
-     * @param bool        $deleted   Include deleted objects
-     * @param array|null  $ids       Optional array of object IDs to filter
-     * @param string|null $uses      Optional object ID that results must use
-     * @param array|null  $views     Optional view filters
+     * @param array       $query         Search query parameters
+     * @param bool        $rbac          Apply RBAC filters
+     * @param bool        $_multitenancy Apply multitenancy filters
+     * @param bool        $published     Only return published objects
+     * @param bool        $deleted       Include deleted objects
+     * @param array|null  $ids           Optional array of object IDs to filter
+     * @param string|null $uses          Optional object ID that results must use
+     * @param array|null  $views         Optional view filters
      *
      * @return array Paginated results with objects
      *
@@ -92,11 +92,11 @@ class CrudHandler
         $this->logger->debug(
             message: '[CrudHandler] Listing objects',
             context: [
-                'query_params' => array_keys($query),
-                'rbac'         => $rbac,
+                'query_params'  => array_keys($query),
+                'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
-                'published'    => $published,
-                'deleted'      => $deleted,
+                'published'     => $published,
+                'deleted'       => $deleted,
             ]
         );
 
@@ -104,16 +104,15 @@ class CrudHandler
             // TODO: Implement proper search logic
             $result = ['results' => [], 'total' => 0];
             // $this->objectEntityMapper->searchObjectsPaginated(
-            //     query: $query,
-            //     _rbac: $rbac,
-            //     _multitenancy: $multi,
-            //     published: $published,
-            //     deleted: $deleted,
-            //     ids: $ids,
-            //     uses: $uses,
-            //     views: $views
+            // query: $query,
+            // _rbac: $rbac,
+            // _multitenancy: $multi,
+            // published: $published,
+            // deleted: $deleted,
+            // ids: $ids,
+            // uses: $uses,
+            // views: $views
             // );
-
             $this->logger->debug(
                 message: '[CrudHandler] Objects listed',
                 context: [
@@ -140,9 +139,9 @@ class CrudHandler
     /**
      * Get a single object by ID
      *
-     * @param string $objectId Object ID or UUID
-     * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $_multitenancy    Apply multitenancy filters
+     * @param string $objectId      Object ID or UUID
+     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity|null Object entity or null if not found
      *
@@ -153,8 +152,8 @@ class CrudHandler
         $this->logger->debug(
             message: '[CrudHandler] Getting object',
             context: [
-                'object_id' => $objectId,
-                'rbac'      => $rbac,
+                'object_id'     => $objectId,
+                'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -163,11 +162,10 @@ class CrudHandler
             // TODO: Implement proper find logic
             $object = null;
             // $this->objectEntityMapper->find(
-            //     id: $objectId,
-            //     _rbac: $rbac,
-            //     _multitenancy: $multi
+            // id: $objectId,
+            // _rbac: $rbac,
+            // _multitenancy: $multi
             // );
-
             if ($object === null) {
                 $this->logger->warning(
                     message: '[CrudHandler] Object not found',
@@ -202,8 +200,8 @@ class CrudHandler
     /**
      * Create a new object
      *
-     * @param array $data  Object data
-     * @param bool  $rbac  Apply RBAC filters
+     * @param array $data          Object data
+     * @param bool  $rbac          Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Created object
@@ -215,8 +213,8 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Creating object',
             context: [
-                'data_keys' => array_keys($data),
-                'rbac'      => $rbac,
+                'data_keys'     => array_keys($data),
+                'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -225,12 +223,11 @@ class CrudHandler
             // TODO: Implement proper save logic
             $object = null;
             // $this->objectEntityMapper->saveObject(
-            //     objectId: null,
-            //     object: $data,
-            //     _rbac: $rbac,
-            //     _multitenancy: $multi
+            // objectId: null,
+            // object: $data,
+            // _rbac: $rbac,
+            // _multitenancy: $multi
             // );
-
             $this->logger->info(
                 message: '[CrudHandler] Object created',
                 context: [
@@ -257,10 +254,10 @@ class CrudHandler
     /**
      * Update an existing object (full update)
      *
-     * @param string $objectId Object ID or UUID
-     * @param array  $data     Object data
-     * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $_multitenancy    Apply multitenancy filters
+     * @param string $objectId      Object ID or UUID
+     * @param array  $data          Object data
+     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Updated object
      *
@@ -275,9 +272,9 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Updating object',
             context: [
-                'object_id' => $objectId,
-                'data_keys' => array_keys($data),
-                'rbac'      => $rbac,
+                'object_id'     => $objectId,
+                'data_keys'     => array_keys($data),
+                'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -286,12 +283,11 @@ class CrudHandler
             // TODO: Implement proper save logic
             $object = null;
             // $this->objectEntityMapper->saveObject(
-            //     objectId: $objectId,
-            //     object: $data,
-            //     _rbac: $rbac,
-            //     _multitenancy: $multi
+            // objectId: $objectId,
+            // object: $data,
+            // _rbac: $rbac,
+            // _multitenancy: $multi
             // );
-
             $this->logger->info(
                 message: '[CrudHandler] Object updated',
                 context: [
@@ -318,10 +314,10 @@ class CrudHandler
     /**
      * Patch an existing object (partial update)
      *
-     * @param string $objectId Object ID or UUID
-     * @param array  $data     Partial object data
-     * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $_multitenancy    Apply multitenancy filters
+     * @param string $objectId      Object ID or UUID
+     * @param array  $data          Partial object data
+     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Patched object
      *
@@ -336,9 +332,9 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Patching object',
             context: [
-                'object_id' => $objectId,
-                'data_keys' => array_keys($data),
-                'rbac'      => $rbac,
+                'object_id'     => $objectId,
+                'data_keys'     => array_keys($data),
+                'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -389,9 +385,9 @@ class CrudHandler
     /**
      * Delete an object
      *
-     * @param string $objectId Object ID or UUID
-     * @param bool   $rbac     Apply RBAC filters
-     * @param bool   $_multitenancy    Apply multitenancy filters
+     * @param string $objectId      Object ID or UUID
+     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return bool True if deleted successfully
      *
@@ -402,8 +398,8 @@ class CrudHandler
         $this->logger->info(
             message: '[CrudHandler] Deleting object',
             context: [
-                'object_id' => $objectId,
-                'rbac'      => $rbac,
+                'object_id'     => $objectId,
+                'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -411,11 +407,10 @@ class CrudHandler
         try {
             // TODO: Implement proper delete logic
             // $this->objectEntityMapper->deleteObject(
-            //     uuid: $objectId,
-            //     _rbac: $rbac,
-            //     _multitenancy: $multi
+            // uuid: $objectId,
+            // _rbac: $rbac,
+            // _multitenancy: $multi
             // );
-
             $this->logger->info(
                 message: '[CrudHandler] Object deleted',
                 context: ['object_id' => $objectId]

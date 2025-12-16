@@ -36,7 +36,7 @@ use OCP\AppFramework\Http\JSONResponse;
  *
  * Requirements for using this trait:
  * - The entity must have an 'organisation' property (string UUID)
- * - The mapper must inject OrganisationService ($this->organisationService)
+ * - The mapper must inject OrganisationMapper ($this->organisationMapper)
  * - The mapper must inject IGroupManager ($this->groupManager - for RBAC)
  * - The mapper must inject IUserSession ($this->userSession - for current user)
  * - The mapper must have access to IDBConnection via $this->db (from QBMapper parent)
@@ -61,30 +61,71 @@ trait MultiTenancyTrait
      * Get the active organisation UUID from the session.
      *
      * Falls back to the default organisation from config if no active organisation is set.
+     * Automatically sets the default as active if user has no active organisation.
      *
      * @return string|null The active organisation UUID or default organisation UUID, or null if neither set
      */
     protected function getActiveOrganisationUuid(): ?string
     {
-        if (isset($this->organisationService) === false) {
+        // Get current user.
+        if (isset($this->userSession) === false) {
             return null;
         }
 
-        // Try to get active organisation first.
-        $activeOrg = $this->organisationService->getActiveOrganisation();
-        if ($activeOrg !== null) {
-            return $activeOrg->getUuid();
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return $this->getDefaultOrganisationUuid();
         }
 
-        // Fall back to default organisation from config.
-        $defaultOrgUuid = $this->organisationService->getDefaultOrganisationUuid();
-        if ($defaultOrgUuid !== null) {
-            return $defaultOrgUuid;
+        // Use OrganisationMapper to get active org with automatic fallback to default.
+        if (isset($this->organisationMapper) === true) {
+            return $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+        }
+
+        // Fallback if mapper not available.
+        return $this->getDefaultOrganisationUuid();
+
+    }//end getActiveOrganisationUuid()
+
+
+    /**
+     * Get default organisation UUID from config
+     *
+     * This method provides a fallback for when OrganisationMapper is not available.
+     * Prefer using OrganisationMapper::getDefaultOrganisationFromConfig() when possible.
+     *
+     * @return string|null Default organisation UUID or null if not set
+     */
+    protected function getDefaultOrganisationUuid(): ?string
+    {
+        // Prefer using OrganisationMapper if available.
+        if (isset($this->organisationMapper) === true) {
+            return $this->organisationMapper->getDefaultOrganisationFromConfig();
+        }
+
+        // Fallback to direct config access if mapper not available.
+        if (isset($this->appConfig) === false) {
+            return null;
+        }
+
+        // Try direct config key (newer format).
+        $defaultOrg = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
+        if (empty($defaultOrg) === false) {
+            return $defaultOrg;
+        }
+
+        // Try nested organisation config (legacy format).
+        $organisationConfig = $this->appConfig->getValueString('openregister', 'organisation', '');
+        if (empty($organisationConfig) === false) {
+            $storedData = json_decode($organisationConfig, true);
+            if (isset($storedData['default_organisation']) === true) {
+                return $storedData['default_organisation'];
+            }
         }
 
         return null;
 
-    }//end getActiveOrganisationUuid()
+    }//end getDefaultOrganisationUuid()
 
 
     /**
@@ -101,21 +142,31 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuids(): array
     {
-        if (isset($this->organisationService) === false) {
+        $activeOrgUuid = $this->getActiveOrganisationUuid();
+        if ($activeOrgUuid === null) {
             return [];
         }
 
-        $uuids = $this->organisationService->getUserActiveOrganisations();
-        
-        // If no active organisations, fall back to default organisation.
-        if (empty($uuids)) {
-            $defaultOrgUuid = $this->organisationService->getDefaultOrganisationUuid();
-            if ($defaultOrgUuid !== null) {
-                $uuids[] = $defaultOrgUuid;
+        // If we have OrganisationMapper, get the full hierarchy (active + parents).
+        if (isset($this->organisationMapper) === true) {
+            try {
+                $uuids = $this->organisationMapper->getOrganisationHierarchy($activeOrgUuid);
+                if (empty($uuids) === false) {
+                    return $uuids;
+                }
+            } catch (\Exception $e) {
+                // Fall back to just the active org.
+                if (isset($this->logger) === true) {
+                    $this->logger->warning(
+                        'Failed to get organisation hierarchy: '.$e->getMessage(),
+                        ['activeOrgUuid' => $activeOrgUuid]
+                    );
+                }
             }
         }
 
-        return $uuids;
+        // Fall back to just the active organisation.
+        return [$activeOrgUuid];
 
     }//end getActiveOrganisationUuids()
 
@@ -526,7 +577,7 @@ trait MultiTenancyTrait
     protected function setOwnerOnCreate(Entity $entity): void
     {
         // Only set owner if the entity has an owner property.
-        if (!method_exists($entity, 'getOwner') || !method_exists($entity, 'setOwner')) {
+        if (method_exists($entity, 'getOwner') === false || method_exists($entity, 'setOwner') === false) {
             return;
         }
 

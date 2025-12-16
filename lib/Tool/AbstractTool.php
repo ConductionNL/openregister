@@ -304,7 +304,7 @@ abstract class AbstractTool implements ToolInterface
         foreach ($required as $param) {
             // Check if parameter exists in parameters array.
             // isset() checks both existence and non-null value.
-            if (!isset($parameters[$param])) {
+            if (isset($parameters[$param]) === false) {
                 // Throw exception with descriptive error message.
                 throw new \InvalidArgumentException("Missing required parameter: {$param}");
             }

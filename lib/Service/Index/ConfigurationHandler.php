@@ -119,7 +119,7 @@ class ConfigurationHandler
         ];
 
         // Add HTTP Basic Authentication if credentials are provided.
-        if (empty($this->solrConfig['username']) === FALSE && empty($this->solrConfig['password']) === FALSE) {
+        if (empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false) {
             $clientConfig['auth'] = [
                 $this->solrConfig['username'],
                 $this->solrConfig['password'],
@@ -212,7 +212,7 @@ class ConfigurationHandler
 
         // Allow custom path for reverse proxies or non-standard setups.
         $path = $this->solrConfig['path'] ?? '';
-        if (empty($path) === FALSE) {
+        if (empty($path) === false) {
             $path = '/'.ltrim($path, '/');
         }
 
@@ -280,7 +280,7 @@ class ConfigurationHandler
      */
     public function getConfigStatus(string $key): string
     {
-        if (isset($this->solrConfig[$key]) && empty($this->solrConfig[$key]) === FALSE) {
+        if (isset($this->solrConfig[$key]) && empty($this->solrConfig[$key]) === false) {
             return '✓ Configured';
         }
 
