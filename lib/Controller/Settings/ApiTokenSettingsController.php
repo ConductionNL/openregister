@@ -73,37 +73,37 @@ class ApiTokenSettingsController extends Controller
      */
     public function getApiTokens(): JSONResponse
     {
-    try {
-        $githubToken = $this->config->getValueString('openregister', 'github_api_token', '');
-        $gitlabToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
-        $gitlabUrl   = $this->config->getValueString('openregister', 'gitlab_api_url', '');
+        try {
+            $githubToken = $this->config->getValueString('openregister', 'github_api_token', '');
+            $gitlabToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
+            $gitlabUrl   = $this->config->getValueString('openregister', 'gitlab_api_url', '');
 
-        // Mask tokens for security (only show first/last few characters).
-        $maskedGithubToken = '';
-        if ($githubToken !== '') {
-            $maskedGithubToken = $this->settingsService->maskToken($githubToken);
-        }
+            // Mask tokens for security (only show first/last few characters).
+            $maskedGithubToken = '';
+            if ($githubToken !== '') {
+                $maskedGithubToken = $this->settingsService->maskToken($githubToken);
+            }
 
-        $maskedGithubToken = '';
-        if ($gitlabToken !== '') {
-            $maskedGitlabToken = $this->settingsService->maskToken($gitlabToken);
-        }
+            $maskedGithubToken = '';
+            if ($gitlabToken !== '') {
+                $maskedGitlabToken = $this->settingsService->maskToken($gitlabToken);
+            }
 
-        return new JSONResponse(
+            return new JSONResponse(
                 data: [
                     'github_token' => $maskedGithubToken,
                     'gitlab_token' => $maskedGitlabToken,
                     'gitlab_url'   => $gitlabUrl,
                 ]
                 );
-    } catch (Exception $e) {
-        return new JSONResponse(
+        } catch (Exception $e) {
+            return new JSONResponse(
             data: [
                 'error' => 'Failed to retrieve API tokens: '.$e->getMessage(),
             ],
             statusCode: 500
-        );
-    }//end try
+            );
+        }//end try
 
     }//end getApiTokens()
 
@@ -287,4 +287,4 @@ class ApiTokenSettingsController extends Controller
     }//end testGitLabToken()
 
 
-    }//end class
+}//end class

@@ -112,13 +112,13 @@ class RegisterMapper extends QBMapper
     private readonly ObjectEntityMapper $objectEntityMapper;
 
     /**
-     * Organisation service for multi-tenancy (from trait)
+     * Organisation mapper for multi-tenancy (from trait)
      *
      * Used to get active organisation and apply organisation filters.
      *
-     * @var OrganisationService Organisation service instance
+     * @var OrganisationMapper Organisation mapper instance
      */
-    protected OrganisationService $organisationService;
+    protected OrganisationMapper $organisationMapper;
 
 
     /**
@@ -127,14 +127,14 @@ class RegisterMapper extends QBMapper
      * Initializes mapper with database connection and required dependencies
      * for multi-tenancy, RBAC, and event dispatching.
      *
-     * @param IDBConnection       $db                  Database connection for queries
-     * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher for register events
-     * @param ObjectEntityMapper  $objectEntityMapper  Object entity mapper for object queries
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
-     * @param IUserSession        $userSession         User session for current user context
-     * @param IGroupManager       $groupManager        Group manager for RBAC checks
-     * @param IAppConfig          $appConfig           App configuration for multitenancy settings
+     * @param IDBConnection      $db                 Database connection for queries
+     * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for register events
+     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for object queries
+     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession       $userSession        User session for current user context
+     * @param IGroupManager      $groupManager       Group manager for RBAC checks
+     * @param IAppConfig         $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
@@ -143,7 +143,7 @@ class RegisterMapper extends QBMapper
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
         ObjectEntityMapper $objectEntityMapper,
-        OrganisationService $organisationService,
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -152,13 +152,13 @@ class RegisterMapper extends QBMapper
         parent::__construct($db, 'openregister_registers', Register::class);
 
         // Store dependencies for use in mapper methods.
-        $this->schemaMapper         = $schemaMapper;
-        $this->eventDispatcher      = $eventDispatcher;
-        $this->objectEntityMapper   = $objectEntityMapper;
-        $this->organisationService  = $organisationService;
-        $this->userSession          = $userSession;
-        $this->groupManager         = $groupManager;
-        $this->appConfig            = $appConfig;
+        $this->schemaMapper       = $schemaMapper;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->appConfig          = $appConfig;
 
     }//end __construct()
 

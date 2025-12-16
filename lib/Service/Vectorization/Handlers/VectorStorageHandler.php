@@ -335,7 +335,7 @@ class VectorStorageHandler
 
             $responseData = json_decode((string) $response->getBody(), true);
 
-            if (!isset($responseData['responseHeader']['status']) || $responseData['responseHeader']['status'] !== 0) {
+            if (isset($responseData['responseHeader']['status']) === false || $responseData['responseHeader']['status'] !== 0) {
                 throw new Exception('Solr atomic update failed: '.json_encode($responseData));
             }
 

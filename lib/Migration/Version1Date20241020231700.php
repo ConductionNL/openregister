@@ -72,7 +72,7 @@ class Version1Date20241020231700 extends SimpleMigrationStep
         $schema = $schemaClosure();
 
         // create the openregister_logs table.
-        if (!$schema->hasTable('openregister_audit_trails')) {
+        if ($schema->hasTable('openregister_audit_trails') === false) {
             $table = $schema->createTable('openregister_audit_trails');
             $table->addColumn('id', Types::INTEGER, ['autoincrement' => true, 'notnull' => true]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
@@ -96,7 +96,7 @@ class Version1Date20241020231700 extends SimpleMigrationStep
 
         // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
-        if (!$table->hasColumn('text_representation')) {
+        if ($table->hasColumn('text_representation') === false) {
             $table->addColumn(name: 'text_representation', typeName: Types::TEXT, options: ['notnull' => false]);
         }
 

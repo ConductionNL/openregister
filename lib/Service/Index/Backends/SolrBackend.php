@@ -147,7 +147,7 @@ class SolrBackend implements SearchBackendInterface
      */
     public function testConnection(bool $includeCollectionTests=true): array
     {
-        if (!$this->httpClient->isConfigured()) {
+        if ($this->httpClient->isConfigured() === false) {
             return [
                 'success' => false,
                 'error'   => 'Solr is not configured',

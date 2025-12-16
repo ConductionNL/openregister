@@ -566,13 +566,12 @@ class FilePropertyHandler
         // Create the file with validation and tagging.
         $file = null;
         // TODO->addFile(
-        //     objectEntity: $objectEntity,
-        //     fileName: $filename,
-        //     content: $fileData['content'],
-        //     share: $autoPublish,
-        //     tags: $autoTags
+        // objectEntity: $objectEntity,
+        // fileName: $filename,
+        // content: $fileData['content'],
+        // share: $autoPublish,
+        // tags: $autoTags
         // );
-
         return $file->getId();
 
     }//end processStringFileInput()
@@ -829,10 +828,10 @@ class FilePropertyHandler
                 // Update file with merged tags.
                 null;
                 // TODO->updateFile(
-                //     filePath: $file->getId(),
-                //     content: null,
-                //     // Don't change content.
-                //     tags: $allTags
+                // filePath: $file->getId(),
+                // content: null,
+                // Don't change content.
+                // tags: $allTags
                 // );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.

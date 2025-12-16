@@ -510,5 +510,3 @@ class FilePublishingHandler
 
 
 }//end class
-
-

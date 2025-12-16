@@ -1244,8 +1244,7 @@ class ValidateObject
                 if (is_array($missing) === true && count($missing) > 0) {
                     if (count($missing) === 1) {
                         $property = $missing[0];
-                        return "The required property ({$property}) is missing. "
-                            ."Please provide a value for this property or set it to null if allowed.";
+                        return "The required property ({$property}) is missing. "."Please provide a value for this property or set it to null if allowed.";
                     }
 
                     $missingList = implode(', ', $missing);
@@ -1259,23 +1258,17 @@ class ValidateObject
 
                 // Provide specific guidance for empty values.
                 if ($expectedType === 'object' && (is_array($value) === true && empty($value) === true)) {
-                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). "
-                        ."For non-required object properties, you can set this to null to clear the field. "
-                        ."For required object properties, provide a valid object with the necessary properties.";
+                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). "."For non-required object properties, you can set this to null to clear the field. "."For required object properties, provide a valid object with the necessary properties.";
                 }
 
                 if ($expectedType === 'array' && (is_array($value) === true && empty($value) === true)) {
-                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). "
-                        ."This property likely has a minItems constraint. Please provide at least one item in the array.";
+                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). "."This property likely has a minItems constraint. Please provide at least one item in the array.";
                 }
 
                 if ($expectedType === 'string' && $value === '') {
-                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. "
-                        ."For non-required string properties, you can set this to null to clear the field. "
-                        ."For required string properties, provide a valid string value.";
+                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. "."For non-required string properties, you can set this to null to clear the field. "."For required string properties, provide a valid string value.";
                 }
-                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. "
-                    ."Please provide a value of the correct type.";
+                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. "."Please provide a value of the correct type.";
 
             case 'minItems':
                 $minItems = $args['min'] ?? 0;
@@ -1284,8 +1277,7 @@ class ValidateObject
                 } else {
                     $actualItems = 0;
                 }
-                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. "
-                    ."Please add more items to the array or set to null if the property is not required.";
+                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. "."Please add more items to the array or set to null if the property is not required.";
 
             case 'maxItems':
                 $maxItems = $args['max'] ?? 0;
@@ -1294,13 +1286,11 @@ class ValidateObject
                 } else {
                     $actualItems = 0;
                 }
-                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. "
-                    ."Please remove some items from the array.";
+                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. "."Please remove some items from the array.";
 
             case 'format':
                 $format = $args['format'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "
-                    ."Please provide a value in the correct format.";
+                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "."Please provide a value in the correct format.";
 
             case 'minLength':
                 $minLength = $args['min'] ?? 0;

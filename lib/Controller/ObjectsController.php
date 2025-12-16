@@ -552,9 +552,9 @@ class ObjectsController extends Controller
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
-        $rbac    = $isAdmin === FALSE;
+        $rbac    = $isAdmin === false;
         // If admin, disable RBAC.
-        $multi = $isAdmin === FALSE;
+        $multi = $isAdmin === false;
         // If admin, disable multitenancy.
         // Find and validate the object.
         try {
@@ -644,9 +644,9 @@ class ObjectsController extends Controller
         // Allow @self metadata to pass through for organization activation.
         $object = array_filter(
             $object,
-            fn ($key) => str_starts_with($key, '_') === FALSE
+            fn ($key) => str_starts_with($key, '_') === false
                 && !($key !== '@self' && str_starts_with($key, '@'))
-                && in_array($key, ['uuid', 'register', 'schema']) === FALSE,
+                && in_array($key, ['uuid', 'register', 'schema']) === false,
             ARRAY_FILTER_USE_KEY
         );
 
@@ -716,7 +716,7 @@ class ObjectsController extends Controller
         // If admin, disable RBAC.
         // Note: multitenancy is disabled for admins via $rbac flag.
         // Determine uploaded files value.
-        if (empty($uploadedFiles) === FALSE) {
+        if (empty($uploadedFiles) === false) {
             $uploadedFilesValue = $uploadedFiles;
         } else {
             $uploadedFilesValue = null;
@@ -792,9 +792,9 @@ class ObjectsController extends Controller
         // Allow @self metadata to pass through for organization activation.
         $object = array_filter(
             $object,
-            fn ($key) => str_starts_with($key, '_') === FALSE
+            fn ($key) => str_starts_with($key, '_') === false
                 && !($key !== '@self' && str_starts_with($key, '@'))
-                && in_array($key, ['uuid', 'register', 'schema']) === FALSE,
+                && in_array($key, ['uuid', 'register', 'schema']) === false,
             ARRAY_FILTER_USE_KEY
         );
 
@@ -860,9 +860,9 @@ class ObjectsController extends Controller
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
-        $rbac    = $isAdmin === FALSE;
+        $rbac    = $isAdmin === false;
         // If admin, disable RBAC.
-        $multi = $isAdmin === FALSE;
+        $multi = $isAdmin === false;
         // If admin, disable multitenancy.
         // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
@@ -905,7 +905,7 @@ class ObjectsController extends Controller
         }//end try
 
         // Determine uploaded files value.
-        if (empty($uploadedFiles) === FALSE) {
+        if (empty($uploadedFiles) === false) {
             $uploadedFilesValue = $uploadedFiles;
         } else {
             $uploadedFilesValue = null;
@@ -979,9 +979,9 @@ class ObjectsController extends Controller
         // Allow @self metadata to pass through for organization activation.
         $patchData = array_filter(
             $patchData,
-            fn ($key) => str_starts_with($key, '_') === FALSE
+            fn ($key) => str_starts_with($key, '_') === false
                 && !($key !== '@self' && str_starts_with($key, '@'))
-                && in_array($key, ['uuid', 'register', 'schema']) === FALSE,
+                && in_array($key, ['uuid', 'register', 'schema']) === false,
             ARRAY_FILTER_USE_KEY
         );
 
@@ -1348,7 +1348,7 @@ class ObjectsController extends Controller
         $requestedRegisterNorm = strtolower($requestedRegister);
         $registerMatch         = ($objectRegisterNorm === $requestedRegisterNorm);
 
-        if ($schemaMatch === FALSE || $registerMatch === FALSE) {
+        if ($schemaMatch === false || $registerMatch === false) {
             return new JSONResponse(data: ['message' => 'Object does not belong to specified register/schema'], statusCode: 404);
         }
 
@@ -1569,9 +1569,9 @@ class ObjectsController extends Controller
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
-        $rbac    = $isAdmin === FALSE;
+        $rbac    = $isAdmin === false;
         // If admin, disable RBAC.
-        $multi = $isAdmin === FALSE;
+        $multi = $isAdmin === false;
         // If admin, disable multitenancy.
         try {
             // Get the publication date from request if provided.
@@ -1621,9 +1621,9 @@ class ObjectsController extends Controller
 
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
-        $rbac    = $isAdmin === FALSE;
+        $rbac    = $isAdmin === false;
         // If admin, disable RBAC.
-        $multi = $isAdmin === FALSE;
+        $multi = $isAdmin === false;
         // If admin, disable multitenancy.
         try {
             // Get the depublication date from request if provided.
@@ -1677,7 +1677,7 @@ class ObjectsController extends Controller
             $requestParams = $this->request->getParams();
 
             // Validate required parameters.
-            if (isset($requestParams['target']) === FALSE) {
+            if (isset($requestParams['target']) === false) {
                 return new JSONResponse(data: ['error' => 'Target object ID is required'], statusCode: 400);
             }
 

@@ -239,7 +239,7 @@ class GetObject
         $objectData = $object->getObject();
         foreach ($files as $file) {
             $propertyName = explode('_', $file->getName())[0];
-            if (!isset($objectData[$propertyName])) {
+            if (isset($objectData[$propertyName]) === false) {
                 continue;
             }
 

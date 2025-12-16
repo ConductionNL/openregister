@@ -57,7 +57,7 @@ class Version1Date20250607093617 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_audit_trails');
 
         // Add the expires column if it doesn't exist.
-        if (!$table->hasColumn('expires')) {
+        if ($table->hasColumn('expires') === false) {
             $table->addColumn(
                     'expires',
                     Types::DATETIME,

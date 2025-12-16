@@ -1375,13 +1375,13 @@ class RenderObject
      * This method renders an array of ObjectEntities by calling renderEntity() for each one.
      * It's used for batch rendering of search results and collections.
      *
-     * @param array             $entities Array of ObjectEntity instances to render.
-     * @param array|string|null $_extend  Properties to extend/embed in the response.
-     * @param array|null        $_filter  Filters to apply to the rendered entities.
-     * @param array|null        $_fields  Specific fields to include in the response.
-     * @param array|null        $_unset   Fields to exclude from the response.
-     * @param bool              $_rbac    Whether to apply RBAC checks (default: true).
-     * @param bool              $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param array             $entities      Array of ObjectEntity instances to render.
+     * @param array|string|null $_extend       Properties to extend/embed in the response.
+     * @param array|null        $_filter       Filters to apply to the rendered entities.
+     * @param array|null        $_fields       Specific fields to include in the response.
+     * @param array|null        $_unset        Fields to exclude from the response.
+     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool              $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return array<int, ObjectEntity> Array of rendered ObjectEntity instances.
      */

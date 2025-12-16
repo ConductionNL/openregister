@@ -464,7 +464,7 @@ class FolderManagementHandler
         $register       = $this->registerMapper->find($objectEntity->getRegister());
         $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
-        if ($registerFolder === null || !($registerFolder instanceof Folder)) {
+        if ($registerFolder === null || ($registerFolder instanceof Folder) === false) {
             throw new Exception("Failed to create or access register folder");
         }
 

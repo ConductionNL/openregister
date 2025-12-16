@@ -28,6 +28,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -96,18 +97,18 @@ class SourceMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher,
         IAppConfig $appConfig
     ) {
         parent::__construct($db, 'openregister_sources', Source::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->eventDispatcher     = $eventDispatcher;
-        $this->appConfig           = $appConfig;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->appConfig          = $appConfig;
 
     }//end __construct()
 

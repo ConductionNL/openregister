@@ -59,9 +59,9 @@ class DocumentProcessingHandler
     /**
      * Constructor for DocumentProcessingHandler.
      *
-     * @param IRootFolder       $rootFolder   Root folder for file access.
-     * @param IUserSession      $userSession  User session for getting current user.
-     * @param LoggerInterface   $logger       Logger for logging operations.
+     * @param IRootFolder     $rootFolder  Root folder for file access.
+     * @param IUserSession    $userSession User session for getting current user.
+     * @param LoggerInterface $logger      Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -113,8 +113,8 @@ class DocumentProcessingHandler
             throw new Exception('Node must be a file');
         }
 
-        $fileName                 = $node->getName();
-        $fileExtension            = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $fileName      = $node->getName();
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
 
         // Generate output file name if not provided.
@@ -169,8 +169,8 @@ class DocumentProcessingHandler
         }
 
         // Generate anonymized file name.
-        $fileName                 = $node->getName();
-        $fileExtension            = pathinfo($fileName, PATHINFO_EXTENSION);
+        $fileName      = $node->getName();
+        $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
         $fileNameWithoutExtension = pathinfo($fileName, PATHINFO_FILENAME);
 
         $anonymizedFileName = $fileNameWithoutExtension.'_anonymized';
@@ -408,5 +408,3 @@ class DocumentProcessingHandler
 
 
 }//end class
-
-

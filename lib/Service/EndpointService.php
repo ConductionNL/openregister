@@ -409,7 +409,7 @@ class EndpointService
             foreach ($agentTools as $toolName) {
                 try {
                     $tool = $toolRegistry->getTool($toolName);
-                    if (!$tool) {
+                    if ($tool === null) {
                         continue;
                     }
 

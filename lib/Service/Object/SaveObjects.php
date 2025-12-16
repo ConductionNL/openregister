@@ -1260,7 +1260,7 @@ class SaveObjects
             $result['invalid'] = array_merge($result['invalid'], $transformationResult['invalid']);
             $result['statistics']['invalid'] += $invalidCount;
             // 'errors' key may not be in statistics type definition, initialize if needed.
-            if (!array_key_exists('errors', $result['statistics'])) {
+            if (array_key_exists('errors', $result['statistics']) === FALSE) {
                 $result['statistics']['errors'] = 0;
             }
             $result['statistics']['errors'] += $invalidCount;

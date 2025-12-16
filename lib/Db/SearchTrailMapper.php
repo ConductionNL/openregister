@@ -831,7 +831,7 @@ class SearchTrailMapper extends QBMapper
 
         foreach ($filters as $field => $value) {
             // Skip system variables and ensure valid column names.
-            if (str_starts_with($field, '_') === true || !in_array($field, $validColumns)) {
+            if (str_starts_with($field, '_') === true || in_array($field, $validColumns) === false) {
                 continue;
             }
 

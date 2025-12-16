@@ -57,10 +57,10 @@ class FileFormattingHandler
     /**
      * Constructor for FileFormattingHandler.
      *
-     * @param TaggingHandler          $taggingHandler   Tagging handler for tag operations.
-     * @param FileSharingHandler      $fileSharingHandler Sharing handler for share operations.
-     * @param IURLGenerator           $urlGenerator     URL generator for creating URLs.
-     * @param LoggerInterface         $logger           Logger for logging operations.
+     * @param TaggingHandler     $taggingHandler     Tagging handler for tag operations.
+     * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
+     * @param IURLGenerator      $urlGenerator       URL generator for creating URLs.
+     * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
         private readonly TaggingHandler $taggingHandler,
@@ -128,8 +128,8 @@ class FileFormattingHandler
         foreach ($metadata['labels'] as $label) {
             if (strpos($label, ':') !== false) {
                 list($key, $value) = explode(':', $label, 2);
-                $key               = trim($key);
-                $value             = trim($value);
+                $key   = trim($key);
+                $value = trim($value);
 
                 // Skip if key exists in base metadata.
                 if (isset($metadata[$key]) === true) {
@@ -237,8 +237,8 @@ class FileFormattingHandler
      *     search?: string
      * } Normalized filter parameters.
      *
-     * @phpstan-param  array<string, mixed> $requestParams
-     * @psalm-param    array<string, mixed> $requestParams
+     * @phpstan-param array<string, mixed> $requestParams
+     * @psalm-param   array<string, mixed> $requestParams
      */
     private function extractFilterParameters(array $requestParams): array
     {
@@ -436,4 +436,3 @@ class FileFormattingHandler
 
 
 }//end class
-

@@ -126,7 +126,7 @@ class MagicFacetHandler
 
         // Verify field exists in schema.
         $properties = $schema->getProperties();
-        if (!isset($properties[$field])) {
+        if (isset($properties[$field]) === false) {
             return [];
         }
 
@@ -433,7 +433,7 @@ class MagicFacetHandler
         $objectFilters = array_filter(
                 $baseQuery,
                 function ($key) {
-                    return $key !== '@self' && !str_starts_with($key, '_');
+                    return $key !== '@self' && str_starts_with($key, '_') === false;
                 },
                 ARRAY_FILTER_USE_KEY
                 );

@@ -53,7 +53,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
          */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_configurations') === FALSE) {
+        if ($schema->hasTable('openregister_configurations') === false) {
             $table = $schema->createTable('openregister_configurations');
             $table->addColumn(
                     'id',
@@ -137,7 +137,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_schemas');
 
         // Add the authorization column if it doesn't exist.
-        if (!$table->hasColumn('authorization')) {
+        if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
                     'authorization',
                     Types::JSON,
@@ -159,7 +159,7 @@ class Version1Date20250410070338 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_registers');
 
         // Add the authorization column if it doesn't exist.
-        if (!$table->hasColumn('authorization')) {
+        if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
                     'authorization',
                     Types::JSON,

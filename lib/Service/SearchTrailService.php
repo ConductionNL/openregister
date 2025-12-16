@@ -861,7 +861,7 @@ class SearchTrailService
 
         foreach ($userAgentStats as $stat) {
             $browser = $stat['browser_info']['browser'];
-            if (!isset($browserCounts[$browser])) {
+            if (isset($browserCounts[$browser]) === false) {
                 $browserCounts[$browser] = 0;
             }
 
