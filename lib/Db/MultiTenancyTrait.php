@@ -60,7 +60,9 @@ trait MultiTenancyTrait
     /**
      * Get the active organisation UUID from the session.
      *
-     * @return string|null The active organisation UUID or null if none set
+     * Falls back to the default organisation from config if no active organisation is set.
+     *
+     * @return string|null The active organisation UUID or default organisation UUID, or null if neither set
      */
     protected function getActiveOrganisationUuid(): ?string
     {
@@ -68,12 +70,19 @@ trait MultiTenancyTrait
             return null;
         }
 
+        // Try to get active organisation first.
         $activeOrg = $this->organisationService->getActiveOrganisation();
         if ($activeOrg !== null) {
             return $activeOrg->getUuid();
-        } else {
-            return null;
         }
+
+        // Fall back to default organisation from config.
+        $defaultOrgUuid = $this->organisationService->getDefaultOrganisationUuid();
+        if ($defaultOrgUuid !== null) {
+            return $defaultOrgUuid;
+        }
+
+        return null;
 
     }//end getActiveOrganisationUuid()
 
@@ -83,6 +92,7 @@ trait MultiTenancyTrait
      *
      * Returns array of organisation UUIDs that the current user can access.
      * Includes the active organisation and all parent organisations in the hierarchy.
+     * Falls back to default organisation if no active organisation is set.
      * Used for filtering queries to allow access to parent resources.
      *
      * @return (mixed|null|string)[] Array of organisation UUIDs
@@ -95,7 +105,17 @@ trait MultiTenancyTrait
             return [];
         }
 
-        return $this->organisationService->getUserActiveOrganisations();
+        $uuids = $this->organisationService->getUserActiveOrganisations();
+        
+        // If no active organisations, fall back to default organisation.
+        if (empty($uuids)) {
+            $defaultOrgUuid = $this->organisationService->getDefaultOrganisationUuid();
+            if ($defaultOrgUuid !== null) {
+                $uuids[] = $defaultOrgUuid;
+            }
+        }
+
+        return $uuids;
 
     }//end getActiveOrganisationUuids()
 

@@ -266,6 +266,13 @@ class OrganisationService
     public function getDefaultOrganisationUuid(): ?string
     {
         try {
+            // First try the direct config key (newer format).
+            $defaultOrg = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
+            if (empty($defaultOrg) === false) {
+                return $defaultOrg;
+            }
+
+            // Fall back to nested organisation config (legacy format).
             $settings = $this->getOrganisationSettingsOnly();
             return $settings['organisation']['default_organisation'] ?? null;
         } catch (Exception $e) {

@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Configuration Table Updates Migration
  *
  * This migration updates the openregister_configurations table to:
@@ -21,6 +19,8 @@ declare(strict_types=1);
  *
  * @link https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

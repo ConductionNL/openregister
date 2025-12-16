@@ -57,7 +57,7 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_schemas');
 
         // Add the authorization column if it doesn't exist.
-        if (!$table->hasColumn('icon')) {
+        if ($table->hasColumn('icon') === FALSE) {
             $table->addColumn(
                     'icon',
                     Types::STRING,
@@ -72,7 +72,7 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_objects');
 
         // Add the authorization column if it doesn't exist.
-        if (!$table->hasColumn('size')) {
+        if ($table->hasColumn('size') === FALSE) {
             $table->addColumn(
                     'size',
                     Types::INTEGER,
@@ -82,11 +82,11 @@ class Version1Date20250430083916 extends SimpleMigrationStep
                     );
         }
 
-        if (!$table->hasColumn('published')) {
+        if ($table->hasColumn('published') === FALSE) {
             $table->addColumn('published', Types::DATETIME, ['notnull' => false]);
         }
 
-        if (!$table->hasColumn('depublished')) {
+        if ($table->hasColumn('depublished') === FALSE) {
             $table->addColumn('depublished', Types::DATETIME, ['notnull' => false]);
         }
 
@@ -94,7 +94,7 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         $table = $schema->getTable('openregister_audit_trails');
 
         // Add the authorization column if it doesn't exist.
-        if (!$table->hasColumn('size')) {
+        if ($table->hasColumn('size') === FALSE) {
             $table->addColumn(
                     'size',
                     Types::INTEGER,

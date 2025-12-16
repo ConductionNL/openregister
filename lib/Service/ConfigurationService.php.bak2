@@ -899,7 +899,81 @@ class ConfigurationService
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
-        return $this->previewHandler->previewConfigurationChanges($configuration);
+        // Fetch the remote configuration.
+        $remoteData = $this->fetchRemoteConfiguration($configuration);
+
+        if ($remoteData instanceof JSONResponse) {
+            return $remoteData;
+        }
+
+        // Initialize preview result.
+        $preview = [
+            'registers'        => [],
+            'schemas'          => [],
+            'objects'          => [],
+            'endpoints'        => [],
+            'sources'          => [],
+            'mappings'         => [],
+            'jobs'             => [],
+            'synchronizations' => [],
+            'rules'            => [],
+        ];
+
+        // Preview registers.
+        if (($remoteData['components']['registers'] ?? null) !== null && is_array($remoteData['components']['registers']) === true) {
+            foreach ($remoteData['components']['registers'] as $slug => $registerData) {
+                $preview['registers'][] = $this->previewRegisterChange(slug: $slug, registerData: $registerData);
+            }
+        }
+
+        // Preview schemas.
+        if (($remoteData['components']['schemas'] ?? null) !== null && is_array($remoteData['components']['schemas']) === true) {
+            foreach ($remoteData['components']['schemas'] as $slug => $schemaData) {
+                $preview['schemas'][] = $this->previewSchemaChange(slug: $slug, schemaData: $schemaData);
+            }
+        }
+
+        // Preview objects.
+        if (($remoteData['components']['objects'] ?? null) !== null && is_array($remoteData['components']['objects']) === true) {
+            // Build register and schema slug to ID maps.
+            $registerSlugToId = [];
+            $schemaSlugToId   = [];
+
+            // Get existing registers and schemas to build maps.
+            $allRegisters = $this->registerMapper->findAll();
+            foreach ($allRegisters as $register) {
+                $registerSlugToId[strtolower($register->getSlug() ?? '')] = $register->getId();
+            }
+
+            $allSchemas = $this->schemaMapper->findAll();
+            foreach ($allSchemas as $schema) {
+                $schemaSlugToId[strtolower($schema->getSlug() ?? '')] = $schema->getId();
+            }
+
+            foreach ($remoteData['components']['objects'] as $objectData) {
+                $preview['objects'][] = $this->previewObjectChange(
+                    objectData: $objectData,
+                    registerSlugToId: $registerSlugToId,
+                    schemaSlugToId: $schemaSlugToId
+                );
+            }
+        }
+
+        // Add metadata about the preview.
+        $preview['metadata'] = [
+            'configurationId'    => $configuration->getId(),
+            'configurationTitle' => $configuration->getTitle(),
+            'sourceUrl'          => $configuration->getSourceUrl(),
+            'remoteVersion'      => $remoteData['version'] ?? $remoteData['info']['version'] ?? null,
+            'localVersion'       => $configuration->getLocalVersion(),
+            'previewedAt'        => (new DateTime())->format('c'),
+            'totalChanges'       => (
+                count($preview['registers']) + count($preview['schemas']) + count($preview['objects'])
+            ),
+        ];
+
+        return $preview;
+
     }//end previewConfigurationChanges()
 
 
@@ -924,7 +998,55 @@ class ConfigurationService
     private function previewRegisterChange(string $slug, array $registerData): array
     {
         $slug = strtolower($slug);
-        return $this->previewHandler->previewRegisterChange($slug, $registerData);
+
+        // Try to find existing register.
+        $existingRegister = null;
+        try {
+            $existingRegister = $this->registerMapper->find($slug);
+        } catch (Exception $e) {
+            // Register doesn't exist.
+        }
+
+        // Determine action.
+        if ($existingRegister === null) {
+            $action = 'create';
+        } else {
+            $action = 'update';
+        }
+
+        $preview = [
+            'type'     => 'register',
+            'action'   => $action,
+            'slug'     => $slug,
+            'title'    => $registerData['title'] ?? $slug,
+            'current'  => null,
+            'proposed' => $registerData,
+            'changes'  => [],
+        ];
+
+        // If register exists, compare versions and build change list.
+        if ($existingRegister !== null) {
+            $currentData        = $existingRegister->jsonSerialize();
+            $preview['current'] = $currentData;
+
+            // Check if version allows update.
+            $currentVersion  = $existingRegister->getVersion() ?? '0.0.0';
+            $proposedVersion = $registerData['version'] ?? '0.0.0';
+
+            if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
+                $preview['action'] = 'skip';
+                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+            } else {
+                // Build list of changed fields.
+                $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $registerData);
+            }
+        }
+
+        return $preview;
+
+    }//end previewRegisterChange()
+
+
     /**
      * Preview changes for a single schema
      *
@@ -943,7 +1065,54 @@ class ConfigurationService
      *     changes: array
      * }
      */
-        return $this->previewHandler->previewSchemaChange($slug, $schemaData);
+    private function previewSchemaChange(string $slug, array $schemaData): array
+    {
+        $slug = strtolower($slug);
+
+        // Try to find existing schema.
+        $existingSchema = null;
+        try {
+            $existingSchema = $this->schemaMapper->find($slug);
+        } catch (Exception $e) {
+            // Schema doesn't exist.
+        }
+
+        // Determine action.
+        if ($existingSchema === null) {
+            $action = 'create';
+        } else {
+            $action = 'update';
+        }
+
+        $preview = [
+            'type'     => 'schema',
+            'action'   => $action,
+            'slug'     => $slug,
+            'title'    => $schemaData['title'] ?? $slug,
+            'current'  => null,
+            'proposed' => $schemaData,
+            'changes'  => [],
+        ];
+
+        // If schema exists, compare versions and build change list.
+        if ($existingSchema !== null) {
+            $currentData        = $existingSchema->jsonSerialize();
+            $preview['current'] = $currentData;
+
+            // Check if version allows update.
+            $currentVersion  = $existingSchema->getVersion() ?? '0.0.0';
+            $proposedVersion = $schemaData['version'] ?? '0.0.0';
+
+            if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
+                $preview['action'] = 'skip';
+                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+            } else {
+                // Build list of changed fields.
+                $preview['changes'] = $this->compareArrays(current: $currentData, proposed: $schemaData);
+            }
+        }
+
+        return $preview;
 
     }//end previewSchemaChange()
 
@@ -962,7 +1131,84 @@ class ConfigurationService
      *     action: string,
      *     slug: string,
      *     title: string,
-        return $this->previewHandler->previewObjectChange($objectData, $registerSlugToId, $schemaSlugToId);
+     *     register: string,
+     *     schema: string,
+     *     current: array|null,
+     *     proposed: array,
+     *     changes: array
+     * }
+     */
+    private function previewObjectChange(array $objectData, array $registerSlugToId, array $schemaSlugToId): array
+    {
+        $slug         = $objectData['@self']['slug'] ?? null;
+        $registerSlug = $objectData['@self']['register'] ?? null;
+        $schemaSlug   = $objectData['@self']['schema'] ?? null;
+
+        $preview = [
+            'type'     => 'object',
+            'action'   => 'skip',
+            'slug'     => $slug,
+            'title'    => $objectData['title'] ?? $objectData['name'] ?? $slug ?? 'Unnamed Object',
+            'register' => $registerSlug,
+            'schema'   => $schemaSlug,
+            'current'  => null,
+            'proposed' => $objectData,
+            'changes'  => [],
+        ];
+
+        // Validate required fields.
+        if (empty($slug) === true || empty($registerSlug) === true || empty($schemaSlug) === true) {
+            $preview['action'] = 'skip';
+            $preview['reason'] = 'Missing required fields (slug, register, or schema)';
+            return $preview;
+        }
+
+        // Get register and schema IDs.
+        $registerId = $registerSlugToId[strtolower($registerSlug)] ?? null;
+        $schemaId   = $schemaSlugToId[strtolower($schemaSlug)] ?? null;
+
+        if ($registerId === null || $schemaId === null) {
+            $preview['action'] = 'skip';
+            $preview['reason'] = 'Register or schema not found locally';
+            return $preview;
+        }
+
+        // Try to find existing object.
+        $search = [
+            '@self'  => [
+                'register' => (int) $registerId,
+                'schema'   => (int) $schemaId,
+                'slug'     => $slug,
+            ],
+            '_limit' => 1,
+        ];
+
+        $results = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
+        if (is_array($results) === true && count($results) > 0) {
+            $existingObject = $results[0];
+        } else {
+            $existingObject = null;
+        }
+
+        if ($existingObject === null) {
+            $preview['action'] = 'create';
+        } else {
+            // Object exists, check version.
+            if (is_array($existingObject) === true) {
+                $existingObjectData = $existingObject;
+            } else {
+                $existingObjectData = $existingObject->jsonSerialize();
+            }
+
+            $preview['current'] = $existingObjectData;
+
+            $currentVersion  = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+            $proposedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+
+            if (version_compare($proposedVersion, $currentVersion, '<=') === true) {
+                $preview['action'] = 'skip';
+                $preview['reason'] = "Remote version ({$proposedVersion}) is not newer than current version ({$currentVersion})";
+            } else {
                 $preview['action'] = 'update';
                 // Build list of changed fields.
                 $preview['changes'] = $this->compareArrays(current: $existingObjectData, proposed: $objectData);
@@ -981,7 +1227,62 @@ class ConfigurationService
      * @param array  $proposed The proposed data
      * @param string $prefix   Field name prefix for nested comparison
      *
-        return $this->previewHandler->compareArrays($current, $proposed, $prefix);
+     * @return array List of changes
+     *
+     * @phpstan-return array<array{field: string, current: mixed, proposed: mixed}>
+     */
+    private function compareArrays(array $current, array $proposed, string $prefix=''): array
+    {
+        $changes = [];
+
+        // Check all keys in proposed data.
+        foreach ($proposed as $key => $proposedValue) {
+            if ($prefix === '') {
+                $fieldName = $key;
+            } else {
+                $fieldName = "{$prefix}.{$key}";
+            }
+
+            // Skip certain metadata fields.
+            if (in_array($key, ['id', 'uuid', 'created', 'updated']) === true) {
+                continue;
+            }
+
+            // Check if field exists in current data.
+            if (array_key_exists($key, $current) === false) {
+                $changes[] = [
+                    'field'    => $fieldName,
+                    'current'  => null,
+                    'proposed' => $proposedValue,
+                ];
+                continue;
+            }
+
+            $currentValue = $current[$key];
+
+            // Deep comparison for arrays.
+            if (is_array($proposedValue) === true && is_array($currentValue) === true) {
+                // For simple arrays, just compare values.
+                if ($this->isSimpleArray($proposedValue) === true || $this->isSimpleArray($currentValue) === true) {
+                    if ($proposedValue !== $currentValue) {
+                        $changes[] = [
+                            'field'    => $fieldName,
+                            'current'  => $currentValue,
+                            'proposed' => $proposedValue,
+                        ];
+                    }
+                } else {
+                    // For nested arrays, recurse.
+                    $nestedChanges = $this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $fieldName);
+                    $changes       = array_merge($changes, $nestedChanges);
+                }
+            } else if ($proposedValue !== $currentValue) {
+                // Values are different.
+                $changes[] = [
+                    'field'    => $fieldName,
+                    'current'  => $currentValue,
+                    'proposed' => $proposedValue,
+                ];
             }//end if
         }//end foreach
 
@@ -1000,7 +1301,135 @@ class ConfigurationService
     private function isSimpleArray(array $array): bool
     {
         foreach ($array as $value) {
-        return $this->previewHandler->importConfigurationWithSelection($configuration, $selection);
+            if (is_array($value) === true || is_object($value) === true) {
+                return false;
+            }
+        }
+
+        return true;
+
+    }//end isSimpleArray()
+
+
+    /**
+     * Import configuration with user selection
+     *
+     * Allows importing only selected entities from a configuration.
+     * The selection array specifies which entities to import by type and identifier.
+     *
+     * @param Configuration $configuration The configuration to import from
+     * @param array         $selection     Selection of entities to import
+     *
+     * @return array Import results
+     * @throws Exception If import fails
+     *
+     * @phpstan-param array{
+     *     registers?: array<string>,
+     *     schemas?: array<string>,
+     *     objects?: array<string>
+     * } $selection
+     *
+     * @phpstan-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     skipped: array
+     * }
+     */
+
+
+    /**
+     * Import configuration with selective import
+     *
+     * @return (ObjectEntity|Register|Schema|mixed)[][]
+     *
+     * @psalm-return array{
+     *     registers: array<Register>,
+     *     schemas: array<Schema>,
+     *     objects: array<ObjectEntity>,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
+     * }
+     */
+    public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
+    {
+        $this->logger->info(message: "Starting selective import for configuration {$configuration->getId()}", context: ['selection' => $selection]);
+
+        // Fetch the remote configuration.
+        $remoteData = $this->fetchRemoteConfiguration($configuration);
+
+        if ($remoteData instanceof JSONResponse) {
+            throw new Exception('Failed to fetch remote configuration: '.json_encode($remoteData->getData()));
+        }
+
+        // Filter remote data based on selection.
+        $filteredData = [
+            'components' => [
+                'registers' => [],
+                'schemas'   => [],
+                'objects'   => [],
+            ],
+        ];
+
+        // Copy metadata.
+        if (($remoteData['info'] ?? null) !== null) {
+            $filteredData['info'] = $remoteData['info'];
+        }
+
+        if (($remoteData['version'] ?? null) !== null) {
+            $filteredData['version'] = $remoteData['version'];
+        }
+
+        if (($remoteData['appId'] ?? null) !== null) {
+            $filteredData['appId'] = $remoteData['appId'];
+        }
+
+        // Filter registers.
+        if (($selection['registers'] ?? null) !== null && is_array($selection['registers']) === true) {
+            foreach ($selection['registers'] as $slug) {
+                $slug = strtolower($slug);
+                if (($remoteData['components']['registers'][$slug] ?? null) !== null) {
+                    $filteredData['components']['registers'][$slug] = $remoteData['components']['registers'][$slug];
+                }
+            }
+        }
+
+        // Filter schemas.
+        if (($selection['schemas'] ?? null) !== null && is_array($selection['schemas']) === true) {
+            foreach ($selection['schemas'] as $slug) {
+                $slug = strtolower($slug);
+                if (($remoteData['components']['schemas'][$slug] ?? null) !== null) {
+                    $filteredData['components']['schemas'][$slug] = $remoteData['components']['schemas'][$slug];
+                }
+            }
+        }
+
+        // Filter objects - requires matching by slug + register + schema.
+        if (($selection['objects'] ?? null) !== null && is_array($selection['objects']) === true) {
+            foreach ($remoteData['components']['objects'] ?? [] as $objectData) {
+                $objectSlug   = $objectData['@self']['slug'] ?? null;
+                $registerSlug = $objectData['@self']['register'] ?? null;
+                $schemaSlug   = $objectData['@self']['schema'] ?? null;
+
+                // Build unique identifier for object.
+                $objectId = "{$registerSlug}:{$schemaSlug}:{$objectSlug}";
+
+                if (in_array($objectId, $selection['objects'], true) === true) {
+                    $filteredData['components']['objects'][] = $objectData;
+                }
+            }
+        }
+
+        // Import the filtered configuration.
+        $result = $this->importFromJson(
+            data: $filteredData,
+            configuration: $configuration,
+            owner: $configuration->getApp(),
+            appId: $configuration->getApp(),
             version: $remoteData['version'] ?? $remoteData['info']['version'] ?? $configuration->getVersion(),
             force: false
         );

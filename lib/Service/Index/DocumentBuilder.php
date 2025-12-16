@@ -298,7 +298,7 @@ class DocumentBuilder
                 $index     = $parts[1];
 
                 // Initialize array if not exists.
-                if (!isset($arrays[$fieldName])) {
+                if (isset($arrays[$fieldName]) === FALSE) {
                     $arrays[$fieldName] = [];
                 }
 
@@ -622,7 +622,7 @@ class DocumentBuilder
         // **CRITICAL VALIDATION**: Check for type compatibility.
         $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
 
-        if (!$isCompatible) {
+        if ($isCompatible === FALSE) {
             $this->logger->warning(
                     '🛡️ Field validation prevented type mismatch',
                     [

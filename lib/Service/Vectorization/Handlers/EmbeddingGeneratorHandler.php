@@ -85,7 +85,7 @@ class EmbeddingGeneratorHandler
     {
         $cacheKey = $config['provider'].'_'.$config['model'];
 
-        if (!isset($this->generatorCache[$cacheKey])) {
+        if (isset($this->generatorCache[$cacheKey]) === FALSE) {
             $this->logger->debug(
                 message: 'Creating new embedding generator',
                 context: [
@@ -287,7 +287,7 @@ class EmbeddingGeneratorHandler
                 }
 
                 $data = json_decode($response, true);
-                if (!isset($data['data'][0]['embedding'])) {
+                if (isset($data['data'][0]['embedding']) === FALSE) {
                     throw new Exception("Unexpected Fireworks API response format: {$response}");
                 }
 

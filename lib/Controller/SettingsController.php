@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Settings Controller
  *
  * This file contains the controller class for handling settings in the OpenRegister application.
@@ -15,6 +13,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 

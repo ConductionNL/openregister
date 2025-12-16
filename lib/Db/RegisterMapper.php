@@ -143,6 +143,7 @@ class RegisterMapper extends QBMapper
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
         ObjectEntityMapper $objectEntityMapper,
+        OrganisationService $organisationService,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
@@ -151,12 +152,13 @@ class RegisterMapper extends QBMapper
         parent::__construct($db, 'openregister_registers', Register::class);
 
         // Store dependencies for use in mapper methods.
-        $this->schemaMapper       = $schemaMapper;
-        $this->eventDispatcher    = $eventDispatcher;
-        $this->objectEntityMapper = $objectEntityMapper;
-        $this->userSession        = $userSession;
-        $this->groupManager       = $groupManager;
-        $this->appConfig          = $appConfig;
+        $this->schemaMapper         = $schemaMapper;
+        $this->eventDispatcher      = $eventDispatcher;
+        $this->objectEntityMapper   = $objectEntityMapper;
+        $this->organisationService  = $organisationService;
+        $this->userSession          = $userSession;
+        $this->groupManager         = $groupManager;
+        $this->appConfig            = $appConfig;
 
     }//end __construct()
 
