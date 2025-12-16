@@ -69,9 +69,6 @@ class SolrManagementController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Get SOLR field configuration and schema information
      *

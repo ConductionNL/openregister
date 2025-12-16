@@ -70,9 +70,6 @@ class SolrOperationsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Run SOLR setup to prepare for multi-tenant architecture
      *

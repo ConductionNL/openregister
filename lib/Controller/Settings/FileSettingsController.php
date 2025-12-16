@@ -62,9 +62,6 @@ class FileSettingsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Get File Management settings
      *
