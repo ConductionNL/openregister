@@ -568,7 +568,7 @@ class SaveObject
                     // Array of file IDs - load first file and get its download URL.
                     try {
                         $fileNode = null;
-                        // TODO: fileService->getFile(object: $entity, file: (int) $firstElement);
+                        // TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
                         if ($fileNode !== null) {
                             $fileData = null;
                             // TODO: fileService->formatFile($fileNode);
@@ -589,7 +589,7 @@ class SaveObject
                                 // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                                 // Re-fetch file data after publishing.
                                 $fileData = null;
-                                // TODO: fileService->formatFile($fileNode);
+                                // TODO: fileService->formatFile($fileNode).
                             }
 
                             if (($fileData['downloadUrl'] ?? null) !== null) {
@@ -618,7 +618,7 @@ class SaveObject
                 // Single file ID - load file and get its download URL.
                 try {
                     $fileNode = null;
-                    // TODO: fileService->getFile(object: $entity, file: (int) $imageValue);
+                    // TODO: fileService->getFile(object: $entity, file: (int) $imageValue).
                     if ($fileNode !== null) {
                         $fileData = null;
                         // TODO: fileService->formatFile($fileNode);
@@ -639,7 +639,7 @@ class SaveObject
                             // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                             // Re-fetch file data after publishing.
                             $fileData = null;
-                            // TODO: fileService->formatFile($fileNode);
+                            // TODO: fileService->formatFile($fileNode).
                         }
 
                         if (($fileData['downloadUrl'] ?? null) !== null) {
@@ -1495,13 +1495,7 @@ class SaveObject
                 try {
                     // Find the target object.
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
-                    /*
-                     * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
-                     */
-
-                    if ($targetObject === null) {
-                        continue;
-                    }
+                    // find() throws DoesNotExistException, never returns null.
 
                     // Get current data from target object.
                     $targetData = $targetObject->getObject();
@@ -1746,6 +1740,22 @@ class SaveObject
             try {
                 $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
 
+                // Check if object is locked - prevent updates on locked objects.
+                $lockData = $existingObject->getLocked();
+                if ($lockData !== null && is_array($lockData)) {
+                    $currentUser = $this->userSession->getUser();
+                    $currentUserId = $currentUser !== null ? $currentUser->getUID() : null;
+                    $lockOwner = $lockData['userId'] ?? null;
+                    
+                    // If object is locked by someone other than the current user, prevent update.
+                    if ($lockOwner !== null && $lockOwner !== $currentUserId) {
+                        throw new Exception(
+                            "Cannot update object: Object is locked by user '{$lockOwner}'. " .
+                            "Please unlock the object before attempting to update it."
+                        );
+                    }
+                }
+
                 // Prepare the object for update.
                 $preparedObject = $this->prepareObjectForUpdate(
                     existingObject: $existingObject,
@@ -1890,7 +1900,7 @@ class SaveObject
         // object: $savedEntity,
         // operation: $operation,
         // registerId: $registerId,
-        // schemaId: $schemaId
+        // schemaId: $schemaId.
         // );
         return $savedEntity;
 
@@ -1994,7 +2004,7 @@ class SaveObject
             && isset($selfData['organisation']) === false
         ) {
             $organisationUuid = null;
-            // TODO: organisationService->getOrganisationForNewEntity();
+            // TODO: organisationService->getOrganisationForNewEntity().
             $objectEntity->setOrganisation($organisationUuid);
         }
 

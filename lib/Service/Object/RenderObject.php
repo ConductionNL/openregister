@@ -828,7 +828,7 @@ class RenderObject
 
         // Handle extensions if depth limit not reached.
         if (empty($_extend) === false && $depth < 10) {
-            $objectData = $this->extendObject(entity: $entity, extend: $_extend, objectData: $objectData, depth: $depth, filter: $filter, fields: $fields, unset: $unset, visitedIds: $visitedIds);
+            $objectData = $this->extendObject(entity: $entity, _extend: $_extend, objectData: $objectData, depth: $depth, _filter: $filter, _fields: $fields, _unset: $unset, visitedIds: $visitedIds);
         }
 
         $entity->setObject($objectData);
@@ -884,7 +884,7 @@ class RenderObject
 
             foreach ($data as $key => $datum) {
                 $tmpExtends = $extends;
-                $data[$key] = $this->handleExtendDot(data: $datum, extend: $tmpExtends, depth: $depth);
+                $data[$key] = $this->handleExtendDot(data: $datum, _extend: $tmpExtends, depth: $depth);
             }
 
             $objectData->set($root, $data);
@@ -910,7 +910,7 @@ class RenderObject
      */
     private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
     {
-        $data = $this->handleWildcardExtends(objectData: $data, extend: $_extend, depth: $depth + 1);
+        $data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
         $dataDot = new Dot($data);
 
@@ -983,7 +983,7 @@ class RenderObject
                                 $subExtend = $keyExtends;
                             }
 
-                            return $this->renderEntity(entity: $object, extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
+                            return $this->renderEntity(entity: $object, _extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
                         },
                         $value
                         );
@@ -1036,7 +1036,7 @@ class RenderObject
                 } else {
                     $rendered = $this->renderEntity(
                         entity: $object,
-                        extend: $subExtend,
+                        _extend: $subExtend,
                         depth: $depth + 1,
                         filter: [],
                         fields: [],
@@ -1105,7 +1105,7 @@ class RenderObject
             $objectData['@self'] = $self;
         }
 
-        $objectDataDot = $this->handleExtendDot(data: $objectData, extend: $_extend, depth: $depth, allFlag: in_array('all', $_extend, true), visitedIds: $visitedIds);
+        $objectDataDot = $this->handleExtendDot(data: $objectData, _extend: $_extend, depth: $depth, allFlag: in_array('all', $_extend, true), visitedIds: $visitedIds);
 
         return $objectDataDot;
 

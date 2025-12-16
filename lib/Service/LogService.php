@@ -19,15 +19,16 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
+use Exception;
+use InvalidArgumentException;
+use RuntimeException;
 use SimpleXMLElement;
+use stdClass;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use Exception;
-use RuntimeException;
-use DateTime;
-use stdClass;
 
 /**
  * LogService handles audit trail logs

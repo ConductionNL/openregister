@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;

@@ -15,8 +15,8 @@
 
 namespace OCA\OpenRegister\Db\ObjectEntity;
 
-use OCA\OpenRegister\Db\FacetHandlers\MariaDbFacetHandler;
-use OCA\OpenRegister\Db\FacetHandlers\MetaDataFacetHandler;
+use OCA\OpenRegister\Db\ObjectHandlers\MariaDbFacetHandler;
+use OCA\OpenRegister\Db\ObjectHandlers\MetaDataFacetHandler;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 

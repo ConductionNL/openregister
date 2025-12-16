@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Db\ObjectEntity;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\OptimizedBulkOperations;
+use OCA\OpenRegister\Db\ObjectHandlers\OptimizedBulkOperations;
 use OCP\DB\Exception as OcpDbException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

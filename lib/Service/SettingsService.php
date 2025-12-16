@@ -423,7 +423,7 @@ class SettingsService
     }//end updateSearchBackendConfig()
 
 
-    // LlmSettingsHandler methods (2)
+    // LlmSettingsHandler methods (2).
 
 
     /**
@@ -451,7 +451,7 @@ class SettingsService
     }//end updateLLMSettingsOnly()
 
 
-    // FileSettingsHandler methods (2)
+    // FileSettingsHandler methods (2).
 
 
     /**
@@ -479,7 +479,7 @@ class SettingsService
     }//end updateFileSettingsOnly()
 
 
-    // ObjectRetentionHandler methods (4)
+    // ObjectRetentionHandler methods (4).
 
 
     /**
@@ -532,7 +532,7 @@ class SettingsService
     }//end updateRetentionSettingsOnly()
 
 
-    // CacheSettingsHandler methods (3 main ones)
+    // CacheSettingsHandler methods (3 main ones).
 
 
     /**
@@ -572,7 +572,7 @@ class SettingsService
     }//end warmupNamesCache()
 
 
-    // SolrSettingsHandler methods (7 main ones)
+    // SolrSettingsHandler methods (7 main ones).
 
 
     /**
@@ -680,7 +680,7 @@ class SettingsService
     }//end warmupSolrIndex()
 
 
-    // ConfigurationSettingsHandler methods (15 main ones)
+    // ConfigurationSettingsHandler methods (15 main ones).
 
 
     /**
@@ -921,7 +921,7 @@ class SettingsService
         }
 
         // Get services from container.
-        // CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService
+        // CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService.
         $objectService = null;
         // $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
         $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
@@ -1141,12 +1141,14 @@ class SettingsService
                     $results['stats']['processed_objects']++;
 
                     // Re-save the object to trigger all business logic.
+                    // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
+                    $objectData = $object->getRegister(); // Assuming this returns the object data array.
                     $savedObject = $objectService->saveObject(
+                        object: $objectData,
+                        extend: [],
                         register: $object->getObject(),
-                        schema: [],
-                        data: $object->getRegister(),
-                        uuid: $object->getSchema(),
-                        folderId: $object->getUuid()
+                        schema: null,
+                        uuid: $object->getUuid()
                     );
 
                     if ($savedObject !== null) {
@@ -1337,12 +1339,14 @@ class SettingsService
                 $batchProcessed++;
 
                 // Re-save the object to trigger all business logic.
+                // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
+                $objectData = $object->getRegister(); // Assuming this returns the object data array.
                 $savedObject = $objectService->saveObject(
+                    object: $objectData,
+                    extend: [],
                     register: $object->getObject(),
-                    schema: [],
-                    data: $object->getRegister(),
-                    uuid: $object->getSchema(),
-                    folderId: $object->getUuid()
+                    schema: null,
+                    uuid: $object->getUuid()
                 );
 
                 if ($savedObject !== null) {
@@ -1484,7 +1488,7 @@ class SettingsService
             $expectedFields = \OCA\OpenRegister\Service\Index\SetupHandler::getObjectEntityFieldDefinitions();
 
             // Get all schemas.
-            $schemas = $schemaMapper->findAll(config: []);
+            $schemas = $schemaMapper->findAll();
 
             // Use the existing analyzeAndResolveFieldConflicts method via reflection.
             $reflection = new \ReflectionClass($solrSchemaService);

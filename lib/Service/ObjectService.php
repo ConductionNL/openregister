@@ -373,7 +373,7 @@ class ObjectService
                 $register = $registers[0];
             } else {
                 // Fallback to direct database lookup if cache fails.
-                $register = $this->registerMapper->find(id: $register, published: null, rbac: false, multi: false);
+                $register = $this->registerMapper->find(id: $register, published: null, _rbac: false, _multitenancy: false);
             }
         }
 
@@ -404,7 +404,7 @@ class ObjectService
                 $schema = $schemas[0];
             } else {
                 // Fallback to direct database lookup if cache fails.
-                $schema = $this->schemaMapper->find(id: $schema, published: null, rbac: false, multi: false);
+                $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
             }
         }
 
@@ -683,7 +683,7 @@ class ObjectService
                     try {
                         $renderedObject = $this->renderHandler->renderEntity(
                             entity: $object,
-                            extend: $config['extend'] ?? [],
+                            _extend: $config['extend'] ?? [],
                             filter: $config['unset'] ?? null,
                             fields: $config['fields'] ?? null,
                             registers: $registers,
@@ -752,11 +752,7 @@ class ObjectService
         unset($config['limit']);
 
         return $this->objectEntityMapper->countAll(
-            filters: $config['filters'] ?? [],
-            search: $config['search'] ?? null,
-            ids: $config['ids'] ?? null,
-            uses: $config['uses'] ?? null,
-            published: $config['published'] ?? false
+            filters: $config['filters'] ?? []
         );
     }//end count()
 
@@ -1950,10 +1946,23 @@ class ObjectService
      * @param array      $objectIds      Array of object IDs to migrate
      * @param array      $mapping        Simple mapping where keys are target properties, values are source properties
      *
-     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
+     * @psalm-param    string|int $sourceRegister
+     * @psalm-param    string|int $sourceSchema
+     * @psalm-param    string|int $targetRegister
+     * @psalm-param    string|int $targetSchema
+     * @psalm-param    array $objectIds
+     * @psalm-param    array $mapping
+     * @phpstan-param  string|int $sourceRegister
+     * @phpstan-param  string|int $sourceSchema
+     * @phpstan-param  string|int $targetRegister
+     * @phpstan-param  string|int $targetSchema
+     * @phpstan-param  array $objectIds
+     * @phpstan-param  array $mapping
      *
      * @psalm-return   array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
      * @phpstan-return array<string, mixed>
+     *
+     * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
      * @throws \InvalidArgumentException If invalid parameters provided
@@ -2405,7 +2414,7 @@ class ObjectService
      */
     public function buildObjectSearchQuery(array $params): array
     {
-        return $this->crudHandler->buildSearchQuery(params: $params);
+        return $this->crudHandler->buildSearchQuery(requestParams: $params);
     }//end buildObjectSearchQuery()
 
 

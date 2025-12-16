@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use Exception;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;

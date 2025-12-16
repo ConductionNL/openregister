@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\Controller;
 use DateTime;
 
-use OCA\OpenRegister\Service\Objects\RevertHandler;
+use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

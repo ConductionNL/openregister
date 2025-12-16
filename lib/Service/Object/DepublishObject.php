@@ -36,7 +36,19 @@ class DepublishObject
      *
      * @var ObjectEntityMapper
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private readonly ObjectEntityMapper $objectEntityMapper;
+
+
+    /**
+     * Constructor for DepublishObject
+     *
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     */
+    public function __construct(
+        ObjectEntityMapper $objectEntityMapper
+    ) {
+        $this->objectEntityMapper = $objectEntityMapper;
+    }//end __construct()
 
 
     /**
@@ -63,9 +75,7 @@ class DepublishObject
          * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
          */
 
-        if ($object === null) {
-            throw new Exception('Object not found');
-        }
+        // find() throws DoesNotExistException, never returns null
 
         // Set depublication date to now if not specified.
         $date = $date ?? new DateTime();

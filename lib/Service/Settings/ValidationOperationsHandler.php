@@ -112,7 +112,7 @@ class ValidationOperationsHandler
                 // Validate the object against its schema using the ValidateObject handler.
                 $validationResult = $this->validateHandler->validateObject(
                     $object->getObject(),
-                    register: $schema
+                    schema: $schema
                 );
 
                 if ($validationResult->isValid() === true) {

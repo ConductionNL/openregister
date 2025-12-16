@@ -233,7 +233,7 @@ class CascadingHandler
                 folderId: null,
                 _rbac: true,
                 // Use default RBAC for internal cascading operations.
-                multi: true
+                _multitenancy: true
                 // Use default multitenancy for internal cascading operations.
             );
 

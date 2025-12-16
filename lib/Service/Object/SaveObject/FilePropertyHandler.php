@@ -52,7 +52,7 @@ class FilePropertyHandler
      * @param LoggerInterface $logger      Logger for logging operations.
      */
     public function __construct(
-        // REMOVED: private readonly
+        // REMOVED: private readonly.
         private readonly LoggerInterface $logger
     ) {
 
@@ -378,7 +378,7 @@ class FilePropertyHandler
                         if (is_numeric($fileId) === true) {
                             try {
                                 null;
-                                // TODO->deleteFile(file: (int) $fileId, object: $objectEntity);
+                                // TODO->deleteFile(file: (int) $fileId, object: $objectEntity).
                             } catch (Exception $e) {
                                 // Log but don't fail - file might already be deleted.
                                 $this->logger->warning("Failed to delete file $fileId: ".$e->getMessage());
@@ -389,7 +389,7 @@ class FilePropertyHandler
                     // Single file ID.
                     try {
                         null;
-                        // TODO->deleteFile(file: (int) $existingFileIds, object: $objectEntity);
+                        // TODO->deleteFile(file: (int) $existingFileIds, object: $objectEntity).
                     } catch (Exception $e) {
                         // Log but don't fail - file might already be deleted.
                         $this->logger->warning("Failed to delete file $existingFileIds: ".$e->getMessage());
@@ -573,7 +573,7 @@ class FilePropertyHandler
         // fileName: $filename,
         // content: $fileData['content'],
         // share: $autoPublish,
-        // tags: $autoTags
+        // tags: $autoTags.
         // );
         return $file->getId();
 
@@ -622,7 +622,7 @@ class FilePropertyHandler
             // Get file info to validate against config.
             try {
                 $existingFile = null;
-                // TODO->getFile(object: $objectEntity, file: $fileId);
+                // TODO->getFile(object: $objectEntity, file: $fileId).
                 if ($existingFile !== null) {
                     // Validate the existing file against current config.
                     $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
@@ -827,7 +827,7 @@ class FilePropertyHandler
             // Get existing tags and merge with auto tags.
             try {
                 $formattedFile = null;
-                // TODO->formatFile($file);
+                // TODO->formatFile($file).
                 $existingTags = $formattedFile['labels'] ?? [];
                 $allTags      = array_unique(array_merge($existingTags, $autoTags));
 
@@ -837,7 +837,7 @@ class FilePropertyHandler
                 // filePath: $file->getId(),
                 // content: null,
                 // Don't change content.
-                // tags: $allTags
+                // tags: $allTags.
                 // );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.

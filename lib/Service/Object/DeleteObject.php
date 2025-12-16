@@ -123,23 +123,24 @@ class DeleteObject
             $objectEntity = $this->objectEntityMapper->find($object['id']);
         }
 
-        // Delete associated files from storage.
-        // TODO: Implement file cleanup
-        $files = [];
-        // $this->fileService->getFiles($objectEntity);
-        foreach ($files ?? [] as $file) {
-            // $this->fileService->deleteFile(file: $file->getName(), object: $objectEntity);
-        }
-
-        // Delete the object folder if it exists (for hard deletes).
-        $this->deleteObjectFolder($objectEntity);
-
-        // Delete the object from database.
+        // **SOFT DELETE**: Mark object as deleted instead of removing from database.
+        // Set deletion metadata with user and timestamp information.
+        $user = $this->userSession->getUser();
+        $userId = $user !== null ? $user->getUID() : 'system';
+        
+        $deletionData = [
+            'deletedBy' => $userId,
+            'deletedAt' => (new \DateTime())->format(\DateTime::ATOM),
+            'objectId' => $objectEntity->getUuid(),
+        ];
+        
+        $objectEntity->setDeleted($deletionData);
+        
+        // Update the object in database (soft delete - keeps record with deleted metadata).
         /*
          * @psalm-suppress InvalidArgument - ObjectEntity extends Entity
          */
-
-        $result = $this->objectEntityMapper->delete($objectEntity) !== null;
+        $result = $this->objectEntityMapper->update($objectEntity) !== null;
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
         if ($result === true) {
@@ -256,7 +257,7 @@ class DeleteObject
             }
 
             if (is_array($value) === true) {
-                foreach ($value ?? [] as $id) {
+                foreach ($value as $id) {
                     $this->deleteObject(register: $register, schema: $schema, uuid: $id, originalObjectId: $originalObjectId);
                 }
             } else {

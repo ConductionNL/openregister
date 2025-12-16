@@ -208,9 +208,7 @@ class GetObject
             uses: $uses,
             register: $register,
             schema: $schema,
-            published: $published,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            published: $published
         );
 
         // If files are to be included, hydrate each object with its file information.

@@ -106,8 +106,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 '_limit'  => $limit,
                 '_source' => 'database',
             ],
-            rbac: false,
-            multi: false,
+            _rbac: false,
+            _multitenancy: false,
             ids: null,
             uses: null,
             views: $views
@@ -155,7 +155,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $config = $this->settingsService->getObjectSettingsOnly();
 
         // Serialize object to text.
-        $text = $this->serializeObject(objectData: $objectData, config: $config);
+        $text = $this->serializeObject(object: $objectData, config: $config);
 
         // Objects produce a single vectorization item.
         return [

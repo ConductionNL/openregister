@@ -574,7 +574,7 @@ class HyperFacetHandler
                 $approximateFacets[$facetName] = $this->calculateMetadataFacetsHyperFast($config, $baseQuery);
             } else {
                 // JSON field facets use statistical estimation.
-                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(field: $facetName, config: $config, baseQuery: $baseQuery, stats: $datasetStats);
+                $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(_field: $facetName, config: $config, _baseQuery: $baseQuery, stats: $datasetStats);
             }
         }
 

@@ -1073,7 +1073,7 @@ class ConfigurationService
             );
 
             // Return null if empty string.
-            if ($version === '' || $version === null) {
+            if ($version === '') {
                 return null;
             }
 

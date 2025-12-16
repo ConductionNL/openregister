@@ -73,13 +73,13 @@ class ElasticsearchDocumentIndexer
         try {
             $index = $this->indexManager->getActiveIndexName();
 
-            // Ensure index exists
+            // Ensure index exists.
             $this->indexManager->ensureIndex($index);
 
-            // Build document
+            // Build document.
             $document = $this->documentBuilder->createDocument($object);
 
-            // Index document
+            // Index document.
             $url      = $this->httpClient->buildBaseUrl().'/'.$index.'/_doc/'.$document['id'];
             $response = $this->httpClient->put($url, $document);
 
@@ -94,7 +94,7 @@ class ElasticsearchDocumentIndexer
                         ]
                         );
 
-                // Refresh index if requested
+                // Refresh index if requested.
                 if ($refresh === TRUE) {
                     $this->indexManager->refreshIndex($index);
                 }
@@ -129,10 +129,10 @@ class ElasticsearchDocumentIndexer
         $failureCount = 0;
         $index        = $this->indexManager->getActiveIndexName();
 
-        // Ensure index exists
+        // Ensure index exists.
         $this->indexManager->ensureIndex($index);
 
-        // Build bulk request body
+        // Build bulk request body.
         $bulkBody = [];
         foreach ($objects as $object) {
             if (($object instanceof ObjectEntity) === false) {
@@ -143,7 +143,7 @@ class ElasticsearchDocumentIndexer
             try {
                 $document = $this->documentBuilder->createDocument($object);
 
-                // Index action
+                // Index action.
                 $bulkBody[] = json_encode(
                         [
                             'index' => [
@@ -153,7 +153,7 @@ class ElasticsearchDocumentIndexer
                         ]
                         );
 
-                // Document data
+                // Document data.
                 $bulkBody[] = json_encode($document);
             } catch (Exception $e) {
                 $this->logger->error(
@@ -179,7 +179,7 @@ class ElasticsearchDocumentIndexer
         try {
             $url = $this->httpClient->buildBaseUrl().'/_bulk';
 
-            // Send bulk request with newline-delimited JSON
+            // Send bulk request with newline-delimited JSON.
             $bulkData = implode("\n", $bulkBody)."\n";
             $response = $this->httpClient->postRaw($url, $bulkData);
 
@@ -201,7 +201,7 @@ class ElasticsearchDocumentIndexer
                     ]
                     );
 
-            // Refresh index if requested
+            // Refresh index if requested.
             if ($refresh === TRUE) {
                 $this->indexManager->refreshIndex($index);
             }
@@ -255,7 +255,7 @@ class ElasticsearchDocumentIndexer
                         ]
                         );
 
-                // Refresh index if requested
+                // Refresh index if requested.
                 if ($refresh === TRUE) {
                     $this->indexManager->refreshIndex($index);
                 }
@@ -286,7 +286,7 @@ class ElasticsearchDocumentIndexer
         try {
             $index = $this->indexManager->getActiveIndexName();
 
-            // Delete and recreate index
+            // Delete and recreate index.
             $this->indexManager->deleteIndex($index);
             $this->indexManager->createIndex($index);
 
