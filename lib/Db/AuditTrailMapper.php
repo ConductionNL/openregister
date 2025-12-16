@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Audit Trail Mapper
  *
  * This file contains the class for handling audit trail related operations
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 

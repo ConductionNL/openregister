@@ -324,7 +324,7 @@ class MetaDataFacetHandler
         }
 
         // Apply IDs filter if provided.
-        if ($ids !== null && is_array($ids) === true && !empty($ids)) {
+        if ($ids !== null && is_array($ids) === true && empty($ids) === FALSE) {
             $this->applyIdsFilter(queryBuilder: $queryBuilder, ids: $ids);
         }
 
@@ -337,12 +337,12 @@ class MetaDataFacetHandler
         $objectFilters = array_filter(
                 $baseQuery,
                 function ($key) {
-                    return $key !== '@self' && !str_starts_with($key, '_');
+                    return $key !== '@self' && str_starts_with($key, '_') === FALSE;
                 },
                 ARRAY_FILTER_USE_KEY
                 );
 
-        if (!empty($objectFilters)) {
+        if (empty($objectFilters) === FALSE) {
             $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
 
@@ -448,7 +448,7 @@ class MetaDataFacetHandler
         $orConditions = $queryBuilder->expr()->orX();
 
         // Add integer ID condition if we have any.
-        if (!empty($integerIds)) {
+        if (empty($integerIds) === FALSE) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'id',
@@ -458,7 +458,7 @@ class MetaDataFacetHandler
         }
 
         // Add UUID condition if we have any.
-        if (!empty($stringIds)) {
+        if (empty($stringIds) === FALSE) {
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'uuid',
@@ -496,7 +496,7 @@ class MetaDataFacetHandler
     {
         foreach ($metadataFilters as $field => $value) {
             // Handle simple values (backwards compatibility).
-            if (!is_array($value)) {
+            if (is_array($value) === FALSE) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                 } else if ($value === 'IS NULL') {
@@ -632,7 +632,7 @@ class MetaDataFacetHandler
             $jsonPath = '$.'.$field;
 
             // Handle simple values (backwards compatibility).
-            if (!is_array($value)) {
+            if (is_array($value) === FALSE) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(

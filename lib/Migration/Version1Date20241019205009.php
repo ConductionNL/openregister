@@ -73,36 +73,36 @@ class Version1Date20241019205009 extends SimpleMigrationStep
 
         // Update the openregister_sources table.
         $table = $schema->getTable('openregister_sources');
-        if (!$table->hasColumn('uuid')) {
+        if ($table->hasColumn('uuid') === FALSE) {
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
             $table->addIndex(['uuid'], 'openregister_sources_uuid_index');
         }
 
-        if (!$table->hasColumn('version')) {
+        if ($table->hasColumn('version') === FALSE) {
             $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
         }
 
         // Update the openregister_schemas table.
         $table = $schema->getTable('openregister_schemas');
-        if (!$table->hasColumn('uuid')) {
+        if ($table->hasColumn('uuid') === FALSE) {
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
             $table->addIndex(['uuid'], 'openregister_schemas_uuid_index');
         }
 
         // Update the openregister_registers table.
         $table = $schema->getTable('openregister_registers');
-        if (!$table->hasColumn('uuid')) {
+        if ($table->hasColumn('uuid') === FALSE) {
             $table->addColumn(name: 'uuid', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255]);
             $table->addIndex(['uuid'], 'openregister_registers_uuid_index');
         }
 
-        if (!$table->hasColumn('version')) {
+        if ($table->hasColumn('version') === FALSE) {
             $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
         }
 
         // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
-        if (!$table->hasColumn('version')) {
+        if ($table->hasColumn('version') === FALSE) {
             $table->addColumn(name: 'version', typeName: Types::STRING, options: ['notnull' => true, 'length' => 255, 'default' => '0.0.1']);
         }
 

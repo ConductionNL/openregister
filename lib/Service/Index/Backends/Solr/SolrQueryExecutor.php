@@ -155,18 +155,18 @@ class SolrQueryExecutor
         $solrQuery = $this->buildSolrQuery($query);
 
         // Apply filters.
-        if ($rbac || $multitenancy || $published || !$deleted) {
+        if ($rbac || $multitenancy || $published || $deleted === FALSE) {
             $filters = [];
 
             if ($published) {
                 $filters[] = 'published:true';
             }
 
-            if (!$deleted) {
+            if ($deleted === FALSE) {
                 $filters[] = '-deleted:true';
             }
 
-            if (!empty($filters)) {
+            if (empty($filters) === FALSE) {
                 $solrQuery['fq'] = array_merge($solrQuery['fq'] ?? [], $filters);
             }
         }
@@ -289,7 +289,7 @@ class SolrQueryExecutor
             'wt'    => 'json',
         ];
 
-        if (!empty($fields)) {
+        if (empty($fields) === FALSE) {
             $params['fl'] = $fields;
         }
 

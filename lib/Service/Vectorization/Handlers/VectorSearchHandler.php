@@ -255,7 +255,7 @@ class VectorSearchHandler
 
                     $responseData = json_decode((string) $response->getBody(), true);
 
-                    if (!isset($responseData['response']['docs'])) {
+                    if (isset($responseData['response']['docs']) === FALSE) {
                         continue;
                     }
 

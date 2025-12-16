@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Validation Settings Controller
  *
  * @category  Controller
@@ -13,6 +11,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 

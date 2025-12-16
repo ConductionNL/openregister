@@ -546,7 +546,7 @@ class MagicMapper
     public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array
     {
         // Use fast cached existence check.
-        if (!$this->existsTableForRegisterSchema($register, $schema)) {
+        if ($this->existsTableForRegisterSchema($register, $schema) === FALSE) {
             $this->logger->info(
                     'Register+schema table does not exist, should use generic storage',
                     [
@@ -1048,7 +1048,7 @@ class MagicMapper
                 return [
                     'name'     => $columnName,
                     'type'     => 'boolean',
-                    'nullable' => !in_array($propertyName, $propertyConfig['required'] ?? []),
+                    'nullable' => in_array($propertyName, $propertyConfig['required'] ?? []) === FALSE,
                     // propertyConfig may contain 'default' key even if not in type definition.
                     'default'  => $defaultValue,
                 ];
@@ -1059,7 +1059,7 @@ class MagicMapper
                 return [
                     'name'     => $columnName,
                     'type'     => 'json',
-                    'nullable' => !in_array($propertyName, $propertyConfig['required'] ?? []),
+                    'nullable' => in_array($propertyName, $propertyConfig['required'] ?? []) === FALSE,
                 ];
 
             default:
@@ -1107,7 +1107,7 @@ class MagicMapper
                 return [
                     'name'     => $columnName,
                     'type'     => 'datetime',
-                    'nullable' => !$isRequired,
+                    'nullable' => $isRequired === FALSE,
                     'index'    => true,
             // Date fields are often used for filtering.
                 ];
@@ -1118,7 +1118,7 @@ class MagicMapper
                     'type'     => 'string',
                     'length'   => 320,
             // RFC 5321 email length limit.
-                    'nullable' => !$isRequired,
+                    'nullable' => $isRequired === FALSE,
                     'index'    => true,
                 ];
 
@@ -1127,7 +1127,7 @@ class MagicMapper
                 return [
                     'name'     => $columnName,
                     'type'     => 'text',
-                    'nullable' => !$isRequired,
+                    'nullable' => $isRequired === FALSE,
                 ];
 
             case 'uuid':
@@ -1135,7 +1135,7 @@ class MagicMapper
                     'name'     => $columnName,
                     'type'     => 'string',
                     'length'   => 36,
-                    'nullable' => !$isRequired,
+                    'nullable' => $isRequired === FALSE,
                     'index'    => true,
                 ];
 
@@ -1146,7 +1146,7 @@ class MagicMapper
                         'name'     => $columnName,
                         'type'     => 'string',
                         'length'   => $maxLength,
-                        'nullable' => !$isRequired,
+                        'nullable' => $isRequired === FALSE,
                         'index'    => $maxLength <= 100,
                     // Index shorter strings for performance.
                     ];
@@ -1198,7 +1198,7 @@ class MagicMapper
         return [
             'name'     => $columnName,
             'type'     => $intType,
-            'nullable' => !$isRequired,
+            'nullable' => $isRequired === FALSE,
             // propertyConfig may contain 'default' key even if not in type definition.
             'default'  => $defaultValue,
             'index'    => true,
@@ -1235,7 +1235,7 @@ class MagicMapper
             'type'      => 'decimal',
             'precision' => 10,
             'scale'     => 2,
-            'nullable'  => !$isRequired,
+            'nullable'  => $isRequired === FALSE,
             // propertyConfig may contain 'default' key even if not in type definition.
             'default'   => $defaultValue,
             'index'     => true,
@@ -1548,7 +1548,7 @@ class MagicMapper
 
             // Handle JSON fields.
             if (in_array($field, ['files', 'relations', 'locked', 'authorization', 'validation', 'deleted', 'geo', 'retention', 'groups']) === true) {
-                if ($value !== null && !is_string($value)) {
+                if ($value !== null && is_string($value) === FALSE) {
                     $value = json_encode($value);
                 }
             }
@@ -1770,7 +1770,7 @@ class MagicMapper
         $name = preg_replace('/[^a-z0-9_]/', '_', $name);
 
         // Ensure it starts with a letter or underscore.
-        if (!preg_match('/^[a-z_]/', $name)) {
+        if (preg_match('/^[a-z_]/', $name) === FALSE) {
             $name = 'table_'.$name;
         }
 
@@ -1799,7 +1799,7 @@ class MagicMapper
         $name = preg_replace('/[^a-z0-9_]/', '_', $name);
 
         // Ensure it starts with a letter or underscore.
-        if (!preg_match('/^[a-z_]/', $name)) {
+        if (preg_match('/^[a-z_]/', $name) === FALSE) {
             $name = 'col_'.$name;
         }
 
@@ -2092,7 +2092,7 @@ class MagicMapper
                     'name'     => $column->getName(),
                     'type'     => $column->getType()->getName(),
                     'length'   => $column->getLength(),
-                    'nullable' => !$column->getNotnull(),
+                    'nullable' => $column->getNotnull() === FALSE,
                     'default'  => $column->getDefault(),
                 ];
             }
@@ -2134,7 +2134,7 @@ class MagicMapper
 
         // Find columns to add.
         foreach ($requiredColumns as $columnName => $columnDef) {
-            if (!isset($currentColumns[$columnName])) {
+            if (isset($currentColumns[$columnName]) === FALSE) {
                 $this->logger->info(
                         'Adding new column to schema table',
                         [

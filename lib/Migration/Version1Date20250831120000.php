@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Migration - Add size column to search trails
  *
  * This migration adds a size column to the openregister_search_trails table
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

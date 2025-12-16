@@ -730,7 +730,7 @@ class SchemaMapper extends QBMapper
             $schema->setVersion(implode('.', $version));
         }
 
-        $schema->hydrate(data: $object, validator: $this->validator);
+        $schema->hydrate(object: $object, validator: $this->validator);
 
         // Update the schema in the database.
         $schema = $this->update($schema);
