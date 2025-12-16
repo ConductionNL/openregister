@@ -57,9 +57,6 @@ class CacheSettingsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Get comprehensive cache statistics and performance metrics.
      *

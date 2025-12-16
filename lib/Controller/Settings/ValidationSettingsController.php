@@ -58,9 +58,6 @@ class ValidationSettingsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Validate all objects in the system
      *

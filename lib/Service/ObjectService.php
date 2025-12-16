@@ -1173,8 +1173,8 @@ class ObjectService
      * @param string|null $uses Optional filter by object usage
      * @param array|null $views Optional view IDs to apply
      *
-     * @phpstan-param array<string, mixed> $query
      * @psalm-param   array<string, mixed> $query
+     * @phpstan-param array<string, mixed> $query
      *
      * @return array<int, ObjectEntity>|int An array of ObjectEntity objects matching the criteria, or integer count if _count is true
      *
@@ -1256,12 +1256,12 @@ class ObjectService
      *                     - _search: Full-text search term
      *                     - _facets: Facet configuration (required)
      *
-     * @phpstan-param array<string, mixed> $query
      * @psalm-param   array<string, mixed> $query
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @phpstan-param array<string, mixed> $query
      *
      * @return array The facets for objects matching the criteria
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function getFacetsForObjects(array $query=[]): array
     {
@@ -1290,14 +1290,14 @@ class ObjectService
      * @param array $baseQuery  Base query filters to apply for context
      * @param int   $sampleSize Unused parameter, kept for backward compatibility
      *
-     * @phpstan-param array<string, mixed> $baseQuery
-     * @phpstan-param int $sampleSize
      * @psalm-param   array<string, mixed> $baseQuery
      * @psalm-param   int $sampleSize
-     *
-     * @throws \Exception If facetable field discovery fails
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $sampleSize
      *
      * @return array Comprehensive facetable field information from schemas
+     *
+     * @throws \Exception If facetable field discovery fails
      */
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
     {
@@ -1397,13 +1397,8 @@ class ObjectService
      * @param string|null $uses     Optional uses parameter for filtering
      * @param array|null  $views    Optional array of view IDs to apply filters from
      *
-     * @phpstan-param  array<string, mixed> $query
-     * @phpstan-return array<string, mixed>
      * @psalm-param    array<string, mixed> $query
-     * @psalm-return   array<string, mixed>
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \Exception If Solr search fails and cannot be recovered
+     * @phpstan-param  array<string, mixed> $query
      *
      * @return array<string, mixed> Array containing:
      *                              - results: Array of rendered ObjectEntity objects
@@ -1416,6 +1411,12 @@ class ObjectService
      *                              - facetable: Facetable field discovery (if _facetable=true)
      *                              - next: URL for next page (if available)
      *                              - prev: URL for previous page (if available)
+     *
+     * @psalm-return   array<string, mixed>
+     * @phpstan-return array<string, mixed>
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     * @throws \Exception If Solr search fails and cannot be recovered
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -1539,15 +1540,14 @@ class ObjectService
      * @param bool                 $published Whether to filter by published status (default: false)
      * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
-     * @return \React\Promise\PromiseInterface Promise that resolves to search results array
-     *
+     * @psalm-param array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
      *
-     * @phpstan-return PromiseInterface<array<string, mixed>>
-     *
-     * @psalm-param array<string, mixed> $query
+     * @return \React\Promise\PromiseInterface Promise that resolves to search results array
      *
      * @psalm-return PromiseInterface<array{results: mixed, total: mixed, page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>, offset: 0|mixed, facets: mixed, facetable?: mixed, next?: null|string, prev?: null|string}>
+     * @phpstan-return PromiseInterface<array<string, mixed>>
+     *
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -1584,12 +1584,12 @@ class ObjectService
      * @param bool                 $published Whether to filter by published status (default: false)
      * @param bool                 $deleted   Whether to include deleted objects (default: false)
      *
-     * @phpstan-param array<string, mixed> $query
      * @psalm-param   array<string, mixed> $query
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @phpstan-param array<string, mixed> $query
      *
      * @return array<string, mixed> The same structure as searchObjectsPaginated
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function searchObjectsPaginatedSync(array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $published=false, bool $deleted=false): array
     {
@@ -1838,10 +1838,11 @@ class ObjectService
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
      *
+     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-param  array<int, array<string, mixed>> $objects
+     *
      * @return array Comprehensive bulk operation results with statistics and categorized objects
      *
-     * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @psalm-param    array<int, array<string, mixed>> $objects
      * @phpstan-return array<string, mixed>
      */
     public function saveObjects(
@@ -1900,12 +1901,13 @@ class ObjectService
      *
      * @param array $objects Array of objects in serialized format
      *
+     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-param  array<int, array<string, mixed>> $objects
+     *
      * @return array Array of transformed objects in database format
      *
-     * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @psalm-param    array<int, array<string, mixed>> $objects
-     * @phpstan-return array<int, array<string, mixed>>
      * @psalm-return   array<int, array<string, mixed>>
+     * @phpstan-return array<int, array<string, mixed>>
      */
 
 
@@ -1936,13 +1938,6 @@ class ObjectService
 
 
     /**
-     * Checks if a value is a UUID string
-     *
-     * @param mixed $value The value to check
-     *
-     * @return bool True if the value is a UUID string
-     */
-    /**
      * Migrate objects between registers and/or schemas
      *
      * This method migrates multiple objects from one register/schema combination
@@ -1957,9 +1952,9 @@ class ObjectService
      *
      * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
      *
+     * @psalm-return array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
      * @phpstan-return array<string, mixed>
      *
-     * @psalm-return array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
      * @throws \InvalidArgumentException If invalid parameters provided
      */
@@ -2170,13 +2165,6 @@ class ObjectService
 
 
 
-    /**
-     * Clear the response cache (useful for testing or cache invalidation)
-     *
-     * **NEXTCLOUD OPTIMIZATION**: Clear distributed cache instead of static arrays
-     *
-     * @return void
-     */
     // **REMOVED**: clearResponseCache method removed since SOLR is now our index.
 
 
@@ -2192,11 +2180,6 @@ class ObjectService
      * to avoid repeated database queries. Entities are cached with 15-minute TTL
 
 
-    /**
-     * Check if search trails are enabled in the settings
-     *
-     * @return bool True if search trails are enabled, false otherwise
-     */
     // =========================================================================
     // NEW HANDLER DELEGATION METHODS
     // =========================================================================

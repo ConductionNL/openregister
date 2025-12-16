@@ -67,9 +67,6 @@ class LlmSettingsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Get LLM (Large Language Model) settings
      *

@@ -59,9 +59,6 @@ class ConfigurationSettingsController extends Controller
     }//end __construct()
 
 
-}//end class
-
-
     /**
      * Get RBAC settings only
      *

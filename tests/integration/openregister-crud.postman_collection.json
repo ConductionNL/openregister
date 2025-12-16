@@ -749,7 +749,418 @@
 			}
 		},
 		{
-			"name": "3. Create Object 1",
+			"name": "3a. Create Second Organization (Multitenancy)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Response has organisation with UUID', function () {",
+							"        pm.expect(jsonData).to.have.property('organisation');",
+							"        pm.expect(jsonData.organisation).to.have.property('uuid');",
+							"        pm.collectionVariables.set('org2_uuid', jsonData.organisation.uuid);",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/organisations?name=Test Organization 2 {{$timestamp}}&description=Second organization for multitenancy testing",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "organisations"],
+					"query": [
+						{"key": "name", "value": "Test Organization 2 {{$timestamp}}"},
+						{"key": "description", "value": "Second organization for multitenancy testing"}
+					]
+				}
+			}
+		},
+		{
+			"name": "3b. Create Schema in Org2 (Multitenancy)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Schema belongs to org2', function () {",
+							"        pm.expect(jsonData.organisation).to.eql(pm.collectionVariables.get('org2_uuid'));",
+							"    });",
+							"    pm.collectionVariables.set('org2_schema_id', jsonData.id);",
+							"    pm.collectionVariables.set('org2_schema_slug', jsonData.slug);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Org2 Schema {{$timestamp}}\",\n  \"description\": \"Schema in organization 2\",\n  \"organisation\": \"{{org2_uuid}}\",\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"required\": true},\n    \"org2_field\": {\"type\": \"string\"}\n  }\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas"],
+					"query": [{"key": "register", "value": "{{register_id}}"}]
+				}
+			}
+		},
+		{
+			"name": "3c. Create Object in Org2 (Multitenancy)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Object created successfully', function () {",
+							"        pm.expect(jsonData).to.have.property('id');",
+							"        pm.expect(jsonData.id).to.be.a('string');",
+							"    });",
+							"    pm.collectionVariables.set('org2_object_uuid', jsonData.id);",
+							"    ",
+							"    // Note: Objects may inherit organization from schema or be set to null",
+							"    // The key test is isolation in step 3d, not the organization property itself",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Org2 Object\",\n  \"org2_field\": \"This belongs to org2\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{org2_schema_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{org2_schema_slug}}"]
+				}
+			}
+		},
+		{
+			"name": "3d. Test Multitenancy Isolation (Should NOT see org2 objects from org1)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Set active organization to org1 (simulate user switching org context)",
+							"// In a real scenario, this would be done via user preferences API"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    var org2_object_uuid = pm.collectionVariables.get('org2_object_uuid');",
+							"    ",
+							"    pm.test('Org2 object should NOT be in org1 results (multitenancy isolation)', function () {",
+							"        var found = jsonData.results.some(obj => obj.id === org2_object_uuid);",
+							"        pm.expect(found).to.be.false;",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{org2_schema_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{org2_schema_slug}}"]
+				}
+			}
+		},
+		{
+			"name": "3e. Test Admin Override (Admin CAN see all orgs)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Admin can see schemas from all organizations', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"    // Admin should see both org1 and org2 schemas",
+							"    pm.expect(jsonData.results.length).to.be.at.least(2);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas"]
+				}
+			}
+		},
+		{
+			"name": "3f. Create Public Read Schema (RBAC)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Schema has public read authorization', function () {",
+							"        pm.expect(jsonData).to.have.property('authorization');",
+							"        pm.expect(jsonData.authorization).to.have.property('read');",
+							"        pm.expect(jsonData.authorization.read).to.eql(true);",
+							"    });",
+							"    pm.collectionVariables.set('public_schema_id', jsonData.id);",
+							"    pm.collectionVariables.set('public_schema_slug', jsonData.slug);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Public Read Schema {{$timestamp}}\",\n  \"description\": \"Schema with public read access for RBAC testing\",\n  \"organisation\": \"{{org_uuid}}\",\n  \"authorization\": {\n    \"read\": true,\n    \"create\": false,\n    \"update\": false,\n    \"delete\": false\n  },\n  \"properties\": {\n    \"title\": {\"type\": \"string\", \"required\": true},\n    \"public_data\": {\"type\": \"string\"},\n    \"content\": {\"type\": \"string\"}\n  }\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas"],
+					"query": [{"key": "register", "value": "{{register_id}}"}]
+				}
+			}
+		},
+		{
+			"name": "3g. Create Object in Public Schema (RBAC)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Public object created', function () {",
+							"        pm.expect(jsonData).to.have.property('id');",
+							"        pm.expect(jsonData.title).to.eql('Public Test Object');",
+							"    });",
+							"    pm.collectionVariables.set('public_object_uuid', jsonData.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Public Test Object\",\n  \"public_data\": \"This data should be publicly readable\",\n  \"content\": \"Anyone can read this without authentication\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{public_schema_slug}}"]
+				}
+			}
+		},
+		{
+			"name": "3h. Test Unauthenticated Read (PUBLIC schema - should WORK)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200 (unauthenticated read allowed for public schema)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Can read object data without authentication', function () {",
+							"        pm.expect(jsonData).to.have.property('title');",
+							"        pm.expect(jsonData.title).to.eql('Public Test Object');",
+							"        pm.expect(jsonData.public_data).to.include('publicly readable');",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}/{{public_object_uuid}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{public_schema_slug}}", "{{public_object_uuid}}"]
+				}
+			}
+		},
+		{
+			"name": "3i. Test Unauthenticated Read (PRIVATE schema - should FAIL)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 or 403 (unauthenticated read blocked for private schema)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([401, 403, 404]);",
+							"});",
+							"",
+							"pm.test('Access denied for unauthenticated request to private schema', function () {",
+							"    // Either gets 401/403 (unauthorized) or 404 (schema not found due to RBAC)",
+							"    pm.expect(pm.response.code).to.be.at.least(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{schema_slug}}"]
+				}
+			}
+		},
+		{
+			"name": "3j. Test Unauthenticated Write (PUBLIC schema - should FAIL)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 or 403 (unauthenticated write blocked even for public schema)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+							"});",
+							"",
+							"pm.test('Cannot create objects without authentication', function () {",
+							"    // Public read does NOT allow public write",
+							"    pm.expect(pm.response.code).to.be.at.least(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Unauthorized Attempt\",\n  \"public_data\": \"This should not be created\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{public_schema_slug}}"]
+				}
+			}
+		},
+		{
+			"name": "3k. Test Authenticated Read (PUBLIC schema - should WORK)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200 (authenticated read works for public schema)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Authenticated users can also read public data', function () {",
+							"        pm.expect(jsonData).to.have.property('title');",
+							"    });",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{"key": "username", "value": "admin"},
+						{"key": "password", "value": "admin"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}/{{public_object_uuid}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "{{register_slug}}", "{{public_schema_slug}}", "{{public_object_uuid}}"]
+				}
+			}
+		},
+		{
+			"name": "5. Create Object 1",
 			"event": [
 				{
 					"listen": "test",
