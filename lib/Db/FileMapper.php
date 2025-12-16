@@ -18,6 +18,7 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use Exception;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;

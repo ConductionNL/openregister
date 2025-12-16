@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateInterval;
 use DateTime;
 use Exception;
 use RuntimeException;

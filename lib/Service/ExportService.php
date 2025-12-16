@@ -19,6 +19,9 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
+use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;

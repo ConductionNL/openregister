@@ -93,7 +93,7 @@ class PublishHandler
         try {
             // Fetch object.
             $object = $this->objectEntityMapper->find(
-                id: $uuid,
+                $uuid,
                 _rbac: $rbac,
                 _multitenancy: $multitenancy
             );
@@ -165,7 +165,7 @@ class PublishHandler
         try {
             // Fetch object.
             $object = $this->objectEntityMapper->find(
-                id: $uuid,
+                $uuid,
                 _rbac: $rbac,
                 _multitenancy: $multitenancy
             );

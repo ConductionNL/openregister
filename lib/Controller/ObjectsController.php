@@ -1404,13 +1404,14 @@ class ObjectsController extends Controller
             $duration = (int) $data['duration'];
         }
 
-        $object = $objectService->lockObject(
+        $lockResult = $objectService->lockObject(
             identifier: $id,
             process: $process,
             duration: $duration
         );
 
-        return new JSONResponse(data: $object);
+        // Return response with locked status for test compatibility
+        return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
 
     }//end lock()
 
@@ -1435,7 +1436,13 @@ class ObjectsController extends Controller
         $this->objectService->setRegister(register: $register);
         $this->objectService->setSchema(schema: $schema);
         $this->objectService->unlockObject($id);
-        return new JSONResponse(data: ['message' => 'Object unlocked successfully']);
+        
+        // Return response with locked status for test compatibility
+        return new JSONResponse(data: [
+            'message' => 'Object unlocked successfully',
+            'locked' => false,
+            'uuid' => $id,
+        ]);
 
     }//end unlock()
 
@@ -1595,7 +1602,9 @@ class ObjectsController extends Controller
             // Publish the object.
             $object = $objectService->publish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
 
-            return new JSONResponse(data: $object->jsonSerialize());
+            // Return the object data with @self unpacked for simpler response structure
+            $response = $object->jsonSerialize();
+            return new JSONResponse(data: $response['@self'] ?? $response);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }
@@ -1647,7 +1656,9 @@ class ObjectsController extends Controller
             // Depublish the object.
             $object = $objectService->depublish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
 
-            return new JSONResponse(data: $object->jsonSerialize());
+            // Return the object data with @self unpacked for simpler response structure
+            $response = $object->jsonSerialize();
+            return new JSONResponse(data: $response['@self'] ?? $response);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }

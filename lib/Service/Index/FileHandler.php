@@ -200,7 +200,7 @@ class FileHandler
         ];
 
         // Get chunks that haven't been indexed yet.
-        $unindexedChunks = $this->chunkMapper->findUnindexed(sourceType: 'file', limit: $limit);
+        $unindexedChunks = $this->chunkMapper->findUnindexed(limit: $limit);
 
         // Group chunks by file_id.
         $chunksByFile = [];
@@ -281,10 +281,10 @@ class FileHandler
      */
     public function getChunkingStats(): array
     {
-        $totalChunks      = $this->chunkMapper->countAll(sourceType: 'file');
-        $indexedChunks    = $this->chunkMapper->countIndexed(sourceType: 'file');
-        $unindexedChunks  = $this->chunkMapper->countUnindexed(sourceType: 'file');
-        $vectorizedChunks = $this->chunkMapper->countVectorized(sourceType: 'file');
+        $totalChunks      = $this->chunkMapper->countAll();
+        $indexedChunks    = $this->chunkMapper->countIndexed();
+        $unindexedChunks  = $this->chunkMapper->countUnindexed();
+        $vectorizedChunks = $this->chunkMapper->countVectorized();
 
         return [
             'total_chunks'      => $totalChunks,

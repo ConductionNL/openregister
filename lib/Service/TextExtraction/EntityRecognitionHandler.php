@@ -268,7 +268,7 @@ class EntityRecognitionHandler
                     text: $text,
                     positionStart: $detected['position_start'],
                     positionEnd: $detected['position_end'],
-                    contextWindow: $contextWindow
+                    window: $contextWindow
                 );
                 $relation->setContext($context);
                 $relation->setCreatedAt(new DateTime());

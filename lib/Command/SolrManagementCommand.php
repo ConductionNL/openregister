@@ -231,7 +231,8 @@ class SolrManagementCommand extends Command
 
                 // Ensure tenant collection.
                 $output->writeln('🏠 Verifying tenant-specific collection...');
-                if ($this->solrService->ensureTenantCollection() === true) {
+                $tenantResult = $this->solrService->ensureTenantCollection();
+                if (empty($tenantResult) === false) {
                     $output->writeln('✅ Tenant collection ready with proper schema');
 
                     $docCount = $this->solrService->getDocumentCount();
@@ -389,7 +390,8 @@ class SolrManagementCommand extends Command
             // Collection test.
             $output->writeln('');
             $output->writeln('🏠 <info>Testing tenant collection...</info>');
-            if ($this->solrService->ensureTenantCollection() === true) {
+            $tenantResult = $this->solrService->ensureTenantCollection();
+            if (empty($tenantResult) === false) {
                 $output->writeln('   ✅ Tenant collection accessible');
 
                 $docCount = $this->solrService->getDocumentCount();
@@ -402,7 +404,7 @@ class SolrManagementCommand extends Command
             // Basic search test.
             $output->writeln('');
             $output->writeln('🔍 <info>Testing search functionality...</info>');
-            $searchResult = $this->solrService->searchObjects(searchParams: ['q' => '*:*', 'rows' => 1]);
+            $searchResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
             if ($searchResult['success'] === true) {
                 $output->writeln('   ✅ Search working ('.$searchResult['execution_time_ms'].'ms)');
                 $output->writeln('   📊 Total documents: <comment>'.$searchResult['total'].'</comment>');
@@ -478,7 +480,7 @@ class SolrManagementCommand extends Command
             $output->writeln('🔍 Checking field compatibility...');
 
             // Test a document structure.
-            $testResult = $this->solrService->searchObjects(searchParams: ['q' => '*:*', 'rows' => 1]);
+            $testResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
             if ($testResult['success'] === true && empty($testResult['data']) === false) {
                 $sampleDoc       = $testResult['data'][0];
                 $availableFields = array_keys($sampleDoc);

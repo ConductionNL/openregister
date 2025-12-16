@@ -206,42 +206,23 @@ class ObjectEntityMapper extends QBMapper
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
         try {
-            $this->logger->debug('[ObjectEntityMapper] lockObject called', ['uuid' => $uuid, 'lockDuration' => $lockDuration]);
-            
             // Get current user from session.
             $user = $this->userSession->getUser();
-            $this->logger->debug('[ObjectEntityMapper] Got user from session', ['user' => $user ? $user->getUID() : 'null']);
-            
             $userId = $user !== null ? $user->getUID() : 'system';
-            $this->logger->debug('[ObjectEntityMapper] User ID determined', ['userId' => $userId]);
             
-            // Create lock information as JSON object (locked is a JSON field, not a string).
-            $lockData = json_encode([
-                'userId' => $userId,
-                'lockedAt' => (new \DateTime())->format(\DateTime::ATOM),
-                'duration' => $lockDuration,
-            ]);
-            $this->logger->debug('[ObjectEntityMapper] Lock data created', ['lockData' => $lockData]);
-            
-            // Update the object to set the locked field.
-            $this->logger->debug('[ObjectEntityMapper] Creating query builder');
+            // Update the object to set the locked field to current user ID.
             $qb = $this->db->getQueryBuilder();
-            
-            $this->logger->debug('[ObjectEntityMapper] Building update query');
             $qb->update($this->getTableName())
-                ->set('locked', $qb->createNamedParameter($lockData))
+                ->set('locked', $qb->createNamedParameter($userId))
                 ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-                
-            $this->logger->debug('[ObjectEntityMapper] Executing query');
             $qb->executeStatement();
-            $this->logger->debug('[ObjectEntityMapper] Query executed successfully');
             
             // Return lock information.
-            $this->logger->debug('[ObjectEntityMapper] Creating return array');
-            
             return [
-                'locked' => json_decode($lockData, true),
+                'locked' => $userId,
                 'uuid' => $uuid,
+                'lockDuration' => $lockDuration,
+                'lockedAt' => (new \DateTime())->format(\DateTime::ATOM),
             ];
         } catch (\Exception $e) {
             throw new Exception("Failed to lock object: " . $e->getMessage());

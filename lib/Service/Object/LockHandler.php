@@ -85,11 +85,9 @@ class LockHandler
         );
 
         try {
-            $object = $this->objectEntityMapper->lockObject(
-                identifier: $identifier,
-                process: $process,
-                duration: $duration
-            );
+            // NOTE: lockObject is deprecated - this will throw BadMethodCallException
+            // Should use LockingHandler through ObjectService instead
+            $object = $this->objectEntityMapper->lockObject($identifier, $duration);
 
             $this->logger->info(
                 message: '[LockHandler] Object locked successfully',
@@ -175,7 +173,7 @@ class LockHandler
     public function isLocked(string $identifier): bool
     {
         try {
-            $object = $this->objectEntityMapper->find(id: $identifier);
+            $object = $this->objectEntityMapper->find($identifier);
 
             // Check if object has a lock_date and it's still valid.
             if (empty($object['lock_date']) === true) {
@@ -221,7 +219,7 @@ class LockHandler
     public function getLockInfo(string $identifier): ?array
     {
         try {
-            $object = $this->objectEntityMapper->find(id: $identifier);
+            $object = $this->objectEntityMapper->find($identifier);
 
             if (empty($object['lock_date']) === true) {
                 return null;

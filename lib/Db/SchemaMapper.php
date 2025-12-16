@@ -1676,7 +1676,7 @@ class SchemaMapper extends QBMapper
 
             // Validation fields require constraint checking.
             if (in_array($key, $validationFields) === true) {
-                $this->validateConstraintChange(parentValue: $parentValue, childValue: $childValue, key: $key, propertyName: $propertyName, schemaId: $schemaId);
+                $this->validateConstraintChange(parentValue: $parentValue, childValue: $childValue, constraint: $key, propertyName: $propertyName, schemaId: $schemaId);
                 $merged[$key] = $childValue;
                 continue;
             }

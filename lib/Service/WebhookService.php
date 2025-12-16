@@ -317,7 +317,7 @@ class WebhookService
             if ($attempt < $webhook->getMaxRetries()) {
                 $nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
                 $webhookLog->setNextRetryAt($nextRetryAt);
-                $this->scheduleRetry(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt + 1);
+                $this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
             }
 
             // Save log entry.

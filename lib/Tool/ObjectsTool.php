@@ -274,7 +274,7 @@ class ObjectsTool extends AbstractTool
         $filters = $this->applyViewFilters($filters);
 
         $result = $this->objectService->findAll(
-                query: [
+                config: [
                     'limit'   => $limit,
                     'offset'  => $offset,
                     'filters' => $filters,

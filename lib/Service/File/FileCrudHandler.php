@@ -95,9 +95,9 @@ class FileCrudHandler
         // This involves:
         // 1. Getting OpenRegister user folder via folderManagementHandler
         // 2. Checking if folder exists
-        // 3. Creating folder if needed
-        // 4. Transferring ownership via fileOwnershipHandler
-        // 5. Creating shares via fileSharingHandler
+        // 3. Creating folder if needed.
+        // 4. Transferring ownership via fileOwnershipHandler.
+        // 5. Creating shares via fileSharingHandler.
         throw new Exception("FileCrudHandler::createFolder() - Full implementation pending Phase 2 extraction");
 
     }//end createFolder()
@@ -132,9 +132,9 @@ class FileCrudHandler
         // 1. Getting object folder via folderManagementHandler
         // 2. Validating file security via fileValidationHandler
         // 3. Creating the file
-        // 4. Transferring ownership via fileOwnershipHandler
-        // 5. Creating shares via fileSharingHandler if requested
-        // 6. Attaching tags
+        // 4. Transferring ownership via fileOwnershipHandler.
+        // 5. Creating shares via fileSharingHandler if requested.
+        // 6. Attaching tags.
         throw new Exception("FileCrudHandler::addFile() - Full implementation pending Phase 2 extraction");
 
     }//end addFile()
@@ -168,9 +168,9 @@ class FileCrudHandler
         // 1. Finding the file (by ID or path)
         // 2. Validating security via fileValidationHandler
         // 3. Checking ownership via fileValidationHandler
-        // 4. Updating content
-        // 5. Transferring ownership via fileOwnershipHandler
-        // 6. Updating tags
+        // 4. Updating content.
+        // 5. Transferring ownership via fileOwnershipHandler.
+        // 6. Updating tags.
         throw new Exception("FileCrudHandler::updateFile() - Full implementation pending Phase 2 extraction");
 
     }//end updateFile()
@@ -197,9 +197,9 @@ class FileCrudHandler
     {
         // TODO: Extract full implementation from FileService
         // This involves:
-        // 1. Finding the file
-        // 2. Checking ownership via fileValidationHandler
-        // 3. Deleting the file
+        // 1. Finding the file.
+        // 2. Checking ownership via fileValidationHandler.
+        // 3. Deleting the file.
         throw new Exception("FileCrudHandler::deleteFile() - Full implementation pending Phase 2 extraction");
 
     }//end deleteFile()
@@ -224,9 +224,9 @@ class FileCrudHandler
     {
         // TODO: Extract full implementation from FileService
         // This involves:
-        // 1. Getting object folder via folderManagementHandler
-        // 2. Finding file by ID or path
-        // 3. Checking ownership via fileValidationHandler
+        // 1. Getting object folder via folderManagementHandler.
+        // 2. Finding file by ID or path.
+        // 3. Checking ownership via fileValidationHandler.
         throw new Exception("FileCrudHandler::getFile() - Full implementation pending Phase 2 extraction");
 
     }//end getFile()
@@ -250,8 +250,8 @@ class FileCrudHandler
     {
         // TODO: Extract full implementation from FileService
         // This involves:
-        // 1. Using rootFolder->getById()
-        // 2. Checking ownership via fileValidationHandler
+        // 1. Using rootFolder->getById().
+        // 2. Checking ownership via fileValidationHandler.
         throw new Exception("FileCrudHandler::getFileById() - Full implementation pending Phase 2 extraction");
 
     }//end getFileById()
@@ -276,9 +276,9 @@ class FileCrudHandler
     {
         // TODO: Extract full implementation from FileService
         // This involves:
-        // 1. Getting object folder via folderManagementHandler
-        // 2. Listing directory contents
-        // 3. Filtering by share status if requested
+        // 1. Getting object folder via folderManagementHandler.
+        // 2. Listing directory contents.
+        // 3. Filtering by share status if requested.
         throw new Exception("FileCrudHandler::getFiles() - Full implementation pending Phase 2 extraction");
 
     }//end getFiles()
@@ -310,9 +310,9 @@ class FileCrudHandler
     {
         // TODO: Extract full implementation from FileService
         // This is an upsert operation that:
-        // 1. Checks if file exists via getFile()
-        // 2. Calls updateFile() if exists
-        // 3. Calls addFile() if not exists
+        // 1. Checks if file exists via getFile().
+        // 2. Calls updateFile() if exists.
+        // 3. Calls addFile() if not exists.
         throw new Exception("FileCrudHandler::saveFile() - Full implementation pending Phase 2 extraction");
 
     }//end saveFile()

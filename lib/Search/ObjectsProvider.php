@@ -337,11 +337,11 @@ class ObjectsProvider implements IFilteringProvider
                 $description = $this->buildDescription($result);
 
                 $searchResultEntries[] = new SearchResultEntry(
-                    url: $objectUrl,
-                    title: $title,
-                    text: $description,
-                    link: $objectUrl,
-                    icon: 'icon-openregister'
+                    $objectUrl,
+                    $title,
+                    $description,
+                    $objectUrl,
+                    'icon-openregister'
                 );
             }
         }//end if
@@ -375,11 +375,11 @@ class ObjectsProvider implements IFilteringProvider
 
         // Add schema/register information if available.
         if (empty($object['schema']) === false) {
-            $parts[] = $this->l10n->t(text: 'Schema: %s', args: [$object['schema']]);
+            $parts[] = $this->l10n->t('Schema: %s', $object['schema']);
         }
 
         if (empty($object['register']) === false) {
-            $parts[] = $this->l10n->t(text: 'Register: %s', args: [$object['register']]);
+            $parts[] = $this->l10n->t('Register: %s', $object['register']);
         }
 
         // Add summary/description if available.
@@ -396,7 +396,7 @@ class ObjectsProvider implements IFilteringProvider
 
         // Add last updated info if available.
         if (empty($object['updated']) === false) {
-            $parts[] = $this->l10n->t(text: 'Updated: %s', args: [date('Y-m-d H:i', strtotime($object['updated']))]);
+            $parts[] = $this->l10n->t('Updated: %s', date('Y-m-d H:i', strtotime($object['updated'])));
         }
 
         $description = implode(' • ', $parts);
