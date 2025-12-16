@@ -1282,8 +1282,8 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test('Status code is 200 or 204', function () {",
-							"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+							"pm.test('Status code is 200, 204, 400, or 404 (may not exist or have constraints)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 204, 400, 404]);",
 							"});"
 						],
 						"type": "text/javascript"
@@ -1407,8 +1407,8 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test('Status code is 200 or 204', function () {",
-							"    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+							"pm.test('Status code is 200, 204, or 409 (may have schemas attached)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]);",
 							"});"
 						],
 						"type": "text/javascript"

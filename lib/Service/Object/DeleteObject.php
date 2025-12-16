@@ -166,12 +166,17 @@ class DeleteObject
                 $schemaIdInt = null;
             }
 
-            $this->objectCacheService->invalidateForObjectChange(
-                object: $objectEntity,
-                operation: 'delete',
-                registerId: $registerIdInt,
-                schemaId: $schemaIdInt
-            );
+            try {
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: $objectEntity,
+                    operation: 'delete',
+                    registerId: $registerIdInt,
+                    schemaId: $schemaIdInt
+                );
+            } catch (\Exception $e) {
+                // Gracefully handle cache invalidation errors (e.g., Solr not configured)
+                // Deletion should succeed even if cache invalidation fails
+            }
         }//end if
 
         // Create audit trail for delete if audit trails are enabled.

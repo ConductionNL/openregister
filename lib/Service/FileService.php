@@ -1256,12 +1256,12 @@ class FileService
      *
      * @throws Exception If deleting the file is not permitted or file operations fail
      *
-     * @return bool True if successful, false if the file didn't exist
-     *
      * @psalm-param   Node|string|int $file
-     * @phpstan-param Node|string|int $file
      * @psalm-param   ObjectEntity|null $object
+     * @phpstan-param Node|string|int $file
      * @phpstan-param ObjectEntity|null $object
+     *
+     * @return bool True if successful, false if the file didn't exist
      */
 
 
@@ -1447,9 +1447,10 @@ class FileService
      * @throws DoesNotExistException If the object ID is not found.
      *
      * @psalm-param    ObjectEntity|string|null $object
-     * @phpstan-param  ObjectEntity|string|null $object
      * @psalm-param    string|int $file
+     * @phpstan-param  ObjectEntity|string|null $object
      * @phpstan-param  string|int $file
+     *
      * @psalm-return   File|null
      * @phpstan-return File|null
      */
