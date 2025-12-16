@@ -1397,7 +1397,7 @@ class SettingsService
      *
      * @return string Formatted string.
      */
-    private function formatBytes(int $bytes, int $precision=2): string
+    public function formatBytes(int $bytes, int $precision=2): string
     {
         $units     = ['B', 'KB', 'MB', 'GB', 'TB'];
         $unitCount = count($units);

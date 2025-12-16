@@ -82,14 +82,15 @@ class ValidationHandler
      *
      * @param array $objects Array of objects to validate.
      *
-     * @return void
-     *
-     * @throws InvalidArgumentException If required fields are missing.
-     *
      * @psalm-param    array<int, array<string, mixed>> $objects
      * @phpstan-param  array<int, array<string, mixed>> $objects
+     *
+     * @return void
+     *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @throws InvalidArgumentException If required fields are missing.
      */
     public function validateRequiredFields(array $objects): void
     {
@@ -127,12 +128,13 @@ class ValidationHandler
      * @param int      $schemaId     The schema ID to validate objects for.
      * @param callable $saveCallback Callback function to save/validate objects (receives: object, register, schema, uuid, rbac, multi, silent).
      *
+     * @psalm-param    int $schemaId
+     * @psalm-param    callable(array, int, int, string, bool, bool, bool): void $saveCallback
+     * @phpstan-param  int $schemaId
+     * @phpstan-param  callable(array, int, int, string, bool, bool, bool): void $saveCallback
+     *
      * @return array Array containing 'valid' and 'invalid' objects with details.
      *
-     * @psalm-param    int $schemaId
-     * @phpstan-param  int $schemaId
-     * @psalm-param    callable(array, int, int, string, bool, bool, bool): void $saveCallback
-     * @phpstan-param  callable(array, int, int, string, bool, bool, bool): void $saveCallback
      * @psalm-return   array{valid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>}>, invalid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>, error: string}>}
      * @phpstan-return array{valid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>}>, invalid: array<int, array{id: int, uuid: string, name: string|null, data: array<string, mixed>, error: string}>}
      */

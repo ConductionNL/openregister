@@ -329,12 +329,12 @@ class ConfigurationService
      * @param array|Configuration|Register $input          The configuration array, Configuration object, or Register object to build the OAS from.
      * @param bool                         $includeObjects Whether to include objects in the registers.
      *
+     * @psalm-param   array<string, mixed>|Configuration|Register $input
+     * @phpstan-param array<string, mixed>|Configuration|Register $input
+     *
      * @return array The OpenAPI specification.
      *
      * @throws Exception If configuration is invalid.
-     *
-     * @phpstan-param array<string, mixed>|Configuration|Register $input
-     * @psalm-param   array<string, mixed>|Configuration|Register $input
      */
     public function exportConfig(array | Configuration | Register $input=[], bool $includeObjects=false): array
     {
@@ -416,9 +416,9 @@ class ConfigurationService
     /**
      * Get JSON data from uploaded file (DELEGATED).
      *
-     * @return JSONResponse|array
-     *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
+     *
+     * @return JSONResponse|array
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -436,9 +436,9 @@ class ConfigurationService
      *
      * @throws GuzzleException
      *
-     * @return JSONResponse|array The response from the call converted to PHP array or JSONResponse in case of an error.
-     *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
+     *
+     * @return JSONResponse|array The response from the call converted to PHP array or JSONResponse in case of an error.
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -982,11 +982,11 @@ class ConfigurationService
      * @param array  $proposed The proposed data
      * @param string $prefix   Field name prefix for nested comparison
      *
+     * @return array List of differences
+     */
+    private function compareArrays(array $current, array $proposed, string $prefix=''): array
+    {
         return $this->previewHandler->compareArrays($current, $proposed, $prefix);
-            }//end if
-        }//end foreach
-
-        return $changes;
 
     }//end compareArrays()
 

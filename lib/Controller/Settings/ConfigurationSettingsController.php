@@ -21,6 +21,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -46,12 +47,14 @@ class ConfigurationSettingsController extends Controller
      * @param string          $appName         The app name.
      * @param IRequest        $request         The request.
      * @param SettingsService $settingsService Settings service.
+     * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly SettingsService $settingsService,
+        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -352,7 +355,7 @@ class ConfigurationSettingsController extends Controller
     public function getObjectCollectionFields(): JSONResponse
     {
         try {
-            $solrSchemaService = $this->container->get(IndexService::class);
+            $solrSchemaService = $this->indexService;
             $status            = $solrSchemaService->getObjectCollectionFieldStatus();
 
             return new JSONResponse(
@@ -389,7 +392,7 @@ class ConfigurationSettingsController extends Controller
     public function createMissingObjectFields(): JSONResponse
     {
         try {
-            $solrSchemaService = $this->container->get(IndexService::class);
+            $solrSchemaService = $this->indexService;
 
             // Switch to object collection.
             $objectCollection = $this->settingsService->getSolrSettingsOnly()['objectCollection'] ?? null;

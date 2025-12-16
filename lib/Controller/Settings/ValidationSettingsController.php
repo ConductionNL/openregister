@@ -256,11 +256,11 @@ class ValidationSettingsController extends Controller
                 'available_memory_bytes'   => $availableMemory,
                 'safety_margin_percentage' => 80,
                 'formatted'                => [
-                    'total_predicted'   => $this->formatBytes($totalEstimatedMemory),
-                    'available'         => $this->formatBytes($availableMemory),
-                    'current_usage'     => $this->formatBytes($currentMemory),
-                    'memory_limit'      => $this->formatBytes($memoryLimitBytes),
-                    'memory_per_object' => $this->formatBytes($estimatedMemoryPerObject),
+                    'total_predicted'   => $this->settingsService->formatBytes($totalEstimatedMemory),
+                    'available'         => $this->settingsService->formatBytes($availableMemory),
+                    'current_usage'     => $this->settingsService->formatBytes($currentMemory),
+                    'memory_limit'      => $this->settingsService->formatBytes($memoryLimitBytes),
+                    'memory_per_object' => $this->settingsService->formatBytes($estimatedMemoryPerObject),
                 ],
                 // Get recommendation message based on prediction safety.
                 'recommendation'           => $recommendationMessage,

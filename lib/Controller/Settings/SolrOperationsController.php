@@ -22,6 +22,7 @@ use OCP\IRequest;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Exception;
+use ReflectionClass;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Index\SetupHandler;

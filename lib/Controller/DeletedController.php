@@ -18,6 +18,7 @@
  */
 
 namespace OCA\OpenRegister\Controller;
+use DateTime;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -179,7 +180,6 @@ class DeletedController extends Controller
                 filters: $params['filters'],
                 sort: $params['sort'],
                 search: $params['search'],
-                includeDeleted: true
             // Include deleted objects.
             );
 
@@ -193,9 +193,7 @@ class DeletedController extends Controller
 
             // Get total count for pagination.
             $total = $this->objectEntityMapper->countAll(
-                filters: $params['filters'],
-                search: $params['search'],
-                includeDeleted: true
+                filters: $params['filters']
             );
 
             // Calculate pagination.
@@ -243,7 +241,6 @@ class DeletedController extends Controller
             // Get total deleted count.
             $totalDeleted = $this->objectEntityMapper->countAll(
                 filters: ['@self.deleted' => 'IS NOT NULL'],
-                includeDeleted: true
             );
 
             // Get deleted today count.
@@ -253,7 +250,6 @@ class DeletedController extends Controller
                     '@self.deleted'         => 'IS NOT NULL',
                     '@self.deleted.deleted' => '>='.$today,
                 ],
-                includeDeleted: true
             );
 
             // Get deleted this week count.
@@ -263,7 +259,6 @@ class DeletedController extends Controller
                     '@self.deleted'         => 'IS NOT NULL',
                     '@self.deleted.deleted' => '>='.$weekAgo,
                 ],
-                includeDeleted: true
             );
 
             // Calculate oldest deletion (placeholder for now).
@@ -353,7 +348,7 @@ class DeletedController extends Controller
 
             // Clear the deleted status.
             $object->setDeleted(null);
-            $this->objectEntityMapper->update(entity: $object, includeDeleted: true);
+            $this->objectEntityMapper->update(entity: $object);
 
             return new JSONResponse(
                     data: [
@@ -413,7 +408,6 @@ class DeletedController extends Controller
                 search: null,
                 ids: $ids,
                 uses: null,
-                includeDeleted: true
             );
 
             // Track results.
@@ -428,7 +422,7 @@ class DeletedController extends Controller
                 try {
                     if ($object->getDeleted() !== null) {
                         $object->setDeleted(null);
-                        $this->objectEntityMapper->update(entity: $object, includeDeleted: true);
+                        $this->objectEntityMapper->update(entity: $object);
                         $restored++;
                     } else {
                         // Object exists but is not deleted.
@@ -552,7 +546,6 @@ class DeletedController extends Controller
                 search: null,
                 ids: $ids,
                 uses: null,
-                includeDeleted: true
             );
 
             // Track results.

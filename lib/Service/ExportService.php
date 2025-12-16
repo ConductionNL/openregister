@@ -256,9 +256,9 @@ class ExportService
 
         $objects = $this->objectService->searchObjects(
             query: $query,
-            rbac: true,
+            _rbac: true,
         // Apply RBAC filtering.
-            multi: true,
+            _multitenancy: true,
         // Apply multi-tenancy filtering.
             ids: null,
             uses: null

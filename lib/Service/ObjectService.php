@@ -1952,7 +1952,7 @@ class ObjectService
      *
      * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
      *
-     * @psalm-return array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
+     * @psalm-return   array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
      * @phpstan-return array<string, mixed>
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register or schema not found
@@ -2021,12 +2021,13 @@ class ObjectService
      * @param bool          $_rbac     Whether to apply RBAC filtering
      * @param bool          $_multitenancy    Whether to apply multi-organization filtering
      *
+     * @psalm-param    array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     *
      * @return array Array of UUIDs of published objects
      *
-     * @phpstan-param  array<int, string> $uuids
-     * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
+     * @phpstan-return array<int, string>
      */
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -2052,12 +2053,13 @@ class ObjectService
      * @param bool          $_rbac     Whether to apply RBAC filtering
      * @param bool          $_multitenancy    Whether to apply multi-organization filtering
      *
+     * @psalm-param    array<int, string> $uuids
+     * @phpstan-param  array<int, string> $uuids
+     *
      * @return array Array of UUIDs of depublished objects
      *
-     * @phpstan-param  array<int, string> $uuids
-     * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, string>
      * @psalm-return   array<int, string>
+     * @phpstan-return array<int, string>
      */
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
     {

@@ -618,13 +618,24 @@ class IndexService
         ?string $collection=null,
         bool $includeTotal=true
     ): array {
+        // Map IndexService parameters to SearchBackendInterface parameters.
+        // Add pagination and other params to query array.
+        $query['_limit'] = $limit;
+        $query['_offset'] = $offset;
+        if (empty($facets) === false) {
+            $query['_facets'] = $facets;
+        }
+        if ($collection !== null) {
+            $query['_collection'] = $collection;
+        }
+        $query['_includeTotal'] = $includeTotal;
+        
         return $this->searchBackend->searchObjectsPaginated(
             query: $query,
-            limit: $limit,
-            offset: $offset,
-            facets: $facets,
-            collection: $collection,
-            includeTotal: $includeTotal
+            _rbac: true,
+            _multitenancy: true,
+            published: false,
+            deleted: false
         );
 
     }//end searchObjectsPaginated()

@@ -1155,7 +1155,7 @@ class ImportHandler
                 $this->logger->debug(message: 'Import object search filter', context: ['filter' => $search]);
 
                 // Search for existing object.
-                $results = $this->objectService->searchObjects(query: $search, rbac: true, multi: true);
+                $results = $this->objectService->searchObjects(query: $search, _rbac: true, _multitenancy: true);
                 if ((is_array($results) === true) && count($results) > 0) {
                     $existingObject = $results[0];
                 } else {
