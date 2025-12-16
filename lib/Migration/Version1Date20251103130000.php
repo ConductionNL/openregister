@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Add authorization column to organisations and applications
  *
  * This migration adds the authorization column (JSON type) to both
@@ -18,6 +16,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://www.openregister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

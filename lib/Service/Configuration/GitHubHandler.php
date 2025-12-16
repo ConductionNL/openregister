@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister GitHub Handler
  *
  * This file contains the GitHubHandler class for interacting with the GitHub API
@@ -16,6 +14,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 

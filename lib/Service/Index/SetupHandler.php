@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * SetupHandler
  *
  * Setup class for SOLR configuration in the OpenRegister application.

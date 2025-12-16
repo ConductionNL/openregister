@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Multi-Tenancy Organisation UUID Migration
  *
  * This migration ensures all entities have proper organisation UUID columns
@@ -29,6 +27,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

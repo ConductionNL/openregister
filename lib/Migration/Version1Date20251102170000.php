@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Schema Extension Migration
  *
  * This migration adds the 'extend' column to the schemas table to support
@@ -19,6 +17,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

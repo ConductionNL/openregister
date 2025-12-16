@@ -281,7 +281,7 @@ trait MultiTenancyTrait
         // CASE 1: No active organisation set.
         if (empty($activeOrganisationUuids) === true) {
             // Build conditions for users without active organisation.
-            $orgConditions = $qb->expr()->orX();
+            $conditions = [];
 
             // Check if user is admin - only if user exists.
             $isAdmin = false;
@@ -292,7 +292,7 @@ trait MultiTenancyTrait
 
             // Admins can see NULL organisation entities (legacy data).
             if ($isAdmin === true && $allowNullOrg === true) {
-                $orgConditions->add($qb->expr()->isNull($organisationColumn));
+                $conditions[] = $qb->expr()->isNull($organisationColumn);
             }
 
             // Include published entities if bypass is enabled (works for objects, schemas, registers).
@@ -314,25 +314,25 @@ trait MultiTenancyTrait
 
                 // Published bypass condition: entity must be published AND not depublished.
                 // This ensures depublished entities from OTHER organizations are never visible via published bypass.
-                $orgConditions->add(
-                    $qb->expr()->andX(
-                        $qb->expr()->isNotNull($publishedColumn),
-                        $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
-                        // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)..
-                        $qb->expr()->orX(
-                            $qb->expr()->isNull($depublishedColumn),
-                            $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
-                        )
+                $conditions[] = $qb->expr()->andX(
+                    $qb->expr()->isNotNull($publishedColumn),
+                    $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
+                    // Depublished check: must be NULL (never depublished) OR in the future (not yet depublished)..
+                    $qb->expr()->orX(
+                        $qb->expr()->isNull($depublishedColumn),
+                        $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
                     )
                 );
             }//end if
 
             // If no conditions were added, deny all access.
-            if ($orgConditions->count() === 0) {
+            if (empty($conditions)) {
                 // Use raw SQL to create an always-false condition (1 = 0).
                 // Note: Using raw SQL instead of literal() as it avoids query builder interpretation issues.
                 $qb->andWhere('1 = 0');
             } else {
+                // Create orX with at least one condition to avoid deprecation warning.
+                $orgConditions = call_user_func_array([$qb->expr(), 'orX'], $conditions);
                 $qb->andWhere($orgConditions);
             }
 

@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * Rename views table to view (singular)
  *
  * This migration renames the openregister_views table to openregister_view
@@ -17,6 +15,8 @@ declare(strict_types=1);
  *
  * @link https://www.openregister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

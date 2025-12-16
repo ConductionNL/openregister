@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * PermissionHandler - RBAC and Permission Management Handler
  *
  * Handles all permission checking, RBAC enforcement, and multi-tenancy filtering.
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 

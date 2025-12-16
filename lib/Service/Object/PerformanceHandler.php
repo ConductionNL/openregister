@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * PerformanceHandler - Performance Optimization and Monitoring Handler
  *
  * Handles performance optimization, caching strategies, and performance monitoring.
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 

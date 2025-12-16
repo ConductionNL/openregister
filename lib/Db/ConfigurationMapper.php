@@ -546,12 +546,9 @@ class ConfigurationMapper extends QBMapper
      */
     private function invalidateConfigurationCache(): void
     {
-        $activeOrg = $this->organisationService->getActiveOrganisation();
-        if ($activeOrg === null) {
-            return;
-        }
-
-        $orgUuid    = $activeOrg->getUuid();
+        // Organisation service was removed from mapper (services should not be in mappers).
+        // Cache invalidation is handled at service layer instead.
+        return;
         $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
 
         // Remove from session.

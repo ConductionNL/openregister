@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Schema Composition Migration
  *
  * This migration adds 'allOf', 'oneOf', and 'anyOf' columns to the schemas table
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

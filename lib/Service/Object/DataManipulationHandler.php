@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * DataManipulationHandler - Data Transformation and Manipulation Handler
  *
  * Handles data transformation, property mapping, slug generation, and path-based access.
@@ -20,6 +18,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 

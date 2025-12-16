@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * BulkIndexer
  *
  * Handles bulk indexing business logic (batching, parallel processing, optimization).
@@ -16,6 +14,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 

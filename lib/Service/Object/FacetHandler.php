@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister Facet Handler
  *
  * **CENTRALIZED FACETING SYSTEM**: This handler manages all faceting operations
@@ -17,6 +15,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 

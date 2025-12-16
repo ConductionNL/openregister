@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * OpenRegister ConfigurationHandler
  *
  * Handles Solr configuration initialization, validation, and management.
@@ -18,6 +16,8 @@ declare(strict_types=1);
  *
  * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 
