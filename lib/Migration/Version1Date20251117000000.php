@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
-/*
+
+/**
  * Migration to add checksum column to chunks table.
  *
  * @category Migration
@@ -12,6 +12,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 

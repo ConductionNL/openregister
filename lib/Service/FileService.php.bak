@@ -1092,7 +1092,54 @@ class FileService
      */
     private function transferFileOwnershipIfNeeded(File $file): void
     {
-        $this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file, $this->fileSharingHandler);
+        try {
+            // Get current user.
+            $currentUser = $this->getCurrentUser();
+            if ($currentUser === null) {
+                // No user logged in, nothing to do.
+                return;
+            }
+
+            $currentUserId = $currentUser->getUID();
+
+            // Get OpenRegister system user.
+            $openRegisterUser   = $this->getUser();
+            $openRegisterUserId = $openRegisterUser->getUID();
+
+            // If current user is already the OpenRegister user, nothing to do.
+            if ($currentUserId === $openRegisterUserId) {
+                return;
+            }
+
+            // Get file owner.
+            $fileOwner = $file->getOwner();
+            if ($fileOwner === null) {
+                $this->logger->warning(message: "File {$file->getName()} has no owner, skipping ownership transfer");
+                return;
+            }
+
+            $fileOwnerId = $fileOwner->getUID();
+
+            // Check if current user is the owner and is not OpenRegister.
+            if ($fileOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
+                $this->logger->info(message: "Transferring ownership of file {$file->getName()} from {$currentUserId} to {$openRegisterUserId}");
+
+                // Change file ownership to OpenRegister user.
+                $storage = $file->getStorage();
+                if (method_exists($storage, 'chown') === true) {
+                    $storage->chown($file->getInternalPath(), $openRegisterUserId);
+                }
+
+                // Create a share with the current user to maintain access.
+                $this->shareFileWithUser(file: $file, userId: $currentUserId);
+
+                $this->logger->info(message: "Successfully transferred ownership and shared file {$file->getName()} with {$currentUserId}");
+            }
+        } catch (Exception $e) {
+            $this->logger->error(message: "Failed to transfer file ownership for {$file->getName()}: ".$e->getMessage());
+            // Don't throw the exception to avoid breaking file operations.
+            // The file operation should succeed even if ownership transfer fails.
+        }//end try
 
     }//end transferFileOwnershipIfNeeded()
 
@@ -1132,7 +1179,54 @@ class FileService
      */
     private function transferFolderOwnershipIfNeeded(Node $folder): void
     {
-        $this->fileOwnershipHandler->transferFolderOwnershipIfNeeded($folder, $this->fileSharingHandler);
+        try {
+            // Get current user.
+            $currentUser = $this->getCurrentUser();
+            if ($currentUser === null) {
+                // No user logged in, nothing to do.
+                return;
+            }
+
+            $currentUserId = $currentUser->getUID();
+
+            // Get OpenRegister system user.
+            $openRegisterUser   = $this->getUser();
+            $openRegisterUserId = $openRegisterUser->getUID();
+
+            // If current user is already the OpenRegister user, nothing to do.
+            if ($currentUserId === $openRegisterUserId) {
+                return;
+            }
+
+            // Get folder owner.
+            $folderOwner = $folder->getOwner();
+            if ($folderOwner === null) {
+                $this->logger->warning(message: "Folder {$folder->getName()} has no owner, skipping ownership transfer");
+                return;
+            }
+
+            $folderOwnerId = $folderOwner->getUID();
+
+            // Check if current user is the owner and is not OpenRegister.
+            if ($folderOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
+                $this->logger->info(message: "Transferring ownership of folder {$folder->getName()} from {$currentUserId} to {$openRegisterUserId}");
+
+                // Change folder ownership to OpenRegister user.
+                $storage = $folder->getStorage();
+                if (method_exists($storage, 'chown') === true) {
+                    $storage->chown($folder->getInternalPath(), $openRegisterUserId);
+                }
+
+                // Create a share with the current user to maintain access.
+                $this->shareFolderWithUser(folder: $folder, userId: $currentUserId);
+
+                $this->logger->info(message: "Successfully transferred ownership and shared folder {$folder->getName()} with {$currentUserId}");
+            }
+        } catch (Exception $e) {
+            $this->logger->error(message: "Failed to transfer folder ownership for {$folder->getName()}: ".$e->getMessage());
+            // Don't throw the exception to avoid breaking folder operations.
+            // The folder operation should succeed even if ownership transfer fails.
+        }//end try
 
     }//end transferFolderOwnershipIfNeeded()
 
@@ -1209,7 +1303,54 @@ class FileService
      */
     public function createFolder(string $folderPath): Node
     {
-        return $this->folderManagementHandler->createFolder($folderPath);
+        $folderPath = trim(string: $folderPath, characters: '/');
+
+        // Get the current user.
+        $userFolder = $this->getOpenRegisterUserFolder();
+
+        // Check if folder exists and if not create it.
+        try {
+            // First, check if the root folder exists, and if not, create it and share it with the openregister group.
+            try {
+                $userFolder->get(self::ROOT_FOLDER);
+            } catch (NotFoundException) {
+                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+
+                if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
+                    $this->groupManager->createGroup(self::APP_GROUP);
+                }
+
+                $this->createShare(
+                        shareData: [
+                            'path'        => self::ROOT_FOLDER,
+                            'nodeId'      => $rootFolder->getId(),
+                            'nodeType'    => $this->getNodeTypeFromFolder($rootFolder),
+                            'shareType'   => 1,
+                            'permissions' => 31,
+                            'sharedWith'  => self::APP_GROUP,
+                        ]
+                        );
+            }
+
+            try {
+                // Try to get the folder if it already exists.
+                $node = $userFolder->get(path: $folderPath);
+                $this->logger->info(message: "This folder already exists: $folderPath");
+                return $node;
+            } catch (NotFoundException) {
+                // Folder does not exist, create it.
+                $node = $userFolder->newFolder(path: $folderPath);
+                $this->logger->info(message: "Created folder: $folderPath");
+
+                // Transfer ownership to OpenRegister and share with current user if needed.
+                $this->transferFolderOwnershipIfNeeded($node);
+
+                return $node;
+            }
+        } catch (NotPermittedException $e) {
+            $this->logger->error(message: "Can't create folder $folderPath: ".$e->getMessage());
+            throw new Exception("Can't create folder $folderPath");
+        }//end try
 
     }//end createFolder()
 
@@ -1798,7 +1939,38 @@ class FileService
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
-        return $this->folderManagementHandler->createObjectFolderWithoutUpdate($objectEntity, $currentUser);
+        // Ensure register folder exists first.
+        $register       = $this->registerMapper->find($objectEntity->getRegister());
+        $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
+
+        if ($registerFolder === null || !($registerFolder instanceof Folder)) {
+            throw new Exception("Failed to create or access register folder");
+        }
+
+        // Create object folder within the register folder.
+        $objectFolderName = $this->getObjectFolderName($objectEntity);
+
+        try {
+            // Try to get existing folder first.
+            $objectFolder = $registerFolder->get($objectFolderName);
+            $this->logger->info(message: "Object folder already exists: ".$objectFolderName);
+        } catch (NotFoundException) {
+            // Create new folder if it doesn't exist.
+            $objectFolder = $registerFolder->newFolder($objectFolderName);
+            $this->logger->info(message: "Created object folder: ".$objectFolderName);
+        }
+
+        $this->logger->info(message: "Created object folder with ID: ".$objectFolder->getId());
+
+        // Transfer ownership to OpenRegister and share with current user if needed.
+        $this->transferFolderOwnershipIfNeeded($objectFolder);
+
+        // Share the folder with the currently active user if there is one.
+        if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
+            $this->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID());
+        }
+
+        return $objectFolder->getId();
 
     }//end createObjectFolderWithoutUpdate()
 

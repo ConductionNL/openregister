@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * SchemaMapper
  *
  * Handles mapping between OpenRegister schemas and search backend schemas.
@@ -15,6 +13,8 @@ declare(strict_types=1);
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index;
 

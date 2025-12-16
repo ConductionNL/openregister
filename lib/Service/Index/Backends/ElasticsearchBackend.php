@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * ElasticsearchBackend
  *
  * Elasticsearch backend implementation for OpenRegister search operations.
@@ -13,6 +11,8 @@ declare(strict_types=1);
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index\Backends;
 

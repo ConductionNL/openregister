@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * FileOwnershipHandler
  *
  * This file is part of the OpenRegister app for Nextcloud.
@@ -13,6 +11,8 @@ declare(strict_types=1);
  * @license  AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 

@@ -1,8 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
-/*
+/**
  * SolrHttpClient
  *
  * Handles HTTP client configuration and basic HTTP operations for Solr.
@@ -16,6 +14,8 @@ declare(strict_types=1);
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Index\Backends\Solr;
 
