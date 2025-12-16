@@ -16,6 +16,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
 use OCA\OpenRegister\Service\DashboardService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\ContentSecurityPolicy;

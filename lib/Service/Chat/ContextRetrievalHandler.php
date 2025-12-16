@@ -376,10 +376,11 @@ class ContextRetrievalHandler
     {
         $results = $this->solrService->searchObjectsPaginated(
             query: ['_search' => $query],
-            rbac: true,
-            multi: true,
-            published: false,
-            deleted: false
+            limit: $_limit,
+            offset: 0,
+            facets: [],
+            collection: null,
+            includeTotal: true
         );
 
         $transformed = [];

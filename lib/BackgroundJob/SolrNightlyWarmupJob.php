@@ -71,7 +71,7 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    protected function run($_argument): void
+    protected function run($argument): void
     {
         $startTime = microtime(true);
 

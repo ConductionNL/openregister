@@ -41,12 +41,13 @@ class MetadataHandler
      * @param array  $data The data array to search.
      * @param string $path The dot-notation path (e.g., 'user.profile.name').
      *
+     * @psalm-param    array<string, mixed> $data
+     * @psalm-param    string $path
+     * @phpstan-param  array<string, mixed> $data
+     * @phpstan-param  string $path
+     *
      * @return mixed The value at the path, or null if not found.
      *
-     * @psalm-param    array<string, mixed> $data
-     * @phpstan-param  array<string, mixed> $data
-     * @psalm-param    string $path
-     * @phpstan-param  string $path
      * @psalm-return   mixed
      * @phpstan-return mixed
      */
@@ -109,10 +110,11 @@ class MetadataHandler
      *
      * @param string $text The text to convert to a slug.
      *
-     * @return string The generated slug.
-     *
      * @psalm-param    string $text
      * @phpstan-param  string $text
+     *
+     * @return string The generated slug.
+     *
      * @psalm-return   string
      * @phpstan-return string
      */

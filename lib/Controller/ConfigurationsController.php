@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;

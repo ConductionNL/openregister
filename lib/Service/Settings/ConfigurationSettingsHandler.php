@@ -160,7 +160,7 @@ public function getSettings(): array
         $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
         if (empty($rbacConfig) === true) {
             $data['rbac'] = [
-                'enabled'             => false,
+                'enabled'             => true,
                 'anonymousGroup'      => 'public',
                 'defaultNewUserGroup' => 'viewer',
                 'defaultObjectOwner'  => '',
@@ -169,7 +169,7 @@ public function getSettings(): array
         } else {
             $rbacData     = json_decode($rbacConfig, true);
             $data['rbac'] = [
-                'enabled'             => $rbacData['enabled'] ?? false,
+                'enabled'             => $rbacData['enabled'] ?? true,
                 'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
                 'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
                 'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
@@ -392,7 +392,7 @@ public function updateSettings(array $data): array
             $rbacData = $data['rbac'];
             // Always store RBAC config with enabled state.
             $rbacConfig = [
-                'enabled'             => $rbacData['enabled'] ?? false,
+                'enabled'             => $rbacData['enabled'] ?? true,
                 'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
                 'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
                 'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',
@@ -533,7 +533,7 @@ public function getRbacSettingsOnly(): array
         $rbacData=[];
         if (empty($rbacConfig) === true) {
             $rbacData = [
-                'enabled'             => false,
+                'enabled'             => true,
                 'anonymousGroup'      => 'public',
                 'defaultNewUserGroup' => 'viewer',
                 'defaultObjectOwner'  => '',
@@ -542,7 +542,7 @@ public function getRbacSettingsOnly(): array
         } else {
             $storedData = json_decode($rbacConfig, true);
             $rbacData   = [
-                'enabled'             => $storedData['enabled'] ?? false,
+                'enabled'             => $storedData['enabled'] ?? true,
                 'anonymousGroup'      => $storedData['anonymousGroup'] ?? 'public',
                 'defaultNewUserGroup' => $storedData['defaultNewUserGroup'] ?? 'viewer',
                 'defaultObjectOwner'  => $storedData['defaultObjectOwner'] ?? '',
@@ -576,7 +576,7 @@ public function updateRbacSettingsOnly(array $rbacData): array
 {
     try {
         $rbacConfig = [
-            'enabled'             => $rbacData['enabled'] ?? false,
+            'enabled'             => $rbacData['enabled'] ?? true,
             'anonymousGroup'      => $rbacData['anonymousGroup'] ?? 'public',
             'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
             'defaultObjectOwner'  => $rbacData['defaultObjectOwner'] ?? '',

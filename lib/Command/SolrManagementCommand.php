@@ -331,7 +331,7 @@ class SolrManagementCommand extends Command
             foreach ($warmQueries as $query) {
                 $output->write('   🔥 '.$query['description'].'... ');
 
-                $result = $this->solrService->searchObjects(searchParams: $query);
+                $result = $this->solrService->searchObjects(query: $query);
                 if ($result['success'] === true) {
                     $output->writeln('<info>✅</info>');
                     $successCount++;

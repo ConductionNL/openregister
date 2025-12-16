@@ -19,6 +19,7 @@
 
 
 namespace OCA\OpenRegister\Controller;
+use DateTime;
 
 use OCA\OpenRegister\Service\Objects\RevertHandler;
 use OCP\AppFramework\Controller;

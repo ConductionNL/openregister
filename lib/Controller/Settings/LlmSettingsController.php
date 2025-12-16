@@ -389,7 +389,7 @@ class LlmSettingsController extends Controller
                         // Format size if available.
                         $size = '';
                         if (($model['size'] ?? null) !== null && is_numeric($model['size']) === true) {
-                            $size = $this->formatBytes((int) $model['size']);
+                            $size = $this->settingsService->formatBytes((int) $model['size']);
                         }
 
                         $family = $model['details']['family'] ?? '';
@@ -459,7 +459,7 @@ class LlmSettingsController extends Controller
     public function checkEmbeddingModelMismatch(): JSONResponse
     {
         try {
-            $result = $this->vectorEmbeddingService->checkEmbeddingModelMismatch();
+            $result = $this->vectorizationService->checkEmbeddingModelMismatch();
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
@@ -490,7 +490,7 @@ class LlmSettingsController extends Controller
     public function clearAllEmbeddings(): JSONResponse
     {
         try {
-            $result = $this->vectorEmbeddingService->clearAllEmbeddings();
+            $result = $this->vectorizationService->clearAllEmbeddings();
 
             if ($result['success'] === true) {
                 return new JSONResponse(data: $result);

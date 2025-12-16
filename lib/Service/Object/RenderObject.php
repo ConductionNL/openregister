@@ -330,8 +330,6 @@ class RenderObject
      *
      * @param string $fileId The ID of the file
      *
-     * @return string[]
-     *
      * @psalm-return list<string>
      * @phpstan-return array<int, string>
      *

@@ -19,6 +19,7 @@
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
+use DateTime;
 
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\WebhookLogMapper;

@@ -1226,7 +1226,7 @@ class ObjectsController extends Controller
             objectId: $id,
             query: $searchQuery,
             rbac: true,
-            multi: true
+            _multitenancy: true
         );
 
         // Return the result directly from ObjectService.
@@ -1271,7 +1271,7 @@ class ObjectsController extends Controller
             objectId: $id,
             query: $searchQuery,
             rbac: true,
-            multi: true
+            _multitenancy: true
         );
 
         // Return the result directly from ObjectService.
@@ -1365,7 +1365,7 @@ class ObjectsController extends Controller
         }
 
         // Get config and fetch logs.
-        $config = $this->getConfig(register: $register, schema: $schema);
+        $config = $this->getConfig(_register: $register, _schema: $schema);
         $logs   = $objectService->getLogs(uuid: $id, filters: $config['filters']);
 
         // Get total count of logs.

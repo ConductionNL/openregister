@@ -224,8 +224,13 @@ class SolrDebugCommand extends Command
             $output->writeln("    Scheme: <comment>{$solrSettings['scheme']}</comment>");
 
             // Create IndexService from settings.
+            // NOTE: This requires proper dependency injection - IndexService needs FileHandler, ObjectHandler, SchemaHandler, SearchBackendInterface
+            // For now, this will fail at runtime and needs to be fixed with proper DI
             $solrService = new IndexService(
-                settingsService: $this->settingsService,
+                fileHandler: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\FileHandler::class),
+                objectHandler: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\ObjectHandler::class),
+                schemaHandler: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\SchemaHandler::class),
+                searchBackend: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\SearchBackendInterface::class),
                 logger: $this->logger
             );
             // Test setup.

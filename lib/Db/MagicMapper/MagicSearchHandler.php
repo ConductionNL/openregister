@@ -212,7 +212,7 @@ class MagicSearchHandler
      */
     private function applyMetadataFilters(IQueryBuilder $qb, array $filters): void
     {
-        foreach ($filters ?? [] as $field => $value) {
+        foreach ($filters as $field => $value) {
             $columnName = '_'.$field;
             // Metadata columns are prefixed with _.
             if ($value === 'IS NOT NULL') {
@@ -242,7 +242,7 @@ class MagicSearchHandler
     {
         $properties = $schema->getProperties();
 
-        foreach ($filters ?? [] as $field => $value) {
+        foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
             if (($properties[$field] ?? null) !== null) {
                 $columnName = $this->sanitizeColumnName($field);
@@ -327,7 +327,7 @@ class MagicSearchHandler
     {
         $properties = $schema->getProperties();
 
-        foreach ($order ?? [] as $field => $direction) {
+        foreach ($order as $field => $direction) {
             $direction = strtoupper($direction);
             if (in_array($direction, ['ASC', 'DESC']) === false) {
                 $direction = 'ASC';
@@ -367,7 +367,7 @@ class MagicSearchHandler
         $rows    = $result->fetchAll();
         $objects = [];
 
-        foreach ($rows ?? [] as $row) {
+        foreach ($rows as $row) {
             $objectEntity = $this->convertRowToObjectEntity(row: $row, register: $register, schema: $schema, tableName: $tableName);
             if ($objectEntity !== null) {
                 $objects[] = $objectEntity;
@@ -398,7 +398,7 @@ class MagicSearchHandler
             $metadataData = [];
             $objectData   = [];
 
-            foreach ($row ?? [] as $column => $value) {
+            foreach ($row as $column => $value) {
                 if (str_starts_with($column, '_') === true) {
                     // Metadata column - remove prefix and map to ObjectEntity.
                     $metadataField = substr($column, 1);

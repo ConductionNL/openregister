@@ -2242,11 +2242,8 @@ class MagicMapper
      */
     private function isJsonString(string $string): bool
     {
-        /*
-         * @psalm-suppress UnusedFunctionCall - json_decode is used to check for errors via json_last_error()
-         */
-
-        json_decode($string);
+        // Decode JSON to check for errors via json_last_error().
+        $decoded = json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
 
     }//end isJsonString()
