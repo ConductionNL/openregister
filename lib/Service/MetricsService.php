@@ -17,6 +17,7 @@
  * @link https://www.conduction.nl
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
@@ -35,6 +36,7 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
  * @link     https://www.conduction.nl
  */
+
 class MetricsService
 {
 
@@ -616,6 +618,7 @@ class MetricsService
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
+
         if ($days <= 0) {
             return 0.0;
         }
@@ -625,6 +628,7 @@ class MetricsService
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
+
         return round($totalVectors / $days, 2);
 
     }//end calculateAverageVectorsPerDay()

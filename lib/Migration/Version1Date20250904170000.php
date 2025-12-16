@@ -19,6 +19,7 @@
  * @link https://www.OpenRegister.nl
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -38,6 +39,7 @@ use OCP\Migration\SimpleMigrationStep;
  * - Query-specific indexes for extend operations
  * - Full-text search optimizations
  */
+
 class Version1Date20250904170000 extends SimpleMigrationStep
 {
 
@@ -53,11 +55,13 @@ class Version1Date20250904170000 extends SimpleMigrationStep
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
+
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Get the objects table for optimization.
@@ -111,6 +115,7 @@ class Version1Date20250904170000 extends SimpleMigrationStep
      *
      * @return void
      */
+
     private function optimizeRelationshipTable($table, IOutput $output): void
     {
         $tableName = $table->getName();

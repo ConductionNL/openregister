@@ -89,6 +89,7 @@ class ConfigurationHandler
             /*
              * @psalm-suppress InvalidPropertyAssignmentValue - ['enabled' => false] is compatible with solrConfig type
              */
+
             $this->solrConfig = ['enabled' => false];
         }
 
@@ -154,12 +155,12 @@ class ConfigurationHandler
     public function isSolrConfigured(): bool
     {
         // Check if SOLR is enabled in settings.
-        if (empty($this->solrConfig['enabled']) || $this->solrConfig['enabled'] !== true) {
+        if (empty($this->solrConfig['enabled']) === TRUE || $this->solrConfig['enabled'] !== true) {
             return false;
         }
 
         // Check if required configuration parameters are present.
-        if (empty($this->solrConfig['host']) || empty($this->solrConfig['core'])) {
+        if (empty($this->solrConfig['host']) === TRUE || empty($this->solrConfig['core']) === TRUE) {
             return false;
         }
 
@@ -280,7 +281,7 @@ class ConfigurationHandler
      */
     public function getConfigStatus(string $key): string
     {
-        if (isset($this->solrConfig[$key]) && empty($this->solrConfig[$key]) === false) {
+        if (isset($this->solrConfig[$key]) === TRUE && empty($this->solrConfig[$key]) === false) {
             return '✓ Configured';
         }
 

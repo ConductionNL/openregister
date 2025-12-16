@@ -636,7 +636,7 @@ class VectorSearchHandler
         $settings            = $this->settingsService->getSettings();
 
         if (($filters['entity_type'] ?? null) !== null) {
-            $entityTypes = is_array($filters['entity_type']) ? $filters['entity_type'] : [$filters['entity_type']];
+            $entityTypes = is_array($filters['entity_type']) === TRUE ? $filters['entity_type'] : [$filters['entity_type']];
 
             foreach ($entityTypes as $entityType) {
                 $collection = $this->getSolrCollectionForEntityType($entityType, $settings);

@@ -17,6 +17,7 @@
  * @link https://www.OpenRegister.nl
  */
 
+
 namespace OCA\OpenRegister\Service\Chat;
 
 use Exception;
@@ -43,6 +44,7 @@ use LLPhant\OllamaConfig;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
+
 class ResponseGenerationHandler
 {
 
@@ -210,6 +212,7 @@ class ResponseGenerationHandler
                         /*
                          * @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties
                          */
+
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
                 } else if ($chatProvider === 'fireworks') {
@@ -243,6 +246,7 @@ class ResponseGenerationHandler
                     /*
                      * @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties
                      */
+
                     $config->temperature = $agent->getTemperature();
                 }
             }//end if
@@ -275,6 +279,7 @@ class ResponseGenerationHandler
                 /*
                  * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
                  */
+
                 $response = $this->callFireworksChatAPIWithHistory(
                     $config->apiKey,
                     $config->model,

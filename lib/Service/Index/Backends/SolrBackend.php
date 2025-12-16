@@ -159,7 +159,7 @@ class SolrBackend implements SearchBackendInterface
             'configured' => true,
         ];
 
-        if ($includeCollectionTests) {
+        if ($includeCollectionTests === TRUE) {
             $collection            = $this->collectionManager->getActiveCollectionName();
             $results['collection'] = $collection;
             $results['collection_exists'] = $collection !== null;

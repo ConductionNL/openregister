@@ -23,6 +23,7 @@
  * @link https://www.OpenRegister.app
  */
 
+
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
@@ -52,6 +53,7 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
+
 class DeleteObject
 {
 
@@ -136,6 +138,7 @@ class DeleteObject
         /*
          * @psalm-suppress InvalidArgument - ObjectEntity extends Entity
          */
+
         $result = $this->objectEntityMapper->delete($objectEntity) !== null;
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
@@ -145,6 +148,7 @@ class DeleteObject
             /*
              * @var ObjectEntity $objectEntity
              */
+
             $registerId = $objectEntity->getRegister();
             $schemaId   = $objectEntity->getSchema();
 

@@ -25,6 +25,7 @@
  * @link      https://www.OpenRegister.app
  */
 
+
 declare(strict_types=1);
 
 /*
@@ -43,6 +44,7 @@ declare(strict_types=1);
  *     shareLink: string|null
  * }
  */
+
 
 namespace OCA\OpenRegister\Service;
 
@@ -99,6 +101,7 @@ use Psr\Log\LoggerInterface;
  * including creation, deletion, sharing, and file updates. It integrates with NextCloud's file and
  * sharing APIs to provide seamless file management for the application.
  */
+
 class FileService
 {
 
@@ -556,10 +559,12 @@ class FileService
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
+
         if (is_string($objectEntity) === true) {
             /*
              * @psalm-suppress NoValue - guaranteed to return string
              */
+
             return $objectEntity;
         }
 

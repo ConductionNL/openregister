@@ -1151,8 +1151,8 @@ class BulkOperationsHandler
         }
 
         // Handle boolean values.
-        if (is_bool($value) === true) {
-            $value = $value ? 1 : 0;
+        if (is_bool($value) === TRUE) {
+            $value = $value === TRUE ? 1 : 0;
         }
 
         // Handle null values.

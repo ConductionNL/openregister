@@ -81,6 +81,7 @@ class CascadingHandler
             /*
              * @psalm-suppress UnusedMethodCall
              */
+
             $urlGeneratorProperty->setAccessible(true);
             $urlGeneratorInstance = $urlGeneratorProperty->getValue($this->saveHandler);
 

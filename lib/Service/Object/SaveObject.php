@@ -23,6 +23,7 @@
  * @link https://www.OpenRegister.app
  */
 
+
 namespace OCA\OpenRegister\Service\Object;
 
 use finfo;
@@ -104,6 +105,7 @@ use Twig\Loader\ArrayLoader;
  * @since 1.8.0 Enhanced metadata hydration and file processing
  * @since 2.0.0 Optimized for integration with bulk operations
  */
+
 class SaveObject
 {
 
@@ -662,6 +664,7 @@ class SaveObject
                 /*
                  * @var array<string, mixed> $imageValue
                  */
+
                 if (array_key_exists('downloadUrl', $imageValue) === true) {
                     $downloadUrlValue = $imageValue['downloadUrl'];
                     if (is_string($downloadUrlValue) === true) {
@@ -1495,6 +1498,7 @@ class SaveObject
                     /*
                      * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
                      */
+
                     if ($targetObject === null) {
                         continue;
                     }

@@ -243,7 +243,7 @@ class SolrSchemaManager
             // Check if field exists.
             $existingFields = $this->getFields($collection);
 
-            if (isset($existingFields[$fieldName])) {
+            if (isset($existingFields[$fieldName]) === TRUE) {
                 if ($force === false) {
                     $this->logger->debug(
                             '[SolrSchemaManager] Field already exists, skipping',
@@ -267,7 +267,7 @@ class SolrSchemaManager
 
             if (($result['responseHeader']['status'] ?? -1) === 0) {
                 $this->logger->info('[SolrSchemaManager] Field created', ['field' => $fieldName]);
-                return isset($existingFields[$fieldName]) ? 'updated' : 'created';
+                return isset($existingFields[$fieldName]) === TRUE ? 'updated' : 'created';
             }
 
             $this->logger->warning(

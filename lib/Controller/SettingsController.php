@@ -559,7 +559,7 @@ class SettingsController extends Controller
             $data    = $this->request->getParams();
             $backend = $data['backend'] ?? $data['active'] ?? '';
 
-            if (empty($backend)) {
+            if (empty($backend) === TRUE) {
                 return new JSONResponse(
                     data: ['error' => 'Backend parameter is required'],
                     statusCode: 400

@@ -145,7 +145,7 @@ class AuditHandler
 
             $requestedSchemaNorm  = strtolower($requestedSchema);
             $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
-            $objectSchemaSlugNorm = $objectSchemaSlug ? strtolower($objectSchemaSlug) : null;
+            $objectSchemaSlugNorm = $objectSchemaSlug !== null ? strtolower($objectSchemaSlug) : null;
 
             // Check schema match (by ID or slug).
             $schemaMatch = (

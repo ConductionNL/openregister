@@ -128,7 +128,7 @@ class RelationHandler
             $foundIds = array_map(
                 function (ObjectEntity $object) use ($property, $key) {
                     $serialized = $object->jsonSerialize();
-                    $idRaw      = is_array($property) && is_array($serialized) && isset($property['inversedBy']) ? $serialized[$property['inversedBy']] : null;
+                    $idRaw      = is_array($property) === TRUE && is_array($serialized) === TRUE && isset($property['inversedBy']) === TRUE ? $serialized[$property['inversedBy']] : null;
 
                     if (Uuid::isValid($idRaw) === true) {
                         return $idRaw;

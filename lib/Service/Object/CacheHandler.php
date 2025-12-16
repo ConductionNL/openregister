@@ -1002,6 +1002,7 @@ class CacheHandler
         /*
          * @psalm-suppress UndefinedThisPropertyAssignment - relationshipCache property doesn't exist, not used)
          */
+
         $this->relationshipCache  = [];
         $this->inMemoryQueryCache = [];
         $this->nameCache          = [];

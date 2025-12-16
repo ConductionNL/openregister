@@ -33,9 +33,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
     /**
      * Pre-schema change operations.
      *
-     * @param IOutput $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array $options
+     * @param IOutput                   $output         Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options        Migration options
      *
      * @return void
      *
@@ -49,9 +49,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
     /**
      * Change schema by adding and modifying columns, and dropping unused tables.
      *
-     * @param IOutput $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array $options
+     * @param IOutput                   $output         Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options        Migration options
      *
      * @return ISchemaWrapper
      *
@@ -291,9 +291,9 @@ class Version1Date20250321061615 extends SimpleMigrationStep
     /**
      * Post-schema change operations.
      *
-     * @param IOutput $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array $options
+     * @param IOutput                   $output         Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options        Migration options
      *
      * @return void
      *

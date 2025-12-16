@@ -202,7 +202,7 @@ class ElasticsearchDocumentIndexer
                     );
 
             // Refresh index if requested
-            if ($refresh) {
+            if ($refresh === TRUE) {
                 $this->indexManager->refreshIndex($index);
             }
 

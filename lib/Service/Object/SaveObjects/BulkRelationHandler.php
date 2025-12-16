@@ -62,12 +62,13 @@ class BulkRelationHandler
      * @param array &$preparedObjects Prepared objects to process
      * @param array $schemaAnalysis   Pre-analyzed schema information indexed by schema ID
      *
+     * @psalm-param array<int, mixed> &$preparedObjects
+     * @psalm-param array<string, mixed> $schemaAnalysis
+     * @phpstan-param array<int, mixed> &$preparedObjects
+     * @phpstan-param array<string, mixed> $schemaAnalysis
+     *
      * @return void
      *
-     * @psalm-param array<int, mixed> &$preparedObjects
-     * @phpstan-param array<int, mixed> &$preparedObjects
-     * @psalm-param array<string, mixed> $schemaAnalysis
-     * @phpstan-param array<string, mixed> $schemaAnalysis
      * @psalm-return void
      * @phpstan-return void
      */
@@ -163,14 +164,15 @@ class BulkRelationHandler
      * @param array $schemaCache  Schema cache for inverse relation analysis
      * @param callable $getSchemaAnalysisCallback Callback to get schema analysis
      *
+     * @psalm-param array<int, \OCA\OpenRegister\Db\ObjectEntity> $savedObjects
+     * @psalm-param array<string, \OCA\OpenRegister\Db\Schema> $schemaCache
+     * @psalm-param callable(Schema): array $getSchemaAnalysisCallback
+     * @phpstan-param array<int, \OCA\OpenRegister\Db\ObjectEntity> $savedObjects
+     * @phpstan-param array<string, \OCA\OpenRegister\Db\Schema> $schemaCache
+     * @phpstan-param callable(Schema): array $getSchemaAnalysisCallback
+     *
      * @return void
      *
-     * @psalm-param array<int, \OCA\OpenRegister\Db\ObjectEntity> $savedObjects
-     * @phpstan-param array<int, \OCA\OpenRegister\Db\ObjectEntity> $savedObjects
-     * @psalm-param array<string, \OCA\OpenRegister\Db\Schema> $schemaCache
-     * @phpstan-param array<string, \OCA\OpenRegister\Db\Schema> $schemaCache
-     * @psalm-param callable(Schema): array $getSchemaAnalysisCallback
-     * @phpstan-param callable(Schema): array $getSchemaAnalysisCallback
      * @psalm-return void
      * @phpstan-return void
      */
@@ -294,10 +296,11 @@ class BulkRelationHandler
      *
      * @param array $writeBackOperations Array of writeBack operations with context
      *
-     * @return void
-     *
      * @psalm-param array<int, array{targetObject: \OCA\OpenRegister\Db\ObjectEntity, sourceUuid: string, inverseProperty: string}> $writeBackOperations
      * @phpstan-param array<int, array{targetObject: \OCA\OpenRegister\Db\ObjectEntity, sourceUuid: string, inverseProperty: string}> $writeBackOperations
+     *
+     * @return void
+     *
      * @psalm-return void
      * @phpstan-return void
      */
@@ -368,14 +371,15 @@ class BulkRelationHandler
      * @param string      $prefix The current prefix for dot notation (used in recursion)
      * @param Schema|null $schema The schema to check property definitions against
      *
+     * @psalm-param array<string, mixed> $data
+     * @psalm-param string $prefix
+     * @psalm-param Schema|null $schema
+     * @phpstan-param array<string, mixed> $data
+     * @phpstan-param string $prefix
+     * @phpstan-param Schema|null $schema
+     *
      * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
      *
-     * @psalm-param array<string, mixed> $data
-     * @phpstan-param array<string, mixed> $data
-     * @psalm-param string $prefix
-     * @phpstan-param string $prefix
-     * @psalm-param Schema|null $schema
-     * @phpstan-param Schema|null $schema
      * @psalm-return array<string, string>
      * @phpstan-return array<string, string>
      */

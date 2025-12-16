@@ -177,13 +177,16 @@ class FolderManagementHandler
                  *
                  * @var int|float $folderProperty
                  */
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType
                  */
+
                 if (is_numeric($folderProperty) === true) {
                     /*
                      * @psalm-suppress InvalidCast - numeric value can be cast to int
                      */
+
                     $folderId       = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {
@@ -261,13 +264,16 @@ class FolderManagementHandler
                  *
                  * @var int|float $folderProperty
                  */
+
                 /*
                  * @psalm-suppress TypeDoesNotContainType
                  */
+
                 if (is_numeric($folderProperty) === true) {
                     /*
                      * @psalm-suppress InvalidCast - numeric value can be cast to int
                      */
+
                     $folderId       = (int) $folderProperty;
                     $existingFolder = $this->getNodeById($folderId);
                     if ($existingFolder !== null && $existingFolder instanceof Folder) {

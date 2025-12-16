@@ -394,6 +394,7 @@ class FilesController extends Controller
             /*
              * @var array<string, array<int, string>|string|int> $files
              */
+
             $files = $_FILES['files'] ?? [];
 
             // Lets see if we have files in the request.
@@ -406,6 +407,7 @@ class FilesController extends Controller
             /*
              * @var string|array<int, string>|null $fileName
              */
+
             $fileName = $files['name'] ?? null;
 
             if ($fileName !== null && is_array($fileName) === false) {
@@ -445,6 +447,7 @@ class FilesController extends Controller
                      * @var array<int, int>|null $errorArray
                      * @var array<int, int>|null $sizeArray
                      */
+
                     $filesType = $files['type'] ?? null;
 
                     if (is_array($filesType) === true) {
@@ -465,10 +468,12 @@ class FilesController extends Controller
                     /*
                      * @var int|array<int, int>|null $errorValue
                      */
+
                     $errorValue = $files['error'] ?? null;
                     /*
                      * @var int|array<int, int>|null $sizeValue
                      */
+
                     $sizeValue = $files['size'] ?? null;
 
                     if (is_array($errorValue) === true) {

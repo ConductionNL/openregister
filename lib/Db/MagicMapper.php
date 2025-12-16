@@ -604,6 +604,7 @@ class MagicMapper
             /*
              * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
              */
+
             $schemaManager = $this->db->getSchemaManager();
             return $schemaManager->tablesExist([$tableName]);
         } catch (Exception $e) {
@@ -1260,6 +1261,7 @@ class MagicMapper
         /*
          * @var DoctrineSchema $schema
          */
+
         $schema = $this->db->createSchema();
         $table  = $schema->createTable($tableName);
 
@@ -2083,6 +2085,7 @@ class MagicMapper
             /*
              * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
              */
+
             $schemaManager = $this->db->getSchemaManager();
             $columns       = $schemaManager->listTableColumns($tableName);
 
@@ -2129,6 +2132,7 @@ class MagicMapper
         /*
          * @var DoctrineSchema $schema
          */
+
         $schema = $this->db->createSchema();
         $table  = $schema->getTable($tableName);
 
@@ -2194,6 +2198,7 @@ class MagicMapper
             /*
              * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
              */
+
             $schemaManager = $this->db->getSchemaManager();
             $schemaManager->dropTable($tableName);
 
@@ -2240,6 +2245,7 @@ class MagicMapper
         /*
          * @psalm-suppress UnusedFunctionCall - json_decode is used to check for errors via json_last_error()
          */
+
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
 
@@ -2297,6 +2303,7 @@ class MagicMapper
             /*
              * @psalm-suppress UndefinedInterfaceMethod - getSchemaManager() exists on Doctrine DBAL Connection
              */
+
             $schemaManager = $this->db->getSchemaManager();
             $allTables     = $schemaManager->listTableNames();
 
@@ -2365,7 +2372,7 @@ class MagicMapper
         $configuration = $schema->getConfiguration();
 
         // Enable magic mapping if explicitly enabled in schema config.
-        if (is_array($configuration) && ($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
+        if (is_array($configuration) === TRUE && ($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
             return true;
         }
 
@@ -2390,7 +2397,7 @@ class MagicMapper
         // For backward compatibility, just check schema config without register context.
         $configuration = $schema->getConfiguration();
 
-        if (is_array($configuration) && ($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
+        if (is_array($configuration) === TRUE && ($configuration['magicMapping'] ?? null) !== null && $configuration['magicMapping'] === true) {
             return true;
         }
 

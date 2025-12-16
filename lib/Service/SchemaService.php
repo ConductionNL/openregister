@@ -1382,6 +1382,7 @@ class SchemaService
                 /*
                  * @psalm-suppress TypeDoesNotContainType
                  */
+
                 case 'double':
                 case 'float':
                     return ['type' => 'number'];

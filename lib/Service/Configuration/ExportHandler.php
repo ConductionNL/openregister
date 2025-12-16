@@ -379,6 +379,7 @@ class ExportHandler
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
+
                         $property['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
@@ -398,6 +399,7 @@ class ExportHandler
                         /*
                          * @var array<int|string, string> $schemaIdsAndSlugsMap
                          */
+
                         $property['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
                     }
                 }
@@ -421,6 +423,7 @@ class ExportHandler
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
+
                         $property['items']['objectConfiguration']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
@@ -444,6 +447,7 @@ class ExportHandler
                         /*
                          * @var array<int|string, string> $schemaIdsAndSlugsMap
                          */
+
                         $property['items']['objectConfiguration']['schema'] = $schemaIdsAndSlugsMap[$schemaIdStr];
                     }
                 }
@@ -458,6 +462,7 @@ class ExportHandler
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
+
                         $property['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }
@@ -476,6 +481,7 @@ class ExportHandler
                         /*
                          * @var array<int|string, string> $registerIdsAndSlugsMap
                          */
+
                         $property['items']['register'] = $registerIdsAndSlugsMap[$registerIdStr];
                     }
                 }

@@ -23,6 +23,7 @@
  * @link https://www.OpenRegister.app
  */
 
+
 namespace OCA\OpenRegister\Service\Object;
 
 use stdClass;
@@ -58,6 +59,7 @@ use Opis\Uri\Uri;
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  */
+
 class ValidateObject
 {
     /**
@@ -986,6 +988,7 @@ class ValidateObject
                     /*
                      * @var string $schemaString
                      */
+
                     $schemaString = $schema;
                     $schemaObject = $this->schemaMapper->find($schemaString)->getSchemaObject($this->urlGenerator);
                 }
@@ -1017,7 +1020,8 @@ class ValidateObject
         }
 
         // If there are no properties, we don't need to validate.
-        if (isset($schemaObject->properties) === true || empty($schemaObject->properties) === true) {
+        // Skip validation ONLY if properties are NOT set OR if properties are empty
+        if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Validate against an empty schema object to get a valid ValidationResult.
             $validator = new Validator();
             return $validator->validate(json_decode(json_encode($object)), new stdClass());
@@ -1043,19 +1047,31 @@ class ValidateObject
                         && (($propertySchema->enum ?? null) !== null) === true
                         && is_array($propertySchema->enum) === true
                     ) {
-                        // For enum fields, only keep null if it's explicitly allowed in the enum.
-                        if ($value === null && in_array(null, $propertySchema->enum) === false) {
-                            return false;
-                            // Remove null values for enum fields that don't allow null.
+                    // For enum fields, only keep null if it's explicitly allowed in the enum.
+                    if ($value === null && in_array(null, $propertySchema->enum) === false) {
+                        return false;
+                        // Remove null values for enum fields that don't allow null.
+                    }
+                }
+
+                // For non-required fields, filter out empty arrays ONLY if they have no validation constraints.
+                // Keep empty arrays if they have minItems, maxItems, or other array validation rules.
+                if (is_array($value) === true && empty($value) === true) {
+                    // Check if this field has array validation constraints
+                    if (($propertySchema !== null) === true) {
+                        $hasMinItems = isset($propertySchema->minItems) && $propertySchema->minItems > 0;
+                        $hasMaxItems = isset($propertySchema->maxItems);
+                        $hasUniqueItems = isset($propertySchema->uniqueItems) && $propertySchema->uniqueItems === true;
+                        
+                        // Keep empty arrays if they have validation constraints (should fail validation)
+                        if ($hasMinItems === true || $hasMaxItems === true || $hasUniqueItems === true) {
+                            return true;
                         }
                     }
-
-                    // For non-required fields, filter out empty arrays and empty strings.
-                    // but keep null values (explicit clearing) and all other values.
-                    if (is_array($value) === true && empty($value) === true) {
-                        return false;
-                        // Remove empty arrays for non-required fields.
-                    }
+                    
+                    return false;
+                    // Remove empty arrays for non-required fields without validation constraints.
+                }
 
                     if ($value === '') {
                         return false;
@@ -1073,11 +1089,13 @@ class ValidateObject
         /*
          * @psalm-suppress NoValue
          */
+
         if (property_exists($schemaObject, 'properties') === true) {
             $properties = $schemaObject->properties;
             /*
              * @psalm-suppress TypeDoesNotContainType
              */
+
             if (isset($properties) === true && is_array($properties) === true) {
                 foreach ($properties as $propertyName => $propertySchema) {
                     // Skip required fields - they should not allow null unless explicitly defined.
@@ -1110,13 +1128,37 @@ class ValidateObject
 
         $validator = new Validator();
         $validator->setMaxErrors(100);
-        $validator->parser()->getFormatResolver()->register(type: 'string', format: 'bsn', resolver: new BsnFormat());
-        $validator->parser()->getFormatResolver()->register(type: 'string', format: 'semver', resolver: new SemVerFormat());
+        
+        // Register custom format validators using our helper method that supports named parameters
+        $this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
+        $this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
+        
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
         return $validator->validate(json_decode(json_encode($object)), $schemaObject);
 
     }//end validateObject()
+
+
+    /**
+     * Register a custom format validator with named parameters support
+     *
+     * This helper method wraps the Opis\JsonSchema FormatResolver::register() method
+     * to support named parameters, maintaining consistency with our codebase style.
+     *
+     * @param Validator $validator The validator instance
+     * @param string    $type      The data type (e.g., 'string', 'number')
+     * @param string    $format    The format name (e.g., 'bsn', 'semver')
+     * @param object    $resolver  The format resolver instance
+     *
+     * @return void
+     */
+    private function registerCustomFormat(Validator $validator, string $type, string $format, object $resolver): void
+    {
+        // The underlying library doesn't support named parameters, so we convert them here
+        $validator->parser()->getFormatResolver()->register($type, $format, $resolver);
+
+    }//end registerCustomFormat()
 
 
     /**
