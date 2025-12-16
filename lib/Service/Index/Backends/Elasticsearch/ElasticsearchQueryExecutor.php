@@ -118,7 +118,7 @@ class ElasticsearchQueryExecutor
         ];
 
         // Handle search text
-        if (isset($params['_search']) && $params['_search'] !== '*:*') {
+        if (isset($params['_search']) === TRUE && $params['_search'] !== '*:*') {
             $query['query'] = [
                 'multi_match' => [
                     'query'  => $params['_search'],
@@ -129,11 +129,11 @@ class ElasticsearchQueryExecutor
         }
 
         // Handle pagination
-        if (isset($params['_limit'])) {
+        if (isset($params['_limit']) === TRUE) {
             $query['size'] = (int) $params['_limit'];
         }
 
-        if (isset($params['_page'])) {
+        if (isset($params['_page']) === TRUE) {
             $page          = (int) $params['_page'];
             $query['from'] = ($page - 1) * $query['size'];
         }

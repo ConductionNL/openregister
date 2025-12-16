@@ -397,7 +397,7 @@ trait MultiTenancyTrait
             }//end if
 
             // If no conditions were added, deny all access.
-            if (empty($conditions)) {
+            if (empty($conditions) === TRUE) {
                 // Use raw SQL to create an always-false condition (1 = 0).
                 // Note: Using raw SQL instead of literal() as it avoids query builder interpretation issues.
                 $qb->andWhere('1 = 0');

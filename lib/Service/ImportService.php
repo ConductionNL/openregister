@@ -15,6 +15,7 @@
  * @link      https://OpenRegister.app
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
@@ -55,6 +56,7 @@ use React\EventLoop\Loop;
  *
  * @package OCA\OpenRegister\Service
  */
+
 class ImportService
 {
 
@@ -992,6 +994,7 @@ class ImportService
             /*
              * @psalm-suppress InvalidPropertyAssignmentValue - getProperties() returns array compatible with array<string, array>
              */
+
             $this->schemaPropertiesCache[$schemaIdKey] = $schema->getProperties();
         }
 
@@ -1043,7 +1046,7 @@ class ImportService
                 // Note: Other @ columns that don't start with @self. are ignored.
             } else {
                 // Regular properties - transform based on schema if needed.
-                if (is_array($schemaProperties) && ($schemaProperties[$key] ?? null) !== null) {
+                if (is_array($schemaProperties) === TRUE && ($schemaProperties[$key] ?? null) !== null) {
                     $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
                 } else {
                     $objectData[$key] = $value;
@@ -1366,6 +1369,7 @@ class ImportService
                             /*
                              * @var callable(mixed): void $resolve
                              */
+
                             $resolve($result);
                         }
                         );
@@ -1379,6 +1383,7 @@ class ImportService
                 /*
                  * @psalm-suppress UndefinedFunction - React\Async\await is from external library
                  */
+
                 $results = \React\Async\await(\React\Promise\all($batch));
 
                 foreach ($results as $result) {

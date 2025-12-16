@@ -17,6 +17,7 @@
  * @link https://www.OpenRegister.nl
  */
 
+
 namespace OCA\OpenRegister\Service\Chat;
 
 use Exception;
@@ -46,6 +47,7 @@ use LLPhant\OllamaConfig;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
+
 class ConversationManagementHandler
 {
 
@@ -199,6 +201,7 @@ class ConversationManagementHandler
                 /*
                  * @psalm-suppress UndefinedPropertyAssignment - LLPhant\OpenAIConfig has dynamic properties
                  */
+
                 $config->temperature = 0.7;
             }//end if
 
@@ -217,6 +220,7 @@ class ConversationManagementHandler
                 /*
                  * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
                  */
+
                 $title = $method->invoke(
                     $this->responseHandler,
                     $config->apiKey,
@@ -523,6 +527,7 @@ class ConversationManagementHandler
             /*
              * @psalm-suppress UndefinedPropertyFetch - LLPhant\OllamaConfig has dynamic properties
              */
+
             return $method->invoke(
                 $this->responseHandler,
                 $config->apiKey,

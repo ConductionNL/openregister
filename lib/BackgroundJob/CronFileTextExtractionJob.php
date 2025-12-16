@@ -17,6 +17,7 @@
  * @link https://www.OpenRegister.nl
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
@@ -42,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * - Detailed logging and error handling
  * - Automatic retry for failed files
  */
+
 class CronFileTextExtractionJob extends TimedJob
 {
     /**
@@ -71,6 +73,7 @@ class CronFileTextExtractionJob extends TimedJob
         /*
          * @var LoggerInterface $logger
          */
+
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
@@ -87,16 +90,19 @@ class CronFileTextExtractionJob extends TimedJob
              *
              * @var SettingsService $settingsService
              */
+
             $settingsService = \OC::$server->get(SettingsService::class);
 
             /*
              * @var TextExtractionService $textExtractionService
              */
+
             $textExtractionService = \OC::$server->get(TextExtractionService::class);
 
             /*
              * @var FileMapper $fileMapper
              */
+
             $fileMapper = \OC::$server->get(FileMapper::class);
 
             // Check if extraction mode is set to 'cron'.

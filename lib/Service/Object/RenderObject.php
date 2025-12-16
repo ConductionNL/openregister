@@ -129,10 +129,10 @@ class RenderObject
      *
      * @param array $ultraPreloadCache Array of preloaded objects indexed by ID/UUID
      *
-     * @return void
-     *
-     * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
      * @psalm-param   array<string, ObjectEntity> $ultraPreloadCache
+     * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
+     *
+     * @return void
      */
     public function setUltraPreloadCache(array $ultraPreloadCache): void
     {
@@ -332,11 +332,10 @@ class RenderObject
      *
      * @return string[]
      *
-     * @return array List of file tags
-     *
+     * @psalm-return list<string>
      * @phpstan-return array<int, string>
      *
-     * @psalm-return list<string>
+     * @return array List of file tags
      */
     private function getFileTags(string $fileId): array
     {
@@ -386,14 +385,15 @@ class RenderObject
      *
      * @param ObjectEntity $entity The entity to process.
      *
-     * @return ObjectEntity The entity with hydrated file properties.
-     *
-     * @throws Exception If schema or file operations fail.
-     *
      * @psalm-param    ObjectEntity $entity
      * @phpstan-param  ObjectEntity $entity
+     *
+     * @return ObjectEntity The entity with hydrated file properties.
+     *
      * @psalm-return   ObjectEntity
      * @phpstan-return ObjectEntity
+     *
+     * @throws Exception If schema or file operations fail.
      */
     private function renderFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -461,10 +461,11 @@ class RenderObject
      *
      * @param array $propertyConfig The property configuration from schema.
      *
-     * @return bool True if this is a file property configuration.
-     *
      * @psalm-param    array<string, mixed> $propertyConfig
      * @phpstan-param  array<string, mixed> $propertyConfig
+     *
+     * @return bool True if this is a file property configuration.
+     *
      * @psalm-return   bool
      * @phpstan-return bool
      */
@@ -476,7 +477,7 @@ class RenderObject
         }
 
         // Array of files.
-        if (($propertyConfig['type'] ?? '' === true) === 'array'
+        if (($propertyConfig['type'] ?? '') === 'array'
             && (($propertyConfig['items'] ?? null) !== null)
             && ($propertyConfig['items']['type'] ?? '') === 'file'
         ) {
@@ -495,14 +496,14 @@ class RenderObject
      * @param array  $propertyConfig The property configuration from schema.
      * @param string $propertyName   The property name (for error reporting).
      *
-     * @return mixed The hydrated property value (file object or array of file objects).
-     *
      * @psalm-param   mixed $propertyValue
-     * @phpstan-param mixed $propertyValue
      * @psalm-param   array<string, mixed> $propertyConfig
-     * @phpstan-param array<string, mixed> $propertyConfig
      * @psalm-param   string $propertyName
+     * @phpstan-param mixed $propertyValue
+     * @phpstan-param array<string, mixed> $propertyConfig
      * @phpstan-param string $propertyName
+     *
+     * @return mixed The hydrated property value (file object or array of file objects).
      *
      * @psalm-return   mixed
      * @phpstan-return mixed
@@ -622,11 +623,10 @@ class RenderObject
      *
      * @param mixed $fileId The file ID to retrieve.
      *
-     * @return (int|mixed|null|string|string[])[]|null
-     *
      * @psalm-param mixed $fileId
-     *
      * @phpstan-param mixed $fileId
+     *
+     * @return (int|mixed|null|string|string[])[]|null
      *
      * @psalm-return   array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: mixed, labels: array<int, string>}|null
      * @phpstan-return array<string, mixed>|null
@@ -765,7 +765,7 @@ class RenderObject
 
             $filteredData = [];
             foreach ($fields as $field) {
-                if (is_array($objectData) && ($objectData[$field] ?? null) !== null) {
+                if (is_array($objectData) === TRUE && ($objectData[$field] ?? null) !== null) {
                     $filteredData[$field] = $objectData[$field];
                 }
             }
@@ -777,7 +777,7 @@ class RenderObject
         // Apply filters if specified.
         if (empty($filter) === false) {
             foreach ($filter as $key => $value) {
-                if (is_array($objectData) && ($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
+                if (is_array($objectData) === TRUE && ($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
                     $entity->setObject([]);
                     return $entity;
                 }
@@ -787,7 +787,7 @@ class RenderObject
         // Apply unset - remove specified properties from the response.
         if (empty($unset) === false) {
             foreach ($unset as $property) {
-                if (is_array($objectData) && ($objectData[$property] ?? null) !== null) {
+                if (is_array($objectData) === TRUE && ($objectData[$property] ?? null) !== null) {
                     unset($objectData[$property]);
                 }
             }
@@ -1360,7 +1360,7 @@ class RenderObject
     private function removeQueryParameters(string $reference): string
     {
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-        if (str_contains($reference, '?') === true) {
+        if (str_contains($reference, '?') === TRUE) {
             return substr($reference, 0, strpos($reference, '?'));
         }
 

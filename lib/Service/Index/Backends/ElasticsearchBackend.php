@@ -114,7 +114,7 @@ class ElasticsearchBackend implements SearchBackendInterface
     {
         // Simplified implementation - just return success
         $this->logger->info('[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)');
-        return $returnDetails ? ['deleted' => 0] : true;
+        return $returnDetails === TRUE ? ['deleted' => 0] : true;
 
     }//end deleteByQuery()
 

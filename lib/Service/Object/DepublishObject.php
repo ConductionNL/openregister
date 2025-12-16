@@ -62,6 +62,7 @@ class DepublishObject
         /*
          * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
          */
+
         if ($object === null) {
             throw new Exception('Object not found');
         }

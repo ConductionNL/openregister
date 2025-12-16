@@ -868,6 +868,7 @@ class SearchTrailController extends Controller
             /*
              * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper
              */
+
             $searchTrailMapper = \OC::$server->get(id: 'OCA\OpenRegister\Db\SearchTrailMapper');
 
                     // Use the clearAllLogs method from the mapper.

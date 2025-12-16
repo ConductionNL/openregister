@@ -658,9 +658,11 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
+
             /*
              * @var string|array<int, string> $nameValue
              */
+
             $nameValue = $fileData['name'];
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
@@ -672,18 +674,22 @@ class ObjectsController extends Controller
                 /*
                  * @var mixed $typeRaw
                  */
+
                 $typeRaw = $fileData['type'];
                 /*
                  * @var mixed $tmpNameRaw
                  */
+
                 $tmpNameRaw = $fileData['tmp_name'];
                 /*
                  * @var mixed $errorRaw
                  */
+
                 $errorRaw = $fileData['error'];
                 /*
                  * @var mixed $sizeRaw
                  */
+
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
                 $typeArray    = is_array($typeRaw) === true ? $typeRaw : [];
@@ -806,9 +812,11 @@ class ObjectsController extends Controller
             /*
              * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
              */
+
             /*
              * @var string|array<int, string> $nameValue
              */
+
             $nameValue = $fileData['name'];
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
@@ -820,18 +828,22 @@ class ObjectsController extends Controller
                 /*
                  * @var mixed $typeRaw
                  */
+
                 $typeRaw = $fileData['type'];
                 /*
                  * @var mixed $tmpNameRaw
                  */
+
                 $tmpNameRaw = $fileData['tmp_name'];
                 /*
                  * @var mixed $errorRaw
                  */
+
                 $errorRaw = $fileData['error'];
                 /*
                  * @var mixed $sizeRaw
                  */
+
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
                 $typeArray    = is_array($typeRaw) === true ? $typeRaw : [];
@@ -1817,6 +1829,7 @@ class ObjectsController extends Controller
             /*
              * @var FileService $fileService
              */
+
             $fileService = $this->container->get(FileService::class);
 
             // Optional: get custom filename from query parameters.

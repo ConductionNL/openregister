@@ -18,6 +18,7 @@
  * @link https://OpenRegister.app
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -46,11 +47,13 @@ class Version1Date20250607093617 extends SimpleMigrationStep
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
+
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         // Update the openregister_configurations table.

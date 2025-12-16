@@ -18,6 +18,7 @@
  * @link https://www.OpenRegister.nl
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -39,6 +40,7 @@ use OCP\Migration\SimpleMigrationStep;
  * This enables schemas and registers to be published and made accessible across
  * organization boundaries, similar to how objects already support this feature.
  */
+
 class Version1Date20251202000000 extends SimpleMigrationStep
 {
 
@@ -54,11 +56,13 @@ class Version1Date20251202000000 extends SimpleMigrationStep
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
+
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         $output->info('🔧 Adding publication fields to schemas and registers tables...');

@@ -28,6 +28,7 @@
  * @link https://www.OpenRegister.nl
  */
 
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -48,6 +49,7 @@ use OCP\Migration\SimpleMigrationStep;
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  */
+
 class Version1Date20251106120000 extends SimpleMigrationStep
 {
 
@@ -63,11 +65,13 @@ class Version1Date20251106120000 extends SimpleMigrationStep
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
+
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema  = $schemaClosure();
         $updated = false;
 

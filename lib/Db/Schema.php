@@ -184,7 +184,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var boolean Whether hard validation is enabled
      */
-    protected bool $hardValidation = false;
+    protected bool $hardValidation = true;
 
     /**
      * Last update timestamp
@@ -672,9 +672,24 @@ class Schema extends Entity implements JsonSerializable
             $object['metadata'] = [];
         }
 
+        // Default hardValidation to true if not explicitly provided
+        // This ensures schemas validate by default unless explicitly disabled
+        if (isset($object['hardValidation']) === false) {
+            $object['hardValidation'] = true;
+        }
+
         foreach ($object as $key => $value) {
             if (in_array($key, $jsonFields) === true && $value === []) {
                 $value = null;
+            }
+
+            // Force hardValidation to be set explicitly to override database default
+            // The database column defaults to 0/false, but we want schemas to validate by default
+            if ($key === 'hardValidation') {
+                // Explicitly set the value and mark as updated to ensure it persists to database
+                $this->hardValidation = (bool) $value;
+                $this->markFieldUpdated('hardValidation');
+                continue;
             }
 
             // Use special validation for configuration.
@@ -994,6 +1009,7 @@ class Schema extends Entity implements JsonSerializable
             /*
              * @psalm-suppress NoValue - json_decode returns array when successful
              */
+
             $decoded = json_decode($configuration, true);
             if (json_last_error() === JSON_ERROR_NONE && $decoded !== null) {
                 $configuration = $decoded;

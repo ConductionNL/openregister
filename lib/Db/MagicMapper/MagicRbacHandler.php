@@ -116,6 +116,7 @@ class MagicRbacHandler
         /*
          * @psalm-suppress TypeDoesNotContainType
          */
+
         if (is_array($authConfig) === false) {
             // Invalid config - no automatic access, use explicit published filter.
             return;

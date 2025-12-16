@@ -37,9 +37,9 @@ class Version1Date20250712080102 extends SimpleMigrationStep
     /**
      * Pre-schema change operations
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output         Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options        Migration options
      *
      * @return void
      *
@@ -55,9 +55,9 @@ class Version1Date20250712080102 extends SimpleMigrationStep
     /**
      * Create the search_trails table
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output         Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options        Migration options
      *
      * @return ISchemaWrapper
      *
@@ -155,9 +155,9 @@ class Version1Date20250712080102 extends SimpleMigrationStep
     /**
      * Post-schema change operations
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output         Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options        Migration options
      *
      * @return void
      *
