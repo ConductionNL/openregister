@@ -1096,8 +1096,8 @@ class ObjectService
      * @param int|string|null $schema        Optional schema identifier (should be resolved numeric ID)
      * @param array|null      $ids           Optional array of specific IDs to filter
      *
-     * @phpstan-param array<string, mixed> $requestParams
      * @psalm-param   array<string, mixed> $requestParams
+     * @phpstan-param array<string, mixed> $requestParams
      *
      * @return array<string, mixed> Query array containing:
      *                               - @self: Metadata filters (register, schema, etc.)
@@ -1114,8 +1114,8 @@ class ObjectService
      *                               - _facetable: Include facetable field discovery
      *                               - _ids: Specific IDs to filter
      *
-     * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
+     * @phpstan-return array<string, mixed>
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -1218,14 +1218,15 @@ class ObjectService
      * @param array|null           $ids   Optional array of object IDs to filter by
      * @param string|null          $uses  Optional uses parameter for filtering
      *
-     * @phpstan-param  array<string, mixed> $query
-     * @phpstan-return int
      * @psalm-param    array<string, mixed> $query
-     * @psalm-return   int
-     *
-     * @throws \OCP\DB\Exception If a database error occurs
+     * @phpstan-param  array<string, mixed> $query
      *
      * @return int The number of objects matching the criteria
+     *
+     * @psalm-return   int
+     * @phpstan-return int
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
      */
     public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int
     {

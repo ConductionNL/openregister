@@ -76,14 +76,15 @@ class BulkOperationsHandler
      * @param bool          $validation      Whether to validate objects.
      * @param bool          $events          Whether to trigger events.
      *
+     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @psalm-param    Register|null $currentRegister
+     * @psalm-param    Schema|null $currentSchema
+     * @phpstan-param  array<int, array<string, mixed>> $objects
+     * @phpstan-param  Register|null $currentRegister
+     * @phpstan-param  Schema|null $currentSchema
+     *
      * @return array Bulk operation result.
      *
-     * @psalm-param    array<int, array<string, mixed>> $objects
-     * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @psalm-param    Register|null $currentRegister
-     * @phpstan-param  Register|null $currentRegister
-     * @psalm-param    Schema|null $currentSchema
-     * @phpstan-param  Schema|null $currentSchema
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      */

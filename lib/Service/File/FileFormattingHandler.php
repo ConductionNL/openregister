@@ -95,12 +95,12 @@ class FileFormattingHandler
      *
      * @param Node $file The file node to format.
      *
+     * @psalm-return   array<string, mixed>
+     * @phpstan-return array<string, mixed>
+     *
      * @return array Formatted file metadata.
      *
      * @throws Exception If formatting fails.
-     *
-     * @phpstan-return array<string, mixed>
-     * @psalm-return   array<string, mixed>
      */
     public function formatFile(Node $file): array
     {
@@ -170,17 +170,18 @@ class FileFormattingHandler
      * @param Node[] $files         Array of Node files to format.
      * @param array  $requestParams Optional request parameters for filtering.
      *
+     * @psalm-param    array<int, Node> $files
+     * @psalm-param    array<string, mixed> $requestParams
+     * @phpstan-param  array<int, Node> $files
+     * @phpstan-param  array<string, mixed> $requestParams
+     *
      * @return array Formatted response with files, pagination, and metadata.
+     *
+     * @psalm-return   array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
+     * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
      *
      * @throws InvalidPathException If any file path is invalid.
      * @throws NotFoundException    If files are not found.
-     *
-     * @phpstan-param  array<int, Node> $files
-     * @psalm-param    array<int, Node> $files
-     * @phpstan-param  array<string, mixed> $requestParams
-     * @psalm-param    array<string, mixed> $requestParams
-     * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
-     * @psalm-return   array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
@@ -237,8 +238,8 @@ class FileFormattingHandler
      *     search?: string
      * } Normalized filter parameters.
      *
-     * @phpstan-param array<string, mixed> $requestParams
      * @psalm-param   array<string, mixed> $requestParams
+     * @phpstan-param array<string, mixed> $requestParams
      */
     private function extractFilterParameters(array $requestParams): array
     {
@@ -320,14 +321,15 @@ class FileFormattingHandler
      * @param array $formattedFiles Array of formatted file metadata.
      * @param array $filters        Filter parameters to apply.
      *
+     * @psalm-param    array<int, array<string, mixed>> $formattedFiles
+     * @psalm-param    array<string, mixed> $filters
+     * @phpstan-param  array<int, array<string, mixed>> $formattedFiles
+     * @phpstan-param  array<string, mixed> $filters
+     *
      * @return array Filtered array of file metadata.
      *
-     * @phpstan-param  array<int, array<string, mixed>> $formattedFiles
-     * @psalm-param    array<int, array<string, mixed>> $formattedFiles
-     * @phpstan-param  array<string, mixed> $filters
-     * @psalm-param    array<string, mixed> $filters
-     * @phpstan-return array<int, array<string, mixed>>
      * @psalm-return   array<int, array<string, mixed>>
+     * @phpstan-return array<int, array<string, mixed>>
      */
     private function applyFileFilters(array $formattedFiles, array $filters): array
     {
