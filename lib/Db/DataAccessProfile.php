@@ -83,7 +83,6 @@ class DataAccessProfile extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Constructor.
      */
@@ -97,7 +96,6 @@ class DataAccessProfile extends Entity implements JsonSerializable
         $this->addType('updated', 'datetime');
 
     }//end __construct()
-
 
     /**
      * JSON serialization.
@@ -130,7 +128,6 @@ class DataAccessProfile extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the data access profile
      *
@@ -160,6 +157,4 @@ class DataAccessProfile extends Entity implements JsonSerializable
         return 'Data Access Profile';
 
     }//end __toString()
-
-
 }//end class

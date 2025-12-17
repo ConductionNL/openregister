@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251101120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create applications table
      *
@@ -244,6 +242,4 @@ class Version1Date20251101120000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

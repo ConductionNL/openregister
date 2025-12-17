@@ -26,8 +26,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251116000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Apply schema changes.
      *
@@ -37,7 +35,7 @@ class Version1Date20251116000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper Updated schema.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -55,7 +53,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * Create the object text table.
@@ -203,7 +200,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $output->info(message: '✅ Created openregister_object_texts table.');
 
     }//end createObjectTextTable()
-
 
     /**
      * Create the chunk table.
@@ -402,7 +398,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
 
     }//end createChunksTable()
 
-
     /**
      * Create the entities table.
      *
@@ -515,7 +510,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $output->info(message: '✅ Created openregister_entities table.');
 
     }//end createEntitiesTable()
-
 
     /**
      * Create the entity relations table.
@@ -668,6 +662,4 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $output->info(message: '✅ Created openregister_entity_relations table.');
 
     }//end createEntityRelationsTable()
-
-
 }//end class

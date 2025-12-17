@@ -120,7 +120,6 @@ class Source extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
-
     /**
      * Constructor for the Source class
      *
@@ -139,7 +138,6 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'created', type: 'datetime');
 
     }//end __construct()
-
 
     /**
      * Get JSON fields from the entity
@@ -162,7 +160,6 @@ class Source extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -199,7 +196,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Get the organisation UUID
      *
@@ -210,7 +206,6 @@ class Source extends Entity implements JsonSerializable
         return $this->organisation;
 
     }//end getOrganisation()
-
 
     /**
      * Set the organisation UUID
@@ -225,7 +220,6 @@ class Source extends Entity implements JsonSerializable
         $this->markFieldUpdated('organisation');
 
     }//end setOrganisation()
-
 
     /**
      * Convert entity to JSON serializable array
@@ -264,7 +258,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the source
      *
@@ -295,7 +288,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end __toString()
 
-
     /**
      * Get the configuration that manages this source (transient property)
      *
@@ -306,7 +298,6 @@ class Source extends Entity implements JsonSerializable
         return $this->managedByConfiguration;
 
     }//end getManagedByConfigurationEntity()
-
 
     /**
      * Set the configuration that manages this source (transient property)
@@ -320,7 +311,6 @@ class Source extends Entity implements JsonSerializable
         $this->managedByConfiguration = $configuration;
 
     }//end setManagedByConfigurationEntity()
-
 
     /**
      * Check if this source is managed by a configuration
@@ -352,7 +342,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end isManagedByConfiguration()
 
-
     /**
      * Get the configuration that manages this source
      *
@@ -383,7 +372,6 @@ class Source extends Entity implements JsonSerializable
 
     }//end getManagedByConfiguration()
 
-
     /**
      * Get managed by configuration data as array or null
      *
@@ -404,6 +392,4 @@ class Source extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfigurationData()
-
-
 }//end class

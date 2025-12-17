@@ -41,7 +41,6 @@ class Notifier implements INotifier
      */
     private IFactory $factory;
 
-
     /**
      * Constructor
      *
@@ -52,7 +51,6 @@ class Notifier implements INotifier
         $this->factory = $factory;
 
     }//end __construct()
-
 
     /**
      * Identifier of the notifier.
@@ -69,7 +67,6 @@ class Notifier implements INotifier
 
     }//end getID()
 
-
     /**
      * Human readable name describing the notifier.
      *
@@ -80,7 +77,6 @@ class Notifier implements INotifier
         return $this->factory->get('openregister')->t('OpenRegister');
 
     }//end getName()
-
 
     /**
      * Prepare notification for display.
@@ -110,7 +106,6 @@ class Notifier implements INotifier
         }//end switch
 
     }//end prepare()
-
 
     /**
      * Prepare configuration update notification.
@@ -161,6 +156,4 @@ class Notifier implements INotifier
         return $notification;
 
     }//end prepareConfigurationUpdate()
-
-
 }//end class

@@ -39,7 +39,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor
      *
@@ -53,14 +52,13 @@ class Version1Date20250123120000 extends SimpleMigrationStep
 
     }//end __construct()
 
-
     /**
      * Pre-schema change operations
      *
      * @param IOutput                   $output        Output interface
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
-     * 
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @return void
@@ -69,7 +67,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
     {
         // No pre-schema changes required.
     }//end preSchemaChange()
-
 
     /**
      * Apply schema changes for active column
@@ -109,7 +106,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change operations
      *
@@ -125,6 +121,4 @@ class Version1Date20250123120000 extends SimpleMigrationStep
     {
         // No post-schema changes required.
     }//end postSchemaChange()
-
-
 }//end class

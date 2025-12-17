@@ -43,7 +43,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor
      *
@@ -54,7 +53,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
         $this->connection = $connection;
 
     }//end __construct()
-
 
     /**
      * Pre-schema change operations to clean up duplicates
@@ -73,7 +71,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
     }//end preSchemaChange()
 
-
     /**
      * Clean up duplicate (organisation, slug) combinations by updating slugs
      *
@@ -90,7 +87,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
         $this->cleanupTableDuplicates(tableName: 'openregister_schemas', entityType: 'schemas', output: $output);
 
     }//end cleanupDuplicateSlugs()
-
 
     /**
      * Clean up duplicates in a specific table
@@ -154,7 +150,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
     }//end cleanupTableDuplicates()
 
-
     /**
      * Generate a unique slug for the given table and organisation
      *
@@ -180,7 +175,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
     }//end generateUniqueSlug()
 
-
     /**
      * Check if a slug exists for the given organisation in the table
      *
@@ -202,7 +196,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
         return ((int) $count > 0);
 
     }//end slugExists()
-
 
     /**
      * Apply schema changes for both image column and unique constraints
@@ -275,6 +268,4 @@ class Version1Date20250829120000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

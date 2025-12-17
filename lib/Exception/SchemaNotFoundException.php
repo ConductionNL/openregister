@@ -39,8 +39,6 @@ use Exception;
  */
 class SchemaNotFoundException extends Exception
 {
-
-
     /**
      * SchemaNotFoundException constructor
      *
@@ -66,6 +64,4 @@ class SchemaNotFoundException extends Exception
         parent::__construct($message, $code, $previous);
 
     }//end __construct()
-
-
 }//end class

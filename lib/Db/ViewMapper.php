@@ -111,7 +111,6 @@ class ViewMapper extends QBMapper
      */
     private readonly IEventDispatcher $eventDispatcher;
 
-
     /**
      * Constructor
      *
@@ -149,7 +148,6 @@ class ViewMapper extends QBMapper
         $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
-
 
     /**
      * Find a view by its ID
@@ -197,17 +195,16 @@ class ViewMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find all views for a specific owner
      *
      * @param string $owner The owner user ID
      *
-     * @return View[] Array of View entities
+     * @return View[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\View>
+     * @psalm-return list<OCA\OpenRegister\Db\View>
      */
     public function findAll(?string $owner=null): array
     {
@@ -244,7 +241,6 @@ class ViewMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Create a new view from an Entity
      *
@@ -279,7 +275,6 @@ class ViewMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing view
      *
@@ -311,7 +306,6 @@ class ViewMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete a view
      *
@@ -339,7 +333,6 @@ class ViewMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Enrich a view entity with configuration management information
      *
@@ -363,6 +356,4 @@ class ViewMapper extends QBMapper
         }
 
     }//end enrichWithConfigurationInfo()
-
-
 }//end class

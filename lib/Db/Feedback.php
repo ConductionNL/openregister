@@ -123,7 +123,6 @@ class Feedback extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Constructor.
      */
@@ -141,7 +140,6 @@ class Feedback extends Entity implements JsonSerializable
         $this->addType('updated', 'datetime');
 
     }//end __construct()
-
 
     /**
      * JSON serialization.
@@ -167,6 +165,4 @@ class Feedback extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

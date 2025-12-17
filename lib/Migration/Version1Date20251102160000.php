@@ -39,8 +39,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251102160000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create agents table for AI agent configurations.
      *
@@ -340,6 +338,4 @@ class Version1Date20251102160000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

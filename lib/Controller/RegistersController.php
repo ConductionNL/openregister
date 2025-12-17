@@ -137,7 +137,6 @@ class RegistersController extends Controller
      */
     private readonly OasService $oasService;
 
-
     /**
      * Constructor
      *
@@ -196,7 +195,6 @@ class RegistersController extends Controller
         $this->logger->debug('RegistersController constructor completed.');
 
     }//end __construct()
-
 
     /**
      * Retrieves a list of all registers
@@ -318,7 +316,6 @@ class RegistersController extends Controller
 
     }//end index()
 
-
     /**
      * Retrieves a single register by ID
      *
@@ -382,15 +379,12 @@ class RegistersController extends Controller
 
     }//end show()
 
-
     /**
      * Creates a new register
      *
      * This method creates a new register based on POST data.
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing created register
      *
      * @NoCSRFRequired
      *
@@ -427,7 +421,6 @@ class RegistersController extends Controller
 
     }//end create()
 
-
     /**
      * Updates an existing register
      *
@@ -436,8 +429,6 @@ class RegistersController extends Controller
      * @param int $id The ID of the register to update
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing updated register
      *
      * @NoCSRFRequired
      *
@@ -475,7 +466,6 @@ class RegistersController extends Controller
 
     }//end update()
 
-
     /**
      * Patch (partially update) a register
      *
@@ -488,7 +478,10 @@ class RegistersController extends Controller
      * @return JSONResponse The updated register data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {
@@ -497,7 +490,6 @@ class RegistersController extends Controller
         return $this->update($id);
 
     }//end patch()
-
 
     /**
      * Deletes a register
@@ -535,7 +527,6 @@ class RegistersController extends Controller
 
     }//end destroy()
 
-
     /**
      * Get schemas associated with a register
      *
@@ -543,13 +534,11 @@ class RegistersController extends Controller
      *
      * @param int|string $id The ID, UUID, or slug of the register
      *
-     * @return JSONResponse A JSON response containing the schemas associated with the register
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array{error?: string, results?: array, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, results?: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, total?: int<0, max>}, array<never, never>>
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -580,7 +569,6 @@ class RegistersController extends Controller
 
     }//end schemas()
 
-
     /**
      * Get objects
      *
@@ -591,15 +579,9 @@ class RegistersController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing objects for register and schema
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200,
-     *     int|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Db\ObjectEntity>,
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200, list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -616,7 +598,6 @@ class RegistersController extends Controller
 
     }//end objects()
 
-
     /**
      * Export a register and its related data
      *
@@ -625,17 +606,13 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to export
      *
-     * @return DataDownloadResponse|JSONResponse The exported register data as a downloadable file or error response
+     * @return DataDownloadResponse|JSONResponse
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return DataDownloadResponse<
-     *     200,
-     *     'application/json'|'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv',
-     *     array<never, never>
-     * >|JSONResponse<400, array{error: string}, array<never, never>>
+     * @psalm-return DataDownloadResponse<200, 'application/json'|'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv', array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -699,7 +676,6 @@ class RegistersController extends Controller
 
     }//end export()
 
-
     /**
      * Publish register OAS specification to GitHub
      *
@@ -709,26 +685,9 @@ class RegistersController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing GitHub publish operation result
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|400|401|403|404|500,
-     *     array{
-     *         error?: string,
-     *         success?: true,
-     *         message?: string,
-     *         registerId?: int,
-     *         commit_sha?: mixed|null,
-     *         commit_url?: mixed|null,
-     *         file_url?: mixed|null,
-     *         branch?: string,
-     *         default_branch?: 'main'|mixed|null,
-     *         indexing_note?: string
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed|null, commit_url?: mixed|null, file_url?: mixed|null, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -858,7 +817,6 @@ class RegistersController extends Controller
         }//end try
 
     }//end publishToGitHub()
-
 
     /**
      * Import data into a register
@@ -1051,7 +1009,6 @@ class RegistersController extends Controller
 
     }//end import()
 
-
     /**
      * Get statistics for a specific register
      *
@@ -1121,7 +1078,6 @@ class RegistersController extends Controller
 
     }//end stats()
 
-
     /**
      * Parse boolean parameter from request with enhanced support for string values
      *
@@ -1158,7 +1114,6 @@ class RegistersController extends Controller
         return $default;
 
     }//end parseBooleanParam()
-
 
     /**
      * Publish a register
@@ -1248,7 +1203,6 @@ class RegistersController extends Controller
 
     }//end publish()
 
-
     /**
      * Depublish a register
      *
@@ -1335,6 +1289,4 @@ class RegistersController extends Controller
         }//end try
 
     }//end depublish()
-
-
 }//end class

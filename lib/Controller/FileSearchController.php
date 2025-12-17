@@ -40,8 +40,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileSearchController extends Controller
 {
-
-
     /**
      * Constructor
      *
@@ -63,7 +61,6 @@ class FileSearchController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Keyword search in file contents (SOLR full-text search)
@@ -193,13 +190,10 @@ class FileSearchController extends Controller
 
     }//end keywordSearch()
 
-
     /**
      * Semantic search in file contents (vector similarity search)
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing semantic search results
      *
      * @NoCSRFRequired
      *
@@ -255,7 +249,6 @@ class FileSearchController extends Controller
         }//end try
 
     }//end semanticSearch()
-
 
     /**
      * Hybrid search - Combines keyword (SOLR) and semantic (vector) search
@@ -325,6 +318,4 @@ class FileSearchController extends Controller
         }//end try
 
     }//end hybridSearch()
-
-
 }//end class

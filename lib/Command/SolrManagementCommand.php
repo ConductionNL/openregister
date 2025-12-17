@@ -53,8 +53,6 @@ use Symfony\Component\Console\Input\InputArgument;
  */
 class SolrManagementCommand extends Command
 {
-
-
     /**
      * Constructor
      *
@@ -68,7 +66,6 @@ class SolrManagementCommand extends Command
         parent::__construct();
 
     }//end __construct()
-
 
     /**
      * Configure the command
@@ -143,7 +140,6 @@ class SolrManagementCommand extends Command
 
     }//end configure()
 
-
     /**
      * Execute the command
      *
@@ -151,6 +147,8 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
+     *
+     * @psalm-return 0|1
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -181,7 +179,6 @@ class SolrManagementCommand extends Command
         };
 
     }//end execute()
-
 
     /**
      * Handle SOLR setup
@@ -261,7 +258,6 @@ class SolrManagementCommand extends Command
 
     }//end handleSetup()
 
-
     /**
      * Handle index optimization
      *
@@ -309,7 +305,6 @@ class SolrManagementCommand extends Command
         }//end try
 
     }//end handleOptimize()
-
 
     /**
      * Handle cache warming
@@ -363,7 +358,6 @@ class SolrManagementCommand extends Command
         }//end try
 
     }//end handleWarm()
-
 
     /**
      * Handle health check
@@ -450,7 +444,6 @@ class SolrManagementCommand extends Command
 
     }//end handleHealth()
 
-
     /**
      * Handle schema validation
      *
@@ -532,7 +525,6 @@ class SolrManagementCommand extends Command
 
     }//end handleSchemaCheck()
 
-
     /**
      * Handle index clearing
      *
@@ -572,7 +564,6 @@ class SolrManagementCommand extends Command
         }
 
     }//end handleClear()
-
 
     /**
      * Handle statistics display
@@ -623,7 +614,6 @@ class SolrManagementCommand extends Command
 
     }//end handleStats()
 
-
     /**
      * Handle invalid action
      *
@@ -652,6 +642,4 @@ class SolrManagementCommand extends Command
         return self::FAILURE;
 
     }//end handleInvalidAction()
-
-
 }//end class

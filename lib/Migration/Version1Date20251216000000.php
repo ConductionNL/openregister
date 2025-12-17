@@ -46,8 +46,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251216000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Perform the migration.
      *
@@ -77,6 +75,4 @@ class Version1Date20251216000000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

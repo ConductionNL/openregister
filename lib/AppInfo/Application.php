@@ -201,7 +201,6 @@ class Application extends App implements IBootstrap
      */
     public const APP_ID = 'openregister';
 
-
     /**
      * Constructor for the Application class
      *
@@ -212,7 +211,6 @@ class Application extends App implements IBootstrap
         parent::__construct(self::APP_ID);
 
     }//end __construct()
-
 
     /**
      * Register application components
@@ -697,9 +695,7 @@ class Application extends App implements IBootstrap
         // $context->registerEventListener(OrganisationCreatedEvent::class, WebhookEventListener::class);
         // $context->registerEventListener(OrganisationUpdatedEvent::class, WebhookEventListener::class);
         // $context->registerEventListener(OrganisationDeletedEvent::class, WebhookEventListener::class);
-
     }//end register()
-
 
     /**
      * Boot application components
@@ -712,9 +708,9 @@ class Application extends App implements IBootstrap
     {
         // Register event listeners for testing and functionality.
         $container = $context->getAppContainer();
-        
+
         $container->get(IEventDispatcher::class);
-        
+
         $logger = $container->get(id: 'Psr\Log\LoggerInterface');
         $logger->debug('OpenRegister boot() method started.');
         $logger->debug('Got app container.');
@@ -748,7 +744,7 @@ class Application extends App implements IBootstrap
                     ]
                 );
             }
-            
+
             if ($jobList->has(SolrNightlyWarmupJob::class, null) === true) {
                 $logger->debug('SOLR Nightly Warmup Job already registered');
             }
@@ -764,7 +760,7 @@ class Application extends App implements IBootstrap
                     ]
                 );
             }
-            
+
             if ($jobList->has(CronFileTextExtractionJob::class, null) === true) {
                 $logger->debug('Cron File Text Extraction Job already registered');
             }
@@ -781,7 +777,7 @@ class Application extends App implements IBootstrap
                     ]
                 );
             }
-            
+
             if ($jobList->has($webhookRetryJobClass, null) === true) {
                 $logger->debug('Webhook Retry Job already registered');
             }
@@ -796,6 +792,4 @@ class Application extends App implements IBootstrap
         }//end try
 
     }//end boot()
-
-
 }//end class

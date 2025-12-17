@@ -70,7 +70,6 @@ class ConversationMapper extends QBMapper
      */
     private readonly IEventDispatcher $eventDispatcher;
 
-
     /**
      * Constructor
      *
@@ -93,7 +92,6 @@ class ConversationMapper extends QBMapper
         $this->eventDispatcher = $eventDispatcher;
 
     }//end __construct()
-
 
     /**
      * Insert a new conversation entity
@@ -137,7 +135,6 @@ class ConversationMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update a conversation entity
      *
@@ -172,7 +169,6 @@ class ConversationMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete a conversation entity
      *
@@ -192,7 +188,6 @@ class ConversationMapper extends QBMapper
         return $entity;
 
     }//end delete()
-
 
     /**
      * Find a conversation by its ID
@@ -216,7 +211,6 @@ class ConversationMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find a conversation by its UUID
      *
@@ -238,7 +232,6 @@ class ConversationMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end findByUuid()
-
 
     /**
      * Find all conversations for a user
@@ -284,7 +277,6 @@ class ConversationMapper extends QBMapper
 
     }//end findByUser()
 
-
     /**
      * Find all soft-deleted conversations for a user (archive)
      *
@@ -322,7 +314,6 @@ class ConversationMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findDeletedByUser()
-
 
     /**
      * Find conversations by user and agent with matching title pattern
@@ -366,7 +357,6 @@ class ConversationMapper extends QBMapper
 
     }//end findTitlesByUserAgent()
 
-
     /**
      * Count conversations for a user
      *
@@ -405,7 +395,6 @@ class ConversationMapper extends QBMapper
 
     }//end countByUser()
 
-
     /**
      * Count soft-deleted conversations for a user (archived)
      *
@@ -438,7 +427,6 @@ class ConversationMapper extends QBMapper
 
     }//end countDeletedByUser()
 
-
     /**
      * Soft delete a conversation
      *
@@ -461,7 +449,6 @@ class ConversationMapper extends QBMapper
 
     }//end softDelete()
 
-
     /**
      * Restore a soft-deleted conversation
      *
@@ -481,7 +468,6 @@ class ConversationMapper extends QBMapper
         return $this->update($conversation);
 
     }//end restore()
-
 
     /**
      * Check if user can access a conversation
@@ -512,7 +498,6 @@ class ConversationMapper extends QBMapper
 
     }//end canUserAccessConversation()
 
-
     /**
      * Check if user can modify a conversation
      *
@@ -529,6 +514,4 @@ class ConversationMapper extends QBMapper
         return $conversation->getUserId() === $userId;
 
     }//end canUserModifyConversation()
-
-
 }//end class

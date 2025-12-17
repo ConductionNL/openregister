@@ -30,8 +30,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251118000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Apply schema changes.
      *
@@ -41,7 +39,7 @@ class Version1Date20251118000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper Updated schema.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -53,7 +51,6 @@ class Version1Date20251118000000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * Drop the deprecated file_texts table.
@@ -75,7 +72,6 @@ class Version1Date20251118000000 extends SimpleMigrationStep
 
     }//end dropFileTextsTable()
 
-
     /**
      * Drop the deprecated object_texts table.
      *
@@ -95,6 +91,4 @@ class Version1Date20251118000000 extends SimpleMigrationStep
         $output->info(message: '✅ Dropped deprecated openregister_object_texts table.');
 
     }//end dropObjectTextsTable()
-
-
 }//end class

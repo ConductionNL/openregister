@@ -60,7 +60,6 @@ class StatisticsHandler
      */
     private string $tableName;
 
-
     /**
      * Constructor.
      *
@@ -79,7 +78,6 @@ class StatisticsHandler
 
     }//end __construct()
 
-
     /**
      * Get statistics for objects.
      *
@@ -90,7 +88,9 @@ class StatisticsHandler
      * @param int|array|null $schemaId   Filter by schema ID(s).
      * @param array          $exclude    Array of register/schema combinations to exclude.
      *
-     * @return array Array containing statistics: total, size, invalid, deleted, locked, published.
+     * @return int[] Array containing statistics: total, size, invalid, deleted, locked, published.
+     *
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
     public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
@@ -176,14 +176,15 @@ class StatisticsHandler
 
     }//end getStatistics()
 
-
     /**
      * Get chart data for objects grouped by register.
      *
      * @param int|null $registerId The register ID (null for all registers).
      * @param int|null $schemaId   The schema ID (null for all schemas).
      *
-     * @return array Array containing chart data with 'labels' and 'series' keys.
+     * @return (int|mixed|string)[][] Array containing chart data with 'labels' and 'series' keys.
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -236,14 +237,15 @@ class StatisticsHandler
 
     }//end getRegisterChartData()
 
-
     /**
      * Get chart data for objects grouped by schema.
      *
      * @param int|null $registerId The register ID (null for all registers).
      * @param int|null $schemaId   The schema ID (null for all schemas).
      *
-     * @return array Array containing chart data with 'labels' and 'series' keys.
+     * @return (int|mixed|string)[][] Array containing chart data with 'labels' and 'series' keys.
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -296,14 +298,15 @@ class StatisticsHandler
 
     }//end getSchemaChartData()
 
-
     /**
      * Get chart data for objects grouped by size ranges.
      *
      * @param int|null $registerId The register ID (null for all registers).
      * @param int|null $schemaId   The schema ID (null for all schemas).
      *
-     * @return array Array containing chart data with 'labels' and 'series' keys.
+     * @return (int|string)[][] Array containing chart data with 'labels' and 'series' keys.
+     *
+     * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
      */
     public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -372,6 +375,4 @@ class StatisticsHandler
         }//end try
 
     }//end getSizeDistributionChartData()
-
-
 }//end class

@@ -76,14 +76,13 @@ class WebhookService
      */
     private ?CloudEventFormatter $cloudEventFormatter;
 
-
     /**
      * Constructor
      *
-     * @param WebhookMapper            $webhookMapper        Webhook mapper
-     * @param LoggerInterface          $logger               Logger
-     * @param WebhookLogMapper         $webhookLogMapper     Webhook log mapper
-     * @param CloudEventFormatter|null $cloudEventFormatter  CloudEvent formatter (optional)
+     * @param WebhookMapper            $webhookMapper       Webhook mapper
+     * @param LoggerInterface          $logger              Logger
+     * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
+     * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
      *
      * @return void
      */
@@ -91,16 +90,15 @@ class WebhookService
         WebhookMapper $webhookMapper,
         LoggerInterface $logger,
         WebhookLogMapper $webhookLogMapper,
-        ?CloudEventFormatter $cloudEventFormatter = null
+        ?CloudEventFormatter $cloudEventFormatter=null
     ) {
-        $this->webhookMapper        = $webhookMapper;
-        $this->logger               = $logger;
-        $this->webhookLogMapper     = $webhookLogMapper;
-        $this->cloudEventFormatter  = $cloudEventFormatter;
+        $this->webhookMapper    = $webhookMapper;
+        $this->logger           = $logger;
+        $this->webhookLogMapper = $webhookLogMapper;
+        $this->cloudEventFormatter = $cloudEventFormatter;
         $this->initializeHttpClient();
 
     }//end __construct()
-
 
     /**
      * Initialize HTTP client with default configuration
@@ -126,7 +124,6 @@ class WebhookService
         $this->client = new GuzzleClient($clientConfig);
 
     }//end initializeHttpClient()
-
 
     /**
      * Dispatch event to all matching webhooks
@@ -177,7 +174,6 @@ class WebhookService
         }
 
     }//end dispatchEvent()
-
 
     /**
      * Deliver webhook to target URL
@@ -251,11 +247,11 @@ class WebhookService
         } catch (RequestException $e) {
             // Build detailed error message from Guzzle exception.
             $errorMessage = $e->getMessage();
-            $errorDetails=[];
+            $errorDetails = [];
 
             // Get status code from exception if available.
             if ($e->hasResponse() === true) {
-                $response = $e->getResponse();
+                $response   = $e->getResponse();
                 $statusCode = $response->getStatusCode();
                 $webhookLog->setStatusCode($statusCode);
                 $errorDetails['status_code'] = $statusCode;
@@ -269,7 +265,7 @@ class WebhookService
                     $jsonResponse = json_decode($responseBody, true);
                     if ($jsonResponse !== null && (($jsonResponse['message'] ?? null) !== null)) {
                         $errorMessage .= ': '.$jsonResponse['message'];
-                    } elseif ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
+                    } else if ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
                         $errorMessage .= ': '.$jsonResponse['error'];
                     }
                 } catch (\Exception $bodyException) {
@@ -281,12 +277,12 @@ class WebhookService
                 if ($e->getCode() !== 0) {
                     $errorDetails['error_code'] = $e->getCode();
                 }
-            }
+            }//end if
 
             // Add request details to error message.
-            $errorDetails['request_url'] = $webhook->getUrl();
+            $errorDetails['request_url']    = $webhook->getUrl();
             $errorDetails['request_method'] = $webhook->getMethod();
-            $errorDetails['timeout'] = $webhook->getTimeout();
+            $errorDetails['timeout']        = $webhook->getTimeout();
 
             // Store request body as JSON for retry purposes (only on failure).
             $webhookLog->setRequestBody(json_encode($webhookPayload));
@@ -298,16 +294,16 @@ class WebhookService
             $this->logger->error(
                     message: 'Webhook delivery failed',
                     context: [
-                        'webhook_id'   => $webhook->getId(),
-                        'webhook_name' => $webhook->getName(),
-                        'event'        => $eventName,
-                        'error'        => $errorMessage,
-                        'error_details' => $errorDetails,
-                        'attempt'      => $attempt,
-                        'max_retries'  => $webhook->getMaxRetries(),
+                        'webhook_id'      => $webhook->getId(),
+                        'webhook_name'    => $webhook->getName(),
+                        'event'           => $eventName,
+                        'error'           => $errorMessage,
+                        'error_details'   => $errorDetails,
+                        'attempt'         => $attempt,
+                        'max_retries'     => $webhook->getMaxRetries(),
                         'exception_class' => get_class($e),
-                        'exception_code' => $e->getCode(),
-                        'trace' => $e->getTraceAsString(),
+                        'exception_code'  => $e->getCode(),
+                        'trace'           => $e->getTraceAsString(),
                     ]
                     );
 
@@ -344,7 +340,6 @@ class WebhookService
 
     }//end deliverWebhook()
 
-
     /**
      * Check if payload passes webhook filters
      *
@@ -370,7 +365,7 @@ class WebhookService
                 if (in_array($actualValue, $value) === false) {
                     return false;
                 }
-            } elseif ($actualValue !== $value) {
+            } else if ($actualValue !== $value) {
                 return false;
             }
         }
@@ -378,7 +373,6 @@ class WebhookService
         return true;
 
     }//end passesFilters()
-
 
     /**
      * Get nested value from array using dot notation
@@ -404,7 +398,6 @@ class WebhookService
 
     }//end getNestedValue()
 
-
     /**
      * Build webhook payload
      *
@@ -423,19 +416,22 @@ class WebhookService
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
         // Check if webhook is configured to use CloudEvents format.
-        $config = $webhook->getConfigurationArray();
+        $config         = $webhook->getConfigurationArray();
         $useCloudEvents = ($config['useCloudEvents'] ?? false) === true;
 
         // Use CloudEvents format if configured and formatter is available.
         if ($useCloudEvents === true && $this->cloudEventFormatter !== null) {
             // Add webhook metadata to payload.
-            $enrichedPayload = array_merge($payload, [
-                'webhook' => [
-                    'id'   => $webhook->getUuid(),
-                    'name' => $webhook->getName(),
-                ],
-                'attempt' => $attempt,
-            ]);
+            $enrichedPayload = array_merge(
+                    $payload,
+                    [
+                        'webhook' => [
+                            'id'   => $webhook->getUuid(),
+                            'name' => $webhook->getName(),
+                        ],
+                        'attempt' => $attempt,
+                    ]
+                    );
 
             return $this->cloudEventFormatter->formatAsCloudEvent(
                 eventType: $eventName,
@@ -458,7 +454,6 @@ class WebhookService
         ];
 
     }//end buildPayload()
-
 
     /**
      * Send HTTP request to webhook URL
@@ -514,7 +509,6 @@ class WebhookService
 
     }//end sendRequest()
 
-
     /**
      * Generate HMAC signature for payload
      *
@@ -528,7 +522,6 @@ class WebhookService
         return hash_hmac('sha256', json_encode($payload), $secret);
 
     }//end generateSignature()
-
 
     /**
      * Schedule retry for failed webhook delivery
@@ -565,7 +558,6 @@ class WebhookService
         // No need to schedule a job here - the cron job will pick it up.
     }//end scheduleRetry()
 
-
     /**
      * Calculate next retry timestamp
      *
@@ -576,14 +568,13 @@ class WebhookService
      */
     private function calculateNextRetryTime(Webhook $webhook, int $attempt): DateTime
     {
-        $delay = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
+        $delay     = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
         $nextRetry = new DateTime();
         $nextRetry->modify('+'.$delay.' seconds');
 
         return $nextRetry;
 
     }//end calculateNextRetryTime()
-
 
     /**
      * Calculate retry delay based on retry policy
@@ -613,7 +604,6 @@ class WebhookService
         }//end switch
 
     }//end calculateRetryDelay()
-
 
     /**
      * Intercept request and send to webhooks
@@ -711,7 +701,6 @@ class WebhookService
 
     }//end interceptRequest()
 
-
     /**
      * Find webhooks configured for request interception
      *
@@ -757,7 +746,6 @@ class WebhookService
 
     }//end findWebhooksForInterception()
 
-
     /**
      * Check if webhook response should be processed
      *
@@ -778,7 +766,6 @@ class WebhookService
 
     }//end shouldProcessResponse()
 
-
     /**
      * Convert event type to event class name
      *
@@ -796,9 +783,7 @@ class WebhookService
         $entity = ucfirst($parts[0]);
         $action = ucfirst($parts[1] ?? 'created');
 
-        return 'OCA\\OpenRegister\\Event\\' . $entity . $action . 'Event';
+        return 'OCA\\OpenRegister\\Event\\'.$entity.$action.'Event';
 
     }//end eventTypeToEventClass()
-
-
 }//end class

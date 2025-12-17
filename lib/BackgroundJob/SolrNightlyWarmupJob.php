@@ -61,7 +61,6 @@ class SolrNightlyWarmupJob extends TimedJob
      */
     private const DEFAULT_NIGHTLY_MODE = 'parallel';
 
-
     /**
      * Execute the nightly SOLR warmup job
      *
@@ -198,7 +197,6 @@ class SolrNightlyWarmupJob extends TimedJob
 
     }//end run()
 
-
     /**
      * Calculate objects per second performance metric
      *
@@ -220,7 +218,6 @@ class SolrNightlyWarmupJob extends TimedJob
         return 0.0;
 
     }//end calculateObjectsPerSecond()
-
 
     /**
      * Count successful warmup queries
@@ -246,7 +243,6 @@ class SolrNightlyWarmupJob extends TimedJob
         return $count;
 
     }//end countSuccessfulWarmupQueries()
-
 
     /**
      * Calculate warmup efficiency percentage
@@ -283,7 +279,6 @@ class SolrNightlyWarmupJob extends TimedJob
 
     }//end calculateWarmupEfficiency()
 
-
     /**
      * Check if SOLR is enabled and available.
      *
@@ -315,7 +310,6 @@ class SolrNightlyWarmupJob extends TimedJob
 
     }//end isSolrEnabledAndAvailable()
 
-
     /**
      * Get warmup configuration from settings.
      *
@@ -346,15 +340,14 @@ class SolrNightlyWarmupJob extends TimedJob
 
     }//end getWarmupConfiguration()
 
-
     /**
      * Summarize operations for logging.
      *
      * @param array $operations Operations array
      *
-     * @return (float|int)[] Summary array
+     * @return (float|int)[]
      *
-     * @psalm-return array{total: int<0, max>, successful: int, efficiency: float}
+     * @psalm-return array{total: int<0, max>, successful: int<0, max>, efficiency: float}
      */
     private function summarizeOperations(array $operations): array
     {
@@ -365,7 +358,6 @@ class SolrNightlyWarmupJob extends TimedJob
         ];
 
     }//end summarizeOperations()
-
 
     /**
      * Log performance statistics.
@@ -388,6 +380,4 @@ class SolrNightlyWarmupJob extends TimedJob
         );
 
     }//end logPerformanceStats()
-
-
 }//end class

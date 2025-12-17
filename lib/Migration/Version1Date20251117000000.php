@@ -28,8 +28,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251117000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Apply schema changes.
      *
@@ -39,7 +37,7 @@ class Version1Date20251117000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper Updated schema.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -50,7 +48,6 @@ class Version1Date20251117000000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * Add checksum column to chunks table.
@@ -89,6 +86,4 @@ class Version1Date20251117000000 extends SimpleMigrationStep
         $output->info(message: '✅ Added checksum column to openregister_chunks table.');
 
     }//end addChecksumToChunks()
-
-
 }//end class

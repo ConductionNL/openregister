@@ -39,8 +39,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251128120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change database schema
      *
@@ -413,7 +411,6 @@ class Version1Date20251128120000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change hook
      *
@@ -431,6 +428,4 @@ class Version1Date20251128120000 extends SimpleMigrationStep
         $output->info('   Endpoints can now be created to expose views, agents, webhooks, registers, and schemas');
 
     }//end postSchemaChange()
-
-
 }//end class

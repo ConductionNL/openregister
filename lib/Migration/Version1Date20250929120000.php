@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250929120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add searchable column to schemas table
      *
@@ -93,7 +91,6 @@ class Version1Date20250929120000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Ensure all existing schemas have searchable set to true
      *
@@ -135,6 +132,4 @@ class Version1Date20250929120000 extends SimpleMigrationStep
         }
 
     }//end postSchemaChange()
-
-
 }//end class

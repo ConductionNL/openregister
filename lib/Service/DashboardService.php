@@ -106,7 +106,6 @@ class DashboardService
      */
     private readonly SchemaMapper $schemaMapper;
 
-
     /**
      * Constructor for DashboardService
      *
@@ -138,7 +137,6 @@ class DashboardService
         $this->logger           = $logger;
 
     }//end __construct()
-
 
     /**
      * Get statistics for a register/schema combination
@@ -236,7 +234,6 @@ class DashboardService
 
     }//end getStats()
 
-
     /**
      * Get statistics for orphaned items
      *
@@ -327,7 +324,6 @@ class DashboardService
 
     }//end getOrphanedStats()
 
-
     /**
      * Get all registers with their schemas and statistics
      *
@@ -338,7 +334,7 @@ class DashboardService
      *
      * @throws \Exception If there is an error getting the registers with schemas
      *
-     * @psalm-return list{0: array{id: 'orphaned'|'totals'|int, title: null|string, description: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs?: array{total: int, size: int}}, schemas: list{0?: mixed,...}, uuid?: null|string, slug?: null|string, version?: null|string, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, 1?: array{id: 'orphaned'|'totals'|int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: list{0?: mixed,...}, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs: array{total: int, size: int}}},...}
+     * @psalm-return list{0: array{id: 'orphaned'|'totals'|int, title: null|string, description: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs?: array{total: int, size: int}}, schemas: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, stats: array{files: array{size: int, total: int}, logs: array{size: int, total: int}, objects: array{deleted: int, invalid: int, locked: int, published: int, size: int, total: int}, webhookLogs: array{size: int, total: int}}, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, uuid?: null|string, slug?: null|string, version?: null|string, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, 1?: array{id: 'orphaned'|'totals'|int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, stats: array{files: array{size: int, total: int}, logs: array{size: int, total: int}, objects: array{deleted: int, invalid: int, locked: int, published: int, size: int, total: int}, webhookLogs: array{size: int, total: int}}, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs: array{total: int, size: int}}},...}
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -416,7 +412,6 @@ class DashboardService
 
     }//end getRegistersWithSchemas()
 
-
     /**
      * Recalculate sizes for objects in specified registers and/or schemas
      *
@@ -466,7 +461,6 @@ class DashboardService
         }//end try
 
     }//end recalculateSizes()
-
 
     /**
      * Recalculate sizes for audit trail logs in specified registers and/or schemas
@@ -518,7 +512,6 @@ class DashboardService
 
     }//end recalculateLogSizes()
 
-
     /**
      * Recalculate sizes for both objects and logs in specified registers and/or schemas
      *
@@ -549,7 +542,6 @@ class DashboardService
         }
 
     }//end recalculateAllSizes()
-
 
     /**
      * Calculate sizes for all entities (objects and logs) in the system
@@ -593,7 +585,6 @@ class DashboardService
 
     }//end calculate()
 
-
     /**
      * Fetch register by ID with validation
      *
@@ -616,7 +607,6 @@ class DashboardService
         }
 
     }//end fetchRegister()
-
 
     /**
      * Fetch schema by ID with validation
@@ -648,7 +638,6 @@ class DashboardService
         }
 
     }//end fetchSchema()
-
 
     /**
      * Build response scope object from register and schema
@@ -683,7 +672,6 @@ class DashboardService
 
     }//end buildResponseScope()
 
-
     /**
      * Calculate success rate from results
      *
@@ -701,7 +689,6 @@ class DashboardService
 
     }//end calculateSuccessRate()
 
-
     /**
      * Get chart data for audit trail actions over time
      *
@@ -710,7 +697,9 @@ class DashboardService
      * @param int|null      $registerId Optional register ID to filter by
      * @param int|null      $schemaId   Optional schema ID to filter by
      *
-     * @return array Array containing chart data for audit trail actions
+     * @return ((int[]|string)[]|(int|string)|mixed)[][] Array containing chart data for audit trail actions
+     *
+     * @psalm-return array{labels: list<array-key>, series: list{0?: array{name: string, data: list<int>},...}}
      */
     public function getAuditTrailActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
@@ -725,7 +714,6 @@ class DashboardService
         }
 
     }//end getAuditTrailActionChartData()
-
 
     /**
      * Get chart data for objects by register
@@ -749,7 +737,6 @@ class DashboardService
 
     }//end getObjectsByRegisterChartData()
 
-
     /**
      * Get chart data for objects by schema
      *
@@ -771,7 +758,6 @@ class DashboardService
         }
 
     }//end getObjectsBySchemaChartData()
-
 
     /**
      * Get chart data for objects by size distribution
@@ -795,7 +781,6 @@ class DashboardService
 
     }//end getObjectsBySizeChartData()
 
-
     /**
      * Get audit trail statistics including total counts and recent activity
      *
@@ -803,12 +788,9 @@ class DashboardService
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
      *
-     * @return array Array containing audit trail statistics:
-     *               - total: Total number of audit trails
-     *               - creates: Number of create actions in timeframe
-     *               - updates: Number of update actions in timeframe
-     *               - deletes: Number of delete actions in timeframe
-     *               - reads: Number of read actions in timeframe
+     * @return (int|mixed)[] Array containing audit trail statistics: - total: Total number of audit trails - creates: Number of create actions in timeframe - updates: Number of update actions in timeframe - deletes: Number of delete actions in timeframe - reads: Number of read actions in timeframe
+     *
+     * @psalm-return array{total: 0|mixed, creates: int, updates: int, deletes: int, reads: int}
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -827,7 +809,6 @@ class DashboardService
 
     }//end getAuditTrailStatistics()
 
-
     /**
      * Get action distribution data for audit trails with percentages
      *
@@ -835,8 +816,9 @@ class DashboardService
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return array Array containing action distribution data:
-     *               - actions: Array of action data with name, count, and percentage
+     * @return ((int|mixed)[]|mixed)[][] Array containing action distribution data: - actions: Array of action data with name, count, and percentage
+     *
+     * @psalm-return array{actions: list{0?: array{name: mixed, count: int},...}}
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -851,7 +833,6 @@ class DashboardService
 
     }//end getAuditTrailActionDistribution()
 
-
     /**
      * Get most active objects based on audit trail activity
      *
@@ -860,8 +841,9 @@ class DashboardService
      * @param int|null $limit      Optional limit for number of results (default: 10)
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return array Array containing most active objects:
-     *               - objects: Array of object data with name, id, and count
+     * @return ((int|mixed|string)[]|mixed)[][] Array containing most active objects: - objects: Array of object data with name, id, and count
+     *
+     * @psalm-return array{objects: list{0?: array{id: mixed, name: string, count: int},...}}
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
@@ -875,6 +857,4 @@ class DashboardService
         }
 
     }//end getMostActiveObjects()
-
-
 }//end class

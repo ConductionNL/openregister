@@ -59,8 +59,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class OrganisationMapper extends QBMapper
 {
-
-
     /**
      * OrganisationMapper constructor
      *
@@ -78,7 +76,6 @@ class OrganisationMapper extends QBMapper
         parent::__construct($db, 'openregister_organisations', Organisation::class);
 
     }//end __construct()
-
 
     /**
      * Insert a new organisation
@@ -108,7 +105,6 @@ class OrganisationMapper extends QBMapper
         return $entity;
 
     }//end insert()
-
 
     /**
      * Update an existing organisation
@@ -140,7 +136,6 @@ class OrganisationMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete an organisation
      *
@@ -158,7 +153,6 @@ class OrganisationMapper extends QBMapper
         return $entity;
 
     }//end delete()
-
 
     /**
      * Find organisation by UUID
@@ -182,7 +176,6 @@ class OrganisationMapper extends QBMapper
 
     }//end findByUuid()
 
-
     /**
      * Find multiple organisations by UUIDs using a single optimized query
      *
@@ -191,7 +184,7 @@ class OrganisationMapper extends QBMapper
      *
      * @param array $uuids Array of organisation UUIDs to find
      *
-     * @return Entity&Organisation[] Associative array of UUID => Organisation entity
+     * @return Entity&Organisation[]
      *
      * @psalm-return array<Entity&Organisation>
      */
@@ -222,7 +215,6 @@ class OrganisationMapper extends QBMapper
 
     }//end findMultipleByUuid()
 
-
     /**
      * Find all organisations for a specific user
      *
@@ -243,7 +235,6 @@ class OrganisationMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findByUserId()
-
 
     /**
      * Get all organisations with user count
@@ -270,7 +261,6 @@ class OrganisationMapper extends QBMapper
         return $organisations;
 
     }//end findAllWithUserCount()
-
 
     /**
      * Insert or update organisation with UUID generation
@@ -355,7 +345,6 @@ class OrganisationMapper extends QBMapper
 
     }//end save()
 
-
     /**
      * Generate a unique UUID for organisations
      *
@@ -366,7 +355,6 @@ class OrganisationMapper extends QBMapper
         return Uuid::v4()->toRfc4122();
 
     }//end generateUuid()
-
 
     /**
      * Check if a UUID already exists
@@ -395,7 +383,6 @@ class OrganisationMapper extends QBMapper
         return $exists;
 
     }//end uuidExists()
-
 
     /**
      * Validate and ensure UUID uniqueness
@@ -429,7 +416,6 @@ class OrganisationMapper extends QBMapper
 
     }//end validateUuid()
 
-
     /**
      * Find organisations by name (case-insensitive search)
      *
@@ -438,16 +424,15 @@ class OrganisationMapper extends QBMapper
      * @return array Array of matching organisations
      */
 
-
     /**
      * Find all organisations with pagination
      *
      * @param int $limit  Maximum number of results to return (default 50)
      * @param int $offset Number of results to skip (default 0)
      *
-     * @return Organisation[] List of organisation entities
+     * @return Organisation[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function findAll(int $limit=50, int $offset=0): array
     {
@@ -462,7 +447,6 @@ class OrganisationMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findAll()
-
 
     /**
      * Find organisations by name with pagination
@@ -490,7 +474,6 @@ class OrganisationMapper extends QBMapper
 
     }//end findByName()
 
-
     /**
      * Get organisation statistics
      *
@@ -515,7 +498,6 @@ class OrganisationMapper extends QBMapper
 
     }//end getStatistics()
 
-
     /**
      * Add user to organisation by UUID
      *
@@ -536,7 +518,6 @@ class OrganisationMapper extends QBMapper
 
     }//end addUserToOrganisation()
 
-
     /**
      * Remove user from organisation by UUID
      *
@@ -556,7 +537,6 @@ class OrganisationMapper extends QBMapper
         return $this->update($organisation);
 
     }//end removeUserFromOrganisation()
-
 
     /**
      * Find all parent organisations recursively for a given organisation UUID
@@ -641,7 +621,6 @@ class OrganisationMapper extends QBMapper
 
     }//end findParentChain()
 
-
     /**
      * Find all child organisations recursively for a given organisation UUID
      *
@@ -724,7 +703,6 @@ class OrganisationMapper extends QBMapper
 
     }//end findChildrenChain()
 
-
     /**
      * Validate parent assignment to prevent circular references and enforce max depth
      *
@@ -794,7 +772,6 @@ class OrganisationMapper extends QBMapper
 
     }//end validateParentAssignment()
 
-
     /**
      * Get maximum depth in a children chain
      *
@@ -804,9 +781,7 @@ class OrganisationMapper extends QBMapper
      * @param array  $childrenUuids Array of child organisation UUIDs
      * @param string $rootUuid      The root organisation UUID
      *
-     * @return int Maximum depth from root
-     *
-     * @psalm-return int<0, max>
+     * @psalm-return int<0, 20>
      */
     private function getMaxDepthInChain(array $childrenUuids, string $rootUuid): int
     {
@@ -839,7 +814,6 @@ class OrganisationMapper extends QBMapper
 
     }//end getMaxDepthInChain()
 
-
     /**
      * Calculate depth of a node from root
      *
@@ -865,7 +839,6 @@ class OrganisationMapper extends QBMapper
 
     }//end calculateDepthFromRoot()
 
-
     /**
      * Get table prefix for raw SQL queries
      *
@@ -881,7 +854,6 @@ class OrganisationMapper extends QBMapper
         return \OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_');
 
     }//end getTablePrefix()
-
 
     /**
      * Get active organisation UUID for a user from preferences
@@ -922,7 +894,6 @@ class OrganisationMapper extends QBMapper
         return null;
 
     }//end getActiveOrganisationUuidForUser()
-
 
     /**
      * Get active organisation with fallback to default and set on session
@@ -987,7 +958,6 @@ class OrganisationMapper extends QBMapper
 
     }//end getActiveOrganisationWithFallback()
 
-
     /**
      * Set active organisation for a user in preferences
      *
@@ -1039,7 +1009,6 @@ class OrganisationMapper extends QBMapper
 
     }//end setActiveOrganisationForUser()
 
-
     /**
      * Get default organisation UUID from configuration
      *
@@ -1066,7 +1035,6 @@ class OrganisationMapper extends QBMapper
 
     }//end getDefaultOrganisationFromConfig()
 
-
     /**
      * Get organisation hierarchy (organisation + all parents)
      *
@@ -1091,6 +1059,4 @@ class OrganisationMapper extends QBMapper
         return $hierarchy;
 
     }//end getOrganisationHierarchy()
-
-
 }//end class

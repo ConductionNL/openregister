@@ -93,7 +93,6 @@ class ConfigurationMapper extends QBMapper
      */
     private IEventDispatcher $eventDispatcher;
 
-
     /**
      * Constructor
      *
@@ -123,14 +122,12 @@ class ConfigurationMapper extends QBMapper
 
     }//end __construct()
 
-
     /**
      * Session key prefix for storing configurations
      *
      * @var string
      */
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
-
 
     /**
      * Find a configuration by its ID
@@ -160,7 +157,6 @@ class ConfigurationMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
     /**
      * Find configurations by app
@@ -195,7 +191,6 @@ class ConfigurationMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findByApp()
-
 
     /**
      * Find configuration by source URL
@@ -235,7 +230,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end findBySourceUrl()
 
-
     /**
      * Find configurations that have sync enabled
      *
@@ -274,7 +268,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end findBySyncEnabled()
 
-
     /**
      * Update synchronization status for a configuration
      *
@@ -305,7 +298,6 @@ class ConfigurationMapper extends QBMapper
         return $this->update($configuration);
 
     }//end updateSyncStatus()
-
 
     /**
      * Insert a new configuration
@@ -362,7 +354,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing configuration
      *
@@ -396,7 +387,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete a configuration
      *
@@ -427,7 +417,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Create a configuration from an array
      *
@@ -445,7 +434,6 @@ class ConfigurationMapper extends QBMapper
         return $this->insert($config);
 
     }//end createFromArray()
-
 
     /**
      * Update a configuration from an array
@@ -473,7 +461,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end updateFromArray()
 
-
     /**
      * Find all configurations
      *
@@ -483,11 +470,11 @@ class ConfigurationMapper extends QBMapper
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
      *
-     * @return Configuration[] Array of found configurations
+     * @return Configuration[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
+     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
      */
     public function findAll(
         ?int $limit=null,
@@ -535,7 +522,6 @@ class ConfigurationMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Invalidate the configuration cache for the active organisation
      *
@@ -555,6 +541,4 @@ class ConfigurationMapper extends QBMapper
         $this->session->remove($sessionKey);
 
     }//end invalidateConfigurationCache()
-
-
 }//end class

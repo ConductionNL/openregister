@@ -50,8 +50,6 @@ use Exception;
  */
 class TagsController extends Controller
 {
-
-
     /**
      * TagsController constructor
      *
@@ -76,7 +74,6 @@ class TagsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get all tags available in the system
      *
@@ -88,9 +85,7 @@ class TagsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response containing array of tag names
-     *
-     * @psalm-return JSONResponse<200, array<int, string>, array<never, never>>
+     * @psalm-return JSONResponse<200, list<string>, array<never, never>>
      */
     public function getAllTags(): JSONResponse
     {
@@ -102,6 +97,4 @@ class TagsController extends Controller
         return new JSONResponse(data: $tags);
 
     }//end getAllTags()
-
-
 }//end class

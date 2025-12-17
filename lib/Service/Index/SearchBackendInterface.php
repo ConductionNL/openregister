@@ -48,8 +48,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
  */
 interface SearchBackendInterface
 {
-
-
     /**
      * Test if the backend is available and configured.
      *
@@ -59,7 +57,6 @@ interface SearchBackendInterface
      */
     public function isAvailable(bool $forceRefresh=false): bool;
 
-
     /**
      * Test the connection to the backend with detailed diagnostics.
      *
@@ -68,7 +65,6 @@ interface SearchBackendInterface
      * @return array Test results with status, timing, and error information.
      */
     public function testConnection(bool $includeCollectionTests=true): array;
-
 
     /**
      * Index a single object in the search backend.
@@ -80,7 +76,6 @@ interface SearchBackendInterface
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool;
 
-
     /**
      * Index multiple objects in bulk.
      *
@@ -90,7 +85,6 @@ interface SearchBackendInterface
      * @return array Result with success count, failure count, and errors.
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array;
-
 
     /**
      * Delete an object from the search index.
@@ -102,7 +96,6 @@ interface SearchBackendInterface
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool;
 
-
     /**
      * Delete multiple objects by query.
      *
@@ -113,7 +106,6 @@ interface SearchBackendInterface
      * @return array|bool Results array if returnDetails=true, bool otherwise.
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool;
-
 
     /**
      * Search objects with pagination support.
@@ -134,14 +126,12 @@ interface SearchBackendInterface
         bool $deleted=false
     ): array;
 
-
     /**
      * Get the total count of indexed documents.
      *
      * @return int Total document count.
      */
     public function getDocumentCount(): int;
-
 
     /**
      * Commit pending changes to the index.
@@ -150,14 +140,12 @@ interface SearchBackendInterface
      */
     public function commit(): bool;
 
-
     /**
      * Optimize the search index for better performance.
      *
      * @return bool True if optimization succeeded, false otherwise.
      */
     public function optimize(): bool;
-
 
     /**
      * Clear all documents from the index.
@@ -167,7 +155,6 @@ interface SearchBackendInterface
      * @return array Results with count of deleted documents.
      */
     public function clearIndex(?string $collectionName=null): array;
-
 
     /**
      * Warm up the index by pre-loading data into cache.
@@ -190,7 +177,6 @@ interface SearchBackendInterface
         array $schemaIds=[]
     ): array;
 
-
     /**
      * Get backend configuration.
      *
@@ -198,14 +184,12 @@ interface SearchBackendInterface
      */
     public function getConfig(): array;
 
-
     /**
      * Get statistics about the search backend.
      *
      * @return array Backend statistics (doc count, size, performance metrics, etc.).
      */
     public function getStats(): array;
-
 
     /**
      * Create a collection/index in the backend.
@@ -217,7 +201,6 @@ interface SearchBackendInterface
      */
     public function createCollection(string $name, array $config=[]): array;
 
-
     /**
      * Delete a collection/index from the backend.
      *
@@ -226,7 +209,6 @@ interface SearchBackendInterface
      * @return array Deletion results.
      */
     public function deleteCollection(?string $collectionName=null): array;
-
 
     /**
      * Check if a collection/index exists.
@@ -237,14 +219,12 @@ interface SearchBackendInterface
      */
     public function collectionExists(string $collectionName): bool;
 
-
     /**
      * List all collections/indices in the backend.
      *
      * @return array Array of collection names.
      */
     public function listCollections(): array;
-
 
     /**
      * Index generic documents (not ObjectEntity).
@@ -257,7 +237,6 @@ interface SearchBackendInterface
      */
     public function index(array $documents): bool;
 
-
     /**
      * Perform a generic search query.
      *
@@ -269,7 +248,6 @@ interface SearchBackendInterface
      */
     public function search(array $params): array;
 
-
     /**
      * Get field types for a collection.
      *
@@ -280,7 +258,6 @@ interface SearchBackendInterface
      * @return array Field types indexed by name
      */
     public function getFieldTypes(string $collection): array;
-
 
     /**
      * Add a new field type to a collection.
@@ -294,7 +271,6 @@ interface SearchBackendInterface
      */
     public function addFieldType(string $collection, array $fieldType): bool;
 
-
     /**
      * Get fields for a collection.
      *
@@ -305,7 +281,6 @@ interface SearchBackendInterface
      * @return array Fields indexed by name
      */
     public function getFields(string $collection): array;
-
 
     /**
      * Add or update a field in a collection.
@@ -319,7 +294,6 @@ interface SearchBackendInterface
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string;
 
-
     /**
      * Reindex all objects in the system.
      *
@@ -332,6 +306,4 @@ interface SearchBackendInterface
      * @return array Reindexing results with statistics.
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array;
-
-
 }//end interface

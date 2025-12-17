@@ -62,7 +62,6 @@ abstract class AbstractTool implements ToolInterface
      */
     protected ?Agent $agent = null;
 
-
     /**
      * Constructor
      *
@@ -77,7 +76,6 @@ abstract class AbstractTool implements ToolInterface
         $this->logger      = $logger;
 
     }//end __construct()
-
 
     /**
      * Set the agent context
@@ -94,7 +92,6 @@ abstract class AbstractTool implements ToolInterface
         $this->agent = $agent;
 
     }//end setAgent()
-
 
     /**
      * Get the current user ID
@@ -130,7 +127,6 @@ abstract class AbstractTool implements ToolInterface
 
     }//end getUserId()
 
-
     /**
      * Check if a user context is available
      *
@@ -143,7 +139,6 @@ abstract class AbstractTool implements ToolInterface
         return $this->getUserId($explicitUserId) !== null;
 
     }//end hasUserContext()
-
 
     /**
      * Apply view filters to query parameters
@@ -174,7 +169,6 @@ abstract class AbstractTool implements ToolInterface
 
     }//end applyViewFilters()
 
-
     /**
      * Format a success result
      *
@@ -194,7 +188,6 @@ abstract class AbstractTool implements ToolInterface
         ];
 
     }//end formatSuccess()
-
 
     /**
      * Format an error result
@@ -220,7 +213,6 @@ abstract class AbstractTool implements ToolInterface
         return $result;
 
     }//end formatError()
-
 
     /**
      * Log tool execution
@@ -284,7 +276,6 @@ abstract class AbstractTool implements ToolInterface
 
     }//end log()
 
-
     /**
      * Validate required parameters
      *
@@ -312,7 +303,6 @@ abstract class AbstractTool implements ToolInterface
         }
 
     }//end validateParameters()
-
 
     /**
      * Magic method to support snake_case method calls for LLPhant compatibility
@@ -439,6 +429,4 @@ abstract class AbstractTool implements ToolInterface
         throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
 
     }//end __call()
-
-
 }//end class

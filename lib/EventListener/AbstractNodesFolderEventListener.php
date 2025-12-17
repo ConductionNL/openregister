@@ -37,8 +37,6 @@ use OCP\Files\FileInfo;
  */
 class AbstractNodesFolderEventListener implements IEventListener
 {
-
-
     /**
      * Constructor for AbstractNodesFolderEventListener
      *
@@ -53,7 +51,6 @@ class AbstractNodesFolderEventListener implements IEventListener
     ) {
 
     }//end __construct()
-
 
     /**
      * Handle incoming events.
@@ -76,13 +73,12 @@ class AbstractNodesFolderEventListener implements IEventListener
         match (true) {
             $event instanceof NodeCopiedEvent => $this->handleNodeCopied($event),
             $event instanceof NodeRenamedEvent => $this->handleNodeRenamed($event),
-        default => throw new InvalidArgumentException(
+            default => throw new InvalidArgumentException(
                 'Unsupported event type: '.get_class($event)
             ),
         };
 
     }//end handle()
-
 
     /**
      * Handle when a node is copied.
@@ -98,7 +94,6 @@ class AbstractNodesFolderEventListener implements IEventListener
         // $this->objectService->nodeCopiedEventFunction();
     }//end handleNodeCopied()
 
-
     /**
      * Handle when a node is renamed.
      *
@@ -112,6 +107,4 @@ class AbstractNodesFolderEventListener implements IEventListener
     {
         // $this->objectService->nodeRenamedEventFunction();
     }//end handleNodeRenamed()
-
-
 }//end class

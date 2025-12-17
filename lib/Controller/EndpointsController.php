@@ -90,7 +90,6 @@ class EndpointsController extends Controller
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -124,7 +123,6 @@ class EndpointsController extends Controller
         $this->logger            = $logger;
 
     }//end __construct()
-
 
     /**
      * List all endpoints
@@ -175,7 +173,6 @@ class EndpointsController extends Controller
         }//end try
 
     }//end index()
-
 
     /**
      * Get a single endpoint
@@ -232,7 +229,6 @@ class EndpointsController extends Controller
 
     }//end show()
 
-
     /**
      * Create a new endpoint
      *
@@ -241,8 +237,6 @@ class EndpointsController extends Controller
      * Returns 201 Created on success, 400 Bad Request on validation failure.
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing created endpoint
      *
      * @NoCSRFRequired
      *
@@ -302,7 +296,6 @@ class EndpointsController extends Controller
 
     }//end create()
 
-
     /**
      * Update an existing endpoint
      *
@@ -313,8 +306,6 @@ class EndpointsController extends Controller
      * @param int $id Endpoint ID to update
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing updated endpoint
      *
      * @NoCSRFRequired
      *
@@ -375,7 +366,6 @@ class EndpointsController extends Controller
         }//end try
 
     }//end update()
-
 
     /**
      * Delete an endpoint
@@ -444,7 +434,6 @@ class EndpointsController extends Controller
 
     }//end destroy()
 
-
     /**
      * Test an endpoint by executing it with test data
      *
@@ -455,8 +444,6 @@ class EndpointsController extends Controller
      * @param int $id Endpoint ID to test
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing endpoint test results
      *
      * @NoCSRFRequired
      *
@@ -525,7 +512,6 @@ class EndpointsController extends Controller
         }//end try
 
     }//end test()
-
 
     /**
      * Get logs for a specific endpoint
@@ -596,7 +582,6 @@ class EndpointsController extends Controller
 
     }//end logs()
 
-
     /**
      * Get statistics for a specific endpoint
      *
@@ -608,11 +593,9 @@ class EndpointsController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing endpoint log statistics
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array<string, 'Endpoint not found'|'Failed to retrieve endpoint log statistics'|int>, array<never, never>>
+     * @psalm-return JSONResponse<200|404|500, array{error?: 'Endpoint not found'|'Failed to retrieve endpoint log statistics', total?: int, success?: int, failed?: int}, array<never, never>>
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -658,7 +641,6 @@ class EndpointsController extends Controller
 
     }//end logStats()
 
-
     /**
      * Get all endpoint logs with optional filtering
      *
@@ -667,8 +649,6 @@ class EndpointsController extends Controller
      * Returns logs for specific endpoint if endpoint_id provided, otherwise all logs.
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing all endpoint logs
      *
      * @NoCSRFRequired
      *
@@ -730,6 +710,4 @@ class EndpointsController extends Controller
         }//end try
 
     }//end allLogs()
-
-
 }//end class

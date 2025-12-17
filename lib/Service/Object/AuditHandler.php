@@ -41,8 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class AuditHandler
 {
-
-
     /**
      * Constructor
      *
@@ -58,7 +56,6 @@ class AuditHandler
 
     }//end __construct()
 
-
     /**
      * Get audit logs for an object
      *
@@ -67,9 +64,11 @@ class AuditHandler
      * @param string $uuid    Object UUID
      * @param array  $filters Optional filters for logs
      *
-     * @return array Array of audit log entries
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit log entries
      *
      * @throws \Exception If retrieval fails
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
     public function getLogs(string $uuid, array $filters=[]): array
     {
@@ -109,7 +108,6 @@ class AuditHandler
         }//end try
 
     }//end getLogs()
-
 
     /**
      * Validate object ownership
@@ -164,14 +162,15 @@ class AuditHandler
 
     }//end validateObjectOwnership()
 
-
     /**
      * Prepare filters for audit trail query
      *
      * @param string $uuid    Object UUID
      * @param array  $filters Raw filters
      *
-     * @return array Prepared filters
+     * @return (mixed|string)[] Prepared filters
+     *
+     * @psalm-return array{object_uuid: string, action?: mixed, user?: mixed, date_from?: mixed, date_to?: mixed, order_by: 'created_at'|mixed, order: 'DESC'|mixed}
      */
     private function prepareFilters(string $uuid, array $filters): array
     {
@@ -203,15 +202,14 @@ class AuditHandler
 
     }//end prepareFilters()
 
-
     /**
      * Extract schema ID from schema data
      *
      * @param mixed $schema Schema data (array, object, or string)
      *
-     * @return string|null Schema ID
+     * @return string Schema ID
      */
-    private function extractSchemaId(mixed $schema): ?string
+    private function extractSchemaId(mixed $schema): string
     {
         if (is_array($schema) === true && isset($schema['id']) === true) {
             return (string) $schema['id'];
@@ -225,15 +223,14 @@ class AuditHandler
 
     }//end extractSchemaId()
 
-
     /**
      * Extract schema slug from schema data
      *
      * @param mixed $schema Schema data (array, object, or string)
      *
-     * @return string|null Schema slug
+     * @return null|string Schema slug
      */
-    private function extractSchemaSlug(mixed $schema): ?string
+    private function extractSchemaSlug(mixed $schema): string|null
     {
         if (is_array($schema) === true && isset($schema['slug']) === true) {
             return strtolower($schema['slug']);
@@ -246,6 +243,4 @@ class AuditHandler
         return null;
 
     }//end extractSchemaSlug()
-
-
 }//end class

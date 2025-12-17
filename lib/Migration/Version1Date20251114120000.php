@@ -43,8 +43,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251114120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add allOf, oneOf, anyOf columns to schemas table
      *
@@ -132,6 +130,4 @@ class Version1Date20251114120000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

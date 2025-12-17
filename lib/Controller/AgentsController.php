@@ -100,7 +100,6 @@ class AgentsController extends Controller
      */
     private readonly ?string $userId;
 
-
     /**
      * Constructor
      *
@@ -138,7 +137,6 @@ class AgentsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Render the Agents page
      *
@@ -163,7 +161,6 @@ class AgentsController extends Controller
         );
 
     }//end page()
-
 
     /**
      * Get all agents accessible by current user
@@ -237,7 +234,6 @@ class AgentsController extends Controller
 
     }//end index()
 
-
     /**
      * Get a single agent
      *
@@ -292,15 +288,12 @@ class AgentsController extends Controller
 
     }//end show()
 
-
     /**
      * Create a new agent
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Created agent
      *
      * @psalm-return JSONResponse<201, Agent, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
@@ -376,7 +369,6 @@ class AgentsController extends Controller
 
     }//end create()
 
-
     /**
      * Update an existing agent
      *
@@ -385,8 +377,6 @@ class AgentsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Updated agent
      *
      * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
      */
@@ -454,7 +444,6 @@ class AgentsController extends Controller
 
     }//end update()
 
-
     /**
      * Patch (partially update) an agent
      *
@@ -477,7 +466,6 @@ class AgentsController extends Controller
         return $this->update($id);
 
     }//end patch()
-
 
     /**
      * Delete an agent
@@ -541,7 +529,6 @@ class AgentsController extends Controller
 
     }//end destroy()
 
-
     /**
      * Get agent statistics
      *
@@ -579,7 +566,6 @@ class AgentsController extends Controller
         }//end try
 
     }//end stats()
-
 
     /**
      * Get all available tools
@@ -631,6 +617,4 @@ class AgentsController extends Controller
         }//end try
 
     }//end tools()
-
-
 }//end class

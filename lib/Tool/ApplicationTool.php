@@ -46,7 +46,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
      */
     private ApplicationMapper $applicationMapper;
 
-
     /**
      * ApplicationTool constructor
      *
@@ -64,7 +63,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
     }//end __construct()
 
-
     /**
      * Get the tool name
      *
@@ -78,7 +76,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
     }//end getName()
 
-
     /**
      * Get the tool description
      *
@@ -91,7 +88,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         return 'Manage applications: list, view, create, update, or delete applications with RBAC permissions and organisation boundaries.';
 
     }//end getDescription()
-
 
     /**
      * Get function definitions for LLM function calling
@@ -204,7 +200,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
     }//end getFunctions()
 
-
     /**
      * List applications
      *
@@ -254,7 +249,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
     }//end listApplications()
 
-
     /**
      * Get application details
      *
@@ -290,7 +284,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         }//end try
 
     }//end getApplication()
-
 
     /**
      * Create application
@@ -337,7 +330,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         }//end try
 
     }//end createApplication()
-
 
     /**
      * Update application
@@ -394,7 +386,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
     }//end updateApplication()
 
-
     /**
      * Delete application
      *
@@ -435,7 +426,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface
 
     }//end deleteApplication()
 
-
     /**
      * Execute a function by name
      *
@@ -454,6 +444,4 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         return $this->$methodName(...array_values($parameters));
 
     }//end executeFunction()
-
-
 }//end class

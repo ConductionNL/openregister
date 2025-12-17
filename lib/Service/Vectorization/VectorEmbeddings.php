@@ -47,8 +47,6 @@ use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStatsHandler;
  */
 class VectorEmbeddings
 {
-
-
     /**
      * Constructor
      *
@@ -72,11 +70,9 @@ class VectorEmbeddings
 
     }//end __construct()
 
-
     // =============================================================================
     // EMBEDDING GENERATION
     // =============================================================================
-
 
     /**
      * Generate embedding for a single text
@@ -134,7 +130,6 @@ class VectorEmbeddings
         }//end try
 
     }//end generateEmbedding()
-
 
     /**
      * Generate embedding with custom configuration (for testing)
@@ -211,7 +206,6 @@ class VectorEmbeddings
 
     }//end generateEmbeddingWithCustomConfig()
 
-
     /**
      * Test embedding generation with custom configuration
      *
@@ -282,7 +276,6 @@ class VectorEmbeddings
         }//end try
 
     }//end testEmbedding()
-
 
     /**
      * Generate embeddings for multiple texts in batch
@@ -362,11 +355,9 @@ class VectorEmbeddings
 
     }//end generateBatchEmbeddings()
 
-
     // =============================================================================
     // VECTOR STORAGE
     // =============================================================================
-
 
     /**
      * Store vector embedding
@@ -413,11 +404,9 @@ class VectorEmbeddings
 
     }//end storeVector()
 
-
     // =============================================================================
     // VECTOR SEARCH
     // =============================================================================
-
 
     /**
      * Perform semantic similarity search
@@ -453,7 +442,6 @@ class VectorEmbeddings
 
     }//end semanticSearch()
 
-
     /**
      * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
      *
@@ -463,9 +451,11 @@ class VectorEmbeddings
      * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
      * @param string|null $provider    Embedding provider
      *
-     * @return array Hybrid search results
+     * @return (((array|bool|float|int|mixed|null)[]|float|int)[]|float|int)[] Hybrid search results
      *
      * @throws \Exception If hybrid search fails
+     *
+     * @psalm-return array{results: list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: float|int|null, solr_score: mixed|null, vector_rank: float|int|null, vector_similarity: mixed|null}>, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
      */
     public function hybridSearch(
         string $query,
@@ -494,16 +484,16 @@ class VectorEmbeddings
 
     }//end hybridSearch()
 
-
     // =============================================================================
     // STATISTICS
     // =============================================================================
 
-
     /**
      * Get vector statistics
      *
-     * @return array Statistics about stored vectors
+     * @return ((int|mixed)[]|int|string)[] Statistics about stored vectors
+     *
+     * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int, source?: 'solr'|'solr_error'|'solr_unavailable'}
      */
     public function getVectorStats(): array
     {
@@ -513,18 +503,16 @@ class VectorEmbeddings
 
     }//end getVectorStats()
 
-
     // =============================================================================
     // MANAGEMENT
     // =============================================================================
-
 
     /**
      * Check if embedding model has changed since vectors were created
      *
      * @return (array|bool|int|mixed|string)[]
      *
-     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: string, current_model?: mixed, existing_models?: list{0?: mixed,...}, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
+     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: string, current_model?: mixed, existing_models?: list<mixed>, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -632,7 +620,6 @@ class VectorEmbeddings
 
     }//end checkEmbeddingModelMismatch()
 
-
     /**
      * Clear all embeddings from the database
      *
@@ -689,11 +676,9 @@ class VectorEmbeddings
 
     }//end clearAllEmbeddings()
 
-
     // =============================================================================
     // CONFIGURATION HELPERS
     // =============================================================================
-
 
     /**
      * Get the configured vector search backend
@@ -714,7 +699,6 @@ class VectorEmbeddings
         }
 
     }//end getVectorSearchBackend()
-
 
     /**
      * Get embedding configuration from settings
@@ -758,6 +742,4 @@ class VectorEmbeddings
         ];
 
     }//end getEmbeddingConfig()
-
-
 }//end class

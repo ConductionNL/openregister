@@ -63,7 +63,6 @@ class MagicBulkHandler
      */
     private float $maxPacketSizeBuffer = 0.5;
 
-
     /**
      * Constructor for MagicBulkHandler
      *
@@ -78,7 +77,6 @@ class MagicBulkHandler
         $this->initializeMaxPacketSize();
 
     }//end __construct()
-
 
     /**
      * Prepare objects for dynamic table structure
@@ -140,7 +138,6 @@ class MagicBulkHandler
 
     }//end prepareObjectsForDynamicTable()
 
-
     /**
      * Categorize objects into insert vs update operations
      *
@@ -185,7 +182,6 @@ class MagicBulkHandler
 
     }//end categorizeObjectsForSave()
 
-
     /**
      * Perform bulk insert into dynamic table
      *
@@ -218,7 +214,6 @@ class MagicBulkHandler
         return $insertedUuids;
 
     }//end bulkInsertToDynamicTable()
-
 
     /**
      * Execute bulk insert for a single chunk
@@ -285,7 +280,6 @@ class MagicBulkHandler
 
     }//end executeBulkInsertChunk()
 
-
     /**
      * Perform bulk update on dynamic table
      *
@@ -347,7 +341,6 @@ class MagicBulkHandler
 
     }//end bulkUpdateDynamicTable()
 
-
     /**
      * Calculate optimal chunk size for bulk operations
      *
@@ -383,7 +376,6 @@ class MagicBulkHandler
 
     }//end calculateOptimalChunkSize()
 
-
     /**
      * Get max_allowed_packet size from database
      *
@@ -406,7 +398,6 @@ class MagicBulkHandler
         return 16777216;
 
     }//end getMaxAllowedPacketSize()
-
 
     /**
      * Initialize max packet size buffer based on database configuration
@@ -441,7 +432,6 @@ class MagicBulkHandler
 
     }//end initializeMaxPacketSize()
 
-
     /**
      * Sanitize column name for safe database usage
      *
@@ -463,6 +453,4 @@ class MagicBulkHandler
         return substr($sanitized, 0, 64);
 
     }//end sanitizeColumnName()
-
-
 }//end class

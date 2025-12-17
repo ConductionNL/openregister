@@ -66,7 +66,6 @@ class QueryOptimizationHandler
      */
     private string $tableName;
 
-
     /**
      * Constructor.
      *
@@ -85,14 +84,15 @@ class QueryOptimizationHandler
 
     }//end __construct()
 
-
     /**
      * Detect and separate extremely large objects for individual processing.
      *
      * @param array $objects     Array of objects to check.
      * @param int   $maxSafeSize Maximum safe size in bytes for batch processing.
      *
-     * @return array Array with 'large' and 'normal' keys containing separated objects.
+     * @return array[] Array with 'large' and 'normal' keys containing separated objects.
+     *
+     * @psalm-return array{large: list<mixed>, normal: list<mixed>}
      */
     public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
@@ -116,7 +116,6 @@ class QueryOptimizationHandler
 
     }//end separateLargeObjects()
 
-
     /**
      * Process large objects individually to prevent packet size errors.
      *
@@ -125,6 +124,8 @@ class QueryOptimizationHandler
      * @param array $largeObjects Array of large objects to process (must be arrays for INSERT).
      *
      * @return array Array of processed object UUIDs.
+     *
+     * @psalm-return list<mixed>
      */
     public function processLargeObjectsIndividually(array $largeObjects): array
     {
@@ -187,7 +188,6 @@ class QueryOptimizationHandler
 
     }//end processLargeObjectsIndividually()
 
-
     /**
      * Bulk assign default owner and organization to objects that don't have them assigned.
      *
@@ -197,9 +197,11 @@ class QueryOptimizationHandler
      * @param string|null $defaultOrganisation Default organization UUID to assign.
      * @param int         $batchSize           Number of objects to process in each batch.
      *
-     * @return array Array containing statistics about the bulk operation.
+     * @return (DateTime|array|int|mixed|string)[] Array containing statistics about the bulk operation.
      *
      * @throws \Exception If the bulk operation fails.
+     *
+     * @psalm-return array{endTime: DateTime, duration: string,...}
      */
     public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
@@ -282,7 +284,6 @@ class QueryOptimizationHandler
 
     }//end bulkOwnerDeclaration()
 
-
     /**
      * Set expiry dates for objects based on retention period in milliseconds.
      *
@@ -325,7 +326,6 @@ class QueryOptimizationHandler
 
     }//end setExpiryDate()
 
-
     /**
      * Apply optimizations for composite indexes.
      *
@@ -355,7 +355,6 @@ class QueryOptimizationHandler
 
     }//end applyCompositeIndexOptimizations()
 
-
     /**
      * Optimize ORDER BY clauses to use indexes.
      *
@@ -377,7 +376,6 @@ class QueryOptimizationHandler
         }
 
     }//end optimizeOrderBy()
-
 
     /**
      * Add database-specific query hints for better performance.
@@ -408,7 +406,6 @@ class QueryOptimizationHandler
 
     }//end addQueryHints()
 
-
     /**
      * Check if filters contain JSON-based queries.
      *
@@ -429,7 +426,6 @@ class QueryOptimizationHandler
 
     }//end hasJsonFilters()
 
-
     /**
      * Process a batch of objects for bulk owner declaration.
      *
@@ -437,7 +433,9 @@ class QueryOptimizationHandler
      * @param string|null $defaultOwner        Default owner to assign.
      * @param string|null $defaultOrganisation Default organization UUID to assign.
      *
-     * @return array Batch processing results.
+     * @return (int|string[])[] Batch processing results.
+     *
+     * @psalm-return array{ownersAssigned: 0|1|2, organisationsAssigned: 0|1|2, errors: list<non-falsy-string>}
      */
     private function processBulkOwnerDeclarationBatch(array $objects, ?string $defaultOwner, ?string $defaultOrganisation): array
     {
@@ -480,7 +478,6 @@ class QueryOptimizationHandler
 
     }//end processBulkOwnerDeclarationBatch()
 
-
     /**
      * Update ownership information for a specific object.
      *
@@ -508,13 +505,14 @@ class QueryOptimizationHandler
 
     }//end updateObjectOwnership()
 
-
     /**
      * Estimate the size of an object in bytes for size calculations.
      *
      * @param mixed $object The object to estimate size for.
      *
      * @return int Estimated size in bytes.
+     *
+     * @psalm-return int<0, max>
      */
     private function estimateObjectSize(mixed $object): int
     {
@@ -554,6 +552,4 @@ class QueryOptimizationHandler
         return 0;
 
     }//end estimateObjectSize()
-
-
 }//end class

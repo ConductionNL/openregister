@@ -251,7 +251,6 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
-
     /**
      * Constructor for the AuditTrail class
      *
@@ -287,7 +286,6 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the changed data
      *
@@ -298,7 +296,6 @@ class AuditTrail extends Entity implements JsonSerializable
         return ($this->changed ?? []);
 
     }//end getChanged()
-
 
     /**
      * Get JSON fields from the entity
@@ -321,7 +318,6 @@ class AuditTrail extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -353,7 +349,6 @@ class AuditTrail extends Entity implements JsonSerializable
         return $this;
 
     }//end hydrate()
-
 
     /**
      * Convert entity to JSON serializable array
@@ -434,7 +429,6 @@ class AuditTrail extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the audit trail
      *
@@ -464,6 +458,4 @@ class AuditTrail extends Entity implements JsonSerializable
         return 'Audit Trail';
 
     }//end __toString()
-
-
 }//end class

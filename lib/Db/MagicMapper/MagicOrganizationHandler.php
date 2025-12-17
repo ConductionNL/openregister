@@ -57,8 +57,6 @@ use Psr\Log\LoggerInterface;
  */
 class MagicOrganizationHandler
 {
-
-
     /**
      * Constructor for MagicOrganizationHandler.
      *
@@ -90,7 +88,6 @@ class MagicOrganizationHandler
 
     }//end __construct()
 
-
     /**
      * Check if published objects should bypass multi-tenancy restrictions
      *
@@ -108,7 +105,6 @@ class MagicOrganizationHandler
         return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
-
 
     /**
      * Apply organization access rules for unauthenticated users
@@ -134,7 +130,6 @@ class MagicOrganizationHandler
         );
 
     }//end applyUnauthenticatedOrganizationAccess()
-
 
     /**
      * Get the system default organization UUID
@@ -163,7 +158,6 @@ class MagicOrganizationHandler
 
     }//end getSystemDefaultOrganizationUuid()
 
-
     /**
      * Check if multi-tenancy is enabled in app configuration
      *
@@ -180,7 +174,6 @@ class MagicOrganizationHandler
         return $multitenancyData['enabled'] ?? false;
 
     }//end isMultiTenancyEnabled()
-
 
     /**
      * Check if admin override is enabled in app configuration
@@ -199,6 +192,4 @@ class MagicOrganizationHandler
         return $rbacData['adminOverride'] ?? true;
 
     }//end isAdminOverrideEnabled()
-
-
 }//end class

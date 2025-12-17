@@ -55,7 +55,6 @@ class DocumentProcessingHandler
      */
     private ?FileService $fileService = null;
 
-
     /**
      * Constructor for DocumentProcessingHandler.
      *
@@ -71,7 +70,6 @@ class DocumentProcessingHandler
 
     }//end __construct()
 
-
     /**
      * Set the FileService instance for cross-handler coordination.
      *
@@ -85,7 +83,6 @@ class DocumentProcessingHandler
 
     }//end setFileService()
 
-
     /**
      * Replace words in a document.
      *
@@ -98,16 +95,17 @@ class DocumentProcessingHandler
      * @param array       $replacements Array of replacement mappings (search => replace).
      * @param string|null $outputName   Optional name for the output file.
      *
-     * @return Node The new file node with replaced content.
-     *
      * @throws Exception If node is not a file or replacement fails.
      *
-     * @phpstan-param  array<string, string> $replacements
-     * @psalm-param    array<string, string> $replacements
+     * @phpstan-param array<string, string> $replacements
+     *
+     * @psalm-param array<string, string> $replacements
+     *
      * @phpstan-return Node
-     * @psalm-return   Node
+     *
+     * @psalm-return Node
      */
-    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): Node
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null): File
     {
         if ($node->getType() !== \OCP\Files\FileInfo::TYPE_FILE) {
             throw new Exception('Node must be a file');
@@ -133,7 +131,6 @@ class DocumentProcessingHandler
         return $this->replaceWordsInTextDocument($node, $replacements, $outputName);
 
     }//end replaceWords()
-
 
     /**
      * Anonymize a document by replacing entity values.
@@ -181,7 +178,6 @@ class DocumentProcessingHandler
         return $this->replaceWords($node, $replacements, $anonymizedFileName);
 
     }//end anonymizeDocument()
-
 
     /**
      * Replace words in a Word document.
@@ -331,7 +327,6 @@ class DocumentProcessingHandler
 
     }//end replaceWordsInWordDocument()
 
-
     /**
      * Replace words in a text-based document.
      *
@@ -393,7 +388,6 @@ class DocumentProcessingHandler
 
     }//end replaceWordsInTextDocument()
 
-
     /**
      * Get the current user.
      *
@@ -411,6 +405,4 @@ class DocumentProcessingHandler
         return $user;
 
     }//end getUser()
-
-
 }//end class

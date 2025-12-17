@@ -85,7 +85,6 @@ class AgentMapper extends QBMapper
      */
     private IEventDispatcher $eventDispatcher;
 
-
     /**
      * Constructor
      *
@@ -111,7 +110,6 @@ class AgentMapper extends QBMapper
         $this->eventDispatcher    = $eventDispatcher;
 
     }//end __construct()
-
 
     /**
      * Find an agent by its ID
@@ -142,7 +140,6 @@ class AgentMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find an agent by its UUID
      *
@@ -171,7 +168,6 @@ class AgentMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end findByUuid()
-
 
     /**
      * Find agents accessible by a user in an organisation
@@ -218,7 +214,6 @@ class AgentMapper extends QBMapper
 
     }//end findByOrganisation()
 
-
     /**
      * Filter agents by user access rights
      *
@@ -242,7 +237,6 @@ class AgentMapper extends QBMapper
         return $accessible;
 
     }//end filterByUserAccess()
-
 
     /**
      * Check if user can access an agent
@@ -277,7 +271,6 @@ class AgentMapper extends QBMapper
 
     }//end canUserAccessAgent()
 
-
     /**
      * Check if user can modify an agent
      *
@@ -295,7 +288,6 @@ class AgentMapper extends QBMapper
 
     }//end canUserModifyAgent()
 
-
     /**
      * Find all agents with optional filters
      *
@@ -304,11 +296,11 @@ class AgentMapper extends QBMapper
      * @param array|null $filters Filter criteria
      * @param array|null $order   Order by criteria
      *
-     * @return Agent[] Array of agent entities
+     * @return Agent[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Agent>
+     * @psalm-return list<OCA\OpenRegister\Db\Agent>
      */
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {
@@ -360,7 +352,6 @@ class AgentMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Insert a new agent
      *
@@ -408,7 +399,6 @@ class AgentMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing agent
      *
@@ -439,7 +429,6 @@ class AgentMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete an agent
      *
@@ -467,7 +456,6 @@ class AgentMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Create an agent from an array
      *
@@ -483,7 +471,6 @@ class AgentMapper extends QBMapper
         return $this->insert($agent);
 
     }//end createFromArray()
-
 
     /**
      * Count agents with optional filters
@@ -524,6 +511,4 @@ class AgentMapper extends QBMapper
         return (int) $qb->executeQuery()->fetchOne();
 
     }//end count()
-
-
 }//end class

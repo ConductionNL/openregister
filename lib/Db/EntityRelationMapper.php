@@ -38,8 +38,6 @@ use OCP\IDBConnection;
  */
 class EntityRelationMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -50,6 +48,4 @@ class EntityRelationMapper extends QBMapper
         parent::__construct($db, 'openregister_entity_relations', EntityRelation::class);
 
     }//end __construct()
-
-
 }//end class

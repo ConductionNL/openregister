@@ -64,7 +64,7 @@ class AuditTrailMapper extends QBMapper
     {
         parent::__construct($db, 'openregister_audit_trails', AuditTrail::class);
         $this->objectEntityMapper = $objectEntityMapper;
-    }
+    }//end __construct()
 
     /**
      * The object entity mapper instance
@@ -106,9 +106,9 @@ class AuditTrailMapper extends QBMapper
      * @param array|null  $sort    The sort to apply
      * @param string|null $search  Optional search term to filter by ext fields
      *
-     * @return AuditTrail[] The audit trails
+     * @return AuditTrail[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -159,11 +159,11 @@ class AuditTrailMapper extends QBMapper
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($field));
-            } elseif ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
             } else {
                 // Handle comma-separated values (e.g., action=create,update).
-                // Cast to string to handle integer filter values
+                // Cast to string to handle integer filter values.
                 $valueStr = (string) $value;
                 if (strpos($valueStr, ',') !== false) {
                     $values = array_map('trim', explode(',', $valueStr));
@@ -247,22 +247,22 @@ class AuditTrailMapper extends QBMapper
         if ($new === null && $action === 'update') {
             $action       = 'delete';
             $objectEntity = $old;
-        } elseif ($old === null && $action === 'update') {
+        } else if ($old === null && $action === 'update') {
             $action       = 'create';
             $objectEntity = $new;
-        } elseif ($action === 'delete') {
+        } else if ($action === 'delete') {
             $objectEntity = $old;
         } else {
             $objectEntity = $new;
         }
 
         // Initialize an array to store changed fields.
-        $changed=[];
+        $changed = [];
         if ($action !== 'delete' && $action !== 'read') {
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             } else {
-                $oldArray=[];
+                $oldArray = [];
             }
 
             $newArray = $new->jsonSerialize();
@@ -365,7 +365,7 @@ class AuditTrailMapper extends QBMapper
                                     )
                             )
                     );
-        } elseif (is_string($until) === true) {
+        } else if (is_string($until) === true) {
             if ($this->isSemanticVersion($until) === true) {
                 // Handle semantic version.
                 $qb->andWhere(
@@ -476,8 +476,9 @@ class AuditTrailMapper extends QBMapper
                 // Use reflection to set the value if it's a protected property.
                 $reflection = new ReflectionClass($object);
                 $property   = $reflection->getProperty($field);
-                /**
-                 * Suppress unused method call warning for reflection
+
+                /*
+                 * Suppress unused method call warning for reflection.
                  *
                  * @psalm-suppress UnusedMethodCall
                  */
@@ -496,7 +497,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $schemaId   The schema ID (null for all schemas)
      * @param array    $exclude    Array of register/schema combinations to exclude, format: [['register' => id, 'schema' => id], ...]
      *
-     * @return int[] Array containing total count and size of audit trails: - total: Total number of audit trails - size: Total size of all audit trails in bytes
+     * @return int[] Array containing total count and size of audit trails:
+     *               - total: Total number of audit trails
+     *               - size: Total size of all audit trails in bytes
      *
      * @psalm-return array{total: int, size: int}
      */
@@ -607,9 +610,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null      $registerId Optional register ID to filter by
      * @param int|null      $schemaId   Optional schema ID to filter by
      *
-     * @return ((int[]|string)[]|(int|string))[][] Array containing chart data: - labels: Array of dates - series: Array of series data, each containing: - name: Action name (create, update, delete) - data: Array of counts for each date
+     * @return ((int[]|string)[]|(int|string))[][]
      *
-     * @psalm-return array{labels: list<array-key>, series: list{0?: array{name: string, data: list<int>},...}}
+     * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
      */
     public function getActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
     {
@@ -648,7 +651,7 @@ class AuditTrailMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             // Process results into chart format.
-            $dateData=[];
+            $dateData = [];
             $actions  = ['create', 'update', 'delete','read'];
 
             // Initialize data structure.
@@ -665,7 +668,7 @@ class AuditTrailMapper extends QBMapper
             ksort($dateData);
 
             // Prepare series data.
-            $series=[];
+            $series = [];
             foreach ($actions as $action) {
                 $series[] = [
                     'name' => ucfirst($action),
@@ -701,9 +704,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
      *
-     * @return (int|mixed)[] Array containing detailed statistics: - total: Total number of audit trails - creates: Number of create actions in timeframe - updates: Number of update actions in timeframe - deletes: Number of delete actions in timeframe - reads: Number of read actions in timeframe
+     * @return int[]
      *
-     * @psalm-return array{total: 0|mixed, creates: int, updates: int, deletes: int, reads: int}
+     * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
      */
     public function getDetailedStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -798,9 +801,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return (int|mixed)[][][] Array containing action distribution data: - actions: Array of action data with name, count, and percentage
+     * @return (int|mixed)[][][]
      *
-     * @psalm-return array{actions: list{0?: array{name: mixed, count: int},...}}
+     * @psalm-return array{actions: list<array{count: int, name: mixed}>}
      */
     public function getActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -836,7 +839,7 @@ class AuditTrailMapper extends QBMapper
 
             // Calculate total for percentages.
             $total      = 0;
-            $actionData=[];
+            $actionData = [];
 
             foreach ($results as $row) {
                 $count        = (int) $row['count'];
@@ -876,9 +879,9 @@ class AuditTrailMapper extends QBMapper
      * @param int|null $limit      Optional limit for number of results (default: 10)
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return (int|mixed|string)[][][] Array containing most active objects: - objects: Array of object data with name, id, and count
+     * @return (int|mixed|string)[][][]
      *
-     * @psalm-return array{objects: list{0?: array{id: mixed, name: string, count: int},...}}
+     * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
@@ -919,7 +922,7 @@ class AuditTrailMapper extends QBMapper
             $results = $qb->executeQuery()->fetchAll();
 
             // Format results.
-            $objects=[];
+            $objects = [];
             foreach ($results as $row) {
                 $objects[] = [
                     'id'    => $row['object'],

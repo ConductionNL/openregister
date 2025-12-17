@@ -36,8 +36,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
  */
 class UtilityHandler
 {
-
-
     /**
      * Constructor for UtilityHandler.
      *
@@ -50,7 +48,6 @@ class UtilityHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Check if a value is a valid UUID string.
@@ -73,7 +70,6 @@ class UtilityHandler
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
 
     }//end isUuid()
-
 
     /**
      * Normalize a value to an array.
@@ -98,7 +94,6 @@ class UtilityHandler
 
     }//end normalizeToArray()
 
-
     /**
      * Get the appropriate URL separator for pagination.
      *
@@ -121,7 +116,6 @@ class UtilityHandler
         return '&';
 
     }//end getUrlSeparator()
-
 
     /**
      * Normalize entity identifier to entity object.
@@ -151,7 +145,6 @@ class UtilityHandler
 
     }//end normalizeEntity()
 
-
     /**
      * Calculate efficiency metric for bulk operations.
      *
@@ -160,10 +153,10 @@ class UtilityHandler
      * @param array $lookupMap The lookup map of loaded objects.
      * @param float $totalTime Total execution time in milliseconds.
      *
-     * @return string Efficiency metric string (e.g., '5.2ms/object').
+     * @psalm-param array<string, mixed> $lookupMap
      *
-     * @psalm-param    array<string, mixed> $lookupMap
-     * @phpstan-param  array<string, mixed> $lookupMap
+     * @phpstan-param array<string, mixed> $lookupMap
+     *
      * @psalm-return   string
      * @phpstan-return string
      */
@@ -177,7 +170,6 @@ class UtilityHandler
         return 'no_objects';
 
     }//end calculateEfficiency()
-
 
     /**
      * Clean query parameters by removing internal/system parameters.
@@ -245,6 +237,4 @@ class UtilityHandler
         return $newParameters;
 
     }//end cleanQuery()
-
-
 }//end class

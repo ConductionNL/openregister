@@ -38,8 +38,6 @@ use OCA\OpenRegister\Exception\LockedException;
  */
 class RevertController extends Controller
 {
-
-
     /**
      * Constructor for RevertController
      *
@@ -56,7 +54,6 @@ class RevertController extends Controller
 
     }//end __construct()
 
-
     /**
      * Revert an object to a previous state
      *
@@ -69,13 +66,11 @@ class RevertController extends Controller
      * @param string $schema   The schema identifier
      * @param string $id       The object ID
      *
-     * @return JSONResponse A JSON response containing the reverted object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|404|423|500, array<array-key, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: mixed|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
      */
     public function revert(string $register, string $schema, string $id): JSONResponse
     {
@@ -123,6 +118,4 @@ class RevertController extends Controller
         }//end try
 
     }//end revert()
-
-
 }//end class

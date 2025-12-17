@@ -103,7 +103,6 @@ class MetricsService
      */
     public const METRIC_CHAT_MESSAGE = 'chat_message';
 
-
     /**
      * Constructor
      *
@@ -118,7 +117,6 @@ class MetricsService
         $this->logger = $logger;
 
     }//end __construct()
-
 
     /**
      * Record a metric
@@ -191,7 +189,6 @@ class MetricsService
 
     }//end recordMetric()
 
-
     /**
      * Get files processed per day for last N days
      *
@@ -227,7 +224,6 @@ class MetricsService
         return $data;
 
     }//end getFilesProcessedPerDay()
-
 
     /**
      * Get embedding generation success rate
@@ -297,7 +293,6 @@ class MetricsService
 
     }//end getEmbeddingStats()
 
-
     /**
      * Get search latency statistics
      *
@@ -362,7 +357,6 @@ class MetricsService
         return $stats;
 
     }//end getSearchLatencyStats()
-
 
     /**
      * Get vector database storage growth
@@ -438,13 +432,12 @@ class MetricsService
 
     }//end getStorageGrowth()
 
-
     /**
      * Get comprehensive metrics dashboard data
      *
-     * @return ((float|int)[]|float|int|mixed)[][] All metrics for dashboard
+     * @return ((float|int)[]|float|int)[][]
      *
-     * @psalm-return array{files_processed: array, embedding_stats: array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}, search_latency: array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>, storage_growth: array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}}
+     * @psalm-return array{files_processed: array<int>, embedding_stats: array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}, search_latency: array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>, storage_growth: array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}}
      */
     public function getDashboardMetrics(): array
     {
@@ -456,7 +449,6 @@ class MetricsService
         ];
 
     }//end getDashboardMetrics()
-
 
     /**
      * Clean old metrics (retention policy)
@@ -496,7 +488,6 @@ class MetricsService
 
     }//end cleanOldMetrics()
 
-
     /**
      * Encode metadata array to JSON string.
      *
@@ -528,7 +519,6 @@ class MetricsService
 
     }//end encodeMetadata()
 
-
     /**
      * Calculate success rate percentage
      *
@@ -552,7 +542,6 @@ class MetricsService
         return round(($successful / $total) * 100, 2);
 
     }//end calculateSuccessRate()
-
 
     /**
      * Round average milliseconds value
@@ -579,7 +568,6 @@ class MetricsService
         return 0.0;
 
     }//end roundAverageMs()
-
 
     /**
      * Calculate average vectors per day from growth data
@@ -632,6 +620,4 @@ class MetricsService
         return round($totalVectors / $days, 2);
 
     }//end calculateAverageVectorsPerDay()
-
-
 }//end class

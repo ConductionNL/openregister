@@ -37,8 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class RelationshipOptimizationHandler
 {
-
-
     /**
      * Constructor for RelationshipOptimizationHandler.
      *
@@ -52,7 +50,6 @@ class RelationshipOptimizationHandler
 
     }//end __construct()
 
-
     /**
      * Extract all relationship IDs with aggressive limits to prevent timeouts.
      *
@@ -62,6 +59,8 @@ class RelationshipOptimizationHandler
      * @param array $extend  Array of properties to extend.
      *
      * @return array Array of unique relationship IDs.
+     *
+     * @psalm-return array<never, never>
      */
     public function extractAllRelationshipIds(array $objects, array $extend): array
     {
@@ -69,7 +68,6 @@ class RelationshipOptimizationHandler
         return [];
 
     }//end extractAllRelationshipIds()
-
 
     /**
      * Bulk load relationships in batches.
@@ -79,6 +77,8 @@ class RelationshipOptimizationHandler
      * @param array $relationshipIds Array of relationship IDs to load.
      *
      * @return array Array mapping UUIDs to ObjectEntity objects.
+     *
+     * @psalm-return array<never, never>
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
@@ -86,7 +86,6 @@ class RelationshipOptimizationHandler
         return [];
 
     }//end bulkLoadRelationshipsBatched()
-
 
     /**
      * Bulk load relationships in parallel.
@@ -96,6 +95,8 @@ class RelationshipOptimizationHandler
      * @param array $relationshipIds Array of relationship IDs to load.
      *
      * @return array Array mapping UUIDs to ObjectEntity objects.
+     *
+     * @psalm-return array<never, never>
      */
     public function bulkLoadRelationshipsParallel(array $relationshipIds): array
     {
@@ -103,7 +104,6 @@ class RelationshipOptimizationHandler
         return [];
 
     }//end bulkLoadRelationshipsParallel()
-
 
     /**
      * Load relationship chunk with optimizations.
@@ -113,6 +113,8 @@ class RelationshipOptimizationHandler
      * @param array $relationshipIds Array of relationship IDs to load.
      *
      * @return array Array mapping UUIDs to ObjectEntity objects.
+     *
+     * @psalm-return array<never, never>
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
@@ -121,7 +123,6 @@ class RelationshipOptimizationHandler
 
     }//end loadRelationshipChunkOptimized()
 
-
     /**
      * Create lightweight object entity from database row.
      *
@@ -129,14 +130,12 @@ class RelationshipOptimizationHandler
      *
      * @param array $row Database row data.
      *
-     * @return ObjectEntity|null Created object entity or null.
+     * @return null Created object entity or null.
      */
-    public function createLightweightObjectEntity(array $row): ?ObjectEntity
+    public function createLightweightObjectEntity(array $row)
     {
         // Placeholder - will be filled with actual implementation.
         return null;
 
     }//end createLightweightObjectEntity()
-
-
 }//end class

@@ -39,8 +39,6 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class VectorSearchHandler
 {
-
-
     /**
      * Constructor
      *
@@ -57,7 +55,6 @@ class VectorSearchHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Perform semantic similarity search
@@ -184,7 +181,6 @@ class VectorSearchHandler
 
     }//end semanticSearch()
 
-
     /**
      * Search vectors in Solr using dense vector KNN
      *
@@ -218,7 +214,11 @@ class VectorSearchHandler
                 throw new Exception('Solr service is not available');
             }
 
-            $settings    = $this->settingsService->getSettings();
+            $settings = $this->settingsService->getSettings();
+            // Get vector field from LLM configuration, default to '_embedding_'.
+            /*
+             * @psalm-suppress InvalidArrayOffset
+             */
             $vectorField = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $allResults  = [];
 
@@ -306,7 +306,6 @@ class VectorSearchHandler
 
     }//end searchVectorsInSolr()
 
-
     /**
      * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
      *
@@ -322,7 +321,7 @@ class VectorSearchHandler
      *
      * @throws \Exception If hybrid search fails
      *
-     * @psalm-return array{results: list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: float|int|null, solr_score: mixed|null, vector_rank: float|int|null, vector_similarity: mixed|null}>, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
+     * @psalm-return array{results: list<array{chunk_index: 0|mixed, chunk_text: mixed|null, combined_score: 0|float, entity_id: mixed, entity_type: mixed, in_solr: bool, in_vector: bool, metadata: array<never, never>|mixed, solr_rank: int|null, solr_score: mixed|null, vector_rank: int|null, vector_similarity: mixed|null}>, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}
      */
     public function hybridSearch(
         array $queryEmbedding,
@@ -418,7 +417,6 @@ class VectorSearchHandler
 
     }//end hybridSearch()
 
-
     /**
      * Combine search results using Reciprocal Rank Fusion (RRF)
      *
@@ -503,7 +501,6 @@ class VectorSearchHandler
 
     }//end reciprocalRankFusion()
 
-
     /**
      * Fetch vectors from database with optional filters
      *
@@ -572,7 +569,6 @@ class VectorSearchHandler
 
     }//end fetchVectors()
 
-
     /**
      * Calculate cosine similarity between two vectors
      *
@@ -609,7 +605,6 @@ class VectorSearchHandler
 
     }//end cosineSimilarity()
 
-
     /**
      * Extract entity ID from Solr document based on entity type
      *
@@ -627,7 +622,6 @@ class VectorSearchHandler
         return $doc['self_uuid'] ?? $doc['self_object_id'] ?? $doc['id'] ?? '';
 
     }//end extractEntityId()
-
 
     /**
      * Get collections to search based on filters
@@ -671,7 +665,6 @@ class VectorSearchHandler
 
     }//end getCollectionsToSearch()
 
-
     /**
      * Get Solr collection for entity type
      *
@@ -691,6 +684,4 @@ class VectorSearchHandler
         return $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
 
     }//end getSolrCollectionForEntityType()
-
-
 }//end class

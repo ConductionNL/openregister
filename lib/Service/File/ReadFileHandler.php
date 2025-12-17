@@ -54,7 +54,6 @@ class ReadFileHandler
      */
     private ?FileService $fileService = null;
 
-
     /**
      * Constructor for ReadFileHandler.
      *
@@ -76,7 +75,6 @@ class ReadFileHandler
 
     }//end __construct()
 
-
     /**
      * Set the FileService instance for cross-handler coordination.
      *
@@ -89,7 +87,6 @@ class ReadFileHandler
         $this->fileService = $fileService;
 
     }//end setFileService()
-
 
     /**
      * Get a file by file identifier (ID or name/path) or by object and file name/path.
@@ -182,7 +179,6 @@ class ReadFileHandler
 
     }//end getFile()
 
-
     /**
      * Get a file by its Nextcloud file ID without needing object context.
      *
@@ -227,7 +223,6 @@ class ReadFileHandler
 
     }//end getFileById()
 
-
     /**
      * Get all files for an object.
      *
@@ -252,6 +247,4 @@ class ReadFileHandler
         return $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
 
     }//end getFiles()
-
-
 }//end class

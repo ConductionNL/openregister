@@ -35,7 +35,6 @@ class ApplicationDeletedEvent extends Event
      */
     private Application $application;
 
-
     /**
      * Constructor for ApplicationDeletedEvent.
      *
@@ -50,7 +49,6 @@ class ApplicationDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted application.
      *
@@ -61,6 +59,4 @@ class ApplicationDeletedEvent extends Event
         return $this->application;
 
     }//end getApplication()
-
-
 }//end class

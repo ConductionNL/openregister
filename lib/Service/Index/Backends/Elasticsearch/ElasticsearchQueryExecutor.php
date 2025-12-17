@@ -28,12 +28,26 @@ use Psr\Log\LoggerInterface;
 class ElasticsearchQueryExecutor
 {
 
+    /**
+     * Elasticsearch HTTP client for making requests
+     *
+     * @var ElasticsearchHttpClient
+     */
     private readonly ElasticsearchHttpClient $httpClient;
 
+    /**
+     * Elasticsearch index manager for index operations
+     *
+     * @var ElasticsearchIndexManager
+     */
     private readonly ElasticsearchIndexManager $indexManager;
 
+    /**
+     * PSR-3 logger instance
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
-
 
     /**
      * Constructor
@@ -52,7 +66,6 @@ class ElasticsearchQueryExecutor
         $this->logger       = $logger;
 
     }//end __construct()
-
 
     /**
      * Execute a search query.
@@ -99,13 +112,14 @@ class ElasticsearchQueryExecutor
 
     }//end search()
 
-
     /**
      * Build Elasticsearch query from simple query parameters.
      *
      * @param array $params Query parameters
      *
-     * @return array Elasticsearch query DSL
+     * @return (((mixed|string[])[]|stdClass)[]|int)[] Elasticsearch query DSL
+     *
+     * @psalm-return array{query: array{match_all?: stdClass, multi_match?: array{query: mixed, fields: list{'*'}, type: 'best_fields'}}, from: int, size: int}
      */
     private function buildElasticsearchQuery(array $params): array
     {
@@ -143,7 +157,6 @@ class ElasticsearchQueryExecutor
 
     }//end buildElasticsearchQuery()
 
-
     /**
      * Get document count.
      *
@@ -169,6 +182,4 @@ class ElasticsearchQueryExecutor
         }
 
     }//end getDocumentCount()
-
-
 }//end class

@@ -55,7 +55,6 @@ class SearchController extends Controller
      */
     private readonly IndexService $indexService;
 
-
     /**
      * Constructor for the SearchController
      *
@@ -80,7 +79,6 @@ class SearchController extends Controller
         $this->indexService = $indexService;
 
     }//end __construct()
-
 
     /**
      * Handles search requests and forwards them to the SOLR search service
@@ -124,6 +122,11 @@ class SearchController extends Controller
         // Step 5: Format search results for JSON response.
         // Extract relevant fields from each object and standardize format.
         $formattedResults = array_map(
+            /*
+             * @return (mixed|null|string)[]
+             *
+             * @psalm-return array{id: mixed|null, name: 'Unknown'|mixed, type: 'object', url: mixed|null, source: 'openregister'}
+             */
             function (array $object): array {
                 return [
                     'id'     => $object['uuid'] ?? $object['id'] ?? null,
@@ -146,7 +149,6 @@ class SearchController extends Controller
         );
 
     }//end search()
-
 
     /**
      * Process search query to support multiple search words and case-insensitive partial matches
@@ -208,6 +210,4 @@ class SearchController extends Controller
         return implode(' OR ', $processedTerms);
 
     }//end processSearchQuery()
-
-
 }//end class

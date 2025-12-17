@@ -34,8 +34,6 @@ use OCP\IRequest;
  */
 class SourcesController extends Controller
 {
-
-
     /**
      * Constructor for the SourcesController
      *
@@ -55,7 +53,6 @@ class SourcesController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Retrieves a list of all sources
@@ -102,7 +99,6 @@ class SourcesController extends Controller
 
     }//end index()
 
-
     /**
      * Retrieves a single source by its ID
      *
@@ -129,7 +125,6 @@ class SourcesController extends Controller
         }
 
     }//end show()
-
 
     /**
      * Creates a new source
@@ -165,7 +160,6 @@ class SourcesController extends Controller
         return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
 
     }//end create()
-
 
     /**
      * Updates an existing source
@@ -206,7 +200,6 @@ class SourcesController extends Controller
 
     }//end update()
 
-
     /**
      * Patch (partially update) a source
      *
@@ -225,7 +218,6 @@ class SourcesController extends Controller
         return $this->update($id);
 
     }//end patch()
-
 
     /**
      * Deletes a source
@@ -254,7 +246,6 @@ class SourcesController extends Controller
 
     }//end destroy()
 
-
     /**
      * Get integer parameter from params array or return null
      *
@@ -272,6 +263,4 @@ class SourcesController extends Controller
         return null;
 
     }//end getIntParam()
-
-
 }//end class

@@ -41,8 +41,6 @@ use Throwable;
  */
 class LockedException extends Exception
 {
-
-
     /**
      * Constructor for LockedException
      *
@@ -67,6 +65,4 @@ class LockedException extends Exception
         parent::__construct($message, $code, $previous);
 
     }//end __construct()
-
-
 }//end class

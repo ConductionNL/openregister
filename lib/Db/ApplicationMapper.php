@@ -104,7 +104,6 @@ class ApplicationMapper extends QBMapper
      */
     private readonly IEventDispatcher $eventDispatcher;
 
-
     /**
      * Constructor
      *
@@ -138,7 +137,6 @@ class ApplicationMapper extends QBMapper
         $this->eventDispatcher    = $eventDispatcher;
 
     }//end __construct()
-
 
     /**
      * Find an application by its ID
@@ -181,7 +179,6 @@ class ApplicationMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find an application by its UUID
      *
@@ -222,7 +219,6 @@ class ApplicationMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end findByUuid()
-
 
     /**
      * Find applications by organisation
@@ -265,7 +261,6 @@ class ApplicationMapper extends QBMapper
 
     }//end findByOrganisation()
 
-
     /**
      * Find all applications
      *
@@ -283,7 +278,7 @@ class ApplicationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Application>
+     * @psalm-return list<OCA\OpenRegister\Db\Application>
      */
     public function findAll(
         ?int $limit=null,
@@ -332,7 +327,6 @@ class ApplicationMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Insert a new application
      *
@@ -378,7 +372,6 @@ class ApplicationMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing application
      *
@@ -422,7 +415,6 @@ class ApplicationMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete an application
      *
@@ -457,7 +449,6 @@ class ApplicationMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Create an application from an array
      *
@@ -482,7 +473,6 @@ class ApplicationMapper extends QBMapper
         return $this->insert($application);
 
     }//end createFromArray()
-
 
     /**
      * Update an application from an array
@@ -511,7 +501,6 @@ class ApplicationMapper extends QBMapper
         return $this->update($application);
 
     }//end updateFromArray()
-
 
     /**
      * Count applications by organisation
@@ -554,7 +543,6 @@ class ApplicationMapper extends QBMapper
 
     }//end countByOrganisation()
 
-
     /**
      * Count total applications
      *
@@ -591,6 +579,4 @@ class ApplicationMapper extends QBMapper
         return (int) $count;
 
     }//end countAll()
-
-
 }//end class

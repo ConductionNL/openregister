@@ -42,8 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class DeleteFileHandler
 {
-
-
     /**
      * Constructor for DeleteFileHandler.
      *
@@ -62,7 +60,6 @@ class DeleteFileHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Delete a file by node, path, or ID.
@@ -111,14 +108,15 @@ class DeleteFileHandler
 
     }//end deleteFile()
 
-
     /**
      * Delete multiple files.
      *
      * @param array             $files  Array of file nodes, paths, or IDs.
      * @param ObjectEntity|null $object Object entity (optional).
      *
-     * @return array Array of deletion results.
+     * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
+     *
+     * @psalm-return list<array{error?: string, file: OCP\Files\Node|int|mixed|string, success: bool}>
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {
@@ -134,6 +132,4 @@ class DeleteFileHandler
         return $results;
 
     }//end deleteFiles()
-
-
 }//end class

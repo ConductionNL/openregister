@@ -60,7 +60,6 @@ class ViewsController extends Controller
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor for ViewsController
      *
@@ -84,20 +83,17 @@ class ViewsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get all views for the current user
      *
      * This method retrieves all saved views that belong to the current user,
      * as well as any public views shared by other users.
      *
-     * @return JSONResponse A JSON response containing the list of views
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to fetch views'|'User not authenticated', message?: string, results?: array<array>, total?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to fetch views'|'User not authenticated', message?: string, results?: array<array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}>, total?: int<0, max>}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -176,7 +172,6 @@ class ViewsController extends Controller
 
     }//end index()
 
-
     /**
      * Get a specific view by ID
      *
@@ -184,11 +179,9 @@ class ViewsController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing view details
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
     public function show(string $id): JSONResponse
     {
@@ -241,13 +234,10 @@ class ViewsController extends Controller
 
     }//end show()
 
-
     /**
      * Create a new view
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing created view
      *
      * @NoCSRFRequired
      *
@@ -340,7 +330,6 @@ class ViewsController extends Controller
 
     }//end create()
 
-
     /**
      * Update an existing view
      *
@@ -348,11 +337,9 @@ class ViewsController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing updated view
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
     public function update(string $id): JSONResponse
     {
@@ -449,7 +436,6 @@ class ViewsController extends Controller
 
     }//end update()
 
-
     /**
      * Patch view details (partial update)
      *
@@ -460,11 +446,9 @@ class ViewsController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing patched view
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
     public function patch(string $id): JSONResponse
     {
@@ -563,15 +547,12 @@ class ViewsController extends Controller
 
     }//end patch()
 
-
     /**
      * Delete a view
      *
      * @param string $id The view ID
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing deletion result
      *
      * @NoCSRFRequired
      *
@@ -639,6 +620,4 @@ class ViewsController extends Controller
         }//end try
 
     }//end destroy()
-
-
 }//end class

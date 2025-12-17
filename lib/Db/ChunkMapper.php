@@ -38,8 +38,6 @@ use OCP\IDBConnection;
  */
 class ChunkMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -50,7 +48,6 @@ class ChunkMapper extends QBMapper
         parent::__construct($db, 'openregister_chunks', Chunk::class);
 
     }//end __construct()
-
 
     /**
      * Public wrapper for findEntities (parent protected method).
@@ -64,7 +61,6 @@ class ChunkMapper extends QBMapper
         return parent::findEntities($query);
 
     }//end findEntitiesPublic()
-
 
     /**
      * Find chunks by source reference.
@@ -97,7 +93,6 @@ class ChunkMapper extends QBMapper
 
     }//end findBySource()
 
-
     /**
      * Delete chunks by source reference.
      *
@@ -122,7 +117,6 @@ class ChunkMapper extends QBMapper
             ->executeStatement();
 
     }//end deleteBySource()
-
 
     /**
      * Get the latest updated timestamp for a source's chunks.
@@ -165,7 +159,6 @@ class ChunkMapper extends QBMapper
 
     }//end getLatestUpdatedTimestamp()
 
-
     /**
      * Count all chunks in the database.
      *
@@ -184,7 +177,6 @@ class ChunkMapper extends QBMapper
         return $count;
 
     }//end countAll()
-
 
     /**
      * Count indexed chunks.
@@ -208,7 +200,6 @@ class ChunkMapper extends QBMapper
 
     }//end countIndexed()
 
-
     /**
      * Count unindexed chunks.
      *
@@ -231,7 +222,6 @@ class ChunkMapper extends QBMapper
 
     }//end countUnindexed()
 
-
     /**
      * Count vectorized chunks.
      *
@@ -253,7 +243,6 @@ class ChunkMapper extends QBMapper
         return $count;
 
     }//end countVectorized()
-
 
     /**
      * Find unindexed chunks.
@@ -286,6 +275,4 @@ class ChunkMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findUnindexed()
-
-
 }//end class

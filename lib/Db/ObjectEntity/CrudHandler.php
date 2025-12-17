@@ -40,7 +40,6 @@ class CrudHandler
 
     private LoggerInterface $logger;
 
-
     public function __construct(
         ObjectEntityMapper $mapper,
         IDBConnection $db,
@@ -54,13 +53,12 @@ class CrudHandler
 
     }//end __construct()
 
-
     /**
      * Insert a new object entity
      *
-     * @return Entity The inserted entity
+     * @return ObjectEntity The inserted entity
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): ObjectEntity
     {
         // Clean @self and id from object.
         $object = $entity->getObject();
@@ -80,13 +78,12 @@ class CrudHandler
 
     }//end insert()
 
-
     /**
      * Update an existing object entity
      *
-     * @return Entity The updated entity
+     * @return ObjectEntity The updated entity
      */
-    public function update(Entity $entity, bool $includeDeleted=false): Entity
+    public function update(Entity $entity, bool $includeDeleted=false): ObjectEntity
     {
         // Find old object for event.
         $qb = $this->db->getQueryBuilder();
@@ -117,7 +114,6 @@ class CrudHandler
 
     }//end update()
 
-
     /**
      * Delete an object entity
      *
@@ -136,6 +132,4 @@ class CrudHandler
         return $result;
 
     }//end delete()
-
-
 }//end class

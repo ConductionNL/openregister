@@ -83,7 +83,6 @@ class WebhookEventListener implements IEventListener
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -98,7 +97,6 @@ class WebhookEventListener implements IEventListener
         $this->logger         = $logger;
 
     }//end __construct()
-
 
     /**
      * Handle event
@@ -134,15 +132,14 @@ class WebhookEventListener implements IEventListener
 
     }//end handle()
 
-
     /**
      * Extract payload from event
      *
      * @param Event $event The event
      *
-     * @return (\DateTime|array|mixed|null|string)[]|null Payload data or null if not supported
+     * @return (((int|mixed|null|string[])[]|mixed|null|scalar)[]|\DateTime|mixed|null|string)[]|null
      *
-     * @psalm-return array{objectType: string, action: string, object?: array, register?: array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}|null|string, schema?: array<string, mixed>|null|string, newObject?: array, oldObject?: array, revertPoint?: \DateTime|null|string, application?: array{id: int, uuid: null|string, name: null|string, description: null|string, version: null|string, organisation: null|string, configurations: array|null, registers: array|null, schemas: array|null, owner: null|string, active: bool|null, groups: array|null, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string, managedByConfiguration: array|null}, agent?: mixed, source?: mixed, configuration?: mixed, view?: mixed, conversation?: array{id: int, uuid: null|string, title: null|string, userId: null|string, organisation: null|string, agentId: int|null, metadata: array|null, deletedAt: null|string, created: null|string, updated: null|string}, organisation?: mixed}|null
+     * @psalm-return array{objectType: string, action: string, object?: array{'@self': array{name: mixed|null|string,...},...}, register?: array{id: int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: array<int|string>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string}|null|string, schema?: array{id: int, uuid: null|string, uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, organisation: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}|null|string, newObject?: array{'@self': array{name: mixed|null|string,...},...}, oldObject?: array{'@self': array{name: mixed|null|string,...},...}, revertPoint?: \DateTime|null|string, application?: array{id: int, uuid: null|string, name: null|string, description: null|string, version: null|string, organisation: null|string, configurations: array|null, registers: array|null, schemas: array|null, owner: null|string, active: bool|null, groups: array|null, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}, agent?: array{id: int, uuid: null|string, name: null|string, description: null|string, type: null|string, provider: null|string, model: null|string, prompt: null|string, temperature: float|null, maxTokens: int|null, configuration: array|null, organisation: null|string, owner: null|string, active: bool, enableRag: bool, ragSearchMode: null|string, ragNumSources: int|null, ragIncludeFiles: bool, ragIncludeObjects: bool, requestQuota: int|null, tokenQuota: int|null, views: array|null, searchFiles: bool|null, searchObjects: bool|null, isPrivate: bool|null, invitedUsers: array|null, groups: array|null, tools: array|null, user: null|string, created: null|string, updated: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}, source?: array{id: int, uuid: null|string, title: null|string, version: null|string, description: null|string, databaseUrl: null|string, type: null|string, organisation: null|string, updated: null|string, created: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}, configuration?: mixed, view?: mixed, conversation?: array{id: int, uuid: null|string, title: null|string, userId: null|string, organisation: null|string, agentId: int|null, metadata: array|null, deletedAt: null|string, created: null|string, updated: null|string}, organisation?: mixed}|null
      */
     private function extractPayload(Event $event): array|null
     {
@@ -405,6 +402,4 @@ class WebhookEventListener implements IEventListener
         return null;
 
     }//end extractPayload()
-
-
 }//end class

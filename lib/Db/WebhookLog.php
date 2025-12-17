@@ -153,7 +153,6 @@ class WebhookLog extends Entity implements JsonSerializable
      */
     protected DateTime $created;
 
-
     /**
      * Constructor
      *
@@ -180,7 +179,6 @@ class WebhookLog extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get payload as array
      *
@@ -195,7 +193,6 @@ class WebhookLog extends Entity implements JsonSerializable
         return json_decode($this->payload, true) ?? [];
 
     }//end getPayloadArray()
-
 
     /**
      * Set payload from array
@@ -214,7 +211,6 @@ class WebhookLog extends Entity implements JsonSerializable
         $this->setPayload(json_encode($payload));
 
     }//end setPayloadArray()
-
 
     /**
      * JSON serialize the entity
@@ -243,6 +239,4 @@ class WebhookLog extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

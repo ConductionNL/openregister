@@ -52,8 +52,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version1Date20251106120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Update organisation columns for multi-tenancy
      *
@@ -286,6 +284,4 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         }
 
     }//end changeSchema()
-
-
 }//end class

@@ -63,7 +63,6 @@ class ToolManagementHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -83,7 +82,6 @@ class ToolManagementHandler
         $this->logger       = $logger;
 
     }//end __construct()
-
 
     /**
      * Get enabled tools for agent
@@ -152,7 +150,6 @@ class ToolManagementHandler
 
     }//end getAgentTools()
 
-
     /**
      * Convert tools to OpenAI function format
      *
@@ -178,7 +175,6 @@ class ToolManagementHandler
         return $functions;
 
     }//end convertToolsToFunctions()
-
 
     /**
      * Convert array-based function definitions to FunctionInfo objects
@@ -260,6 +256,4 @@ class ToolManagementHandler
         return $functionInfoObjects;
 
     }//end convertFunctionsToFunctionInfo()
-
-
 }//end class

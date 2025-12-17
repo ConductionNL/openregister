@@ -201,7 +201,6 @@ class Endpoint extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Initialize the entity and define field types
      */
@@ -231,7 +230,6 @@ class Endpoint extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the endpoint path
      *
@@ -242,7 +240,6 @@ class Endpoint extends Entity implements JsonSerializable
         return $this->endpoint;
 
     }//end getEndpoint()
-
 
     /**
      * Get the endpoint array representation
@@ -255,7 +252,6 @@ class Endpoint extends Entity implements JsonSerializable
 
     }//end getEndpointArray()
 
-
     /**
      * Get the conditions array
      *
@@ -267,7 +263,6 @@ class Endpoint extends Entity implements JsonSerializable
 
     }//end getConditions()
 
-
     /**
      * Get the rules array
      *
@@ -278,7 +273,6 @@ class Endpoint extends Entity implements JsonSerializable
         return $this->rules ?? [];
 
     }//end getRules()
-
 
     /**
      * Get the groups array
@@ -293,7 +287,6 @@ class Endpoint extends Entity implements JsonSerializable
 
     }//end getGroups()
 
-
     /**
      * Get the configurations array
      *
@@ -304,7 +297,6 @@ class Endpoint extends Entity implements JsonSerializable
         return $this->configurations ?? [];
 
     }//end getConfigurations()
-
 
     /**
      * Get array of field names that are JSON type
@@ -326,12 +318,9 @@ class Endpoint extends Entity implements JsonSerializable
 
     }//end getJsonFields()
 
-
     /**
      * Get the slug for the endpoint.
      * If the slug is not set, generate one from the name.
-     *
-     * @return string The slug
      *
      * @phpstan-return non-empty-string
      *
@@ -356,7 +345,6 @@ class Endpoint extends Entity implements JsonSerializable
         return $generatedSlug;
 
     }//end getSlug()
-
 
     /**
      * Hydrate the entity from an array of data
@@ -387,15 +375,14 @@ class Endpoint extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Serialize the entity to JSON format
      *
-     * @return (array|int|null|string)[]
+     * @return ((mixed|string[])[]|int|null|string)[]
      *
      * @phpstan-return array<string,mixed>
      *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, reference: null|string, version: null|string, endpoint: null|string, endpointArray: array, endpointRegex: null|string, method: null|string, targetType: null|string, targetId: null|string, conditions: array, inputMapping: null|string, outputMapping: null|string, rules: array, configurations: array, slug: string, groups: array, organisation: null|string, created: null|string, updated: null|string}
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, reference: null|string, version: null|string, endpoint: null|string, endpointArray: array, endpointRegex: null|string, method: null|string, targetType: null|string, targetId: null|string, conditions: array, inputMapping: null|string, outputMapping: null|string, rules: array, configurations: array, slug: string, groups: array<string, list<string>>, organisation: null|string, created: null|string, updated: null|string}
      */
     public function jsonSerialize(): array
     {
@@ -437,6 +424,4 @@ class Endpoint extends Entity implements JsonSerializable
         return $result;
 
     }//end jsonSerialize()
-
-
 }//end class

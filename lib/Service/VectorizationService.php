@@ -67,7 +67,6 @@ class VectorizationService
      */
     private array $strategies = [];
 
-
     /**
      * Constructor
      *
@@ -82,7 +81,6 @@ class VectorizationService
         $this->logger        = $logger;
 
     }//end __construct()
-
 
     /**
      * Register a vectorization strategy for an entity type
@@ -105,7 +103,6 @@ class VectorizationService
 
     }//end registerStrategy()
 
-
     /**
      * Vectorize entities in batch
      *
@@ -119,7 +116,7 @@ class VectorizationService
      *
      * @throws \Exception If strategy not found or vectorization fails
      *
-     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}}
+     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list<array{entity_id: int|string, error: string, item_index?: array-key}>}
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -225,7 +222,6 @@ class VectorizationService
         }//end try
 
     }//end vectorizeBatch()
-
 
     /**
      * Vectorize a single entity
@@ -344,7 +340,6 @@ class VectorizationService
 
     }//end vectorizeEntity()
 
-
     /**
      * Store a vector using strategy-provided metadata
      *
@@ -373,7 +368,6 @@ class VectorizationService
 
     }//end storeVector()
 
-
     /**
      * Get strategy for entity type
      *
@@ -393,7 +387,6 @@ class VectorizationService
 
     }//end getStrategy()
 
-
     // =============================================================================
     // PUBLIC API FACADE METHODS - Delegate to VectorEmbeddingService
     // =============================================================================
@@ -401,7 +394,6 @@ class VectorizationService
     // Other services should call VectorizationService instead of
     // VectorEmbeddingService directly.
     // =============================================================================
-
 
     /**
      * Generate embedding for a single text
@@ -411,16 +403,17 @@ class VectorizationService
      * @param string      $text     Text to embed
      * @param string|null $provider Embedding provider (null = use default from settings)
      *
-     * @return array{embedding: array<float>, model: string, dimensions: int} Embedding data
+     * @return (float[]|int|string)[] Embedding data
      *
      * @throws \Exception If embedding generation fails
+     *
+     * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
         return $this->vectorService->generateEmbedding($text, $provider);
 
     }//end generateEmbedding()
-
 
     /**
      * Perform semantic similarity search
@@ -445,7 +438,6 @@ class VectorizationService
         return $this->vectorService->semanticSearch($query, $limit, $filters, $provider);
 
     }//end semanticSearch()
-
 
     /**
      * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
@@ -473,7 +465,6 @@ class VectorizationService
 
     }//end hybridSearch()
 
-
     /**
      * Get vector statistics
      *
@@ -487,7 +478,6 @@ class VectorizationService
 
     }//end getVectorStats()
 
-
     /**
      * Test embedding generation with custom configuration
      *
@@ -497,7 +487,9 @@ class VectorizationService
      * @param array  $config   Provider-specific configuration
      * @param string $testText Optional test text to embed
      *
-     * @return array Test results
+     * @return ((float[]|int|mixed|string)[]|bool|string)[] Test results
+     *
+     * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -505,13 +497,14 @@ class VectorizationService
 
     }//end testEmbedding()
 
-
     /**
      * Check if embedding model has changed since vectors were created
      *
      * Delegates to VectorEmbeddings.
      *
-     * @return array Model mismatch information
+     * @return (array|bool|int|mixed|string)[] Model mismatch information
+     *
+     * @psalm-return array{has_vectors: bool, mismatch: bool, error?: string, message?: string, current_model?: mixed, existing_models?: list{0?: mixed,...}, total_vectors?: int, null_model_count?: int, mismatched_models?: list<mixed>}
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -519,19 +512,18 @@ class VectorizationService
 
     }//end checkEmbeddingModelMismatch()
 
-
     /**
      * Clear all embeddings from the database
      *
      * Delegates to VectorEmbeddings.
      *
-     * @return array Deletion results
+     * @return (bool|int|string)[] Deletion results
+     *
+     * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
      */
     public function clearAllEmbeddings(): array
     {
         return $this->vectorService->clearAllEmbeddings();
 
     }//end clearAllEmbeddings()
-
-
 }//end class

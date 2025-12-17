@@ -316,7 +316,6 @@ class FileService
      */
     private const FILE_TAG_TYPE = 'files';
 
-
     /**
      * Constructor
      *
@@ -437,7 +436,6 @@ class FileService
 
     }//end __construct()
 
-
     /**
      * Clean and extract filename from a file path that may contain folder ID prefixes.
      *
@@ -474,7 +472,6 @@ class FileService
 
     }//end extractFileNameFromPath()
 
-
     /**
      * Get the name for the folder of a Register (used for storing files of Schemas/Objects).
      *
@@ -493,7 +490,6 @@ class FileService
         return "$title Register";
 
     }//end getRegisterFolderName()
-
 
     /**
      * Creates a folder for a Schema to store files of Objects.
@@ -556,7 +552,6 @@ class FileService
      * @phpstan-return Node|null
      */
 
-
     /**
      * Get the folder name for an Object Entity.
      *
@@ -564,8 +559,6 @@ class FileService
      * identifier or other properties.
      *
      * @param ObjectEntity $objectEntity The Object Entity to get the folder name for
-     *
-     * @return string The folder name for the object
      *
      * @phpstan-return string
      */
@@ -591,7 +584,6 @@ class FileService
         return (string) $id;
 
     }//end getObjectFolderName()
-
 
     /**
      * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
@@ -631,7 +623,6 @@ class FileService
 
     }//end createEntityFolder()
 
-
     /**
      * Creates a folder for a Register and stores the folder ID.
      *
@@ -651,7 +642,6 @@ class FileService
 
     }//end createRegisterFolderById()
 
-
     /**
      * Creates a folder for an ObjectEntity nested under the register folder.
      *
@@ -661,8 +651,6 @@ class FileService
      *
      * @throws Exception If folder creation fails
      * @throws NotPermittedException If folder creation is not permitted
-     *
-     * @return Node|null The created folder node or null on failure
      *
      * @phpstan-return Node|null
      */
@@ -674,7 +662,6 @@ class FileService
         return $this->folderManagementHandler->createObjectFolderById($objectEntity, $currentUser, $registerId);
 
     }//end createObjectFolderById()
-
 
     /**
      * Get the OpenRegister user root folder.
@@ -695,7 +682,6 @@ class FileService
 
     }//end getOpenRegisterUserFolder()
 
-
     /**
      * Get a Node by its ID.
      *
@@ -713,7 +699,6 @@ class FileService
         return $this->folderManagementHandler->getNodeById($nodeId);
 
     }//end getNodeById()
-
 
     /**
      * Get files for either a Register or ObjectEntity.
@@ -760,7 +745,6 @@ class FileService
 
     }//end getFilesForEntity()
 
-
     /**
      * Get a register folder by its stored ID.
      *
@@ -776,7 +760,6 @@ class FileService
         return $this->folderManagementHandler->getRegisterFolderById($register);
 
     }//end getRegisterFolderById()
-
 
     /**
      * Get an object folder by its stored ID.
@@ -795,13 +778,10 @@ class FileService
 
     }//end getObjectFolder()
 
-
     /**
      * Create a folder path and return the Node.
      *
      * @param string $folderPath The full path to create
-     *
-     * @return Node The created folder node
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
@@ -811,7 +791,6 @@ class FileService
         return $this->folderManagementHandler->createFolderPath($folderPath);
 
     }//end createFolderPath()
-
 
     /**
      * Returns a share link for the given IShare object.
@@ -825,7 +804,6 @@ class FileService
         return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
 
     }//end getShareLink()
-
 
     /**
      * Gets and returns the current host/domain with correct protocol.
@@ -845,7 +823,6 @@ class FileService
 
     }//end getCurrentDomain()
 
-
     /**
      * Gets or creates the OpenRegister user for file operations.
      *
@@ -863,7 +840,6 @@ class FileService
         return $this->fileOwnershipHandler->getUser();
 
     }//end getUser()
-
 
     /**
      * Set file ownership to the OpenRegister user at database level.
@@ -887,7 +863,6 @@ class FileService
 
     }//end ownFile()
 
-
     /**
      * Check file ownership and fix it if needed to prevent "File not found" errors.
      *
@@ -910,7 +885,6 @@ class FileService
 
     }//end checkOwnership()
 
-
     /**
      * Formats a single Node file into a metadata array (DELEGATED to FileFormattingHandler).
      *
@@ -926,7 +900,6 @@ class FileService
         return $this->fileFormattingHandler->formatFile($file);
 
     }//end formatFile()
-
 
     /**
      * Formats an array of Node files into an array of metadata arrays (DELEGATED to FileFormattingHandler).
@@ -947,7 +920,6 @@ class FileService
 
     }//end formatFiles()
 
-
     /**
      * Get the tags associated with a file.
      *
@@ -966,7 +938,6 @@ class FileService
 
     }//end getFileTags()
 
-
     /**
      * Finds shares associated with a file or folder.
      *
@@ -975,7 +946,6 @@ class FileService
      *
      * @return IShare[] Array of shares associated with the file
      */
-
 
     /**
      * Find shares for a given file or folder.
@@ -999,7 +969,6 @@ class FileService
 
     }//end findShares()
 
-
     /**
      * Creates a IShare object using the $shareData array data.
      *
@@ -1020,7 +989,6 @@ class FileService
      * @psalm-suppress UnusedReturnValue
      */
 
-
     /**
      * Create a share with the given share data.
      *
@@ -1037,7 +1005,6 @@ class FileService
         return $this->fileSharingHandler->createShare($shareData);
 
     }//end createShare()
-
 
     /**
      * Share a folder with a specific user.
@@ -1058,7 +1025,6 @@ class FileService
      * @psalm-suppress UnusedReturnValue - Return value may be used by callers
      */
 
-
     /**
      * Share a folder with a specific user.
      *
@@ -1076,7 +1042,6 @@ class FileService
 
     }//end shareFolderWithUser()
 
-
     /**
      * Get the currently active user (not the OpenRegister system user).
      *
@@ -1092,7 +1057,6 @@ class FileService
         return $this->fileOwnershipHandler->getCurrentUser();
 
     }//end getCurrentUser()
-
 
     /**
      * Transfer file ownership to OpenRegister user and share with current user
@@ -1113,7 +1077,6 @@ class FileService
 
     }//end transferFileOwnershipIfNeeded()
 
-
     /**
      * Share a file with a specific user.
      *
@@ -1133,7 +1096,6 @@ class FileService
 
     }//end shareFileWithUser()
 
-
     /**
      * Transfer folder ownership to OpenRegister user and share with current user
      *
@@ -1152,7 +1114,6 @@ class FileService
         $this->fileOwnershipHandler->transferFolderOwnershipIfNeeded($folder, $this->fileSharingHandler);
 
     }//end transferFolderOwnershipIfNeeded()
-
 
     /**
      * Creates and returns a share link for a file (or folder).
@@ -1214,7 +1175,6 @@ class FileService
 
     }//end createShareLink()
 
-
     /**
      * Creates a new folder in NextCloud, unless it already exists.
      *
@@ -1229,7 +1189,6 @@ class FileService
         return $this->folderManagementHandler->createFolder($folderPath);
 
     }//end createFolder()
-
 
     /**
      * Overwrites an existing file in NextCloud.
@@ -1254,7 +1213,6 @@ class FileService
 
     }//end updateFile()
 
-
     /**
      * Deletes a file from NextCloud.
      *
@@ -1278,7 +1236,6 @@ class FileService
      * @return bool True if successful, false if the file didn't exist
      */
 
-
     /**
      * Delete a file by node, path, or ID.
      *
@@ -1296,7 +1253,6 @@ class FileService
         return $this->deleteFileHandler->deleteFile($file, $object);
 
     }//end deleteFile()
-
 
     /**
      * Attach tags to a file.
@@ -1317,7 +1273,6 @@ class FileService
 
     }//end attachTagsToFile()
 
-
     /**
      * Generate the object tag for a given ObjectEntity.
      *
@@ -1335,7 +1290,6 @@ class FileService
         return $this->taggingHandler->generateObjectTag($objectEntity);
 
     }//end generateObjectTag()
-
 
     /**
      * Adds a new file to an object's folder.
@@ -1365,7 +1319,6 @@ class FileService
 
     }//end addFile()
 
-
     /**
      * Save a file to an object's folder (create new or update existing).
      *
@@ -1390,7 +1343,6 @@ class FileService
         return $this->createFileHandler->saveFile($objectEntity, $fileName, $content, $share, $tags);
 
     }//end saveFile()
-
 
     /**
      * Retrieves all available tags in the system.
@@ -1423,7 +1375,6 @@ class FileService
 
     }//end getAllTags()
 
-
     /**
      * Get all files for an object.
      *
@@ -1445,7 +1396,6 @@ class FileService
         return $this->readFileHandler->getFiles($object, $sharedFilesOnly);
 
     }//end getFiles()
-
 
     /**
      * Get a file by file identifier (ID or name/path) or by object and file name/path.
@@ -1473,7 +1423,6 @@ class FileService
         return $this->readFileHandler->getFile($object, $file);
 
     }//end getFile()
-
 
     /**
      * Get a file by its Nextcloud file ID without needing object context.
@@ -1519,7 +1468,6 @@ class FileService
 
     }//end getFileById()
 
-
     /**
      * Stream a file for download.
      *
@@ -1550,7 +1498,6 @@ class FileService
 
     }//end streamFile()
 
-
     /**
      * Publish a file by creating a public share link using direct database operations.
      *
@@ -1572,7 +1519,6 @@ class FileService
 
     }//end publishFile()
 
-
     /**
      * Unpublish a file by removing its public share link.
      *
@@ -1593,7 +1539,6 @@ class FileService
         return $this->filePublishingHandler->unpublishFile($object, $filePath);
 
     }//end unpublishFile()
-
 
     /**
      * Create a ZIP archive containing all files for a specific object.
@@ -1619,7 +1564,6 @@ class FileService
         return $this->filePublishingHandler->createObjectFilesZip($object, $zipName);
 
     }//end createObjectFilesZip()
-
 
     /**
     /**
@@ -1663,7 +1607,6 @@ class FileService
 
     }//end debugFindFileById()
 
-
     /**
      * Debug method to list all files in an object's folder
      * //end try
@@ -1672,9 +1615,9 @@ class FileService
      *
      * @param ObjectEntity $object The object to list files for
      *
-     * @return (float|int|string)[][] List of file information
+     * @return (float|int|string)[][]
      *
-     * @psalm-return list{0?: array{id: int, name: string, path: string, type: string, mimetype: string, size: float|int},...}
+     * @psalm-return list<array{id: int, mimetype: string, name: string, path: string, size: float|int, type: string}>
      */
     public function debugListObjectFiles(ObjectEntity $object): array
     {
@@ -1710,7 +1653,6 @@ class FileService
 
     }//end debugListObjectFiles()
 
-
     /**
      * Blocks executable files from being uploaded for security.
      *
@@ -1731,7 +1673,6 @@ class FileService
         $this->fileValidationHandler->blockExecutableFile(fileName: $fileName, fileContent: $fileContent);
 
     }//end blockExecutableFile()
-
 
     /**
      * Detects executable magic bytes in file content.
@@ -1793,7 +1734,6 @@ class FileService
 
     }//end detectExecutableMagicBytes()
 
-
     /**
      * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.
      *
@@ -1808,8 +1748,6 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      * @throws NotFoundException If parent folders do not exist
      *
-     * @return int The ID of the created folder
-     *
      * @psalm-return   int|null
      * @phpstan-return int|null
      */
@@ -1818,7 +1756,6 @@ class FileService
         return $this->folderManagementHandler->createObjectFolderWithoutUpdate($objectEntity, $currentUser);
 
     }//end createObjectFolderWithoutUpdate()
-
 
     /**
      * Get node type from folder (file or folder).
@@ -1843,7 +1780,6 @@ class FileService
 
     }//end getNodeTypeFromFolder()
 
-
     /**
      * Get access URL from shares array.
      *
@@ -1866,7 +1802,6 @@ class FileService
 
     }//end getAccessUrlFromShares()
 
-
     /**
      * Get download URL from shares array.
      *
@@ -1888,7 +1823,6 @@ class FileService
         return null;
 
     }//end getDownloadUrlFromShares()
-
 
     /**
      * Get published time from shares array.
@@ -1920,7 +1854,6 @@ class FileService
 
     }//end getPublishedTimeFromShares()
 
-
     /**
      * Get object ID from ObjectEntity.
      *
@@ -1937,7 +1870,6 @@ class FileService
         return $object->getUuid() ?? (string) $object->getId();
 
     }//end getObjectId()
-
 
     /**
      * Get file in object folder message.
@@ -1956,7 +1888,6 @@ class FileService
         return "File $fileId is not in object folder";
 
     }//end getFileInObjectFolderMessage()
-
 
     /**
      * Replace words in a document
@@ -1983,7 +1914,6 @@ class FileService
 
     }//end replaceWords()
 
-
     /**
      * Anonymize a document by replacing detected entities (DELEGATED to DocumentProcessingHandler).
      *
@@ -2007,6 +1937,4 @@ class FileService
         return $this->documentProcessingHandler->anonymizeDocument($node, $entities);
 
     }//end anonymizeDocument()
-
-
 }//end class

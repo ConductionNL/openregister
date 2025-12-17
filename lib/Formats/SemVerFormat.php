@@ -62,7 +62,6 @@ class SemVerFormat implements Format
 (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 REGEX;
 
-
     /**
      * Validates if a given value conforms to the Semantic Versioning format
      *
@@ -83,6 +82,4 @@ REGEX;
         return preg_match(self::SEMVER_PATTERN, $data) === 1;
 
     }//end validate()
-
-
 }//end class

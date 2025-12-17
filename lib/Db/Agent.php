@@ -328,7 +328,6 @@ class Agent extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Agent constructor
      *
@@ -369,7 +368,6 @@ class Agent extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Check if a user is invited to access this private agent
      *
@@ -386,7 +384,6 @@ class Agent extends Entity implements JsonSerializable
         return in_array($userId, $this->invitedUsers, true);
 
     }//end hasInvitedUser()
-
 
     /**
      * Hydrate the entity from an array
@@ -437,7 +434,6 @@ class Agent extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Serialize the entity to JSON
      *
@@ -484,7 +480,6 @@ class Agent extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * Get managed by configuration data for JSON serialization
      *
@@ -505,6 +500,4 @@ class Agent extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfigurationData()
-
-
 }//end class

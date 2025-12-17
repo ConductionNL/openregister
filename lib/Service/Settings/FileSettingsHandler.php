@@ -56,7 +56,6 @@ class FileSettingsHandler
      */
     private string $appName;
 
-
     /**
      * Constructor for FileSettingsHandler
      *
@@ -73,7 +72,6 @@ class FileSettingsHandler
         $this->appName = $appName;
 
     }//end __construct()
-
 
     /**
      * Get File Management settings only.
@@ -120,15 +118,16 @@ class FileSettingsHandler
 
     }//end getFileSettingsOnly()
 
-
     /**
      * Update File Management settings only.
      *
      * @param array $fileData File management configuration data.
      *
-     * @return array Updated file management configuration.
+     * @return (false|int|mixed|null|string[])[] Updated file management configuration.
      *
      * @throws \RuntimeException If File Management settings update fails.
+     *
+     * @psalm-return array{vectorizationEnabled: false|mixed, provider: mixed|null, chunkingStrategy: 'RECURSIVE_CHARACTER'|mixed, chunkSize: 1000|mixed, chunkOverlap: 200|mixed, enabledFileTypes: list{'txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'}|mixed, ocrEnabled: false|mixed, maxFileSizeMB: 100|mixed, extractionScope: 'objects'|mixed, textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed, maxFileSize: 100|mixed, batchSize: 10|mixed, dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -162,6 +161,4 @@ class FileSettingsHandler
         }//end try
 
     }//end updateFileSettingsOnly()
-
-
 }//end class

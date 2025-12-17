@@ -40,8 +40,6 @@ use Psr\Log\LoggerInterface;
  */
 class LlmSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -66,7 +64,6 @@ class LlmSettingsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get LLM (Large Language Model) settings
      *
@@ -88,7 +85,6 @@ class LlmSettingsController extends Controller
         }
 
     }//end getLLMSettings()
-
 
     /**
      * Update LLM (Large Language Model) settings
@@ -151,7 +147,6 @@ class LlmSettingsController extends Controller
 
     }//end updateLLMSettings()
 
-
     /**
      * Patch LLM settings (partial update)
      *
@@ -160,16 +155,18 @@ class LlmSettingsController extends Controller
      * to ensure PATCH verb is properly registered in Nextcloud routing.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated LLM settings
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'LLM settings updated successfully', data?: array}, array<never, never>>
      */
     public function patchLLMSettings(): JSONResponse
     {
         return $this->updateLLMSettings();
 
     }//end patchLLMSettings()
-
 
     /**
      * Test LLM embedding functionality
@@ -242,7 +239,6 @@ class LlmSettingsController extends Controller
 
     }//end testEmbedding()
 
-
     /**
      * Test LLM chat functionality
      *
@@ -314,7 +310,6 @@ class LlmSettingsController extends Controller
 
     }//end testChat()
 
-
     /**
      * Get available Ollama models from the configured Ollama instance
      *
@@ -384,6 +379,11 @@ class LlmSettingsController extends Controller
 
             // Format models for frontend dropdown.
             $models = array_map(
+                    /*
+                     * @return (int|mixed|null|string)[]
+                     *
+                     * @psalm-return array{id: 'unknown'|mixed, name: 'unknown'|mixed, description: mixed|string, size: 0|mixed, modified: mixed|null}
+                     */
                     function (array $model): array {
                         $name = $model['name'] ?? 'unknown';
                         // Format size if available.
@@ -444,7 +444,6 @@ class LlmSettingsController extends Controller
 
     }//end getOllamaModels()
 
-
     /**
      * Check if embedding model has changed and vectors need regeneration
      *
@@ -474,7 +473,6 @@ class LlmSettingsController extends Controller
         }
 
     }//end checkEmbeddingModelMismatch()
-
 
     /**
      * Clear all embeddings from the database
@@ -509,7 +507,6 @@ class LlmSettingsController extends Controller
 
     }//end clearAllEmbeddings()
 
-
     /**
      * Get vector embedding statistics
      *
@@ -517,9 +514,7 @@ class LlmSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Vector statistics
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, stats?: mixed, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, stats?: array, timestamp?: string}, array<never, never>>
      */
     public function getVectorStats(): JSONResponse
     {
@@ -549,6 +544,4 @@ class LlmSettingsController extends Controller
         }//end try
 
     }//end getVectorStats()
-
-
 }//end class

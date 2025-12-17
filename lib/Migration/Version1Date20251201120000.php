@@ -43,8 +43,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251201120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change database schema
      *
@@ -98,7 +96,6 @@ class Version1Date20251201120000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change hook
      *
@@ -116,6 +113,4 @@ class Version1Date20251201120000 extends SimpleMigrationStep
         $output->info('   Views can now be filtered by organisation');
 
     }//end postSchemaChange()
-
-
 }//end class

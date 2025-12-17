@@ -37,8 +37,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version1Date20241019205009 extends SimpleMigrationStep
 {
-
-
     /**
      * Execute actions before schema changes
      *
@@ -55,7 +53,6 @@ class Version1Date20241019205009 extends SimpleMigrationStep
 
     }//end preSchemaChange()
 
-
     /**
      * Apply schema changes
      *
@@ -63,9 +60,9 @@ class Version1Date20241019205009 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
      * @param array                     $options       Migration options
      *
-     * @return ISchemaWrapper|null
+     * @return ISchemaWrapper
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -114,7 +111,6 @@ class Version1Date20241019205009 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Execute actions after schema changes
      *
@@ -130,6 +126,4 @@ class Version1Date20241019205009 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
-
 }//end class

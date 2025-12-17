@@ -88,7 +88,6 @@ class BulkOperationsHandler
      */
     private QueryBuilderHandler $queryBuilderHandler;
 
-
     /**
      * Constructor.
      *
@@ -109,7 +108,6 @@ class BulkOperationsHandler
         $this->tableName           = $tableName;
 
     }//end __construct()
-
 
     /**
      * ULTRA PERFORMANCE: Memory-intensive unified bulk save operation.
@@ -132,7 +130,6 @@ class BulkOperationsHandler
         return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
 
     }//end ultraFastBulkSave()
-
 
     /**
      * Perform bulk delete operations on objects by UUID.
@@ -181,7 +178,6 @@ class BulkOperationsHandler
 
     }//end deleteObjects()
 
-
     /**
      * Perform bulk publish operations on objects by UUID.
      *
@@ -222,7 +218,6 @@ class BulkOperationsHandler
         return $publishedObjectIds;
 
     }//end publishObjects()
-
 
     /**
      * Perform bulk depublish operations on objects by UUID.
@@ -265,16 +260,17 @@ class BulkOperationsHandler
 
     }//end depublishObjects()
 
-
     /**
      * Publish all objects belonging to a specific schema.
      *
      * @param int  $schemaId   The ID of the schema whose objects should be published.
      * @param bool $publishAll Whether to publish all objects (default: false).
      *
-     * @return array Array containing statistics about the publishing operation.
+     * @return (array|int)[] Array containing statistics about the publishing operation.
      *
      * @throws \Exception If the publishing operation fails.
+     *
+     * @psalm-return array{published_count: int<0, max>, published_uuids: list<mixed>, schema_id: int}
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
@@ -313,16 +309,17 @@ class BulkOperationsHandler
 
     }//end publishObjectsBySchema()
 
-
     /**
      * Delete all objects belonging to a specific schema.
      *
      * @param int  $schemaId   The ID of the schema whose objects should be deleted.
      * @param bool $hardDelete Whether to force hard delete (default: false).
      *
-     * @return array Array containing statistics about the deletion operation.
+     * @return (array|int)[] Array containing statistics about the deletion operation.
      *
      * @throws \Exception If the deletion operation fails.
+     *
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array, schema_id: int}
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
@@ -364,15 +361,16 @@ class BulkOperationsHandler
 
     }//end deleteObjectsBySchema()
 
-
     /**
      * Delete all objects belonging to a specific register.
      *
      * @param int $registerId The ID of the register whose objects should be deleted.
      *
-     * @return array Array containing statistics about the deletion operation.
+     * @return (array|int)[] Array containing statistics about the deletion operation.
      *
      * @throws \Exception If the deletion operation fails.
+     *
+     * @psalm-return array{deleted_count: int<0, max>, deleted_uuids: array, register_id: int}
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
@@ -409,7 +407,6 @@ class BulkOperationsHandler
         ];
 
     }//end deleteObjectsByRegister()
-
 
     /**
      * Process a single chunk of insert objects within a transaction.
@@ -455,7 +452,6 @@ class BulkOperationsHandler
 
     }//end processInsertChunk()
 
-
     /**
      * Process a single chunk of update objects within a transaction.
      *
@@ -500,7 +496,6 @@ class BulkOperationsHandler
 
     }//end processUpdateChunk()
 
-
     /**
      * Calculate optimal chunk size based on actual data size to prevent max_allowed_packet errors.
      *
@@ -508,6 +503,8 @@ class BulkOperationsHandler
      * @param array $updateObjects Array of objects to update.
      *
      * @return int Optimal chunk size in number of objects.
+     *
+     * @psalm-return int<5, 100>
      */
     public function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
@@ -566,13 +563,14 @@ class BulkOperationsHandler
 
     }//end calculateOptimalChunkSize()
 
-
     /**
      * Estimate the size of an object in bytes for chunk size calculation.
      *
      * @param mixed $object The object to estimate size for.
      *
      * @return int Estimated size in bytes.
+     *
+     * @psalm-return int<0, max>
      */
     private function estimateObjectSize(mixed $object): int
     {
@@ -615,7 +613,6 @@ class BulkOperationsHandler
 
     }//end estimateObjectSize()
 
-
     /**
      * Calculate optimal batch size for bulk insert operations based on actual data size.
      *
@@ -623,6 +620,8 @@ class BulkOperationsHandler
      * @param array $_columns      Array of column names.
      *
      * @return int Optimal batch size in number of objects.
+     *
+     * @psalm-return int<5, 100>
      */
     private function calculateOptimalBatchSize(array $insertObjects, array $_columns): int
     {
@@ -676,7 +675,6 @@ class BulkOperationsHandler
 
     }//end calculateOptimalBatchSize()
 
-
     /**
      * Perform true bulk insert of objects using single SQL statement.
      *
@@ -688,6 +686,8 @@ class BulkOperationsHandler
      * @return array Array of inserted object UUIDs.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<mixed>
      */
     private function bulkInsert(array $insertObjects): array
     {
@@ -788,7 +788,6 @@ class BulkOperationsHandler
 
     }//end bulkInsert()
 
-
     /**
      * Perform bulk update of objects using optimized SQL.
      *
@@ -796,9 +795,11 @@ class BulkOperationsHandler
      *
      * @param array $updateObjects Array of ObjectEntity instances to update.
      *
-     * @return array Array of updated object UUIDs.
+     * @return string[] Array of updated object UUIDs.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<string>
      */
     private function bulkUpdate(array $updateObjects): array
     {
@@ -849,7 +850,6 @@ class BulkOperationsHandler
 
     }//end bulkUpdate()
 
-
     /**
      * Perform bulk delete operations on objects by UUID.
      *
@@ -859,6 +859,8 @@ class BulkOperationsHandler
      * @param bool  $hardDelete Whether to force hard delete.
      *
      * @return array Array of UUIDs of deleted objects.
+     *
+     * @psalm-return list<mixed>
      */
     private function bulkDelete(array $uuids, bool $hardDelete=false): array
     {
@@ -942,7 +944,6 @@ class BulkOperationsHandler
 
     }//end bulkDelete()
 
-
     /**
      * Perform bulk publish operations on objects by UUID.
      *
@@ -950,6 +951,8 @@ class BulkOperationsHandler
      * @param \DateTime|bool $datetime Optional datetime for publishing (false to unset).
      *
      * @return array Array of UUIDs of published objects.
+     *
+     * @psalm-return list<mixed>
      */
     private function bulkPublish(array $uuids, \DateTime|bool $datetime=true): array
     {
@@ -1014,7 +1017,6 @@ class BulkOperationsHandler
 
     }//end bulkPublish()
 
-
     /**
      * Perform bulk depublish operations on objects by UUID.
      *
@@ -1022,6 +1024,8 @@ class BulkOperationsHandler
      * @param \DateTime|bool $datetime Optional datetime for depublishing (false to unset).
      *
      * @return array Array of UUIDs of depublished objects.
+     *
+     * @psalm-return list<mixed>
      */
     private function bulkDepublish(array $uuids, \DateTime|bool $datetime=true): array
     {
@@ -1086,13 +1090,14 @@ class BulkOperationsHandler
 
     }//end bulkDepublish()
 
-
     /**
      * Get all column names from an entity for bulk operations.
      *
      * @param ObjectEntity $entity The entity to extract columns from.
      *
-     * @return array Array of column names.
+     * @return string[] Array of column names.
+     *
+     * @psalm-return list<string>
      */
     private function getEntityColumns(ObjectEntity $entity): array
     {
@@ -1110,7 +1115,6 @@ class BulkOperationsHandler
         return $columns;
 
     }//end getEntityColumns()
-
 
     /**
      * Get the value of a specific column from an entity.
@@ -1169,6 +1173,4 @@ class BulkOperationsHandler
         return $value;
 
     }//end getEntityValue()
-
-
 }//end class

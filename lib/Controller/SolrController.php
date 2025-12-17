@@ -42,8 +42,6 @@ use Psr\Log\LoggerInterface;
 
 class SolrController extends Controller
 {
-
-
     /**
      * Constructor
      *
@@ -61,7 +59,6 @@ class SolrController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Perform semantic search using vector embeddings
@@ -163,7 +160,6 @@ class SolrController extends Controller
         }//end try
 
     }//end semanticSearch()
-
 
     /**
      * Perform hybrid search combining SOLR keyword and vector semantic search
@@ -283,7 +279,6 @@ class SolrController extends Controller
 
     }//end hybridSearch()
 
-
     /**
      * Get vector embedding statistics
      *
@@ -335,7 +330,6 @@ class SolrController extends Controller
         }//end try
 
     }//end getVectorStats()
-
 
     /**
      * Test vector embedding generation with a provider
@@ -508,7 +502,6 @@ class SolrController extends Controller
 
     }//end testVectorEmbedding()
 
-
     /**
      * List all SOLR collections with their metadata
      *
@@ -563,7 +556,6 @@ class SolrController extends Controller
 
     }//end listCollections()
 
-
     /**
      * List all SOLR ConfigSets
      *
@@ -617,7 +609,6 @@ class SolrController extends Controller
         }//end try
 
     }//end listConfigSets()
-
 
     /**
      * Create a new SOLR collection
@@ -694,7 +685,6 @@ class SolrController extends Controller
 
     }//end createCollection()
 
-
     /**
      * Create a new SOLR ConfigSet
      *
@@ -756,7 +746,6 @@ class SolrController extends Controller
 
     }//end createConfigSet()
 
-
     /**
      * Delete a SOLR ConfigSet
      *
@@ -816,7 +805,6 @@ class SolrController extends Controller
         }//end try
 
     }//end deleteConfigSet()
-
 
     /**
      * Copy/duplicate an existing SOLR collection
@@ -881,7 +869,6 @@ class SolrController extends Controller
         }//end try
 
     }//end copyCollection()
-
 
     /**
      * Vectorize a single object by ID
@@ -959,7 +946,6 @@ class SolrController extends Controller
         }//end try
 
     }//end vectorizeObject()
-
 
     /**
      * Bulk vectorize objects with optional filtering
@@ -1099,7 +1085,6 @@ class SolrController extends Controller
 
     }//end bulkVectorizeObjects()
 
-
     /**
      * Get vectorization statistics and progress
      *
@@ -1182,6 +1167,4 @@ class SolrController extends Controller
         }//end try
 
     }//end getVectorizationStats()
-
-
 }//end class

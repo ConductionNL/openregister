@@ -33,8 +33,6 @@ use Exception;
  */
 class MetadataHandler
 {
-
-
     /**
      * Get a value from a nested array using dot notation.
      *
@@ -68,7 +66,6 @@ class MetadataHandler
 
     }//end getValueFromPath()
 
-
     /**
      * Generate a slug from a given value.
      *
@@ -76,10 +73,12 @@ class MetadataHandler
      *
      * @param string $value The value to convert to a slug.
      *
-     * @return string|null The generated slug or null if generation failed.
+     * @return null|string
      *
-     * @psalm-param    string $value
-     * @phpstan-param  string $value
+     * @psalm-param string $value
+     *
+     * @phpstan-param string $value
+     *
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
@@ -104,16 +103,14 @@ class MetadataHandler
 
     }//end generateSlugFromValue()
 
-
     /**
      * Creates a URL-friendly slug from a string.
      *
      * @param string $text The text to convert to a slug.
      *
-     * @psalm-param   string $text
-     * @phpstan-param string $text
+     * @psalm-param string $text
      *
-     * @return string The generated slug.
+     * @phpstan-param string $text
      *
      * @psalm-return   string
      * @phpstan-return string
@@ -137,6 +134,4 @@ class MetadataHandler
         return $text;
 
     }//end createSlugHelper()
-
-
 }//end class

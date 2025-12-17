@@ -91,7 +91,6 @@ class RenderObject
      */
     private array $ultraPreloadCache = [];
 
-
     /**
      * Constructor for RenderObject handler.
      *
@@ -121,7 +120,6 @@ class RenderObject
 
     }//end __construct()
 
-
     /**
      * Set the ultra-aggressive preload cache for maximum performance
      *
@@ -148,7 +146,6 @@ class RenderObject
 
     }//end setUltraPreloadCache()
 
-
     /**
      * Get the size of the ultra preload cache for monitoring
      *
@@ -161,7 +158,6 @@ class RenderObject
         return count($this->ultraPreloadCache);
 
     }//end getUltraCacheSize()
-
 
     /**
      * Get a register from cache or database
@@ -188,7 +184,6 @@ class RenderObject
 
     }//end getRegister()
 
-
     /**
      * Get a schema from cache or database
      *
@@ -213,7 +208,6 @@ class RenderObject
         }
 
     }//end getSchema()
-
 
     /**
      * Get an object from cache or database
@@ -250,7 +244,6 @@ class RenderObject
 
     }//end getObject()
 
-
     /**
      * Clear all caches
      *
@@ -263,7 +256,6 @@ class RenderObject
         $this->objectsCache   = [];
 
     }//end clearCache()
-
 
     /**
      * Add formatted files to the files array in the entity using FileMapper.
@@ -323,7 +315,6 @@ class RenderObject
 
     }//end renderFiles()
 
-
     /**
      * Get the tags associated with a file.
      *
@@ -374,7 +365,6 @@ class RenderObject
         return array_values($tagNames);
 
     }//end getFileTags()
-
 
     /**
      * Hydrates file properties by replacing file IDs with actual file objects.
@@ -455,7 +445,6 @@ class RenderObject
 
     }//end renderFileProperties()
 
-
     /**
      * Checks if a property configuration indicates a file property.
      *
@@ -487,7 +476,6 @@ class RenderObject
         return false;
 
     }//end isFilePropertyConfig()
-
 
     /**
      * Hydrates a file property by replacing file IDs with file objects.
@@ -542,7 +530,6 @@ class RenderObject
 
     }//end hydrateFileProperty()
 
-
     /**
      * Hydrates metadata (@self) from file properties after they've been converted to file objects.
      *
@@ -591,7 +578,6 @@ class RenderObject
 
     }//end hydrateMetadataFromFileProperties()
 
-
     /**
      * Helper method to get a value from a nested path in an array.
      *
@@ -617,18 +603,18 @@ class RenderObject
 
     }//end getValueFromPath()
 
-
     /**
      * Gets a file object by its ID using the FileService.
      *
      * @param mixed $fileId The file ID to retrieve.
      *
-     * @psalm-param   mixed $fileId
+     * @psalm-param mixed $fileId
+     *
      * @phpstan-param mixed $fileId
      *
-     * @return (int|mixed|null|string|string[])[]|null
+     * @return (int|null|string[])[]|null
      *
-     * @psalm-return   array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: mixed, labels: array<int, string>}|null
+     * @psalm-return   array{id: numeric-string, path: string, title: string, accessUrl: null|string, downloadUrl: null|string, type: string, extension: string, size: int, hash: string, published: null|string, modified: int|null, labels: list<string>}|null
      * @phpstan-return array<string, mixed>|null
      */
     private function getFileObject($fileId): array|null
@@ -675,7 +661,6 @@ class RenderObject
         }//end try
 
     }//end getFileObject()
-
 
     /**
      * Renders an entity with optional extensions and filters.
@@ -839,7 +824,6 @@ class RenderObject
 
     }//end renderEntity()
 
-
     /**
      * Handle extends containing a wildcard ($)
      *
@@ -895,7 +879,6 @@ class RenderObject
         return $objectData->all();
 
     }//end handleWildcardExtends()
-
 
     /**
      * Handle extends on a dot array
@@ -1059,7 +1042,6 @@ class RenderObject
 
     }//end handleExtendDot()
 
-
     /**
      * Extends an object with additional data based on the extension configuration
      *
@@ -1113,7 +1095,6 @@ class RenderObject
 
     }//end extendObject()
 
-
     /**
      * Gets the inversed properties from a schema
      *
@@ -1140,7 +1121,6 @@ class RenderObject
         return $inversedProperties;
 
     }//end getInversedProperties()
-
 
     /**
      * Handles inversed properties for an object
@@ -1289,7 +1269,6 @@ class RenderObject
 
     }//end handleInversedProperties()
 
-
     /**
      * Resolve schema reference to actual schema ID
      *
@@ -1349,7 +1328,6 @@ class RenderObject
 
     }//end resolveSchemaReference()
 
-
     /**
      * Removes query parameters from a reference string.
      *
@@ -1368,7 +1346,6 @@ class RenderObject
 
     }//end removeQueryParameters()
 
-
     /**
      * Render multiple entities with extensions, filters, and field selections.
      *
@@ -1383,7 +1360,9 @@ class RenderObject
      * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool              $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return array<int, ObjectEntity> Array of rendered ObjectEntity instances.
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function renderEntities(
         array $entities,
@@ -1413,6 +1392,4 @@ class RenderObject
         return $renderedEntities;
 
     }//end renderEntities()
-
-
 }//end class

@@ -86,7 +86,6 @@ class SyncConfigurationsJob extends TimedJob
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -120,7 +119,6 @@ class SyncConfigurationsJob extends TimedJob
         $this->setInterval(3600);
 
     }//end __construct()
-
 
     /**
      * Run the background job
@@ -190,7 +188,6 @@ class SyncConfigurationsJob extends TimedJob
 
     }//end run()
 
-
     /**
      * Check if a configuration is due for synchronization
      *
@@ -216,7 +213,6 @@ class SyncConfigurationsJob extends TimedJob
         return $hoursPassed >= $interval;
 
     }//end isDueForSync()
-
 
     /**
      * Synchronize a configuration from its source
@@ -252,7 +248,6 @@ class SyncConfigurationsJob extends TimedJob
         }
 
     }//end syncConfiguration()
-
 
     /**
      * Sync configuration from GitHub
@@ -299,7 +294,6 @@ class SyncConfigurationsJob extends TimedJob
         );
 
     }//end syncFromGitHub()
-
 
     /**
      * Sync configuration from GitLab
@@ -356,7 +350,6 @@ class SyncConfigurationsJob extends TimedJob
 
     }//end syncFromGitLab()
 
-
     /**
      * Sync configuration from URL
      *
@@ -403,7 +396,6 @@ class SyncConfigurationsJob extends TimedJob
 
     }//end syncFromUrl()
 
-
     /**
      * Sync configuration from local file
      *
@@ -440,6 +432,4 @@ class SyncConfigurationsJob extends TimedJob
         );
 
     }//end syncFromLocal()
-
-
 }//end class

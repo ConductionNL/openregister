@@ -35,7 +35,6 @@ class SchemaCreatedEvent extends Event
      */
     private Schema $schema;
 
-
     /**
      * Constructor for SchemaCreatedEvent
      *
@@ -50,7 +49,6 @@ class SchemaCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created schema
      *
@@ -61,6 +59,4 @@ class SchemaCreatedEvent extends Event
         return $this->schema;
 
     }//end getSchema()
-
-
 }//end class

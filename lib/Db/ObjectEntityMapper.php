@@ -110,7 +110,6 @@ class ObjectEntityMapper extends QBMapper
 
     private IAppConfig $appConfig;
 
-
     /**
      * Constructor for the ObjectEntityMapper.
      *
@@ -158,11 +157,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end __construct()
 
-
     // ==================================================================================
     // QUERY BUILDER OPERATIONS (Delegated to QueryBuilderHandler)
     // ==================================================================================
-
 
     /**
      * Get query builder instance.
@@ -175,7 +172,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getQueryBuilder()
 
-
     /**
      * Get the actual max_allowed_packet value from the database.
      *
@@ -187,11 +183,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getMaxAllowedPacketSize()
 
-
     // ==================================================================================
     // LOCKING OPERATIONS (Delegated to LockingHandler)
     // ==================================================================================
-
 
     /**
      * Lock an object to prevent concurrent modifications.
@@ -199,9 +193,11 @@ class ObjectEntityMapper extends QBMapper
      * @param string   $uuid         Object UUID to lock.
      * @param int|null $lockDuration Lock duration in seconds (null for default).
      *
-     * @return array Lock information including expiry time.
+     * @return (mixed|string)[] Lock information including expiry time.
      *
      * @throws Exception If locking fails.
+     *
+     * @psalm-return array{locked: mixed, uuid: string}
      */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
@@ -258,7 +254,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end lockObject()
 
-
     /**
      * Unlock an object to allow modifications.
      *
@@ -283,11 +278,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end unlockObject()
 
-
     // ==================================================================================
     // CRUD OPERATIONS (Orchestrated with Events)
     // ==================================================================================
-
 
     /**
      * Insert a new object entity with event dispatching.
@@ -313,7 +306,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing object entity with event dispatching.
      *
@@ -337,7 +329,6 @@ class ObjectEntityMapper extends QBMapper
         return $result;
 
     }//end update()
-
 
     /**
      * Delete an object entity with event dispatching.
@@ -363,7 +354,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Internal insert method that calls parent QBMapper without events.
      *
@@ -382,7 +372,6 @@ class ObjectEntityMapper extends QBMapper
         return parent::insert($entity);
 
     }//end insertEntity()
-
 
     /**
      * Internal update method that calls parent QBMapper without events.
@@ -403,7 +392,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end updateEntity()
 
-
     /**
      * Internal delete method that calls parent QBMapper without events.
      *
@@ -423,11 +411,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end deleteEntity()
 
-
     // ==================================================================================
     // STATISTICS OPERATIONS (Delegated to StatisticsHandler)
     // ==================================================================================
-
 
     /**
      * Get statistics for objects.
@@ -444,7 +430,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getStatistics()
 
-
     /**
      * Get chart data for objects grouped by register.
      *
@@ -458,7 +443,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->statisticsHandler->getRegisterChartData($registerId, $schemaId);
 
     }//end getRegisterChartData()
-
 
     /**
      * Get chart data for objects grouped by schema.
@@ -474,7 +458,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getSchemaChartData()
 
-
     /**
      * Get chart data for objects grouped by size ranges.
      *
@@ -489,11 +472,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getSizeDistributionChartData()
 
-
     // ==================================================================================
     // FACET OPERATIONS (Delegated to FacetsHandler)
     // ==================================================================================
-
 
     /**
      * Get simple facets using the facet handlers.
@@ -510,7 +491,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getSimpleFacets()
 
-
     /**
      * Get facetable fields from schemas.
      *
@@ -526,11 +506,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end getFacetableFieldsFromSchemas()
 
-
     // ==================================================================================
     // BULK OPERATIONS (Delegated to BulkOperationsHandler)
     // ==================================================================================
-
 
     /**
      * ULTRA PERFORMANCE: Memory-intensive unified bulk save operation.
@@ -546,7 +524,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end ultraFastBulkSave()
 
-
     /**
      * Perform bulk delete operations on objects by UUID.
      *
@@ -560,7 +537,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->bulkOperationsHandler->deleteObjects($uuids, $hardDelete);
 
     }//end deleteObjects()
-
 
     /**
      * Perform bulk publish operations on objects by UUID.
@@ -576,7 +552,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end publishObjects()
 
-
     /**
      * Perform bulk depublish operations on objects by UUID.
      *
@@ -590,7 +565,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->bulkOperationsHandler->depublishObjects($uuids, $datetime);
 
     }//end depublishObjects()
-
 
     /**
      * Publish all objects belonging to a specific schema.
@@ -608,7 +582,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end publishObjectsBySchema()
 
-
     /**
      * Delete all objects belonging to a specific schema.
      *
@@ -625,7 +598,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end deleteObjectsBySchema()
 
-
     /**
      * Delete all objects belonging to a specific register.
      *
@@ -640,7 +612,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->bulkOperationsHandler->deleteObjectsByRegister($registerId);
 
     }//end deleteObjectsByRegister()
-
 
     /**
      * Process a single chunk of insert objects within a transaction.
@@ -657,7 +628,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end processInsertChunk()
 
-
     /**
      * Process a single chunk of update objects within a transaction.
      *
@@ -673,7 +643,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end processUpdateChunk()
 
-
     /**
      * Calculate optimal chunk size based on actual data size.
      *
@@ -688,11 +657,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end calculateOptimalChunkSize()
 
-
     // ==================================================================================
     // QUERY OPTIMIZATION OPERATIONS (Delegated to QueryOptimizationHandler)
     // ==================================================================================
-
 
     /**
      * Detect and separate extremely large objects for individual processing.
@@ -708,7 +675,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end separateLargeObjects()
 
-
     /**
      * Process large objects individually to prevent packet size errors.
      *
@@ -721,7 +687,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->queryOptimizationHandler->processLargeObjectsIndividually($largeObjects);
 
     }//end processLargeObjectsIndividually()
-
 
     /**
      * Bulk assign default owner and organization to objects.
@@ -740,7 +705,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end bulkOwnerDeclaration()
 
-
     /**
      * Set expiry dates for objects based on retention period.
      *
@@ -756,7 +720,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end setExpiryDate()
 
-
     /**
      * Apply optimizations for composite indexes.
      *
@@ -771,7 +734,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end applyCompositeIndexOptimizations()
 
-
     /**
      * Optimize ORDER BY clauses to use indexes.
      *
@@ -784,7 +746,6 @@ class ObjectEntityMapper extends QBMapper
         $this->queryOptimizationHandler->optimizeOrderBy($qb);
 
     }//end optimizeOrderBy()
-
 
     /**
      * Add database-specific query hints for better performance.
@@ -801,7 +762,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end addQueryHints()
 
-
     /**
      * Check if filters contain JSON-based queries.
      *
@@ -815,11 +775,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end hasJsonFilters()
 
-
     // ==================================================================================
     // CORE QUERY OPERATIONS (Find/Search/Count Methods - Restored from pre-refactor)
     // ==================================================================================
-
 
     /**
      * Find an object entity by identifier (ID, UUID, slug, or URI).
@@ -881,13 +839,14 @@ class ObjectEntityMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find multiple objects by their IDs or UUIDs.
      *
      * @param array $ids Array of IDs or UUIDs.
      *
-     * @return ObjectEntity[] Array of found objects.
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findMultiple(array $ids): array
     {
@@ -931,13 +890,14 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findMultiple()
 
-
     /**
      * Find all objects for a given schema.
      *
      * @param int $schemaId Schema ID.
      *
-     * @return ObjectEntity[] Array of objects.
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findBySchema(int $schemaId): array
     {
@@ -952,7 +912,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findBySchema()
-
 
     /**
      * Find all ObjectEntities with filtering, pagination, and search.
@@ -974,9 +933,11 @@ class ObjectEntityMapper extends QBMapper
      * @param Schema|null   $schema           Optional schema to filter objects.
      * @param bool|null     $published        If true, only return currently published objects.
      *
-     * @return ObjectEntity[] Array of objects.
+     * @return ObjectEntity[]
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<ObjectEntity>
      */
     public function findAll(
         ?int $limit=null,
@@ -1083,7 +1044,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Search for objects with complex filtering.
      *
@@ -1097,7 +1057,9 @@ class ObjectEntityMapper extends QBMapper
      * @param array|null  $ids                     Array of IDs or UUIDs to filter by.
      * @param string|null $uses                    Value that must be present in relations.
      *
-     * @return array|int Array of objects or count (depending on query parameters).
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function searchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): array|int
     {
@@ -1124,7 +1086,6 @@ class ObjectEntityMapper extends QBMapper
         );
 
     }//end searchObjects()
-
 
     /**
      * Count search results.
@@ -1185,7 +1146,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end countSearchObjects()
 
-
     /**
      * Count all objects with optional filtering.
      *
@@ -1216,7 +1176,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end countAll()
 
-
     /**
      * Count objects across multiple schemas.
      *
@@ -1242,7 +1201,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end countBySchemas()
 
-
     /**
      * Find objects across multiple schemas.
      *
@@ -1250,7 +1208,9 @@ class ObjectEntityMapper extends QBMapper
      * @param int|null $limit     Maximum number of results
      * @param int|null $offset    Offset for pagination
      *
-     * @return ObjectEntity[] Array of objects
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findBySchemas(array $schemaIds, ?int $limit=null, ?int $offset=null): array
     {
@@ -1277,7 +1237,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findBySchemas()
 
-
     /**
      * Find objects by relation search.
      *
@@ -1287,7 +1246,9 @@ class ObjectEntityMapper extends QBMapper
      * @param string $search       Search term to find in relationships
      * @param bool   $partialMatch Whether to allow partial matches (default: true)
      *
-     * @return ObjectEntity[] Array of matching objects
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     public function findByRelation(string $search, bool $partialMatch=true): array
     {
@@ -1323,11 +1284,9 @@ class ObjectEntityMapper extends QBMapper
 
     }//end findByRelation()
 
-
     // ==================================================================================
     // RBAC AND MULTITENANCY HELPERS (Kept in Facade)
     // ==================================================================================
-
 
     /**
      * Check if RBAC is enabled in app configuration.
@@ -1346,7 +1305,6 @@ class ObjectEntityMapper extends QBMapper
 
     }//end isRbacEnabled()
 
-
     /**
      * Check if multi-tenancy is enabled in app configuration.
      *
@@ -1363,7 +1321,6 @@ class ObjectEntityMapper extends QBMapper
         return $multitenancyData['enabled'] ?? false;
 
     }//end isMultiTenancyEnabled()
-
 
     /**
      * Check if multitenancy admin override is enabled.
@@ -1382,6 +1339,4 @@ class ObjectEntityMapper extends QBMapper
         return $multitenancyData['adminOverride'] ?? true;
 
     }//end isMultitenancyAdminOverrideEnabled()
-
-
 }//end class

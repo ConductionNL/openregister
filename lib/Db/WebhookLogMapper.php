@@ -42,8 +42,6 @@ use OCP\IDBConnection;
  */
 class WebhookLogMapper extends QBMapper
 {
-
-
     /**
      * Constructor for WebhookLogMapper
      *
@@ -56,7 +54,6 @@ class WebhookLogMapper extends QBMapper
         parent::__construct($db, 'openregister_webhook_logs', WebhookLog::class);
 
     }//end __construct()
-
 
     /**
      * Find a webhook log by ID
@@ -79,7 +76,6 @@ class WebhookLogMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
     /**
      * Find logs for a specific webhook
@@ -113,7 +109,6 @@ class WebhookLogMapper extends QBMapper
 
     }//end findByWebhook()
 
-
     /**
      * Find all webhook logs
      *
@@ -122,7 +117,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @return WebhookLog[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
+     * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -143,7 +138,6 @@ class WebhookLogMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findAll()
-
 
     /**
      * Find failed logs that need retry
@@ -169,7 +163,6 @@ class WebhookLogMapper extends QBMapper
 
     }//end findFailedForRetry()
 
-
     /**
      * Insert a new webhook log
      *
@@ -189,7 +182,6 @@ class WebhookLogMapper extends QBMapper
         return parent::insert($entity);
 
     }//end insert()
-
 
     /**
      * Get statistics for a webhook
@@ -225,6 +217,4 @@ class WebhookLogMapper extends QBMapper
         ];
 
     }//end getStatistics()
-
-
 }//end class

@@ -37,8 +37,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250902130000 extends SimpleMigrationStep
 {
-
-
     /**
      * Apply database schema changes for search performance
      *
@@ -65,7 +63,6 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
 
     /**
      * Execute raw SQL for TEXT column prefix indexes
@@ -94,6 +91,4 @@ class Version1Date20250902130000 extends SimpleMigrationStep
         $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
 
     }//end postSchemaChange()
-
-
 }//end class

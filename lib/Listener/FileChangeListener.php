@@ -48,8 +48,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileChangeListener implements IEventListener
 {
-
-
     /**
      * Constructor
      *
@@ -66,7 +64,6 @@ class FileChangeListener implements IEventListener
     ) {
 
     }//end __construct()
-
 
     /**
      * Handle file events
@@ -229,6 +226,4 @@ class FileChangeListener implements IEventListener
         }//end try
 
     }//end handle()
-
-
 }//end class

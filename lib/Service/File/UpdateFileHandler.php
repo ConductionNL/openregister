@@ -55,7 +55,6 @@ class UpdateFileHandler
      */
     private ?FileService $fileService = null;
 
-
     /**
      * Constructor for UpdateFileHandler.
      *
@@ -81,7 +80,6 @@ class UpdateFileHandler
 
     }//end __construct()
 
-
     /**
      * Set the FileService instance for cross-handler coordination.
      *
@@ -94,7 +92,6 @@ class UpdateFileHandler
         $this->fileService = $fileService;
 
     }//end setFileService()
-
 
     /**
      * Update a file's content, metadata, and tags.
@@ -297,6 +294,4 @@ class UpdateFileHandler
         return $file;
 
     }//end updateFile()
-
-
 }//end class

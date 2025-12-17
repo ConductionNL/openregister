@@ -46,7 +46,6 @@ class ViewUpdatedEvent extends Event
      */
     private View $oldView;
 
-
     /**
      * Constructor for ViewUpdatedEvent.
      *
@@ -62,6 +61,4 @@ class ViewUpdatedEvent extends Event
         $this->oldView = $oldView;
 
     }//end __construct()
-
-
 }//end class

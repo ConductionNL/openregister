@@ -68,7 +68,6 @@ class ViewService
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -88,7 +87,6 @@ class ViewService
         $this->logger     = $logger;
 
     }//end __construct()
-
 
     /**
      * Find a view by ID
@@ -122,7 +120,6 @@ class ViewService
 
     }//end find()
 
-
     /**
      * Find all views accessible to a user
      *
@@ -141,7 +138,6 @@ class ViewService
         return $this->viewMapper->findAll(owner: $owner);
 
     }//end findAll()
-
 
     /**
      * Create a new view
@@ -194,7 +190,6 @@ class ViewService
         }//end try
 
     }//end create()
-
 
     /**
      * Update an existing view.
@@ -249,7 +244,6 @@ class ViewService
 
     }//end update()
 
-
     /**
      * Delete a view by ID.
      *
@@ -272,7 +266,6 @@ class ViewService
 
     }//end delete()
 
-
     /**
      * Clear default flag for all views of a user.
      *
@@ -291,6 +284,4 @@ class ViewService
         }
 
     }//end clearDefaultForUser()
-
-
 }//end class

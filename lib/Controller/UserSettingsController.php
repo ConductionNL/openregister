@@ -57,7 +57,6 @@ class UserSettingsController extends Controller
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -81,7 +80,6 @@ class UserSettingsController extends Controller
         $this->logger        = $logger;
 
     }//end __construct()
-
 
     /**
      * Get current GitHub token status (without exposing the token).
@@ -135,17 +133,14 @@ class UserSettingsController extends Controller
 
     }//end getGitHubTokenStatus()
 
-
     /**
      * Set GitHub personal access token for the current user.
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing token save result
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'GitHub token saved successfully'}, array<never, never>>
      */
     public function setGitHubToken(): JSONResponse
     {
@@ -185,7 +180,6 @@ class UserSettingsController extends Controller
         }//end try
 
     }//end setGitHubToken()
-
 
     /**
      * Remove GitHub personal access token for the current user.
@@ -234,7 +228,6 @@ class UserSettingsController extends Controller
 
     }//end removeGitHubToken()
 
-
     /**
      * Get token validation message
      *
@@ -253,6 +246,4 @@ class UserSettingsController extends Controller
         return 'Token is invalid or expired';
 
     }//end getTokenValidationMessage()
-
-
 }//end class

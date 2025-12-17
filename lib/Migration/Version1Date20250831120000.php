@@ -37,8 +37,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250831120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add size column to search trails table.
      *
@@ -78,6 +76,4 @@ class Version1Date20250831120000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

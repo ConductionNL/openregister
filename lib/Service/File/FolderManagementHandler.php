@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -50,13 +50,12 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
 class FolderManagementHandler
 {
-
     /**
      * Root folder name for all OpenRegister files.
      *
@@ -71,7 +70,6 @@ class FolderManagementHandler
      */
     private const APP_GROUP = 'openregister';
 
-
     /**
      * Constructor for FolderManagementHandler.
      *
@@ -81,7 +79,8 @@ class FolderManagementHandler
      * @param IUserSession       $userSession        User session for user context.
      * @param IGroupManager      $groupManager       Group manager for group operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
-     * @param FileService|null   $fileService        File service facade for cross-handler coordination (injected lazily to avoid circular dependency).
+     * @param FileService|null   $fileService        File service facade for cross-handler coordination
+     *                                               (injected lazily to avoid circular dependency).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -92,9 +91,7 @@ class FolderManagementHandler
         private readonly LoggerInterface $logger,
         private ?FileService $fileService=null
     ) {
-
     }//end __construct()
-
 
     /**
      * Set the FileService facade for cross-handler coordination.
@@ -112,9 +109,7 @@ class FolderManagementHandler
     public function setFileService(FileService $fileService): void
     {
         $this->fileService = $fileService;
-
     }//end setFileService()
-
 
     /**
      * Creates a folder for an entity (Register or ObjectEntity).
@@ -137,9 +132,9 @@ class FolderManagementHandler
         try {
             if ($entity instanceof Register) {
                 return $this->createRegisterFolderById(register: $entity, currentUser: $currentUser);
-            } else {
-                return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
             }
+
+            return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
         } catch (Exception $e) {
             $this->logger->error(
                 message: 'Failed to create folder for entity: {message}',
@@ -147,9 +142,7 @@ class FolderManagementHandler
             );
             return null;
         }
-
     }//end createEntityFolder()
-
 
     /**
      * Creates a folder for a Register and stores the folder ID.
@@ -157,52 +150,25 @@ class FolderManagementHandler
      * @param Register   $register    The register to create the folder for.
      * @param IUser|null $currentUser The current user to share the folder with.
      *
-     * @return Node|null The created folder Node or null if creation fails.
-     *
      * @throws Exception             If folder creation fails.
      * @throws NotPermittedException If folder creation is not permitted.
      *
+     * @return Node The created or existing register folder node.
+     *
      * @phpstan-return Node|null
-     * @psalm-return   Node|null
+     *
+     * @psalm-return Node|null
      */
-    public function createRegisterFolderById(Register $register, ?IUser $currentUser=null): ?Node
+    public function createRegisterFolderById(Register $register, ?IUser $currentUser=null): Node
     {
         $folderProperty = $register->getFolder();
 
-        // Check if folder ID is already set and valid (not legacy string).
-        // Note: Defensive check for legacy data - getFolder() returns string|null, but legacy data might have int IDs.
-        /*
-         * @psalm-suppress TypeDoesNotContainType - Legacy data handling
-         */
-        if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
-            try {
-                /*
-                 * Type assertion: after checking it's not a string, it should be numeric (int or float).
-                 *
-                 * @var int|float $folderProperty
-                 */
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
-                 */
-                if (is_numeric($folderProperty) === true) {
-                    /*
-                     * @psalm-suppress InvalidCast - numeric value can be cast to int
-                     */
-
-                    $folderId       = (int) $folderProperty;
-                    $existingFolder = $this->getNodeById($folderId);
-                    if ($existingFolder !== null && $existingFolder instanceof Folder) {
-                        $this->logger->info(message: "Register folder already exists with ID: ".$folderProperty);
-                        return $existingFolder;
-                    }
-                } else {
-                    throw new Exception('Invalid folder ID type');
-                }
-            } catch (Exception $e) {
-                $this->logger->warning(message: "Stored folder ID invalid, creating new folder: ".$e->getMessage());
-            }//end try
-        }//end if
+        // Try to get existing folder by ID.
+        $existingFolder = $this->getExistingFolderFromProperty($folderProperty);
+        if ($existingFolder !== null) {
+            $this->logger->info(message: "Register folder already exists with ID: ".$folderProperty);
+            return $existingFolder;
+        }
 
         // Create the folder path and node.
         $registerFolderName = $this->getRegisterFolderName($register);
@@ -210,32 +176,28 @@ class FolderManagementHandler
 
         $folderNode = $this->createFolderPath($folderPath);
 
-        if ($folderNode !== null) {
-            // Store the folder ID instead of the path.
-            $register->setFolder((string) $folderNode->getId());
-            $this->logger->info('🔹 FolderManagementHandler: About to update register with folder ID');
-            $this->registerMapper->update($register);
-            $this->logger->info('🔹 FolderManagementHandler: Register updated with folder ID');
+        if ($folderNode === null) {
+            return $folderNode;
+        }
 
-            $this->logger->info(message: "Created register folder with ID: ".$folderNode->getId());
+        // Store the folder ID instead of the path.
+        $register->setFolder((string) $folderNode->getId());
+        $this->logger->info('🔹 FolderManagementHandler: About to update register with folder ID');
+        $this->registerMapper->update($register);
+        $this->logger->info('🔹 FolderManagementHandler: Register updated with folder ID');
 
-            // Transfer ownership to OpenRegister and share with current user if needed.
-            if ($this->fileService !== null) {
-                // TODO: Call $this->fileService->transferFolderOwnershipIfNeeded($folderNode) once FileOwnershipHandler is extracted.
-            }
+        $this->logger->info(message: "Created register folder with ID: ".$folderNode->getId());
 
-            // Share the folder with the currently active user if there is one.
-            if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-                if ($this->fileService !== null) {
-                    // TODO: Call $this->fileService->shareFolderWithUser(folder: $folderNode, userId: $currentUser->getUID()) once FileSharingHandler is extracted.
-                }
-            }
-        }//end if
+        // Transfer ownership to OpenRegister and share with current user if needed.
+        if ($this->fileService !== null) {
+            // TODO: Call $this->fileService->transferFolderOwnershipIfNeeded($folderNode) once FileOwnershipHandler is extracted.
+        }
+
+        // Share the folder with the currently active user if there is one.
+        $this->shareFolderWithCurrentUser(folderNode: $folderNode, currentUser: $currentUser);
 
         return $folderNode;
-
     }//end createRegisterFolderById()
-
 
     /**
      * Creates a folder for an ObjectEntity nested under the register folder.
@@ -261,60 +223,15 @@ class FolderManagementHandler
             $folderProperty = $objectEntity->getFolder();
         }
 
-        // Check if folder ID is already set and valid (not legacy string).
-        // Note: Defensive check for legacy data - getFolder() returns string|null, but legacy data might have int IDs.
-        /*
-         * @psalm-suppress TypeDoesNotContainType - Legacy data handling
-         */
-        if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
-            try {
-                /*
-                 * Type assertion: after checking it's not a string, it should be numeric (int or float).
-                 *
-                 * @var int|float $folderProperty
-                 */
-
-                /*
-                 * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
-                 */
-                if (is_numeric($folderProperty) === true) {
-                    /*
-                     * @psalm-suppress InvalidCast - numeric value can be cast to int
-                     */
-
-                    $folderId       = (int) $folderProperty;
-                    $existingFolder = $this->getNodeById($folderId);
-                    if ($existingFolder !== null && $existingFolder instanceof Folder) {
-                        $this->logger->info(message: "Object folder already exists with ID: ".$folderProperty);
-                        return $existingFolder;
-                    }
-                } else {
-                    throw new Exception('Invalid folder ID type');
-                }
-            } catch (Exception $e) {
-                $this->logger->warning(message: "Stored folder ID invalid, creating new folder: ".$e->getMessage());
-            }//end try
-        }//end if
-
-        // Ensure register folder exists first.
-        $register = null;
-        if ($objectEntity instanceof ObjectEntity === true) {
-            $register = $this->registerMapper->find($objectEntity->getRegister());
-            if ($register === null) {
-                $registerUuid = $objectEntity->getRegister();
-                throw new Exception("Failed to create file, could not find register for objects register: {$registerUuid}");
-            }
-        } else if ($registerId !== null) {
-            $register = $this->registerMapper->find($registerId);
-            if ($register === null) {
-                throw new Exception("Failed to create file, could not find register with register id: $registerId");
-            }
-        }//end if
-
-        if ($register === null) {
-            throw new Exception("Failed to create file because no objectEntity or registerId given");
+        // Try to get existing folder by ID.
+        $existingFolder = $this->getExistingFolderFromProperty($folderProperty);
+        if ($existingFolder !== null) {
+            $this->logger->info(message: "Object folder already exists with ID: ".$folderProperty);
+            return $existingFolder;
         }
 
+        // Ensure register folder exists first.
+        $register       = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $registerId);
         $registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
 
         if ($registerFolder === null || ($registerFolder instanceof Folder) === false) {
@@ -322,17 +239,7 @@ class FolderManagementHandler
         }
 
         // Create object folder within the register folder.
-        $objectFolderName = $this->getObjectFolderName($objectEntity);
-
-        try {
-            // Try to get existing folder first.
-            $objectFolder = $registerFolder->get($objectFolderName);
-            $this->logger->info(message: "Object folder already exists: ".$objectFolderName);
-        } catch (NotFoundException) {
-            // Create new folder if it doesn't exist.
-            $objectFolder = $registerFolder->newFolder($objectFolderName);
-            $this->logger->info(message: "Created object folder: ".$objectFolderName);
-        }
+        $objectFolder = $this->createObjectFolderInRegister(registerFolder: $registerFolder, objectEntity: $objectEntity);
 
         // Store the folder ID.
         if ($objectEntity instanceof ObjectEntity === true) {
@@ -348,16 +255,10 @@ class FolderManagementHandler
         }
 
         // Share the folder with the currently active user if there is one.
-        if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-            if ($this->fileService !== null) {
-                // TODO: Call $this->fileService->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID()) once FileSharingHandler is extracted.
-            }
-        }
+        $this->shareFolderWithCurrentUser(folderNode: $objectFolder, currentUser: $currentUser);
 
         return $objectFolder;
-
     }//end createObjectFolderById()
-
 
     /**
      * Get the register folder by ID.
@@ -382,16 +283,18 @@ class FolderManagementHandler
             return $this->createRegisterFolderById(register: $register);
         }
 
-        // Type-safe casting to int if numeric.
         /*
+         * Type-safe casting to int if numeric.
+         *
          * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
          */
-        if (is_numeric($folderProperty) === true) {
-            $folderId = (int) $folderProperty;
-        } else {
+
+        if (is_numeric($folderProperty) === false) {
             $this->logger->warning(message: "Invalid folder ID type for register {$register->getId()}, creating new folder");
             return $this->createRegisterFolderById(register: $register);
         }
+
+        $folderId = (int) $folderProperty;
 
         // Try to get folder by ID.
         $folder = $this->getNodeById($folderId);
@@ -403,9 +306,7 @@ class FolderManagementHandler
         // If stored ID is invalid, recreate the folder.
         $this->logger->warning(message: "Register {$register->getId()} has invalid folder ID, recreating folder");
         return $this->createRegisterFolderById($register);
-
     }//end getRegisterFolderById()
-
 
     /**
      * Get the object folder for an object entity.
@@ -453,9 +354,7 @@ class FolderManagementHandler
         $this->logger->warning(message: "Object {$objectEntity->getId()} has invalid folder ID, recreating folder");
 
         return $this->createObjectFolderById(objectEntity: $objectEntity);
-
     }//end getObjectFolder()
-
 
     /**
      * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.
@@ -508,14 +407,13 @@ class FolderManagementHandler
         // Share the folder with the currently active user if there is one.
         if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
             if ($this->fileService !== null) {
-                // TODO: Call $this->fileService->shareFolderWithUser(folder: $objectFolder, userId: $currentUser->getUID()) once FileSharingHandler is extracted.
+                // TODO: Call $this->fileService->shareFolderWithUser(folder: $objectFolder, userId:
+                // $currentUser->getUID()) once FileSharingHandler is extracted.
             }
         }
 
         return $objectFolder->getId();
-
     }//end createObjectFolderWithoutUpdate()
-
 
     /**
      * Create a folder path and return the Node.
@@ -543,7 +441,7 @@ class FolderManagementHandler
             try {
                 $userFolder->get(self::ROOT_FOLDER);
             } catch (NotFoundException) {
-                $rootFolder = $userFolder->newFolder(self::ROOT_FOLDER);
+                $userFolder->newFolder(self::ROOT_FOLDER);
 
                 if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
                     $this->groupManager->createGroup(self::APP_GROUP);
@@ -577,9 +475,7 @@ class FolderManagementHandler
             $this->logger->error(message: "Can't create folder $folderPath: ".$e->getMessage());
             throw new Exception("Can't create folder $folderPath");
         }//end try
-
     }//end createFolderPath()
-
 
     /**
      * Public interface to create a folder (delegates to createFolderPath).
@@ -595,9 +491,7 @@ class FolderManagementHandler
     public function createFolder(string $folderPath): Node
     {
         return $this->createFolderPath($folderPath);
-
     }//end createFolder()
-
 
     /**
      * Get the register folder name.
@@ -620,9 +514,7 @@ class FolderManagementHandler
         }
 
         return "$title Register";
-
     }//end getRegisterFolderName()
-
 
     /**
      * Get the object folder name.
@@ -649,9 +541,7 @@ class FolderManagementHandler
 
         $id = $objectEntity->getId();
         return (string) $id;
-
     }//end getObjectFolderName()
-
 
     /**
      * Get the OpenRegister user root folder.
@@ -676,9 +566,7 @@ class FolderManagementHandler
             $this->logger->error(message: "Failed to get OpenRegister user folder: ".$e->getMessage());
             throw new Exception("Cannot access OpenRegister user folder: ".$e->getMessage());
         }
-
     }//end getOpenRegisterUserFolder()
-
 
     /**
      * Get a Node by its ID.
@@ -704,9 +592,7 @@ class FolderManagementHandler
             $this->logger->error(message: "Failed to get node by ID $nodeId: ".$e->getMessage());
             return null;
         }
-
     }//end getNodeById()
-
 
     /**
      * Get node type from node (file or folder).
@@ -729,9 +615,7 @@ class FolderManagementHandler
         }
 
         return 'unknown';
-
     }//end getNodeTypeFromFolder()
-
 
     /**
      * Get the OpenRegister user from the session.
@@ -752,9 +636,7 @@ class FolderManagementHandler
         }
 
         return $user;
-
     }//end getUser()
-
 
     /**
      * Get the currently active user (not the OpenRegister system user).
@@ -770,8 +652,160 @@ class FolderManagementHandler
     private function getCurrentUser(): ?IUser
     {
         return $this->userSession->getUser();
-
     }//end getCurrentUser()
 
+    /**
+     * Try to get existing folder by ID from folder property.
+     *
+     * @param string|null $folderProperty The folder property to check.
+     *
+     * @return Folder|null The existing folder or null if not found.
+     *
+     * @psalm-return   Folder|null
+     * @phpstan-return Folder|null
+     */
+    private function getExistingFolderFromProperty(?string $folderProperty): ?Folder
+    {
+        /*
+         * Check if folder ID is already set and valid (not legacy string).
+         * Note: Defensive check for legacy data - getFolder() returns string|null, but legacy data might have int IDs.
+         *
+         * @psalm-suppress TypeDoesNotContainType - Legacy data handling
+         */
 
+        if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty) === true) {
+            return null;
+        }
+
+        try {
+            /*
+             * Type assertion: after checking it's not a string, it should be numeric (int or float).
+             *
+             * @var int|float $folderProperty
+             */
+
+            /*
+             * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
+             */
+
+            if (is_numeric($folderProperty) === false) {
+                throw new Exception('Invalid folder ID type');
+            }
+
+            /*
+             * @psalm-suppress InvalidCast - numeric value can be cast to int
+             */
+
+            $folderId       = (int) $folderProperty;
+            $existingFolder = $this->getNodeById($folderId);
+            if ($existingFolder !== null && $existingFolder instanceof Folder) {
+                return $existingFolder;
+            }
+
+            return null;
+        } catch (Exception $e) {
+            $this->logger->warning(message: "Stored folder ID invalid: ".$e->getMessage());
+            return null;
+        }//end try
+    }//end getExistingFolderFromProperty()
+
+    /**
+     * Share folder with current user if different from system user.
+     *
+     * @param Node       $folderNode  The folder to share.
+     * @param IUser|null $currentUser The current user to share with.
+     *
+     * @return void
+     *
+     * @psalm-return   void
+     * @phpstan-return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    private function shareFolderWithCurrentUser(Node $folderNode, ?IUser $currentUser): void
+    {
+        // Share the folder with the currently active user if there is one and different from system user.
+        if ($currentUser === null) {
+            return;
+        }
+
+        if ($currentUser->getUID() === $this->getUser()->getUID()) {
+            return;
+        }
+
+        if ($this->fileService === null) {
+            return;
+        }
+
+        // TODO: Call $this->fileService->shareFolderWithUser(folder: $folderNode, userId: $currentUser->getUID())
+        // once FileSharingHandler is extracted. The $folderNode parameter will be used when the
+        // FileSharingHandler integration is complete.
+    }//end shareFolderWithCurrentUser()
+
+    /**
+     * Get register from object entity or register ID.
+     *
+     * @param ObjectEntity|string $objectEntity The object entity or UUID.
+     * @param int|string|null     $registerId   Optional register ID.
+     *
+     * @return Register The register entity.
+     *
+     * @throws Exception If register cannot be found.
+     *
+     * @psalm-return   Register
+     * @phpstan-return Register
+     */
+    private function getRegisterFromObjectOrId(ObjectEntity|string $objectEntity, int|string|null $registerId): Register
+    {
+        $register = null;
+
+        if ($objectEntity instanceof ObjectEntity === true) {
+            $register = $this->registerMapper->find($objectEntity->getRegister());
+            if ($register === null) {
+                $registerUuid = $objectEntity->getRegister();
+                throw new Exception("Failed to create file, could not find register for objects register: {$registerUuid}");
+            }
+
+            return $register;
+        }
+
+        if ($registerId !== null) {
+            $register = $this->registerMapper->find($registerId);
+            if ($register === null) {
+                throw new Exception("Failed to create file, could not find register with register id: $registerId");
+            }
+
+            return $register;
+        }
+
+        throw new Exception("Failed to create file because no objectEntity or registerId given");
+    }//end getRegisterFromObjectOrId()
+
+    /**
+     * Create or get object folder within register folder.
+     *
+     * @param Folder              $registerFolder The parent register folder.
+     * @param ObjectEntity|string $objectEntity   The object entity or UUID.
+     *
+     * @return Folder The object folder.
+     *
+     * @psalm-return   Folder
+     * @phpstan-return Folder
+     */
+    private function createObjectFolderInRegister(Folder $registerFolder, ObjectEntity|string $objectEntity): Folder
+    {
+        $objectFolderName = $this->getObjectFolderName($objectEntity);
+
+        try {
+            // Try to get existing folder first.
+            $objectFolder = $registerFolder->get($objectFolderName);
+            $this->logger->info(message: "Object folder already exists: ".$objectFolderName);
+            return $objectFolder;
+        } catch (NotFoundException) {
+            // Create new folder if it doesn't exist.
+            $objectFolder = $registerFolder->newFolder($objectFolderName);
+            $this->logger->info(message: "Created object folder: ".$objectFolderName);
+            return $objectFolder;
+        }
+    }//end createObjectFolderInRegister()
 }//end class

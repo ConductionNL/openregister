@@ -56,8 +56,6 @@ use OCP\AppFramework\Http\JSONResponse;
  */
 trait MultiTenancyTrait
 {
-
-
     /**
      * Get the active organisation UUID from the session.
      *
@@ -99,7 +97,6 @@ trait MultiTenancyTrait
         return $this->getDefaultOrganisationUuid();
 
     }//end getActiveOrganisationUuid()
-
 
     /**
      * Get default organisation UUID from config
@@ -143,7 +140,6 @@ trait MultiTenancyTrait
         return null;
 
     }//end getDefaultOrganisationUuid()
-
 
     /**
      * Get active organisation UUIDs (active + all parents)
@@ -191,7 +187,6 @@ trait MultiTenancyTrait
 
     }//end getActiveOrganisationUuids()
 
-
     /**
      * Check if published objects should bypass multi-tenancy filtering.
      *
@@ -219,7 +214,6 @@ trait MultiTenancyTrait
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
 
-
     /**
      * Get the current user ID.
      *
@@ -240,7 +234,6 @@ trait MultiTenancyTrait
 
     }//end getCurrentUserId()
 
-
     /**
      * Check if the current user is an admin.
      *
@@ -260,7 +253,6 @@ trait MultiTenancyTrait
         return $this->groupManager->isAdmin($userId);
 
     }//end isCurrentUserAdmin()
-
 
     /**
      * Apply organisation filter to a query builder with advanced multi-tenancy support.
@@ -554,7 +546,6 @@ trait MultiTenancyTrait
 
     }//end applyOrganisationFilter()
 
-
     /**
      * Set organisation on an entity during creation.
      *
@@ -580,7 +571,6 @@ trait MultiTenancyTrait
         }
 
     }//end setOrganisationOnCreate()
-
 
     /**
      * Set the owner field on entity creation from the current user session
@@ -619,7 +609,6 @@ trait MultiTenancyTrait
 
     }//end setOwnerOnCreate()
 
-
     /**
      * Verify that an entity belongs to the active organisation.
      *
@@ -656,7 +645,6 @@ trait MultiTenancyTrait
         }
 
     }//end verifyOrganisationAccess()
-
 
     /**
      * Check if the current user has permission to perform an action.
@@ -771,7 +759,6 @@ trait MultiTenancyTrait
 
     }//end hasRbacPermission()
 
-
     /**
      * Verify RBAC permission and throw exception if denied.
      *
@@ -792,6 +779,4 @@ trait MultiTenancyTrait
         }
 
     }//end verifyRbacPermission()
-
-
 }//end trait

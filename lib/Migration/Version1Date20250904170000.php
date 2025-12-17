@@ -42,8 +42,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version1Date20250904170000 extends SimpleMigrationStep
 {
-
-
     /**
      * Apply database performance optimizations
      *
@@ -105,7 +103,6 @@ class Version1Date20250904170000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Optimize relationship tables with appropriate indexes
      *
@@ -154,6 +151,4 @@ class Version1Date20250904170000 extends SimpleMigrationStep
         }
 
     }//end optimizeRelationshipTable()
-
-
 }//end class

@@ -160,7 +160,6 @@ class FacetCacheHandler
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -184,7 +183,6 @@ class FacetCacheHandler
         $this->logger       = $logger;
 
     }//end __construct()
-
 
     /**
      * Cache facetable fields configuration for a schema
@@ -215,7 +213,6 @@ class FacetCacheHandler
                 );
 
     }//end cacheFacetableFields()
-
 
     /**
      * Invalidate all cached facets for a schema
@@ -278,7 +275,6 @@ class FacetCacheHandler
 
     }//end invalidateForSchemaChange()
 
-
     /**
      * Clear all facet caches (Administrative Operation)
      *
@@ -315,11 +311,8 @@ class FacetCacheHandler
 
     }//end clearAllCaches()
 
-
     /**
      * Clean expired facet cache entries
-     *
-     * @return int Number of cleaned entries
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -351,7 +344,6 @@ class FacetCacheHandler
         return $deletedCount;
 
     }//end cleanExpiredEntries()
-
 
     /**
      * Get comprehensive facet cache statistics
@@ -395,17 +387,16 @@ class FacetCacheHandler
 
     }//end getCacheStatistics()
 
-
     /**
      * Generate facetable fields configuration from schema properties
      *
      * @param int $schemaId The schema ID
      *
-     * @return ((mixed|string)[]|mixed|string)[][][]
+     * @return (array|mixed|string)[][][]
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @psalm-return array{'@self'?: array{register: array{type: 'integer', facet_types: list{'terms'}, description: 'Register ID'}, schema: array{type: 'integer', facet_types: list{'terms'}, description: 'Schema ID'}, organisation: array{type: 'string', facet_types: list{'terms'}, description: 'Organisation UUID'}, owner: array{type: 'string', facet_types: list{'terms'}, description: 'Owner user ID'}, created: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Creation date'}, updated: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Last update date'}, published: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Publication date'}, depublished: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Depublication date'}}, object_fields?: array<array{type: 'string'|mixed, facet_types: array<string>, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}>}
+     * @psalm-return array{'@self'?: array{register: array{type: 'integer', facet_types: list{'terms'}, description: 'Register ID'}, schema: array{type: 'integer', facet_types: list{'terms'}, description: 'Schema ID'}, organisation: array{type: 'string', facet_types: list{'terms'}, description: 'Organisation UUID'}, owner: array{type: 'string', facet_types: list{'terms'}, description: 'Owner user ID'}, created: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Creation date'}, updated: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Last update date'}, published: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Publication date'}, depublished: array{type: 'datetime', facet_types: list{'date_histogram', 'range'}, description: 'Depublication date'}}, object_fields?: array<array{type: 'string'|mixed, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, description: mixed|string, enum_values?: array, minimum?: mixed, maximum?: mixed}>}
      */
     private function generateFacetableFieldsFromSchema(int $schemaId): array
     {
@@ -450,7 +441,6 @@ class FacetCacheHandler
         return $facetableFields;
 
     }//end generateFacetableFieldsFromSchema()
-
 
     /**
      * Get metadata facetable fields (always available)
@@ -547,7 +537,6 @@ class FacetCacheHandler
 
     }//end getMetadataFacetableFields()
 
-
     /**
      * Check if a property is facetable based on its definition
      *
@@ -581,7 +570,6 @@ class FacetCacheHandler
         return false;
 
     }//end isPropertyFacetable()
-
 
     /**
      * Generate field configuration from property definition
@@ -624,7 +612,6 @@ class FacetCacheHandler
 
     }//end generateFieldConfigFromProperty()
 
-
     /**
      * Determine appropriate facet types for a property
      *
@@ -660,7 +647,6 @@ class FacetCacheHandler
 
     }//end determineFacetTypesFromProperty()
 
-
     /**
      * Build cache key for facet results
      *
@@ -676,7 +662,6 @@ class FacetCacheHandler
         return "facet_{$facetType}_{$fieldName}_{$configHash}";
 
     }//end buildFacetCacheKey()
-
 
     /**
      * Get cached facet data from database
@@ -714,7 +699,6 @@ class FacetCacheHandler
         return json_decode($result['cache_data'], true);
 
     }//end getCachedFacetData()
-
 
     /**
      * Set cached facet data in database
@@ -783,7 +767,6 @@ class FacetCacheHandler
 
     }//end setCachedFacetData()
 
-
     /**
      * Remove cached facet data from database
      *
@@ -803,6 +786,4 @@ class FacetCacheHandler
         $qb->executeStatement();
 
     }//end removeCachedFacetData()
-
-
 }//end class

@@ -52,7 +52,6 @@ class ValidationException extends Exception
      */
     private readonly ?ValidationError $errors;
 
-
     /**
      * Constructor for ValidationException
      *
@@ -81,7 +80,6 @@ class ValidationException extends Exception
 
     }//end __construct()
 
-
     /**
      * Returns the validation errors
      *
@@ -96,6 +94,4 @@ class ValidationException extends Exception
         return $this->errors;
 
     }//end getErrors()
-
-
 }//end class

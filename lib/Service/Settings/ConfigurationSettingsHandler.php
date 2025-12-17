@@ -88,16 +88,15 @@ private LoggerInterface $logger;
      */
 private string $appName;
 
-
     /**
      * Constructor for ConfigurationSettingsHandler
      *
-     * @param IConfig              $config              Configuration service.
-     * @param IGroupManager        $groupManager        Group manager.
-     * @param IUserManager         $userManager         User manager.
-     * @param OrganisationMapper   $organisationMapper  Organisation mapper.
-     * @param LoggerInterface      $logger              Logger.
-     * @param string               $appName             Application name.
+     * @param IConfig            $config             Configuration service.
+     * @param IGroupManager      $groupManager       Group manager.
+     * @param IUserManager       $userManager        User manager.
+     * @param OrganisationMapper $organisationMapper Organisation mapper.
+     * @param LoggerInterface    $logger             Logger.
+     * @param string             $appName            Application name.
      *
      * @return void
      */
@@ -107,16 +106,15 @@ public function __construct(
     IUserManager $userManager,
     OrganisationMapper $organisationMapper,
     LoggerInterface $logger,
-    string $appName = 'openregister'
+    string $appName='openregister'
 ) {
-    $this->config             = $config;
-    $this->groupManager       = $groupManager;
-    $this->userManager        = $userManager;
+    $this->config       = $config;
+    $this->groupManager = $groupManager;
+    $this->userManager  = $userManager;
     $this->organisationMapper = $organisationMapper;
-    $this->logger             = $logger;
-    $this->appName            = $appName;
+    $this->logger  = $logger;
+    $this->appName = $appName;
 }//end __construct()
-
 
     /**
      * Check if multi-tenancy is enabled
@@ -135,20 +133,19 @@ public function __construct(
 
     }//end isMultiTenancyEnabled()
 
-
     /**
      * Retrieve the current settings including RBAC and Multitenancy.
      *
-     * @return array[] The current settings configuration.
+     * @return (bool|int|mixed|null|string)[][]
      *
      * @throws \RuntimeException If settings retrieval fails.
      *
-     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array, availableTenants: array, availableUsers: array, retention: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
+     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac: array{enabled: mixed|true, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array<string, string>, availableTenants: array, availableUsers: array<string, string>, retention: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
      */
 public function getSettings(): array
 {
     try {
-        $data=[];
+        $data = [];
 
         // Version information.
         $data['version'] = [
@@ -303,17 +300,16 @@ public function getSettings(): array
     }//end try
 }//end getSettings()
 
-
     /**
      * Get available Nextcloud groups.
      *
-     * @return string[] Array of group_id => group_name
+     * @return string[]
      *
      * @psalm-return array<string, string>
      */
 private function getAvailableGroups(): array
 {
-    $groups=[];
+    $groups = [];
 
     // Add special "public" group for anonymous users.
     $groups['public'] = 'Public (No restrictions)';
@@ -327,11 +323,12 @@ private function getAvailableGroups(): array
     return $groups;
 }//end getAvailableGroups()
 
-
     /**
      * Get available organisations as tenants.
      *
-     * @return array Array of organisation_uuid => organisation_name
+     * @return (null|string)[] Array of organisation_uuid => organisation_name
+     *
+     * @psalm-return array<string, null|string>
      */
 private function getAvailableOrganisations(): array
 {
@@ -350,7 +347,6 @@ private function getAvailableOrganisations(): array
     }
 }//end getAvailableOrganisations()
 
-
     /**
      * Get available users.
      *
@@ -360,7 +356,7 @@ private function getAvailableOrganisations(): array
      */
 private function getAvailableUsers(): array
 {
-    $users=[];
+    $users = [];
 
     // Get all Nextcloud users (limit to prevent performance issues).
     $nextcloudUsers = $this->userManager->search('', 100);
@@ -375,14 +371,16 @@ private function getAvailableUsers(): array
     return $users;
 }//end getAvailableUsers()
 
-
     /**
      * Update the settings configuration.
      *
      * @param array $data The settings data to update.
      *
-     * @return array The updated settings configuration.
+     * @return array[] The updated settings configuration.
+     *
      * @throws \RuntimeException If settings update fails.
+     *
+     * @psalm-return array{version: array{appName: 'Open Register', appVersion: '0.2.3'}, rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, multitenancy: array{enabled: false|mixed, defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed, publishedObjectsBypassMultiTenancy: false|mixed, adminOverride: mixed|true}, availableGroups: array, availableTenants: array, availableUsers: array, retention: array{objectArchiveRetention: 31536000000|mixed, objectDeleteRetention: 63072000000|mixed, searchTrailRetention: 2592000000|mixed, createLogRetention: 2592000000|mixed, readLogRetention: 86400000|mixed, updateLogRetention: 604800000|mixed, deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true, searchTrailsEnabled: mixed|true}, solr: array{enabled: false|mixed, host: 'solr'|mixed, port: 8983|mixed, path: '/solr'|mixed, core: 'openregister'|mixed, configSet: '_default'|mixed, scheme: 'http'|mixed, username: 'solr'|mixed, password: 'SolrRocks'|mixed, timeout: 30|mixed, autoCommit: mixed|true, commitWithin: 1000|mixed, enableLogging: mixed|true, zookeeperHosts: 'zookeeper:2181'|mixed, zookeeperUsername: ''|mixed, zookeeperPassword: ''|mixed, collection: 'openregister'|mixed, useCloud: mixed|true, objectCollection: mixed|null, fileCollection: mixed|null}}
      */
 public function updateSettings(array $data): array
 {
@@ -467,7 +465,6 @@ public function updateSettings(array $data): array
     }//end try
 }//end updateSettings()
 
-
     /**
      * Update the publishing options configuration.
      *
@@ -489,7 +486,7 @@ public function updatePublishingOptions(array $options): array
             'use_old_style_publishing_view',
         ];
 
-        $updatedOptions=[];
+        $updatedOptions = [];
 
         // Update each publishing option in the configuration.
         foreach ($validOptions as $option) {
@@ -515,22 +512,21 @@ public function updatePublishingOptions(array $options): array
     }//end try
 }//end updatePublishingOptions()
 
-
     /**
      * Get focused RBAC settings only
      *
-     * @return array[] RBAC configuration with available groups and users
+     * @return (mixed|string|true)[][]
      *
      * @throws \RuntimeException If RBAC settings retrieval fails
      *
-     * @psalm-return array{rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array, availableUsers: array}
+     * @psalm-return array{rbac: array{enabled: mixed|true, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array<string, string>, availableUsers: array<string, string>}
      */
 public function getRbacSettingsOnly(): array
 {
     try {
         $rbacConfig = $this->config->getAppValue($this->appName, 'rbac', '');
 
-        $rbacData=[];
+        $rbacData = [];
         if (empty($rbacConfig) === true) {
             $rbacData = [
                 'enabled'             => true,
@@ -560,17 +556,16 @@ public function getRbacSettingsOnly(): array
     }//end try
 }//end getRbacSettingsOnly()
 
-
     /**
      * Update RBAC settings only
      *
      * @param array $rbacData RBAC configuration data
      *
-     * @return array[] Updated RBAC configuration
+     * @return (mixed|string|true)[][]
      *
      * @throws \RuntimeException If RBAC settings update fails
      *
-     * @psalm-return array{rbac: array{enabled: false|mixed, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array, availableUsers: array}
+     * @psalm-return array{rbac: array{enabled: mixed|true, anonymousGroup: 'public'|mixed, defaultNewUserGroup: 'viewer'|mixed, defaultObjectOwner: ''|mixed, adminOverride: mixed|true}, availableGroups: array<string, string>, availableUsers: array<string, string>}
      */
 public function updateRbacSettingsOnly(array $rbacData): array
 {
@@ -595,7 +590,6 @@ public function updateRbacSettingsOnly(array $rbacData): array
     }
 }//end updateRbacSettingsOnly()
 
-
     /**
      * Get Organisation settings only
      *
@@ -610,7 +604,7 @@ public function getOrganisationSettingsOnly(): array
     try {
         $organisationConfig = $this->config->getAppValue($this->appName, 'organisation', '');
 
-        $organisationData=[];
+        $organisationData = [];
         if (empty($organisationConfig) === true) {
             $organisationData = [
                 'default_organisation'             => null,
@@ -631,7 +625,6 @@ public function getOrganisationSettingsOnly(): array
         throw new RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
     }//end try
 }//end getOrganisationSettingsOnly()
-
 
     /**
      * Update Organisation settings only
@@ -662,7 +655,6 @@ public function updateOrganisationSettingsOnly(array $organisationData): array
     }
 }//end updateOrganisationSettingsOnly()
 
-
     /**
      * Get default organisation UUID from settings
      *
@@ -678,7 +670,6 @@ public function getDefaultOrganisationUuid(): ?string
         return null;
     }
 }//end getDefaultOrganisationUuid()
-
 
     /**
      * Get tenant ID from multitenancy settings
@@ -696,7 +687,6 @@ public function getTenantId(): ?string
     }
 }//end getTenantId()
 
-
     /**
      * Get organisation ID (alias for getDefaultOrganisationUuid)
      *
@@ -706,7 +696,6 @@ public function getOrganisationId(): ?string
 {
     return $this->getDefaultOrganisationUuid();
 }//end getOrganisationId()
-
 
     /**
      * Set default organisation UUID in settings
@@ -725,14 +714,12 @@ public function setDefaultOrganisationUuid(?string $uuid): void
     }
 }//end setDefaultOrganisationUuid()
 
-
     /**
      * Get focused Multitenancy settings only
      *
      * @return array Multitenancy configuration with available tenants
      * @throws \RuntimeException If Multitenancy settings retrieval fails
      */
-
 
     /**
      * Get multitenancy settings only (detailed implementation)
@@ -746,7 +733,7 @@ public function getMultitenancySettingsOnly(): array
     try {
         $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
 
-        $multitenancyData=[];
+        $multitenancyData = [];
         if (empty($multitenancyConfig) === true) {
             $multitenancyData = [
                 'enabled'                            => false,
@@ -774,7 +761,6 @@ public function getMultitenancySettingsOnly(): array
         throw new RuntimeException('Failed to retrieve Multitenancy settings: '.$e->getMessage());
     }//end try
 }//end getMultitenancySettingsOnly()
-
 
     /**
      * Update Multitenancy settings only
@@ -808,7 +794,6 @@ public function updateMultitenancySettingsOnly(array $multitenancyData): array
         throw new RuntimeException('Failed to update Multitenancy settings: '.$e->getMessage());
     }
 }//end updateMultitenancySettingsOnly()
-
 
     /**
      * Get LLM settings only
@@ -884,7 +869,6 @@ public function getLLMSettingsOnly(): array
     }//end try
 }//end getLLMSettingsOnly()
 
-
     /**
      * Update LLM settings only
      *
@@ -937,7 +921,6 @@ public function updateLLMSettingsOnly(array $llmData): array
     }//end try
 }//end updateLLMSettingsOnly()
 
-
     /**
      * Get File Management settings only
      *
@@ -981,13 +964,12 @@ public function getFileSettingsOnly(): array
     }//end try
 }//end getFileSettingsOnly()
 
-
     /**
      * Update File Management settings only
      *
      * @param array $fileData File management configuration data
      *
-     * @return (false|int|mixed|null|string|string[])[] Updated file management configuration
+     * @return (false|int|mixed|null|string[])[] Updated file management configuration
      *
      * @throws \RuntimeException
      *
@@ -1026,13 +1008,14 @@ public function updateFileSettingsOnly(array $fileData): array
 
 }//end updateFileSettingsOnly()
 
-
 /**
  * Get only version information.
  *
  * Returns version and build information for the application.
  *
- * @return array Version information
+ * @return (int|mixed|string)[] Version information
+ *
+ * @psalm-return array{version: 'unknown'|mixed, error?: string, name?: 'OpenRegister'|mixed, description?: ''|mixed, author?: 'Conduction'|mixed, licence?: 'AGPL'|mixed, timestamp?: int<1, max>, date?: string}
  */
 public function getVersionInfoOnly(): array
 {
@@ -1040,22 +1023,20 @@ public function getVersionInfoOnly(): array
         $appInfo = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppInfo($this->appName);
 
         return [
-            'version' => $appInfo['version'] ?? 'unknown',
-            'name' => $appInfo['name'] ?? 'OpenRegister',
+            'version'     => $appInfo['version'] ?? 'unknown',
+            'name'        => $appInfo['name'] ?? 'OpenRegister',
             'description' => $appInfo['description'] ?? '',
-            'author' => $appInfo['author'] ?? 'Conduction',
-            'licence' => $appInfo['licence'] ?? 'AGPL',
-            'timestamp' => time(),
-            'date' => date('Y-m-d H:i:s'),
+            'author'      => $appInfo['author'] ?? 'Conduction',
+            'licence'     => $appInfo['licence'] ?? 'AGPL',
+            'timestamp'   => time(),
+            'date'        => date('Y-m-d H:i:s'),
         ];
     } catch (Exception $e) {
         return [
             'version' => 'unknown',
-            'error' => 'Failed to retrieve version info: '.$e->getMessage(),
+            'error'   => 'Failed to retrieve version info: '.$e->getMessage(),
         ];
     }
 
 }//end getVersionInfoOnly()
-
-
 }//end class

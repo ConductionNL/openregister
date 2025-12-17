@@ -46,7 +46,6 @@ class ConversationUpdatedEvent extends Event
      */
     private Conversation $oldConversation;
 
-
     /**
      * Constructor for ConversationUpdatedEvent.
      *
@@ -63,7 +62,6 @@ class ConversationUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the conversation (returns new conversation for compatibility)
      *
@@ -74,7 +72,6 @@ class ConversationUpdatedEvent extends Event
         return $this->newConversation;
 
     }//end getConversation()
-
 
     /**
      * Get the new conversation
@@ -87,7 +84,6 @@ class ConversationUpdatedEvent extends Event
 
     }//end getNewConversation()
 
-
     /**
      * Get the old conversation
      *
@@ -98,6 +94,4 @@ class ConversationUpdatedEvent extends Event
         return $this->oldConversation;
 
     }//end getOldConversation()
-
-
 }//end class

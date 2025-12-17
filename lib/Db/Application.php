@@ -212,7 +212,6 @@ class Application extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Application constructor
      *
@@ -240,7 +239,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Validate UUID format
      *
@@ -259,7 +257,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end isValidUuid()
 
-
     /**
      * Get the organisation UUID
      *
@@ -270,7 +267,6 @@ class Application extends Entity implements JsonSerializable
         return $this->organisation;
 
     }//end getOrganisation()
-
 
     /**
      * Set the organisation UUID
@@ -286,7 +282,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end setOrganisation()
 
-
     /**
      * Get configurations associated with this application
      *
@@ -297,7 +292,6 @@ class Application extends Entity implements JsonSerializable
         return $this->configurations ?? [];
 
     }//end getConfigurations()
-
 
     /**
      * Set configurations for this application
@@ -314,7 +308,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end setConfigurations()
 
-
     /**
      * Get registers managed by this application
      *
@@ -325,7 +318,6 @@ class Application extends Entity implements JsonSerializable
         return $this->registers ?? [];
 
     }//end getRegisters()
-
 
     /**
      * Set registers for this application
@@ -342,7 +334,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end setRegisters()
 
-
     /**
      * Get schemas used by this application
      *
@@ -353,7 +344,6 @@ class Application extends Entity implements JsonSerializable
         return $this->schemas ?? [];
 
     }//end getSchemas()
-
 
     /**
      * Set schemas for this application
@@ -370,7 +360,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end setSchemas()
 
-
     /**
      * Get whether this application is active
      *
@@ -381,7 +370,6 @@ class Application extends Entity implements JsonSerializable
         return $this->active ?? true;
 
     }//end getActive()
-
 
     /**
      * Set whether this application is active
@@ -405,7 +393,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end setActive()
 
-
     /**
      * Get groups that have access to this application
      *
@@ -416,7 +403,6 @@ class Application extends Entity implements JsonSerializable
         return $this->groups ?? [];
 
     }//end getGroups()
-
 
     /**
      * Set groups that have access to this application
@@ -432,7 +418,6 @@ class Application extends Entity implements JsonSerializable
         return $this;
 
     }//end setGroups()
-
 
     /**
      * Get JSON fields from the entity
@@ -455,7 +440,6 @@ class Application extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -488,7 +472,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Get default authorization structure for applications
      *
@@ -509,7 +492,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end getDefaultAuthorization()
 
-
     /**
      * Get authorization rules for this application
      *
@@ -520,7 +502,6 @@ class Application extends Entity implements JsonSerializable
         return $this->authorization ?? $this->getDefaultAuthorization();
 
     }//end getAuthorization()
-
 
     /**
      * Set authorization rules for this application
@@ -536,7 +517,6 @@ class Application extends Entity implements JsonSerializable
         return $this;
 
     }//end setAuthorization()
-
 
     /**
      * JSON serialization for API responses
@@ -590,7 +570,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the application
      *
@@ -610,7 +589,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end __toString()
 
-
     /**
      * Get the configuration that manages this application (transient property)
      *
@@ -621,7 +599,6 @@ class Application extends Entity implements JsonSerializable
         return $this->managedByConfiguration;
 
     }//end getManagedByConfigurationEntity()
-
 
     /**
      * Set the configuration that manages this application (transient property)
@@ -635,7 +612,6 @@ class Application extends Entity implements JsonSerializable
         $this->managedByConfiguration = $configuration;
 
     }//end setManagedByConfigurationEntity()
-
 
     /**
      * Check if this application is managed by a configuration
@@ -665,7 +641,6 @@ class Application extends Entity implements JsonSerializable
         return false;
 
     }//end isManagedByConfiguration()
-
 
     /**
      * Get the configuration that manages this application
@@ -697,7 +672,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end getManagedByConfiguration()
 
-
     /**
      * Get formatted created date for JSON serialization
      *
@@ -713,7 +687,6 @@ class Application extends Entity implements JsonSerializable
 
     }//end getCreatedFormatted()
 
-
     /**
      * Get formatted updated date for JSON serialization
      *
@@ -728,7 +701,6 @@ class Application extends Entity implements JsonSerializable
         return null;
 
     }//end getUpdatedFormatted()
-
 
     /**
      * Get managed by configuration data for JSON serialization
@@ -750,6 +722,4 @@ class Application extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfigurationData()
-
-
 }//end class

@@ -46,7 +46,6 @@ class OrganisationUpdatedEvent extends Event
      */
     private Organisation $oldOrganisation;
 
-
     /**
      * Constructor for OrganisationUpdatedEvent.
      *
@@ -62,6 +61,4 @@ class OrganisationUpdatedEvent extends Event
         $this->oldOrganisation = $oldOrganisation;
 
     }//end __construct()
-
-
 }//end class

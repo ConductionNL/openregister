@@ -221,7 +221,6 @@ class ConfigurationService
      */
     private readonly PreviewHandler $previewHandler;
 
-
     /**
      * Constructor
      *
@@ -301,7 +300,6 @@ class ConfigurationService
 
     }//end __construct()
 
-
     /**
      * Attempts to retrieve the OpenConnector service from the container.
      *
@@ -324,7 +322,6 @@ class ConfigurationService
         return false;
 
     }//end getOpenConnector()
-
 
     /**
      * Build OpenAPI Specification from configuration or register
@@ -356,7 +353,6 @@ class ConfigurationService
 
     }//end exportConfig()
 
-
     /**
      * Gets the uploaded json from the request data and returns it as a PHP array.
      * Will first try to find an uploaded 'file', then if an 'url' is present in the body,
@@ -376,7 +372,6 @@ class ConfigurationService
 
     }//end getUploadedJson()
 
-
     /**
      * A function used to decode file content or the response of an url get call.
      * Before the data can be used to create or update an object.
@@ -392,7 +387,6 @@ class ConfigurationService
 
     }//end decode()
 
-
     /**
      * Recursively converts stdClass objects to arrays to ensure consistent data structure (DELEGATED).
      *
@@ -405,7 +399,6 @@ class ConfigurationService
 
     }//end ensureArrayStructure()
 
-
     /**
      * Gets uploaded file content from a file in the api request as PHP array and use it for creating/updating an object.
      *
@@ -415,22 +408,19 @@ class ConfigurationService
      * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
 
-
     /**
      * Get JSON data from uploaded file (DELEGATED).
      *
-     * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
+     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
+     * @return       JSONResponse|array
      *
-     * @return JSONResponse|array
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
         return $this->importHandler->getJSONfromFile($uploadedFile, $_type);
 
     }//end getJSONfromFile()
-
 
     /**
      * Uses Guzzle to call the given URL and returns response as PHP array (DELEGATED).
@@ -439,16 +429,14 @@ class ConfigurationService
      *
      * @throws GuzzleException
      *
-     * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
-     *
-     * @return JSONResponse|array The response from the call converted to PHP array or JSONResponse in case of an error.
+     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
+     * @return       JSONResponse|array
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
         return $this->importHandler->getJSONfromURL($url);
 
     }//end getJSONfromURL()
-
 
     /**
      * Uses the given string or array as PHP array for creating/updating an object.
@@ -459,20 +447,18 @@ class ConfigurationService
      * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
 
-
     /**
      * Get JSON data from request body (DELEGATED).
      *
      * @return JSONResponse|array
      *
-     * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
+     * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
         return $this->importHandler->getJSONfromBody($phpArray);
 
     }//end getJSONfromBody()
-
 
     /**
      * Import configuration from a JSON file.
@@ -521,7 +507,6 @@ class ConfigurationService
 
     }//end importFromJson()
 
-
     /**
      * Create or update a configuration entity to track imported data
      *
@@ -546,7 +531,6 @@ class ConfigurationService
 
     }//end createOrUpdateConfiguration()
 
-
     /**
      * Import a register from configuration data
      *
@@ -561,7 +545,6 @@ class ConfigurationService
 
     }//end importRegister()
 
-
     private function importSchema(
         array $data,
         array $slugsAndIdsMap,
@@ -573,7 +556,6 @@ class ConfigurationService
         return $this->importHandler->importSchema($data, $slugsAndIdsMap, $owner, $appId, $version, $force);
 
     }//end importSchema()
-
 
     /**
      * Import configuration from a file path.
@@ -616,7 +598,6 @@ class ConfigurationService
 
     }//end importFromFilePath()
 
-
     /**
      * Import configuration from an app's JSON data.
      *
@@ -651,7 +632,6 @@ class ConfigurationService
         return $this->importHandler->importFromApp($appId, $data, $version, $force);
 
     }//end importFromApp()
-
 
     /**
      * Check the remote version of a configuration
@@ -712,7 +692,6 @@ class ConfigurationService
         }//end try
 
     }//end checkRemoteVersion()
-
 
     /**
      * Compare versions and get update status
@@ -783,7 +762,6 @@ class ConfigurationService
 
     }//end compareVersions()
 
-
     /**
      * Fetch remote configuration data
      *
@@ -792,10 +770,13 @@ class ConfigurationService
      *
      * @param Configuration $configuration The configuration to fetch
      *
-     * @return array|JSONResponse The configuration data or error response
+     * @return JSONResponse|array
+     *
      * @throws GuzzleException If HTTP request fails
+     *
+     * @psalm-return JSONResponse<400|500, array{error: string}, array<never, never>>|JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
      */
-    public function fetchRemoteConfiguration(Configuration $configuration): array | JSONResponse
+    public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
         // Only fetch from remote sources.
         if ($configuration->isRemoteSource() === false) {
@@ -837,7 +818,6 @@ class ConfigurationService
         }//end try
 
     }//end fetchRemoteConfiguration()
-
 
     /**
      * Preview configuration changes before importing
@@ -903,7 +883,6 @@ class ConfigurationService
 
     }//end previewConfigurationChanges()
 
-
     /**
      * Preview changes for a single register
      *
@@ -948,7 +927,6 @@ class ConfigurationService
 
     }//end previewRegisterChange()
 
-
     /**
      * Preview changes for a single object
      *
@@ -989,7 +967,6 @@ class ConfigurationService
         return $this->previewHandler->compareArrays($current, $proposed, $prefix);
 
     }//end compareArrays()
-
 
     /**
      * Check if an array is a simple (non-nested) array
@@ -1047,7 +1024,6 @@ class ConfigurationService
 
     }//end isSimpleArray()
 
-
     /**
      * Get the configured app version from appconfig
      *
@@ -1092,7 +1068,6 @@ class ConfigurationService
         }//end try
 
     }//end getConfiguredAppVersion()
-
 
     /**
      * Set the configured app version in appconfig
@@ -1139,7 +1114,6 @@ class ConfigurationService
 
     }//end setConfiguredAppVersion()
 
-
     /**
      * Search GitHub for OpenRegister configurations
      *
@@ -1149,15 +1123,17 @@ class ConfigurationService
      * @param int    $page    Page number
      * @param int    $perPage Results per page
      *
-     * @return array Search results
+     * @return (((array|int|mixed|null|string)[]|mixed)[]|int|mixed)[] Search results
+     *
      * @throws Exception If search fails
+     *
+     * @psalm-return array{total_count: 0|mixed, results: list{0?: array{repository: mixed, owner: string, repo: string, path: string, url: mixed, stars: 0|mixed, description: ''|mixed, name: string, branch: string, raw_url: string, sha: null|string, organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array},...}, page: int, per_page: int}
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
         return $this->githubHandler->searchConfigurations($search, $page, $perPage);
 
     }//end searchGitHub()
-
 
     /**
      * Search GitLab for OpenRegister configurations
@@ -1168,15 +1144,17 @@ class ConfigurationService
      * @param int    $page    Page number
      * @param int    $perPage Results per page
      *
-     * @return array Search results
+     * @return ((((null|string)[]|mixed|string)[]|mixed)[]|int)[] Search results
+     *
      * @throws Exception If search fails
+     *
+     * @psalm-return array{total_count: int<0, max>, results: list{0?: array{project_id: mixed, path: mixed, ref: 'main'|mixed, url: ''|mixed, name: string, config: array{title: string, description: '', version: 'unknown', app: null, type: 'unknown'}},...}, page: int, per_page: int}
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
         return $this->gitlabHandler->searchConfigurations($search, $page, $perPage);
 
     }//end searchGitLab()
-
 
     /**
      * Get GitHubHandler for direct access
@@ -1189,7 +1167,6 @@ class ConfigurationService
 
     }//end getGitHubHandler()
 
-
     /**
      * Get GitLabHandler for direct access
      *
@@ -1201,7 +1178,6 @@ class ConfigurationService
 
     }//end getGitLabHandler()
 
-
     /**
      * Get CacheHandler for direct access
      *
@@ -1212,7 +1188,6 @@ class ConfigurationService
         return $this->cacheHandler;
 
     }//end getCacheHandler()
-
 
     /**
      * Import configuration with selection.
@@ -1229,6 +1204,4 @@ class ConfigurationService
         return $this->previewHandler->importConfigurationWithSelection(configuration: $configuration, selection: $selection);
 
     }//end importConfigurationWithSelection()
-
-
 }//end class

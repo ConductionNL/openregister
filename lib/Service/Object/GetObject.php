@@ -50,8 +50,6 @@ use OCA\OpenRegister\Service\SettingsService;
  */
 class GetObject
 {
-
-
     /**
      * Constructor for GetObject handler.
      *
@@ -67,7 +65,6 @@ class GetObject
     ) {
 
     }//end __construct()
-
 
     /**
      * Gets an object by its ID with optional extensions.
@@ -114,7 +111,6 @@ class GetObject
 
     }//end find()
 
-
     /**
      * Gets an object by its ID without creating an audit trail.
      *
@@ -156,7 +152,6 @@ class GetObject
 
     }//end findSilent()
 
-
     /**
      * Finds all objects matching the given criteria.
      *
@@ -175,11 +170,10 @@ class GetObject
      * @param bool          $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return \\OCA\OpenRegister\Db\ObjectEntity[]
+     * @return ObjectEntity[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @psalm-return     list<OCA\OpenRegister\Db\ObjectEntity>
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,
@@ -223,7 +217,6 @@ class GetObject
 
     }//end findAll()
 
-
     /**
      * Hydrates an object with its file information.
      *
@@ -254,7 +247,6 @@ class GetObject
         return $object;
 
     }//end hydrateFiles()
-
 
     /**
      * Find logs for a given object.
@@ -298,7 +290,6 @@ class GetObject
 
     }//end findLogs()
 
-
     /**
      * Check if audit trails are enabled in the settings
      *
@@ -315,6 +306,4 @@ class GetObject
         }
 
     }//end isAuditTrailsEnabled()
-
-
 }//end class

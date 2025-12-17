@@ -127,7 +127,6 @@ class ChatService
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -166,7 +165,6 @@ class ChatService
 
     }//end __construct()
 
-
     /**
      * Process a chat message and generate AI response
      *
@@ -179,11 +177,11 @@ class ChatService
      * @param array  $selectedTools  Tool UUIDs to use (optional).
      * @param array  $ragSettings    RAG configuration overrides (optional).
      *
-     * @return array Response with message, sources, and timings
+     * @return ((array|string)[]|string)[]
      *
      * @throws \Exception If processing fails
      *
-     * @psalm-return array{message: string, sources: list<array>, timings: array}
+     * @psalm-return array{message: string, sources: list<array>, timings: array{context: string, history: string, llm: string, total: string}}
      */
     public function processMessage(
         int $conversationId,
@@ -280,7 +278,6 @@ class ChatService
 
     }//end processMessage()
 
-
     /**
      * Generate conversation title from first message
      *
@@ -295,7 +292,6 @@ class ChatService
         return $this->conversationHandler->generateConversationTitle($firstMessage);
 
     }//end generateConversationTitle()
-
 
     /**
      * Ensure conversation title is unique
@@ -314,7 +310,6 @@ class ChatService
 
     }//end ensureUniqueTitle()
 
-
     /**
      * Test chat functionality with custom configuration
      *
@@ -325,7 +320,9 @@ class ChatService
      * @param array  $config      Provider-specific configuration.
      * @param string $testMessage Optional test message to send.
      *
-     * @return array Test results with success status
+     * @return (bool|string)[] Test results with success status
+     *
+     * @psalm-return array{success: bool, error?: string, message: string, note?: 'Full testChat implementation preserved in ChatService_ORIGINAL_2156.php backup.'}
      */
     public function testChat(string $provider, array $config, string $testMessage='Hello! Please respond with a brief greeting.'): array
     {
@@ -360,6 +357,4 @@ class ChatService
         }//end try
 
     }//end testChat()
-
-
 }//end class

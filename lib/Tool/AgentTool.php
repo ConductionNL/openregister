@@ -46,7 +46,6 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     private AgentMapper $agentMapper;
 
-
     /**
      * AgentTool constructor
      *
@@ -64,7 +63,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end __construct()
 
-
     /**
      * Get the tool name
      *
@@ -78,7 +76,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end getName()
 
-
     /**
      * Get the tool description
      *
@@ -91,7 +88,6 @@ class AgentTool extends AbstractTool implements ToolInterface
         return 'Manage AI agents: list, view, create, update, or delete agents with RBAC permissions and organisation boundaries.';
 
     }//end getDescription()
-
 
     /**
      * Get function definitions for LLM function calling
@@ -208,7 +204,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end getFunctions()
 
-
     /**
      * List agents
      *
@@ -258,7 +253,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end listAgents()
 
-
     /**
      * Get agent details
      *
@@ -294,7 +288,6 @@ class AgentTool extends AbstractTool implements ToolInterface
         }//end try
 
     }//end getAgent()
-
 
     /**
      * Create agent
@@ -358,7 +351,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end createAgent()
 
-
     /**
      * Update agent
      *
@@ -418,7 +410,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end updateAgent()
 
-
     /**
      * Delete agent
      *
@@ -459,7 +450,6 @@ class AgentTool extends AbstractTool implements ToolInterface
 
     }//end deleteAgent()
 
-
     /**
      * Execute a function by name
      *
@@ -478,6 +468,4 @@ class AgentTool extends AbstractTool implements ToolInterface
         return $this->$methodName(...array_values($parameters));
 
     }//end executeFunction()
-
-
 }//end class

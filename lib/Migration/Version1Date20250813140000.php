@@ -37,8 +37,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250813140000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add slug column to objects table
      *
@@ -87,6 +85,4 @@ class Version1Date20250813140000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

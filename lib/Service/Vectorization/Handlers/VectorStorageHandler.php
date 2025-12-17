@@ -38,8 +38,6 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class VectorStorageHandler
 {
-
-
     /**
      * Constructor
      *
@@ -56,7 +54,6 @@ class VectorStorageHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Store vector embedding
@@ -145,7 +142,6 @@ class VectorStorageHandler
         }//end try
 
     }//end storeVector()
-
 
     /**
      * Store vector embedding in database
@@ -239,7 +235,6 @@ class VectorStorageHandler
         }//end try
 
     }//end storeVectorInDatabase()
-
 
     /**
      * Store vector embedding in Solr
@@ -371,7 +366,6 @@ class VectorStorageHandler
 
     }//end storeVectorInSolr()
 
-
     /**
      * Get the appropriate Solr collection based on entity type
      *
@@ -416,7 +410,6 @@ class VectorStorageHandler
 
     }//end getSolrCollectionForEntityType()
 
-
     /**
      * Get the configured Solr vector field name
      *
@@ -426,6 +419,10 @@ class VectorStorageHandler
     {
         try {
             $settings = $this->settingsService->getSettings();
+            // Get vector field from LLM configuration, default to '_embedding_'.
+            /*
+             * @psalm-suppress InvalidArrayOffset
+             */
             return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
         } catch (Exception $e) {
             $this->logger->warning(
@@ -436,7 +433,6 @@ class VectorStorageHandler
         }
 
     }//end getSolrVectorField()
-
 
     /**
      * Sanitize text to prevent UTF-8 encoding errors
@@ -464,6 +460,4 @@ class VectorStorageHandler
         return trim($text);
 
     }//end sanitizeText()
-
-
 }//end class

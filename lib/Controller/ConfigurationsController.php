@@ -44,8 +44,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class ConfigurationsController extends Controller
 {
-
-
     /**
      * Constructor for ConfigurationController.
      *
@@ -65,7 +63,6 @@ class ConfigurationsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * List all configurations
@@ -104,7 +101,6 @@ class ConfigurationsController extends Controller
 
     }//end index()
 
-
     /**
      * Show a specific configuration
      *
@@ -128,11 +124,8 @@ class ConfigurationsController extends Controller
 
     }//end show()
 
-
     /**
      * Create a new configuration
-     *
-     * @return JSONResponse The created configuration.
      *
      * @NoAdminRequired
      *
@@ -184,13 +177,10 @@ class ConfigurationsController extends Controller
 
     }//end create()
 
-
     /**
      * Update an existing configuration
      *
      * @param int $id Configuration ID
-     *
-     * @return JSONResponse The updated configuration
      *
      * @NoAdminRequired
      *
@@ -234,7 +224,6 @@ class ConfigurationsController extends Controller
 
     }//end update()
 
-
     /**
      * Patch (partially update) a configuration.
      *
@@ -243,7 +232,10 @@ class ConfigurationsController extends Controller
      * @return JSONResponse The updated configuration data
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function patch(int $id): JSONResponse
     {
@@ -251,13 +243,10 @@ class ConfigurationsController extends Controller
 
     }//end patch()
 
-
     /**
      * Delete a configuration
      *
      * @param int $id Configuration ID
-     *
-     * @return JSONResponse Empty response on success
      *
      * @NoAdminRequired
      *
@@ -277,14 +266,13 @@ class ConfigurationsController extends Controller
 
     }//end destroy()
 
-
     /**
      * Export a configuration
      *
      * @param int  $id             Configuration ID.
      * @param bool $includeObjects Whether to include objects in the export.
      *
-     * @return DataDownloadResponse|JSONResponse The exported configuration.
+     * @return DataDownloadResponse|JSONResponse
      *
      * @NoAdminRequired
      *
@@ -325,7 +313,6 @@ class ConfigurationsController extends Controller
         }//end try
 
     }//end export()
-
 
     /**
      * Import a configuration
@@ -375,6 +362,4 @@ class ConfigurationsController extends Controller
         }//end try
 
     }//end import()
-
-
 }//end class

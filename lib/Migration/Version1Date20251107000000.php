@@ -35,8 +35,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Remove roles column from organisations table
      *
@@ -77,6 +75,4 @@ class Version1Date20251107000000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

@@ -141,7 +141,6 @@ class SettingsController extends Controller
      */
     private ?\OCA\OpenRegister\Service\ObjectService $objectService = null;
 
-
     /**
      * SettingsController constructor.
      *
@@ -170,14 +169,14 @@ class SettingsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Attempts to retrieve the OpenRegister service from the container.
      *
-     * @return \OCA\OpenRegister\Service\ObjectService|null The OpenRegister service if available, null otherwise.
+     * @return null The OpenRegister service if available, null otherwise.
+     *
      * @throws \RuntimeException If the service is not available.
      */
-    public function getObjectService(): ?\OCA\OpenRegister\Service\ObjectService
+    public function getObjectService()
     {
         if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
             $this->objectService = null;
@@ -188,7 +187,6 @@ class SettingsController extends Controller
         throw new RuntimeException('OpenRegister service is not available.');
 
     }//end getObjectService()
-
 
     /**
      * Attempts to retrieve the Configuration service from the container.
@@ -209,7 +207,6 @@ class SettingsController extends Controller
         throw new RuntimeException('Configuration service is not available.');
 
     }//end getConfigurationService()
-
 
     /**
      * Retrieve the current settings.
@@ -232,7 +229,6 @@ class SettingsController extends Controller
         }
 
     }//end index()
-
 
     /**
      * Handle the PUT request to update settings.
@@ -257,7 +253,6 @@ class SettingsController extends Controller
 
     }//end update()
 
-
     /**
      * Load the settings from the publication_register.json file.
      *
@@ -277,7 +272,6 @@ class SettingsController extends Controller
         }
 
     }//end load()
-
 
     /**
      * Update the publishing options.
@@ -299,7 +293,6 @@ class SettingsController extends Controller
         }
 
     }//end updatePublishingOptions()
-
 
     /**
      * Rebase all objects and logs with current retention settings.
@@ -326,7 +319,6 @@ class SettingsController extends Controller
 
     }//end rebase()
 
-
     /**
      * Get statistics for the settings dashboard.
      *
@@ -352,7 +344,6 @@ class SettingsController extends Controller
 
     }//end stats()
 
-
     /**
      * Get statistics for the settings dashboard (alias for stats method).
      *
@@ -362,14 +353,16 @@ class SettingsController extends Controller
      * @return JSONResponse JSON response containing statistics data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|422, array, array<never, never>>
      */
     public function getStatistics(): JSONResponse
     {
         return $this->stats();
 
     }//end getStatistics()
-
 
     /**
      * Test SOLR setup directly (bypassing SolrService)
@@ -435,7 +428,6 @@ class SettingsController extends Controller
         }//end try
 
     }//end testSetupHandler()
-
 
     /**
      * Reindex a specific SOLR collection by name
@@ -518,7 +510,6 @@ class SettingsController extends Controller
 
     }//end reindexSpecificCollection()
 
-
     /**
      * Get search backend configuration.
      *
@@ -529,6 +520,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Backend configuration
+     *
+     * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
     public function getSearchBackend(): JSONResponse
     {
@@ -541,7 +534,6 @@ class SettingsController extends Controller
 
     }//end getSearchBackend()
 
-
     /**
      * Update search backend configuration.
      *
@@ -552,6 +544,8 @@ class SettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated backend configuration
+     *
+     * @psalm-return JSONResponse<200|400|500, array{error?: mixed|string, message?: 'Backend updated successfully. Please reload the application.', reload_required?: true,...}, array<never, never>>
      */
     public function updateSearchBackend(): JSONResponse
     {
@@ -583,7 +577,6 @@ class SettingsController extends Controller
 
     }//end updateSearchBackend()
 
-
     /**
      * Get database information and vector search capabilities
      *
@@ -593,8 +586,6 @@ class SettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Database information
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, database?: array{type: string, version: string, platform: string, vectorSupport: bool, recommendedPlugin: null|string, performanceNote: null|string}}, array<never, never>>
      */
@@ -716,7 +707,6 @@ class SettingsController extends Controller
 
     }//end getDatabaseInfo()
 
-
     /**
      * Get version information only
      *
@@ -738,7 +728,6 @@ class SettingsController extends Controller
         }
 
     }//end getVersionInfo()
-
 
     /**
      * Test schema-aware SOLR mapping by indexing sample objects
@@ -777,17 +766,14 @@ class SettingsController extends Controller
 
     }//end testSchemaMapping()
 
-
     /**
      * Debug endpoint for type filtering issue
-     *
-     * @return JSONResponse Debug information about type filtering
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: string, trace?: string, all_organizations?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_data: mixed}>}, type_samenwerking?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed}>}, type_community?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed}>}, type_both?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed}>}, direct_database_query?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}>}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, trace?: string, all_organizations?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}>}, type_samenwerking?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, type_community?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, type_both?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, direct_database_query?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}>}}, array<never, never>>
      */
     public function debugTypeFiltering(): JSONResponse
     {
@@ -813,6 +799,11 @@ class SettingsController extends Controller
             $results['all_organizations'] = [
                 'count'         => count($result1['results']),
                 'organizations' => array_map(
+                        /*
+                         * @return (array|int|mixed|null|string)[]
+                         *
+                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}
+                         */
                         function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
@@ -837,6 +828,11 @@ class SettingsController extends Controller
             $results['type_samenwerking'] = [
                 'count'         => count($result2['results']),
                 'organizations' => array_map(
+                        /*
+                         * @return (int|mixed|null|string)[]
+                         *
+                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
+                         */
                         function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
@@ -860,6 +856,11 @@ class SettingsController extends Controller
             $results['type_community'] = [
                 'count'         => count($result3['results']),
                 'organizations' => array_map(
+                        /*
+                         * @return (int|mixed|null|string)[]
+                         *
+                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
+                         */
                         function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
@@ -883,6 +884,11 @@ class SettingsController extends Controller
             $results['type_both'] = [
                 'count'         => count($result4['results']),
                 'organizations' => array_map(
+                        /*
+                         * @return (int|mixed|null|string)[]
+                         *
+                         * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
+                         */
                         function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
@@ -908,6 +914,11 @@ class SettingsController extends Controller
             $results['direct_database_query'] = [
                 'count'         => count($rows),
                 'organizations' => array_map(
+                        /*
+                         * @return (mixed|string)[]
+                         *
+                         * @psalm-return array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}
+                         */
                         function (array $row): array {
                             $objectData = json_decode($row['object'], true);
                             return [
@@ -934,7 +945,6 @@ class SettingsController extends Controller
 
     }//end debugTypeFiltering()
 
-
     /**
      * Perform semantic search using vector embeddings
      *
@@ -947,9 +957,7 @@ class SettingsController extends Controller
      * @param array       $filters  Optional filters (entity_type, entity_id, etc.)
      * @param string|null $provider Embedding provider override
      *
-     * @return JSONResponse Search results
-     *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: mixed, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: array<int, array<string, mixed>>, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
      */
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
@@ -993,7 +1001,6 @@ class SettingsController extends Controller
         }//end try
 
     }//end semanticSearch()
-
 
     /**
      * Perform hybrid search combining SOLR keyword and vector semantic search
@@ -1063,6 +1070,4 @@ class SettingsController extends Controller
         }//end try
 
     }//end hybridSearch()
-
-
 }//end class

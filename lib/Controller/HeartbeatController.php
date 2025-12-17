@@ -44,8 +44,6 @@ use OCP\IRequest;
  */
 class HeartbeatController extends Controller
 {
-
-
     /**
      * HeartbeatController constructor
      *
@@ -65,7 +63,6 @@ class HeartbeatController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Heartbeat endpoint to keep connections alive during long operations
@@ -101,6 +98,4 @@ class HeartbeatController extends Controller
           );
 
     }//end heartbeat()
-
-
 }//end class

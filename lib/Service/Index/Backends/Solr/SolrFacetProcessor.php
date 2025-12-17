@@ -57,7 +57,6 @@ class SolrFacetProcessor
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -78,14 +77,15 @@ class SolrFacetProcessor
 
     }//end __construct()
 
-
     /**
      * Get facetable fields from Solr schema.
      *
      * NOTE: This is a simplified implementation.
      * Full implementation with 25+ facet methods can be migrated from SolrBackend.
      *
-     * @return array Facetable fields
+     * @return (mixed|string)[][] Facetable fields
+     *
+     * @psalm-return list<array{name: non-empty-string, type: 'unknown'|mixed}>
      */
     public function getRawSolrFieldsForFacetConfiguration(): array
     {
@@ -134,13 +134,14 @@ class SolrFacetProcessor
 
     }//end getRawSolrFieldsForFacetConfiguration()
 
-
     /**
      * Build facet query for search.
      *
      * @param array $facetFields Fields to facet on
      *
-     * @return array Facet query parameters
+     * @return (array|int|string)[] Facet query parameters
+     *
+     * @psalm-return array{facet?: 'true', 'facet.field'?: array, 'facet.limit'?: 100}
      */
     public function buildFacetQuery(array $facetFields): array
     {
@@ -156,13 +157,14 @@ class SolrFacetProcessor
 
     }//end buildFacetQuery()
 
-
     /**
      * Process facet response from Solr.
      *
      * @param array $solrResponse Solr search response with facets
      *
-     * @return array Processed facets
+     * @return (array[]|mixed)[][] Processed facets
+     *
+     * @psalm-return array<array{field: mixed, items: non-empty-list<array{count: mixed, value: mixed}>}>
      */
     public function processFacetResponse(array $solrResponse): array
     {
@@ -195,6 +197,4 @@ class SolrFacetProcessor
         return $processed;
 
     }//end processFacetResponse()
-
-
 }//end class

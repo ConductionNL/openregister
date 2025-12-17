@@ -42,7 +42,6 @@ class SchemaUpdatedEvent extends Event
      */
     private Schema $oldSchema;
 
-
     /**
      * Constructor for SchemaUpdatedEvent
      *
@@ -59,7 +58,6 @@ class SchemaUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated schema
      *
@@ -71,7 +69,6 @@ class SchemaUpdatedEvent extends Event
 
     }//end getNewSchema()
 
-
     /**
      * Get the original schema
      *
@@ -82,6 +79,4 @@ class SchemaUpdatedEvent extends Event
         return $this->oldSchema;
 
     }//end getOldSchema()
-
-
 }//end class

@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250125000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change schema to add configuration column
      *
@@ -77,6 +75,4 @@ class Version1Date20250125000000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

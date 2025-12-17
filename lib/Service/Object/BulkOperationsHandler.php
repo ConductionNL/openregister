@@ -43,8 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class BulkOperationsHandler
 {
-
-
     /**
      * Constructor for BulkOperationsHandler.
      *
@@ -64,7 +62,6 @@ class BulkOperationsHandler
 
     }//end __construct()
 
-
     /**
      * Bulk save operations orchestrator with cache invalidation.
      *
@@ -76,16 +73,17 @@ class BulkOperationsHandler
      * @param bool          $validation      Whether to validate objects.
      * @param bool          $events          Whether to trigger events.
      *
-     * @psalm-param   array<int, array<string, mixed>> $objects
-     * @psalm-param   Register|null $currentRegister
-     * @psalm-param   Schema|null $currentSchema
+     * @psalm-param array<int, array<string, mixed>> $objects
+     * @psalm-param Register|null $currentRegister
+     * @psalm-param Schema|null $currentSchema
+     *
      * @phpstan-param array<int, array<string, mixed>> $objects
      * @phpstan-param Register|null $currentRegister
      * @phpstan-param Schema|null $currentSchema
      *
-     * @return array Bulk operation result.
+     * @return array[]
      *
-     * @psalm-return   array<string, mixed>
+     * @psalm-return   array{saved: array, updated: array, unchanged: array<never, never>, invalid: array, errors: array, statistics: array{totalProcessed: int<0, max>, saved: 0|mixed, updated: 0|mixed, unchanged: 0, invalid: 0|1|2|mixed, errors: 0|1|2|mixed, processingTimeMs: 0, objectsCreated?: mixed, objectsUpdated?: mixed}, chunkStatistics?: list{0?: array{chunkIndex: int<0, max>, count: int<0, max>, saved: 0|mixed, updated: 0|mixed, invalid: 0|mixed},...}, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalRequested: int<0, max>, efficiency: 0|float, deduplicationEfficiency?: string}}
      * @phpstan-return array<string, mixed>
      */
     public function saveObjects(
@@ -163,7 +161,6 @@ class BulkOperationsHandler
 
     }//end saveObjects()
 
-
     /**
      * Bulk delete operations with cache invalidation.
      *
@@ -240,7 +237,6 @@ class BulkOperationsHandler
         return $deletedObjectIds;
 
     }//end deleteObjects()
-
 
     /**
      * Perform bulk publish operations on objects by UUID.
@@ -320,7 +316,6 @@ class BulkOperationsHandler
 
     }//end publishObjects()
 
-
     /**
      * Perform bulk depublish operations on objects by UUID.
      *
@@ -399,7 +394,6 @@ class BulkOperationsHandler
 
     }//end depublishObjects()
 
-
     /**
      * Publish all objects belonging to a specific schema.
      *
@@ -462,7 +456,6 @@ class BulkOperationsHandler
         return $result;
 
     }//end publishObjectsBySchema()
-
 
     /**
      * Delete all objects belonging to a specific schema.
@@ -527,7 +520,6 @@ class BulkOperationsHandler
 
     }//end deleteObjectsBySchema()
 
-
     /**
      * Delete all objects belonging to a specific register.
      *
@@ -586,6 +578,4 @@ class BulkOperationsHandler
         return $result;
 
     }//end deleteObjectsByRegister()
-
-
 }//end class

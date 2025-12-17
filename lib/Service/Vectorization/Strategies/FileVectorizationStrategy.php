@@ -59,7 +59,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -77,7 +76,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger      = $logger;
 
     }//end __construct()
-
 
     /**
      * Fetch file chunks for vectorization
@@ -140,7 +138,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
 
     }//end fetchEntities()
 
-
     /**
      * Extract chunks from file
      *
@@ -163,7 +160,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         ];
 
     }//end extractVectorizationItems()
-
 
     /**
      * Prepare metadata for file chunk vector
@@ -208,7 +204,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
 
     }//end prepareVectorMetadata()
 
-
     /**
      * Get file ID as identifier
      *
@@ -221,6 +216,4 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         return $entity->getSourceId();
 
     }//end getEntityIdentifier()
-
-
 }//end class

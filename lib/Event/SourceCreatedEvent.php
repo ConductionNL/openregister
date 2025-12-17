@@ -35,7 +35,6 @@ class SourceCreatedEvent extends Event
      */
     private Source $source;
 
-
     /**
      * Constructor for SourceCreatedEvent.
      *
@@ -50,7 +49,6 @@ class SourceCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created source.
      *
@@ -61,6 +59,4 @@ class SourceCreatedEvent extends Event
         return $this->source;
 
     }//end getSource()
-
-
 }//end class

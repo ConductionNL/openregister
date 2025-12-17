@@ -80,7 +80,6 @@ class DeleteObject
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor for DeleteObject handler.
      *
@@ -107,7 +106,6 @@ class DeleteObject
         $this->logger           = $logger;
 
     }//end __construct()
-
 
     /**
      * Deletes an object and its associated files.
@@ -209,7 +207,6 @@ class DeleteObject
 
     }//end delete()
 
-
     /**
      * Deletes an object by its UUID with optional cascading.
      *
@@ -246,7 +243,6 @@ class DeleteObject
         }
 
     }//end deleteObject()
-
 
     /**
      * Handles cascading deletes for related objects.
@@ -286,7 +282,6 @@ class DeleteObject
 
     }//end cascadeDeleteObjects()
 
-
     /**
      * Delete the object folder when performing hard delete
      *
@@ -311,7 +306,6 @@ class DeleteObject
 
     }//end deleteObjectFolder()
 
-
     /**
      * Check if audit trails are enabled in the settings
      *
@@ -329,6 +323,4 @@ class DeleteObject
         }
 
     }//end isAuditTrailsEnabled()
-
-
 }//end class

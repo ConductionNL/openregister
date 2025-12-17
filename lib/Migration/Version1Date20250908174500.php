@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250908174500 extends SimpleMigrationStep
 {
-
-
     /**
      * Add UNIQUE constraint to uuid field
      *
@@ -94,7 +92,6 @@ class Version1Date20250908174500 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post schema update operations
      *
@@ -115,6 +112,4 @@ class Version1Date20250908174500 extends SimpleMigrationStep
         $output->info(message: '🎯 Migration successful - deduplication system ready');
 
     }//end postSchemaChange()
-
-
 }//end class

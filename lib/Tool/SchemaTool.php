@@ -49,7 +49,6 @@ class SchemaTool extends AbstractTool
      */
     private SchemaMapper $schemaMapper;
 
-
     /**
      * Constructor
      *
@@ -67,7 +66,6 @@ class SchemaTool extends AbstractTool
 
     }//end __construct()
 
-
     /**
      * Get tool name
      *
@@ -81,7 +79,6 @@ class SchemaTool extends AbstractTool
 
     }//end getName()
 
-
     /**
      * Get tool description
      *
@@ -94,7 +91,6 @@ class SchemaTool extends AbstractTool
         return 'Manage schemas: list, view, create, update, or delete schemas. Schemas define structure and validation rules.';
 
     }//end getDescription()
-
 
     /**
      * Get function definitions for LLphant
@@ -212,7 +208,6 @@ class SchemaTool extends AbstractTool
 
     }//end getFunctions()
 
-
     /**
      * Execute a function
      *
@@ -244,7 +239,6 @@ class SchemaTool extends AbstractTool
         }
 
     }//end executeFunction()
-
 
     /**
      * List schemas
@@ -285,7 +279,6 @@ class SchemaTool extends AbstractTool
 
     }//end listSchemas()
 
-
     /**
      * Get a specific schema
      *
@@ -321,7 +314,6 @@ class SchemaTool extends AbstractTool
         );
 
     }//end getSchema()
-
 
     /**
      * Create a new schema
@@ -364,7 +356,6 @@ class SchemaTool extends AbstractTool
         );
 
     }//end createSchema()
-
 
     /**
      * Update an existing schema
@@ -417,7 +408,6 @@ class SchemaTool extends AbstractTool
 
     }//end updateSchema()
 
-
     /**
      * Delete a schema
      *
@@ -440,6 +430,4 @@ class SchemaTool extends AbstractTool
         );
 
     }//end deleteSchema()
-
-
 }//end class

@@ -69,7 +69,6 @@ class ObjectsProvider implements IFilteringProvider
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor for the ObjectsProvider class
      *
@@ -93,7 +92,6 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end __construct()
 
-
     /**
      * Returns the unique identifier for this search provider
      *
@@ -107,7 +105,6 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end getId()
 
-
     /**
      * Returns the human-readable name for this search provider
      *
@@ -119,7 +116,6 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end getName()
 
-
     /**
      * Returns the order/priority of this search provider
      *
@@ -128,18 +124,16 @@ class ObjectsProvider implements IFilteringProvider
      * @param string $route           The route/context for which to get the order
      * @param array  $routeParameters Parameters for the route
      *
-     * @return int Order priority (0-100, lower = higher priority) or null for default
+     * @return int
      *
-     * @psalm-return 10
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @psalm-return     10
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function getOrder(string $_route, array $_routeParameters): ?int
     {
         return 10;
 
     }//end getOrder()
-
 
     /**
      * Returns the list of supported filters for the search provider
@@ -164,7 +158,6 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end getSupportedFilters()
 
-
     /**
      * Returns the list of alternate IDs for the search provider
      *
@@ -178,7 +171,6 @@ class ObjectsProvider implements IFilteringProvider
         return [];
 
     }//end getAlternateIds()
-
 
     /**
      * Returns the list of custom filters for the search provider
@@ -196,7 +188,6 @@ class ObjectsProvider implements IFilteringProvider
         ];
 
     }//end getCustomFilters()
-
 
     /**
      * Performs a search based on the provided query using searchObjectsPaginated
@@ -341,7 +332,6 @@ class ObjectsProvider implements IFilteringProvider
 
     }//end search()
 
-
     /**
      * Build a descriptive text for search results
      *
@@ -387,6 +377,4 @@ class ObjectsProvider implements IFilteringProvider
         }
 
     }//end buildDescription()
-
-
 }//end class

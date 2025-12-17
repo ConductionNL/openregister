@@ -42,8 +42,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251105150000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create conversations and messages tables, update agents table
      *
@@ -382,6 +380,4 @@ class Version1Date20251105150000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

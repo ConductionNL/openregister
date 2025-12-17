@@ -46,7 +46,6 @@ class OpenRegisterAdmin implements IIconSection
      */
     private IURLGenerator $urlGenerator;
 
-
     /**
      * Constructor for OpenRegisterAdmin section.
      *
@@ -60,7 +59,6 @@ class OpenRegisterAdmin implements IIconSection
 
     }//end __construct()
 
-
     /**
      * Get the icon for this admin section.
      *
@@ -71,7 +69,6 @@ class OpenRegisterAdmin implements IIconSection
         return $this->urlGenerator->imagePath(appName: 'openregister', file: 'app-dark.svg');
 
     }//end getIcon()
-
 
     /**
      * Get the ID of this admin section.
@@ -86,7 +83,6 @@ class OpenRegisterAdmin implements IIconSection
 
     }//end getID()
 
-
     /**
      * Get the display name of this admin section.
      *
@@ -97,7 +93,6 @@ class OpenRegisterAdmin implements IIconSection
         return $this->l->t('Open Register');
 
     }//end getName()
-
 
     /**
      * Get the priority of this admin section.
@@ -111,6 +106,4 @@ class OpenRegisterAdmin implements IIconSection
         return 97;
 
     }//end getPriority()
-
-
 }//end class

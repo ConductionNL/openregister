@@ -86,7 +86,6 @@ class EndpointService
      */
     private readonly IGroupManager $groupManager;
 
-
     /**
      * Test an endpoint by executing it with test data
      *
@@ -154,7 +153,6 @@ class EndpointService
 
     }//end testEndpoint()
 
-
     /**
      * Execute an endpoint with given request data
      *
@@ -200,7 +198,6 @@ class EndpointService
 
     }//end executeEndpoint()
 
-
     /**
      * Execute a view endpoint
      *
@@ -226,7 +223,6 @@ class EndpointService
         ];
 
     }//end executeViewEndpoint()
-
 
     /**
      * Execute an agent endpoint
@@ -388,7 +384,6 @@ class EndpointService
 
     }//end executeAgentEndpoint()
 
-
     /**
      * Execute a tool function
      *
@@ -480,7 +475,6 @@ class EndpointService
 
     }//end executeToolFunction()
 
-
     /**
      * Execute a webhook endpoint
      *
@@ -506,7 +500,6 @@ class EndpointService
         ];
 
     }//end executeWebhookEndpoint()
-
 
     /**
      * Execute a register endpoint
@@ -534,7 +527,6 @@ class EndpointService
 
     }//end executeRegisterEndpoint()
 
-
     /**
      * Execute a schema endpoint
      *
@@ -560,7 +552,6 @@ class EndpointService
         ];
 
     }//end executeSchemaEndpoint()
-
 
     /**
      * Check if the current user can execute an endpoint
@@ -605,7 +596,6 @@ class EndpointService
         return false;
 
     }//end canExecuteEndpoint()
-
 
     /**
      * Log an endpoint call
@@ -678,6 +668,4 @@ class EndpointService
         }//end try
 
     }//end logEndpointCall()
-
-
 }//end class

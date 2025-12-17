@@ -32,8 +32,6 @@ use OCP\IDBConnection;
  */
 class MetaDataFacetHandler
 {
-
-
     /**
      * Constructor for the MetaDataFacetHandler
      *
@@ -44,7 +42,6 @@ class MetaDataFacetHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Get terms facet for a metadata field
@@ -62,9 +59,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed|string)[][]|string)[] Terms facet data with buckets containing key, results, and label
+     * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string},...}}
+     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
@@ -104,7 +101,6 @@ class MetaDataFacetHandler
 
     }//end getTermsFacet()
 
-
     /**
      * Map @self metadata field names to actual database columns
      *
@@ -134,7 +130,6 @@ class MetaDataFacetHandler
 
     }//end mapMetadataFieldToColumn()
 
-
     /**
      * Get date histogram facet for a metadata field
      *
@@ -154,9 +149,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed)[][]|string)[] Date histogram facet data
+     * @return ((int|mixed)[][]|string)[]
      *
-     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list{0?: array{key: mixed, results: int},...}}
+     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
@@ -196,7 +191,6 @@ class MetaDataFacetHandler
 
     }//end getDateHistogramFacet()
 
-
     /**
      * Get range facet for a metadata field
      *
@@ -216,9 +210,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed|string)[][]|string)[] Range facet data
+     * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'range', buckets: list{0?: array{key: string, results: int, from?: mixed, to?: mixed},...}}
+     * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -271,7 +265,6 @@ class MetaDataFacetHandler
         ];
 
     }//end getRangeFacet()
-
 
     /**
      * Apply base query filters to the query builder
@@ -348,7 +341,6 @@ class MetaDataFacetHandler
 
     }//end applyBaseFilters()
 
-
     /**
      * Apply full-text search to the query builder
      *
@@ -412,7 +404,6 @@ class MetaDataFacetHandler
 
     }//end applyFullTextSearch()
 
-
     /**
      * Apply IDs filter to the query builder
      *
@@ -473,7 +464,6 @@ class MetaDataFacetHandler
         }
 
     }//end applyIdsFilter()
-
 
     /**
      * Apply metadata filters with advanced operator support
@@ -608,7 +598,6 @@ class MetaDataFacetHandler
 
     }//end applyMetadataFilters()
 
-
     /**
      * Apply object field filters with advanced operator support
      *
@@ -673,7 +662,6 @@ class MetaDataFacetHandler
 
     }//end applyObjectFieldFilters()
 
-
     /**
      * Apply simple object field filter (backwards compatibility)
      *
@@ -698,7 +686,6 @@ class MetaDataFacetHandler
         $queryBuilder->andWhere($singleValueConditions);
 
     }//end applySimpleObjectFieldFilter()
-
 
     /**
      * Add object field value condition (exact match and array containment)
@@ -739,7 +726,6 @@ class MetaDataFacetHandler
         );
 
     }//end addObjectFieldValueCondition()
-
 
     /**
      * Apply object field operator
@@ -856,7 +842,6 @@ class MetaDataFacetHandler
 
     }//end applyObjectFieldOperator()
 
-
     /**
      * Get date format string for histogram interval
      *
@@ -885,7 +870,6 @@ class MetaDataFacetHandler
 
     }//end getDateFormatForInterval()
 
-
     /**
      * Generate a human-readable key for a range
      *
@@ -910,7 +894,6 @@ class MetaDataFacetHandler
         }
 
     }//end generateRangeKey()
-
 
     /**
      * Get human-readable label for metadata field value
@@ -970,7 +953,6 @@ class MetaDataFacetHandler
 
     }//end getFieldLabel()
 
-
     /**
      * Get facetable metadata fields with their types and available options
      *
@@ -985,9 +967,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return (array|bool|string)[][] Facetable metadata fields with their configuration
+     * @return (((int|mixed|string)[]|mixed|string)[]|bool|string)[][]
      *
-     * @psalm-return array{register?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, schema?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, organisation?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, application?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, created?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, updated?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, published?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}, depublished?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: array, date_range?: array}}
+     * @psalm-return array{register?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, schema?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, organisation?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, application?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, created?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, updated?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, published?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}, depublished?: array{type: 'categorical'|'date', description: string, facet_types: list{0: 'date_histogram'|'terms', 1?: 'range'}, intervals?: list{'day', 'week', 'month', 'year'}, has_labels: bool, sample_values?: list{0?: array{value: mixed, label: string, count: int}|mixed,...}, date_range?: array{min: mixed, max: mixed}}}
      */
     public function getFacetableFields(array $baseQuery=[]): array
     {
@@ -1075,7 +1057,6 @@ class MetaDataFacetHandler
 
     }//end getFacetableFields()
 
-
     /**
      * Check if a metadata field has data in the database
      *
@@ -1110,7 +1091,6 @@ class MetaDataFacetHandler
 
     }//end hasFieldData()
 
-
     /**
      * Get sample values for a categorical field
      *
@@ -1128,9 +1108,9 @@ class MetaDataFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return (int|mixed|string)[][] Sample values with their counts
+     * @return (int|mixed|string)[][]
      *
-     * @psalm-return list{0?: array{value: mixed, label: string, count: int},...}
+     * @psalm-return list<array{count: int, label: string, value: mixed}>
      */
     private function getSampleValues(string $field, array $baseQuery, int $limit): array
     {
@@ -1164,7 +1144,6 @@ class MetaDataFacetHandler
         return $samples;
 
     }//end getSampleValues()
-
 
     /**
      * Get date range for a date field
@@ -1209,6 +1188,4 @@ class MetaDataFacetHandler
         return null;
 
     }//end getDateRange()
-
-
 }//end class

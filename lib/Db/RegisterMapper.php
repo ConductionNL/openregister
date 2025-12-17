@@ -121,7 +121,6 @@ class RegisterMapper extends QBMapper
      */
     protected OrganisationMapper $organisationMapper;
 
-
     /**
      * Constructor
      *
@@ -162,7 +161,6 @@ class RegisterMapper extends QBMapper
         $this->appConfig          = $appConfig;
 
     }//end __construct()
-
 
     /**
      * Find a register by its ID, with optional extension for statistics
@@ -318,7 +316,6 @@ class RegisterMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Finds multiple registers by id
      *
@@ -351,7 +348,6 @@ class RegisterMapper extends QBMapper
 
     }//end findMultiple()
 
-
     /**
      * Find multiple registers by IDs using a single optimized query
      *
@@ -359,7 +355,7 @@ class RegisterMapper extends QBMapper
      *
      * @param array $ids Array of register IDs to find.
      *
-     * @return Entity&Register[] Associative array of ID => Register entity.
+     * @return Entity&Register[]
      *
      * @psalm-return array<Entity&Register>
      */
@@ -389,7 +385,6 @@ class RegisterMapper extends QBMapper
 
     }//end findMultipleOptimized()
 
-
     /**
      * Find all registers, files: with optional extension for statistics
      *
@@ -403,11 +398,10 @@ class RegisterMapper extends QBMapper
      * @param bool       $rbac             Whether to apply RBAC permission checks (default: true)
      * @param bool       $multi            Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return Register[] Array of found registers, multi: possibly with stats
+     * @return Register[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Register>
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @psalm-return     list<OCA\OpenRegister\Db\Register>
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,
@@ -473,7 +467,6 @@ class RegisterMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Insert a new entity
      *
@@ -504,7 +497,6 @@ class RegisterMapper extends QBMapper
         return $entity;
 
     }//end insert()
-
 
     /**
      * Ensures that a register object has a UUID and a slug.
@@ -547,7 +539,6 @@ class RegisterMapper extends QBMapper
 
     }//end cleanObject()
 
-
     /**
      * Create a new register from an array of data
      *
@@ -568,7 +559,6 @@ class RegisterMapper extends QBMapper
         return $register;
 
     }//end createFromArray()
-
 
     /**
      * Update an entity
@@ -605,7 +595,6 @@ class RegisterMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Update an existing register from an array of data
      *
@@ -636,7 +625,6 @@ class RegisterMapper extends QBMapper
         return $register;
 
     }//end updateFromArray()
-
 
     /**
      * Delete a register only if no objects are attached
@@ -678,7 +666,6 @@ class RegisterMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Get all schemas associated with a register
      *
@@ -713,7 +700,6 @@ class RegisterMapper extends QBMapper
         return $schemas;
 
     }//end getSchemasByRegisterId()
-
 
     /**
      * Retrieves the ID of the first register that includes the given schema ID.
@@ -750,7 +736,6 @@ class RegisterMapper extends QBMapper
 
     }//end getFirstRegisterWithSchema()
 
-
     /**
      * Check if a register has a schema with a specific title
      *
@@ -774,7 +759,6 @@ class RegisterMapper extends QBMapper
 
     }//end hasSchemaWithTitle()
 
-
     /**
      * Get all register ID to slug mappings
      *
@@ -796,7 +780,6 @@ class RegisterMapper extends QBMapper
 
     }//end getIdToSlugMap()
 
-
     /**
      * Get all register slug to ID mappings
      *
@@ -817,6 +800,4 @@ class RegisterMapper extends QBMapper
         return $mappings;
 
     }//end getSlugToIdMap()
-
-
 }//end class

@@ -42,8 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class SolrManagementController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -68,7 +66,6 @@ class SolrManagementController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get SOLR field configuration and schema information
      *
@@ -76,44 +73,7 @@ class SolrManagementController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse SOLR field configuration data
-     *
-     * @psalm-return JSONResponse<
-     *     200|422,
-     *     array{
-     *         success: bool,
-     *         message?: string,
-     *         details?: array{error: string},
-     *         comparison?: array{
-     *             total_differences: int<0, max>,
-     *             missing_count: int<0, max>,
-     *             extra_count: int<0, max>,
-     *             missing: list{
-     *                 0?: array{
-     *                     name: mixed,
-     *                     type: mixed,
-     *                     config: mixed,
-     *                     collection: 'files'|'objects',
-     *                     collectionLabel: 'File Collection'|'Object Collection'
-     *                 },
-     *                 ...
-     *             },
-     *             extra: list{
-     *                 0?: array{
-     *                     name: mixed,
-     *                     collection: 'files'|'objects',
-     *                     collectionLabel: 'File Collection'|'Object Collection'
-     *                 },
-     *                 ...
-     *             },
-     *             object_collection: array{missing: int<0, max>, extra: int<0, max>},
-     *             file_collection: array{missing: int<0, max>, extra: int<0, max>}
-     *         },
-     *         object_collection_status?: mixed,
-     *         file_collection_status?: mixed
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|422, array{success: bool, message?: string, details?: array{error: string}, comparison?: array{total_differences: int<0, max>, missing_count: int<0, max>, extra_count: int<0, max>, missing: list<array{collection: 'files'|'objects', collectionLabel: 'File Collection'|'Object Collection', config: mixed, name: mixed, type: mixed}>, extra: list<array{collection: 'files'|'objects', collectionLabel: 'File Collection'|'Object Collection', name: mixed}>, object_collection: array{missing: int<0, max>, extra: int<0, max>}, file_collection: array{missing: int<0, max>, extra: int<0, max>}}, object_collection_status?: mixed, file_collection_status?: mixed}, array<never, never>>
      */
     public function getSolrFields(): JSONResponse
     {
@@ -218,7 +178,6 @@ class SolrManagementController extends Controller
 
     }//end getSolrFields()
 
-
     /**
      * Create missing SOLR fields based on schema analysis
      *
@@ -226,25 +185,7 @@ class SolrManagementController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse The field creation results
-     *
-     * @psalm-return JSONResponse<
-     *     200|422,
-     *     array{
-     *         success: bool,
-     *         message: string,
-     *         details?: array{error: string},
-     *         total_created?: 0|mixed,
-     *         total_errors?: 0|mixed,
-     *         results?: array{
-     *             objects: array{success: false, message: string}|mixed|null,
-     *             files: array{success: false, message: string}|mixed|null
-     *         },
-     *         execution_time_ms?: float,
-     *         dry_run?: bool
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, details?: array{error: string}, total_created?: 0|mixed, total_errors?: 0|mixed, results?: array{objects: array{success: false, message: string}|mixed|null, files: array{success: false, message: string}|mixed|null}, execution_time_ms?: float, dry_run?: bool}, array<never, never>>
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -358,7 +299,6 @@ class SolrManagementController extends Controller
 
     }//end createMissingSolrFields()
 
-
     /**
      * Fix mismatched SOLR field configurations
      *
@@ -463,7 +403,6 @@ class SolrManagementController extends Controller
         }//end try
 
     }//end fixMismatchedSolrFields()
-
 
     /**
      * Delete a SOLR field
@@ -572,7 +511,6 @@ class SolrManagementController extends Controller
 
     }//end deleteSolrField()
 
-
     /**
      * List all SOLR collections with statistics
      *
@@ -621,7 +559,6 @@ class SolrManagementController extends Controller
         }//end try
 
     }//end listSolrCollections()
-
 
     /**
      * List all SOLR ConfigSets
@@ -672,7 +609,6 @@ class SolrManagementController extends Controller
 
     }//end listSolrConfigSets()
 
-
     /**
      * Create a new SOLR ConfigSet by copying an existing one
      *
@@ -710,7 +646,6 @@ class SolrManagementController extends Controller
 
     }//end createSolrConfigSet()
 
-
     /**
      * Delete a SOLR ConfigSet
      *
@@ -746,7 +681,6 @@ class SolrManagementController extends Controller
         }
 
     }//end deleteSolrConfigSet()
-
 
     /**
      * Create a new SOLR collection from a ConfigSet
@@ -800,7 +734,6 @@ class SolrManagementController extends Controller
 
     }//end createSolrCollection()
 
-
     /**
      * Copy a SOLR collection
      *
@@ -843,7 +776,6 @@ class SolrManagementController extends Controller
         }
 
     }//end copySolrCollection()
-
 
     /**
      * Delete a specific SOLR collection by name
@@ -938,7 +870,6 @@ class SolrManagementController extends Controller
 
     }//end deleteSpecificSolrCollection()
 
-
     /**
      * Update SOLR collection assignments (Object Collection and File Collection)
      *
@@ -1004,6 +935,4 @@ class SolrManagementController extends Controller
         }//end try
 
     }//end updateSolrCollectionAssignments()
-
-
 }//end class

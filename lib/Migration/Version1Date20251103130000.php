@@ -35,8 +35,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251103130000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add authorization column to organisations and applications tables
      *
@@ -96,6 +94,4 @@ class Version1Date20251103130000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

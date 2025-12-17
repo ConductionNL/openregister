@@ -41,8 +41,6 @@ use DateTime;
  */
 class TransformationHandler
 {
-
-
     /**
      * Constructor for TransformationHandler.
      *
@@ -59,7 +57,6 @@ class TransformationHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Transform objects to database format in-place.
@@ -280,6 +277,4 @@ class TransformationHandler
         ];
 
     }//end transformObjectsToDatabaseFormatInPlace()
-
-
 }//end class

@@ -46,7 +46,6 @@ class AgentUpdatedEvent extends Event
      */
     private Agent $oldAgent;
 
-
     /**
      * Constructor for AgentUpdatedEvent.
      *
@@ -63,7 +62,6 @@ class AgentUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated agent.
      *
@@ -74,7 +72,6 @@ class AgentUpdatedEvent extends Event
         return $this->newAgent;
 
     }//end getAgent()
-
 
     /**
      * Get the new agent state.
@@ -87,7 +84,6 @@ class AgentUpdatedEvent extends Event
 
     }//end getNewAgent()
 
-
     /**
      * Get the old agent state.
      *
@@ -98,6 +94,4 @@ class AgentUpdatedEvent extends Event
         return $this->oldAgent;
 
     }//end getOldAgent()
-
-
 }//end class

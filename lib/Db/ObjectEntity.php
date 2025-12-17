@@ -426,7 +426,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
-
     /**
      * Initialize the entity and define field types
      */
@@ -466,7 +465,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Override getter to provide default empty arrays for JSON array fields
      *
@@ -504,14 +502,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getter()
 
-
     /**
      * Get the object data and set the 'id' to the 'uuid'
      *
      * This getter has special logic to inject the UUID as 'id' field,
      * so it must remain explicit rather than using the magic method.
      *
-     * @return (mixed|null|string)[] The object data with 'id' set to 'uuid', or empty array if null
+     * @return (mixed|null|string)[]
      *
      * @psalm-return array{id: mixed|null|string,...}
      */
@@ -526,7 +523,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $objectData;
 
     }//end getObject()
-
 
     /**
      * Get array of field names that are JSON type
@@ -547,7 +543,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity from an array of data
@@ -582,7 +577,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Hydrate the entity from an serialized array of data
      *
@@ -605,16 +599,15 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end hydrateObject()
 
-
     /**
      * Serialize the entity to JSON format
      *
      * Merges the object's own data with a '@self' key containing metadata.
      * Ensures that if a name is not set, the UUID is used as a fallback.
      *
-     * @return ((mixed|null|string)[]|mixed)[] Serialized object data
+     * @return ((array|int|mixed|null|string)[]|mixed)[]
      *
-     * @psalm-return array{'@self': array{name: mixed|null|string,...},...}
+     * @psalm-return array{'@self': array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null},...}
      */
     public function jsonSerialize(): array
     {
@@ -637,7 +630,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $object;
 
     }//end jsonSerialize()
-
 
     /**
      * Get array representation of all object properties
@@ -714,7 +706,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end getObjectArray()
 
-
     /**
      * Format DateTime object to ISO 8601 string or return null
      *
@@ -731,7 +722,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $date->format('c');
 
     }//end getFormattedDate()
-
 
     /**
      * Lock the object for a specific duration
@@ -801,7 +791,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end lock()
 
-
     /**
      * Unlock the object
      *
@@ -840,7 +829,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end unlock()
 
-
     /**
      * Check if the object is currently locked
      *
@@ -860,7 +848,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end isLocked()
 
-
     /**
      * Get lock information
      *
@@ -875,7 +862,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $this->locked;
 
     }//end getLockInfo()
-
 
     /**
      * Delete the object
@@ -915,7 +901,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end delete()
 
-
     /**
      * Get the last log entry for this object (runtime only)
      *
@@ -928,7 +913,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $this->lastLog;
 
     }//end getLastLog()
-
 
     /**
      * Set the last log entry for this object (runtime only)
@@ -945,7 +929,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->lastLog = $log;
 
     }//end setLastLog()
-
 
     /**
      * String representation of the object entity
@@ -971,7 +954,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         return 'Object Entity';
 
     }//end __toString()
-
 
     /**
      * Check if this object is managed by any configuration
@@ -1003,7 +985,6 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     }//end isManagedByConfiguration()
 
-
     /**
      * Get the configuration that manages this object
      *
@@ -1033,6 +1014,4 @@ class ObjectEntity extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
-
-
 }//end class

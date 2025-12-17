@@ -35,7 +35,6 @@ class AgentCreatedEvent extends Event
      */
     private Agent $agent;
 
-
     /**
      * Constructor for AgentCreatedEvent.
      *
@@ -50,7 +49,6 @@ class AgentCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created agent.
      *
@@ -61,6 +59,4 @@ class AgentCreatedEvent extends Event
         return $this->agent;
 
     }//end getAgent()
-
-
 }//end class

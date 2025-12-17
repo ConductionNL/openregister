@@ -57,8 +57,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  */
 class ExportHandler
 {
-
-
     /**
      * Constructor
      *
@@ -80,7 +78,6 @@ class ExportHandler
 
     }//end __construct()
 
-
     /**
      * Export objects to specified format
      *
@@ -90,9 +87,11 @@ class ExportHandler
      * @param string     $type        Export type ('csv' or 'excel')
      * @param IUser|null $currentUser Current user (for RBAC)
      *
-     * @return array Export data ['content' => string, 'filename' => string, 'mimetype' => string]
+     * @return (false|string)[] Export data ['content' => string, 'filename' => string, 'mimetype' => string]
      *
      * @throws \Exception If export fails
+     *
+     * @psalm-return array{content: false|string, filename: string, mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv'}
      */
     public function export(
         Register $register,
@@ -182,7 +181,6 @@ class ExportHandler
 
     }//end export()
 
-
     /**
      * Import objects from uploaded file
      *
@@ -196,9 +194,11 @@ class ExportHandler
      * @param bool        $publish      Publish imported objects (Excel only)
      * @param IUser|null  $currentUser  Current user
      *
-     * @return array Import result with summary
+     * @return (array|int|null|string)[][] Import result with summary
      *
      * @throws \Exception If import fails
+     *
+     * @psalm-return array<string, array{created: array, errors: array, found: int, unchanged?: array, updated: array, deduplication_efficiency?: string, schema?: array{id: int, title: null|string, slug: null|string}|null, debug?: array{headers: array<never, never>, processableHeaders: array<never, never>, schemaProperties: list<array-key>}, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}}>
      */
     public function import(
         Register $register,
@@ -302,7 +302,6 @@ class ExportHandler
 
     }//end import()
 
-
     /**
      * Download all files of an object as ZIP
      *
@@ -310,9 +309,11 @@ class ExportHandler
      *
      * @param string $objectId Object ID or UUID
      *
-     * @return array Download data ['content' => string, 'filename' => string, 'mimetype' => string]
+     * @return (false|string)[] Download data ['content' => string, 'filename' => string, 'mimetype' => string]
      *
      * @throws \Exception If download fails
+     *
+     * @psalm-return array{content: false|string, filename: string, mimetype: 'application/zip'}
      */
     public function downloadObjectFiles(string $objectId): array
     {
@@ -371,6 +372,4 @@ class ExportHandler
         }//end try
 
     }//end downloadObjectFiles()
-
-
 }//end class

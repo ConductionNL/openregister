@@ -37,8 +37,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251102180000 extends SimpleMigrationStep
 {
-
-
     /**
      * Pre-schema change: Copy data before modifying structure
      *
@@ -67,7 +65,6 @@ class Version1Date20251102180000 extends SimpleMigrationStep
         }
 
     }//end preSchemaChange()
-
 
     /**
      * Rename roles column to groups in organisations table
@@ -112,7 +109,6 @@ class Version1Date20251102180000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
 
     /**
      * Perform post-schema change data migration
@@ -164,6 +160,4 @@ class Version1Date20251102180000 extends SimpleMigrationStep
         }//end try
 
     }//end postSchemaChange()
-
-
 }//end class

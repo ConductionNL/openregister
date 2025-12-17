@@ -86,7 +86,6 @@ class FileMapper extends QBMapper
      */
     private readonly IURLGenerator $urlGenerator;
 
-
     /**
      * Constructor
      *
@@ -101,7 +100,6 @@ class FileMapper extends QBMapper
         $this->urlGenerator = $urlGenerator;
 
     }//end __construct()
-
 
     /**
      * Get all files for a given node (parent) and/or file IDs with share information and owner data.
@@ -213,7 +211,6 @@ class FileMapper extends QBMapper
 
     }//end getFiles()
 
-
     /**
      * Get a single file by its fileid with share information and owner data.
      *
@@ -309,7 +306,6 @@ class FileMapper extends QBMapper
 
     }//end getFile()
 
-
     /**
      * Get all files for a given ObjectEntity by using its folder property as the node id.
      * If the folder property is empty, search oc_filecache for a row where name matches the object's uuid.
@@ -385,15 +381,11 @@ class FileMapper extends QBMapper
 
     }//end getFilesForObject()
 
-
     /**
      * Generate a share URL from a share token.
      *
      * @param string $token The share token
-     *
      * @param string $token Share token
-     *
-     * @return string Generated share URL
      *
      * @phpstan-param string $token
      *
@@ -406,7 +398,6 @@ class FileMapper extends QBMapper
 
     }//end generateShareUrl()
 
-
     /**
      * Generate an authenticated access URL for a file (requires login).
      *
@@ -414,10 +405,7 @@ class FileMapper extends QBMapper
      * the user to be authenticated to access the file.
      *
      * @param int $fileId The file ID
-     *
      * @param int $fileId File ID
-     *
-     * @return string Generated authenticated access URL
      *
      * @phpstan-param int $fileId
      *
@@ -430,7 +418,6 @@ class FileMapper extends QBMapper
 
     }//end generateAuthenticatedAccessUrl()
 
-
     /**
      * Generate an authenticated download URL for a file (requires login).
      *
@@ -438,10 +425,7 @@ class FileMapper extends QBMapper
      * the user to be authenticated to download the file.
      *
      * @param int $fileId The file ID
-     *
      * @param int $fileId File ID
-     *
-     * @return string Generated authenticated download URL
      *
      * @phpstan-param int $fileId
      *
@@ -453,7 +437,6 @@ class FileMapper extends QBMapper
         return $baseUrl.'/index.php/apps/openregister/api/files/'.$fileId.'/download';
 
     }//end generateAuthenticatedDownloadUrl()
-
 
     /**
      * Publish a file by creating a public share directly in the database.
@@ -541,7 +524,6 @@ class FileMapper extends QBMapper
 
     }//end publishFile()
 
-
     /**
      * Depublish a file by removing all public shares directly from the database.
      *
@@ -570,7 +552,6 @@ class FileMapper extends QBMapper
         ];
 
     }//end depublishFile()
-
 
     /**
      * Get an existing public share for a file.
@@ -602,7 +583,6 @@ class FileMapper extends QBMapper
         return $share;
 
     }//end getPublicShare()
-
 
     /**
      * Generate a unique share token.
@@ -642,7 +622,6 @@ class FileMapper extends QBMapper
 
     }//end generateShareToken()
 
-
     /**
      * Count all files in the Nextcloud installation
      *
@@ -666,7 +645,6 @@ class FileMapper extends QBMapper
 
     }//end countAllFiles()
 
-
     /**
      * Get total storage size of all files in the Nextcloud installation
      *
@@ -689,7 +667,6 @@ class FileMapper extends QBMapper
         return (int) ($row['total_size'] ?? 0);
 
     }//end getTotalFilesSize()
-
 
     /**
      * Find files in Nextcloud that are not tracked in the extraction system yet
@@ -767,7 +744,6 @@ class FileMapper extends QBMapper
 
     }//end findUntrackedFiles()
 
-
     /**
      * Count untracked files
      *
@@ -803,7 +779,6 @@ class FileMapper extends QBMapper
         return $count;
 
     }//end countUntrackedFiles()
-
 
     /**
      * Set file ownership at database level.
@@ -861,6 +836,4 @@ class FileMapper extends QBMapper
         return $storageResult > 0;
 
     }//end setFileOwnership()
-
-
 }//end class

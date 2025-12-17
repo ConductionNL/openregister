@@ -68,7 +68,6 @@ class FilesController extends Controller
      */
     private readonly ObjectService $objectService;
 
-
     /**
      * Constructor
      *
@@ -96,7 +95,6 @@ class FilesController extends Controller
         $this->objectService = $objectService;
 
     }//end __construct()
-
 
     /**
      * Get all files associated with a specific object
@@ -142,7 +140,6 @@ class FilesController extends Controller
         }//end try
 
     }//end index()
-
 
     /**
      * Get a specific file associated with an object
@@ -191,7 +188,6 @@ class FilesController extends Controller
         }//end try
 
     }//end show()
-
 
     /**
      * Add a new file to an object
@@ -259,7 +255,6 @@ class FilesController extends Controller
         }//end try
 
     }//end create()
-
 
     /**
      * Save a file to an object (create new or update existing)
@@ -350,7 +345,6 @@ class FilesController extends Controller
         }//end try
 
     }//end save()
-
 
     /**
      * Add a new file to an object via multipart form upload
@@ -563,7 +557,6 @@ class FilesController extends Controller
 
     }//end createMultipart()
 
-
     /**
      * Update file metadata for an object
      *
@@ -614,7 +607,6 @@ class FilesController extends Controller
 
     }//end update()
 
-
     /**
      * Delete a file from an object
      *
@@ -657,7 +649,6 @@ class FilesController extends Controller
         }
 
     }//end delete()
-
 
     /**
      * Publish a file associated with an object
@@ -707,7 +698,6 @@ class FilesController extends Controller
 
     }//end publish()
 
-
     /**
      * Depublish a file associated with an object
      *
@@ -756,7 +746,6 @@ class FilesController extends Controller
 
     }//end depublish()
 
-
     /**
      * Download a file by its ID (authenticated endpoint)
      *
@@ -776,7 +765,7 @@ class FilesController extends Controller
      *
      * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
      *
-     * @psalm-return JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200, array<string, mixed>>
+     * @psalm-return JSONResponse<404|500, array{error: string}, array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {
@@ -797,7 +786,6 @@ class FilesController extends Controller
         }
 
     }//end downloadById()
-
 
     /**
      * Get a human-readable error message for PHP file upload errors
@@ -824,7 +812,6 @@ class FilesController extends Controller
         };
 
     }//end getUploadErrorMessage()
-
 
     /**
      * Parse a value to boolean
@@ -861,7 +848,6 @@ class FilesController extends Controller
 
     }//end parseBool()
 
-
     /**
      * Normalize tags input to an array
      *
@@ -893,7 +879,6 @@ class FilesController extends Controller
 
     }//end normalizeTags()
 
-
     /**
      * Render the Files page
      *
@@ -914,6 +899,4 @@ class FilesController extends Controller
         );
 
     }//end page()
-
-
 }//end class

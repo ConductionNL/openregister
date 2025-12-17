@@ -46,7 +46,6 @@ class QueryBuilderHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -64,7 +63,6 @@ class QueryBuilderHandler
 
     }//end __construct()
 
-
     /**
      * Get query builder instance
      *
@@ -77,7 +75,6 @@ class QueryBuilderHandler
         return $this->db->getQueryBuilder();
 
     }//end getQueryBuilder()
-
 
     /**
      * Get the max_allowed_packet value from database
@@ -120,6 +117,4 @@ class QueryBuilderHandler
         return 16777216;
 
     }//end getMaxAllowedPacketSize()
-
-
 }//end class

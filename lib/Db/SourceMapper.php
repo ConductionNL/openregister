@@ -85,7 +85,6 @@ class SourceMapper extends QBMapper
      */
     private IEventDispatcher $eventDispatcher;
 
-
     /**
      * Constructor
      *
@@ -111,7 +110,6 @@ class SourceMapper extends QBMapper
         $this->appConfig          = $appConfig;
 
     }//end __construct()
-
 
     /**
      * Finds a source by id
@@ -141,7 +139,6 @@ class SourceMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Finds all sources
      *
@@ -151,11 +148,11 @@ class SourceMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      *
-     * @return Source[] The sources
+     * @return Source[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Source>
+     * @psalm-return list<OCA\OpenRegister\Db\Source>
      */
     public function findAll(
         ?int $limit=null,
@@ -198,7 +195,6 @@ class SourceMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Insert a new source
      *
@@ -234,7 +230,6 @@ class SourceMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing source
      *
@@ -267,7 +262,6 @@ class SourceMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete a source
      *
@@ -295,7 +289,6 @@ class SourceMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Creates a source from an array
      *
@@ -316,7 +309,6 @@ class SourceMapper extends QBMapper
         return $this->insert(entity: $source);
 
     }//end createFromArray()
-
 
     /**
      * Updates a source from an array
@@ -341,6 +333,4 @@ class SourceMapper extends QBMapper
         return $this->update($obj);
 
     }//end updateFromArray()
-
-
 }//end class

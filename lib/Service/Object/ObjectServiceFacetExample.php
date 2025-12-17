@@ -30,8 +30,6 @@ use OCA\OpenRegister\Service\ObjectService;
  */
 class ObjectServiceFacetExample
 {
-
-
     /**
      * Constructor for ObjectServiceFacetExample
      *
@@ -42,7 +40,6 @@ class ObjectServiceFacetExample
     ) {
 
     }//end __construct()
-
 
     /**
      * Example 1: Basic New Faceting with getFacetsForObjects
@@ -71,7 +68,6 @@ class ObjectServiceFacetExample
 
     }//end newFacetingApproach()
 
-
     /**
      * Example 2: Legacy Faceting (Backward Compatibility)
      *
@@ -94,7 +90,6 @@ class ObjectServiceFacetExample
         return $this->objectService->getFacetsForObjects($query);
 
     }//end legacyFacetingApproach()
-
 
     /**
      * Example 3: Complete Paginated Search with Facets
@@ -135,7 +130,6 @@ class ObjectServiceFacetExample
         return $this->objectService->searchObjectsPaginated($query);
 
     }//end paginatedSearchWithFacets()
-
 
     /**
      * Example 4: E-commerce Style Faceted Search
@@ -227,7 +221,6 @@ class ObjectServiceFacetExample
 
     }//end ecommerceFacetedSearch()
 
-
     /**
      * Example 5: Analytics Dashboard Facets
      *
@@ -295,7 +288,6 @@ class ObjectServiceFacetExample
 
     }//end analyticsDashboardFacets()
 
-
     /**
      * Example 6: Disjunctive Faceting Demonstration
      *
@@ -336,7 +328,6 @@ class ObjectServiceFacetExample
         return $result;
 
     }//end disjunctiveFacetingDemo()
-
 
     /**
      * Example 7: Performance Comparison
@@ -401,15 +392,14 @@ class ObjectServiceFacetExample
 
     }//end performanceComparison()
 
-
     /**
      * Example 8: Complete Frontend Integration Example
      *
      * Shows how to structure data for frontend consumption.
      *
-     * @return ((array|bool|mixed|null|string)[]|mixed)[][]
+     * @return (((mixed|null)[][]|bool|mixed|null|string)[]|mixed)[][]
      *
-     * @psalm-return array{search: array{results: mixed, pagination: array{current_page: mixed, total_pages: mixed, total_items: mixed, items_per_page: mixed, has_next: bool, has_prev: bool, next_url: mixed|null, prev_url: mixed|null}}, facets: array<string, array{field: mixed|string, type: mixed, label: string, options: array}>, applied_filters: array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>}
+     * @psalm-return array{search: array{results: mixed, pagination: array{current_page: mixed, total_pages: mixed, total_items: mixed, items_per_page: mixed, has_next: bool, has_prev: bool, next_url: mixed|null, prev_url: mixed|null}}, facets: array<string, array{field: mixed|string, type: mixed, label: string, options: array<array{value: mixed, label: mixed, count: mixed, from: mixed|null, to: mixed|null}>}>, applied_filters: array<string, array{field: mixed|string, value: mixed, type: 'metadata'|'object_field'}>}
      */
     public function frontendIntegrationExample(): array
     {
@@ -455,7 +445,6 @@ class ObjectServiceFacetExample
 
     }//end frontendIntegrationExample()
 
-
     /**
      * Transform facets for frontend consumption
      *
@@ -499,7 +488,6 @@ class ObjectServiceFacetExample
 
     }//end transformFacetsForFrontend()
 
-
     /**
      * Transform facet buckets for frontend
      *
@@ -529,7 +517,6 @@ class ObjectServiceFacetExample
                 );
 
     }//end transformBuckets()
-
 
     /**
      * Extract applied filters from query
@@ -574,7 +561,6 @@ class ObjectServiceFacetExample
 
     }//end extractAppliedFilters()
 
-
     /**
      * Check if audit trails are enabled
      *
@@ -587,7 +573,6 @@ class ObjectServiceFacetExample
         return false;
 
     }//end isAuditTrailsEnabled()
-
 
     /**
      * Calculate performance improvement percentage
@@ -607,6 +592,4 @@ class ObjectServiceFacetExample
         return round($improvement, 2);
 
     }//end calculatePerformanceImprovement()
-
-
 }//end class

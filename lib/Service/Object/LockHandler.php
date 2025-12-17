@@ -43,8 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class LockHandler
 {
-
-
     /**
      * Constructor
      *
@@ -57,7 +55,6 @@ class LockHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Lock an object
@@ -121,7 +118,6 @@ class LockHandler
 
     }//end lock()
 
-
     /**
      * Unlock an object
      *
@@ -129,7 +125,7 @@ class LockHandler
      *
      * @param string $identifier Object ID or UUID
      *
-     * @return bool True if unlocked successfully
+     * @return true True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
      */
@@ -162,7 +158,6 @@ class LockHandler
         }//end try
 
     }//end unlock()
-
 
     /**
      * Check if an object is locked
@@ -207,7 +202,6 @@ class LockHandler
 
     }//end isLocked()
 
-
     /**
      * Get lock information for an object
      *
@@ -215,9 +209,11 @@ class LockHandler
      *
      * @param string $identifier Object ID or UUID
      *
-     * @return array|null Lock information or null if not locked
+     * @return (bool|mixed|null|string)[]|null Lock information or null if not locked
+     *
+     * @psalm-return array{locked_at: mixed, process: mixed|null, duration: mixed|null, expires_at?: string, is_expired?: bool}|null
      */
-    public function getLockInfo(string $identifier): ?array
+    public function getLockInfo(string $identifier): array|null
     {
         try {
             $object = $this->objectEntityMapper->find($identifier);
@@ -255,6 +251,4 @@ class LockHandler
         }//end try
 
     }//end getLockInfo()
-
-
 }//end class

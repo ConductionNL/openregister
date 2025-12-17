@@ -40,8 +40,6 @@ use OCP\IUserSession;
 
 class DeletedController extends Controller
 {
-
-
     /**
      * Constructor for the DeletedController
      *
@@ -68,11 +66,10 @@ class DeletedController extends Controller
 
     }//end __construct()
 
-
     /**
      * Helper method to extract request parameters for deleted objects
      *
-     * @return ((mixed|string)[]|int|mixed|null)[] Configuration array containing pagination, filters, and search parameters
+     * @return ((mixed|string)[]|int|mixed|null)[]
      *
      * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null}
      */
@@ -154,7 +151,6 @@ class DeletedController extends Controller
 
     }//end extractRequestParameters()
 
-
     /**
      * Get all soft deleted objects
      *
@@ -224,11 +220,8 @@ class DeletedController extends Controller
 
     }//end index()
 
-
     /**
      * Get statistics for deleted objects
-     *
-     * @return JSONResponse A JSON response containing deletion statistics
      *
      * @NoAdminRequired
      *
@@ -284,11 +277,8 @@ class DeletedController extends Controller
 
     }//end statistics()
 
-
     /**
      * Get top deleters statistics
-     *
-     * @return JSONResponse A JSON response containing top deleters data
      *
      * @NoAdminRequired
      *
@@ -319,13 +309,10 @@ class DeletedController extends Controller
 
     }//end topDeleters()
 
-
     /**
      * Restore a deleted object
      *
      * @param string $id The ID or UUID of the object to restore
-     *
-     * @return JSONResponse A JSON response indicating success or failure
      *
      * @NoAdminRequired
      *
@@ -368,15 +355,12 @@ class DeletedController extends Controller
 
     }//end restore()
 
-
     /**
      * Restore multiple deleted objects
      *
      * TODO: This function is unsafe as it doesn't filter by register/schema.
      * In the future, add register and schema filtering to mass operations
      * to prevent cross-register restoring.
-     *
-     * @return JSONResponse A JSON response with restoration results
      *
      * @NoAdminRequired
      *
@@ -458,13 +442,10 @@ class DeletedController extends Controller
 
     }//end restoreMultiple()
 
-
     /**
      * Permanently delete an object
      *
      * @param string $id The ID or UUID of the object to permanently delete
-     *
-     * @return JSONResponse A JSON response indicating success or failure
      *
      * @NoAdminRequired
      *
@@ -506,15 +487,12 @@ class DeletedController extends Controller
 
     }//end destroy()
 
-
     /**
      * Permanently delete multiple objects
      *
      * TODO: This function is unsafe as it doesn't filter by register/schema.
      * In the future, add register and schema filtering to mass operations
      * to prevent cross-register deleting.
-     *
-     * @return JSONResponse A JSON response with deletion results
      *
      * @NoAdminRequired
      *
@@ -595,7 +573,6 @@ class DeletedController extends Controller
 
     }//end destroyMultiple()
 
-
     /**
      * Format restore message.
      *
@@ -616,7 +593,6 @@ class DeletedController extends Controller
 
     }//end formatRestoreMessage()
 
-
     /**
      * Format delete message.
      *
@@ -636,6 +612,4 @@ class DeletedController extends Controller
         return $message;
 
     }//end formatDeleteMessage()
-
-
 }//end class

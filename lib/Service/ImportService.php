@@ -137,7 +137,6 @@ class ImportService
      */
     private readonly IJobList $jobList;
 
-
     /**
      * Constructor for the ImportService
      *
@@ -152,18 +151,14 @@ class ImportService
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
         SchemaMapper $schemaMapper,
-        // REFACTORED: Removed ObjectService dependency to break circular dependency.
-        // Now using SaveObject and SaveObjects handlers directly.
-        \OCA\OpenRegister\Service\Objects\SaveObject $saveHandler,
-        \OCA\OpenRegister\Service\Objects\SaveObjects $saveObjectsHandler,
+        ObjectService $objectService,
         LoggerInterface $logger,
         IGroupManager $groupManager,
         IJobList $jobList
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
-        $this->saveHandler        = $saveHandler;
-        $this->saveObjectsHandler = $saveObjectsHandler;
+        $this->objectService      = $objectService;
         $this->logger       = $logger;
         $this->groupManager = $groupManager;
         $this->jobList      = $jobList;
@@ -172,7 +167,6 @@ class ImportService
         $this->schemaPropertiesCache = [];
 
     }//end __construct()
-
 
     /**
      * Check if the given user is in the admin group
@@ -199,7 +193,6 @@ class ImportService
 
     }//end isUserAdmin()
 
-
     /**
      * Import data from Excel file asynchronously.
      *
@@ -225,7 +218,6 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-
 
     /**
      * Import data from Excel file.
@@ -325,7 +317,6 @@ class ImportService
 
     }//end importFromExcel()
 
-
     /**
      * Import data from CSV file.
      *
@@ -340,7 +331,7 @@ class ImportService
      * @param bool          $publish       Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      *
-     * @return (array|int|string)[][]
+     * @return (((array|int|mixed|string)[]|float|int|mixed|null|string)[]|int|string)[][]
      *
      * @phpstan-return array<string, array{
      *     created: array<mixed>,
@@ -353,23 +344,7 @@ class ImportService
      *     performance?: array
      * }>
      *
-     * @psalm-return array<string, array{
-     *     created: array,
-     *     errors: array,
-     *     found: int,
-     *     unchanged: array,
-     *     updated: array,
-     *     performance?: array{
-     *         efficiency: 0|float,
-     *         objectsPerSecond: float,
-     *         totalFound: int<0, max>,
-     *         totalProcessed: int<0, max>,
-     *         totalTime: float,
-     *         totalTimeMs: float
-     *     },
-     *     deduplication_efficiency?: string,
-     *     schema: array{id: int, title: null|string, slug: null|string}
-     * }>
+     * @psalm-return array<string, array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list{0?: array{object: array<never, never>|mixed, error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, type?: 'ValidationException'|mixed, row?: 1},...}, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}, schema: array{id: int, title: null|string, slug: null|string}}>
      */
     public function importFromCsv(
         string $filePath,
@@ -426,7 +401,6 @@ class ImportService
         return $finalResult;
 
     }//end importFromCsv()
-
 
     /**
      * Process spreadsheet with multiple schemas using batch saving for better performance
@@ -549,7 +523,6 @@ class ImportService
 
     }//end processMultiSchemaSpreadsheetAsync()
 
-
     /**
      * Process spreadsheet with single schema using batch saving for better performance
      *
@@ -562,7 +535,6 @@ class ImportService
      * @phpstan-return array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      * @psalm-return   array<string, array{found: int, created: array<mixed>, unchanged: array<mixed>, errors: array<mixed>}>
      */
-
 
     /**
      * Process a single spreadsheet sheet using batch saving for better performance
@@ -585,23 +557,7 @@ class ImportService
      *     deduplication_efficiency?: string
      * }
      *
-     * @psalm-return array{
-     *     found: int<0, max>,
-     *     created: array<never, mixed|null>,
-     *     updated: array<never, mixed|null>,
-     *     unchanged: array<never, mixed|null>,
-     *     errors: list{
-     *         0?: array{
-     *             sheet: string,
-     *             object: array<never, never>|mixed,
-     *             error: 'No data rows found in sheet'|'No valid headers found in sheet'|'Validation failed'|mixed,
-     *             type?: 'ValidationException'|mixed,
-     *             row?: 1
-     *         },
-     *         ...
-     *     },
-     *     deduplication_efficiency?: string
-     * }
+     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list<array{error: 'No data rows found in sheet'|'No valid headers found in sheet'|'Validation failed'|mixed, object: array<never, never>|mixed, row?: 1, sheet: string, type?: 'ValidationException'|mixed}>, deduplication_efficiency?: string}
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -741,7 +697,6 @@ class ImportService
 
     }//end processSpreadsheetBatch()
 
-
     /**
      * Process CSV sheet and import all objects in batches
      *
@@ -771,30 +726,7 @@ class ImportService
      *     deduplication_efficiency?: string
      * }
      *
-     * @psalm-return array{
-     *     found: int<0, max>,
-     *     created: array<never, mixed|null>,
-     *     updated: array<never, mixed|null>,
-     *     unchanged: array<never, mixed|null>,
-     *     errors: list{
-     *         0?: array{
-     *             object: array<never, never>|mixed,
-     *             error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed,
-     *             type?: 'ValidationException'|mixed,
-     *             row?: 1
-     *         },
-     *         ...
-     *     },
-     *     deduplication_efficiency?: string,
-     *     performance?: array{
-     *         totalTime: float,
-     *         totalTimeMs: float,
-     *         objectsPerSecond: float,
-     *         totalProcessed: int<0, max>,
-     *         totalFound: int<0, max>,
-     *         efficiency: 0|float
-     *     }
-     * }
+     * @psalm-return array{found: int<0, max>, created: array<never, mixed|null>, updated: array<never, mixed|null>, unchanged: array<never, mixed|null>, errors: list<array{error: 'No data rows found in CSV file'|'No valid headers found in CSV file'|'Validation failed'|mixed, object: array<never, never>|mixed, row?: 1, type?: 'ValidationException'|mixed}>, deduplication_efficiency?: string, performance?: array{totalTime: float, totalTimeMs: float, objectsPerSecond: float, totalProcessed: int<0, max>, totalFound: int<0, max>, efficiency: 0|float}}
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -973,7 +905,6 @@ class ImportService
 
     }//end processCsvSheet()
 
-
     /**
      * Transform CSV row data to object format for batch saving
      *
@@ -1076,7 +1007,6 @@ class ImportService
 
     }//end transformCsvRowToObject()
 
-
     /**
      * Transform datetime values from various formats to MySQL datetime format
      *
@@ -1118,7 +1048,6 @@ class ImportService
 
     }//end transformDateTimeValue()
 
-
     /**
      * Transform @self properties based on their type
      *
@@ -1149,7 +1078,6 @@ class ImportService
         return $value;
 
     }//end transformSelfProperty()
-
 
     /**
      * Process a chunk of Excel rows and prepare objects for batch saving
@@ -1197,7 +1125,6 @@ class ImportService
         ];
 
     }//end processExcelChunk()
-
 
     /**
      * Transform Excel row data to object format for batch saving
@@ -1279,7 +1206,6 @@ class ImportService
 
     }//end transformExcelRowToObject()
 
-
     /**
      * Build column mapping from spreadsheet headers
      *
@@ -1313,7 +1239,6 @@ class ImportService
         return $columnMapping;
 
     }//end buildColumnMapping()
-
 
     /**
      * Process a chunk of rows asynchronously
@@ -1411,7 +1336,6 @@ class ImportService
 
     }//end processChunk()
 
-
     /**
      * Extract data from a single row
      *
@@ -1419,7 +1343,7 @@ class ImportService
      * @param array<string, string>                         $columnMapping Column mapping
      * @param int                                           $row           Row number
      *
-     * @return string[] Row data
+     * @return string[]
      *
      * @psalm-return array<string, string>
      */
@@ -1453,7 +1377,6 @@ class ImportService
         return [];
 
     }//end extractRowData()
-
 
     /**
      * Process a single row
@@ -1526,7 +1449,6 @@ class ImportService
 
     }//end processRow()
 
-
     /**
      * Get schema by slug
      *
@@ -1541,7 +1463,6 @@ class ImportService
         return $schema;
 
     }//end getSchemaBySlug()
-
 
     /**
      * Transform object data based on schema property definitions
@@ -1586,7 +1507,6 @@ class ImportService
         return $transformedData;
 
     }//end transformObjectBySchema()
-
 
     /**
      * Transform a value based on its property definition type
@@ -1634,7 +1554,6 @@ class ImportService
 
     }//end transformValueByType()
 
-
     /**
      * Convert string to boolean
      *
@@ -1652,7 +1571,6 @@ class ImportService
         return in_array($value, ['true', '1', 'yes', 'on', 'enabled']);
 
     }//end stringToBoolean()
-
 
     /**
      * Convert string to object
@@ -1681,7 +1599,6 @@ class ImportService
         return ['value' => $value];
 
     }//end stringToObject()
-
 
     /**
      * Convert string to array handling multiple formats
@@ -1750,7 +1667,6 @@ class ImportService
 
     }//end stringToArray()
 
-
     /**
      * Clear all internal caches to prevent issues between imports
      *
@@ -1761,7 +1677,6 @@ class ImportService
         $this->schemaPropertiesCache = [];
 
     }//end clearCaches()
-
 
     /**
      * Validate that object data only contains valid ObjectEntity properties
@@ -1789,7 +1704,6 @@ class ImportService
 
     }//end validateObjectProperties()
 
-
     /**
      * Add published date to all objects in the @self section
      *
@@ -1815,7 +1729,6 @@ class ImportService
         return $objects;
 
     }//end addPublishedDateToObjects()
-
 
     /**
      * Schedule SOLR warmup job after successful import
@@ -1890,7 +1803,6 @@ class ImportService
 
     }//end scheduleSolrWarmup()
 
-
     /**
      * Calculate total objects imported from import summary
      *
@@ -1916,7 +1828,6 @@ class ImportService
 
     }//end calculateTotalImported()
 
-
     /**
      * Determine optimal warmup mode based on import size
      *
@@ -1940,7 +1851,6 @@ class ImportService
         }
 
     }//end getRecommendedWarmupMode()
-
 
     /**
      * Schedule SOLR warmup with smart configuration based on import results
@@ -1987,6 +1897,4 @@ class ImportService
         return $this->scheduleSolrWarmup(importSummary: $importSummary, delaySeconds: $delay, mode: $mode, maxObjects: $maxObjects);
 
     }//end scheduleSmartSolrWarmup()
-
-
 }//end class

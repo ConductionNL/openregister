@@ -47,7 +47,6 @@ class FacetBuilder
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * FacetBuilder constructor
      *
@@ -65,7 +64,6 @@ class FacetBuilder
 
     }//end __construct()
 
-
     /**
      * Get facetable fields for configuration
      *
@@ -78,6 +76,4 @@ class FacetBuilder
         return $this->solrBackend->getRawSolrFieldsForFacetConfiguration();
 
     }//end getRawSolrFieldsForFacetConfiguration()
-
-
 }//end class

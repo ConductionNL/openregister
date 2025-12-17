@@ -50,8 +50,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileSharingHandler
 {
-
-
     /**
      * Constructor for FileSharingHandler.
      *
@@ -73,13 +71,10 @@ class FileSharingHandler
 
     }//end __construct()
 
-
     /**
      * Get the share link URL for a given share.
      *
      * @param IShare $share The share to get the link for.
-     *
-     * @return string The share link URL.
      *
      * @psalm-return   string
      * @phpstan-return string
@@ -89,7 +84,6 @@ class FileSharingHandler
         return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
 
     }//end getShareLink()
-
 
     /**
      * Find shares for a given file or folder.
@@ -111,7 +105,6 @@ class FileSharingHandler
         return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
 
     }//end findShares()
-
 
     /**
      * Create a share with the given share data.
@@ -175,7 +168,6 @@ class FileSharingHandler
 
     }//end createShare()
 
-
     /**
      * Share a file with a specific user.
      *
@@ -225,7 +217,6 @@ class FileSharingHandler
 
     }//end shareFileWithUser()
 
-
     /**
      * Share a folder with a specific user.
      *
@@ -268,7 +259,6 @@ class FileSharingHandler
 
     }//end shareFolderWithUser()
 
-
     /**
      * Get the current domain with correct protocol.
      *
@@ -289,6 +279,4 @@ class FileSharingHandler
         return $baseUrl;
 
     }//end getCurrentDomain()
-
-
 }//end class

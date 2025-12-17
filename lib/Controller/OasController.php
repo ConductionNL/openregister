@@ -42,7 +42,6 @@ class OasController extends Controller
      */
     private readonly OasService $oasService;
 
-
     /**
      * OasController constructor
      *
@@ -59,7 +58,6 @@ class OasController extends Controller
         $this->oasService = $oasService;
 
     }//end __construct()
-
 
     /**
      * Generate OAS for all registers
@@ -85,7 +83,6 @@ class OasController extends Controller
         }
 
     }//end generateAll()
-
 
     /**
      * Generate OAS for a specific register
@@ -113,6 +110,4 @@ class OasController extends Controller
         }
 
     }//end generate()
-
-
 }//end class

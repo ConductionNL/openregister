@@ -56,7 +56,6 @@ class CronFileTextExtractionJob extends TimedJob
      */
     private const DEFAULT_BATCH_SIZE = 10;
 
-
     /**
      * Execute the cron file text extraction job
      *
@@ -215,6 +214,4 @@ class CronFileTextExtractionJob extends TimedJob
         }//end try
 
     }//end run()
-
-
 }//end class

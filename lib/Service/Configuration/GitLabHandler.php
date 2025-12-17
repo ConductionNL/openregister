@@ -71,7 +71,6 @@ class GitLabHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * GitLabHandler constructor
      *
@@ -96,11 +95,10 @@ class GitLabHandler
 
     }//end __construct()
 
-
     /**
      * Get authentication headers for GitLab API
      *
-     * @return string[] Headers array
+     * @return string[]
      *
      * @psalm-return array{'PRIVATE-TOKEN'?: string}
      */
@@ -118,7 +116,6 @@ class GitLabHandler
 
     }//end getHeaders()
 
-
     /**
      * Search for OpenRegister configurations on GitLab
      *
@@ -128,13 +125,13 @@ class GitLabHandler
      * @param int    $page    Page number for pagination
      * @param int    $perPage Results per page (max 100)
      *
-     * @return (((null|string)[]|mixed|string)[][]|int)[] Search results with project info and file details
+     * @return (((null|string)[]|mixed|string)[][]|int)[]
      *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
      *
-     * @psalm-return array{total_count: int<0, max>, results: list{0?: array{project_id: mixed, path: mixed, ref: 'main'|mixed, url: ''|mixed, name: string, config: array{title: string, description: '', version: 'unknown', app: null, type: 'unknown'}},...}, page: int, per_page: int}
+     * @psalm-return array{total_count: int<0, max>, results: list<array{config: array{app: null, description: '', title: string, type: 'unknown', version: 'unknown'}, name: string, path: mixed, project_id: mixed, ref: 'main'|mixed, url: ''|mixed}>, page: int, per_page: int}
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -216,7 +213,6 @@ class GitLabHandler
 
     }//end searchConfigurations()
 
-
     /**
      * Get list of branches for a project
      *
@@ -251,6 +247,11 @@ class GitLabHandler
             $branches = json_decode($response->getBody(), true);
 
             return array_map(
+                /*
+                 * @return (false|mixed|null)[]
+                 *
+                 * @psalm-return array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}
+                 */
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -273,7 +274,6 @@ class GitLabHandler
         }//end try
 
     }//end getBranches()
-
 
     /**
      * Get file content from a project
@@ -333,7 +333,6 @@ class GitLabHandler
         }//end try
 
     }//end getFileContent()
-
 
     /**
      * List OpenRegister configuration files in a project
@@ -420,7 +419,6 @@ class GitLabHandler
 
     }//end listConfigurationFiles()
 
-
     /**
      * Get project information by namespace/project path
      *
@@ -470,7 +468,6 @@ class GitLabHandler
 
     }//end getProjectByPath()
 
-
     /**
      * Parse and validate a configuration file
      *
@@ -516,7 +513,6 @@ class GitLabHandler
 
     }//end parseConfigurationFile()
 
-
     /**
      * Get the configured GitLab API base URL
      *
@@ -529,6 +525,4 @@ class GitLabHandler
         return $this->apiBase;
 
     }//end getApiBase()
-
-
 }//end class

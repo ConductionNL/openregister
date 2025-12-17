@@ -39,8 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -60,7 +58,6 @@ class ConfigurationSettingsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Get RBAC settings only
@@ -83,7 +80,6 @@ class ConfigurationSettingsController extends Controller
         }
 
     }//end getRbacSettings()
-
 
     /**
      * Update RBAC settings only
@@ -108,7 +104,6 @@ class ConfigurationSettingsController extends Controller
 
     }//end updateRbacSettings()
 
-
     /**
      * Get Organisation settings only
      *
@@ -130,7 +125,6 @@ class ConfigurationSettingsController extends Controller
         }
 
     }//end getOrganisationSettings()
-
 
     /**
      * Update Organisation settings only
@@ -155,7 +149,6 @@ class ConfigurationSettingsController extends Controller
 
     }//end updateOrganisationSettings()
 
-
     /**
      * Get Multitenancy settings only
      *
@@ -177,7 +170,6 @@ class ConfigurationSettingsController extends Controller
         }
 
     }//end getMultitenancySettings()
-
 
     /**
      * Update Multitenancy settings only
@@ -201,7 +193,6 @@ class ConfigurationSettingsController extends Controller
         }
 
     }//end updateMultitenancySettings()
-
 
     /**
      * Get Object settings only
@@ -235,7 +226,6 @@ class ConfigurationSettingsController extends Controller
         }
 
     }//end getObjectSettings()
-
 
     /**
      * Update Object Management settings
@@ -278,21 +268,22 @@ class ConfigurationSettingsController extends Controller
 
     }//end updateObjectSettings()
 
-
     /**
      * PATCH Object settings (delegates to updateObjectSettings)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Updated settings
+     *
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'Object settings updated successfully', data?: array}, array<never, never>>
      */
     public function patchObjectSettings(): JSONResponse
     {
         return $this->updateObjectSettings();
 
     }//end patchObjectSettings()
-
 
     /**
      * Get Retention settings only
@@ -315,7 +306,6 @@ class ConfigurationSettingsController extends Controller
         }
 
     }//end getRetentionSettings()
-
 
     /**
      * Update Retention settings only
@@ -340,7 +330,6 @@ class ConfigurationSettingsController extends Controller
 
     }//end updateRetentionSettings()
 
-
     /**
      * Get object collection field status
      *
@@ -348,9 +337,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Field status for object collection
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'objects', status?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'objects', status?: array}, array<never, never>>
      */
     public function getObjectCollectionFields(): JSONResponse
     {
@@ -377,7 +364,6 @@ class ConfigurationSettingsController extends Controller
 
     }//end getObjectCollectionFields()
 
-
     /**
      * Create missing fields in object collection
      *
@@ -385,9 +371,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Creation results
-     *
-     * @psalm-return JSONResponse<200|400|500, array{success: bool, message: string, collection?: 'objects', result?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message: string, collection?: 'objects', result?: array}, array<never, never>>
      */
     public function createMissingObjectFields(): JSONResponse
     {
@@ -428,6 +412,4 @@ class ConfigurationSettingsController extends Controller
         }//end try
 
     }//end createMissingObjectFields()
-
-
 }//end class

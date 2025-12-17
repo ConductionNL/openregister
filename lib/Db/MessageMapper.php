@@ -54,8 +54,6 @@ use OCP\IDBConnection;
  */
 class MessageMapper extends QBMapper
 {
-
-
     /**
      * Constructor
      *
@@ -72,7 +70,6 @@ class MessageMapper extends QBMapper
         parent::__construct($db, 'openregister_messages', Message::class);
 
     }//end __construct()
-
 
     /**
      * Find a message by its ID
@@ -100,7 +97,6 @@ class MessageMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
     /**
      * Find all messages in a conversation
@@ -137,7 +133,6 @@ class MessageMapper extends QBMapper
 
     }//end findByConversation()
 
-
     /**
      * Find recent messages in a conversation
      *
@@ -173,7 +168,6 @@ class MessageMapper extends QBMapper
 
     }//end findRecentByConversation()
 
-
     /**
      * Count messages in a conversation
      *
@@ -200,7 +194,6 @@ class MessageMapper extends QBMapper
 
     }//end countByConversation()
 
-
     /**
      * Delete all messages in a conversation
      *
@@ -208,7 +201,7 @@ class MessageMapper extends QBMapper
      *
      * @param int $conversationId Conversation ID
      *
-     * @return \OCP\DB\IResult|int Number of messages deleted
+     * @return int Number of messages deleted
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
@@ -222,6 +215,4 @@ class MessageMapper extends QBMapper
         return $qb->executeStatement();
 
     }//end deleteByConversation()
-
-
 }//end class

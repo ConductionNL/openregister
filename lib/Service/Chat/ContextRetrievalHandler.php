@@ -62,7 +62,6 @@ class ContextRetrievalHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -83,7 +82,6 @@ class ContextRetrievalHandler
 
     }//end __construct()
 
-
     /**
      * Retrieve context for RAG chat using semantic/hybrid/keyword search
      *
@@ -95,9 +93,9 @@ class ContextRetrievalHandler
      * @param array      $selectedViews View filters for multitenancy (optional).
      * @param array      $ragSettings   RAG configuration overrides (optional).
      *
-     * @return array Context with 'text' and 'sources' keys
+     * @return ((float|mixed|null|string)[][]|string)[]
      *
-     * @psalm-return array{text: string, sources: list<array>}
+     * @psalm-return array{text: string, sources: list<array{file_id?: mixed|null, file_path?: mixed|null, id: mixed|null, mime_type?: mixed|null, name: string, register?: mixed|null, schema?: mixed|null, similarity: float(1)|mixed, text: ''|mixed, type: 'unknown'|mixed, uri?: mixed|null, uuid?: mixed|null}>}
      */
     public function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
     {
@@ -357,7 +355,6 @@ class ContextRetrievalHandler
 
     }//end retrieveContext()
 
-
     /**
      * Search using keyword only (SOLR)
      *
@@ -396,7 +393,6 @@ class ContextRetrievalHandler
         return $transformed;
 
     }//end searchKeywordOnly()
-
 
     /**
      * Extract a human-readable name from search result
@@ -460,6 +456,4 @@ class ContextRetrievalHandler
         return 'Unknown Source';
 
     }//end extractSourceName()
-
-
 }//end class

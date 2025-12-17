@@ -224,7 +224,6 @@ class Chunk extends Entity implements JsonSerializable
      */
     protected ?DateTime $updatedAt = null;
 
-
     /**
      * Constructor.
      */
@@ -253,7 +252,6 @@ class Chunk extends Entity implements JsonSerializable
         $this->addType('updatedAt', 'datetime');
 
     }//end __construct()
-
 
     /**
      * JSON serialization.
@@ -288,6 +286,4 @@ class Chunk extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

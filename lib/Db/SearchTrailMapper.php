@@ -55,8 +55,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SearchTrailMapper extends QBMapper
 {
-
-
     /**
      * Constructor for SearchTrailMapper
      *
@@ -72,7 +70,6 @@ class SearchTrailMapper extends QBMapper
         parent::__construct($db, 'openregister_search_trails', SearchTrail::class);
 
     }//end __construct()
-
 
     /**
      * Find a search trail by ID
@@ -96,7 +93,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find all search trails with optional filters
      *
@@ -108,9 +104,9 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from    Start date filter
      * @param DateTime|null $to      End date filter
      *
-     * @return SearchTrail[] Array of SearchTrail entities
+     * @return SearchTrail[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
+     * @psalm-return list<OCA\OpenRegister\Db\SearchTrail>
      */
     public function findAll(
         ?int $limit=null,
@@ -171,7 +167,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Count search trails with optional filters
      *
@@ -224,7 +219,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end count()
 
-
     /**
      * Create a new search trail entry
      *
@@ -267,7 +261,6 @@ class SearchTrailMapper extends QBMapper
         return $this->insert($searchTrail);
 
     }//end createSearchTrail()
-
 
     /**
      * Get search statistics for the given time period
@@ -317,7 +310,6 @@ class SearchTrailMapper extends QBMapper
         ];
 
     }//end getSearchStatistics()
-
 
     /**
      * Get most popular search terms
@@ -375,7 +367,6 @@ class SearchTrailMapper extends QBMapper
                 );
 
     }//end getPopularSearchTerms()
-
 
     /**
      * Get search activity by time period
@@ -457,7 +448,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end getSearchActivityByTime()
 
-
     /**
      * Get search statistics by register and schema
      *
@@ -517,7 +507,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end getSearchStatisticsByRegisterSchema()
 
-
     /**
      * Get user agent statistics
      *
@@ -574,7 +563,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end getUserAgentStatistics()
 
-
     /**
      * Get count of unique search terms for the given time period
      *
@@ -611,7 +599,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end getUniqueSearchTermsCount()
 
-
     /**
      * Get count of unique users for the given time period
      *
@@ -647,7 +634,6 @@ class SearchTrailMapper extends QBMapper
         return count($users);
 
     }//end getUniqueUsersCount()
-
 
     /**
      * Get average searches per session for the given time period
@@ -692,7 +678,6 @@ class SearchTrailMapper extends QBMapper
         }
 
     }//end getAverageSearchesPerSession()
-
 
     /**
      * Get average object views per session for the given time period
@@ -741,7 +726,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end getAverageObjectViewsPerSession()
 
-
     /**
      * Clear expired search trail logs from the database
      *
@@ -783,7 +767,6 @@ class SearchTrailMapper extends QBMapper
         }//end try
 
     }//end clearLogs()
-
 
     /**
      * Apply filters to the query builder
@@ -867,7 +850,6 @@ class SearchTrailMapper extends QBMapper
         }//end foreach
 
     }//end applyFilters()
-
 
     /**
      * Extract search parameters from the query and set them on the search trail
@@ -959,7 +941,6 @@ class SearchTrailMapper extends QBMapper
 
     }//end extractSearchParameters()
 
-
     /**
      * Set request information on the search trail
      *
@@ -975,7 +956,6 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setHttpMethod($this->request->getMethod());
 
     }//end setRequestInformation()
-
 
     /**
      * Set user information on the search trail
@@ -1000,7 +980,6 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setSession($sessionId);
 
     }//end setUserInformation()
-
 
     /**
      * Set expiry dates for search trails based on retention period in milliseconds
@@ -1050,6 +1029,4 @@ class SearchTrailMapper extends QBMapper
         }//end try
 
     }//end setExpiryDate()
-
-
 }//end class

@@ -81,7 +81,6 @@ class SolrSettingsHandler
      */
     private ?LoggerInterface $logger = null;
 
-
     /**
      * Constructor for SolrSettingsHandler
      *
@@ -107,7 +106,6 @@ class SolrSettingsHandler
         $this->appName = $appName;
 
     }//end __construct()
-
 
     /**
      * Get SOLR configuration settings
@@ -148,7 +146,6 @@ class SolrSettingsHandler
 
     }//end getSolrSettings()
 
-
     /**
      * Complete SOLR warmup: mirror schemas and index objects from the database
      *
@@ -163,7 +160,6 @@ class SolrSettingsHandler
      * @return array Warmup operation results with statistics and status
      * @throws \RuntimeException If SOLR warmup fails
      */
-
 
     /**
      * Complete search index warmup: mirror schemas and index objects from the database
@@ -192,15 +188,17 @@ class SolrSettingsHandler
 
     }//end warmupSolrIndex()
 
-
     /**
      * Get comprehensive SOLR dashboard statistics
      *
      * Provides detailed metrics for the SOLR Search Management dashboard
      * including core statistics, performance metrics, and health indicators.
      *
-     * @return array SOLR dashboard metrics and statistics
+     * @return (((bool|int|mixed|null|string)[]|bool|float|int|mixed|null|string)[]|mixed|string)[] SOLR dashboard metrics and statistics
+     *
      * @throws \RuntimeException If SOLR statistics retrieval fails
+     *
+     * @psalm-return array{overview: array{available: bool, connection_status: 'unavailable'|'unknown'|mixed, response_time_ms: 0, total_documents: 0|mixed, index_size: string, last_commit: mixed|null}, cores: array{active_core: 'unknown'|mixed, core_status: 'active'|'inactive', endpoint_url: 'N/A'}, performance: array{total_searches: 0|mixed, total_indexes: 0|mixed, total_deletes: 0|mixed, avg_search_time_ms: 0|float, avg_index_time_ms: 0|float, total_search_time: 0|mixed, total_index_time: 0|mixed, operations_per_sec: 0|float, error_rate: 0|float}, health: array{status: 'unavailable'|'unknown'|mixed, uptime: 'N/A', memory_usage: array{used: 'N/A', max: 'N/A', percentage: 0}, disk_usage: array{used: 'N/A', available: 'N/A', percentage: 0}, warnings: list{0?: 'SOLR service is not available or not configured'|mixed}, last_optimization: null}, operations: array{recent_activity: array<never, never>, queue_status: array{pending_operations: 0, processing: false, last_processed: null}, commit_frequency: array{auto_commit: bool, commit_within: 0|1000, last_commit: mixed|null}, optimization_needed: false}, generated_at: string, error?: mixed|string}
      */
     public function getSolrDashboardStats(): array
     {
@@ -269,7 +267,6 @@ class SolrSettingsHandler
         }//end try
 
     }//end getSolrDashboardStats()
-
 
     /**
      * Transform raw SOLR stats into dashboard structure
@@ -416,7 +413,6 @@ class SolrSettingsHandler
 
     }//end transformSolrStatsToDashboard()
 
-
     /**
      * Format bytes to human readable format for dashboard
      *
@@ -437,7 +433,6 @@ class SolrSettingsHandler
         return round($bytes / pow(1024, $factor), 2).' '.$units[$factor];
 
     }//end formatBytesForDashboard()
-
 
     /**
      * Get focused SOLR settings only
@@ -507,7 +502,6 @@ class SolrSettingsHandler
 
     }//end getSolrSettingsOnly()
 
-
     /**
      * Update SOLR settings only
      *
@@ -554,7 +548,6 @@ class SolrSettingsHandler
 
     }//end updateSolrSettingsOnly()
 
-
     /**
      * Get search backend configuration.
      *
@@ -584,7 +577,6 @@ class SolrSettingsHandler
 
     }//end getSearchBackendConfig()
 
-
     /**
      * Update search backend configuration.
      *
@@ -592,9 +584,11 @@ class SolrSettingsHandler
      *
      * @param string $backend Backend name ('solr', 'elasticsearch', etc)
      *
-     * @return array Updated backend configuration
+     * @return (int|string[])[] Updated backend configuration
      *
      * @throws \RuntimeException If backend configuration update fails
+     *
+     * @psalm-return array{active: string, available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
      */
     public function updateSearchBackendConfig(string $backend): array
     {
@@ -630,7 +624,6 @@ class SolrSettingsHandler
 
     }//end updateSearchBackendConfig()
 
-
     /**
      * Get SOLR facet configuration
      *
@@ -664,7 +657,6 @@ class SolrSettingsHandler
 
     }//end getSolrFacetConfiguration()
 
-
     /**
      * Update SOLR facet configuration
      *
@@ -673,29 +665,31 @@ class SolrSettingsHandler
      *
      * Expected structure:
      * [
-     *   'facets' => [
-     *     'field_name' => [
-     *       'title' => 'Custom Title',
-     *       'description' => 'Custom description',
-     *       'order' => 1,
-     *       'enabled' => true,
-     *       'show_count' => true,
-     *       'max_items' => 10
-     *     ]
-     *   ],
-     *   'global_order' => ['field1', 'field2', 'field3'],
-     *   'default_settings' => [
-     *     'show_count' => true,
-     *     'show_empty' => false,
-     *     'max_items' => 10
-     *   ]
+     * 'facets' => [
+     * 'field_name' => [
+     * 'title' => 'Custom Title',
+     * 'description' => 'Custom description',
+     * 'order' => 1,
+     * 'enabled' => true,
+     * 'show_count' => true,
+     * 'max_items' => 10
+     * ]
+     * ],
+     * 'global_order' => ['field1', 'field2', 'field3'],
+     * 'default_settings' => [
+     * 'show_count' => true,
+     * 'show_empty' => false,
+     * 'max_items' => 10
+     * ]
      * ]
      *
      * @param array $facetConfig Facet configuration data
      *
-     * @return array Updated facet configuration
+     * @return ((bool|int|mixed|string)[]|bool|int|string)[][] Updated facet configuration
      *
      * @throws \RuntimeException If facet configuration update fails
+     *
+     * @psalm-return array{facets: array<string, array{title: mixed|string, description: ''|mixed, order: int, enabled: bool, show_count: bool, max_items: int}>, global_order: array<string>, default_settings: array{show_count: bool, show_empty: bool, max_items: int}}
      */
     public function updateSolrFacetConfiguration(array $facetConfig): array
     {
@@ -711,13 +705,12 @@ class SolrSettingsHandler
 
     }//end updateSolrFacetConfiguration()
 
-
     /**
      * Validate facet configuration structure
      *
      * @param array $config Configuration to validate
      *
-     * @return ((bool|int|mixed|string)[]|bool|int|string)[][] Validated and normalized configuration
+     * @return ((bool|int|mixed|string)[]|bool|int|string)[][]
      *
      * @throws \InvalidArgumentException If configuration is invalid
      *
@@ -773,6 +766,4 @@ class SolrSettingsHandler
         return $validatedConfig;
 
     }//end validateFacetConfiguration()
-
-
 }//end class

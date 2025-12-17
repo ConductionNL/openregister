@@ -49,8 +49,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250903170000 extends SimpleMigrationStep
 {
-
-
     /**
      * Perform the migration to add comprehensive performance indexes.
      *
@@ -132,6 +130,4 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

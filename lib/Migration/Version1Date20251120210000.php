@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251120210000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change schema for webhooks table creation
      *
@@ -434,6 +432,4 @@ class Version1Date20251120210000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

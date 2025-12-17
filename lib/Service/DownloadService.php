@@ -68,7 +68,6 @@ class DownloadService
      */
     private readonly SchemaMapper $schemaMapper;
 
-
     /**
      * Generate a downloadable JSON file response
      *
@@ -113,7 +112,6 @@ class DownloadService
 
     }//end downloadJson()
 
-
     /**
      * Gets the appropriate mapper based on the object type
      *
@@ -141,6 +139,4 @@ class DownloadService
         };
 
     }//end getMapper()
-
-
 }//end class

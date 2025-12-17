@@ -33,8 +33,6 @@ use Exception;
  */
 class PerformanceOptimizationHandler
 {
-
-
     /**
      * Constructor for PerformanceOptimizationHandler.
      *
@@ -45,19 +43,18 @@ class PerformanceOptimizationHandler
 
     }//end __construct()
 
-
     /**
      * Get the active organization for the current user context.
      *
      * This method determines the active organization using the same logic as SaveObject
      * to ensure consistency between save and retrieval operations.
      *
-     * @return string|null The active organization UUID or null if none found.
+     * @return null
      *
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
-    public function getActiveOrganisationForContext(): ?string
+    public function getActiveOrganisationForContext()
     {
         try {
             $activeOrganisation = null;
@@ -76,7 +73,6 @@ class PerformanceOptimizationHandler
 
     }//end getActiveOrganisationForContext()
 
-
     /**
      * Get performance recommendations based on query timings.
      *
@@ -87,7 +83,9 @@ class PerformanceOptimizationHandler
      * @param array $perfTimings Detailed timing breakdown by operation.
      * @param array $query       Query parameters for context.
      *
-     * @return array Array of performance recommendations with type, issue, message, and suggestions.
+     * @return (string|string[])[][] Array of performance recommendations with type, issue, message, and suggestions.
+     *
+     * @psalm-return list{0?: array{type: string, issue: string, message: string, suggestions: list{0: string, 1: string, 2?: string, 3?: 'Implement pagination with smaller page sizes'|'Implement relationship pagination if applicable'}}, 1?: array{type: 'critical'|'info'|'warning', issue: string, message: string, suggestions: list{0: string, 1: string, 2: string, 3?: 'Implement relationship pagination if applicable'}}, 2?: array{type: 'critical'|'info'|'warning', issue: 'High _extend usage'|'JSON processing overhead'|'Very slow relationship loading', message: string, suggestions: list{0: 'Consider JSON field truncation for large objects'|'Consider reducing the number of _extend parameters'|'Reduce number of _extend relationships', 1: 'Implement selective JSON field loading'|'Use selective loading for only required relationships'|'Use selective relationship loading', 2: 'Consider relationship caching'|'Implement client-side lazy loading for secondary data'|'Use lightweight object serialization', 3?: 'Implement relationship pagination if applicable'}}, 3?: array{type: 'info'|'warning', issue: 'High _extend usage'|'JSON processing overhead', message: string, suggestions: list{'Consider JSON field truncation for large objects'|'Consider reducing the number of _extend parameters', 'Implement selective JSON field loading'|'Use selective loading for only required relationships', 'Implement client-side lazy loading for secondary data'|'Use lightweight object serialization'}}, 4?: array{type: 'info', issue: 'JSON processing overhead', message: string, suggestions: list{'Consider JSON field truncation for large objects', 'Implement selective JSON field loading', 'Use lightweight object serialization'}}}
      */
     public function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {
@@ -198,6 +196,4 @@ class PerformanceOptimizationHandler
         return $recommendations;
 
     }//end getPerformanceRecommendations()
-
-
 }//end class

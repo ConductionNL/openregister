@@ -38,7 +38,6 @@ class PublishObject
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
 
-
     /**
      * Constructor for PublishObject
      *
@@ -50,7 +49,6 @@ class PublishObject
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
-
 
     /**
      * Publish an object
@@ -84,6 +82,4 @@ class PublishObject
         return $this->objectEntityMapper->update($object);
 
     }//end publish()
-
-
 }//end class

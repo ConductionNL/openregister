@@ -38,12 +38,11 @@ use OCP\Files\FileInfo;
  */
 class AbstractNodeFolderEventListener implements IEventListener
 {
-
     /**
      * Constructor for AbstractNodeFolderEventListener.
      *
-     * @param ObjectService $objectService The object service for handling node events.
-     * @param \OCA\OpenRegister\Service\FileService $fileService The file service for file operations.
+     * @param ObjectService                         $objectService The object service for handling node events.
+     * @param \OCA\OpenRegister\Service\FileService $fileService   The file service for file operations.
      *
      * @return void
      */
@@ -53,7 +52,6 @@ class AbstractNodeFolderEventListener implements IEventListener
     ) {
 
     }//end __construct()
-
 
     /**
      * Handle event dispatched by the event dispatcher.
@@ -80,11 +78,10 @@ class AbstractNodeFolderEventListener implements IEventListener
             $event instanceof NodeDeletedEvent => $this->handleNodeDeleted($event),
             $event instanceof NodeTouchedEvent => $this->handleNodeTouched($event),
             $event instanceof NodeWrittenEvent => $this->handleNodeWritten($event),
-        default => throw new InvalidArgumentException('Unsupported event type: '.get_class($event)),
+            default => throw new InvalidArgumentException('Unsupported event type: '.get_class($event)),
         };
 
     }//end handle()
-
 
     /**
      * Handle node created event
@@ -101,9 +98,7 @@ class AbstractNodeFolderEventListener implements IEventListener
         // For now, log the event but don't call non-existent method.
         // TODO: Implement node event handling in ObjectService or remove these calls.
         // $this->objectService->nodeCreatedEventFunction(event: $event).
-
     }//end handleNodeCreated()
-
 
     /**
      * Handle node deleted event
@@ -120,9 +115,7 @@ class AbstractNodeFolderEventListener implements IEventListener
         // For now, log the event but don't call non-existent method.
         // TODO: Implement node event handling in ObjectService or remove these calls.
         // $this->objectService->nodeDeletedEventFunction(event: $event).
-
     }//end handleNodeDeleted()
-
 
     /**
      * Handle node touched event
@@ -139,9 +132,7 @@ class AbstractNodeFolderEventListener implements IEventListener
         // For now, log the event but don't call non-existent method.
         // TODO: Implement node event handling in ObjectService or remove these calls.
         // $this->objectService->nodeTouchedEventFunction(event: $event).
-
     }//end handleNodeTouched()
-
 
     /**
      * Handle node written event
@@ -158,8 +149,5 @@ class AbstractNodeFolderEventListener implements IEventListener
         // For now, log the event but don't call non-existent method.
         // TODO: Implement node event handling in ObjectService or remove these calls.
         // $this->objectService->nodeWrittenEventFunction(event: $event).
-
     }//end handleNodeWritten()
-
-
 }//end class

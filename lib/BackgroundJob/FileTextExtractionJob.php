@@ -71,7 +71,6 @@ class FileTextExtractionJob extends QueuedJob
      */
     private readonly TextExtractionService $textExtractionService;
 
-
     /**
      * Run the background job
      *
@@ -153,6 +152,4 @@ class FileTextExtractionJob extends QueuedJob
         }//end try
 
     }//end run()
-
-
 }//end class

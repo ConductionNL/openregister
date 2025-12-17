@@ -75,7 +75,6 @@ class ToolRegistrationListener implements IEventListener
      */
     private AgentTool $agentTool;
 
-
     /**
      * Constructor
      *
@@ -99,7 +98,6 @@ class ToolRegistrationListener implements IEventListener
         $this->agentTool       = $agentTool;
 
     }//end __construct()
-
 
     /**
      * Handle the event
@@ -172,6 +170,4 @@ class ToolRegistrationListener implements IEventListener
                 );
 
     }//end handle()
-
-
 }//end class

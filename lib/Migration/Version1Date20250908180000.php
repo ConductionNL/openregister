@@ -35,8 +35,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250908180000 extends SimpleMigrationStep
 {
-
-
     /**
      * Enhance updated column with ON UPDATE CURRENT_TIMESTAMP
      *
@@ -62,7 +60,6 @@ class Version1Date20250908180000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
 
     /**
      * Execute raw SQL to modify updated column behavior
@@ -105,6 +102,4 @@ class Version1Date20250908180000 extends SimpleMigrationStep
         }//end try
 
     }//end postSchemaChange()
-
-
 }//end class

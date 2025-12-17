@@ -46,8 +46,6 @@ use Psr\Log\LoggerInterface;
  */
 class PermissionHandler
 {
-
-
     /**
      * PermissionHandler constructor.
      *
@@ -69,7 +67,6 @@ class PermissionHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Check if current user has permission to perform action on schema
@@ -167,7 +164,6 @@ class PermissionHandler
 
     }//end hasPermission()
 
-
     /**
      * Check permission and throw exception if not granted
      *
@@ -209,7 +205,6 @@ class PermissionHandler
 
     }//end checkPermission()
 
-
     /**
      * Filter objects array based on RBAC and multi-tenancy permissions
      *
@@ -220,7 +215,9 @@ class PermissionHandler
      * @param bool                        $rbac         Whether to apply RBAC filtering.
      * @param bool                        $multitenancy Whether to apply multitenancy filtering.
      *
-     * @return array<array<string, mixed>> Filtered array of objects
+     * @return array[] Filtered array of objects
+     *
+     * @psalm-return list<array<string, mixed>>
      */
     public function filterObjectsForPermissions(array $objects, bool $rbac, bool $multitenancy): array
     {
@@ -281,7 +278,6 @@ class PermissionHandler
 
     }//end filterObjectsForPermissions()
 
-
     /**
      * Filter UUIDs based on RBAC and multi-tenancy permissions
      *
@@ -292,7 +288,9 @@ class PermissionHandler
      * @param bool          $rbac         Whether to apply RBAC filtering.
      * @param bool          $multitenancy Whether to apply multitenancy filtering.
      *
-     * @return array<string> Filtered array of UUIDs
+     * @return string[] Filtered array of UUIDs
+     *
+     * @psalm-return list<string>
      */
     public function filterUuidsForPermissions(array $uuids, bool $rbac, bool $multitenancy): array
     {
@@ -359,13 +357,12 @@ class PermissionHandler
 
     }//end filterUuidsForPermissions()
 
-
     /**
      * Get the active organisation UUID for the current context
      *
-     * @return string|null The active organisation UUID or null if none set
+     * @return null The active organisation UUID or null if none set
      */
-    public function getActiveOrganisationForContext(): ?string
+    public function getActiveOrganisationForContext()
     {
         try {
             $activeOrganisation = null;
@@ -383,6 +380,4 @@ class PermissionHandler
         }
 
     }//end getActiveOrganisationForContext()
-
-
 }//end class

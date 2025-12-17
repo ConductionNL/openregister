@@ -41,8 +41,6 @@ use Throwable;
  */
 class NotAuthorizedException extends Exception
 {
-
-
     /**
      * Constructor for NotAuthorizedException
      *
@@ -64,6 +62,4 @@ class NotAuthorizedException extends Exception
         parent::__construct($message, $code, $previous);
 
     }//end __construct()
-
-
 }//end class

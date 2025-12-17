@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenRegister Optimized Facet Handler
  *
  * This handler provides high-performance faceting by using optimized
@@ -48,8 +48,7 @@ class OptimizedFacetHandler
      *
      * @var array<string, array>
      */
-    private array $facetCache=[];
-
+    private array $facetCache = [];
 
     /**
      * Constructor for the OptimizedFacetHandler
@@ -61,7 +60,6 @@ class OptimizedFacetHandler
         $this->db = $db;
 
     }//end __construct()
-
 
     /**
      * Get multiple facets in a single optimized operation
@@ -83,7 +81,7 @@ class OptimizedFacetHandler
      */
     public function getBatchedFacets(array $facetConfig, array $baseQuery=[]): array
     {
-        $results=[];
+        $results = [];
 
         // Generate cache key for this facet combination.
         $cacheKey = $this->generateCacheKey($facetConfig, $baseQuery);
@@ -94,12 +92,12 @@ class OptimizedFacetHandler
 
         // Separate metadata facets from JSON field facets.
         $metadataFacets  = [];
-        $jsonFieldFacets=[];
+        $jsonFieldFacets = [];
 
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
-            } elseif ($facetName !== '@self') {
+            } else if ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
             }
         }
@@ -127,7 +125,6 @@ class OptimizedFacetHandler
 
     }//end getBatchedFacets()
 
-
     /**
      * Get multiple metadata facets in a single database operation
      *
@@ -145,13 +142,13 @@ class OptimizedFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array[] Metadata facet results
+     * @return (((int|mixed|string)[]|mixed)[]|string)[][]
      *
-     * @psalm-return array<string, array>
+     * @psalm-return array<string, array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string}|mixed,...}}>
      */
     private function getBatchedMetadataFacets(array $metadataConfig, array $baseQuery): array
     {
-        $results=[];
+        $results = [];
 
         foreach ($metadataConfig as $field => $config) {
             $type = $config['type'] ?? 'terms';
@@ -166,7 +163,6 @@ class OptimizedFacetHandler
         return $results;
 
     }//end getBatchedMetadataFacets()
-
 
     /**
      * Get optimized terms facet for metadata field
@@ -185,9 +181,9 @@ class OptimizedFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed|string)[][]|string)[] Terms facet results
+     * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed, results: int, label: string},...}}
+     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, label: string, results: int}>}
      */
     private function getOptimizedMetadataTermsFacet(string $field, array $baseQuery): array
     {
@@ -206,7 +202,7 @@ class OptimizedFacetHandler
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
-        $buckets=[];
+        $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
             $key   = $row[$field];
@@ -226,7 +222,6 @@ class OptimizedFacetHandler
 
     }//end getOptimizedMetadataTermsFacet()
 
-
     /**
      * Get optimized terms facet for JSON field
      *
@@ -244,9 +239,9 @@ class OptimizedFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed)[][]|string)[] Terms facet results
+     * @return ((int|mixed)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed, results: int},...}, note?: 'Skipped due to large dataset size for performance'}
+     * @psalm-return array{type: 'terms', buckets: list<array{key: mixed, results: int}>, note?: 'Skipped due to large dataset size for performance'}
      */
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
@@ -283,7 +278,7 @@ class OptimizedFacetHandler
         $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
 
         $result  = $queryBuilder->executeQuery();
-        $buckets=[];
+        $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
             $key = $row['field_value'];
@@ -301,7 +296,6 @@ class OptimizedFacetHandler
         ];
 
     }//end getOptimizedJsonTermsFacet()
-
 
     /**
      * Apply optimized base filters using proper index utilization
@@ -366,9 +360,7 @@ class OptimizedFacetHandler
 
         // Skip expensive operations like full-text search for faceting to improve performance.
         // These can be applied in the main query but not in facet calculations.
-
     }//end applyOptimizedBaseFilters()
-
 
     /**
      * Estimate row count for a query to decide on optimization strategy
@@ -408,7 +400,6 @@ class OptimizedFacetHandler
 
     }//end estimateRowCount()
 
-
     /**
      * Generate cache key for facet configuration
      *
@@ -428,7 +419,6 @@ class OptimizedFacetHandler
         return md5(json_encode(['facets' => $facetConfig, 'query' => $baseQuery]));
 
     }//end generateCacheKey()
-
 
     /**
      * Get human-readable label for metadata field value
@@ -453,7 +443,7 @@ class OptimizedFacetHandler
                     ->from('openregister_registers')
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
-                $title = $result->fetchOne();
+                $title  = $result->fetchOne();
                 if ($title !== false) {
                     return (string) $title;
                 } else {
@@ -471,7 +461,7 @@ class OptimizedFacetHandler
                     ->from('openregister_schemas')
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
-                $title = $result->fetchOne();
+                $title  = $result->fetchOne();
                 if ($title !== false) {
                     return (string) $title;
                 } else {
@@ -487,7 +477,6 @@ class OptimizedFacetHandler
 
     }//end getFieldLabel()
 
-
     /**
      * Clear the facet cache
      *
@@ -498,6 +487,4 @@ class OptimizedFacetHandler
         $this->facetCache = [];
 
     }//end clearCache()
-
-
 }//end class

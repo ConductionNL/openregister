@@ -44,8 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class SolrOperationsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -69,7 +67,6 @@ class SolrOperationsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Run SOLR setup to prepare for multi-tenant architecture
@@ -321,7 +318,6 @@ class SolrOperationsController extends Controller
 
     }//end setupSolr()
 
-
     /**
      * Test SOLR connection with provided settings (basic connectivity and authentication only)
      *
@@ -354,7 +350,6 @@ class SolrOperationsController extends Controller
         }
 
     }//end testSolrConnection()
-
 
     /**
      * Warmup SOLR index
@@ -440,7 +435,6 @@ class SolrOperationsController extends Controller
 
     }//end warmupSolrIndex()
 
-
     /**
      * Inspect SOLR index documents
      *
@@ -514,15 +508,12 @@ class SolrOperationsController extends Controller
 
     }//end inspectSolrIndex()
 
-
     /**
      * Get memory usage prediction for SOLR warmup
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Memory usage prediction
      *
      * @psalm-return JSONResponse<200|422, array{success: bool, message: string, prediction: array{error: string, prediction_safe: false}|mixed}, array<never, never>>
      */
@@ -576,7 +567,6 @@ class SolrOperationsController extends Controller
         }//end try
 
     }//end getSolrMemoryPrediction()
-
 
     /**
      * Perform SOLR management operations
@@ -668,6 +658,4 @@ class SolrOperationsController extends Controller
         }//end try
 
     }//end manageSolr()
-
-
 }//end class

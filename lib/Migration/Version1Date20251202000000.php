@@ -43,8 +43,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version1Date20251202000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add publication fields to schemas and registers tables
      *
@@ -158,6 +156,4 @@ class Version1Date20251202000000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

@@ -35,7 +35,6 @@ class ApplicationCreatedEvent extends Event
      */
     private Application $application;
 
-
     /**
      * Constructor for ApplicationCreatedEvent.
      *
@@ -50,7 +49,6 @@ class ApplicationCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created application.
      *
@@ -61,6 +59,4 @@ class ApplicationCreatedEvent extends Event
         return $this->application;
 
     }//end getApplication()
-
-
 }//end class

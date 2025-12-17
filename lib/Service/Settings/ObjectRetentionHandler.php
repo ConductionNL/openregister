@@ -37,10 +37,19 @@ use OCP\IConfig;
 class ObjectRetentionHandler
 {
 
+    /**
+     * Nextcloud configuration instance
+     *
+     * @var IConfig
+     */
     private IConfig $config;
 
+    /**
+     * Application name identifier
+     *
+     * @var string
+     */
     private string $appName;
-
 
     public function __construct(IConfig $config, string $appName="openregister")
     {
@@ -48,7 +57,6 @@ class ObjectRetentionHandler
         $this->appName = $appName;
 
     }//end __construct()
-
 
     /**
      * Get focused Object settings only (vectorization config)
@@ -98,7 +106,6 @@ class ObjectRetentionHandler
 
     }//end getObjectSettingsOnly()
 
-
     /**
      * Update object management settings
      *
@@ -133,7 +140,6 @@ class ObjectRetentionHandler
         }
 
     }//end updateObjectSettingsOnly()
-
 
     /**
      * Get focused Retention settings only
@@ -190,7 +196,6 @@ class ObjectRetentionHandler
 
     }//end getRetentionSettingsOnly()
 
-
     /**
      * Update Retention settings only
      *
@@ -225,7 +230,6 @@ class ObjectRetentionHandler
 
     }//end updateRetentionSettingsOnly()
 
-
     /**
      * Get version information only
      *
@@ -247,7 +251,6 @@ class ObjectRetentionHandler
         }
 
     }//end getVersionInfoOnly()
-
 
     /**
      * Convert various representations to boolean
@@ -273,6 +276,4 @@ class ObjectRetentionHandler
         return (bool) $value;
 
     }//end convertToBoolean()
-
-
 }//end class

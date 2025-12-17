@@ -42,7 +42,6 @@ class Version1Date20250102000001 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor
      *
@@ -54,14 +53,13 @@ class Version1Date20250102000001 extends SimpleMigrationStep
 
     }//end __construct()
 
-
     /**
      * Pre-schema change operations
      *
      * @param IOutput                   $output        Output interface
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
-     * 
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @return void
@@ -69,9 +67,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-
     }//end preSchemaChange()
-
 
     /**
      * Apply schema changes to add active field
@@ -112,7 +108,6 @@ class Version1Date20250102000001 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change operations
      *
@@ -130,6 +125,4 @@ class Version1Date20250102000001 extends SimpleMigrationStep
         $output->info(message: 'All existing organisations are now active by default');
 
     }//end postSchemaChange()
-
-
 }//end class

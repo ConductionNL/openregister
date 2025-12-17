@@ -46,7 +46,6 @@ class SourceUpdatedEvent extends Event
      */
     private Source $oldSource;
 
-
     /**
      * Constructor for SourceUpdatedEvent.
      *
@@ -63,7 +62,6 @@ class SourceUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated source.
      *
@@ -74,7 +72,6 @@ class SourceUpdatedEvent extends Event
         return $this->newSource;
 
     }//end getSource()
-
 
     /**
      * Get the new source state.
@@ -87,7 +84,6 @@ class SourceUpdatedEvent extends Event
 
     }//end getNewSource()
 
-
     /**
      * Get the old source state.
      *
@@ -98,6 +94,4 @@ class SourceUpdatedEvent extends Event
         return $this->oldSource;
 
     }//end getOldSource()
-
-
 }//end class

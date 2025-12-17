@@ -34,8 +34,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107170000 extends SimpleMigrationStep
 {
-
-
     /**
      * Modify the database schema
      *
@@ -86,7 +84,6 @@ class Version1Date20251107170000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change hook
      *
@@ -104,6 +101,4 @@ class Version1Date20251107170000 extends SimpleMigrationStep
         $output->info(message: '   Chunks will be generated during extraction and stored for later use');
 
     }//end postSchemaChange()
-
-
 }//end class

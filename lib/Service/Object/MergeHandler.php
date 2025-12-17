@@ -40,8 +40,6 @@ use Exception;
  */
 class MergeHandler
 {
-
-
     /**
      * Constructor for MergeHandler.
      *
@@ -56,7 +54,6 @@ class MergeHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Merge two objects together.
@@ -75,14 +72,16 @@ class MergeHandler
      *                               - fileAction: 'transfer' or 'delete'
      *                               - relationAction: 'transfer' or 'drop'
      *
-     * @return array Merge report with success status, statistics, and details.
+     * @return (((array|mixed|null|string)[]|int|mixed|string)[]|true)[]
      *
      * @throws OcpDoesNotExistException If source or target object not found.
      * @throws InvalidArgumentException If objects are in different register/schema.
      *
-     * @psalm-param    array<string, mixed> $mergeData
-     * @phpstan-param  array<string, mixed> $mergeData
-     * @psalm-return   array<string, mixed>
+     * @psalm-param array<string, mixed> $mergeData
+     *
+     * @phpstan-param array<string, mixed> $mergeData
+     *
+     * @psalm-return   array{success: true, sourceObject: array{'@self': array{name: mixed|null|string,...},...}, targetObject: array{'@self': array{name: mixed|null|string,...},...}, mergedObject: array{'@self': array{name: mixed|null|string,...},...}, actions: array{properties: list<array{newValue: mixed, oldValue: mixed|null, property: mixed}>, files: list<array<string, mixed>>, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list<array{objectId: null|string, title: mixed|null|string}>}, statistics: array{propertiesChanged: 0|1|2, filesTransferred: int, filesDeleted: int, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings: list<string>, errors: array<never, never>}
      * @phpstan-return array<string, mixed>
      */
     public function mergeObjects(string $sourceObjectId, array $mergeData): array
@@ -289,7 +288,6 @@ class MergeHandler
 
     }//end mergeObjects()
 
-
     /**
      * Transfer files from source object to target object.
      *
@@ -298,9 +296,9 @@ class MergeHandler
      * @param ObjectEntity $sourceObject The source object.
      * @param ObjectEntity $targetObject The target object.
      *
-     * @return array Transfer result with files, transferred count, and errors.
+     * @return (((bool|string)[]|string)[]|int)[]
      *
-     * @psalm-return   array{files: list<array<string, mixed>>, transferred: int, errors: list<string>}
+     * @psalm-return   array{files: list<array{action: 'transfer_failed'|'transferred', error?: string, name: string, success: bool}>, transferred: 0|1|2, errors: list<non-falsy-string>}
      * @phpstan-return array{files: list<array<string, mixed>>, transferred: int, errors: list<string>}
      */
     private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
@@ -362,15 +360,14 @@ class MergeHandler
 
     }//end transferObjectFiles()
 
-
     /**
      * Delete all files from an object.
      *
      * @param ObjectEntity $sourceObject The source object.
      *
-     * @return array Deletion result with files, deleted count, and errors.
+     * @return (((bool|string)[]|string)[]|int)[]
      *
-     * @psalm-return   array{files: list<array<string, mixed>>, deleted: int, errors: list<string>}
+     * @psalm-return   array{files: list<array{action: 'delete_failed'|'deleted', error?: string, name: string, success: bool}>, deleted: 0|1|2, errors: list<non-falsy-string>}
      * @phpstan-return array{files: list<array<string, mixed>>, deleted: int, errors: list<string>}
      */
     private function deleteObjectFiles(ObjectEntity $sourceObject): array
@@ -420,6 +417,4 @@ class MergeHandler
         return $result;
 
     }//end deleteObjectFiles()
-
-
 }//end class
