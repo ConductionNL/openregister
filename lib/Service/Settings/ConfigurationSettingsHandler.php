@@ -174,11 +174,11 @@ public function getSettings(): array
             ];
         }
 
-        // Multitenancy Settings.
+        // Multitenancy Settings - ENABLED BY DEFAULT for proper data isolation.
         $multitenancyConfig = $this->config->getAppValue($this->appName, 'multitenancy', '');
         if (empty($multitenancyConfig) === true) {
             $data['multitenancy'] = [
-                'enabled'                            => false,
+                'enabled'                            => true,
                 'defaultUserTenant'                  => '',
                 'defaultObjectTenant'                => '',
                 'publishedObjectsBypassMultiTenancy' => false,
@@ -187,7 +187,7 @@ public function getSettings(): array
         } else {
             $multitenancyData     = json_decode($multitenancyConfig, true);
             $data['multitenancy'] = [
-                'enabled'                            => $multitenancyData['enabled'] ?? false,
+                'enabled'                            => $multitenancyData['enabled'] ?? true,
                 'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
@@ -399,12 +399,12 @@ public function updateSettings(array $data): array
             $this->config->setAppValue($this->appName, 'rbac', json_encode($rbacConfig));
         }
 
-        // Handle Multitenancy settings.
+        // Handle Multitenancy settings - enabled by default.
         if (($data['multitenancy'] ?? null) !== null) {
             $multitenancyData = $data['multitenancy'];
-            // Always store Multitenancy config with enabled state.
+            // Always store Multitenancy config with enabled state (default: true).
             $multitenancyConfig = [
-                'enabled'                            => $multitenancyData['enabled'] ?? false,
+                'enabled'                            => $multitenancyData['enabled'] ?? true,
                 'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
@@ -735,8 +735,9 @@ public function getMultitenancySettingsOnly(): array
 
         $multitenancyData = [];
         if (empty($multitenancyConfig) === true) {
+            // Default: multitenancy enabled for proper data isolation.
             $multitenancyData = [
-                'enabled'                            => false,
+                'enabled'                            => true,
                 'defaultUserTenant'                  => '',
                 'defaultObjectTenant'                => '',
                 'publishedObjectsBypassMultiTenancy' => false,
@@ -745,7 +746,7 @@ public function getMultitenancySettingsOnly(): array
         } else {
             $storedData       = json_decode($multitenancyConfig, true);
             $multitenancyData = [
-                'enabled'                            => $storedData['enabled'] ?? false,
+                'enabled'                            => $storedData['enabled'] ?? true,
                 'defaultUserTenant'                  => $storedData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant'                => $storedData['defaultObjectTenant'] ?? '',
                 'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
@@ -776,8 +777,9 @@ public function getMultitenancySettingsOnly(): array
 public function updateMultitenancySettingsOnly(array $multitenancyData): array
 {
     try {
+        // Default: enabled=true for proper data isolation.
         $multitenancyConfig = [
-            'enabled'                            => $multitenancyData['enabled'] ?? false,
+            'enabled'                            => $multitenancyData['enabled'] ?? true,
             'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
             'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
             'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,

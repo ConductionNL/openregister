@@ -40,7 +40,6 @@ class MariaDbFacetHandler
     public function __construct(
         private readonly IDBConnection $db
     ) {
-
     }//end __construct()
 
     /**
@@ -64,10 +63,10 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed|string, results: int},...}}
      */
-    public function getTermsFacet(string $field, array $baseQuery=[]): array
+    public function getTermsFacet(string $field, array $baseQuery = []): array
     {
         // Build JSON path for the field.
-        $jsonPath = '$.'.$field;
+        $jsonPath = '$.' . $field;
 
         // First, check if this field commonly contains arrays.
         if ($this->fieldContainsArrays(field: $field, baseQuery: $baseQuery) === true) {
@@ -79,16 +78,16 @@ class MariaDbFacetHandler
 
         // Build aggregation query for JSON field.
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
-                'field_value'
-            )
+            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+            'field_value'
+        )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
-                    $queryBuilder->expr()->isNotNull(
-                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                )
             )
-                    )
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Note: Still using doc_count in ORDER BY as it's the SQL alias
@@ -112,7 +111,6 @@ class MariaDbFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-
     }//end getTermsFacet()
 
     /**
@@ -136,16 +134,16 @@ class MariaDbFacetHandler
     private function fieldContainsArrays(string $field, array $baseQuery): bool
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath     = '$.'.$field;
+        $jsonPath     = '$.' . $field;
 
         // Sample a few objects to check if the field contains arrays.
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where(
-                    $queryBuilder->expr()->isNotNull(
-                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                )
             )
-                    )
             ->setMaxResults(10);
 
         // Apply base filters.
@@ -167,7 +165,6 @@ class MariaDbFacetHandler
 
         // If more than 50% of sampled objects have arrays for this field, treat it as an array field.
         return $totalCount > 0 && ($arrayCount / $totalCount) > 0.5;
-
     }//end fieldContainsArrays()
 
     /**
@@ -194,15 +191,15 @@ class MariaDbFacetHandler
     {
         // Get all objects that have this field.
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath     = '$.'.$field;
+        $jsonPath     = '$.' . $field;
 
         $queryBuilder->select('object')
             ->from('openregister_objects')
             ->where(
-                    $queryBuilder->expr()->isNotNull(
-                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-            )
-                    );
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                )
+            );
 
         // Apply base filters.
         $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
@@ -217,19 +214,7 @@ class MariaDbFacetHandler
                 $fieldValue = $objectData[$field];
 
                 // Handle both arrays and single values.
-                if (is_array($fieldValue) === true) {
-                    // For arrays, count each element separately.
-                    foreach ($fieldValue as $value) {
-                        $stringValue = $this->normalizeValue($value);
-                        if ($stringValue !== null && $stringValue !== '') {
-                            if (isset($valueCounts[$stringValue]) === false) {
-                                $valueCounts[$stringValue] = 0;
-                            }
-
-                            $valueCounts[$stringValue]++;
-                        }
-                    }
-                } else {
+                if (is_array($fieldValue) === false) {
                     // For single values, count normally.
                     $stringValue = $this->normalizeValue($fieldValue);
                     if ($stringValue !== null && $stringValue !== '') {
@@ -239,7 +224,21 @@ class MariaDbFacetHandler
 
                         $valueCounts[$stringValue]++;
                     }
-                }//end if
+
+                    continue;
+                }
+
+                // For arrays, count each element separately.
+                foreach ($fieldValue as $value) {
+                    $stringValue = $this->normalizeValue($value);
+                    if ($stringValue !== null && $stringValue !== '') {
+                        if (isset($valueCounts[$stringValue]) === false) {
+                            $valueCounts[$stringValue] = 0;
+                        }
+
+                        $valueCounts[$stringValue]++;
+                    }
+                }//end foreach
             }//end if
         }//end while
 
@@ -259,7 +258,6 @@ class MariaDbFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-
     }//end getTermsFacetForArrayField()
 
     /**
@@ -282,11 +280,11 @@ class MariaDbFacetHandler
         }
 
         if (is_bool($value) === true) {
-            if ($value === true) {
-                return 'true';
-            } else {
+            if ($value !== true) {
                 return 'false';
             }
+
+            return 'true';
         }
 
         if (is_scalar($value) === true) {
@@ -295,7 +293,6 @@ class MariaDbFacetHandler
 
         // Skip complex types (objects, nested arrays).
         return null;
-
     }//end normalizeValue()
 
     /**
@@ -321,26 +318,26 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
      */
-    public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
+    public function getDateHistogramFacet(string $field, string $interval, array $baseQuery = []): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
-        $jsonPath   = '$.'.$field;
+        $jsonPath   = '$.' . $field;
         $dateFormat = $this->getDateFormatForInterval($interval);
 
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction(
-                    "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")), '$dateFormat')"
-                ),
-                'date_key'
-            )
+            $queryBuilder->createFunction(
+                "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")), '$dateFormat')"
+            ),
+            'date_key'
+        )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
-                    $queryBuilder->expr()->isNotNull(
-                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                )
             )
-                    )
             ->groupBy('date_key')
             ->orderBy('date_key', 'ASC');
 
@@ -364,7 +361,6 @@ class MariaDbFacetHandler
             'interval' => $interval,
             'buckets'  => $buckets,
         ];
-
     }//end getDateHistogramFacet()
 
     /**
@@ -390,10 +386,10 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
      */
-    public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
+    public function getRangeFacet(string $field, array $ranges, array $baseQuery = []): array
     {
         $buckets  = [];
-        $jsonPath = '$.'.$field;
+        $jsonPath = '$.' . $field;
 
         foreach ($ranges as $range) {
             $queryBuilder = $this->db->getQueryBuilder();
@@ -401,25 +397,25 @@ class MariaDbFacetHandler
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
                 ->from('openregister_objects')
                 ->where(
-                        $queryBuilder->expr()->isNotNull(
-                    $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                )
-                        );
+                    $queryBuilder->expr()->isNotNull(
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    )
+                );
 
             // Apply range conditions.
             if (($range['from'] ?? null) !== null) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
-                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")) AS DECIMAL(10,2))"
-                    ).' >= '.$queryBuilder->createNamedParameter($range['from'])
+                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")) AS DECIMAL(10,2))"
+                    ) . ' >= ' . $queryBuilder->createNamedParameter($range['from'])
                 );
             }
 
             if (($range['to'] ?? null) !== null) {
                 $queryBuilder->andWhere(
                     $queryBuilder->createFunction(
-                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")) AS DECIMAL(10,2))"
-                    ).' < '.$queryBuilder->createNamedParameter($range['to'])
+                        "CAST(JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")) AS DECIMAL(10,2))"
+                    ) . ' < ' . $queryBuilder->createNamedParameter($range['to'])
                 );
             }
 
@@ -452,7 +448,6 @@ class MariaDbFacetHandler
             'type'    => 'range',
             'buckets' => $buckets,
         ];
-
     }//end getRangeFacet()
 
     /**
@@ -517,17 +512,16 @@ class MariaDbFacetHandler
 
         // Apply JSON object field filters (non-@self filters).
         $objectFilters = array_filter(
-                $baseQuery,
-                function ($key) {
-                    return $key !== '@self' && !str_starts_with($key, '_');
-                },
-                ARRAY_FILTER_USE_KEY
-                );
+            $baseQuery,
+            function ($key) {
+                return $key !== '@self' && !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
 
         if (empty($objectFilters) === false) {
             $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
-
     }//end applyBaseFilters()
 
     /**
@@ -577,7 +571,7 @@ class MariaDbFacetHandler
 
             // Use case-insensitive JSON_SEARCH with partial matching.
             // This ensures the search is case-insensitive and supports partial matches.
-            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$queryBuilder->createNamedParameter('%'.$cleanTerm.'%').")";
+            $searchFunction = "JSON_SEARCH(LOWER(`object`), 'all', " . $queryBuilder->createNamedParameter('%' . $cleanTerm . '%') . ")";
 
             $orConditions->add(
                 $queryBuilder->expr()->isNotNull(
@@ -590,7 +584,6 @@ class MariaDbFacetHandler
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
-
     }//end applyFullTextSearch()
 
     /**
@@ -617,11 +610,12 @@ class MariaDbFacetHandler
 
         // Separate integer IDs from string UUIDs.
         foreach ($ids as $id) {
-            if (is_numeric($id) === true) {
-                $integerIds[] = (int) $id;
-            } else {
+            if (is_numeric($id) === false) {
                 $stringIds[] = (string) $id;
+                continue;
             }
+
+            $integerIds[] = (int) $id;
         }
 
         // Create OR condition for ID or UUID matching.
@@ -651,7 +645,6 @@ class MariaDbFacetHandler
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
-
     }//end applyIdsFilter()
 
     /**
@@ -678,13 +671,16 @@ class MariaDbFacetHandler
             if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                } else if ($value === 'IS NULL') {
-                    $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                } else {
-                    // Simple equals (case insensitive for strings).
-                    $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
+                    continue;
                 }
 
+                if ($value === 'IS NULL') {
+                    $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+                    continue;
+                }
+
+                // Simple equals (case insensitive for strings).
+                $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
                 continue;
             }
 
@@ -715,50 +711,53 @@ class MariaDbFacetHandler
                         break;
                     case '~':
                         // Contains (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%' . $operatorValue . '%')));
                         break;
                     case '^':
                         // Starts with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue.'%')));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter($operatorValue . '%')));
                         break;
                     case '$':
                         // Ends with (case insensitive).
-                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%'.$operatorValue)));
+                        $queryBuilder->andWhere($queryBuilder->expr()->like($field, $queryBuilder->createNamedParameter('%' . $operatorValue)));
                         break;
                     case '===':
                         // Exact match (case sensitive).
                         $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
                         break;
                     case 'exists':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                        } else {
+                        if ($operatorValue !== true && $operatorValue !== 'true') {
                             $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+                            break;
                         }
+
+                        $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                         break;
                     case 'empty':
-                        if ($operatorValue === true || $operatorValue === 'true') {
+                        if ($operatorValue !== true && $operatorValue !== 'true') {
                             $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->orX(
+                                $queryBuilder->expr()->andX(
+                                    $queryBuilder->expr()->isNotNull($field),
+                                    $queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
+                                )
+                            );
+                            break;
+                        }
+
+                        $queryBuilder->andWhere(
+                            $queryBuilder->expr()->orX(
                                 $queryBuilder->expr()->isNull($field),
                                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(''))
                             )
-                                    );
-                        } else {
-                            $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->andX(
-                                $queryBuilder->expr()->isNotNull($field),
-                                $queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
-                            )
-                                    );
-                        }
+                        );
                         break;
                     case 'null':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                        } else {
+                        if ($operatorValue !== true && $operatorValue !== 'true') {
                             $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
+                            break;
                         }
+
+                        $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
                         break;
                     default:
                         // Default to equals for unknown operators.
@@ -767,7 +766,6 @@ class MariaDbFacetHandler
                 }//end switch
             }//end foreach
         }//end foreach
-
     }//end applyMetadataFilters()
 
     /**
@@ -790,27 +788,30 @@ class MariaDbFacetHandler
     private function applyObjectFieldFilters(IQueryBuilder $queryBuilder, array $objectFilters): void
     {
         foreach ($objectFilters as $field => $value) {
-            $jsonPath = '$.'.$field;
+            $jsonPath = '$.' . $field;
 
             // Handle simple values (backwards compatibility).
             if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                        );
-                } else if ($value === 'IS NULL') {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
                         )
                     );
-                } else {
-                    // Simple equals with both exact match and array containment.
-                    $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
+                    continue;
                 }
 
+                if ($value === 'IS NULL') {
+                    $queryBuilder->andWhere(
+                        $queryBuilder->expr()->isNull(
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        )
+                    );
+                    continue;
+                }
+
+                // Simple equals with both exact match and array containment.
+                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
                 continue;
             }
 
@@ -831,7 +832,6 @@ class MariaDbFacetHandler
                 $this->applyObjectFieldOperator(queryBuilder: $queryBuilder, jsonPath: $jsonPath, operator: $operator, operatorValue: $operatorValue);
             }
         }//end foreach
-
     }//end applyObjectFieldFilters()
 
     /**
@@ -856,7 +856,6 @@ class MariaDbFacetHandler
                 $singleValueConditions = $queryBuilder->expr()->orX();
         $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $singleValueConditions, jsonPath: $jsonPath, value: $value);
         $queryBuilder->andWhere($singleValueConditions);
-
     }//end applySimpleObjectFieldFilter()
 
     /**
@@ -883,20 +882,19 @@ class MariaDbFacetHandler
     {
                 // Check for exact match (single value).
         $conditions->add(
-                    $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
-                        $queryBuilder->createNamedParameter($value)
-                    )
-                );
+            $queryBuilder->expr()->eq(
+                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+                $queryBuilder->createNamedParameter($value)
+            )
+        );
 
                 // Check if the value exists within an array using JSON_CONTAINS.
         $conditions->add(
-                    $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
-                        $queryBuilder->createNamedParameter(1)
-                    )
-                );
-
+            $queryBuilder->expr()->eq(
+                $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
+                $queryBuilder->createNamedParameter(1)
+            )
+        );
     }//end addObjectFieldValueCondition()
 
     /**
@@ -921,7 +919,7 @@ class MariaDbFacetHandler
      */
     private function applyObjectFieldOperator(IQueryBuilder $queryBuilder, string $jsonPath, string $operator, mixed $operatorValue): void
     {
-        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))");
+        $jsonExtract = $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))");
 
         switch ($operator) {
             case 'gt':
@@ -941,77 +939,79 @@ class MariaDbFacetHandler
                 break;
             case '~':
                 // Contains (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue.'%')));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%' . $operatorValue . '%')));
                 break;
             case '^':
                 // Starts with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue.'%')));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter($operatorValue . '%')));
                 break;
             case '$':
                 // Ends with (case insensitive).
-                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%'.$operatorValue)));
+                $queryBuilder->andWhere($queryBuilder->expr()->like($jsonExtract, $queryBuilder->createNamedParameter('%' . $operatorValue)));
                 break;
             case '===':
                 // Exact match (case sensitive).
                 $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
                 break;
             case 'exists':
-                if ($operatorValue === true || $operatorValue === 'true') {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                    );
-                } else {
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
                         )
                     );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->isNotNull(
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    )
+                );
                 break;
             case 'empty':
-                if ($operatorValue === true || $operatorValue === 'true') {
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                            $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                            ),
-                            $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
-                    )
-                            );
-                } else {
-                    $queryBuilder->andWhere(
-                            $queryBuilder->expr()->andX(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                        $queryBuilder->expr()->andX(
+                            $queryBuilder->expr()->isNotNull(
+                                $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
                             ),
                             $queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter(''))
-                    )
-                            );
+                        )
+                    );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull(
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                        ),
+                        $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
+                    )
+                );
                 break;
             case 'null':
-                if ($operatorValue === true || $operatorValue === 'true') {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                    );
-                } else {
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
                         )
                     );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->isNull(
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                    )
+                );
                 break;
             default:
                 // Default to simple filter for unknown operators.
                 $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $operatorValue);
                 break;
         }//end switch
-
     }//end applyObjectFieldOperator()
 
     /**
@@ -1039,7 +1039,6 @@ class MariaDbFacetHandler
             default:
                 return '%Y-%m';
         }
-
     }//end getDateFormatForInterval()
 
     /**
@@ -1056,15 +1055,18 @@ class MariaDbFacetHandler
     private function generateRangeKey(array $range): string
     {
         if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
-            return $range['from'].'-'.$range['to'];
-        } else if (($range['from'] ?? null) !== null) {
-            return $range['from'].'+';
-        } else if (($range['to'] ?? null) !== null) {
-            return '0-'.$range['to'];
-        } else {
-            return 'all';
+            return $range['from'] . '-' . $range['to'];
         }
 
+        if (($range['from'] ?? null) !== null) {
+            return $range['from'] . '+';
+        }
+
+        if (($range['to'] ?? null) !== null) {
+            return '0-' . $range['to'];
+        }
+
+        return 'all';
     }//end generateRangeKey()
 
     /**
@@ -1108,7 +1110,6 @@ class MariaDbFacetHandler
         }
 
         return $objects;
-
     }//end getSampleObjects()
 
     /**
@@ -1131,7 +1132,7 @@ class MariaDbFacetHandler
      *
      * @return void
      */
-    private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix='', int $depth=0): void
+    private function analyzeObjectFields(array $objectData, array &$fieldAnalysis, string $prefix = '', int $depth = 0): void
     {
         // Limit recursion depth to avoid infinite loops and performance issues.
         if ($depth > 2) {
@@ -1139,10 +1140,9 @@ class MariaDbFacetHandler
         }
 
         foreach ($objectData as $key => $value) {
+            $fieldPath = $prefix . '.' . $key;
             if ($prefix === '') {
                 $fieldPath = $key;
-            } else {
-                $fieldPath = $prefix.'.'.$key;
             }
 
             // Skip system fields.
@@ -1173,14 +1173,15 @@ class MariaDbFacetHandler
                     $fieldAnalysis[$fieldPath]['is_nested'] = true;
                     // Recursively analyze nested objects.
                     $this->analyzeObjectFields(objectData: $value[0], fieldAnalysis: $fieldAnalysis, prefix: $fieldPath, depth: $depth + 1);
-                } else {
-                    // Array of simple values - not nested.
-                    foreach ($value as $item) {
-                        $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
-                        $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
-                    }
+                    continue;
                 }
-            } else if (is_object($value) === true) {
+
+                // Array of simple values - not nested.
+                foreach ($value as $item) {
+                    $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
+                    $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $item);
+                }
+            } elseif (is_object($value) === true) {
                 $fieldAnalysis[$fieldPath]['is_nested'] = true;
                 // Recursively analyze nested object.
                 // Note: is_object($value) and is_array($value) are mutually exclusive.
@@ -1190,14 +1191,16 @@ class MariaDbFacetHandler
                     $valueArray = (array) $value->__toArray();
                     $this->analyzeObjectFields(objectData: $valueArray, fieldAnalysis: $fieldAnalysis, prefix: $fieldPath, depth: $depth + 1);
                 }
-            } else {
-                // Simple value.
-                $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
-                $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
-            }//end if
-        }//end foreach
 
-    }//end analyzeObjectFields()
+                continue;
+            }
+
+            // Simple value.
+            $this->recordValueType(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
+                $this->recordSampleValue(fieldAnalysis: $fieldAnalysis[$fieldPath], value: $value);
+        }//end if
+    }//end foreach
+}//end analyzeObjectFields()
 
     /**
      * Record the type of a value in field analysis
@@ -1213,17 +1216,16 @@ class MariaDbFacetHandler
      *
      * @return void
      */
-    private function recordValueType(array &$fieldAnalysis, mixed $value): void
-    {
-        $type = $this->determineValueType($value);
+private function recordValueType(array &$fieldAnalysis, mixed $value): void
+{
+    $type = $this->determineValueType($value);
 
-        if (isset($fieldAnalysis['types'][$type]) === false) {
-            $fieldAnalysis['types'][$type] = 0;
-        }
+    if (isset($fieldAnalysis['types'][$type]) === false) {
+        $fieldAnalysis['types'][$type] = 0;
+    }
 
-        $fieldAnalysis['types'][$type]++;
-
-    }//end recordValueType()
+    $fieldAnalysis['types'][$type]++;
+}//end recordValueType()
 
     /**
      * Record a sample value in field analysis
@@ -1239,16 +1241,15 @@ class MariaDbFacetHandler
      *
      * @return void
      */
-    private function recordSampleValue(array &$fieldAnalysis, mixed $value): void
-    {
-        // Convert value to string for storage.
-        $stringValue = $this->valueToString($value);
+private function recordSampleValue(array &$fieldAnalysis, mixed $value): void
+{
+    // Convert value to string for storage.
+    $stringValue = $this->valueToString($value);
 
-        if (in_array($stringValue, $fieldAnalysis['sample_values'], true) === false && count($fieldAnalysis['sample_values']) < 20) {
-            $fieldAnalysis['sample_values'][] = $stringValue;
-        }
-
-    }//end recordSampleValue()
+    if (in_array($stringValue, $fieldAnalysis['sample_values'], true) === false && count($fieldAnalysis['sample_values']) < 20) {
+        $fieldAnalysis['sample_values'][] = $stringValue;
+    }
+}//end recordSampleValue()
 
     /**
      * Determine the type of a value
@@ -1261,41 +1262,40 @@ class MariaDbFacetHandler
      *
      * @return string The determined type
      */
-    private function determineValueType(mixed $value): string
-    {
-        if ($value === null) {
-            return 'null';
+private function determineValueType(mixed $value): string
+{
+    if ($value === null) {
+        return 'null';
+    }
+
+    if (is_bool($value) === true) {
+        return 'boolean';
+    }
+
+    if (is_int($value) === true) {
+        return 'integer';
+    }
+
+    if (is_float($value) === true) {
+        return 'float';
+    }
+
+    if (is_string($value) === true) {
+        // Check if it looks like a date.
+        if ($this->looksLikeDate($value) === true) {
+            return 'date';
         }
 
-        if (is_bool($value) === true) {
-            return 'boolean';
+        // Check if it's numeric.
+        if (is_numeric($value) === true) {
+            return 'numeric_string';
         }
 
-        if (is_int($value) === true) {
-            return 'integer';
-        }
+        return 'string';
+    }
 
-        if (is_float($value) === true) {
-            return 'float';
-        }
-
-        if (is_string($value) === true) {
-            // Check if it looks like a date.
-            if ($this->looksLikeDate($value) === true) {
-                return 'date';
-            }
-
-            // Check if it's numeric.
-            if (is_numeric($value) === true) {
-                return 'numeric_string';
-            }
-
-            return 'string';
-        }
-
-        return 'unknown';
-
-    }//end determineValueType()
+    return 'unknown';
+}//end determineValueType()
 
     /**
      * Check if a string value looks like a date
@@ -1308,31 +1308,30 @@ class MariaDbFacetHandler
      *
      * @return bool True if it looks like a date
      */
-    private function looksLikeDate(string $value): bool
-    {
-        // Common date patterns.
-        $datePatterns = [
-            '/^\d{4}-\d{2}-\d{2}$/',
-        // YYYY-MM-DD.
-            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
-        // ISO 8601.
-            '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/',
-        // YYYY-MM-DD HH:MM:SS.
-            '/^\d{2}\/\d{2}\/\d{4}$/',
-        // MM/DD/YYYY.
-            '/^\d{2}-\d{2}-\d{4}$/',
-        // MM-DD-YYYY.
-        ];
+private function looksLikeDate(string $value): bool
+{
+    // Common date patterns.
+    $datePatterns = [
+        '/^\d{4}-\d{2}-\d{2}$/',
+    // YYYY-MM-DD.
+        '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
+    // ISO 8601.
+        '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/',
+    // YYYY-MM-DD HH:MM:SS.
+        '/^\d{2}\/\d{2}\/\d{4}$/',
+    // MM/DD/YYYY.
+        '/^\d{2}-\d{2}-\d{4}$/',
+    // MM-DD-YYYY.
+    ];
 
-        foreach ($datePatterns as $pattern) {
-            if (preg_match($pattern, $value) === true) {
-                return true;
-            }
+    foreach ($datePatterns as $pattern) {
+        if (preg_match($pattern, $value) === true) {
+            return true;
         }
+    }
 
-        return false;
-
-    }//end looksLikeDate()
+    return false;
+}//end looksLikeDate()
 
     /**
      * Convert a value to string representation
@@ -1345,27 +1344,26 @@ class MariaDbFacetHandler
      *
      * @return string String representation of the value
      */
-    private function valueToString(mixed $value): string
-    {
-        if ($value === null) {
-            return 'null';
+private function valueToString(mixed $value): string
+{
+    if ($value === null) {
+        return 'null';
+    }
+
+    if (is_bool($value) === true) {
+        if ($value !== true) {
+            return 'false';
         }
 
-        if (is_bool($value) === true) {
-            if ($value === true) {
-                return 'true';
-            } else {
-                return 'false';
-            }
-        }
+        return 'true';
+    }
 
-        if (is_array($value) === true || is_object($value) === true) {
-            return json_encode($value);
-        }
+    if (is_array($value) === true || is_object($value) === true) {
+        return json_encode($value);
+    }
 
-        return (string) $value;
-
-    }//end valueToString()
+    return (string) $value;
+}//end valueToString()
 
     /**
      * Determine field configuration based on analysis
@@ -1383,66 +1381,65 @@ class MariaDbFacetHandler
      *
      * @psalm-return array{type: string, description: string, sample_values: array, appearance_rate: mixed, is_array: false|mixed, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}, cardinality?: 'binary'|'low'|'numeric', intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
-    private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
-    {
-        // Skip nested objects and arrays of objects, but allow arrays of simple values.
-        if (($analysis['is_nested'] === true) && $this->isArrayOfSimpleValues($analysis) === false) {
-            return null;
-        }
+private function determineFieldConfiguration(string $fieldPath, array $analysis): array|null
+{
+    // Skip nested objects and arrays of objects, but allow arrays of simple values.
+    if (($analysis['is_nested'] === true) && $this->isArrayOfSimpleValues($analysis) === false) {
+        return null;
+    }
 
-        // Determine primary type.
-        $primaryType = $this->getPrimaryType($analysis['types']);
+    // Determine primary type.
+    $primaryType = $this->getPrimaryType($analysis['types']);
 
-        if ($primaryType === null) {
-            return null;
-        }
+    if ($primaryType === null) {
+        return null;
+    }
 
-        $config = [
-            'type'            => $primaryType,
-            'description'     => "Object field: $fieldPath",
-            'sample_values'   => array_slice($analysis['sample_values'], 0, 10),
-            'appearance_rate' => $analysis['count'],
-            'is_array'        => $analysis['is_array'] ?? false,
-        ];
+    $config = [
+        'type'            => $primaryType,
+        'description'     => "Object field: $fieldPath",
+        'sample_values'   => array_slice($analysis['sample_values'], 0, 10),
+        'appearance_rate' => $analysis['count'],
+        'is_array'        => $analysis['is_array'] ?? false,
+    ];
 
-        // Configure facet types based on field type.
-        switch ($primaryType) {
-            case 'string':
-                $uniqueValueCount = count($analysis['sample_values']);
-                if ($uniqueValueCount <= 50) {
-                    // Low cardinality - good for terms facet.
-                    $config['facet_types'] = ['terms'];
-                    $config['cardinality'] = 'low';
-                } else {
-                    // High cardinality - not suitable for faceting.
-                    return null;
-                }
-                break;
-
-            case 'integer':
-            case 'float':
-            case 'numeric_string':
-                $config['facet_types'] = ['range', 'terms'];
-                $config['cardinality'] = 'numeric';
-                break;
-
-            case 'date':
-                $config['facet_types'] = ['date_histogram', 'range'];
-                $config['intervals']   = ['day', 'week', 'month', 'year'];
-                break;
-
-            case 'boolean':
-                $config['facet_types'] = ['terms'];
-                $config['cardinality'] = 'binary';
-                break;
-
-            default:
+    // Configure facet types based on field type.
+    switch ($primaryType) {
+        case 'string':
+            $uniqueValueCount = count($analysis['sample_values']);
+            if ($uniqueValueCount > 50) {
+                // High cardinality - not suitable for faceting.
                 return null;
-        }//end switch
+            }
 
-        return $config;
+            // Low cardinality - good for terms facet.
+            $config['facet_types'] = ['terms'];
+            $config['cardinality'] = 'low';
+            break;
 
-    }//end determineFieldConfiguration()
+        case 'integer':
+        case 'float':
+        case 'numeric_string':
+            $config['facet_types'] = ['range', 'terms'];
+            $config['cardinality'] = 'numeric';
+            break;
+
+        case 'date':
+            $config['facet_types'] = ['date_histogram', 'range'];
+            $config['intervals']   = ['day', 'week', 'month', 'year'];
+            break;
+
+        case 'boolean':
+            $config['facet_types'] = ['terms'];
+            $config['cardinality'] = 'binary';
+            break;
+
+        default:
+            return null;
+    }//end switch
+
+    return $config;
+}//end determineFieldConfiguration()
 
     /**
      * Check if an analysis represents an array of simple values
@@ -1455,37 +1452,36 @@ class MariaDbFacetHandler
      *
      * @return bool True if this is an array of simple values (not nested objects)
      */
-    private function isArrayOfSimpleValues(array $analysis): bool
-    {
-        // If it's not an array, it's not an array of simple values.
-        if (($analysis['is_array'] ?? false) === false) {
-            return false;
-        }
+private function isArrayOfSimpleValues(array $analysis): bool
+{
+    // If it's not an array, it's not an array of simple values.
+    if (($analysis['is_array'] ?? false) === false) {
+        return false;
+    }
 
-        // If it's nested, check if the types are simple.
-        if ($analysis['is_nested'] ?? false) {
-            $types = $analysis['types'] ?? [];
+    // If it's nested, check if the types are simple.
+    if ($analysis['is_nested'] ?? false) {
+        $types = $analysis['types'] ?? [];
 
-            // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
-            $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
+        // Check if all types are simple (string, integer, float, boolean, numeric_string, date).
+        $simpleTypes = ['string', 'integer', 'float', 'boolean', 'numeric_string', 'date'];
 
-            // If types array is empty, consider it valid (no types to check).
-            if (empty($types) === true) {
-                return true;
-            }
-
-            foreach (array_keys($types) as $type) {
-                if (in_array($type, $simpleTypes, true) === false) {
-                    return false;
-                }
-            }
-
+        // If types array is empty, consider it valid (no types to check).
+        if (empty($types) === true) {
             return true;
         }
 
-        return false;
+        foreach (array_keys($types) as $type) {
+            if (in_array($type, $simpleTypes, true) === false) {
+                return false;
+            }
+        }
 
-    }//end isArrayOfSimpleValues()
+        return true;
+    }
+
+    return false;
+}//end isArrayOfSimpleValues()
 
     /**
      * Get the primary type from type analysis
@@ -1498,25 +1494,24 @@ class MariaDbFacetHandler
      *
      * @return string|null The primary type or null if no clear primary type
      */
-    private function getPrimaryType(array $types): ?string
-    {
-        if (empty($types) === true) {
-            return null;
-        }
-
-        // Sort by count descending.
-        arsort($types);
-
-        $totalCount   = array_sum($types);
-        $primaryType  = array_key_first($types);
-        $primaryCount = $types[$primaryType];
-
-        // Primary type should represent at least 70% of values.
-        if ($primaryCount / $totalCount >= 0.7) {
-            return $primaryType;
-        }
-
+private function getPrimaryType(array $types): ?string
+{
+    if (empty($types) === true) {
         return null;
+    }
 
-    }//end getPrimaryType()
+    // Sort by count descending.
+    arsort($types);
+
+    $totalCount   = array_sum($types);
+    $primaryType  = array_key_first($types);
+    $primaryCount = $types[$primaryType];
+
+    // Primary type should represent at least 70% of values.
+    if ($primaryCount / $totalCount >= 0.7) {
+        return $primaryType;
+    }
+
+    return null;
+}//end getPrimaryType()
 }//end class

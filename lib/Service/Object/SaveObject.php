@@ -944,15 +944,15 @@ class SaveObject
             $defaultBehavior = $property['defaultBehavior'] ?? 'false';
 
             // Determine if default should be applied based on behavior.
+            $shouldApplyDefault = false;
+            
             if ($defaultBehavior === 'falsy') {
                 // Apply default if property is missing, null, empty string, or empty array/object.
                 $shouldApplyDefault = isset($data[$key]) === false
                     || $data[$key] === null
                     || $data[$key] === ''
                     || (is_array($data[$key]) === true && empty($data[$key]));
-            }
-
-            if ($applyOnEmptyValues === false) {
+            } else {
                 // Default behavior: only apply if property is missing or null.
                 $shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
             }

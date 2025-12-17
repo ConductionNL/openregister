@@ -810,6 +810,10 @@ class ImportService
                     );
 
             // Add publish date to all objects if publish is enabled.
+            if ($publish !== true) {
+                $this->logger->debug(message: 'Publish disabled for CSV import, not adding publish dates');
+            }
+
             if ($publish === true) {
                 $publishDate = (new DateTime('now'))->format('c');
                 // ISO 8601 format.
@@ -831,8 +835,6 @@ class ImportService
                             ]
                             );
                 }
-            } else {
-                $this->logger->debug(message: 'Publish disabled for CSV import, not adding publish dates');
             }//end if
 
             $saveResult = $this->objectService->saveObjects(

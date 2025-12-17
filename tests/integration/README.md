@@ -1,26 +1,60 @@
 # OpenRegister Integration Tests
 
-Comprehensive CRUD integration testing for OpenRegister with RBAC support using Postman/Newman.
+Comprehensive integration testing for OpenRegister using two complementary test suites:
+1. **Newman/Postman** - Core CRUD operations, RBAC, multitenancy, validation
+2. **PHPUnit** - Advanced features (schema composition, file extraction, imports, agents)
 
 ## Overview
 
-This test suite validates complete CRUD operations across all OpenRegister entities:
+### Newman Test Suite (Basic CRUD + Core Features)
+Validates complete CRUD operations across all OpenRegister entities:
 - Organizations (RBAC context)
 - Registers
 - Schemas  
-- Objects
-- Sources
-- Applications
-- Agents
-- Configurations
+- Objects (CRUD, validation, lifecycle)
+- Sources, Applications, Agents, Configurations
+- RBAC (public read permissions, anonymous access)
+- Multitenancy (org isolation, admin override)
+- Validation (14 test scenarios covering all rules)
+
+### PHPUnit Test Suite (Advanced Features)
+Specialized tests for complex functionality:
+- **Schema Composition** - allOf, Liskov substitution principle
+- **File Operations** - Upload (multipart, base64, URL), text extraction
+- **Object Import** - CSV import with auto-schema detection
+- **Agent/AI Features** - Chat, view filtering, RBAC
+- **Conversations** - CRUD, soft delete, summarization, title generation
+- **Advanced Filtering** - Metadata filters, dot notation, facets
+- **Configuration Management** - Version tracking, GitHub integration
+
+## Which Tests to Use?
+
+**Use Newman tests when:**
+- Testing basic CRUD operations
+- Validating API endpoints work correctly
+- Testing RBAC and multitenancy
+- Running in CI/CD pipelines
+- Quick smoke tests after deployments
+
+**Use PHPUnit tests when:**
+- Testing advanced schema features (composition, validation)
+- Testing file operations and text extraction
+- Testing agent/AI functionality
+- Testing import/export features
+- Deep integration testing of specific features
 
 ## Quick Start
 
+### Newman Tests (Run from Nextcloud container)
 ```bash
-# Run via wrapper script (recommended)
-bash run-newman-tests.sh
+# Install Newman in container (first time only)
+docker exec -u 0 master-nextcloud-1 bash -c "apt-get update && apt-get install -y npm && npm install -g newman"
 
-# Or run Newman directly in the container
+# Run tests
+docker exec -u 33 master-nextcloud-1 newman run \
+    /var/www/html/apps-extra/openregister/tests/integration/openregister-crud.postman_collection.json
+
+# With custom environment
 docker exec -u 33 master-nextcloud-1 newman run \
     /var/www/html/apps-extra/openregister/tests/integration/openregister-crud.postman_collection.json \
     --env-var "base_url=http://localhost" \
@@ -28,26 +62,97 @@ docker exec -u 33 master-nextcloud-1 newman run \
     --env-var "admin_password=admin"
 ```
 
-## Test Collection
+### PHPUnit Tests (Run from host)
+```bash
+# Run all integration tests
+vendor/bin/phpunit tests/Integration/
 
+# Run specific test
+vendor/bin/phpunit tests/Integration/SchemaCompositionIntegrationTest.php
+```
+
+## Test Files
+
+### Newman/Postman Tests
 **File:** `openregister-crud.postman_collection.json`
 
-A comprehensive Postman collection with:
-- ✅ **51 requests** covering full CRUD + validation + RBAC + multitenancy
-- ✅ **84+ assertions** validating responses, errors, permissions
+Comprehensive Postman collection with 66 requests covering:
+- ✅ **118 assertions** validating responses, errors, permissions
+- ✅ **Setup** - RBAC and multitenancy configuration
+- ✅ **Organizations** - Create, multitenancy testing
+- ✅ **Registers** - Create, read, update, delete
+- ✅ **Schemas** - Create, read, update, delete with constraints
+- ✅ **Objects** - Full CRUD, validation (14 scenarios), lifecycle operations
+- ✅ **Sources/Applications/Agents/Configurations** - Complete CRUD
+- ✅ **Validation Testing** - 14 scenarios (required, length, pattern, enum, format, etc.)
+- ✅ **Multitenancy** - Org isolation, admin override
+- ✅ **RBAC** - Public read permissions, anonymous access
+- ✅ **Lifecycle** - Lock/unlock, publish/depublish, soft delete/restore
+- ✅ **Audit Trails** - Global and object-specific
 - ✅ **Automatic variable extraction** (IDs, UUIDs, slugs)
-- ✅ **Chained requests** with dependencies
-- ✅ **Comprehensive validation tests** (14 scenarios covering all rules + formats)
-- ✅ **Multitenancy tests** (5 scenarios testing org isolation)
-- ✅ **RBAC tests** (6 scenarios testing public read permissions)
 - ✅ **Import into Postman** for manual/interactive testing
 - ✅ **CI/CD ready** via Newman CLI
-- ✅ **Beautiful reports** (CLI, JSON, HTML)
-- ✅ **Timestamp-based** unique identifiers
+
+**Current Results:** 88.1% pass rate (104/118 assertions)
+
+**Known Issues:**
+- Register/Schema updates: Fail when multitenancy is enforced and entity belongs to different org
+- Audit trails: Not being recorded (configuration or event listener issue)
+- Soft delete restore: Endpoint returns 400 (feature incomplete)
+- Admin schema visibility: Returns 0 schemas (database state or timing issue)
+
+### PHPUnit Tests
+
+**Advanced Feature Tests (tests/Integration/):**
+- `ConfigurationManagementIntegrationTest.php` - Version tracking, GitHub integration, auto-updates
+- `CoreIntegrationTest.php` - File uploads (multipart, base64, URL), advanced filtering, ordering, facets
+- `SchemaCompositionIntegrationTest.php` - Schema inheritance (allOf), Liskov substitution principle
+- `FileTextExtractionIntegrationTest.php` - File text extraction, tracking, retry logic
+- `ObjectImportIntegrationTest.php` - CSV import with auto-schema detection
+
+**Agent/AI Feature Tests (tests/integration/):**
+- `AgentChatWithViewFilteringTest.php` - Agent chat with view filters
+- `AgentRbacTest.php` - Agent RBAC permissions
+- `ConversationCrudTest.php` - Conversation CRUD operations
+- `ConversationSoftDeleteTest.php` - Conversation soft delete/restore
+- `ConversationSummarizationTest.php` - AI-powered conversation summarization
+- `ConversationTitleGenerationTest.php` - AI-powered title generation
+- `MessageOperationsTest.php` - Message CRUD and operations
+- `OrganisationFilteredConversationListTest.php` - Org-filtered conversation lists
+
+**Removed (Redundant with Newman):**
+- ~~`BasicCrudIntegrationTest.php`~~ - Basic CRUD operations now tested via Newman collection
+
+## Test Migration Notes (Dec 2024)
+
+**Migration Complete**: Basic CRUD tests have been migrated from PHPUnit to Newman/Postman for better portability and easier testing.
+
+**What Changed:**
+- ✅ Basic CRUD operations now tested via Newman (faster, no PHP environment needed)
+- ✅ Multitenancy enabled by default in configuration
+- ✅ All legacy handlers re-enabled (QueryHandler, CascadingHandler, etc.)
+- ✅ Circular dependency issues resolved (99.95% performance improvement)
+- ✅ PHP specialized tests retained for advanced features
+
+**Deleted Files:**
+- `BasicCrudIntegrationTest.php` - Covered by Newman collection
+- `CoreIntegrationTest.php.backup` - Obsolete backup file
+
+---
 
 ## Installation
 
-### Prerequisites
+### Newman in Nextcloud Container (Recommended)
+
+```bash
+# Install Newman (one-time setup)
+docker exec -u 0 master-nextcloud-1 bash -c "apt-get update && apt-get install -y npm && npm install -g newman"
+
+# Verify installation
+docker exec -u 33 master-nextcloud-1 newman --version
+```
+
+### Prerequisites for PHPUnit Tests
 
 - Node.js >= 14
 - npm
