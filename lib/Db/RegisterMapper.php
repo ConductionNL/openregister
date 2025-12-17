@@ -605,6 +605,8 @@ class RegisterMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Register
     {
+        // Note: find() applies multitenancy filter, which is correct for data isolation.
+        // Access verification happens in update() method via verifyOrganisationAccess().
         $register = $this->find(id: $id);
 
         // Set or update the version.

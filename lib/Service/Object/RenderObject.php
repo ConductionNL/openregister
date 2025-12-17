@@ -518,15 +518,15 @@ class RenderObject
             }
 
             return $hydratedFiles;
-        } else {
-            // Handle single file.
-            if (is_numeric($propertyValue) === true || (is_string($propertyValue) === true && ctype_digit($propertyValue) === true) === true) {
-                return $this->getFileObject($propertyValue);
-            }
+        }
 
-            return $propertyValue;
-            // Return unchanged if not a file ID.
-        }//end if
+        // Handle single file.
+        if (is_numeric($propertyValue) === true || (is_string($propertyValue) === true && ctype_digit($propertyValue) === true) === true) {
+            return $this->getFileObject($propertyValue);
+        }
+
+        return $propertyValue;
+        // Return unchanged if not a file ID.
 
     }//end hydrateFileProperty()
 
@@ -560,14 +560,14 @@ class RenderObject
                 $value = $this->getValueFromPath(data: $objectData, path: $imageField);
 
                 // Check if the value is a file object (has downloadUrl or accessUrl).
-                if (is_array($value) === true && (($value['downloadUrl'] ?? null) !== null || (($value['accessUrl'] ?? null) !== null) === true) === true) {
+                if (is_array($value) === false || ((($value['downloadUrl'] ?? null) === null) && (($value['accessUrl'] ?? null) === null))) {
+                    // If the file property is null/empty, set image to null.
+                    $entity->setImage(null);
+                } else {
                     // Set the image URL on the entity itself (not in object data).
                     // This will be serialized to @self.image in jsonSerialize().
                     // Prefer downloadUrl, fallback to accessUrl.
                     $entity->setImage($value['downloadUrl'] ?? $value['accessUrl']);
-                } else {
-                    // If the file property is null/empty, set image to null.
-                    $entity->setImage(null);
                 }
             }
         } catch (\Exception $e) {
@@ -592,11 +592,11 @@ class RenderObject
         $value = $data;
 
         foreach ($keys as $key) {
-            if (is_array($value) === true && (($value[$key] ?? null) !== null)) {
-                $value = $value[$key];
-            } else {
+            if (is_array($value) === false || (($value[$key] ?? null) === null)) {
                 return null;
             }
+
+            $value = $value[$key];
         }
 
         return $value;
@@ -621,10 +621,9 @@ class RenderObject
     {
         try {
             // Convert to string/int as needed.
+            $fileIdStr = $fileId;
             if (is_numeric($fileId) === true) {
                 $fileIdStr = (string) $fileId;
-            } else {
-                $fileIdStr = $fileId;
             }
 
             if (is_string($fileIdStr) === false && is_int($fileIdStr) === false) {
@@ -962,10 +961,9 @@ class RenderObject
                                 return ['@circular' => true, 'id' => $object->getUuid()];
                             }
 
+                            $subExtend = $keyExtends;
                             if ($allFlag === true) {
                                 $subExtend = array_merge(['all'], $keyExtends);
-                            } else {
-                                $subExtend = $keyExtends;
                             }
 
                             return $this->renderEntity(entity: $object, _extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
@@ -976,18 +974,21 @@ class RenderObject
                 // Filter out any null values that might have been returned from the mapping.
                 $renderedValue = array_filter($renderedValue, fn($v) => $v !== null);
 
-                if (is_numeric($override) === true) {
-                    // Reset array keys.
-                    $dataDot->set(keys: $key, value: array_values($renderedValue));
-                } else {
+                if (is_numeric($override) === false) {
                     // Reset array keys.
                     $dataDot->set(keys: $override, value: array_values($renderedValue));
-                }
-            } else {
-                // Skip if the value starts with '@' or '_'.
-                if (is_string($value) === true && ((str_starts_with(haystack: $value, needle: '@') === true) || (str_starts_with(haystack: $value, needle: '_') === true)) === true) {
                     continue;
                 }
+
+                // Reset array keys.
+                $dataDot->set(keys: $key, value: array_values($renderedValue));
+                continue;
+            }
+
+            // Skip if the value starts with '@' or '_'.
+            if (is_string($value) === true && ((str_starts_with(haystack: $value, needle: '@') === true) || (str_starts_with(haystack: $value, needle: '_') === true)) === true) {
+                continue;
+            }
 
                 if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
                     $path         = parse_url($value, PHP_URL_PATH);
@@ -1010,31 +1011,31 @@ class RenderObject
                     continue;
                 }
 
+                $subExtend = $keyExtends;
                 if ($allFlag === true) {
                     $subExtend = array_merge(['all'], $keyExtends);
-                } else {
-                    $subExtend = $keyExtends;
                 }
+
+                $rendered = $this->renderEntity(
+                    entity: $object,
+                    _extend: $subExtend,
+                    depth: $depth + 1,
+                    filter: [],
+                    fields: [],
+                    unset: [],
+                    visitedIds: $visitedIds
+                )->jsonSerialize();
 
                 if (in_array($object->getUuid(), $visitedIds, true) === true) {
                     $rendered = ['@circular' => true, 'id' => $object->getUuid()];
-                } else {
-                    $rendered = $this->renderEntity(
-                        entity: $object,
-                        _extend: $subExtend,
-                        depth: $depth + 1,
-                        filter: [],
-                        fields: [],
-                        unset: [],
-                        visitedIds: $visitedIds
-                    )->jsonSerialize();
                 }
 
-                if (is_numeric($override) === true) {
-                    $dataDot->set(keys: $key, value: $rendered);
-                } else {
+                if (is_numeric($override) === false) {
                     $dataDot->set(keys: $override, value: $rendered);
+                    continue;
                 }
+
+                $dataDot->set(keys: $key, value: $rendered);
             }//end if
         }//end foreach
 
@@ -1214,11 +1215,10 @@ class RenderObject
             }
 
             // Resolve schema reference to actual schema ID.
+            $schemaId = $entity->getSchema();
+            // Use current schema if no target specified.
             if ($targetSchema !== null) {
                 $schemaId = $this->resolveSchemaReference($targetSchema);
-            } else {
-                $schemaId = $entity->getSchema();
-                // Use current schema if no target specified.
             }
 
             $inversedObjects = array_values(

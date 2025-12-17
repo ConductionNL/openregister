@@ -364,15 +364,30 @@ trait MultiTenancyTrait
 
         // CASE 1: No active organisation set.
         if (empty($activeOrganisationUuids) === true) {
-            // Build conditions for users without active organisation.
-            $conditions = [];
-
             // Check if user is admin - only if user exists.
             $isAdmin = false;
             if ($user !== null && isset($this->groupManager) === true) {
                 $userGroups = $this->groupManager->getUserGroupIds($user);
                 $isAdmin    = in_array('admin', $userGroups);
             }
+
+            // Check admin override setting.
+            $adminOverrideEnabled = false;
+            if ($isAdmin === true && isset($this->appConfig) === true) {
+                $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+                if (empty($multitenancyConfig) === false) {
+                    $multitenancyData     = json_decode($multitenancyConfig, true);
+                    $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
+                }
+            }
+
+            // Apply admin override logic - admins see everything if enabled.
+            if ($isAdmin === true && $adminOverrideEnabled === true) {
+                return;
+            }
+
+            // Build conditions for users without active organisation.
+            $conditions = [];
 
             // Admins can see NULL organisation entities (legacy data).
             if ($isAdmin === true && $allowNullOrg === true) {
