@@ -112,9 +112,9 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
-        // Simplified implementation - just return success
+        // Simplified implementation - just return success.
         $this->logger->info('[ElasticsearchBackend] deleteByQuery called (not fully implemented yet)');
-        return $returnDetails === TRUE ? ['deleted' => 0] : true;
+        return $returnDetails === true ? ['deleted' => 0] : true;
 
     }//end deleteByQuery()
 
@@ -133,7 +133,7 @@ class ElasticsearchBackend implements SearchBackendInterface
     ): array {
         $result = $this->queryExecutor->search($query);
 
-        // Convert Elasticsearch response to OpenRegister format
+        // Convert Elasticsearch response to OpenRegister format.
         return [
             'total'   => $result['hits']['total']['value'] ?? 0,
             'results' => array_map(
@@ -272,7 +272,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function optimize(): bool
     {
-        // Elasticsearch doesn't need manual optimization like Solr
+        // Elasticsearch doesn't need manual optimization like Solr.
         return true;
 
     }//end optimize()
@@ -364,7 +364,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function listCollections(): array
     {
-        // Simplified - would need ES API call to list all indices
+        // Simplified - would need ES API call to list all indices.
         return [$this->indexManager->getActiveIndexName()];
 
     }//end listCollections()
@@ -377,7 +377,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function index(array $documents): bool
     {
-        // Simplified implementation
+        // Simplified implementation.
         $this->logger->info('[ElasticsearchBackend] index() called with '.count($documents).' documents');
         return true;
 

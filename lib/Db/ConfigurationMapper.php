@@ -62,7 +62,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    // REMOVED: Services should not be in mappers
+    // REMOVED: Services should not be in mappers.
     protected OrganisationMapper $organisationMapper;
 
     /**
@@ -106,7 +106,7 @@ class ConfigurationMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers
+        // REMOVED: Services should not be in mappers.
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
@@ -114,7 +114,7 @@ class ConfigurationMapper extends QBMapper
         IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_configurations', Configuration::class);
-        // REMOVED: Services should not be in mappers
+        // REMOVED: Services should not be in mappers.
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;

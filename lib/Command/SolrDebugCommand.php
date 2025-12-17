@@ -38,7 +38,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @package   OCA\OpenRegister\Command
  * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  */
 class SolrDebugCommand extends Command
 {
@@ -225,14 +225,11 @@ class SolrDebugCommand extends Command
 
             // Create IndexService from settings.
             // NOTE: This requires proper dependency injection - IndexService needs FileHandler, ObjectHandler, SchemaHandler, SearchBackendInterface
-            // For now, this will fail at runtime and needs to be fixed with proper DI
-            $solrService = new IndexService(
-                fileHandler: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\FileHandler::class),
-                objectHandler: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\ObjectHandler::class),
-                schemaHandler: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\SchemaHandler::class),
-                searchBackend: $this->getContainer()->get(\OCA\OpenRegister\Service\Index\SearchBackendInterface::class),
-                logger: $this->logger
-            );
+            // For now, this will fail at runtime and needs to be fixed with proper DI.
+            // TODO: Inject these dependencies via constructor instead of using getContainer().
+            // Command classes don't have getContainer() method - this needs to be fixed.
+            $output->writeln('<error>IndexService creation requires dependency injection - not yet implemented</error>');
+            return;
             // Test setup.
             $setup  = new SetupHandler($solrService, $this->logger);
             $result = $setup->setupSolr();

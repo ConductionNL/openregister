@@ -42,7 +42,7 @@ use Psr\Log\LoggerInterface;
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  *
  * @template-implements IEventListener<NodeCreatedEvent|NodeWrittenEvent>
  */

@@ -256,8 +256,6 @@ class ObjectsProvider implements IFilteringProvider
         $until = $query->getFilter('until')?->get();
 
         // @todo: implement pagination.
-        $limit  = null;
-        $offset = null;
         // Note: order parameter not currently used in search
         // Build search query for searchObjectsPaginated.
         $searchQuery = [];
@@ -289,27 +287,9 @@ class ObjectsProvider implements IFilteringProvider
             }
         }
 
-        // Set pagination limits for Nextcloud search.
-        /*
-         * @psalm-suppress TypeDoesNotContainType
-         */
-
-        if ($limit !== null) {
-            $searchQuery['_limit'] = $limit;
-        } else {
-            $searchQuery['_limit'] = 25;
-        }
-
-        // Default limit for search interface.
-        /*
-         * @psalm-suppress TypeDoesNotContainType
-         */
-
-        if ($offset !== null) {
-            $searchQuery['_offset'] = $offset;
-        } else {
-            $searchQuery['_offset'] = 0;
-        }
+        // Set pagination limits for Nextcloud search (defaults).
+        $searchQuery['_limit'] = 25;
+        $searchQuery['_offset'] = 0;
 
         $this->logger->debug(
                 'OpenRegister search requested',

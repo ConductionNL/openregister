@@ -291,8 +291,8 @@ class VectorStorageHandler
             }
 
             // Get Solr backend from IndexService.
-            $solrBackend = $this->indexService->getBackend('solr');
-            if ($solrBackend === null || $solrBackend->isAvailable() === false) {
+            $solrBackend = $this->indexService->getBackend();
+            if ($solrBackend->isAvailable() === false) {
                 throw new Exception('Solr service is not available');
             }
 

@@ -263,7 +263,7 @@ class UpdateFileHandler
                 $this->fileValidationHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
 
                 // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-                $this->fileOwnershipHandler->checkOwnership($file);
+                $this->fileValidationHandler->checkOwnership($file);
 
                 $file->putContent(data: $content);
                 $this->logger->info(message: "updateFile: Successfully updated file content: ".$file->getName());

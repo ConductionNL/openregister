@@ -664,6 +664,7 @@ class ObjectsController extends Controller
              */
 
             $nameValue = $fileData['name'];
+            /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
@@ -671,30 +672,22 @@ class ObjectsController extends Controller
                 $nameArray = $nameValue;
                 // Extract values - in $_FILES structure, when name is array, others are arrays too.
                 // Use mixed type and then check to help Psalm understand.
-                /*
-                 * @var mixed $typeRaw
-                 */
-
+                /** @var mixed $typeRaw */
                 $typeRaw = $fileData['type'];
-                /*
-                 * @var mixed $tmpNameRaw
-                 */
-
+                /** @var mixed $tmpNameRaw */
                 $tmpNameRaw = $fileData['tmp_name'];
-                /*
-                 * @var mixed $errorRaw
-                 */
-
+                /** @var mixed $errorRaw */
                 $errorRaw = $fileData['error'];
-                /*
-                 * @var mixed $sizeRaw
-                 */
-
+                /** @var mixed $sizeRaw */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $typeArray    = is_array($typeRaw) === true ? $typeRaw : [];
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $errorArray   = is_array($errorRaw) === true ? $errorRaw : [];
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $sizeArray    = is_array($sizeRaw) === true ? $sizeRaw : [];
                 $fileCount    = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
@@ -818,6 +811,7 @@ class ObjectsController extends Controller
              */
 
             $nameValue = $fileData['name'];
+            /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
             if (is_array($nameValue) === true) {
                 // Handle array uploads: images[] becomes images with array values.
                 // We need to preserve all files, so use indexed keys: images[0], images[1], etc.
@@ -825,30 +819,22 @@ class ObjectsController extends Controller
                 $nameArray = $nameValue;
                 // Extract values - in $_FILES structure, when name is array, others are arrays too.
                 // Use mixed type and then check to help Psalm understand.
-                /*
-                 * @var mixed $typeRaw
-                 */
-
+                /** @var mixed $typeRaw */
                 $typeRaw = $fileData['type'];
-                /*
-                 * @var mixed $tmpNameRaw
-                 */
-
+                /** @var mixed $tmpNameRaw */
                 $tmpNameRaw = $fileData['tmp_name'];
-                /*
-                 * @var mixed $errorRaw
-                 */
-
+                /** @var mixed $errorRaw */
                 $errorRaw = $fileData['error'];
-                /*
-                 * @var mixed $sizeRaw
-                 */
-
+                /** @var mixed $sizeRaw */
                 $sizeRaw = $fileData['size'];
                 // Convert to arrays, handling both array and scalar cases for safety.
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $typeArray    = is_array($typeRaw) === true ? $typeRaw : [];
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $tmpNameArray = is_array($tmpNameRaw) === true ? $tmpNameRaw : [];
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $errorArray   = is_array($errorRaw) === true ? $errorRaw : [];
+                /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
                 $sizeArray    = is_array($sizeRaw) === true ? $sizeRaw : [];
                 $fileCount    = count($nameArray);
                 for ($i = 0; $i < $fileCount; $i++) {
@@ -1410,7 +1396,7 @@ class ObjectsController extends Controller
             duration: $duration
         );
 
-        // Return response with locked status for test compatibility
+        // Return response with locked status for test compatibility.
         return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
 
     }//end lock()
@@ -1437,7 +1423,7 @@ class ObjectsController extends Controller
         $this->objectService->setSchema(schema: $schema);
         $this->objectService->unlockObject($id);
         
-        // Return response with locked status for test compatibility
+        // Return response with locked status for test compatibility.
         return new JSONResponse(data: [
             'message' => 'Object unlocked successfully',
             'locked' => false,
@@ -1602,7 +1588,7 @@ class ObjectsController extends Controller
             // Publish the object.
             $object = $objectService->publish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
 
-            // Return the object data with @self unpacked for simpler response structure
+            // Return the object data with @self unpacked for simpler response structure.
             $response = $object->jsonSerialize();
             return new JSONResponse(data: $response['@self'] ?? $response);
         } catch (Exception $e) {
@@ -1656,7 +1642,7 @@ class ObjectsController extends Controller
             // Depublish the object.
             $object = $objectService->depublish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
 
-            // Return the object data with @self unpacked for simpler response structure
+            // Return the object data with @self unpacked for simpler response structure.
             $response = $object->jsonSerialize();
             return new JSONResponse(data: $response['@self'] ?? $response);
         } catch (Exception $e) {

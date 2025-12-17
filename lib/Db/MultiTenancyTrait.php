@@ -80,7 +80,9 @@ trait MultiTenancyTrait
 
         // Use OrganisationMapper to get active org with automatic fallback to default.
         if (isset($this->organisationMapper) === true) {
-            return $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+            /** @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper */
+            $organisationMapper = $this->organisationMapper;
+            return $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
         }
 
         // Fallback if mapper not available.
@@ -101,7 +103,9 @@ trait MultiTenancyTrait
     {
         // Prefer using OrganisationMapper if available.
         if (isset($this->organisationMapper) === true) {
-            return $this->organisationMapper->getDefaultOrganisationFromConfig();
+            /** @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper */
+            $organisationMapper = $this->organisationMapper;
+            return $organisationMapper->getDefaultOrganisationFromConfig();
         }
 
         // Fallback to direct config access if mapper not available.
@@ -151,7 +155,9 @@ trait MultiTenancyTrait
         // If we have OrganisationMapper, get the full hierarchy (active + parents).
         if (isset($this->organisationMapper) === true) {
             try {
-                $uuids = $this->organisationMapper->getOrganisationHierarchy($activeOrgUuid);
+                /** @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper */
+                $organisationMapper = $this->organisationMapper;
+                $uuids = $organisationMapper->getOrganisationHierarchy($activeOrgUuid);
                 if (empty($uuids) === false) {
                     return $uuids;
                 }
@@ -398,7 +404,7 @@ trait MultiTenancyTrait
             }//end if
 
             // If no conditions were added, deny all access.
-            if (empty($conditions) === TRUE) {
+            if (empty($conditions) === true) {
                 // Use raw SQL to create an always-false condition (1 = 0).
                 // Note: Using raw SQL instead of literal() as it avoids query builder interpretation issues.
                 $qb->andWhere('1 = 0');

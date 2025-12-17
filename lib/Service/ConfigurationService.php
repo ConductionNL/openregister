@@ -1214,4 +1214,20 @@ class ConfigurationService
     }//end getCacheHandler()
 
 
+    /**
+     * Import configuration with selection.
+     *
+     * Delegates to PreviewHandler.
+     *
+     * @param Configuration $configuration Configuration to import
+     * @param array        $selection     Selection of items to import
+     *
+     * @return array Import results
+     */
+    public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
+    {
+        return $this->previewHandler->importConfigurationWithSelection(configuration: $configuration, selection: $selection);
+    }//end importConfigurationWithSelection()
+
+
 }//end class

@@ -61,8 +61,8 @@ class SourceMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    // REMOVED: Services should not be in mappers
-    // private OrganisationService $organisationService;
+    // REMOVED: Services should not be in mappers.
+    // private OrganisationService $organisationService.
 
     /**
      * User session for current user

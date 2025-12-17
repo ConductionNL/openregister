@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -35,7 +35,7 @@ use Symfony\Component\Uid\Uuid;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -129,7 +129,7 @@ class RelationHandler
             $foundIds = array_map(
                 function (ObjectEntity $object) use ($property, $key) {
                     $serialized = $object->jsonSerialize();
-                    $idRaw      = is_array($property) === TRUE && is_array($serialized) === TRUE && isset($property['inversedBy']) === TRUE ? $serialized[$property['inversedBy']] : null;
+                    $idRaw      = is_array($property) === true && is_array($serialized) === true && isset($property['inversedBy']) === true ? $serialized[$property['inversedBy']] : null;
 
                     if (Uuid::isValid($idRaw) === true) {
                         return $idRaw;

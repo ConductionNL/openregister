@@ -159,8 +159,8 @@ class VectorStatsHandler
     private function getStatsFromSolr(): array
     {
         try {
-            $solrBackend = $this->indexService->getBackend('solr');
-            if ($solrBackend === null || $solrBackend->isAvailable() === false) {
+            $solrBackend = $this->indexService->getBackend();
+            if ($solrBackend->isAvailable() === false) {
                 $this->logger->warning(
                     message: '[VectorStatsHandler] Solr not available for stats'
                 );

@@ -65,7 +65,7 @@ class ElasticsearchQueryExecutor
         $index = $this->indexManager->getActiveIndexName();
 
         try {
-            // Build Elasticsearch query
+            // Build Elasticsearch query.
             $esQuery = $this->buildElasticsearchQuery($query);
 
             $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_search';
@@ -111,14 +111,14 @@ class ElasticsearchQueryExecutor
         $query = [
             'query' => [
                 'match_all' => new \stdClass(),
-        // Empty object
+        // Empty object.
             ],
             'from'  => 0,
             'size'  => 10,
         ];
 
-        // Handle search text
-        if (isset($params['_search']) === TRUE && $params['_search'] !== '*:*') {
+        // Handle search text.
+        if (isset($params['_search']) === true && $params['_search'] !== '*:*') {
             $query['query'] = [
                 'multi_match' => [
                     'query'  => $params['_search'],
@@ -128,12 +128,12 @@ class ElasticsearchQueryExecutor
             ];
         }
 
-        // Handle pagination
-        if (isset($params['_limit']) === TRUE) {
+        // Handle pagination.
+        if (isset($params['_limit']) === true) {
             $query['size'] = (int) $params['_limit'];
         }
 
-        if (isset($params['_page']) === TRUE) {
+        if (isset($params['_page']) === true) {
             $page          = (int) $params['_page'];
             $query['from'] = ($page - 1) * $query['size'];
         }

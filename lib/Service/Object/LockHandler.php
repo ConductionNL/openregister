@@ -85,8 +85,8 @@ class LockHandler
         );
 
         try {
-            // NOTE: lockObject is deprecated - this will throw BadMethodCallException
-            // Should use LockingHandler through ObjectService instead
+            // NOTE: lockObject is deprecated - this will throw BadMethodCallException.
+            // Should use LockingHandler through ObjectService instead.
             $object = $this->objectEntityMapper->lockObject($identifier, $duration);
 
             $this->logger->info(

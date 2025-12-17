@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -43,7 +43,7 @@ use React\Async;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -420,7 +420,7 @@ class QueryHandler
                 context: [
                     'hasFacets'    => $hasFacets,
                     'hasFacetable' => $hasFacetable,
-                    'facetCount'   => $hasFacets === TRUE ? count($query['_facets'] ?? []) : 0,
+                    'facetCount'   => $hasFacets === true ? count($query['_facets'] ?? []) : 0,
                 ]
             );
 

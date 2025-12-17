@@ -108,6 +108,84 @@
 			}
 		},
 		{
+			"name": "Setup: Enable Multitenancy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200 or 405', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 405]);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Multitenancy configuration is accessible', function () {",
+							"        pm.expect(jsonData).to.have.property('multitenancy');",
+							"    });",
+							"    console.log('✓ Multitenancy enabled:', jsonData.multitenancy.enabled);",
+							"    console.log('✓ Admin override:', jsonData.multitenancy.adminOverride);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"enabled\": true,\n  \"adminOverride\": true,\n  \"defaultUserTenant\": \"\",\n  \"defaultObjectTenant\": \"\",\n  \"publishedObjectsBypassMultiTenancy\": false\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/multitenancy",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "settings", "multitenancy"]
+				}
+			}
+		},
+		{
+			"name": "Setup: Verify Multitenancy Status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.test('Multitenancy is enabled', function () {",
+							"        pm.expect(jsonData.multitenancy).to.have.property('enabled');",
+							"        pm.expect(jsonData.multitenancy.enabled).to.be.true;",
+							"    });",
+							"    pm.test('Admin override is enabled', function () {",
+							"        pm.expect(jsonData.multitenancy).to.have.property('adminOverride');",
+							"        pm.expect(jsonData.multitenancy.adminOverride).to.be.true;",
+							"    });",
+							"    console.log('✓ Multitenancy Setup Complete');",
+							"    console.log('  - Enabled:', jsonData.multitenancy.enabled);",
+							"    console.log('  - Admin Override:', jsonData.multitenancy.adminOverride);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/multitenancy",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "settings", "multitenancy"]
+				}
+			}
+		},
+		{
 			"name": "0. Create Organization",
 			"event": [
 				{
@@ -2055,12 +2133,13 @@
 							"    var jsonData = pm.response.json();",
 							"    ",
 							"    pm.test('Audit trail exists for object', function () {",
-							"        pm.expect(jsonData).to.be.an('array');",
-							"        pm.expect(jsonData.length).to.be.at.least(1);",
+							"        pm.expect(jsonData).to.have.property('results');",
+							"        pm.expect(jsonData.results).to.be.an('array');",
+							"        pm.expect(jsonData.results.length).to.be.at.least(1);",
 							"    });",
 							"    ",
 							"    // Check for specific actions",
-							"    var actions = jsonData.map(entry => entry.action);",
+							"    var actions = jsonData.results.map(entry => entry.action);",
 							"    ",
 							"    pm.test('Audit trail contains CREATE action', function () {",
 							"        pm.expect(actions).to.include('Create');",
@@ -2120,7 +2199,7 @@
 							"        if (jsonData.results.length > 0) {",
 							"            var entry = jsonData.results[0];",
 							"            pm.expect(entry).to.have.property('action');",
-							"            pm.expect(entry).to.have.property('user_id');",
+							"            pm.expect(entry).to.have.property('user'); // API returns 'user', not 'user_id'",
 							"            pm.expect(entry).to.have.property('created');",
 							"        }",
 							"    });",

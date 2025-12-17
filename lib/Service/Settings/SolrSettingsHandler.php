@@ -561,7 +561,7 @@ class SolrSettingsHandler
             if (empty($backendConfig) === true) {
                 return [
                     'active'    => 'solr',
-                // Default to Solr for backward compatibility
+                // Default to Solr for backward compatibility.
                     'available' => ['solr', 'elasticsearch'],
                 ];
             }

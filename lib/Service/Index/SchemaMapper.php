@@ -9,7 +9,7 @@
  * @package   OCA\OpenRegister\Service\Index
  * @author    Conduction Development Team
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  */

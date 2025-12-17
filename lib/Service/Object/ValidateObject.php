@@ -54,7 +54,7 @@ use Opis\Uri\Uri;
  * @category  Service
  * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
@@ -1020,7 +1020,7 @@ class ValidateObject
         }
 
         // If there are no properties, we don't need to validate.
-        // Skip validation ONLY if properties are NOT set OR if properties are empty
+        // Skip validation ONLY if properties are NOT set OR if properties are empty.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Validate against an empty schema object to get a valid ValidationResult.
             $validator = new Validator();
@@ -1057,13 +1057,13 @@ class ValidateObject
                 // For non-required fields, filter out empty arrays ONLY if they have no validation constraints.
                 // Keep empty arrays if they have minItems, maxItems, or other array validation rules.
                 if (is_array($value) === true && empty($value) === true) {
-                    // Check if this field has array validation constraints
+                    // Check if this field has array validation constraints.
                     if (($propertySchema !== null) === true) {
                         $hasMinItems = isset($propertySchema->minItems) && $propertySchema->minItems > 0;
                         $hasMaxItems = isset($propertySchema->maxItems);
                         $hasUniqueItems = isset($propertySchema->uniqueItems) && $propertySchema->uniqueItems === true;
                         
-                        // Keep empty arrays if they have validation constraints (should fail validation)
+                        // Keep empty arrays if they have validation constraints (should fail validation).
                         if ($hasMinItems === true || $hasMaxItems === true || $hasUniqueItems === true) {
                             return true;
                         }
@@ -1129,7 +1129,7 @@ class ValidateObject
         $validator = new Validator();
         $validator->setMaxErrors(100);
         
-        // Register custom format validators using our helper method that supports named parameters
+        // Register custom format validators using our helper method that supports named parameters.
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
         
@@ -1155,7 +1155,7 @@ class ValidateObject
      */
     private function registerCustomFormat(Validator $validator, string $type, string $format, object $resolver): void
     {
-        // The underlying library doesn't support named parameters, so we convert them here
+        // The underlying library doesn't support named parameters, so we convert them here.
         $validator->parser()->getFormatResolver()->register($type, $format, $resolver);
 
     }//end registerCustomFormat()

@@ -155,10 +155,10 @@ class SolrQueryExecutor
         $solrQuery = $this->buildSolrQuery($query);
 
         // Apply filters.
-        if ($rbac === TRUE || $multitenancy === TRUE || $published === TRUE || $deleted === false) {
+        if ($rbac === true || $multitenancy === true || $published === true || $deleted === false) {
             $filters = [];
 
-            if ($published === TRUE) {
+            if ($published === true) {
                 $filters[] = 'published:true';
             }
 
@@ -203,8 +203,8 @@ class SolrQueryExecutor
         }
 
         // Handle field selection.
-        if (isset($query['_fields']) === TRUE) {
-            $solrQuery['fl'] = is_array($query['_fields']) === TRUE ? implode(',', $query['_fields']) : $query['_fields'];
+        if (isset($query['_fields']) === true) {
+            $solrQuery['fl'] = is_array($query['_fields']) === true ? implode(',', $query['_fields']) : $query['_fields'];
         }
 
         return $solrQuery;
@@ -221,7 +221,7 @@ class SolrQueryExecutor
      */
     private function translateSortField(array|string $order): string
     {
-        if (is_string($order) === TRUE) {
+        if (is_string($order) === true) {
             return $order;
         }
 

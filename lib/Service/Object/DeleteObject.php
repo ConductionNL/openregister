@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,7 +49,7 @@ use Psr\Log\LoggerInterface;
  * @category  Service
  * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
@@ -87,6 +88,7 @@ class DeleteObject
      * @param CacheHandler       $cacheHandler            Object cache service for entity and query caching.
      * @param SchemaCacheHandler $schemaCacheService      Schema cache handler for schema entity caching.
      * @param FacetCacheHandler  $schemaFacetCacheService Schema facet cache service for facet caching.
+     * @param IUserSession       $userSession             User session service for tracking who deletes.
      * @param AuditTrailMapper   $auditTrailMapper        Audit trail mapper for logs.
      * @param SettingsService    $settingsService         Settings service for accessing trail settings.
      * @param LoggerInterface    $logger                  Logger for error handling.
@@ -94,6 +96,7 @@ class DeleteObject
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly CacheHandler $cacheHandler,
+        private readonly IUserSession $userSession,
         AuditTrailMapper $auditTrailMapper,
         SettingsService $settingsService,
         LoggerInterface $logger
@@ -124,14 +127,29 @@ class DeleteObject
         }
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
-        // Set deletion metadata with user and timestamp information.
+        // Set deletion metadata with user, timestamp, and organization information.
         $user = $this->userSession->getUser();
         $userId = $user !== null ? $user->getUID() : 'system';
+        
+        // Get the active organization from session at time of deletion for audit trail.
+        $activeOrganisation = null;
+        if ($user !== null) {
+            // Access OrganisationMapper via DI container to get active organization.
+            try {
+                $organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
+                $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+            } catch (\Exception $e) {
+                // If we can't get the active organisation, log and continue with null.
+                $this->logger->warning('Failed to get active organisation during delete', ['error' => $e->getMessage()]);
+                $activeOrganisation = null;
+            }
+        }
         
         $deletionData = [
             'deletedBy' => $userId,
             'deletedAt' => (new \DateTime())->format(\DateTime::ATOM),
             'objectId' => $objectEntity->getUuid(),
+            'organisation' => $activeOrganisation,
         ];
         
         $objectEntity->setDeleted($deletionData);
@@ -142,7 +160,7 @@ class DeleteObject
          */
         $result = $this->objectEntityMapper->update($objectEntity) !== null;
 
-        // **CACHE INVALIDATION**: Clear collection and facet caches so deleted objects disappear immediately.
+        // **CACHE INVALIDATION**: Clear collection and facet caches so soft-deleted objects disappear from regular queries.
         if ($result === true) {
             // ObjectEntity has getRegister() and getSchema() methods that return string|null.
             // Convert to int|null for invalidateForObjectChange which expects ?int.
@@ -170,13 +188,13 @@ class DeleteObject
             try {
                 $this->cacheHandler->invalidateForObjectChange(
                     object: $objectEntity,
-                    operation: 'delete',
+                    operation: 'soft_delete',
                     registerId: $registerIdInt,
                     schemaId: $schemaIdInt
                 );
             } catch (\Exception $e) {
-                // Gracefully handle cache invalidation errors (e.g., Solr not configured)
-                // Deletion should succeed even if cache invalidation fails
+                // Gracefully handle cache invalidation errors (e.g., Solr not configured).
+                // Soft deletion should succeed even if cache invalidation fails.
             }
         }//end if
 
@@ -280,10 +298,11 @@ class DeleteObject
         try {
             $folder = null;
             // TODO: $this->fileService->getObjectFolder($objectEntity);
-            if ($folder !== null) {
-                $folder->delete();
-                $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
-            }
+            // When implemented, uncomment:
+            // if ($folder !== null) {
+            //     $folder->delete().
+            //     $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId()).
+            // }.
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.
             $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());

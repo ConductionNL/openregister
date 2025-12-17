@@ -189,6 +189,38 @@ class IndexService
     }//end commit()
 
 
+    /**
+     * Index an object to the search backend.
+     *
+     * Delegates to SearchBackendInterface.
+     *
+     * @param ObjectEntity $object Object entity to index
+     * @param bool         $commit Whether to commit immediately
+     *
+     * @return bool Success status
+     */
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
+    {
+        return $this->searchBackend->indexObject(object: $object, commit: $commit);
+    }//end indexObject()
+
+
+    /**
+     * Delete an object from the search backend.
+     *
+     * Delegates to SearchBackendInterface.
+     *
+     * @param string|int $objectId Object ID or UUID to delete
+     * @param bool       $commit   Whether to commit immediately
+     *
+     * @return bool Success status
+     */
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
+    {
+        return $this->searchBackend->deleteObject(objectId: $objectId, commit: $commit);
+    }//end deleteObject()
+
+
     // ========================================================================
     // SCHEMA OPERATIONS
     // ========================================================================
@@ -249,6 +281,37 @@ class IndexService
         return $this->schemaHandler->getCollectionFieldStatus(collection: $collection);
 
     }//end getCollectionFieldStatus()
+
+
+    /**
+     * Get object collection field status.
+     *
+     * Delegates to SchemaHandler.
+     *
+     * @return array Field status information
+     */
+    public function getObjectCollectionFieldStatus(): array
+    {
+        return $this->schemaHandler->getCollectionFieldStatus(collection: 'objects');
+    }//end getObjectCollectionFieldStatus()
+
+
+    /**
+     * Get fields configuration from search backend.
+     *
+     * Delegates to SearchBackendInterface.
+     *
+     * @return array Fields configuration
+     */
+    public function getFieldsConfiguration(): array
+    {
+        // Get fields from the objects collection.
+        $fields = $this->searchBackend->getFields(collection: 'objects');
+        return [
+            'success' => true,
+            'fields' => $fields,
+        ];
+    }//end getFieldsConfiguration()
 
 
     /**

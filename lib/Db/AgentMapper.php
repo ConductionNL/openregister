@@ -61,7 +61,7 @@ class AgentMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    // REMOVED: Services should not be in mappers
+    // REMOVED: Services should not be in mappers.
     protected OrganisationMapper $organisationMapper;
 
     /**
@@ -97,14 +97,14 @@ class AgentMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers
+        // REMOVED: Services should not be in mappers.
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_agents', Agent::class);
-        // REMOVED: Services should not be in mappers
+        // REMOVED: Services should not be in mappers.
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;

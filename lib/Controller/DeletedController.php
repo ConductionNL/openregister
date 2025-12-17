@@ -180,14 +180,16 @@ class DeletedController extends Controller
                 filters: $params['filters'],
                 sort: $params['sort'],
                 search: $params['search'],
-            // Include deleted objects.
+                includeDeleted: true,  // Include deleted objects in the query.
             );
 
             // Filter to only show actually deleted objects (extra safety).
+            // Check that deleted is not null and not an empty array.
             $deletedObjects = array_filter(
                     $objects,
                     function ($object) {
-                        return $object->getDeleted() !== null;
+                        $deleted = $object->getDeleted();
+                        return $deleted !== null && !empty($deleted);
                     }
             );
 

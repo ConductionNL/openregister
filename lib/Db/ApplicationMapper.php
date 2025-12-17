@@ -121,7 +121,7 @@ class ApplicationMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers
+        // REMOVED: Services should not be in mappers.
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
@@ -131,7 +131,7 @@ class ApplicationMapper extends QBMapper
         parent::__construct($db, 'openregister_applications', Application::class);
 
         // Store dependencies for use in mapper methods.
-        // REMOVED: Services should not be in mappers
+        // REMOVED: Services should not be in mappers.
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;

@@ -129,20 +129,20 @@ class ViewMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers
-        // OrganisationMapper $organisationMapper,
+        // REMOVED: Services should not be in mappers.
+        // OrganisationMapper $organisationMapper.
         IUserSession $userSession,
         IGroupManager $groupManager,
-        // REMOVED: Handlers should not be in mappers
-        // CacheHandler $configurationCacheService,
+        // REMOVED: Handlers should not be in mappers.
+        // CacheHandler $configurationCacheService.
         IEventDispatcher $eventDispatcher
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_views', View::class);
 
         // Store dependencies for use in mapper methods.
-        // REMOVED: Services should not be in mappers
-        // $this->organisationMapper = $organisationService;
+        // REMOVED: Services should not be in mappers.
+        // $this->organisationMapper = $organisationService.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
         // $this->configurationCacheService = $configurationCacheService; // REMOVED

@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.

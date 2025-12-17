@@ -705,7 +705,7 @@ class ImportHandler
                     }
 
                     // Handle register slug/ID in objectConfiguration (new structure).
-                    if (is_array($property['objectConfiguration'] ?? null) === TRUE && ($property['objectConfiguration']['register'] ?? null) !== null) {
+                    if (is_array($property['objectConfiguration'] ?? null) === true && ($property['objectConfiguration']['register'] ?? null) !== null) {
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
@@ -728,7 +728,7 @@ class ImportHandler
                     }//end if
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
-                    if (is_array($property['objectConfiguration'] ?? null) === TRUE && ($property['objectConfiguration']['schema'] ?? null) !== null) {
+                    if (is_array($property['objectConfiguration'] ?? null) === true && ($property['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
                         if (empty($schemaSlug) === false) {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
@@ -758,18 +758,18 @@ class ImportHandler
                             $property['items'] = (array) $property['items'];
                         }
 
-                        if (is_array($property['items']) === TRUE
+                        if (is_array($property['items']) === true
                             && ($property['items']['objectConfiguration'] ?? null) !== null
-                            && is_object($property['items']['objectConfiguration']) === TRUE
+                            && is_object($property['items']['objectConfiguration']) === true
                         ) {
                             $property['items']['objectConfiguration'] = (array) $property['items']['objectConfiguration'];
                         }
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure).
-                    if (is_array($property['items'] ?? []) === TRUE
-                        && is_array($property['items']['objectConfiguration'] ?? []) === TRUE
-                        && isset($property['items']['objectConfiguration']['register']) === TRUE
+                    if (is_array($property['items'] ?? []) === true
+                        && is_array($property['items']['objectConfiguration'] ?? []) === true
+                        && isset($property['items']['objectConfiguration']['register']) === true
                     ) {
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
@@ -793,9 +793,9 @@ class ImportHandler
                     }//end if
 
                     // Handle schema slug/ID in array items objectConfiguration (new structure).
-                    if (is_array($property['items'] ?? []) === TRUE
-                        && is_array($property['items']['objectConfiguration'] ?? []) === TRUE
-                        && isset($property['items']['objectConfiguration']['schema']) === TRUE
+                    if (is_array($property['items'] ?? []) === true
+                        && is_array($property['items']['objectConfiguration'] ?? []) === true
+                        && isset($property['items']['objectConfiguration']['schema']) === true
                     ) {
                         $schemaSlug = $property['items']['objectConfiguration']['schema'];
                         if (empty($schemaSlug) === false) {
@@ -829,7 +829,7 @@ class ImportHandler
                         }
                     }
 
-                    if (is_array($property['items'] ?? []) === TRUE && isset($property['items']['register']) === TRUE) {
+                    if (is_array($property['items'] ?? []) === true && isset($property['items']['register']) === true) {
                         if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
                         } else if (($this->registersMap[$property['items']['register']] ?? null) !== null) {

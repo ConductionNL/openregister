@@ -46,7 +46,7 @@ use Symfony\Component\Console\Input\InputArgument;
  * @category  Command
  * @package   OCA\OpenRegister\Command
  * @author    OpenRegister Team
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/OpenRegister/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 OpenRegister

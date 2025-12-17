@@ -213,8 +213,8 @@ class VectorSearchHandler
 
         try {
             // Get Solr backend.
-            $solrBackend = $this->indexService->getBackend('solr');
-            if ($solrBackend === null || $solrBackend->isAvailable() === false) {
+            $solrBackend = $this->indexService->getBackend();
+            if ($solrBackend->isAvailable() === false) {
                 throw new Exception('Solr service is not available');
             }
 
@@ -636,7 +636,7 @@ class VectorSearchHandler
         $settings            = $this->settingsService->getSettings();
 
         if (($filters['entity_type'] ?? null) !== null) {
-            $entityTypes = is_array($filters['entity_type']) === TRUE ? $filters['entity_type'] : [$filters['entity_type']];
+            $entityTypes = is_array($filters['entity_type']) === true ? $filters['entity_type'] : [$filters['entity_type']];
 
             foreach ($entityTypes as $entityType) {
                 $collection = $this->getSolrCollectionForEntityType($entityType, $settings);
