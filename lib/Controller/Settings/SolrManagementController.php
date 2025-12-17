@@ -78,7 +78,42 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse SOLR field configuration data
      *
-     * @psalm-return JSONResponse<200|422, array{success: bool, message?: string, details?: array{error: string}, comparison?: array{total_differences: int<0, max>, missing_count: int<0, max>, extra_count: int<0, max>, missing: list{0?: array{name: mixed, type: mixed, config: mixed, collection: 'files'|'objects', collectionLabel: 'File Collection'|'Object Collection'},...}, extra: list{0?: array{name: mixed, collection: 'files'|'objects', collectionLabel: 'File Collection'|'Object Collection'},...}, object_collection: array{missing: int<0, max>, extra: int<0, max>}, file_collection: array{missing: int<0, max>, extra: int<0, max>}}, object_collection_status?: mixed, file_collection_status?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|422,
+     *     array{
+     *         success: bool,
+     *         message?: string,
+     *         details?: array{error: string},
+     *         comparison?: array{
+     *             total_differences: int<0, max>,
+     *             missing_count: int<0, max>,
+     *             extra_count: int<0, max>,
+     *             missing: list{
+     *                 0?: array{
+     *                     name: mixed,
+     *                     type: mixed,
+     *                     config: mixed,
+     *                     collection: 'files'|'objects',
+     *                     collectionLabel: 'File Collection'|'Object Collection'
+     *                 },
+     *                 ...
+     *             },
+     *             extra: list{
+     *                 0?: array{
+     *                     name: mixed,
+     *                     collection: 'files'|'objects',
+     *                     collectionLabel: 'File Collection'|'Object Collection'
+     *                 },
+     *                 ...
+     *             },
+     *             object_collection: array{missing: int<0, max>, extra: int<0, max>},
+     *             file_collection: array{missing: int<0, max>, extra: int<0, max>}
+     *         },
+     *         object_collection_status?: mixed,
+     *         file_collection_status?: mixed
+     *     },
+     *     array<never, never>
+     * >
      */
     public function getSolrFields(): JSONResponse
     {
@@ -193,7 +228,23 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse The field creation results
      *
-     * @psalm-return JSONResponse<200|422, array{success: bool, message: string, details?: array{error: string}, total_created?: 0|mixed, total_errors?: 0|mixed, results?: array{objects: array{success: false, message: string}|mixed|null, files: array{success: false, message: string}|mixed|null}, execution_time_ms?: float, dry_run?: bool}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|422,
+     *     array{
+     *         success: bool,
+     *         message: string,
+     *         details?: array{error: string},
+     *         total_created?: 0|mixed,
+     *         total_errors?: 0|mixed,
+     *         results?: array{
+     *             objects: array{success: false, message: string}|mixed|null,
+     *             files: array{success: false, message: string}|mixed|null
+     *         },
+     *         execution_time_ms?: float,
+     *         dry_run?: bool
+     *     },
+     *     array<never, never>
+     * >
      */
     public function createMissingSolrFields(): JSONResponse
     {
@@ -317,7 +368,21 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse The field fix results
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<200|422, array{success: bool, message: string, details?: array{error: mixed|string}, fixed?: array<never, never>, errors?: array<never, never>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<
+     *     200|422,
+     *     array{
+     *         success: bool,
+     *         message: string,
+     *         details?: array{error: mixed|string},
+     *         fixed?: array<never, never>,
+     *         errors?: array<never, never>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function fixMismatchedSolrFields(): JSONResponse
     {
@@ -517,7 +582,18 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse List of collections with metadata
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, collections?: mixed, count?: int<0, max>, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: string,
+     *         trace?: string,
+     *         collections?: mixed,
+     *         count?: int<0, max>,
+     *         timestamp?: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function listSolrCollections(): JSONResponse
     {
@@ -556,7 +632,18 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse List of ConfigSets with metadata
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, configSets?: mixed, count?: int<0, max>, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: string,
+     *         trace?: string,
+     *         configSets?: mixed,
+     *         count?: int<0, max>,
+     *         timestamp?: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function listSolrConfigSets(): JSONResponse
     {
@@ -598,7 +685,11 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Creation result
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
     public function createSolrConfigSet(string $name, string $baseConfigSet='_default'): JSONResponse
     {
@@ -631,7 +722,11 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Deletion result
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<400, array{success: false, error: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<400, array{success: false, error: string}, array<never, never>>
      */
     public function deleteSolrConfigSet(string $name): JSONResponse
     {
@@ -668,7 +763,11 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Creation result
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
     public function createSolrCollection(
         string $collectionName,
@@ -715,13 +814,21 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Copy operation result
      *
-     * @psalm-return JSONResponse<200, array<array-key, mixed>, array<never, never>>|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200,
+     *     array<array-key, mixed>,
+     *     array<never, never>
+     * >|JSONResponse<500, array{success: false, error: string, trace: string}, array<never, never>>
      */
     public function copySolrCollection(string $sourceCollection, string $targetCollection, bool $copyData=false): JSONResponse
     {
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
-            $result            = $guzzleSolrService->copyCollection(sourceCollection: $sourceCollection, targetCollection: $targetCollection, copyData: $copyData);
+            $result = $guzzleSolrService->copyCollection(
+                sourceCollection: $sourceCollection,
+                targetCollection: $targetCollection,
+                copyData: $copyData
+            );
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
@@ -844,7 +951,19 @@ class SolrManagementController extends Controller
      *
      * @return JSONResponse Update result
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, message?: 'Collection assignments updated successfully', objectCollection?: mixed|null, fileCollection?: mixed|null, timestamp?: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: string,
+     *         trace?: string,
+     *         message?: 'Collection assignments updated successfully',
+     *         objectCollection?: mixed|null,
+     *         fileCollection?: mixed|null,
+     *         timestamp?: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function updateSolrCollectionAssignments(?string $objectCollection=null, ?string $fileCollection=null): JSONResponse
     {

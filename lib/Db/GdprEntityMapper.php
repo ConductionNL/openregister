@@ -52,4 +52,18 @@ class GdprEntityMapper extends QBMapper
     }//end __construct()
 
 
+    /**
+     * Public wrapper for findEntities (parent protected method).
+     *
+     * @param IQueryBuilder $query The query builder.
+     *
+     * @return list<GdprEntity> Array of entities.
+     */
+    public function findEntitiesPublic(IQueryBuilder $query): array
+    {
+        return parent::findEntities($query);
+
+    }//end findEntitiesPublic()
+
+
 }//end class

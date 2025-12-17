@@ -805,7 +805,20 @@ class GitHubHandler
      *
      * @throws \Exception If API request fails
      *
-     * @psalm-return array<array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}>
+     * @psalm-return array<
+     *     array{
+     *         id: mixed,
+     *         name: mixed,
+     *         full_name: mixed,
+     *         owner: mixed,
+     *         owner_type: mixed,
+     *         private: mixed,
+     *         description: ''|mixed,
+     *         default_branch: 'main'|mixed,
+     *         url: mixed,
+     *         api_url: mixed
+     *     }
+     * >
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
@@ -905,7 +918,16 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return array{id: mixed|null, name: mixed|string, full_name: mixed|string, owner: mixed|string, private: false|mixed, description: ''|mixed, default_branch: 'main'|mixed, url: ''|mixed}
+     * @psalm-return array{
+     *     id: mixed|null,
+     *     name: mixed|string,
+     *     full_name: mixed|string,
+     *     owner: mixed|string,
+     *     private: false|mixed,
+     *     description: ''|mixed,
+     *     default_branch: 'main'|mixed,
+     *     url: ''|mixed
+     * }
      */
     public function getRepositoryInfo(string $owner, string $repo): array
     {
@@ -1059,11 +1081,14 @@ class GitHubHandler
 
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
-                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', or path '{$path}' may not exist or you may not have access";
+                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', "
+                            ."or path '{$path}' may not exist or you may not have access";
                     } else if ($statusCode === 403) {
-                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' or the branch '{$branch}' is protected";
+                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' "
+                            ."or the branch '{$branch}' is protected";
                     } else if ($statusCode === 422) {
-                        $errorMessage = "Validation Error - {$errorMessage}. Check that the branch '{$branch}' exists and the path '{$path}' is valid";
+                        $errorMessage = "Validation Error - {$errorMessage}. "
+                            ."Check that the branch '{$branch}' exists and the path '{$path}' is valid";
                     }
                 }
             }

@@ -372,6 +372,7 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // ✅ AUTOWIRED: FileService (all params now have correct types after removing RegisterMapper from constructor).
         // ✅ AUTOWIRED: SaveObject (ArrayLoader has default empty array, all other params type-hinted).
         // NOTE: DeleteObject can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.

@@ -53,6 +53,20 @@ class ChunkMapper extends QBMapper
 
 
     /**
+     * Public wrapper for findEntities (parent protected method).
+     *
+     * @param IQueryBuilder $query The query builder.
+     *
+     * @return list<Chunk> Array of chunks.
+     */
+    public function findEntitiesPublic(IQueryBuilder $query): array
+    {
+        return parent::findEntities($query);
+
+    }//end findEntitiesPublic()
+
+
+    /**
      * Find chunks by source reference.
      *
      * @param string $sourceType Source type identifier.

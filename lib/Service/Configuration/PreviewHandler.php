@@ -395,7 +395,7 @@ class PreviewHandler
      *
      * @return array Array of changes.
      */
-    private function compareArrays(array $current, array $proposed, string $prefix=''): array
+    public function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
         // Method body will be extracted from ConfigurationService.
         return [];
