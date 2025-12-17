@@ -652,7 +652,9 @@ class SchemaHandler
 
         try {
             // Delegate to search backend.
-            /** @psalm-suppress UndefinedInterfaceMethod - fixMismatchedFields may exist on specific backend implementations */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - fixMismatchedFields may exist on specific backend implementations
+             */
             return $this->searchBackend->fixMismatchedFields($mismatchedFields, $dryRun);
         } catch (Exception $e) {
             $this->logger->error(

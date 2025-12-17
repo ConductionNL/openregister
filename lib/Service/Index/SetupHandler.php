@@ -426,8 +426,7 @@ class SetupHandler
                                 'template'               => '_default',
                                 'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
                                 'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
-                                'actual_error'           => $errorDetails['error_message'] ??
-                                    'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                                'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
                                 'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
                                 'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
                                 'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
@@ -690,7 +689,7 @@ class SetupHandler
                         ],
                     ];
                     return false;
-                }
+                }//end if
 
                 $this->trackStep(
                     stepNumber: 5,
@@ -788,9 +787,7 @@ class SetupHandler
                         'total_steps'               => $this->setupProgress['total_steps'],
                         'solr_host'                 => $this->solrConfig['host'] ?? 'localhost',
                         'solr_port'                 => $this->solrConfig['port'] ?? '8983',
-                        'admin_ui_url'              => 'http://'.
-                            ($this->solrConfig['host'] ?? 'localhost').':'.
-                            ($this->solrConfig['port'] ?? '8983').'/solr/',
+                        'admin_ui_url'              => 'http://'.($this->solrConfig['host'] ?? 'localhost').':'.($this->solrConfig['port'] ?? '8983').'/solr/',
                     ]
                     );
 
@@ -1682,11 +1679,7 @@ class SetupHandler
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
                     throw new Exception(
-                        "SOLR ConfigSet propagation timeout: The configSet was created successfully "
-                        ."but is still propagating across the SOLR cluster. "
-                        ."This is normal in distributed SOLR environments. "
-                        ."Attempted {$attempt} times over {$totalElapsed} seconds. "
-                        ."Please wait 2-5 minutes and try the setup again.",
+                        "SOLR ConfigSet propagation timeout: The configSet was created successfully "."but is still propagating across the SOLR cluster. "."This is normal in distributed SOLR environments. "."Attempted {$attempt} times over {$totalElapsed} seconds. "."Please wait 2-5 minutes and try the setup again.",
                         500,
                         new Exception(json_encode($retryDetails))
                     );

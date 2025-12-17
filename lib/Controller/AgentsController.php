@@ -188,9 +188,9 @@ class AgentsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination parameters.
-            $limit = (int) ($params['_limit'] ?? 50);
+            $limit  = (int) ($params['_limit'] ?? 50);
             $offset = (int) ($params['_offset'] ?? 0);
-            $page = isset($params['_page']) ? (int) $params['_page'] : null;
+            $page   = isset($params['_page']) ? (int) $params['_page'] : null;
 
             // Convert page to offset if provided (page-based pagination).
             if ($page !== null) {
@@ -207,7 +207,7 @@ class AgentsController extends Controller
                     offset: $offset
                 );
             }
-            
+
             // Get all agents (for global/legacy agents without organisation).
             if ($organisationUuid === null) {
                 $agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);

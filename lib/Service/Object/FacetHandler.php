@@ -134,8 +134,8 @@ class FacetHandler
      *
      * @throws \OCP\DB\Exception If database error occurs.
      *
-     * @psalm-param    array<string, mixed> $query
-     * @phpstan-param  array<string, mixed> $query
+     * @psalm-param   array<string, mixed> $query
+     * @phpstan-param array<string, mixed> $query
      *
      * @return array Facet results with intelligent fallback and performance metadata.
      *
@@ -197,10 +197,10 @@ class FacetHandler
      * @param array $baseQuery  Base query filters to apply for context.
      * @param int   $sampleSize Sample size (kept for backward compatibility).
      *
-     * @psalm-param    array<string, mixed> $baseQuery
-     * @psalm-param    int $sampleSize
-     * @phpstan-param  array<string, mixed> $baseQuery
-     * @phpstan-param  int $sampleSize
+     * @psalm-param   array<string, mixed> $baseQuery
+     * @psalm-param   int $sampleSize
+     * @phpstan-param array<string, mixed> $baseQuery
+     * @phpstan-param int $sampleSize
      *
      * @return array Facetable field information.
      *
@@ -261,10 +261,10 @@ class FacetHandler
      * @param bool  $hasFacets Whether facets were requested.
      * @param array $query     The query array.
      *
-     * @psalm-param    bool $hasFacets
-     * @psalm-param    array<string, mixed> $query
-     * @phpstan-param  bool $hasFacets
-     * @phpstan-param  array<string, mixed> $query
+     * @psalm-param   bool $hasFacets
+     * @psalm-param   array<string, mixed> $query
+     * @phpstan-param bool $hasFacets
+     * @phpstan-param array<string, mixed> $query
      *
      * @return int The facet count.
      *

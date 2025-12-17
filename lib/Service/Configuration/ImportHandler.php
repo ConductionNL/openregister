@@ -451,10 +451,7 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate register detected during import from app '%s' (version %s). "
-            ."Register with slug '%s' has multiple entries in the database: %s. "
-            ."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "
-            ."You can identify duplicates by checking registers with the same slug, uuid, or id.",
+            "Duplicate register detected during import from app '%s' (version %s). "."Register with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "."You can identify duplicates by checking registers with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -533,10 +530,7 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate schema detected during import from app '%s' (version %s). "
-            ."Schema with slug '%s' has multiple entries in the database: %s. "
-            ."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "
-            ."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            "Duplicate schema detected during import from app '%s' (version %s). "."Schema with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -713,7 +707,8 @@ class ImportHandler
 
                     // Handle register slug/ID in objectConfiguration (new structure).
                     if (is_array($property['objectConfiguration'] ?? null) === true
-                        && ($property['objectConfiguration']['register'] ?? null) !== null) {
+                        && ($property['objectConfiguration']['register'] ?? null) !== null
+                    ) {
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
@@ -726,8 +721,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '
-                                        .'during schema property import (will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context '.'during schema property import (will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
@@ -738,7 +732,8 @@ class ImportHandler
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
                     if (is_array($property['objectConfiguration'] ?? null) === true
-                        && ($property['objectConfiguration']['schema'] ?? null) !== null) {
+                        && ($property['objectConfiguration']['schema'] ?? null) !== null
+                    ) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
                         if (empty($schemaSlug) === false) {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
@@ -752,8 +747,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
                                         sprintf(
-                                            'Schema with slug %s not found in current organisation context '
-                                            .'during schema property import (will be resolved after schemas are imported).',
+                                            'Schema with slug %s not found in current organisation context '.'during schema property import (will be resolved after schemas are imported).',
                                             $schemaSlug
                                         )
                                     );
@@ -794,9 +788,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '
-                                        .'during array items schema property import '
-                                        .'(will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context '.'during array items schema property import '.'(will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
@@ -823,9 +815,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
                                         sprintf(
-                                            'Schema with slug %s not found in current organisation context '
-                                            .'during array items schema property import '
-                                            .'(will be resolved after schemas are imported).',
+                                            'Schema with slug %s not found in current organisation context '.'during array items schema property import '.'(will be resolved after schemas are imported).',
                                             $schemaSlug
                                         )
                                     );
@@ -939,9 +929,7 @@ class ImportHandler
         // ⚠️ CRITICAL: Configuration entity is required for proper tracking.
         if ($configuration === null) {
             throw new Exception(
-                'importFromJson must be called with a Configuration entity. '
-                .'Direct imports without a Configuration are not allowed to ensure proper entity tracking. '
-                .'Please create a Configuration entity first before importing.'
+                'importFromJson must be called with a Configuration entity. '.'Direct imports without a Configuration are not allowed to ensure proper entity tracking. '.'Please create a Configuration entity first before importing.'
             );
         }
 
@@ -1102,8 +1090,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Schema with slug %s not found in current organisation context '
-                                        .'during register import (will be created if defined in import).',
+                                        'Schema with slug %s not found in current organisation context '.'during register import (will be created if defined in import).',
                                         $schemaSlug
                                     )
                                 );
@@ -1364,8 +1351,7 @@ class ImportHandler
 
                 // Standard OAS properties from info section.
                 $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-                $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description']
-                    ?? "Configuration imported by application {$appId}";
+                $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}";
 
                 // OpenRegister-specific properties.
                 $type = $xOpenregister['type'] ?? $data['type'] ?? 'app';
@@ -1688,8 +1674,7 @@ class ImportHandler
 
             // Standard OAS properties from info section.
             $title       = $info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}";
-            $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description']
-                ?? "Imported configuration for application {$appId}";
+            $description = $info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Imported configuration for application {$appId}";
 
             // OpenRegister-specific properties.
             $type = $xOpenregister['type'] ?? $data['type'] ?? 'imported';

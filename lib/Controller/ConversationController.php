@@ -309,7 +309,8 @@ class ConversationController extends Controller
                 conversation: $conversation,
                 userId: $this->userId,
                 organisationUuid: $organisationUuid
-            ) === false) {
+            ) === false
+            ) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -406,7 +407,8 @@ class ConversationController extends Controller
                 conversation: $conversation,
                 userId: $this->userId,
                 organisationUuid: $organisationUuid
-            ) === false) {
+            ) === false
+            ) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',

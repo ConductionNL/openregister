@@ -165,7 +165,6 @@ class BulkIndexer
         array $schemaIds=[]
     ): array {
         // $schemaIds is guaranteed to be an array from function signature
-
         // Check backend availability.
         if ($this->searchBackend->isAvailable() === false) {
             return [

@@ -171,7 +171,9 @@ class FolderManagementHandler
 
         // Check if folder ID is already set and valid (not legacy string).
         // Note: Defensive check for legacy data - getFolder() returns string|null, but legacy data might have int IDs.
-        /** @psalm-suppress TypeDoesNotContainType - Legacy data handling */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - Legacy data handling
+         */
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
                 /*
@@ -180,7 +182,9 @@ class FolderManagementHandler
                  * @var int|float $folderProperty
                  */
 
-                /** @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs */
+                /*
+                 * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
+                 */
                 if (is_numeric($folderProperty) === true) {
                     /*
                      * @psalm-suppress InvalidCast - numeric value can be cast to int
@@ -209,7 +213,9 @@ class FolderManagementHandler
         if ($folderNode !== null) {
             // Store the folder ID instead of the path.
             $register->setFolder((string) $folderNode->getId());
+            $this->logger->info('🔹 FolderManagementHandler: About to update register with folder ID');
             $this->registerMapper->update($register);
+            $this->logger->info('🔹 FolderManagementHandler: Register updated with folder ID');
 
             $this->logger->info(message: "Created register folder with ID: ".$folderNode->getId());
 
@@ -224,7 +230,7 @@ class FolderManagementHandler
                     // TODO: Call $this->fileService->shareFolderWithUser(folder: $folderNode, userId: $currentUser->getUID()) once FileSharingHandler is extracted.
                 }
             }
-        }
+        }//end if
 
         return $folderNode;
 
@@ -257,7 +263,9 @@ class FolderManagementHandler
 
         // Check if folder ID is already set and valid (not legacy string).
         // Note: Defensive check for legacy data - getFolder() returns string|null, but legacy data might have int IDs.
-        /** @psalm-suppress TypeDoesNotContainType - Legacy data handling */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - Legacy data handling
+         */
         if ($folderProperty !== null && $folderProperty !== '' && is_string($folderProperty) === false) {
             try {
                 /*
@@ -266,7 +274,9 @@ class FolderManagementHandler
                  * @var int|float $folderProperty
                  */
 
-                /** @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs */
+                /*
+                 * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
+                 */
                 if (is_numeric($folderProperty) === true) {
                     /*
                      * @psalm-suppress InvalidCast - numeric value can be cast to int
@@ -373,7 +383,9 @@ class FolderManagementHandler
         }
 
         // Type-safe casting to int if numeric.
-        /** @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - Legacy numeric folder IDs
+         */
         if (is_numeric($folderProperty) === true) {
             $folderId = (int) $folderProperty;
         } else {

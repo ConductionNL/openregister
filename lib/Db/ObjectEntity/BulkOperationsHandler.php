@@ -538,7 +538,6 @@ class BulkOperationsHandler
         }
 
         // $objectCount is guaranteed to be > 0 because we check empty($sampleObjects) before the loop
-
         $averageObjectSize = $totalSize / $objectCount;
 
         // Use the maximum object size to be extra safe.
@@ -651,7 +650,6 @@ class BulkOperationsHandler
         }
 
         // $objectCount is guaranteed to be > 0 because we check empty($sampleObjects) before the loop
-
         $averageObjectSize = $totalSize / $objectCount;
 
         // Use the maximum object size to be extra safe.
@@ -724,7 +722,9 @@ class BulkOperationsHandler
             foreach ($batch as $objectData) {
                 $rowValues = [];
                 foreach ($columns as $column) {
-                    /** @var string $column */
+                    /*
+                     * @var string $column
+                     */
                     $paramName   = 'param_'.$paramIndex.'_'.$column;
                     $rowValues[] = ':'.$paramName;
 
@@ -740,7 +740,7 @@ class BulkOperationsHandler
                 }
 
                 $valuesClause[] = '('.implode(', ', $rowValues).')';
-            }
+            }//end foreach
 
             // Build the complete INSERT statement for this batch.
             $batchSql = "INSERT INTO {$this->tableName} (".implode(', ', $columns).") VALUES ".implode(', ', $valuesClause);

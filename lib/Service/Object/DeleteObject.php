@@ -129,9 +129,9 @@ class DeleteObject
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.
-        $user = $this->userSession->getUser();
+        $user   = $this->userSession->getUser();
         $userId = $user !== null ? $user->getUID() : 'system';
-        
+
         // Get the active organization from session at time of deletion for audit trail.
         $activeOrganisation = null;
         if ($user !== null) {
@@ -145,16 +145,16 @@ class DeleteObject
                 $activeOrganisation = null;
             }
         }
-        
+
         $deletionData = [
-            'deletedBy' => $userId,
-            'deletedAt' => (new DateTime())->format(DateTime::ATOM),
-            'objectId' => $objectEntity->getUuid(),
+            'deletedBy'    => $userId,
+            'deletedAt'    => (new DateTime())->format(DateTime::ATOM),
+            'objectId'     => $objectEntity->getUuid(),
             'organisation' => $activeOrganisation,
         ];
-        
+
         $objectEntity->setDeleted($deletionData);
-        
+
         // Update the object in database (soft delete - keeps record with deleted metadata).
         /*
          * @psalm-suppress InvalidArgument - ObjectEntity extends Entity
@@ -301,8 +301,8 @@ class DeleteObject
             // TODO: $this->fileService->getObjectFolder($objectEntity);
             // When implemented, uncomment:
             // if ($folder !== null) {
-            //     $folder->delete().
-            //     $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId()).
+            // $folder->delete().
+            // $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId()).
             // }.
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.

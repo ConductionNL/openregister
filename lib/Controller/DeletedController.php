@@ -175,9 +175,9 @@ class DeletedController extends Controller
             // Build query array with filter for deleted objects.
             $query = [
                 '@self.deleted' => 'IS NOT NULL',
-                '_limit' => $params['limit'],
-                '_offset' => $params['offset'],
-                '_order' => $params['sort'],
+                '_limit'        => $params['limit'],
+                '_offset'       => $params['offset'],
+                '_order'        => $params['sort'],
             ];
 
             // Merge any additional filters from request.
@@ -190,11 +190,12 @@ class DeletedController extends Controller
             // Use ObjectService to search for deleted objects with deleted=true to include them.
             $result = $this->objectService->searchObjectsPaginated(
                 query: $query,
-                deleted: true  // This tells the service to include deleted objects in the search
+                deleted: true
+            // This tells the service to include deleted objects in the search
             );
 
             $deletedObjects = $result['results'] ?? [];
-            $total = $result['total'] ?? 0;
+            $total          = $result['total'] ?? 0;
 
             // Calculate pagination.
             $pages = 1;

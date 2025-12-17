@@ -180,16 +180,20 @@ class RegistersController extends Controller
         IAppManager $appManager,
         OasService $oasService
     ) {
+        $this->logger->debug('RegistersController constructor started.');
         parent::__construct(appName: $appName, request: $request);
+        $this->logger->debug('Parent constructor called.');
         $this->configurationService = $configurationService;
-        $this->auditTrailMapper     = $auditTrailMapper;
-        $this->exportService        = $exportService;
-        $this->importService        = $importService;
-        $this->schemaMapper         = $schemaMapper;
-        $this->registerMapper       = $registerMapper;
-        $this->githubService        = $githubService;
-        $this->appManager           = $appManager;
-        $this->oasService           = $oasService;
+        $this->logger->debug('ConfigurationService assigned.');
+        $this->auditTrailMapper = $auditTrailMapper;
+        $this->exportService    = $exportService;
+        $this->importService    = $importService;
+        $this->schemaMapper     = $schemaMapper;
+        $this->registerMapper   = $registerMapper;
+        $this->githubService    = $githubService;
+        $this->appManager       = $appManager;
+        $this->oasService       = $oasService;
+        $this->logger->debug('RegistersController constructor completed.');
 
     }//end __construct()
 
@@ -818,9 +822,7 @@ class RegistersController extends Controller
 
             $message = 'Register OAS published successfully to GitHub';
             if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "
-                    ."GitHub Code Search primarily indexes the default branch, "
-                    ."so this may not appear in search results immediately.";
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "."GitHub Code Search primarily indexes the default branch, "."so this may not appear in search results immediately.";
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }

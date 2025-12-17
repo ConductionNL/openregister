@@ -332,7 +332,7 @@ class RenderObject
      *
      * @param string $fileId The ID of the file
      *
-     * @psalm-return list<string>
+     * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      *
      * @return array List of file tags
@@ -385,8 +385,8 @@ class RenderObject
      *
      * @param ObjectEntity $entity The entity to process.
      *
-     * @psalm-param    ObjectEntity $entity
-     * @phpstan-param  ObjectEntity $entity
+     * @psalm-param   ObjectEntity $entity
+     * @phpstan-param ObjectEntity $entity
      *
      * @return ObjectEntity The entity with hydrated file properties.
      *
@@ -461,8 +461,8 @@ class RenderObject
      *
      * @param array $propertyConfig The property configuration from schema.
      *
-     * @psalm-param    array<string, mixed> $propertyConfig
-     * @phpstan-param  array<string, mixed> $propertyConfig
+     * @psalm-param   array<string, mixed> $propertyConfig
+     * @phpstan-param array<string, mixed> $propertyConfig
      *
      * @return bool True if this is a file property configuration.
      *
@@ -623,7 +623,7 @@ class RenderObject
      *
      * @param mixed $fileId The file ID to retrieve.
      *
-     * @psalm-param mixed $fileId
+     * @psalm-param   mixed $fileId
      * @phpstan-param mixed $fileId
      *
      * @return (int|mixed|null|string|string[])[]|null

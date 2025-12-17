@@ -340,21 +340,15 @@ class GitHubHandler
                 if (stripos($rawError, 'rate limit') !== false) {
                     $token = $this->config->getAppValue('openregister', 'github_api_token', '');
                     if (empty($token) === true) {
-                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). '
-                            .'Please configure a GitHub API token in Settings to increase to 5,000 requests/hour '
-                            .'(30/minute for Code Search).';
+                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). '.'Please configure a GitHub API token in Settings to increase to 5,000 requests/hour '.'(30/minute for Code Search).';
                     } else {
-                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). '
-                            .'Please wait a few minutes before trying again. '
-                            .'The discovery search makes multiple API calls to find configurations.';
+                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). '.'Please wait a few minutes before trying again. '.'The discovery search makes multiple API calls to find configurations.';
                     }
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
 
             case 401:
-                return 'GitHub API authentication failed. '
-                    .'Please check your API token in Settings or remove it to use unauthenticated access '
-                    .'(60 requests/hour limit).';
+                return 'GitHub API authentication failed. '.'Please check your API token in Settings or remove it to use unauthenticated access '.'(60 requests/hour limit).';
 
             case 404:
                 return 'Repository or resource not found on GitHub. Please check the repository exists and is public.';
@@ -1081,17 +1075,14 @@ class GitHubHandler
 
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
-                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', "
-                            ."or path '{$path}' may not exist or you may not have access";
+                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', "."or path '{$path}' may not exist or you may not have access";
                     } else if ($statusCode === 403) {
-                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' "
-                            ."or the branch '{$branch}' is protected";
+                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' "."or the branch '{$branch}' is protected";
                     } else if ($statusCode === 422) {
-                        $errorMessage = "Validation Error - {$errorMessage}. "
-                            ."Check that the branch '{$branch}' exists and the path '{$path}' is valid";
+                        $errorMessage = "Validation Error - {$errorMessage}. "."Check that the branch '{$branch}' exists and the path '{$path}' is valid";
                     }
                 }
-            }
+            }//end if
 
             $this->logger->error(
                 'GitHub API publish failed',

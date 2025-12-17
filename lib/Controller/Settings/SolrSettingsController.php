@@ -46,10 +46,10 @@ class SolrSettingsController extends Controller
      *
      * @param string             $appName         The app name.
      * @param IRequest           $request         The request.
-     * @param SettingsService     $settingsService Settings service.
-     * @param IndexService        $indexService    Index service.
-     * @param ContainerInterface  $container      Container for service access.
-     * @param LoggerInterface     $logger          Logger.
+     * @param SettingsService    $settingsService Settings service.
+     * @param IndexService       $indexService    Index service.
+     * @param ContainerInterface $container       Container for service access.
+     * @param LoggerInterface    $logger          Logger.
      */
     public function __construct(
         $appName,

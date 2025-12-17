@@ -371,11 +371,12 @@ class FileService
         DocumentProcessingHandler $documentProcessingHandler,
         FilePublishingHandler $filePublishingHandler
     ) {
+        $this->logger = $logger;
+        $this->logger->debug('FileService constructor started.');
         $this->config       = $config;
         $this->fileMapper   = $fileMapper;
         $this->groupManager = $groupManager;
-        $this->logger       = $logger;
-        $this->objectEntityMapper    = $objectEntityMapper;
+        $this->objectEntityMapper = $objectEntityMapper;
         // REMOVED: registerMapper assignment (unused, caused circular dependency).
         $this->rootFolder            = $rootFolder;
         $this->shareManager          = $shareManager;
@@ -398,25 +399,41 @@ class FileService
         $this->filePublishingHandler     = $filePublishingHandler;
 
         // Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
+        $this->logger->debug('About to call folderManagementHandler->setFileService.');
         $this->folderManagementHandler->setFileService($this);
+        $this->logger->debug('Called folderManagementHandler->setFileService.');
 
         // Break circular dependency: UpdateFileHandler needs FileService for utility methods (tags, path extraction).
+        $this->logger->debug('About to call updateFileHandler->setFileService.');
         $this->updateFileHandler->setFileService($this);
+        $this->logger->debug('Called updateFileHandler->setFileService.');
 
         // Break circular dependency: CreateFileHandler needs FileService for sharing and tagging.
+        $this->logger->debug('About to call createFileHandler->setFileService.');
         $this->createFileHandler->setFileService($this);
+        $this->logger->debug('Called createFileHandler->setFileService.');
 
         // Break circular dependency: ReadFileHandler needs FileService for utility methods.
+        $this->logger->debug('About to call readFileHandler->setFileService.');
         $this->readFileHandler->setFileService($this);
+        $this->logger->debug('Called readFileHandler->setFileService.');
 
         // Break circular dependency: FileFormattingHandler needs FileService for utility methods (shares, tags, etc.).
+        $this->logger->debug('About to call fileFormattingHandler->setFileService.');
         $this->fileFormattingHandler->setFileService($this);
+        $this->logger->debug('Called fileFormattingHandler->setFileService.');
 
         // Break circular dependency: DocumentProcessingHandler needs FileService for cross-handler coordination.
+        $this->logger->debug('About to call documentProcessingHandler->setFileService.');
         $this->documentProcessingHandler->setFileService($this);
+        $this->logger->debug('Called documentProcessingHandler->setFileService.');
 
         // Break circular dependency: FilePublishingHandler needs FileService for file operations and utilities.
+        $this->logger->debug('About to call filePublishingHandler->setFileService.');
         $this->filePublishingHandler->setFileService($this);
+        $this->logger->debug('Called filePublishingHandler->setFileService.');
+
+        $this->logger->debug('FileService constructor completed.');
 
     }//end __construct()
 
@@ -554,7 +571,9 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
-        /** @psalm-suppress TypeDoesNotContainType - Function accepts ObjectEntity|string, but callers may always pass ObjectEntity */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - Function accepts ObjectEntity|string, but callers may always pass ObjectEntity
+         */
         if (is_string($objectEntity) === true) {
             /*
              * @psalm-suppress NoValue - guaranteed to return string
@@ -1441,10 +1460,10 @@ class FileService
      * @throws NotFoundException If the folder is not found.
      * @throws DoesNotExistException If the object ID is not found.
      *
-     * @psalm-param    ObjectEntity|string|null $object
-     * @psalm-param    string|int $file
-     * @phpstan-param  ObjectEntity|string|null $object
-     * @phpstan-param  string|int $file
+     * @psalm-param   ObjectEntity|string|null $object
+     * @psalm-param   string|int $file
+     * @phpstan-param ObjectEntity|string|null $object
+     * @phpstan-param string|int $file
      *
      * @psalm-return   File|null
      * @phpstan-return File|null

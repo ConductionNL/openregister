@@ -75,10 +75,10 @@ class TransformationHandler
      * @param array &$objects    Array of objects to transform (passed by reference).
      * @param array $schemaCache Cache of schema objects for validation.
      *
-     * @psalm-param    array<int, array<string, mixed>> &$objects
-     * @psalm-param    array<int|string, Schema> $schemaCache
-     * @phpstan-param  array<int, array<string, mixed>> &$objects
-     * @phpstan-param  array<int|string, Schema> $schemaCache
+     * @psalm-param   array<int, array<string, mixed>> &$objects
+     * @psalm-param   array<int|string, Schema> $schemaCache
+     * @phpstan-param array<int, array<string, mixed>> &$objects
+     * @phpstan-param array<int|string, Schema> $schemaCache
      *
      * @return array Array with 'valid' and 'invalid' keys containing transformed and invalid objects.
      *

@@ -117,7 +117,9 @@ class SearchQueryHandler
                             $current[$part] = [];
                         } else {
                             // Ensure it's an array, reset if not.
-                            /** @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier */
+                            /*
+                             * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
+                             */
                             if (is_array($current[$part]) === false) {
                                 $current[$part] = [];
                             }
@@ -125,7 +127,7 @@ class SearchQueryHandler
 
                         $current = &$current[$part];
                     }
-                }
+                }//end foreach
             } else {
                 // No underscores: use as-is.
                 $fixedParams[$key] = $value;

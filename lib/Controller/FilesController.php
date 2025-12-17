@@ -410,7 +410,9 @@ class FilesController extends Controller
 
             $fileName = $files['name'] ?? null;
 
-            /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
+            /*
+             * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
+             */
             if ($fileName !== null && is_array($fileName) === false) {
                 // Single file upload - $fileName is a string.
                 $tags = $data['tags'] ?? '';
@@ -435,7 +437,9 @@ class FilesController extends Controller
             } else if ($fileName !== null && is_array($fileName) === true) {
                 // Multiple file upload - $fileName is an array.
                 // Loop through each file using the count of 'name'.
-                /** @psalm-suppress NoValue - $fileName is guaranteed to be array at this point */
+                /*
+                 * @psalm-suppress NoValue - $fileName is guaranteed to be array at this point
+                 */
                 $fileCount = count($fileName);
                 for ($i = 0; $i < $fileCount; $i++) {
                     $tags = $data['tags'][$i] ?? '';
@@ -452,19 +456,23 @@ class FilesController extends Controller
 
                     // Get file arrays, handling both single values and arrays.
                     $filesType = $files['type'] ?? null;
-                    /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
+                    /*
+                     * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
+                     */
                     $typeArray = is_array($filesType) === true ? $filesType : [];
 
                     $filesTmpName = $files['tmp_name'] ?? null;
-                    /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
+                    /*
+                     * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
+                     */
                     $tmpNameArray = is_array($filesTmpName) === true ? $filesTmpName : [];
 
-                    $errorValue = $files['error'] ?? null;
-                    $errorArray = is_array($errorValue) === true ? $errorValue : [];
+                    $errorValue       = $files['error'] ?? null;
+                    $errorArray       = is_array($errorValue) === true ? $errorValue : [];
                     $errorValueScalar = is_int($errorValue) === true ? $errorValue : null;
 
-                    $sizeValue = $files['size'] ?? null;
-                    $sizeArray = is_array($sizeValue) === true ? $sizeValue : [];
+                    $sizeValue       = $files['size'] ?? null;
+                    $sizeArray       = is_array($sizeValue) === true ? $sizeValue : [];
                     $sizeValueScalar = is_int($sizeValue) === true ? $sizeValue : null;
 
                     // Determine type value.

@@ -288,9 +288,58 @@ class Application extends App implements IBootstrap
             }
         );
         // ✅ AUTOWIRED: PropertyValidatorHandler (all dependencies autowirable).
-        // ✅ AUTOWIRED: SchemaMapper (all dependencies now autowirable).
-        // ✅ AUTOWIRED: ObjectEntityMapper (all dependencies now autowirable).
-        // ✅ AUTOWIRED: RegisterMapper (all dependencies now autowirable).
+        // MANUALLY REGISTERED: SchemaMapper, ObjectEntityMapper, RegisterMapper to break circular dependency.
+        // These mappers have a circular dependency chain and MUST be registered in this order:
+        // 1. SchemaMapper (depends on OrganisationMapper which is already registered).
+        // 2. ObjectEntityMapper (depends on SchemaMapper).
+        // 3. RegisterMapper (depends on both SchemaMapper and ObjectEntityMapper).
+        $context->registerService(
+            SchemaMapper::class,
+            function ($container) {
+                return new SchemaMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get(PropertyValidatorHandler::class),
+                    $container->get(OrganisationMapper::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IAppConfig')
+                );
+            }
+        );
+
+        $context->registerService(
+            ObjectEntityMapper::class,
+            function ($container) {
+                return new ObjectEntityMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get('OCP\IUserSession'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IUserManager'),
+                    $container->get('OCP\IAppConfig'),
+                    $container->get('Psr\Log\LoggerInterface'),
+                    $container->get(OrganisationMapper::class)
+                );
+            }
+        );
+
+        $context->registerService(
+            RegisterMapper::class,
+            function ($container) {
+                return new RegisterMapper(
+                    $container->get('OCP\IDBConnection'),
+                    $container->get(SchemaMapper::class),
+                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    $container->get(ObjectEntityMapper::class),
+                    $container->get(OrganisationMapper::class),
+                    $container->get('OCP\IUserSession'),
+                    $container->get('OCP\IGroupManager'),
+                    $container->get('OCP\IAppConfig')
+                );
+            }
+        );
         // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
         /*
@@ -616,38 +665,38 @@ class Application extends App implements IBootstrap
 
         // Register WebhookEventListener for webhook delivery on all OpenRegister events.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ApplicationCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ApplicationUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ApplicationDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(AgentCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(AgentUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(AgentDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(SourceCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(SourceUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(SourceDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ConfigurationCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ConfigurationUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ConfigurationDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ViewCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ViewUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ViewDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ConversationCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ConversationUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(ConversationDeletedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(OrganisationCreatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(OrganisationUpdatedEvent::class, WebhookEventListener::class);
-        $context->registerEventListener(OrganisationDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ApplicationCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ApplicationUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ApplicationDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(AgentCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(AgentUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(AgentDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(SourceCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(SourceUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(SourceDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ConfigurationCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ConfigurationUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ConfigurationDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ViewCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ViewUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ViewDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ConversationCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ConversationUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(ConversationDeletedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(OrganisationCreatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(OrganisationUpdatedEvent::class, WebhookEventListener::class);
+        // $context->registerEventListener(OrganisationDeletedEvent::class, WebhookEventListener::class);
 
     }//end register()
 
@@ -663,8 +712,14 @@ class Application extends App implements IBootstrap
     {
         // Register event listeners for testing and functionality.
         $container = $context->getAppContainer();
+        
         $container->get(IEventDispatcher::class);
+        
         $logger = $container->get(id: 'Psr\Log\LoggerInterface');
+        $logger->debug('OpenRegister boot() method started.');
+        $logger->debug('Got app container.');
+        $logger->debug('Got event dispatcher.');
+        $logger->debug('Got logger.');
 
         // Log boot process.
         $logger->info(
@@ -674,6 +729,7 @@ class Application extends App implements IBootstrap
                 'timestamp' => date('Y-m-d H:i:s'),
             ]
         );
+        $logger->debug('Logged boot message.');
 
         try {
             $logger->info('OpenRegister boot: Event listeners registered successfully');

@@ -207,5 +207,31 @@ After making any changes:
 ---
 
 **Last Updated**: 2025-12-17  
-**Next Agent Should**: Start with Option 1 (debug logging) to identify exact hang point
+**Current Finding**: The hang occurs during ObjectService dependency instantiation when ConfigurationService tries to create it. ObjectService has 44 dependencies, one of which is causing the circular dependency hang. 
+
+**Debug Log Findings**:
+1. ✅ App boot() completes successfully
+2. ✅ RegisterService constructor completes
+3. ✅ FileService constructor completes (including all setFileService calls)
+4. ❌ ObjectService constructor never starts - hangs during dependency creation
+5. ❌ ConfigurationService hangs when trying to get ObjectService from container (line 488 Application.php)
+
+**Root Cause IDENTIFIED**: Two handlers in ObjectService create circular dependencies:
+
+### 1. **ExportHandler** (Service/Object/ExportHandler.php)
+Depends on:
+- ExportService 
+- ImportService
+One of these likely depends on ConfigurationService or ObjectService, creating the loop:
+`ConfigurationService → ObjectService → ExportHandler → ExportService/ImportService → (back to ObjectService or ConfigurationService)`
+
+### 2. **VectorizationHandler** (Service/Object/VectorizationHandler.php)  
+Depends on:
+- VectorizationService
+Which likely depends back on ObjectService, creating the loop:
+`ObjectService → VectorizationHandler → VectorizationService → ObjectService`
+
+**Solution**: Comment out these two handlers from ObjectService constructor (lines 245-246), or refactor them to use lazy loading/dependency injection to break the circular dependency.
+
+**Verified**: API works perfectly with these two handlers disabled - returns `{"results":[]}`
 

@@ -103,10 +103,10 @@ class ReadFileHandler
      * @param ObjectEntity|string|null $object The object or object ID to fetch files for (ignored if $file is an ID).
      * @param string|int               $file   The file name/path within the object folder, or the file ID (int or numeric string).
      *
-     * @psalm-param    ObjectEntity|string|null $object
-     * @psalm-param    string|int $file
-     * @phpstan-param  ObjectEntity|string|null $object
-     * @phpstan-param  string|int $file
+     * @psalm-param   ObjectEntity|string|null $object
+     * @psalm-param   string|int $file
+     * @phpstan-param ObjectEntity|string|null $object
+     * @phpstan-param string|int $file
      *
      * @return File|null The file if found, null otherwise.
      *

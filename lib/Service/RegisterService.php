@@ -105,11 +105,13 @@ class RegisterService
         OrganisationService $organisationService,
         LoggerInterface $logger
     ) {
+        $this->logger = $logger;
+        $this->logger->debug('RegisterService constructor started.');
         // Store dependencies for use in service methods.
         $this->registerMapper      = $registerMapper;
         $this->fileService         = $fileService;
         $this->organisationService = $organisationService;
-        $this->logger = $logger;
+        $this->logger->debug('RegisterService constructor completed.');
 
     }//end __construct()
 
@@ -186,18 +188,26 @@ class RegisterService
      */
     public function createFromArray(array $data): Register
     {
+        $this->logger->info('🔹 RegisterService: Starting createFromArray');
+
         // Create the register first.
         $register = $this->registerMapper->createFromArray(object: $data);
+        $this->logger->info('🔹 RegisterService: Register created with ID: '.$register->getId());
 
         // Set organisation from active organisation for multi-tenancy (if not already set).
         if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
+            $this->logger->info('🔹 RegisterService: Getting organisation for new entity');
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
+            $this->logger->info('🔹 RegisterService: Got organisation UUID: '.$organisationUuid);
             $register->setOrganisation($organisationUuid);
             $register = $this->registerMapper->update($register);
+            $this->logger->info('🔹 RegisterService: Updated register with organisation');
         }
 
         // Ensure folder exists for the new register.
+        $this->logger->info('🔹 RegisterService: Calling ensureRegisterFolderExists');
         $this->ensureRegisterFolderExists($register);
+        $this->logger->info('🔹 RegisterService: Folder creation completed');
 
         return $register;
 

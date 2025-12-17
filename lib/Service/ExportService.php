@@ -64,11 +64,11 @@ class ExportService
     private readonly IGroupManager $groupManager;
 
     /**
-     * Object service for optimized object operations
+     * Object entity mapper for direct object operations
      *
-     * @var ObjectService
+     * @var ObjectEntityMapper
      */
-    private readonly ObjectService $objectService;
+    private readonly ObjectEntityMapper $objectEntityMapper;
 
 
     /**
@@ -83,15 +83,16 @@ class ExportService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function __construct(
-        ObjectEntityMapper $_objectEntityMapper,
+        ObjectEntityMapper $objectEntityMapper,
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
-        IGroupManager $groupManager,
-        ObjectService $objectService
+        IGroupManager $groupManager
+        // REFACTORED: Removed ObjectService dependency to break circular dependency.
+        // Now using ObjectEntityMapper directly for searching objects.
     ) {
+        $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
-        $this->objectService  = $objectService;
 
     }//end __construct()
 
@@ -257,8 +258,13 @@ class ExportService
             '_includeDeleted' => false,
         ];
 
-        $objects = $this->objectService->searchObjects(
-            query: $query,
+        // REFACTORED: Use ObjectEntityMapper directly instead of ObjectService to break circular dependency.
+        $objects = $this->objectEntityMapper->findAll(
+            limit: null,
+            offset: null,
+            filters: $query,
+            searchConditions: null,
+            searchParams: null,
             _rbac: true,
         // Apply RBAC filtering.
             _multitenancy: true,

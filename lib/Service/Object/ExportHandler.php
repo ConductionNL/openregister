@@ -325,7 +325,6 @@ class ExportHandler
             // Find object.
             $object = $this->objectEntityMapper->find((int) $objectId);
             // find() throws DoesNotExistException, never returns null.
-
             // Get object directory.
             $objectDir = $this->fileService->getObjectDirectory(object: $object);
 

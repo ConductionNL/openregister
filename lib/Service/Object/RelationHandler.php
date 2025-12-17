@@ -67,10 +67,10 @@ class RelationHandler
      * @param array    &$filters        The filters array (passed by reference).
      * @param callable $findAllCallback Callback to findAll method.
      *
-     * @psalm-param    array<string, mixed> &$filters
-     * @psalm-param    callable(array): array $findAllCallback
-     * @phpstan-param  array<string, mixed> &$filters
-     * @phpstan-param  callable(array): array $findAllCallback
+     * @psalm-param   array<string, mixed> &$filters
+     * @psalm-param   callable(array): array $findAllCallback
+     * @phpstan-param array<string, mixed> &$filters
+     * @phpstan-param callable(array): array $findAllCallback
      *
      * @return array|null Array of IDs or null if no matches.
      *
@@ -193,10 +193,10 @@ class RelationHandler
      * @param array $objects Objects to extract relationships from.
      * @param array $_extend Properties to extend.
      *
-     * @psalm-param    array<int, ObjectEntity> $objects
-     * @psalm-param    array<int, string> $_extend
-     * @phpstan-param  array<int, ObjectEntity> $objects
-     * @phpstan-param  array<int, string> $_extend
+     * @psalm-param   array<int, ObjectEntity> $objects
+     * @psalm-param   array<int, string> $_extend
+     * @phpstan-param array<int, ObjectEntity> $objects
+     * @phpstan-param array<int, string> $_extend
      *
      * @return array Array of unique relationship IDs.
      *

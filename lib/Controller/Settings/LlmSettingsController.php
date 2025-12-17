@@ -80,12 +80,12 @@ class LlmSettingsController extends Controller
      */
     public function getLLMSettings(): JSONResponse
     {
-    try {
-        $data = $this->settingsService->getLLMSettingsOnly();
-        return new JSONResponse(data: $data);
-    } catch (Exception $e) {
-        return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-    }
+        try {
+            $data = $this->settingsService->getLLMSettingsOnly();
+            return new JSONResponse(data: $data);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
 
     }//end getLLMSettings()
 
@@ -551,4 +551,4 @@ class LlmSettingsController extends Controller
     }//end getVectorStats()
 
 
-    }//end class
+}//end class

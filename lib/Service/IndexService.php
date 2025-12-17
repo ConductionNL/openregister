@@ -202,6 +202,7 @@ class IndexService
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
         return $this->searchBackend->indexObject(object: $object, commit: $commit);
+
     }//end indexObject()
 
 
@@ -218,6 +219,7 @@ class IndexService
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
         return $this->searchBackend->deleteObject(objectId: $objectId, commit: $commit);
+
     }//end deleteObject()
 
 
@@ -293,6 +295,7 @@ class IndexService
     public function getObjectCollectionFieldStatus(): array
     {
         return $this->schemaHandler->getCollectionFieldStatus(collection: 'objects');
+
     }//end getObjectCollectionFieldStatus()
 
 
@@ -309,8 +312,9 @@ class IndexService
         $fields = $this->searchBackend->getFields(collection: 'objects');
         return [
             'success' => true,
-            'fields' => $fields,
+            'fields'  => $fields,
         ];
+
     }//end getFieldsConfiguration()
 
 
@@ -683,16 +687,18 @@ class IndexService
     ): array {
         // Map IndexService parameters to SearchBackendInterface parameters.
         // Add pagination and other params to query array.
-        $query['_limit'] = $limit;
+        $query['_limit']  = $limit;
         $query['_offset'] = $offset;
         if (empty($facets) === false) {
             $query['_facets'] = $facets;
         }
+
         if ($collection !== null) {
             $query['_collection'] = $collection;
         }
+
         $query['_includeTotal'] = $includeTotal;
-        
+
         return $this->searchBackend->searchObjectsPaginated(
             query: $query,
             _rbac: true,

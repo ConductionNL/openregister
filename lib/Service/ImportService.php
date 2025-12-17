@@ -152,14 +152,18 @@ class ImportService
     public function __construct(
         ObjectEntityMapper $objectEntityMapper,
         SchemaMapper $schemaMapper,
-        ObjectService $objectService,
+        // REFACTORED: Removed ObjectService dependency to break circular dependency.
+        // Now using SaveObject and SaveObjects handlers directly.
+        \OCA\OpenRegister\Service\Objects\SaveObject $saveHandler,
+        \OCA\OpenRegister\Service\Objects\SaveObjects $saveObjectsHandler,
         LoggerInterface $logger,
         IGroupManager $groupManager,
         IJobList $jobList
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
-        $this->objectService      = $objectService;
+        $this->saveHandler        = $saveHandler;
+        $this->saveObjectsHandler = $saveObjectsHandler;
         $this->logger       = $logger;
         $this->groupManager = $groupManager;
         $this->jobList      = $jobList;
@@ -513,7 +517,7 @@ class ImportService
                     'type'     => 'SchemaNotFoundException',
                 ];
                 continue;
-            }
+            }//end try
 
             // Update debug information with schema properties.
             $schemaProperties = $schema->getProperties();

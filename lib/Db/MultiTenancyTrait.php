@@ -68,6 +68,10 @@ trait MultiTenancyTrait
      */
     protected function getActiveOrganisationUuid(): ?string
     {
+        if (isset($this->logger) === true) {
+            $this->logger->info('🔹 MultiTenancyTrait: getActiveOrganisationUuid called');
+        }
+
         // Get current user.
         if (isset($this->userSession) === false) {
             return null;
@@ -80,8 +84,14 @@ trait MultiTenancyTrait
 
         // Use OrganisationMapper to get active org with automatic fallback to default.
         if (isset($this->organisationMapper) === true) {
-            /** @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper */
+            /*
+             * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
+             */
             $organisationMapper = $this->organisationMapper;
+            if (isset($this->logger) === true) {
+                $this->logger->info('🔹 MultiTenancyTrait: Calling getActiveOrganisationWithFallback for user: '.$user->getUID());
+            }
+
             return $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
         }
 
@@ -103,7 +113,9 @@ trait MultiTenancyTrait
     {
         // Prefer using OrganisationMapper if available.
         if (isset($this->organisationMapper) === true) {
-            /** @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper */
+            /*
+             * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
+             */
             $organisationMapper = $this->organisationMapper;
             return $organisationMapper->getDefaultOrganisationFromConfig();
         }
@@ -155,7 +167,9 @@ trait MultiTenancyTrait
         // If we have OrganisationMapper, get the full hierarchy (active + parents).
         if (isset($this->organisationMapper) === true) {
             try {
-                /** @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper */
+                /*
+                 * @var \OCA\OpenRegister\Db\OrganisationMapper $organisationMapper
+                 */
                 $organisationMapper = $this->organisationMapper;
                 $uuids = $organisationMapper->getOrganisationHierarchy($activeOrgUuid);
                 if (empty($uuids) === false) {

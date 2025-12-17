@@ -76,12 +76,12 @@ class FileSettingsController extends Controller
      */
     public function getFileSettings(): JSONResponse
     {
-    try {
-        $data = $this->settingsService->getFileSettingsOnly();
-        return new JSONResponse(data: $data);
-    } catch (Exception $e) {
-        return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-    }
+        try {
+            $data = $this->settingsService->getFileSettingsOnly();
+            return new JSONResponse(data: $data);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
 
     }//end getFileSettings()
 
@@ -693,4 +693,4 @@ class FileSettingsController extends Controller
     }//end getFileExtractionStats()
 
 
-    }//end class
+}//end class

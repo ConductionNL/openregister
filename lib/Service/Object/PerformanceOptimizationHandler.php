@@ -64,7 +64,7 @@ class PerformanceOptimizationHandler
             // TODO: Implement organisation retrieval.
             // When implemented, uncomment:
             // if ($activeOrganisation !== null) {
-            //     return $activeOrganisation->getUuid().
+            // return $activeOrganisation->getUuid().
             // }.
             return null;
         } catch (Exception $e) {

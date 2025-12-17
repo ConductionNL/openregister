@@ -140,13 +140,13 @@ class ObjectEntityMapper extends QBMapper
 
         // Existing dependencies.
         // $this->databaseJsonService = $mySQLJsonService; // REMOVED: Dead code (never used).
-        $this->eventDispatcher    = $eventDispatcher;
-        $this->userSession        = $userSession;
-        $this->schemaMapper       = $schemaMapper;
-        $this->groupManager       = $groupManager;
-        $this->userManager        = $userManager;
-        $this->appConfig          = $appConfig;
-        $this->logger             = $logger;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->userSession     = $userSession;
+        $this->schemaMapper    = $schemaMapper;
+        $this->groupManager    = $groupManager;
+        $this->userManager     = $userManager;
+        $this->appConfig       = $appConfig;
+        $this->logger          = $logger;
         $this->organisationMapper = $organisationMapper;
 
         // Initialize handlers (no circular dependencies).
@@ -207,52 +207,54 @@ class ObjectEntityMapper extends QBMapper
     {
         try {
             $this->logger->debug('[ObjectEntityMapper] lockObject called', ['uuid' => $uuid, 'lockDuration' => $lockDuration]);
-            
+
             // Get current user from session.
             $user = $this->userSession->getUser();
             $this->logger->debug('[ObjectEntityMapper] Got user from session', ['user' => $user ? $user->getUID() : 'null']);
-            
+
             $userId = $user !== null ? $user->getUID() : 'system';
             $this->logger->debug('[ObjectEntityMapper] User ID determined', ['userId' => $userId]);
-            
+
             // Get the active organization from session at time of lock for audit trail.
             $activeOrganisation = null;
             if ($user !== null) {
                 $activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
             }
-            
+
             // Create lock information as JSON object (locked is a JSON field, not a string).
-            $lockData = json_encode([
-                'userId' => $userId,
-                'lockedAt' => (new DateTime())->format(DateTime::ATOM),
-                'duration' => $lockDuration,
-                'organisation' => $activeOrganisation,
-            ]);
+            $lockData = json_encode(
+                    [
+                        'userId'       => $userId,
+                        'lockedAt'     => (new DateTime())->format(DateTime::ATOM),
+                        'duration'     => $lockDuration,
+                        'organisation' => $activeOrganisation,
+                    ]
+                    );
             $this->logger->debug('[ObjectEntityMapper] Lock data created', ['lockData' => $lockData]);
-            
+
             // Update the object to set the locked field.
             $this->logger->debug('[ObjectEntityMapper] Creating query builder');
             $qb = $this->db->getQueryBuilder();
-            
+
             $this->logger->debug('[ObjectEntityMapper] Building update query');
             $qb->update($this->getTableName())
                 ->set('locked', $qb->createNamedParameter($lockData))
                 ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-                
+
             $this->logger->debug('[ObjectEntityMapper] Executing query');
             $qb->executeStatement();
             $this->logger->debug('[ObjectEntityMapper] Query executed successfully');
-            
+
             // Return lock information.
             $this->logger->debug('[ObjectEntityMapper] Creating return array');
-            
+
             return [
                 'locked' => json_decode($lockData, true),
-                'uuid' => $uuid,
+                'uuid'   => $uuid,
             ];
         } catch (\Exception $e) {
-            throw new Exception("Failed to lock object: " . $e->getMessage());
-        }
+            throw new Exception("Failed to lock object: ".$e->getMessage());
+        }//end try
 
     }//end lockObject()
 
@@ -1001,9 +1003,10 @@ class ObjectEntityMapper extends QBMapper
             $deletedFilter = $filters['@self.deleted'];
             if ($deletedFilter === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull('deleted'));
-            } elseif ($deletedFilter === 'IS NULL') {
+            } else if ($deletedFilter === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
+
             // Additional @self.deleted.* filters can be added here for nested properties
             $hasDeletedFilter = true;
         }
@@ -1106,13 +1109,14 @@ class ObjectEntityMapper extends QBMapper
         // **DELETED FILTER HANDLING**: Check if @self.deleted filter is in query.
         // If yes, include deleted objects and apply the filter. If no, exclude deleted objects.
         $hasDeletedFilter = isset($query['@self.deleted']);
-        $includeDeleted = $hasDeletedFilter;
+        $includeDeleted   = $hasDeletedFilter;
 
         // Pass the entire query array so filters can be applied.
         return $this->findAll(
             limit: $limit,
             offset: $offset,
-            filters: $query,  // Pass full query so filters like @self.deleted are available
+            filters: $query,
+        // Pass full query so filters like @self.deleted are available
             sort: $sort,
             ids: $ids,
             uses: $uses,
@@ -1148,7 +1152,7 @@ class ObjectEntityMapper extends QBMapper
             $deletedFilter = $query['@self.deleted'];
             if ($deletedFilter === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull('deleted'));
-            } elseif ($deletedFilter === 'IS NULL') {
+            } else if ($deletedFilter === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
         } else {
@@ -1298,12 +1302,16 @@ class ObjectEntityMapper extends QBMapper
 
         // Search in the object JSON field for the search term.
         if ($partialMatch === true) {
-            /** @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation
+             */
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         } else {
-            /** @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation */
+            /*
+             * @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation
+             */
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
             );

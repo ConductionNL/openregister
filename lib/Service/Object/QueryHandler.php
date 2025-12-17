@@ -86,10 +86,10 @@ class QueryHandler
      * @param array|null  $ids           Optional array of IDs to filter by.
      * @param string|null $uses          Optional uses parameter.
      *
-     * @psalm-param    array<string, mixed> $query
-     * @psalm-param    array<int, string>|null $ids
-     * @phpstan-param  array<string, mixed> $query
-     * @phpstan-param  array<int, string>|null $ids
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-param   array<int, string>|null $ids
+     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param array<int, string>|null $ids
      *
      * @return int The count of matching objects.
      *
@@ -131,12 +131,12 @@ class QueryHandler
      * @param string|null $uses          Optional uses parameter.
      * @param array|null  $views         Optional view IDs to apply.
      *
-     * @psalm-param    array<string, mixed> $query
-     * @psalm-param    array<int, string>|null $ids
-     * @psalm-param    array<int, string>|null $views
-     * @phpstan-param  array<string, mixed> $query
-     * @phpstan-param  array<int, string>|null $ids
-     * @phpstan-param  array<int, string>|null $views
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-param   array<int, string>|null $ids
+     * @psalm-param   array<int, string>|null $views
+     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param array<int, string>|null $ids
+     * @phpstan-param array<int, string>|null $views
      *
      * @return array|int Array of ObjectEntity objects or count if _count is true.
      *
@@ -269,12 +269,12 @@ class QueryHandler
      * @param string|null $uses          Optional uses parameter.
      * @param array|null  $views         Optional view IDs to apply.
      *
-     * @psalm-param    array<string, mixed> $query
-     * @psalm-param    array<int, string>|null $ids
-     * @psalm-param    array<int, string>|null $views
-     * @phpstan-param  array<string, mixed> $query
-     * @phpstan-param  array<int, string>|null $ids
-     * @phpstan-param  array<int, string>|null $views
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-param   array<int, string>|null $ids
+     * @psalm-param   array<int, string>|null $views
+     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param array<int, string>|null $ids
+     * @phpstan-param array<int, string>|null $views
      *
      * @return array Paginated search results.
      *
@@ -368,10 +368,10 @@ class QueryHandler
      * @param array|null  $ids           Optional array of IDs to filter by.
      * @param string|null $uses          Optional uses parameter.
      *
-     * @psalm-param    array<string, mixed> $query
-     * @psalm-param    array<int, string>|null $ids
-     * @phpstan-param  array<string, mixed> $query
-     * @phpstan-param  array<int, string>|null $ids
+     * @psalm-param   array<string, mixed> $query
+     * @psalm-param   array<int, string>|null $ids
+     * @phpstan-param array<string, mixed> $query
+     * @phpstan-param array<int, string>|null $ids
      *
      * @return array Paginated search results.
      *

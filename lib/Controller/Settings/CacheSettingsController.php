@@ -76,12 +76,12 @@ class CacheSettingsController extends Controller
      */
     public function getCacheStats(): JSONResponse
     {
-    try {
-        $result = $this->settingsService->getCacheStats();
-        return new JSONResponse(data: $result);
-    } catch (Exception $e) {
-        return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-    }
+        try {
+            $result = $this->settingsService->getCacheStats();
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
 
     }//end getCacheStats()
 
@@ -195,4 +195,4 @@ class CacheSettingsController extends Controller
     }//end clearSpecificCollection()
 
 
-    }//end class
+}//end class
