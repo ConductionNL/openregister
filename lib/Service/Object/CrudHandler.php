@@ -101,7 +101,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper search logic
+            // TODO: Implement proper search logic.
             $result = ['results' => [], 'total' => 0];
             // $this->objectEntityMapper->searchObjectsPaginated(
             // query: $query,
@@ -159,7 +159,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper find logic
+            // TODO: Implement proper find logic.
             $object = null;
             // $this->objectEntityMapper->find(
             // id: $objectId,
@@ -220,7 +220,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper save logic
+            // TODO: Implement proper save logic.
             $object = null;
             // $this->objectEntityMapper->saveObject(
             // objectId: null,
@@ -280,7 +280,7 @@ class CrudHandler
         );
 
         try {
-            // TODO: Implement proper save logic
+            // TODO: Implement proper save logic.
             $object = null;
             // $this->objectEntityMapper->saveObject(
             // objectId: $objectId,
@@ -409,8 +409,8 @@ class CrudHandler
             // $this->objectEntityMapper->deleteObject(
             // uuid: $objectId,
             // _rbac: $rbac,
-            // _multitenancy: $multi
-            // );
+            // _multitenancy: $multi.
+            // );.
             $this->logger->info(
                 message: '[CrudHandler] Object deleted',
                 context: ['object_id' => $objectId]

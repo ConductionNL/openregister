@@ -410,6 +410,7 @@ class FilesController extends Controller
 
             $fileName = $files['name'] ?? null;
 
+            /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
             if ($fileName !== null && is_array($fileName) === false) {
                 // Single file upload - $fileName is a string.
                 $tags = $data['tags'] ?? '';
@@ -448,77 +449,34 @@ class FilesController extends Controller
                      * @var array<int, int>|null $sizeArray
                      */
 
+                    // Get file arrays, handling both single values and arrays.
                     $filesType = $files['type'] ?? null;
-
-                    if (is_array($filesType) === true) {
-                        $typeArray = $filesType;
-                    } else {
-                        $typeArray = null;
-                    }
+                    /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
+                    $typeArray = is_array($filesType) === true ? $filesType : [];
 
                     $filesTmpName = $files['tmp_name'] ?? null;
-
-                    if (is_array($filesTmpName) === true) {
-                        $tmpNameArray = $filesTmpName;
-                    } else {
-                        $tmpNameArray = null;
-                    }
-
-                    // Get error and size arrays, handling both single values and arrays.
-                    /*
-                     * @var int|array<int, int>|null $errorValue
-                     */
+                    /** @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types */
+                    $tmpNameArray = is_array($filesTmpName) === true ? $filesTmpName : [];
 
                     $errorValue = $files['error'] ?? null;
-                    /*
-                     * @var int|array<int, int>|null $sizeValue
-                     */
+                    $errorArray = is_array($errorValue) === true ? $errorValue : [];
+                    $errorValueScalar = is_int($errorValue) === true ? $errorValue : null;
 
                     $sizeValue = $files['size'] ?? null;
-
-                    if (is_array($errorValue) === true) {
-                        $errorArray = $errorValue;
-                    } else {
-                        $errorArray = null;
-                    }
-
-                    if (is_array($sizeValue) === true) {
-                        $sizeArray = $sizeValue;
-                    } else {
-                        $sizeArray = null;
-                    }
+                    $sizeArray = is_array($sizeValue) === true ? $sizeValue : [];
+                    $sizeValueScalar = is_int($sizeValue) === true ? $sizeValue : null;
 
                     // Determine type value.
-                    $typeValue = '';
-
-                    if ($typeArray !== null && isset($typeArray[$i]) === true) {
-                        $typeValue = $typeArray[$i];
-                    }
+                    $typeValue = $typeArray[$i] ?? '';
 
                     // Determine tmp_name value.
-                    $tmpNameValue = '';
-
-                    if ($tmpNameArray !== null && isset($tmpNameArray[$i]) === true) {
-                        $tmpNameValue = $tmpNameArray[$i];
-                    }
+                    $tmpNameValue = $tmpNameArray[$i] ?? '';
 
                     // Determine error value.
-                    $errorValueFinal = UPLOAD_ERR_NO_FILE;
-
-                    if ($errorArray !== null && isset($errorArray[$i]) === true) {
-                        $errorValueFinal = $errorArray[$i];
-                    } else if (is_int($errorValue) === true) {
-                        $errorValueFinal = $errorValue;
-                    }
+                    $errorValueFinal = $errorArray[$i] ?? $errorValueScalar ?? UPLOAD_ERR_NO_FILE;
 
                     // Determine size value.
-                    $sizeValueFinal = 0;
-
-                    if ($sizeArray !== null && isset($sizeArray[$i]) === true) {
-                        $sizeValueFinal = $sizeArray[$i];
-                    } else if (is_int($sizeValue) === true) {
-                        $sizeValueFinal = $sizeValue;
-                    }
+                    $sizeValueFinal = $sizeArray[$i] ?? $sizeValueScalar ?? 0;
 
                     $uploadedFiles[] = [
                         'name'     => $fileName[$i] ?? '',

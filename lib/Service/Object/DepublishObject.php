@@ -75,7 +75,7 @@ class DepublishObject
          * @psalm-suppress TypeDoesNotContainNull - find() throws DoesNotExistException, never returns null
          */
 
-        // find() throws DoesNotExistException, never returns null
+        // find() throws DoesNotExistException, never returns null.
 
         // Set depublication date to now if not specified.
         $date = $date ?? new DateTime();

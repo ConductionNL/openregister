@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  *
  * @psalm-suppress UnusedClass

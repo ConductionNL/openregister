@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity\FacetsHandler;
 use OCA\OpenRegister\Db\ObjectEntity\QueryBuilderHandler;
 use OCA\OpenRegister\Db\ObjectEntity\QueryOptimizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
-// REMOVED: CrudHandler and LockingHandler (dead code - never instantiated, create circular dependencies)
+// REMOVED: CrudHandler and LockingHandler (dead code - never instantiated, create circular dependencies).
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -36,7 +36,7 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-// use OCA\OpenRegister\Service\MySQLJsonService; // REMOVED: Dead code (never used)
+// use OCA\OpenRegister\Service\MySQLJsonService; // REMOVED: Dead code (never used).
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -95,7 +95,7 @@ class ObjectEntityMapper extends QBMapper
     // Existing dependencies (kept from original).
     private OrganisationMapper $organisationMapper;
 
-    // REMOVED: MySQLJsonService $databaseJsonService - Never used (dead code)
+    // REMOVED: MySQLJsonService $databaseJsonService - Never used (dead code).
     private IEventDispatcher $eventDispatcher;
 
     private IUserSession $userSession;
@@ -126,7 +126,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        // MySQLJsonService $mySQLJsonService, // REMOVED: Dead code (never used)
+        // MySQLJsonService $mySQLJsonService, // REMOVED: Dead code (never used).
         IEventDispatcher $eventDispatcher,
         IUserSession $userSession,
         SchemaMapper $schemaMapper,
@@ -139,7 +139,7 @@ class ObjectEntityMapper extends QBMapper
         parent::__construct($db, 'openregister_objects');
 
         // Existing dependencies.
-        // $this->databaseJsonService = $mySQLJsonService; // REMOVED: Dead code (never used)
+        // $this->databaseJsonService = $mySQLJsonService; // REMOVED: Dead code (never used).
         $this->eventDispatcher    = $eventDispatcher;
         $this->userSession        = $userSession;
         $this->schemaMapper       = $schemaMapper;
@@ -215,11 +215,18 @@ class ObjectEntityMapper extends QBMapper
             $userId = $user !== null ? $user->getUID() : 'system';
             $this->logger->debug('[ObjectEntityMapper] User ID determined', ['userId' => $userId]);
             
+            // Get the active organization from session at time of lock for audit trail.
+            $activeOrganisation = null;
+            if ($user !== null) {
+                $activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+            }
+            
             // Create lock information as JSON object (locked is a JSON field, not a string).
             $lockData = json_encode([
                 'userId' => $userId,
                 'lockedAt' => (new \DateTime())->format(\DateTime::ATOM),
                 'duration' => $lockDuration,
+                'organisation' => $activeOrganisation,
             ]);
             $this->logger->debug('[ObjectEntityMapper] Lock data created', ['lockData' => $lockData]);
             

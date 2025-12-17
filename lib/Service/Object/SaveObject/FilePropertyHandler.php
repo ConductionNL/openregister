@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -574,7 +574,7 @@ class FilePropertyHandler
         // content: $fileData['content'],
         // share: $autoPublish,
         // tags: $autoTags.
-        // );
+        // );.
         return $file->getId();
 
     }//end processStringFileInput()
@@ -623,15 +623,16 @@ class FilePropertyHandler
             try {
                 $existingFile = null;
                 // TODO->getFile(object: $objectEntity, file: $fileId).
-                if ($existingFile !== null) {
-                    // Validate the existing file against current config.
-                    $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+                // When implemented, uncomment:
+                // if ($existingFile !== null) {
+                // Validate the existing file against current config.
+                // $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index).
 
-                    // Apply auto tags if needed (non-destructive - adds to existing tags).
-                    $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+                // Apply auto tags if needed (non-destructive - adds to existing tags).
+                // $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index).
 
-                    return $fileId;
-                }
+                // return $fileId.
+                // }.
             } catch (Exception $e) {
                 // Existing file not accessible, continue to create new one.
             }
@@ -838,7 +839,7 @@ class FilePropertyHandler
                 // content: null,
                 // Don't change content.
                 // tags: $allTags.
-                // );
+                // );.
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.
             }

@@ -131,7 +131,7 @@ class OasService
         // Step 4: Get all schemas using unique schema IDs and index by schema ID.
         // Indexing by ID allows fast lookup when processing registers.
         $schemas=[];
-        foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) ?? [] as $schema) {
+        foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) as $schema) {
             $schemas[$schema->getId()] = $schema;
         }
 
@@ -168,7 +168,7 @@ class OasService
         $this->oas['tags'] = [];
 
         // Step 8: Add schemas to components and create tags for each schema.
-        foreach ($schemas ?? [] as $schema) {
+        foreach ($schemas as $schema) {
             // Step 8a: Ensure schema has valid title (skip if empty).
             $schemaTitle = $schema->getTitle();
             if (empty($schemaTitle) === true) {
@@ -367,7 +367,7 @@ class OasService
         ];
 
         // Copy only valid OpenAPI schema keywords.
-        foreach ($allowedSchemaKeywords ?? [] as $keyword) {
+        foreach ($allowedSchemaKeywords as $keyword) {
             if (($propertyDefinition[$keyword] ?? null) !== null) {
                 $cleanDef[$keyword] = $propertyDefinition[$keyword];
             }

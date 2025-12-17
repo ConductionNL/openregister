@@ -67,6 +67,28 @@ class ObjectTextExtractionJob extends QueuedJob
 
 
     /**
+     * Constructor
+     *
+     * Initializes the background job with required services via dependency injection.
+     *
+     * @param IAppConfig             $config                Configuration service
+     * @param LoggerInterface        $logger                Logger service
+     * @param TextExtractionService  $textExtractionService Text extraction service
+     *
+     * @return void
+     */
+    public function __construct(
+        IAppConfig $config,
+        LoggerInterface $logger,
+        TextExtractionService $textExtractionService
+    ) {
+        $this->config = $config;
+        $this->logger = $logger;
+        $this->textExtractionService = $textExtractionService;
+    }
+
+
+    /**
      * Run the background job
      *
      * Extracts text from the specified object and stores it in the database.

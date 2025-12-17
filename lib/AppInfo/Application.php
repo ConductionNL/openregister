@@ -188,7 +188,7 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadH
  * @package  OCA\OpenRegister\AppInfo
  *
  * @author  Nextcloud Dev Team
- * @license AGPL-3.0-or-later
+ * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  */
@@ -283,7 +283,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get('Psr\Log\LoggerInterface'),
                     null
-                // SettingsService - null to break circular dependency
+                // SettingsService - null to break circular dependency.
                 );
             }
         );
@@ -367,7 +367,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IGroupManager'),
                     $container->get('Psr\Log\LoggerInterface'),
                     null
-                // FileService - null to break circular dependency
+                // FileService - null to break circular dependency.
                 );
             }
         );
@@ -518,16 +518,16 @@ class Application extends App implements IBootstrap
         // SolrQueryExecutor, SolrFacetProcessor, SolrSchemaManager, and SolrBackend
         // can all be autowired (only type-hinted parameters).
         // Nextcloud will automatically resolve them via dependency injection.
-        // Register SearchBackendInterface - dynamically select backend from configuration
+        // Register SearchBackendInterface - dynamically select backend from configuration.
         $context->registerService(
             \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
             function ($container) {
-                // Read backend configuration from settings
+                // Read backend configuration from settings.
                 $settingsService = $container->get(SettingsService::class);
                 $backendConfig   = $settingsService->getSearchBackendConfig();
                 $activeBackend   = $backendConfig['active'] ?? 'solr';
 
-                // Select backend based on configuration
+                // Select backend based on configuration.
                 switch ($activeBackend) {
                     case 'elasticsearch':
                         return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);

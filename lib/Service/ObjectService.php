@@ -665,13 +665,13 @@ class ObjectService
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
         if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
-            $schemas   = $this->getCachedEntities(ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
+            $schemas   = $this->performanceHandler->getCachedEntities(ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
             $schemas   = array_combine(array_map(fn($schema) => $schema->getId(), $schemas), $schemas);
         }
 
         if (isset($config['extend']) === true && in_array('@self.register', (array) $config['extend'], true) === true && $registers === null) {
             $registerIds = array_unique(array_filter(array_map(fn($object) => $object->getRegister() ?? null, $objects)));
-            $registers   = $this->getCachedEntities(ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
+            $registers   = $this->performanceHandler->getCachedEntities(ids: $registerIds, fallbackFunc: [$this->registerMapper, 'findMultiple']);
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
@@ -2512,4 +2512,31 @@ class ObjectService
     // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS
     // =========================================================================
+
+
+    /**
+     * Merge objects using MergeHandler.
+     *
+     * @param string $sourceObjectId Source object ID
+     * @param array  $mergeData      Merge data
+     *
+     * @return array Merge result
+     */
+    public function mergeObjects(string $sourceObjectId, array $mergeData): array
+    {
+        return $this->mergeHandler->mergeObjects(sourceObjectId: $sourceObjectId, mergeData: $mergeData);
+    }//end mergeObjects()
+
+
+    /**
+     * Validate objects by schema using ValidationHandler.
+     *
+     * @param int $schemaId Schema ID
+     *
+     * @return array Validation result
+     */
+    public function validateObjectsBySchema(int $schemaId): array
+    {
+        return $this->validationHandler->validateObjectsBySchema(schemaId: $schemaId, saveCallback: [$this, 'saveObject']);
+    }//end validateObjectsBySchema()
 }//end class

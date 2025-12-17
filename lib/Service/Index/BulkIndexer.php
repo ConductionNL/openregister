@@ -164,10 +164,7 @@ class BulkIndexer
         array $solrFieldTypes=[],
         array $schemaIds=[]
     ): array {
-        // Ensure schemaIds is always an array.
-        if ($schemaIds === null) {
-            $schemaIds = [];
-        }
+        // $schemaIds is guaranteed to be an array from function signature
 
         // Check backend availability.
         if ($this->searchBackend->isAvailable() === false) {

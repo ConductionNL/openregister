@@ -113,8 +113,14 @@ class SearchQueryHandler
                         $current[$part] = $value;
                     } else {
                         // Intermediate part: create nested array if needed.
-                        if (isset($current[$part]) === false || is_array($current[$part]) === false) {
+                        if (isset($current[$part]) === false) {
                             $current[$part] = [];
+                        } else {
+                            // Ensure it's an array, reset if not.
+                            /** @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier */
+                            if (is_array($current[$part]) === false) {
+                                $current[$part] = [];
+                            }
                         }
 
                         $current = &$current[$part];
@@ -531,8 +537,8 @@ class SearchQueryHandler
                 // resultCount: $resultCount,
                 // totalResults: $totalResults,
                 // responseTime: $executionTime,
-                // executionType: $executionType
-                // );
+                // executionType: $executionType.
+                // );.
             }
         } catch (Exception $e) {
             // Log the error but don't fail the request.

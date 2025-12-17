@@ -26,6 +26,7 @@ use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\FileValidationHandler;
 
 /**
  * Handles file retrieval operations with Single Responsibility.
@@ -59,6 +60,7 @@ class ReadFileHandler
      *
      * @param IRootFolder             $rootFolder              Root folder for file operations.
      * @param FolderManagementHandler $folderManagementHandler Folder management handler.
+     * @param FileValidationHandler   $fileValidationHandler   File validation handler.
      * @param FileOwnershipHandler    $fileOwnershipHandler    File ownership handler.
      * @param ObjectEntityMapper      $objectEntityMapper      Object entity mapper.
      * @param LoggerInterface         $logger                  Logger for logging operations.
@@ -66,6 +68,7 @@ class ReadFileHandler
     public function __construct(
         private readonly IRootFolder $rootFolder,
         private readonly FolderManagementHandler $folderManagementHandler,
+        private readonly FileValidationHandler $fileValidationHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
@@ -132,7 +135,7 @@ class ReadFileHandler
                 if (empty($nodes) === false && $nodes[0] instanceof File) {
                     $fileNode = $nodes[0];
                     // Check ownership for NextCloud rights issues.
-                    $this->fileOwnershipHandler->checkOwnership($fileNode);
+                    $this->fileValidationHandler->checkOwnership($fileNode);
                     return $fileNode;
                 }
             } catch (Exception $e) {
@@ -156,7 +159,7 @@ class ReadFileHandler
                 $fileNode = $folder->get($fileName);
 
                 // Check ownership for NextCloud rights issues.
-                $this->fileOwnershipHandler->checkOwnership($fileNode);
+                $this->fileValidationHandler->checkOwnership($fileNode);
 
                 return $fileNode;
             } catch (NotFoundException) {
@@ -165,7 +168,7 @@ class ReadFileHandler
                     $fileNode = $folder->get($filePath);
 
                     // Check ownership for NextCloud rights issues.
-                    $this->fileOwnershipHandler->checkOwnership($fileNode);
+                    $this->fileValidationHandler->checkOwnership($fileNode);
 
                     return $fileNode;
                 } catch (NotFoundException) {
@@ -214,7 +217,7 @@ class ReadFileHandler
             }
 
             // Check ownership for NextCloud rights issues.
-            $this->fileOwnershipHandler->checkOwnership($node);
+            $this->fileValidationHandler->checkOwnership($node);
 
             return $node;
         } catch (Exception $e) {

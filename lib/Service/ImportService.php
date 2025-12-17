@@ -491,7 +491,17 @@ class ImportService
             ];
 
             // Skip sheets that don't correspond to a valid schema.
-            if ($schema === null) {
+            // Note: getSchemaBySlug() returns Schema (non-nullable) or throws exception.
+            try {
+                $schema = $this->getSchemaBySlug($schemaSlug);
+                // Schema is guaranteed to be non-null if we reach here (exception thrown otherwise)
+                // Add schema information to the summary.
+                $summary[$schemaSlug]['schema'] = [
+                    'id'    => $schema->getId(),
+                    'title' => $schema->getTitle(),
+                    'slug'  => $schema->getSlug(),
+                ];
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 $summary[$schemaSlug]['errors'][] = [
                     'sheet'    => $schemaSlug,
                     'register' => [
@@ -504,13 +514,6 @@ class ImportService
                 ];
                 continue;
             }
-
-            // Add schema information to the summary.
-            $summary[$schemaSlug]['schema'] = [
-                'id'    => $schema->getId(),
-                'title' => $schema->getTitle(),
-                'slug'  => $schema->getSlug(),
-            ];
 
             // Update debug information with schema properties.
             $schemaProperties = $schema->getProperties();
@@ -1046,7 +1049,7 @@ class ImportService
                 // Note: Other @ columns that don't start with @self. are ignored.
             } else {
                 // Regular properties - transform based on schema if needed.
-                if (is_array($schemaProperties) === TRUE && ($schemaProperties[$key] ?? null) !== null) {
+                if (is_array($schemaProperties) === true && ($schemaProperties[$key] ?? null) !== null) {
                     $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
                 } else {
                     $objectData[$key] = $value;

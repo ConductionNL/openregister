@@ -52,7 +52,7 @@ use Symfony\Component\Uid\Uuid;
  * @category  Service
  * @package   OCA\OpenRegister\Service\Objects
  * @author    Conduction b.v. <info@conduction.nl>
- * @license   AGPL-3.0-or-later
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/OpenCatalogi/OpenRegister
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
@@ -763,7 +763,7 @@ class RenderObject
 
             $filteredData = [];
             foreach ($fields as $field) {
-                if (is_array($objectData) === TRUE && ($objectData[$field] ?? null) !== null) {
+                if (is_array($objectData) === true && ($objectData[$field] ?? null) !== null) {
                     $filteredData[$field] = $objectData[$field];
                 }
             }
@@ -775,7 +775,7 @@ class RenderObject
         // Apply filters if specified.
         if (empty($filter) === false) {
             foreach ($filter as $key => $value) {
-                if (is_array($objectData) === TRUE && ($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
+                if (is_array($objectData) === true && ($objectData[$key] ?? null) !== null && $objectData[$key] !== $value) {
                     $entity->setObject([]);
                     return $entity;
                 }
@@ -785,7 +785,7 @@ class RenderObject
         // Apply unset - remove specified properties from the response.
         if (empty($unset) === false) {
             foreach ($unset as $property) {
-                if (is_array($objectData) === TRUE && ($objectData[$property] ?? null) !== null) {
+                if (is_array($objectData) === true && ($objectData[$property] ?? null) !== null) {
                     unset($objectData[$property]);
                 }
             }
@@ -1358,7 +1358,7 @@ class RenderObject
     private function removeQueryParameters(string $reference): string
     {
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-        if (str_contains($reference, '?') === TRUE) {
+        if (str_contains($reference, '?') === true) {
             return substr($reference, 0, strpos($reference, '?'));
         }
 

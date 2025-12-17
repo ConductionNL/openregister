@@ -23,6 +23,7 @@ use Exception;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use Psr\Log\LoggerInterface;
+use Psr\Container\ContainerInterface;
 
 /**
  * Controller for SOLR configuration settings.
@@ -43,15 +44,19 @@ class SolrSettingsController extends Controller
     /**
      * Constructor.
      *
-     * @param string          $appName         The app name.
-     * @param IRequest        $request         The request.
-     * @param SettingsService $settingsService Settings service.
-     * @param LoggerInterface $logger          Logger.
+     * @param string             $appName         The app name.
+     * @param IRequest           $request         The request.
+     * @param SettingsService     $settingsService Settings service.
+     * @param IndexService        $indexService    Index service.
+     * @param ContainerInterface  $container      Container for service access.
+     * @param LoggerInterface     $logger          Logger.
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly SettingsService $settingsService,
+        private readonly IndexService $indexService,
+        private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);

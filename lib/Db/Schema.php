@@ -672,8 +672,8 @@ class Schema extends Entity implements JsonSerializable
             $object['metadata'] = [];
         }
 
-        // Default hardValidation to true if not explicitly provided
-        // This ensures schemas validate by default unless explicitly disabled
+        // Default hardValidation to true if not explicitly provided.
+        // This ensures schemas validate by default unless explicitly disabled.
         if (isset($object['hardValidation']) === false) {
             $object['hardValidation'] = true;
         }
@@ -683,10 +683,10 @@ class Schema extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            // Force hardValidation to be set explicitly to override database default
-            // The database column defaults to 0/false, but we want schemas to validate by default
+            // Force hardValidation to be set explicitly to override database default.
+            // The database column defaults to 0/false, but we want schemas to validate by default.
             if ($key === 'hardValidation') {
-                // Explicitly set the value and mark as updated to ensure it persists to database
+                // Explicitly set the value and mark as updated to ensure it persists to database.
                 $this->hardValidation = (bool) $value;
                 $this->markFieldUpdated('hardValidation');
                 continue;

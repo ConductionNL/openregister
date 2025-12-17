@@ -537,10 +537,7 @@ class BulkOperationsHandler
             $objectCount++;
         }
 
-        // Safety check.
-        if ($objectCount === 0) {
-            return $baseChunkSize;
-        }
+        // $objectCount is guaranteed to be > 0 because we check empty($sampleObjects) before the loop
 
         $averageObjectSize = $totalSize / $objectCount;
 
@@ -653,9 +650,7 @@ class BulkOperationsHandler
             $objectCount++;
         }
 
-        if ($objectCount === 0) {
-            return $baseBatchSize;
-        }
+        // $objectCount is guaranteed to be > 0 because we check empty($sampleObjects) before the loop
 
         $averageObjectSize = $totalSize / $objectCount;
 
@@ -729,6 +724,7 @@ class BulkOperationsHandler
             foreach ($batch as $objectData) {
                 $rowValues = [];
                 foreach ($columns as $column) {
+                    /** @var string $column */
                     $paramName   = 'param_'.$paramIndex.'_'.$column;
                     $rowValues[] = ':'.$paramName;
 
@@ -1151,8 +1147,8 @@ class BulkOperationsHandler
         }
 
         // Handle boolean values.
-        if (is_bool($value) === TRUE) {
-            $value = $value === TRUE ? 1 : 0;
+        if (is_bool($value) === true) {
+            $value = $value === true ? 1 : 0;
         }
 
         // Handle null values.

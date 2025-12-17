@@ -569,33 +569,34 @@ class SaveObject
                     try {
                         $fileNode = null;
                         // TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
-                        if ($fileNode !== null) {
-                            $fileData = null;
-                            // TODO: fileService->formatFile($fileNode);
-                            // IMPORTANT: Object image requires public access.
-                            // If file is not published, auto-publish it.
-                            if (empty($fileData['downloadUrl']) === true) {
-                                $this->logger->warning(
-                                    'File configured as objectImageField is not published. Auto-publishing file.',
-                                    [
-                                        'app'      => 'openregister',
-                                        'fileId'   => $firstElement,
-                                        'objectId' => $entity->getId(),
-                                        'field'    => $config['objectImageField'],
-                                    ]
-                                );
-                                // Publish the file.
-                                null;
-                                // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
-                                // Re-fetch file data after publishing.
-                                $fileData = null;
-                                // TODO: fileService->formatFile($fileNode).
-                            }
-
-                            if (($fileData['downloadUrl'] ?? null) !== null) {
-                                $entity->setImage($fileData['downloadUrl']);
-                            }
-                        }//end if
+                        // When implemented, uncomment:
+                        // if ($fileNode !== null) {
+                        //     $fileData = null;
+                        //     // TODO: fileService->formatFile($fileNode);
+                        //     // IMPORTANT: Object image requires public access.
+                        //     // If file is not published, auto-publish it.
+                        //     if (empty($fileData['downloadUrl']) === true) {
+                        //         $this->logger->warning(
+                        //             'File configured as objectImageField is not published. Auto-publishing file.',
+                        //             [
+                        //                 'app'      => 'openregister',
+                        //                 'fileId'   => $firstElement,
+                        //                 'objectId' => $entity->getId(),
+                        //                 'field'    => $config['objectImageField'],
+                        //             ]
+                        //         );
+                        //         // Publish the file.
+                        //         null;
+                        //         // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
+                        //         // Re-fetch file data after publishing.
+                        //         $fileData = null;
+                        //         // TODO: fileService->formatFile($fileNode).
+                        //     }
+                        //.
+                        //     if (($fileData['downloadUrl'] ?? null) !== null) {
+                        //         $entity->setImage($fileData['downloadUrl']).
+                        //     }
+                        // }//end if.
                     } catch (Exception $e) {
                         // File not found or error loading - skip.
                         $this->logger->error(
@@ -1901,7 +1902,7 @@ class SaveObject
         // operation: $operation,
         // registerId: $registerId,
         // schemaId: $schemaId.
-        // );
+        // );.
         return $savedEntity;
 
     }//end saveObject()

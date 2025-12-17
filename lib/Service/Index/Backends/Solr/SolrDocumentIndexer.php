@@ -110,7 +110,7 @@ class SolrDocumentIndexer
             $document = $this->documentBuilder->createDocument($object);
 
             // Index the document.
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === TRUE ? 'true' : 'false');
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
 
             $this->httpClient->post($url, [$document]);
 
@@ -180,7 +180,7 @@ class SolrDocumentIndexer
 
         if (empty($documents) === false) {
             try {
-                $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === TRUE ? 'true' : 'false');
+                $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
                 $this->httpClient->post($url, $documents);
 
                 $this->logger->info(
@@ -235,7 +235,7 @@ class SolrDocumentIndexer
         }
 
         try {
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === TRUE ? 'true' : 'false');
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
             $this->httpClient->post($url, $documents);
 
             $this->logger->info(
@@ -278,7 +278,7 @@ class SolrDocumentIndexer
         }
 
         try {
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === TRUE ? 'true' : 'false');
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
 
             $deleteCommand = [
                 'delete' => [
@@ -325,11 +325,11 @@ class SolrDocumentIndexer
         $collection = $this->collectionManager->getActiveCollectionName();
 
         if ($collection === null) {
-            return $returnDetails === TRUE ? ['success' => false, 'error' => 'No active collection'] : false;
+            return $returnDetails === true ? ['success' => false, 'error' => 'No active collection'] : false;
         }
 
         try {
-            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === TRUE ? 'true' : 'false');
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.($commit === true ? 'true' : 'false');
 
             $deleteCommand = [
                 'delete' => [
@@ -347,7 +347,7 @@ class SolrDocumentIndexer
                     ]
                     );
 
-            if ($returnDetails === TRUE) {
+            if ($returnDetails === true) {
                 return [
                     'success' => true,
                     'query'   => $query,
@@ -365,7 +365,7 @@ class SolrDocumentIndexer
                     ]
                     );
 
-            if ($returnDetails === TRUE) {
+            if ($returnDetails === true) {
                 return [
                     'success' => false,
                     'error'   => $e->getMessage(),

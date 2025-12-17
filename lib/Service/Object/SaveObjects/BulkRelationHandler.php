@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -80,7 +80,7 @@ class BulkRelationHandler
 
         // Create direct UUID to object reference mapping.
         $objectsByUuid=[];
-        foreach ($preparedObjects ?? [] as $_index => &$object) {
+        foreach ($preparedObjects as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $objectUuid = $selfData['id'] ?? null;
             if ($objectUuid !== null && $objectUuid !== '') {
@@ -89,7 +89,7 @@ class BulkRelationHandler
         }
 
         // Process inverse relations using cached analysis.
-        foreach ($preparedObjects ?? [] as $_index => &$object) {
+        foreach ($preparedObjects as $_index => &$object) {
             $selfData   = $object['@self'] ?? [];
             $schemaId   = $selfData['schema'] ?? null;
             $objectUuid = $selfData['id'] ?? null;
@@ -129,7 +129,7 @@ class BulkRelationHandler
                     }
                 } elseif (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
-                    foreach ($value ?? [] as $relatedUuid) {
+                    foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
                             if (isset($objectsByUuid[$relatedUuid]) === true) {
                                 // @psalm-suppress EmptyArrayAccess - Already checked isset above.
@@ -189,7 +189,7 @@ class BulkRelationHandler
         $objectRelationsMap=[];
 
         // First pass: collect all related object IDs.
-        foreach ($savedObjects ?? [] as $index => $savedObject) {
+        foreach ($savedObjects as $index => $savedObject) {
             $schema = $schemaCache[$savedObject->getSchema()] ?? null;
             if ($schema === null) {
                 continue;
@@ -217,7 +217,7 @@ class BulkRelationHandler
                     $relatedObjectIds = [$objectData[$propertyName]];
                 }
 
-                foreach ($relatedObjectIds ?? [] as $relatedId) {
+                foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
                         $allRelatedIds[] = $relatedId;
                         $objectRelationsMap[$index][] = $relatedId;
@@ -233,7 +233,7 @@ class BulkRelationHandler
 
             try {
                 $relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
-                foreach ($relatedObjects ?? [] as $obj) {
+                foreach ($relatedObjects as $obj) {
                     $relatedObjectsMap[$obj->getUuid()] = $obj;
                 }
             } catch (\Exception $e) {
@@ -243,7 +243,7 @@ class BulkRelationHandler
 
         // Second pass: process inverse relations with proper context.
         $writeBackOperations=[];
-        foreach ($savedObjects ?? [] as $index => $savedObject) {
+        foreach ($savedObjects as $index => $savedObject) {
             if (isset($objectRelationsMap[$index]) === false) {
                 continue;
             }
@@ -269,7 +269,7 @@ class BulkRelationHandler
                     $relatedObjectIds = [$objectData[$propertyName]];
                 }
 
-                foreach ($relatedObjectIds ?? [] as $relatedId) {
+                foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
                         $writeBackOperations[] = [
                             'targetObject' => $relatedObjectsMap[$relatedId],
@@ -313,7 +313,7 @@ class BulkRelationHandler
         // Track objects that need to be updated.
         $objectsToUpdate=[];
 
-        foreach ($writeBackOperations ?? [] as $operation) {
+        foreach ($writeBackOperations as $operation) {
             $targetObject = $operation['targetObject'];
             $sourceUuid = $operation['sourceUuid'];
             $inverseProperty = $operation['inverseProperty'] ?? null;
@@ -395,7 +395,7 @@ class BulkRelationHandler
             $schemaProperties = $schema->getProperties();
         }
 
-        foreach ($data ?? [] as $key => $value) {
+        foreach ($data as $key => $value) {
             $currentPath = $prefix !== '' ? "$prefix.$key" : $key;
 
             // Check if this property is defined in the schema.

@@ -37,7 +37,7 @@ use OCP\Migration\SimpleMigrationStep;
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  */
-class Version1Date20251127000000 extends SimpleMigrationStep
+class Version1Date20251216110000 extends SimpleMigrationStep
 {
 
 

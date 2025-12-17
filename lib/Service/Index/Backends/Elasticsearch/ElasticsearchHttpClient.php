@@ -64,7 +64,7 @@ class ElasticsearchHttpClient
      */
     private function initializeConfig(): void
     {
-        // For now, use hardcoded config since we don't have ES settings in SettingsService yet
+        // For now, use hardcoded config since we don't have ES settings in SettingsService yet.
         $this->config = [
             'enabled' => true,
             'host'    => 'openregister-elasticsearch',

@@ -70,7 +70,7 @@ class ValidationOperationsHandler
      */
     private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
     {
-        return null; // CIRCULAR FIX
+        return null; // CIRCULAR FIX.
 
     }//end getObjectService()
 

@@ -948,7 +948,7 @@ class SaveObjects
         }
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
-        $defaultOrganisation=null; // TODO
+        $defaultOrganisation=null; // TODO.
 
         $now = new DateTime();
         $now->format('c');
@@ -1102,7 +1102,7 @@ class SaveObjects
                                      'published', 'depublished', 'register', 'schema', 'organisation',
                                      'uuid', 'owner', 'created', 'updated', 'id'];
 
-                    foreach ($metadataFields ?? [] as $field) {
+                    foreach ($metadataFields as $field) {
                         unset($businessData[$field]);
                     }
 
@@ -1260,7 +1260,7 @@ class SaveObjects
             $result['invalid'] = array_merge($result['invalid'], $transformationResult['invalid']);
             $result['statistics']['invalid'] += $invalidCount;
             // 'errors' key may not be in statistics type definition, initialize if needed.
-            if (array_key_exists('errors', $result['statistics']) === FALSE) {
+            if (array_key_exists('errors', $result['statistics']) === false) {
                 $result['statistics']['errors'] = 0;
             }
             $result['statistics']['errors'] += $invalidCount;
@@ -1420,7 +1420,7 @@ class SaveObjects
                 }
             }
 
-            foreach ($updatedObjects ?? [] as $updatedObj) {
+            foreach ($updatedObjects as $updatedObj) {
                 if (is_array($updatedObj) === true) {
                     $result['updated'][] = $updatedObj;
                 } else {
@@ -1770,7 +1770,7 @@ class SaveObjects
                                  'published', 'depublished', 'register', 'schema', 'organisation',
                                  'uuid', 'owner', 'created', 'updated', 'id'];
 
-            foreach ($metadataFields ?? [] as $field) {
+            foreach ($metadataFields as $field) {
                     unset($businessData[$field]);
                 }
 
@@ -1850,7 +1850,7 @@ class SaveObjects
 
         // Check custom ID fields.
         $customIdFields = ['id', 'identifier', 'externalId', 'sourceId'];
-        foreach ($customIdFields ?? [] as $field) {
+        foreach ($customIdFields as $field) {
             if (empty($incomingData[$field]) === false && (($existingObjects[$incomingData[$field]] ?? null) !== null)) {
                 return $existingObjects[$incomingData[$field]];
             }
@@ -1886,7 +1886,7 @@ class SaveObjects
 
         // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
         // Instead, create ObjectEntity and hydrate without inserting.
-        foreach ($insertObjects ?? [] as $objData) {
+        foreach ($insertObjects as $objData) {
             $obj = new ObjectEntity();
 
             // CRITICAL FIX: Objects missing UUIDs after save indicate serious database issues - LOG ERROR!
@@ -1908,7 +1908,7 @@ class SaveObjects
         }
 
         // Add all update objects.
-        foreach ($updateObjects ?? [] as $obj) {
+        foreach ($updateObjects as $obj) {
             $savedObjects[] = $obj;
         }
 
@@ -1940,7 +1940,7 @@ class SaveObjects
         $objectRelationsMap=[];
 
         // First pass: collect all related object IDs.
-        foreach ($savedObjects ?? [] as $index => $savedObject) {
+        foreach ($savedObjects as $index => $savedObject) {
             $schema = $schemaCache[$savedObject->getSchema()] ?? null;
             if ($schema === null) {
                 continue;
@@ -1984,7 +1984,7 @@ class SaveObjects
 
             try {
                 $relatedObjects = $this->objectEntityMapper->findAll(ids: $uniqueRelatedIds, includeDeleted: false);
-                foreach ($relatedObjects ?? [] as $obj) {
+                foreach ($relatedObjects as $obj) {
                     $relatedObjectsMap[$obj->getUuid()] = $obj;
                 }
             } catch (Exception $e) {
@@ -1994,7 +1994,7 @@ class SaveObjects
 
         // Second pass: process inverse relations with proper context.
         $writeBackOperations=[];
-        foreach ($savedObjects ?? [] as $index => $savedObject) {
+        foreach ($savedObjects as $index => $savedObject) {
             if (isset($objectRelationsMap[$index]) === false) {
                 continue;
             }
@@ -2058,7 +2058,7 @@ class SaveObjects
         // Track objects that need to be updated.
         $objectsToUpdate=[];
 
-        foreach ($writeBackOperations ?? [] as $operation) {
+        foreach ($writeBackOperations as $operation) {
             $targetObject = $operation['targetObject'];
             $sourceUuid = $operation['sourceUuid'];
             $inverseProperty = $operation['inverseProperty'] ?? null;
@@ -2160,7 +2160,7 @@ class SaveObjects
             $schemaProperties = $schema->getProperties();
         }
 
-        foreach ($data ?? [] as $key => $value) {
+        foreach ($data as $key => $value) {
             // Skip if key is not a string or is empty.
             if (is_string($key) === false || empty($key) === true) {
                 continue;
@@ -2182,7 +2182,7 @@ class SaveObjects
 
                 if ($isArrayOfObjects === true) {
                     // For arrays of objects, scan each item for relations.
-                    foreach ($value ?? [] as $index => $item) {
+                    foreach ($value as $index => $item) {
                         if (is_array($item) === true) {
                             $itemRelations = $this->scanForRelations(
                                     data: $item,
@@ -2197,7 +2197,7 @@ class SaveObjects
                     }
                 } else {
                     // For non-object arrays, check each item.
-                    foreach ($value ?? [] as $index => $item) {
+                    foreach ($value as $index => $item) {
                         if (is_array($item) === true) {
                             // Recursively scan nested arrays/objects.
                             $itemRelations = $this->scanForRelations(

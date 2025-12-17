@@ -94,7 +94,7 @@ class ElasticsearchIndexManager
 
             $success = isset($response['acknowledged']) && $response['acknowledged'] === true;
 
-            if ($success === TRUE) {
+            if ($success === true) {
                 $this->logger->info(
                         '[ElasticsearchIndexManager] Index created',
                         [
@@ -131,7 +131,7 @@ class ElasticsearchIndexManager
 
             $success = isset($response['acknowledged']) && $response['acknowledged'] === true;
 
-            if ($success === TRUE) {
+            if ($success === true) {
                 $this->logger->info(
                         '[ElasticsearchIndexManager] Index deleted',
                         [
@@ -162,7 +162,7 @@ class ElasticsearchIndexManager
      */
     public function ensureIndex(string $indexName): bool
     {
-        if ($this->indexExists($indexName) === TRUE) {
+        if ($this->indexExists($indexName) === true) {
             $this->logger->debug(
                     '[ElasticsearchIndexManager] Index already exists',
                     [

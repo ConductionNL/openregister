@@ -153,7 +153,7 @@ class CreateFileHandler
             $file = $folder->newFile($fileName);
 
             // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-            $this->fileOwnershipHandler->checkOwnership($file);
+            $this->fileValidationHandler->checkOwnership($file);
 
             // Write content to the file.
             $file->putContent($content);

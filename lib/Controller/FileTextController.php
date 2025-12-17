@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Http;
 use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -36,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  *
  * @psalm-suppress UnusedClass
  */
@@ -50,6 +51,7 @@ class FileTextController extends Controller
      * @param string                $appName               App name
      * @param IRequest              $request               Request object
      * @param TextExtractionService $textExtractionService Text extraction service
+     * @param IndexService          $indexService          Index service for file operations
      * @param LoggerInterface       $logger                Logger
      * @param IAppConfig            $config                Application configuration
      */
@@ -57,6 +59,7 @@ class FileTextController extends Controller
         string $appName,
         IRequest $request,
         private readonly TextExtractionService $textExtractionService,
+        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
         private readonly IAppConfig $config
     ) {
@@ -329,7 +332,7 @@ class FileTextController extends Controller
                 $options['chunk_overlap'] = $chunkOverlap;
             }
 
-            $result = $this->solrFileService->processExtractedFiles(limit: $limit, options: $options);
+            $result = $this->indexService->processUnindexedChunks(limit: $limit);
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {

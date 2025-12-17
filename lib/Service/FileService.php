@@ -556,10 +556,7 @@ class FileService
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
-        /*
-         * @psalm-suppress TypeDoesNotContainType
-         */
-
+        /** @psalm-suppress TypeDoesNotContainType - Function accepts ObjectEntity|string, but callers may always pass ObjectEntity */
         if (is_string($objectEntity) === true) {
             /*
              * @psalm-suppress NoValue - guaranteed to return string

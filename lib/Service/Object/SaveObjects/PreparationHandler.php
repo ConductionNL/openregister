@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -40,7 +40,7 @@ use Exception;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -76,7 +76,7 @@ class PreparationHandler
     private readonly SaveObject $saveHandler,
     private readonly SchemaMapper $schemaMapper,
     private readonly BulkValidationHandler $bulkValidationHandler,
-    // REMOVED: private readonly 
+    // REMOVED: private readonly.
     private readonly IUserSession $userSession,
     private readonly LoggerInterface $logger
     ) {
@@ -118,7 +118,7 @@ class PreparationHandler
 
         // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
         $schemaIds=[];
-        foreach ($objects ?? [] as $object) {
+        foreach ($objects as $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
             if (($schemaId !== null) === true && in_array($schemaId, $schemaIds, true) === false) {
@@ -127,7 +127,7 @@ class PreparationHandler
         }
 
         // PERFORMANCE OPTIMIZATION: Load and analyze all schemas with caching.
-        foreach ($schemaIds ?? [] as $schemaId) {
+        foreach ($schemaIds as $schemaId) {
             // Load schema (implementation would use schema mapper).
             // For this extracted handler, we assume schema loading is done externally.
             // This is a placeholder - actual implementation needs schema mapper injection.
@@ -139,7 +139,7 @@ class PreparationHandler
         }
 
         // Pre-process objects using cached schema analysis.
-        foreach ($objects ?? [] as $index => $object) {
+        foreach ($objects as $index => $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
 

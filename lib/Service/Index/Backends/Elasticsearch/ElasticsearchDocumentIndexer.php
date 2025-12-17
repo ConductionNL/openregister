@@ -85,7 +85,7 @@ class ElasticsearchDocumentIndexer
 
             $success = isset($response['result']) && in_array($response['result'], ['created', 'updated']);
 
-            if ($success === TRUE) {
+            if ($success === true) {
                 $this->logger->info(
                         '[ElasticsearchDocumentIndexer] Object indexed',
                         [
@@ -95,7 +95,7 @@ class ElasticsearchDocumentIndexer
                         );
 
                 // Refresh index if requested.
-                if ($refresh === TRUE) {
+                if ($refresh === true) {
                     $this->indexManager->refreshIndex($index);
                 }
             }
@@ -167,7 +167,7 @@ class ElasticsearchDocumentIndexer
             }//end try
         }//end foreach
 
-        if (empty($bulkBody) === TRUE) {
+        if (empty($bulkBody) === true) {
             return [
                 'success' => false,
                 'indexed' => 0,
@@ -183,9 +183,9 @@ class ElasticsearchDocumentIndexer
             $bulkData = implode("\n", $bulkBody)."\n";
             $response = $this->httpClient->postRaw($url, $bulkData);
 
-            if (isset($response['items']) === TRUE) {
+            if (isset($response['items']) === true) {
                 foreach ($response['items'] as $item) {
-                    if (isset($item['index']['status']) === TRUE && $item['index']['status'] < 300) {
+                    if (isset($item['index']['status']) === true && $item['index']['status'] < 300) {
                         $successCount++;
                     } else {
                         $failureCount++;
@@ -202,7 +202,7 @@ class ElasticsearchDocumentIndexer
                     );
 
             // Refresh index if requested.
-            if ($refresh === TRUE) {
+            if ($refresh === true) {
                 $this->indexManager->refreshIndex($index);
             }
 
@@ -247,7 +247,7 @@ class ElasticsearchDocumentIndexer
 
             $success = isset($response['result']) && $response['result'] === 'deleted';
 
-            if ($success === TRUE) {
+            if ($success === true) {
                 $this->logger->info(
                         '[ElasticsearchDocumentIndexer] Object deleted',
                         [
@@ -256,7 +256,7 @@ class ElasticsearchDocumentIndexer
                         );
 
                 // Refresh index if requested.
-                if ($refresh === TRUE) {
+                if ($refresh === true) {
                     $this->indexManager->refreshIndex($index);
                 }
             }

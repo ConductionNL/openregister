@@ -155,12 +155,12 @@ class ConfigurationHandler
     public function isSolrConfigured(): bool
     {
         // Check if SOLR is enabled in settings.
-        if (empty($this->solrConfig['enabled']) === TRUE || $this->solrConfig['enabled'] !== true) {
+        if (($this->solrConfig['enabled'] ?? false) !== true) {
             return false;
         }
 
         // Check if required configuration parameters are present.
-        if (empty($this->solrConfig['host']) === TRUE || empty($this->solrConfig['core']) === TRUE) {
+        if (empty($this->solrConfig['host']) === true || empty($this->solrConfig['core']) === true) {
             return false;
         }
 
@@ -281,7 +281,7 @@ class ConfigurationHandler
      */
     public function getConfigStatus(string $key): string
     {
-        if (isset($this->solrConfig[$key]) === TRUE && empty($this->solrConfig[$key]) === false) {
+        if (isset($this->solrConfig[$key]) === true && empty($this->solrConfig[$key]) === false) {
             return '✓ Configured';
         }
 

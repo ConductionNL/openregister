@@ -101,7 +101,7 @@ class DocumentBuilder
                 ]
                 );
 
-        // Build basic Solr document from object
+        // Build basic Solr document from object.
         $doc = [
             'id'        => (string) $object->getUuid(),
             'object_id' => $object->getId(),
@@ -112,21 +112,21 @@ class DocumentBuilder
             'updated'   => $object->getUpdated()?->format('Y-m-d\TH:i:s\Z'),
         ];
 
-        // Add object data
+        // Add object data.
         $objectData = $object->getObject();
-        if (is_array($objectData) === TRUE) {
+        if (is_array($objectData) === true) {
             foreach ($objectData as $key => $value) {
-                // Skip null values
+                // Skip null values.
                 if ($value === null) {
                     continue;
                 }
 
-                // Convert value to Solr-compatible format
+                // Convert value to Solr-compatible format.
                 $doc[$key] = $this->convertValueForSolr($value, 'auto');
             }
         }
 
-        // Add searchable text field
+        // Add searchable text field.
         $doc['_text'] = json_encode($objectData);
 
         return $doc;
@@ -566,7 +566,7 @@ class DocumentBuilder
 
         // File fields should always be truncated.
         if ($type === 'file' || $format === 'file' || $format === 'binary'
-            || in_array($format, ['data-url', 'base64', 'image', 'document']) === TRUE
+            || in_array($format, ['data-url', 'base64', 'image', 'document']) === true
         ) {
             return true;
         }
@@ -578,7 +578,7 @@ class DocumentBuilder
         }
 
         // Base64 data URLs (common pattern).
-        if (is_string($fieldName) === TRUE && str_contains(strtolower($fieldName), 'base64') === TRUE) {
+        if (is_string($fieldName) === true && str_contains(strtolower($fieldName), 'base64') === true) {
             return true;
         }
 

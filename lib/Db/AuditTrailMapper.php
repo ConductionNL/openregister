@@ -163,8 +163,10 @@ class AuditTrailMapper extends QBMapper
                 $qb->andWhere($qb->expr()->isNull($field));
             } else {
                 // Handle comma-separated values (e.g., action=create,update).
-                if (strpos($value, ',') !== false) {
-                    $values = array_map('trim', explode(',', $value));
+                // Cast to string to handle integer filter values
+                $valueStr = (string) $value;
+                if (strpos($valueStr, ',') !== false) {
+                    $values = array_map('trim', explode(',', $valueStr));
                     $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));

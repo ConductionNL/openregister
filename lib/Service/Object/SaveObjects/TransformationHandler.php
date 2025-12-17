@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -35,7 +35,7 @@ use DateTime;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -53,7 +53,7 @@ class TransformationHandler
      */
     public function __construct(
         private readonly RelationCascadeHandler $relationCascadeHandler,
-        // REMOVED: private readonly
+        // REMOVED: private readonly.
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {
@@ -90,7 +90,7 @@ class TransformationHandler
         $transformedObjects = [];
         $invalidObjects     = [];
 
-        foreach ($objects ?? [] as $index => &$object) {
+        foreach ($objects as $index => &$object) {
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
             // Only extract @self if it exists (mixed schema or other paths).
@@ -181,7 +181,7 @@ class TransformationHandler
             if (($selfData['organisation'] ?? null) === null || empty($selfData['organisation']) === true) {
                 // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
                 $selfData['organisation'] = null;
-                // TODO->getOrganisationForNewEntity();
+                // TODO->getOrganisationForNewEntity().
             }
 
             // DATABASE-MANAGED: created and updated are handled by database DEFAULT and ON UPDATE clauses.
@@ -225,7 +225,7 @@ class TransformationHandler
                     'id',
                 ];
 
-                foreach ($metadataFields ?? [] as $field) {
+                foreach ($metadataFields as $field) {
                     unset($businessData[$field]);
                 }
 

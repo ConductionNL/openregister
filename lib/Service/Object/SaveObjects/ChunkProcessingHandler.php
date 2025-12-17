@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -185,7 +185,7 @@ class ChunkProcessingHandler
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
 
-                foreach ($bulkResult ?? [] as $completeObject) {
+                foreach ($bulkResult as $completeObject) {
                     $savedObjectIds[] = $completeObject['uuid'];
 
                     // DATABASE-COMPUTED CLASSIFICATION: Use the object_status calculated by database.
@@ -263,15 +263,15 @@ class ChunkProcessingHandler
         // STEP 5: ENHANCED OBJECT RESPONSE - Use pre-classified objects or reconstruct.
         if (empty($reconstructedObjects) === false) {
             // NEW APPROACH: Use already reconstructed objects from timestamp classification.
-            foreach ($createdObjects ?? [] as $createdObj) {
+            foreach ($createdObjects as $createdObj) {
                 $result['saved'][] = $createdObj;
             }
 
-            foreach ($updatedObjects ?? [] as $updatedObj) {
+            foreach ($updatedObjects as $updatedObj) {
                 $result['updated'][] = $updatedObj;
             }
 
-            foreach ($unchangedObjects ?? [] as $unchangedObj) {
+            foreach ($unchangedObjects as $unchangedObj) {
                 $result['unchanged'][] = $unchangedObj;
             }
 

@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -27,7 +27,7 @@ use Exception;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -61,12 +61,12 @@ class PerformanceOptimizationHandler
     {
         try {
             $activeOrganisation = null;
-            // TODO
-            if ($activeOrganisation !== null) {
-                return $activeOrganisation->getUuid();
-            } else {
-                return null;
-            }
+            // TODO: Implement organisation retrieval.
+            // When implemented, uncomment:
+            // if ($activeOrganisation !== null) {
+            //     return $activeOrganisation->getUuid().
+            // }.
+            return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.
             return null;
@@ -151,7 +151,8 @@ class PerformanceOptimizationHandler
         // Extend usage recommendations.
         $extendCount = 0;
         if (empty($query['_extend']) === false) {
-            $extendCount = $this->calculateExtendCount($query['_extend']);
+            // Calculate extend count - count array elements or string length.
+            $extendCount = is_array($query['_extend']) === true ? count($query['_extend']) : 1;
         }
 
         if ($extendCount > 3) {

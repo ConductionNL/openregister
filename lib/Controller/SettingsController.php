@@ -181,7 +181,7 @@ class SettingsController extends Controller
     {
         if (in_array(needle: 'openregister', haystack: $this->appManager->getInstalledApps()) === true) {
             $this->objectService = null;
-            // CIRCULAR FIX
+            // CIRCULAR FIX.
             return $this->objectService;
         }
 
@@ -559,7 +559,7 @@ class SettingsController extends Controller
             $data    = $this->request->getParams();
             $backend = $data['backend'] ?? $data['active'] ?? '';
 
-            if (empty($backend) === TRUE) {
+            if (empty($backend) === true) {
                 return new JSONResponse(
                     data: ['error' => 'Backend parameter is required'],
                     statusCode: 400
@@ -794,7 +794,7 @@ class SettingsController extends Controller
         try {
             // Get services.
             $objectService = null;
-            // CIRCULAR FIX
+            // CIRCULAR FIX.
             $connection = $this->container->get(\OCP\IDBConnection::class);
 
             // Set register and schema context.

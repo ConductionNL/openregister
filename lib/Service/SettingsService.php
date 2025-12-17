@@ -1038,6 +1038,7 @@ class SettingsService
         ];
 
         // Determine overall success.
+        /** @psalm-suppress TypeDoesNotContainType - failed_saves can be incremented in processJobsParallel/processJobsSerial */
         if ($results['stats']['failed_saves'] > 0) {
             if ($collectErrors === true) {
                 $results['success'] = $results['stats']['successful_saves'] > 0;

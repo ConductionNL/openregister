@@ -71,7 +71,7 @@ class PublishObject
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);
-        // find() throws DoesNotExistException, never returns null
+        // find() throws DoesNotExistException, never returns null.
 
         // Set publication date to now if not specified.
         $date = $date ?? new DateTime();

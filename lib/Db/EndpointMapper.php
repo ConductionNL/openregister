@@ -107,8 +107,8 @@ class EndpointMapper extends QBMapper
      */
     public function __construct(
         IDBConnection $db,
-        // REMOVED: Services should not be in mappers
-        // OrganisationMapper $organisationMapper,
+        // REMOVED: Services should not be in mappers.
+        // OrganisationMapper $organisationMapper.
         IUserSession $userSession,
         IGroupManager $groupManager
     ) {
@@ -116,8 +116,8 @@ class EndpointMapper extends QBMapper
         parent::__construct($db, 'openregister_endpoints', Endpoint::class);
 
         // Store dependencies for use in mapper methods.
-        // REMOVED: Services should not be in mappers
-        // $this->organisationMapper = $organisationService;
+        // REMOVED: Services should not be in mappers.
+        // $this->organisationMapper = $organisationService.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
 
