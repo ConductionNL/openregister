@@ -15,7 +15,6 @@
  * @link      https://OpenRegister.app
  */
 
-
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
@@ -59,7 +58,6 @@ use React\EventLoop\Loop;
 
 class ImportService
 {
-
     /**
      * Object entity mapper instance
      *
@@ -165,7 +163,6 @@ class ImportService
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];
-
     }//end __construct()
 
     /**
@@ -190,7 +187,6 @@ class ImportService
         }
 
         return $adminGroup->inGroup($user);
-
     }//end isUserAdmin()
 
     /**
@@ -255,14 +251,14 @@ class ImportService
      */
     public function importFromExcel(
         string $filePath,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -314,7 +310,6 @@ class ImportService
 
         // Return in sheet-based format for consistency.
         return $finalResult;
-
     }//end importFromExcel()
 
     /**
@@ -348,14 +343,14 @@ class ImportService
      */
     public function importFromCsv(
         string $filePath,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -399,7 +394,6 @@ class ImportService
 
         // Return in sheet-based format for consistency.
         return $finalResult;
-
     }//end importFromCsv()
 
     /**
@@ -440,12 +434,12 @@ class ImportService
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
         Register $register,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $summary = [];
 
@@ -487,7 +481,7 @@ class ImportService
                         'name' => $register->getTitle(),
                     ],
                     'schema'   => null,
-                    'error'    => 'No matching schema found for sheet: '.$schemaSlug,
+                    'error'    => 'No matching schema found for sheet: ' . $schemaSlug,
                     'type'     => 'SchemaNotFoundException',
                 ];
                 continue;
@@ -520,7 +514,6 @@ class ImportService
         $this->scheduleSmartSolrWarmup($summary);
 
         return $summary;
-
     }//end processMultiSchemaSpreadsheetAsync()
 
     /**
@@ -561,14 +554,14 @@ class ImportService
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $summary = [
             'found'     => 0,
@@ -674,7 +667,7 @@ class ImportService
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
             if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1).'% operations avoided';
+                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
             }
 
             // Handle validation errors if validation was enabled.
@@ -694,7 +687,6 @@ class ImportService
         $processingTime = microtime(true) - $startTime;
 
         return $summary;
-
     }//end processSpreadsheetBatch()
 
     /**
@@ -732,12 +724,12 @@ class ImportService
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
         Register $register,
         Schema $schema,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $summary = [
             'found'     => 0,
@@ -802,12 +794,12 @@ class ImportService
         if (empty($allObjects) === false) {
             // Log publish processing for debugging.
             $this->logger->debug(
-                    message: 'CSV import processing objects',
-                    context: [
+                message: 'CSV import processing objects',
+                context: [
                         'objectCount' => count($allObjects),
                         'publish'     => $publish,
                     ]
-                    );
+            );
 
             // Add publish date to all objects if publish is enabled.
             if ($publish !== true) {
@@ -818,22 +810,22 @@ class ImportService
                 $publishDate = (new DateTime('now'))->format('c');
                 // ISO 8601 format.
                 $this->logger->debug(
-                        message: 'Adding publish date to CSV import objects',
-                        context: [
+                    message: 'Adding publish date to CSV import objects',
+                    context: [
                             'publishDate' => $publishDate,
                             'objectCount' => count($allObjects),
                         ]
-                        );
+                );
                 $allObjects = $this->addPublishedDateToObjects(objects: $allObjects, publishDate: $publishDate);
 
                 // Log first object structure for debugging.
                 if (empty($allObjects[0]['@self']) === false) {
                     $this->logger->debug(
-                            message: 'First object @self structure after adding publish date',
-                            context: [
+                        message: 'First object @self structure after adding publish date',
+                        context: [
                                 'selfData' => $allObjects[0]['@self'],
                             ]
-                            );
+                    );
                 }
             }//end if
 
@@ -867,7 +859,7 @@ class ImportService
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
             if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1).'% operations avoided';
+                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
             }
 
             // Handle validation errors if validation was enabled.
@@ -887,10 +879,9 @@ class ImportService
         $overallRowsPerSecond = count($allObjects) / max($totalImportTime, 0.001);
 
         // Calculate efficiency.
+        $efficiency = 0;
         if ($summary['found'] > 0) {
             $efficiency = round((count($allObjects) / $summary['found']) * 100, 1);
-        } else {
-            $efficiency = 0;
         }
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like SaveObjects does.
@@ -904,7 +895,6 @@ class ImportService
         ];
 
         return $summary;
-
     }//end processCsvSheet()
 
     /**
@@ -919,15 +909,14 @@ class ImportService
      *
      * @psalm-return array{'@self': array<string, int|mixed|string>,...}
      */
-    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, ?IUser $currentUser=null): array
+    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, ?IUser $currentUser = null): array
     {
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
         // Ensure schemaId is string for array key.
+        $schemaIdKey = (string) $schemaId;
         if (is_string($schemaId) === true) {
             $schemaIdKey = $schemaId;
-        } else {
-            $schemaIdKey = (string) $schemaId;
         }
 
         if (isset($this->schemaPropertiesCache[$schemaIdKey]) === false) {
@@ -957,10 +946,9 @@ class ImportService
             }
 
             // Ensure $key is a string before accessing as array.
+            $keyString = (string) $key;
             if (is_string($key) === true) {
                 $keyString = $key;
-            } else {
-                $keyString = (string) $key;
             }
 
             $firstChar = $keyString[0] ?? '';
@@ -968,7 +956,7 @@ class ImportService
             if ($firstChar === '_') {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } else if ($firstChar === '@') {
+            } elseif ($firstChar === '@') {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -984,14 +972,14 @@ class ImportService
                 }
 
                 // Note: Other @ columns that don't start with @self. are ignored.
-            } else {
-                // Regular properties - transform based on schema if needed.
-                if (is_array($schemaProperties) === true && ($schemaProperties[$key] ?? null) !== null) {
-                    $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
-                } else {
-                    $objectData[$key] = $value;
-                }
-            }//end if
+                continue;
+            }
+
+            // Regular properties - transform based on schema if needed.
+            $objectData[$key] = $value;
+            if (is_array($schemaProperties) === true && ($schemaProperties[$key] ?? null) !== null) {
+                $objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
+            }
         }//end foreach
 
         // Add ID if present in the data (for updates) - check once at the end.
@@ -1006,7 +994,6 @@ class ImportService
         $this->validateObjectProperties(objectData: $objectData, _schemaId: (string) $schemaId);
 
         return $objectData;
-
     }//end transformCsvRowToObject()
 
     /**
@@ -1042,12 +1029,11 @@ class ImportService
 
         // Handle date-only format (e.g., "2025-01-01").
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === true) {
-            return $value.' 00:00:00';
+            return $value . ' 00:00:00';
         }
 
         // Return original value if no transformation needed.
         return $value;
-
     }//end transformDateTimeValue()
 
     /**
@@ -1078,7 +1064,6 @@ class ImportService
 
         // Return original value for other properties.
         return $value;
-
     }//end transformSelfProperty()
 
     /**
@@ -1125,7 +1110,6 @@ class ImportService
         return [
             'objects' => $objects,
         ];
-
     }//end processExcelChunk()
 
     /**
@@ -1138,7 +1122,7 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, ?IUser $currentUser=null): ?array
+    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, ?IUser $currentUser = null): ?array
     {
         // Separate regular properties from system properties.
         $objectData = [];
@@ -1156,7 +1140,7 @@ class ImportService
             if (str_starts_with($key, '_') === true) {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } else if (str_starts_with($key, '@') === true) {
+            } elseif (str_starts_with($key, '@') === true) {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -1172,10 +1156,11 @@ class ImportService
                 }
 
                 // Note: Other @ columns that don't start with @self. are ignored.
-            } else {
-                // Regular properties go to main object data.
-                $objectData[$key] = $value;
-            }//end if
+                continue;
+            }
+
+            // Regular properties go to main object data.
+            $objectData[$key] = $value;
         }//end foreach
 
         // Build @self section with metadata if available.
@@ -1198,14 +1183,12 @@ class ImportService
         }
 
         // Transform object data based on schema property types if schema is available.
+        $transformedData = $objectData;
         if ($schema !== null) {
             $transformedData = $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
-        } else {
-            $transformedData = $objectData;
         }
 
         return $transformedData;
-
     }//end transformExcelRowToObject()
 
     /**
@@ -1225,21 +1208,20 @@ class ImportService
         while ($columnIndex <= 50) {
             // Check up to 50 columns.
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex);
-            $cellValue    = $sheet->getCell($columnLetter.'1')->getValue();
+            $cellValue    = $sheet->getCell($columnLetter . '1')->getValue();
 
-            if ($cellValue !== null && trim($cellValue) !== '') {
-                $cleanColumnName = trim($cellValue);
-                $columnMapping[$columnLetter] = $cleanColumnName;
-            } else {
+            if ($cellValue === null || trim($cellValue) === '') {
                 // Found empty column, stop here.
                 break;
             }
+
+            $cleanColumnName                = trim($cellValue);
+            $columnMapping[$columnLetter] = $cleanColumnName;
 
             $columnIndex++;
         }
 
         return $columnMapping;
-
     }//end buildColumnMapping()
 
     /**
@@ -1297,16 +1279,16 @@ class ImportService
 
             foreach ($processedRows as $index => $rowData) {
                 $promises[] = new Promise(
-                        function (callable $resolve, callable $_reject) use ($rowData, $index, $register, $schema, $startRow) {
-                            // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
-                            $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, _rowIndex: $startRow + $index);
-                            /*
+                    function (callable $resolve, callable $_reject) use ($rowData, $index, $register, $schema, $startRow) {
+                        // NO ERROR SUPPRESSION: Let processRow errors bubble up immediately!
+                        $result = $this->processRow(rowData: $rowData, register: $register, schema: $schema, _rowIndex: $startRow + $index);
+                        /*
                              * @var callable(mixed): void $resolve
                              */
 
-                            $resolve($result);
-                        }
-                        );
+                        $resolve($result);
+                    }
+                );
             }
 
             // Process promises in batches to limit concurrency.
@@ -1323,19 +1305,20 @@ class ImportService
                 foreach ($results as $result) {
                     if (($result['error'] ?? null) !== null) {
                         $chunkSummary['errors'][] = $result['error'];
-                    } else {
-                        if ($result['wasExisting'] === true) {
-                            $chunkSummary['updated'][] = $result['uuid'];
-                        } else {
-                            $chunkSummary['created'][] = $result['uuid'];
-                        }
+                        continue;
                     }
+
+                    if ($result['wasExisting'] === true) {
+                        $chunkSummary['updated'][] = $result['uuid'];
+                        continue;
+                    }
+
+                    $chunkSummary['created'][] = $result['uuid'];
                 }
             }
         }//end if
 
         return $chunkSummary;
-
     }//end processChunk()
 
     /**
@@ -1357,13 +1340,12 @@ class ImportService
 
         // Loop through each column in the mapping.
         foreach ($columnMapping as $columnLetter => $columnName) {
-            $cellValue = $sheet->getCell($columnLetter.$row)->getValue();
+            $cellValue = $sheet->getCell($columnLetter . $row)->getValue();
 
             // Convert cell value to string and trim whitespace.
+            $cleanCellValue = '';
             if ($cellValue !== null) {
                 $cleanCellValue = trim((string) $cellValue);
-            } else {
-                $cleanCellValue = '';
             }
 
             if ($cleanCellValue !== '') {
@@ -1377,7 +1359,6 @@ class ImportService
         }
 
         return [];
-
     }//end extractRowData()
 
     /**
@@ -1405,15 +1386,16 @@ class ImportService
                 $selfPropertyName = substr($key, 1);
                 // Remove the _ prefix.
                 $selfData[$selfPropertyName] = $value;
-            } else if (str_starts_with($key, '@self.') === true) {
+            } elseif (str_starts_with($key, '@self.') === true) {
                 // Move properties starting with @self. to @self array and remove the @self. prefix.
                 $selfPropertyName = substr($key, 6);
                 // Remove the @self. prefix (6 characters).
                 $selfData[$selfPropertyName] = $value;
-            } else {
-                // Regular properties go to main object data.
-                $objectData[$key] = $value;
+                continue;
             }
+
+            // Regular properties go to main object data.
+            $objectData[$key] = $value;
         }
 
         // Add @self array to object data if we have self properties.
@@ -1448,7 +1430,6 @@ class ImportService
             'uuid'        => $savedObject->getUuid(),
             'wasExisting' => $wasExisting,
         ];
-
     }//end processRow()
 
     /**
@@ -1463,7 +1444,6 @@ class ImportService
         // NO ERROR SUPPRESSION: Let schema lookup errors bubble up immediately!
         $schema = $this->schemaMapper->find($slug);
         return $schema;
-
     }//end getSchemaBySlug()
 
     /**
@@ -1507,7 +1487,6 @@ class ImportService
         }
 
         return $transformedData;
-
     }//end transformObjectBySchema()
 
     /**
@@ -1542,7 +1521,8 @@ class ImportService
 
             case 'object':
                 // Check if this is a related-object that should store UUID strings directly.
-                if (($propertyDef['objectConfiguration']['handling'] ?? null) !== null
+                if (
+                    ($propertyDef['objectConfiguration']['handling'] ?? null) !== null
                     && ($propertyDef['objectConfiguration']['handling'] === 'related-object') === true
                 ) {
                     // For related objects, store UUID strings directly instead of wrapping in objects.
@@ -1553,7 +1533,6 @@ class ImportService
             default:
                 return (string) $value;
         }//end switch
-
     }//end transformValueByType()
 
     /**
@@ -1571,7 +1550,6 @@ class ImportService
 
         $value = strtolower(trim((string) $value));
         return in_array($value, ['true', '1', 'yes', 'on', 'enabled']);
-
     }//end stringToBoolean()
 
     /**
@@ -1599,7 +1577,6 @@ class ImportService
 
         // If not JSON, return as single-key object.
         return ['value' => $value];
-
     }//end stringToObject()
 
     /**
@@ -1652,7 +1629,8 @@ class ImportService
                 $part = trim($part);
 
                 // Remove surrounding quotes.
-                if ((str_starts_with($part, '"') === true && str_ends_with($part, '"') === true)
+                if (
+                    (str_starts_with($part, '"') === true && str_ends_with($part, '"') === true)
                     || (str_starts_with($part, "'") === true && str_ends_with($part, "'") === true)
                 ) {
                     $part = substr($part, 1, -1);
@@ -1666,7 +1644,6 @@ class ImportService
 
         // Single value - return as array with one element.
         return [$value];
-
     }//end stringToArray()
 
     /**
@@ -1677,7 +1654,6 @@ class ImportService
     public function clearCaches(): void
     {
         $this->schemaPropertiesCache = [];
-
     }//end clearCaches()
 
     /**
@@ -1703,7 +1679,6 @@ class ImportService
             if (in_array($key, $invalidProperties) === true) {
             }
         }
-
     }//end validateObjectProperties()
 
     /**
@@ -1729,7 +1704,6 @@ class ImportService
         }
 
         return $objects;
-
     }//end addPublishedDateToObjects()
 
     /**
@@ -1748,9 +1722,9 @@ class ImportService
      */
     public function scheduleSolrWarmup(
         array $importSummary,
-        int $delaySeconds=30,
-        string $mode='serial',
-        int $maxObjects=5000
+        int $delaySeconds = 30,
+        string $mode = 'serial',
+        int $maxObjects = 5000
     ): bool {
         try {
             // Calculate total objects imported across all sheets.
@@ -1779,8 +1753,8 @@ class ImportService
             $this->jobList->scheduleAfter(SolrWarmupJob::class, $executeAfter, $jobArguments);
 
             $this->logger->info(
-                    message: '🔥 SOLR Warmup Job Scheduled',
-                    context: [
+                message: '🔥 SOLR Warmup Job Scheduled',
+                context: [
                         'total_imported' => $totalImported,
                         'warmup_mode'    => $mode,
                         'max_objects'    => $maxObjects,
@@ -1788,21 +1762,20 @@ class ImportService
                         'execute_after'  => date('Y-m-d H:i:s', $executeAfter),
                         'triggered_by'   => 'import_completion',
                     ]
-                    );
+            );
 
             return true;
         } catch (Exception $e) {
             $this->logger->error(
-                    message: 'Failed to schedule SOLR warmup job',
-                    context: [
+                message: 'Failed to schedule SOLR warmup job',
+                context: [
                         'error'          => $e->getMessage(),
                         'import_summary' => $importSummary,
                     ]
-                    );
+            );
 
             return false;
         }//end try
-
     }//end scheduleSolrWarmup()
 
     /**
@@ -1827,7 +1800,6 @@ class ImportService
         }
 
         return $total;
-
     }//end calculateTotalImported()
 
     /**
@@ -1844,14 +1816,15 @@ class ImportService
         if ($totalImported > 10000) {
             // Fast mode for large imports.
             return 'fast';
-        } else if ($totalImported > 1000) {
-            // Balanced mode for medium imports.
-            return 'balanced';
-        } else {
-            // Safe mode for small imports.
-            return 'safe';
         }
 
+        if ($totalImported > 1000) {
+            // Balanced mode for medium imports.
+            return 'balanced';
+        }
+
+        // Safe mode for small imports.
+        return 'safe';
     }//end getRecommendedWarmupMode()
 
     /**
@@ -1867,7 +1840,7 @@ class ImportService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
+    public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate = false): bool
     {
         $totalImported = $this->calculateTotalImported($importSummary);
 
@@ -1879,24 +1852,22 @@ class ImportService
         $mode = $this->getRecommendedWarmupMode($totalImported);
         // Index up to 2x imported objects, max 15k.
         $maxObjects = min($totalImported * 2, 15000);
+        $delay      = 30;
         if ($immediate === true) {
             $delay = 0;
-        } else {
-            $delay = 30;
         }
 
         // 30 second delay by default
         $this->logger->info(
-                message: 'Scheduling smart SOLR warmup',
-                context: [
+            message: 'Scheduling smart SOLR warmup',
+            context: [
                     'total_imported'   => $totalImported,
                     'recommended_mode' => $mode,
                     'max_objects'      => $maxObjects,
                     'delay_seconds'    => $delay,
                 ]
-                );
+        );
 
         return $this->scheduleSolrWarmup(importSummary: $importSummary, delaySeconds: $delay, mode: $mode, maxObjects: $maxObjects);
-
     }//end scheduleSmartSolrWarmup()
 }//end class

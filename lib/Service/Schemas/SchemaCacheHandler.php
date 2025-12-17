@@ -725,3 +725,4 @@ class SchemaCacheHandler
 
     }//end reconstructSchemaFromCache()
 }//end class
+

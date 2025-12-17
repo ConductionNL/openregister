@@ -233,6 +233,12 @@ class SchemasController extends Controller
             $schemaArr['@self'] = $schemaArr['@self'] ?? [];
             $schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
 
+            // Add property source metadata to distinguish native vs inherited properties.
+            // This is especially useful for schemas using allOf composition.
+            if (($schema->getAllOf() ?? null) !== null && count($schema->getAllOf()) > 0) {
+                $schemaArr['@self']['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
+            }
+
             // If '@self.stats' is requested, attach statistics to the schema.
         if (in_array('@self.stats', $extend, true) === true) {
             // Get register counts for all schemas in one call.
