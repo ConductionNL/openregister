@@ -81,12 +81,12 @@ class SolrOperationsController extends Controller
      */
     public function setupSolr(): JSONResponse
     {
-    try {
-        // Get logger for improved logging.
-        $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+        try {
+            // Get logger for improved logging.
+            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
 
-        // **IMPROVED LOGGING**: Log setup attempt with detailed context.
-        $logger->info(
+            // **IMPROVED LOGGING**: Log setup attempt with detailed context.
+            $logger->info(
                 message: '🔧 SOLR setup endpoint called',
                 context: [
                     'timestamp'  => date('c'),
@@ -95,18 +95,18 @@ class SolrOperationsController extends Controller
                 ]
                 );
 
-        // Get SOLR settings.
-        $solrSettings = $this->settingsService->getSolrSettings();
+            // Get SOLR settings.
+            $solrSettings = $this->settingsService->getSolrSettings();
 
-        // Determine port value for configuration display.
-        if (($solrSettings['port'] !== null) === true && ($solrSettings['port'] !== '') === true) {
-            $portValue = $solrSettings['port'];
-        } else {
-            $portValue = 'default';
-        }
+            // Determine port value for configuration display.
+            if (($solrSettings['port'] !== null) === true && ($solrSettings['port'] !== '') === true) {
+                $portValue = $solrSettings['port'];
+            } else {
+                $portValue = 'default';
+            }
 
-        // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data).
-        $logger->info(
+            // **IMPROVED LOGGING**: Log SOLR configuration (without sensitive data).
+            $logger->info(
                 '📋 SOLR configuration loaded for setup',
                 [
                     'enabled'         => $solrSettings['enabled'] ?? false,
@@ -116,23 +116,23 @@ class SolrOperationsController extends Controller
                 ]
                 );
 
-        // Create SolrSetup using IndexService for authenticated HTTP client.
-        $guzzleSolrService = $this->container->get(IndexService::class);
-        $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
+            // Create SolrSetup using IndexService for authenticated HTTP client.
+            $guzzleSolrService = $this->container->get(IndexService::class);
+            $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
 
-        // **IMPROVED LOGGING**: Log setup initialization.
-        $logger->info(message: '🏗️ SolrSetup instance created, starting setup process');
+            // **IMPROVED LOGGING**: Log setup initialization.
+            $logger->info(message: '🏗️ SolrSetup instance created, starting setup process');
 
-        // Run setup.
-        $setupResult = $setup->setupSolr();
+            // Run setup.
+            $setupResult = $setup->setupSolr();
 
-        if ($setupResult === true) {
-            // Get detailed setup progress and infrastructure info from SolrSetup.
-            $setupProgress         = $setup->getSetupProgress();
-            $infrastructureCreated = $setup->getInfrastructureCreated();
+            if ($setupResult === true) {
+                // Get detailed setup progress and infrastructure info from SolrSetup.
+                $setupProgress         = $setup->getSetupProgress();
+                $infrastructureCreated = $setup->getInfrastructureCreated();
 
-            // **IMPROVED LOGGING**: Log successful setup.
-            $logger->info(
+                // **IMPROVED LOGGING**: Log successful setup.
+                $logger->info(
                     '✅ SOLR setup completed successfully',
                     [
                         'completed_steps' => $setupProgress['completed_steps'] ?? 0,
@@ -140,41 +140,41 @@ class SolrOperationsController extends Controller
                         'duration'        => $setupProgress['completed_at'] ?? 'unknown',
                         'infrastructure'  => $infrastructureCreated,
                     ]
-                    );
+                        );
 
-            return new JSONResponse(
-                    data: [
-                        'success'        => true,
-                        'message'        => 'SOLR setup completed successfully',
-                        'timestamp'      => date('Y-m-d H:i:s'),
-                        'mode'           => 'SolrCloud',
-                        'progress'       => [
-                            'started_at'      => $setupProgress['started_at'] ?? null,
-                            'completed_at'    => $setupProgress['completed_at'] ?? null,
-                            'total_steps'     => $setupProgress['total_steps'] ?? 5,
-                            'completed_steps' => $setupProgress['completed_steps'] ?? 5,
-                            'success'         => $setupProgress['success'] ?? true,
-                        ],
-                        'steps'          => $setupProgress['steps'] ?? [],
-                        'infrastructure' => $infrastructureCreated,
-                        'next_steps'     => [
-                            'Tenant-specific resources are ready for use',
-                            'Objects can now be indexed to SOLR',
-                            'Search functionality is ready for use',
-                        ],
-                    ]
-                    );
-        } else {
-            // Get detailed error information and setup progress from SolrSetup.
-            $errorDetails  = $setup->getLastErrorDetails();
-            $setupProgress = $setup->getSetupProgress();
-
-            if ($errorDetails !== null && $errorDetails !== '') {
-                // Get infrastructure info even on failure to show partial progress.
-                $infrastructureCreated = $setup->getInfrastructureCreated();
-
-                // Use the detailed error information from SolrSetup.
                 return new JSONResponse(
+                        data: [
+                            'success'        => true,
+                            'message'        => 'SOLR setup completed successfully',
+                            'timestamp'      => date('Y-m-d H:i:s'),
+                            'mode'           => 'SolrCloud',
+                            'progress'       => [
+                                'started_at'      => $setupProgress['started_at'] ?? null,
+                                'completed_at'    => $setupProgress['completed_at'] ?? null,
+                                'total_steps'     => $setupProgress['total_steps'] ?? 5,
+                                'completed_steps' => $setupProgress['completed_steps'] ?? 5,
+                                'success'         => $setupProgress['success'] ?? true,
+                            ],
+                            'steps'          => $setupProgress['steps'] ?? [],
+                            'infrastructure' => $infrastructureCreated,
+                            'next_steps'     => [
+                                'Tenant-specific resources are ready for use',
+                                'Objects can now be indexed to SOLR',
+                                'Search functionality is ready for use',
+                            ],
+                        ]
+                        );
+            } else {
+                // Get detailed error information and setup progress from SolrSetup.
+                $errorDetails  = $setup->getLastErrorDetails();
+                $setupProgress = $setup->getSetupProgress();
+
+                if ($errorDetails !== null && $errorDetails !== '') {
+                    // Get infrastructure info even on failure to show partial progress.
+                    $infrastructureCreated = $setup->getInfrastructureCreated();
+
+                    // Use the detailed error information from SolrSetup.
+                    return new JSONResponse(
                         data: [
                             'success'               => false,
                             'message'               => 'SOLR setup failed',
@@ -217,23 +217,23 @@ class SolrOperationsController extends Controller
                         ],
                         statusCode: 422
                         );
-            } else {
-                // Fallback to generic error if no detailed error information is available.
-                $lastError = error_get_last();
+                } else {
+                    // Fallback to generic error if no detailed error information is available.
+                    $lastError = error_get_last();
 
-                // Get last system error message.
-                $lastSystemError = 'No system error captured';
-                if ($lastError !== null && (($lastError['message'] ?? null) !== null)) {
-                    $lastSystemError = $lastError['message'];
-                }
+                    // Get last system error message.
+                    $lastSystemError = 'No system error captured';
+                    if ($lastError !== null && (($lastError['message'] ?? null) !== null)) {
+                        $lastSystemError = $lastError['message'];
+                    }
 
-                // Get port value or default.
-                $portValue = 'default';
-                if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
-                    $portValue = $solrSettings['port'];
-                }
+                    // Get port value or default.
+                    $portValue = 'default';
+                    if ($solrSettings['port'] !== null && $solrSettings['port'] !== '') {
+                        $portValue = $solrSettings['port'];
+                    }
 
-                return new JSONResponse(
+                    return new JSONResponse(
                     data: [
                         'success'               => false,
                         'message'               => 'SOLR setup failed',
@@ -255,17 +255,17 @@ class SolrOperationsController extends Controller
                         ],
                     ],
                     statusCode: 422
-                );
+                    );
+                }//end if
             }//end if
-        }//end if
-    } catch (Exception $e) {
-        // Get logger for error logging if not already available.
-        if (isset($logger) === false) {
-            $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
-        }
+        } catch (Exception $e) {
+            // Get logger for error logging if not already available.
+            if (isset($logger) === false) {
+                $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
+            }
 
-        // **IMPROVED ERROR LOGGING**: Log detailed setup failure information.
-        $logger->error(
+            // **IMPROVED ERROR LOGGING**: Log detailed setup failure information.
+            $logger->error(
                 message: '❌ SOLR setup failed with exception',
                 context: [
                     'exception_class'   => get_class($e),
@@ -276,33 +276,33 @@ class SolrOperationsController extends Controller
                 ]
                 );
 
-        // Try to get detailed error information from SolrSetup if available.
-        $detailedError = null;
-        if (($setup ?? null) !== null) {
-            try {
-                $setupProgress    = $setup->getSetupProgress();
-                $lastErrorDetails = $setup->getLastErrorDetails();
+            // Try to get detailed error information from SolrSetup if available.
+            $detailedError = null;
+            if (($setup ?? null) !== null) {
+                try {
+                    $setupProgress    = $setup->getSetupProgress();
+                    $lastErrorDetails = $setup->getLastErrorDetails();
 
-                $detailedError = [
-                    'setup_progress'     => $setupProgress,
-                    'last_error_details' => $lastErrorDetails,
-                    'failed_at_step'     => $setupProgress['completed_steps'] ?? 0,
-                    'total_steps'        => $setupProgress['total_steps'] ?? 5,
-                ];
+                    $detailedError = [
+                        'setup_progress'     => $setupProgress,
+                        'last_error_details' => $lastErrorDetails,
+                        'failed_at_step'     => $setupProgress['completed_steps'] ?? 0,
+                        'total_steps'        => $setupProgress['total_steps'] ?? 5,
+                    ];
 
-                // **IMPROVED LOGGING**: Log setup progress and error details.
-                $logger->error('📋 SOLR setup failure details', $detailedError);
-            } catch (Exception $progressException) {
-                $logger->warning(
+                    // **IMPROVED LOGGING**: Log setup progress and error details.
+                    $logger->error('📋 SOLR setup failure details', $detailedError);
+                } catch (Exception $progressException) {
+                    $logger->warning(
                         message: 'Failed to get setup progress details',
                         context: [
                             'error' => $progressException->getMessage(),
                         ]
                         );
-            }//end try
-        }//end if
+                }//end try
+            }//end if
 
-        return new JSONResponse(
+            return new JSONResponse(
                 data: [
                     'success'   => false,
                     'message'   => 'SOLR setup failed: '.$e->getMessage(),
@@ -317,7 +317,7 @@ class SolrOperationsController extends Controller
                 ],
                 statusCode: 422
                 );
-    }//end try
+        }//end try
 
     }//end setupSolr()
 
@@ -670,4 +670,4 @@ class SolrOperationsController extends Controller
     }//end manageSolr()
 
 
-    }//end class
+}//end class

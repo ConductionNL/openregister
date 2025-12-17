@@ -44,15 +44,14 @@ class Version1Date20241030131427 extends SimpleMigrationStep
     /**
      * Execute actions before schema changes
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
 
@@ -62,15 +61,14 @@ class Version1Date20241030131427 extends SimpleMigrationStep
     /**
      * Apply schema changes
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
@@ -134,15 +132,14 @@ class Version1Date20241030131427 extends SimpleMigrationStep
     /**
      * Execute actions after schema changes
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
 

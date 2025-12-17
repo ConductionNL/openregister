@@ -557,4 +557,3 @@ class QueryOptimizationHandler
 
 
 }//end class
-

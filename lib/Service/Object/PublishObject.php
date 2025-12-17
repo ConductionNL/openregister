@@ -48,6 +48,7 @@ class PublishObject
         ObjectEntityMapper $objectEntityMapper
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
+
     }//end __construct()
 
 
@@ -72,7 +73,6 @@ class PublishObject
         // Get the object.
         $object = $this->objectEntityMapper->find($uuid);
         // find() throws DoesNotExistException, never returns null.
-
         // Set publication date to now if not specified.
         $date = $date ?? new DateTime();
 

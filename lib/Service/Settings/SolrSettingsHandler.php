@@ -103,8 +103,8 @@ class SolrSettingsHandler
         $this->config = $config;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
-        $this->logger            = $logger;
-        $this->appName            = $appName;
+        $this->logger  = $logger;
+        $this->appName = $appName;
 
     }//end __construct()
 

@@ -170,10 +170,10 @@ class FileFormattingHandler
      * @param Node[] $files         Array of Node files to format.
      * @param array  $requestParams Optional request parameters for filtering.
      *
-     * @psalm-param    array<int, Node> $files
-     * @psalm-param    array<string, mixed> $requestParams
-     * @phpstan-param  array<int, Node> $files
-     * @phpstan-param  array<string, mixed> $requestParams
+     * @psalm-param   array<int, Node> $files
+     * @psalm-param   array<string, mixed> $requestParams
+     * @phpstan-param array<int, Node> $files
+     * @phpstan-param array<string, mixed> $requestParams
      *
      * @return array Formatted response with files, pagination, and metadata.
      *
@@ -321,10 +321,10 @@ class FileFormattingHandler
      * @param array $formattedFiles Array of formatted file metadata.
      * @param array $filters        Filter parameters to apply.
      *
-     * @psalm-param    array<int, array<string, mixed>> $formattedFiles
-     * @psalm-param    array<string, mixed> $filters
-     * @phpstan-param  array<int, array<string, mixed>> $formattedFiles
-     * @phpstan-param  array<string, mixed> $filters
+     * @psalm-param   array<int, array<string, mixed>> $formattedFiles
+     * @psalm-param   array<string, mixed> $filters
+     * @phpstan-param array<int, array<string, mixed>> $formattedFiles
+     * @phpstan-param array<string, mixed> $filters
      *
      * @return array Filtered array of file metadata.
      *

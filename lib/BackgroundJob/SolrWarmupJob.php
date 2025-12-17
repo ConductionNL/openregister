@@ -171,7 +171,7 @@ class SolrWarmupJob extends QueuedJob
                         ]
                         );
             }//end if
-            
+
             if (($result['success'] ?? false) === false) {
                 $logger->error(
                         '❌ SOLR Warmup Job Failed',

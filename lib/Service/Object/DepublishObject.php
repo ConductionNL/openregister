@@ -48,6 +48,7 @@ class DepublishObject
         ObjectEntityMapper $objectEntityMapper
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
+
     }//end __construct()
 
 
@@ -76,7 +77,6 @@ class DepublishObject
          */
 
         // find() throws DoesNotExistException, never returns null.
-
         // Set depublication date to now if not specified.
         $date = $date ?? new DateTime();
 

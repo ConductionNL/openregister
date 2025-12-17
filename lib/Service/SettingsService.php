@@ -673,7 +673,9 @@ class SettingsService
     ): array {
         // NOTE: This method calls a deprecated method that always throws.
         // TODO: Refactor to use IndexService->warmupIndex() directly.
-        /** @psalm-suppress NoValue - Method always throws, return is unreachable */
+        /*
+         * @psalm-suppress NoValue - Method always throws, return is unreachable
+         */
         return $this->solrSettingsHandler->warmupSolrIndex(
             $schemas,
             $maxObjects,
@@ -1044,7 +1046,9 @@ class SettingsService
         ];
 
         // Determine overall success.
-        /** @psalm-suppress TypeDoesNotContainType - failed_saves can be incremented in processJobsParallel/processJobsSerial */
+        /*
+         * @psalm-suppress TypeDoesNotContainType - failed_saves can be incremented in processJobsParallel/processJobsSerial
+         */
         if ($results['stats']['failed_saves'] > 0) {
             if ($collectErrors === true) {
                 $results['success'] = $results['stats']['successful_saves'] > 0;
@@ -1149,12 +1153,15 @@ class SettingsService
 
                     // Re-save the object to trigger all business logic.
                     // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
-                    $objectData = $object->getObject(); // Get the object business data.
+                    $objectData = $object->getObject();
+                    // Get the object business data.
                     $savedObject = $objectService->saveObject(
                         object: $objectData,
                         extend: [],
-                        register: $object->getRegister(), // Get the register ID.
-                        schema: $object->getSchema(), // Get the schema ID.
+                        register: $object->getRegister(),
+                    // Get the register ID.
+                        schema: $object->getSchema(),
+                    // Get the schema ID.
                         uuid: $object->getUuid()
                     );
 
@@ -1347,12 +1354,15 @@ class SettingsService
 
                 // Re-save the object to trigger all business logic.
                 // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
-                $objectData = $object->getObject(); // Get the object business data.
+                $objectData = $object->getObject();
+                // Get the object business data.
                 $savedObject = $objectService->saveObject(
                     object: $objectData,
                     extend: [],
-                    register: $object->getRegister(), // Get the register ID.
-                    schema: $object->getSchema(), // Get the schema ID.
+                    register: $object->getRegister(),
+                // Get the register ID.
+                    schema: $object->getSchema(),
+                // Get the schema ID.
                     uuid: $object->getUuid()
                 );
 

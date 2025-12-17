@@ -117,14 +117,14 @@ class SolrManagementController extends Controller
      */
     public function getSolrFields(): JSONResponse
     {
-    try {
-        // Use IndexService to get field status for both collections.
-        $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\IndexService::class);
-        $guzzleSolrService = $this->container->get(IndexService::class);
+        try {
+            // Use IndexService to get field status for both collections.
+            $solrSchemaService = $this->container->get(\OCA\OpenRegister\Service\IndexService::class);
+            $guzzleSolrService = $this->container->get(IndexService::class);
 
-        // Check if SOLR is available first.
-        if ($guzzleSolrService->isAvailable() === false) {
-            return new JSONResponse(
+            // Check if SOLR is available first.
+            if ($guzzleSolrService->isAvailable() === false) {
+                return new JSONResponse(
                     data: [
                         'success' => false,
                         'message' => 'SOLR is not available or not configured',
@@ -132,72 +132,72 @@ class SolrManagementController extends Controller
                     ],
                     statusCode: 422
                     );
-        }
+            }
 
-        // Get field status for both collections.
-        $objectFieldStatus = $solrSchemaService->getObjectCollectionFieldStatus();
-        $fileFieldStatus   = $solrSchemaService->getFileCollectionFieldStatus();
+            // Get field status for both collections.
+            $objectFieldStatus = $solrSchemaService->getObjectCollectionFieldStatus();
+            $fileFieldStatus   = $solrSchemaService->getFileCollectionFieldStatus();
 
-        // Combine missing fields from both collections with collection identifier.
-        $missingFields = [];
+            // Combine missing fields from both collections with collection identifier.
+            $missingFields = [];
 
-        foreach ($objectFieldStatus['missing'] as $fieldName => $fieldInfo) {
-            $missingFields[] = [
-                'name'            => $fieldName,
-                'type'            => $fieldInfo['type'],
-                'config'          => $fieldInfo,
-                'collection'      => 'objects',
-                'collectionLabel' => 'Object Collection',
+            foreach ($objectFieldStatus['missing'] as $fieldName => $fieldInfo) {
+                $missingFields[] = [
+                    'name'            => $fieldName,
+                    'type'            => $fieldInfo['type'],
+                    'config'          => $fieldInfo,
+                    'collection'      => 'objects',
+                    'collectionLabel' => 'Object Collection',
+                ];
+            }
+
+            foreach ($fileFieldStatus['missing'] as $fieldName => $fieldInfo) {
+                $missingFields[] = [
+                    'name'            => $fieldName,
+                    'type'            => $fieldInfo['type'],
+                    'config'          => $fieldInfo,
+                    'collection'      => 'files',
+                    'collectionLabel' => 'File Collection',
+                ];
+            }
+
+            // Combine extra fields from both collections.
+            $extraFields = [];
+
+            foreach ($objectFieldStatus['extra'] as $fieldName) {
+                $extraFields[] = [
+                    'name'            => $fieldName,
+                    'collection'      => 'objects',
+                    'collectionLabel' => 'Object Collection',
+                ];
+            }
+
+            foreach ($fileFieldStatus['extra'] as $fieldName) {
+                $extraFields[] = [
+                    'name'            => $fieldName,
+                    'collection'      => 'files',
+                    'collectionLabel' => 'File Collection',
+                ];
+            }
+
+            // Build comparison result.
+            $comparison = [
+                'total_differences' => count($missingFields) + count($extraFields),
+                'missing_count'     => count($missingFields),
+                'extra_count'       => count($extraFields),
+                'missing'           => $missingFields,
+                'extra'             => $extraFields,
+                'object_collection' => [
+                    'missing' => count($objectFieldStatus['missing']),
+                    'extra'   => count($objectFieldStatus['extra']),
+                ],
+                'file_collection'   => [
+                    'missing' => count($fileFieldStatus['missing']),
+                    'extra'   => count($fileFieldStatus['extra']),
+                ],
             ];
-        }
 
-        foreach ($fileFieldStatus['missing'] as $fieldName => $fieldInfo) {
-            $missingFields[] = [
-                'name'            => $fieldName,
-                'type'            => $fieldInfo['type'],
-                'config'          => $fieldInfo,
-                'collection'      => 'files',
-                'collectionLabel' => 'File Collection',
-            ];
-        }
-
-        // Combine extra fields from both collections.
-        $extraFields = [];
-
-        foreach ($objectFieldStatus['extra'] as $fieldName) {
-            $extraFields[] = [
-                'name'            => $fieldName,
-                'collection'      => 'objects',
-                'collectionLabel' => 'Object Collection',
-            ];
-        }
-
-        foreach ($fileFieldStatus['extra'] as $fieldName) {
-            $extraFields[] = [
-                'name'            => $fieldName,
-                'collection'      => 'files',
-                'collectionLabel' => 'File Collection',
-            ];
-        }
-
-        // Build comparison result.
-        $comparison = [
-            'total_differences' => count($missingFields) + count($extraFields),
-            'missing_count'     => count($missingFields),
-            'extra_count'       => count($extraFields),
-            'missing'           => $missingFields,
-            'extra'             => $extraFields,
-            'object_collection' => [
-                'missing' => count($objectFieldStatus['missing']),
-                'extra'   => count($objectFieldStatus['extra']),
-            ],
-            'file_collection'   => [
-                'missing' => count($fileFieldStatus['missing']),
-                'extra'   => count($fileFieldStatus['extra']),
-            ],
-        ];
-
-        return new JSONResponse(
+            return new JSONResponse(
                 data: [
                     'success'                  => true,
                     'comparison'               => $comparison,
@@ -205,8 +205,8 @@ class SolrManagementController extends Controller
                     'file_collection_status'   => $fileFieldStatus,
                 ]
                 );
-    } catch (Exception $e) {
-        return new JSONResponse(
+        } catch (Exception $e) {
+            return new JSONResponse(
                 data: [
                     'success' => false,
                     'message' => 'Failed to retrieve SOLR field configuration: '.$e->getMessage(),
@@ -214,7 +214,7 @@ class SolrManagementController extends Controller
                 ],
                 statusCode: 422
             );
-    }//end try
+        }//end try
 
     }//end getSolrFields()
 
@@ -824,7 +824,7 @@ class SolrManagementController extends Controller
     {
         try {
             $guzzleSolrService = $this->container->get(IndexService::class);
-            $result = $guzzleSolrService->copyCollection(
+            $result            = $guzzleSolrService->copyCollection(
                 sourceCollection: $sourceCollection,
                 targetCollection: $targetCollection,
                 copyData: $copyData
@@ -1006,4 +1006,4 @@ class SolrManagementController extends Controller
     }//end updateSolrCollectionAssignments()
 
 
-    }//end class
+}//end class

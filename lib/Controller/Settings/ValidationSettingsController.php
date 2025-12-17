@@ -74,11 +74,11 @@ class ValidationSettingsController extends Controller
      */
     public function validateAllObjects(): JSONResponse
     {
-    try {
-        $validationResults = $this->settingsService->validateAllObjects();
-        return new JSONResponse(data: $validationResults);
-    } catch (Exception $e) {
-        return new JSONResponse(
+        try {
+            $validationResults = $this->settingsService->validateAllObjects();
+            return new JSONResponse(data: $validationResults);
+        } catch (Exception $e) {
+            return new JSONResponse(
                 data: [
                     'error'             => 'Failed to validate objects: '.$e->getMessage(),
                     'total_objects'     => 0,
@@ -89,7 +89,7 @@ class ValidationSettingsController extends Controller
                 ],
                 statusCode: 500
                 );
-    }//end try
+        }//end try
 
     }//end validateAllObjects()
 
@@ -287,4 +287,4 @@ class ValidationSettingsController extends Controller
     }//end predictMassValidationMemory()
 
 
-    }//end class
+}//end class

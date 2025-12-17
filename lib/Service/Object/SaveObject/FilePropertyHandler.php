@@ -68,10 +68,10 @@ class FilePropertyHandler
      * @param array $uploadedFiles The uploaded files array (from IRequest::getUploadedFile()).
      * @param array $data          The object data to inject files into.
      *
-     * @psalm-param    array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
-     * @psalm-param    array<string, mixed> $data
-     * @phpstan-param  array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
-     * @phpstan-param  array<string, mixed> $data
+     * @psalm-param   array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
+     * @psalm-param   array<string, mixed> $data
+     * @phpstan-param array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}> $uploadedFiles
+     * @phpstan-param array<string, mixed> $data
      *
      * @return array The modified object data with file content injected.
      *
@@ -272,8 +272,8 @@ class FilePropertyHandler
      *
      * @param array $value The array to check.
      *
-     * @psalm-param    array<string, mixed> $value
-     * @phpstan-param  array<string, mixed> $value
+     * @psalm-param   array<string, mixed> $value
+     * @phpstan-param array<string, mixed> $value
      *
      * @return bool Whether the array is a file object.
      *
@@ -323,14 +323,14 @@ class FilePropertyHandler
      * @param string       $propertyName The name of the file property.
      * @param Schema       $schema       The schema containing property configuration.
      *
-     * @psalm-param    ObjectEntity $objectEntity
-     * @psalm-param    array<string, mixed> &$object
-     * @psalm-param    string $propertyName
-     * @psalm-param    Schema $schema
-     * @phpstan-param  ObjectEntity $objectEntity
-     * @phpstan-param  array<string, mixed> &$object
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  Schema $schema
+     * @psalm-param   ObjectEntity $objectEntity
+     * @psalm-param   array<string, mixed> &$object
+     * @psalm-param   string $propertyName
+     * @psalm-param   Schema $schema
+     * @phpstan-param ObjectEntity $objectEntity
+     * @phpstan-param array<string, mixed> &$object
+     * @phpstan-param string $propertyName
+     * @phpstan-param Schema $schema
      *
      * @return void
      *
@@ -465,11 +465,11 @@ class FilePropertyHandler
      * @param array        $fileConfig   The file property configuration from schema.
      * @param int|null     $index        Optional index for array properties.
      *
-     * @psalm-param ObjectEntity $objectEntity
-     * @psalm-param mixed $fileInput
-     * @psalm-param string $propertyName
-     * @psalm-param array<string, mixed> $fileConfig
-     * @psalm-param int|null $index
+     * @psalm-param   ObjectEntity $objectEntity
+     * @psalm-param   mixed $fileInput
+     * @psalm-param   string $propertyName
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   int|null $index
      * @phpstan-param ObjectEntity $objectEntity
      * @phpstan-param mixed $fileInput
      * @phpstan-param string $propertyName
@@ -517,16 +517,16 @@ class FilePropertyHandler
      * @param array        $fileConfig   The file property configuration from schema.
      * @param int|null     $index        Optional index for array properties.
      *
-     * @psalm-param    ObjectEntity $objectEntity
-     * @psalm-param    string $fileInput
-     * @psalm-param    string $propertyName
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @psalm-param    int|null $index
-     * @phpstan-param  ObjectEntity $objectEntity
-     * @phpstan-param  string $fileInput
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @phpstan-param  int|null $index
+     * @psalm-param   ObjectEntity $objectEntity
+     * @psalm-param   string $fileInput
+     * @psalm-param   string $propertyName
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   int|null $index
+     * @phpstan-param ObjectEntity $objectEntity
+     * @phpstan-param string $fileInput
+     * @phpstan-param string $propertyName
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param int|null $index
      *
      * @return int The ID of the created file.
      *
@@ -589,16 +589,16 @@ class FilePropertyHandler
      * @param array        $fileConfig   The file property configuration from schema.
      * @param int|null     $index        Optional index for array properties.
      *
-     * @psalm-param    ObjectEntity $objectEntity
-     * @psalm-param    array<string, mixed> $fileObject
-     * @psalm-param    string $propertyName
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @psalm-param    int|null $index
-     * @phpstan-param  ObjectEntity $objectEntity
-     * @phpstan-param  array<string, mixed> $fileObject
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @phpstan-param  int|null $index
+     * @psalm-param   ObjectEntity $objectEntity
+     * @psalm-param   array<string, mixed> $fileObject
+     * @psalm-param   string $propertyName
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   int|null $index
+     * @phpstan-param ObjectEntity $objectEntity
+     * @phpstan-param array<string, mixed> $fileObject
+     * @phpstan-param string $propertyName
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param int|null $index
      *
      * @return int The ID of the existing or created file.
      *
@@ -627,10 +627,8 @@ class FilePropertyHandler
                 // if ($existingFile !== null) {
                 // Validate the existing file against current config.
                 // $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index).
-
                 // Apply auto tags if needed (non-destructive - adds to existing tags).
                 // $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index).
-
                 // return $fileId.
                 // }.
             } catch (Exception $e) {
@@ -751,14 +749,14 @@ class FilePropertyHandler
      * @param string   $propertyName The property name (for error messages).
      * @param int|null $index        Optional array index (for error messages).
      *
-     * @psalm-param    File $file
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @psalm-param    string $propertyName
-     * @psalm-param    int|null $index
-     * @phpstan-param  File $file
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  int|null $index
+     * @psalm-param   File $file
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   string $propertyName
+     * @psalm-param   int|null $index
+     * @phpstan-param File $file
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param string $propertyName
+     * @phpstan-param int|null $index
      *
      * @return void
      *
@@ -806,14 +804,14 @@ class FilePropertyHandler
      * @param string   $propertyName The property name.
      * @param int|null $index        Optional array index.
      *
-     * @psalm-param    File $file
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @psalm-param    string $propertyName
-     * @psalm-param    int|null $index
-     * @phpstan-param  File $file
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  int|null $index
+     * @psalm-param   File $file
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   string $propertyName
+     * @psalm-param   int|null $index
+     * @phpstan-param File $file
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param string $propertyName
+     * @phpstan-param int|null $index
      *
      * @return void
      *
@@ -918,14 +916,14 @@ class FilePropertyHandler
      * @param string   $propertyName The property name (for error messages).
      * @param int|null $index        Optional array index (for error messages).
      *
-     * @psalm-param    array{content: string, mimeType: string, extension: string, size: int} $fileData
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @psalm-param    string $propertyName
-     * @psalm-param    int|null $index
-     * @phpstan-param  array{content: string, mimeType: string, extension: string, size: int} $fileData
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  int|null $index
+     * @psalm-param   array{content: string, mimeType: string, extension: string, size: int} $fileData
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   string $propertyName
+     * @psalm-param   int|null $index
+     * @phpstan-param array{content: string, mimeType: string, extension: string, size: int} $fileData
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param string $propertyName
+     * @phpstan-param int|null $index
      *
      * @return void
      *
@@ -973,10 +971,10 @@ class FilePropertyHandler
      * @param array  $fileData    The file data containing content, mimeType, and filename.
      * @param string $errorPrefix The error message prefix for context.
      *
-     * @psalm-param    array<string, mixed> $fileData
-     * @psalm-param    string $errorPrefix
-     * @phpstan-param  array<string, mixed> $fileData
-     * @phpstan-param  string $errorPrefix
+     * @psalm-param   array<string, mixed> $fileData
+     * @psalm-param   string $errorPrefix
+     * @phpstan-param array<string, mixed> $fileData
+     * @phpstan-param string $errorPrefix
      *
      * @return void
      *
@@ -1044,10 +1042,10 @@ class FilePropertyHandler
      * @param string $content     The file content to check.
      * @param string $errorPrefix The error message prefix.
      *
-     * @psalm-param    string $content
-     * @psalm-param    string $errorPrefix
-     * @phpstan-param  string $content
-     * @phpstan-param  string $errorPrefix
+     * @psalm-param   string $content
+     * @psalm-param   string $errorPrefix
+     * @phpstan-param string $content
+     * @phpstan-param string $errorPrefix
      *
      * @return void
      *
@@ -1148,12 +1146,12 @@ class FilePropertyHandler
      * @param string   $propertyName The property name.
      * @param int|null $index        Optional array index.
      *
-     * @psalm-param    array<string, mixed> $fileConfig
-     * @psalm-param    string $propertyName
-     * @psalm-param    int|null $index
-     * @phpstan-param  array<string, mixed> $fileConfig
-     * @phpstan-param  string $propertyName
-     * @phpstan-param  int|null $index
+     * @psalm-param   array<string, mixed> $fileConfig
+     * @psalm-param   string $propertyName
+     * @psalm-param   int|null $index
+     * @phpstan-param array<string, mixed> $fileConfig
+     * @phpstan-param string $propertyName
+     * @phpstan-param int|null $index
      *
      * @return array The prepared auto tags.
      *

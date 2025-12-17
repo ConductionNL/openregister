@@ -157,9 +157,9 @@ class LogService
         try {
             // Try to resolve slugs, but allow deleted entities
             $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
-            $schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
-            
-            if ($object->getRegister() !== (string)$registerEntity->getId() || $object->getSchema() !== (string)$schemaEntity->getId()) {
+            $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
+
+            if ($object->getRegister() !== (string) $registerEntity->getId() || $object->getSchema() !== (string) $schemaEntity->getId()) {
                 throw new InvalidArgumentException('Object does not belong to specified register/schema');
             }
         } catch (\Exception $e) {
@@ -211,9 +211,9 @@ class LogService
         try {
             // Try to resolve slugs, but allow deleted entities
             $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
-            $schemaEntity = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
-            
-            if ($object->getRegister() !== (string)$registerEntity->getId() || $object->getSchema() !== (string)$schemaEntity->getId()) {
+            $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
+
+            if ($object->getRegister() !== (string) $registerEntity->getId() || $object->getSchema() !== (string) $schemaEntity->getId()) {
                 throw new InvalidArgumentException('Object does not belong to specified register/schema');
             }
         } catch (\Exception $e) {

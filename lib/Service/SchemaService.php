@@ -660,8 +660,8 @@ class SchemaService
                 // Incompatible types, default to number.
                 return [
                     'type' => 'number',
-                    'min' => min($existingRange['min'], $newRange['min']),
-                    'max' => max($existingRange['max'], $newRange['max'])
+                    'min'  => min($existingRange['min'], $newRange['min']),
+                    'max'  => max($existingRange['max'], $newRange['max']),
                 ];
             }
         }
@@ -1159,7 +1159,8 @@ class SchemaService
             // Check for missing format.
             if (($analysis['detected_format'] ?? null) !== null
                 && ($analysis['detected_format'] !== null) === true
-                && ($analysis['detected_format'] !== '') === true) {
+                && ($analysis['detected_format'] !== '') === true
+            ) {
                 $currentFormat = $currentConfig['format'] ?? null;
                 if ($currentFormat === null || $currentFormat === '') {
                     $issues[]      = "missing_format";
@@ -1537,7 +1538,9 @@ class SchemaService
                     return ['type' => 'string'];
                 case 'integer':
                     return ['type' => 'integer'];
-                /** @psalm-suppress TypeDoesNotContainType - array_key_first returns string|int|null, but item_types keys are type names (strings) */
+                /*
+                 * @psalm-suppress TypeDoesNotContainType - array_key_first returns string|int|null, but item_types keys are type names (strings)
+                 */
                 case 'double':
                 case 'float':
                     return ['type' => 'number'];

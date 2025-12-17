@@ -71,9 +71,9 @@ class ObjectTextExtractionJob extends QueuedJob
      *
      * Initializes the background job with required services via dependency injection.
      *
-     * @param IAppConfig             $config                Configuration service
-     * @param LoggerInterface        $logger                Logger service
-     * @param TextExtractionService  $textExtractionService Text extraction service
+     * @param IAppConfig            $config                Configuration service
+     * @param LoggerInterface       $logger                Logger service
+     * @param TextExtractionService $textExtractionService Text extraction service
      *
      * @return void
      */
@@ -85,7 +85,8 @@ class ObjectTextExtractionJob extends QueuedJob
         $this->config = $config;
         $this->logger = $logger;
         $this->textExtractionService = $textExtractionService;
-    }
+
+    }//end __construct()
 
 
     /**

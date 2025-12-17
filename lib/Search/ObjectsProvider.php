@@ -288,7 +288,7 @@ class ObjectsProvider implements IFilteringProvider
         }
 
         // Set pagination limits for Nextcloud search (defaults).
-        $searchQuery['_limit'] = 25;
+        $searchQuery['_limit']  = 25;
         $searchQuery['_offset'] = 0;
 
         $this->logger->debug(

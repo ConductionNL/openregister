@@ -370,7 +370,7 @@ class SaveObject
                             }
                         }
                     }
-                    
+
                     if ($isArrayOfObjects === false) {
                         // For non-object arrays, check each item.
                         foreach ($value as $index => $item) {
@@ -571,31 +571,31 @@ class SaveObject
                         // TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
                         // When implemented, uncomment:
                         // if ($fileNode !== null) {
-                        //     $fileData = null;
-                        //     // TODO: fileService->formatFile($fileNode);
-                        //     // IMPORTANT: Object image requires public access.
-                        //     // If file is not published, auto-publish it.
-                        //     if (empty($fileData['downloadUrl']) === true) {
-                        //         $this->logger->warning(
-                        //             'File configured as objectImageField is not published. Auto-publishing file.',
-                        //             [
-                        //                 'app'      => 'openregister',
-                        //                 'fileId'   => $firstElement,
-                        //                 'objectId' => $entity->getId(),
-                        //                 'field'    => $config['objectImageField'],
-                        //             ]
-                        //         );
-                        //         // Publish the file.
-                        //         null;
-                        //         // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
-                        //         // Re-fetch file data after publishing.
-                        //         $fileData = null;
-                        //         // TODO: fileService->formatFile($fileNode).
-                        //     }
-                        //.
-                        //     if (($fileData['downloadUrl'] ?? null) !== null) {
-                        //         $entity->setImage($fileData['downloadUrl']).
-                        //     }
+                        // $fileData = null;
+                        // TODO: fileService->formatFile($fileNode);
+                        // IMPORTANT: Object image requires public access.
+                        // If file is not published, auto-publish it.
+                        // if (empty($fileData['downloadUrl']) === true) {
+                        // $this->logger->warning(
+                        // 'File configured as objectImageField is not published. Auto-publishing file.',
+                        // [
+                        // 'app'      => 'openregister',
+                        // 'fileId'   => $firstElement,
+                        // 'objectId' => $entity->getId(),
+                        // 'field'    => $config['objectImageField'],
+                        // ]
+                        // );
+                        // Publish the file.
+                        // null;
+                        // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
+                        // Re-fetch file data after publishing.
+                        // $fileData = null;
+                        // TODO: fileService->formatFile($fileNode).
+                        // }
+                        // .
+                        // if (($fileData['downloadUrl'] ?? null) !== null) {
+                        // $entity->setImage($fileData['downloadUrl']).
+                        // }
                         // }//end if.
                     } catch (Exception $e) {
                         // File not found or error loading - skip.
@@ -844,7 +844,7 @@ class SaveObject
                 $result    = str_replace($fullMatch, trim($value), $result);
                 $hasValues = true;
             }
-            
+
             if ($value === null || trim($value) === '') {
                 // Replace with empty string for missing/empty values.
                 $result = str_replace($fullMatch, '', $result);
@@ -960,7 +960,7 @@ class SaveObject
                     || $data[$key] === ''
                     || (is_array($data[$key]) === true && empty($data[$key]));
             }
-            
+
             if ($applyOnEmptyValues === false) {
                 // Default behavior: only apply if property is missing or null.
                 $shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
@@ -977,13 +977,15 @@ class SaveObject
             try {
                 if (is_string($defaultValue) === true
                     && str_contains(haystack: $defaultValue, needle: '{{') === true
-                    && str_contains(haystack: $defaultValue, needle: '}}') === true) {
+                    && str_contains(haystack: $defaultValue, needle: '}}') === true
+                ) {
                     $renderedDefaultValues[$key] = $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
                 }
-                
+
                 if (is_string($defaultValue) === false
                     || str_contains(haystack: $defaultValue, needle: '{{') === false
-                    || str_contains(haystack: $defaultValue, needle: '}}') === false) {
+                    || str_contains(haystack: $defaultValue, needle: '}}') === false
+                ) {
                     $renderedDefaultValues[$key] = $defaultValue;
                 }
             } catch (Exception $e) {
@@ -1169,9 +1171,7 @@ class SaveObject
             }
 
             // Convert object to array if needed.
-            $objectData = (is_object($data[$property]) === true) 
-                ? (array) $data[$property] 
-                : $data[$property];
+            $objectData = (is_object($data[$property]) === true) ? (array) $data[$property] : $data[$property];
 
             // Skip if the object is effectively empty (only contains empty values).
             if ($this->isEffectivelyEmptyObject($objectData) === true) {
@@ -1188,20 +1188,20 @@ class SaveObject
                         // Keep the property for write-back processing.
                         $data[$property] = $createdUuid;
                     }
-                    
+
                     if (($definition['writeBack'] ?? null) === null || $definition['writeBack'] === false) {
                         // Remove the property (traditional cascading).
                         unset($data[$property]);
                     }
                 }
-                
+
                 if (($definition['inversedBy'] ?? null) === null) {
                     // Without inversedBy: store the created object's UUID.
                     $data[$property] = $createdUuid;
                 }
             } catch (Exception $e) {
                 // Continue with other properties even if one fails.
-            }
+            }//end try
         }//end foreach
 
         // Process array object properties that need cascading.
@@ -1224,13 +1224,13 @@ class SaveObject
                         // Keep the property for write-back processing.
                         $data[$property] = $createdUuids;
                     }
-                    
+
                     if ($hasWriteBack === false) {
                         // Remove the property (traditional cascading).
                         unset($data[$property]);
                     }
                 }
-                
+
                 if (($definition['inversedBy'] ?? null) === null && (($definition['items']['inversedBy'] ?? null) !== null) === false) {
                     // Without inversedBy: store the created objects' UUIDs.
                     $data[$property] = $createdUuids;
@@ -1357,7 +1357,7 @@ class SaveObject
                     $object[$inversedByProperty][] = $objectId;
                 }
             }
-            
+
             if (($object[$inversedByProperty] ?? null) === null || is_array($object[$inversedByProperty]) === false) {
                 // Set as single value or create new array.
                 $object[$inversedByProperty] = $objectId;
@@ -1378,7 +1378,7 @@ class SaveObject
         if (($definition['inversedBy'] ?? null) !== null) {
             $uuid = $object['id'] ?? $object['@self']['id'] ?? null;
         }
-        
+
         if (($definition['inversedBy'] ?? null) === null) {
             // Remove any existing UUID/id fields to force new object creation.
             unset($object['id']);
@@ -1444,7 +1444,8 @@ class SaveObject
             if ($property['type'] === 'array'
                 && (($property['items']['inversedBy'] ?? null) !== null)
                 && (($property['items']['writeBack'] ?? null) !== null)
-                && $property['items']['writeBack'] === true) {
+                && $property['items']['writeBack'] === true
+            ) {
                 return true;
             }
 
@@ -1452,7 +1453,8 @@ class SaveObject
             if ($property['type'] === 'array'
                 && (($property['items']['inversedBy'] ?? null) !== null)
                 && (($property['writeBack'] ?? null) !== null)
-                && $property['writeBack'] === true) {
+                && $property['writeBack'] === true
+            ) {
                 return true;
             }
 
@@ -1480,20 +1482,22 @@ class SaveObject
                 $removeFromSource = $definition['removeAfterWriteBack'] ?? false;
             } else if (($definition['items']['inversedBy'] ?? null) !== null
                 && (($definition['items']['writeBack'] ?? null) !== null)
-                && $definition['items']['writeBack'] === true) {
+                && $definition['items']['writeBack'] === true
+            ) {
                 $inverseProperty  = $definition['items']['inversedBy'];
                 $targetSchema     = $definition['items']['$ref'] ?? null;
                 $targetRegister   = $definition['items']['register'] ?? $objectEntity->getRegister();
                 $removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
             } else if (($definition['items']['inversedBy'] ?? null) !== null
                 && (($definition['writeBack'] ?? null) !== null)
-                && $definition['writeBack'] === true) {
+                && $definition['writeBack'] === true
+            ) {
                 // Handle array of objects with writeBack at array level.
                 $inverseProperty  = $definition['items']['inversedBy'];
                 $targetSchema     = $definition['items']['$ref'] ?? null;
                 $targetRegister   = $definition['register'] ?? $objectEntity->getRegister();
                 $removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-            }
+            }//end if
 
             // Skip if we don't have the necessary configuration.
             if (($inverseProperty === false || $inverseProperty === null) === true || ($targetSchema === false || $targetSchema === null) === true) {
@@ -1530,7 +1534,6 @@ class SaveObject
                     // Find the target object.
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
                     // find() throws DoesNotExistException, never returns null.
-
                     // Get current data from target object.
                     $targetData = $targetObject->getObject();
 
@@ -1640,11 +1643,11 @@ class SaveObject
                     if (empty($value) === true && $minItems > 0) {
                         // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error.
                     }
-                    
+
                     if (empty($value) === true && $minItems === 0) {
                         // Empty array is valid for arrays with no minItems constraint.
                     }
-                    
+
                     if (empty($value) === false) {
                         // Handle array items that might contain empty strings.
                         $sanitizedArray = [];
@@ -1668,7 +1671,7 @@ class SaveObject
                     // Convert empty string to null for non-required scalar properties.
                     $sanitizedData[$propertyName] = null;
                 }
-                
+
                 if ($isRequired === true) {
                     // Keep empty string for required properties - will fail validation with clear error.
                     // No action needed - property stays as is.
@@ -1741,7 +1744,7 @@ class SaveObject
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
         }
-        
+
         if (($schema instanceof Schema) === false) {
             // Resolve schema reference if it's a string.
             if (is_string($schema) === true) {
@@ -1752,7 +1755,7 @@ class SaveObject
 
                 $schema = $this->schemaMapper->find(id: $schemaId);
             }
-            
+
             if (is_string($schema) === false) {
                 $schemaId = $schema;
                 $schema   = $this->schemaMapper->find(id: $schema);
@@ -1762,7 +1765,7 @@ class SaveObject
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
         }
-        
+
         if (($register instanceof Register) === false) {
             // Resolve register reference if it's a string.
             if (is_string($register) === true) {
@@ -1773,7 +1776,7 @@ class SaveObject
 
                 $register = $this->registerMapper->find(id: $registerId);
             }
-            
+
             if (is_string($register) === false) {
                 $registerId = $register;
                 $register   = $this->registerMapper->find(id: $register);
@@ -1790,15 +1793,14 @@ class SaveObject
                 // Check if object is locked - prevent updates on locked objects.
                 $lockData = $existingObject->getLocked();
                 if ($lockData !== null && is_array($lockData)) {
-                    $currentUser = $this->userSession->getUser();
+                    $currentUser   = $this->userSession->getUser();
                     $currentUserId = $currentUser !== null ? $currentUser->getUID() : null;
-                    $lockOwner = $lockData['userId'] ?? null;
-                    
+                    $lockOwner     = $lockData['userId'] ?? null;
+
                     // If object is locked by someone other than the current user, prevent update.
                     if ($lockOwner !== null && $lockOwner !== $currentUserId) {
                         throw new Exception(
-                            "Cannot update object: Object is locked by user '{$lockOwner}'. " .
-                            "Please unlock the object before attempting to update it."
+                            "Cannot update object: Object is locked by user '{$lockOwner}'. "."Please unlock the object before attempting to update it."
                         );
                     }
                 }
@@ -1939,14 +1941,10 @@ class SaveObject
         }
 
         // Determine register ID.
-        $registerId = ($savedEntity->getRegister() !== null) 
-            ? (int) $savedEntity->getRegister() 
-            : null;
+        $registerId = ($savedEntity->getRegister() !== null) ? (int) $savedEntity->getRegister() : null;
 
         // Determine schema ID.
-        $schemaId = ($savedEntity->getSchema() !== null) 
-            ? (int) $savedEntity->getSchema() 
-            : null;
+        $schemaId = ($savedEntity->getSchema() !== null) ? (int) $savedEntity->getSchema() : null;
 
         // TODO: Implement cache invalidation for object changes.
         // This should use the CacheHandler to invalidate relevant caches after object operations.
@@ -2196,13 +2194,13 @@ class SaveObject
                     // Silently ignore invalid date formats.
                 }//end try
             }//end if
-            
+
             if (empty($publishedValue) === true) {
                 $this->logger->debug('Published value is empty, setting to null');
                 $objectEntity->setPublished(null);
             }//end if
         }//end if
-        
+
         if (array_key_exists('published', $selfData) === false) {
             $this->logger->debug('No published field found in selfData, setting to existing value');
             $objectEntity->setPublished($objectEntity->getPublished());
@@ -2253,8 +2251,7 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
             throw new Exception(
-                'Object data sanitization failed: '.$e->getMessage()
-                    .'. This indicates invalid or corrupted object data that cannot be processed safely.',
+                'Object data sanitization failed: '.$e->getMessage().'. This indicates invalid or corrupted object data that cannot be processed safely.',
                 0,
                 $e
             );
@@ -2308,14 +2305,10 @@ class SaveObject
         unset($data['@self'], $data['id']);
 
         // Set register ID based on input type.
-        $registerId = ($register instanceof Register === true) 
-            ? $register->getId() 
-            : $register;
+        $registerId = ($register instanceof Register === true) ? $register->getId() : $register;
 
         // Set schema ID based on input type.
-        $schemaId = ($schema instanceof Schema === true) 
-            ? $schema->getId() 
-            : $schema;
+        $schemaId = ($schema instanceof Schema === true) ? $schema->getId() : $schema;
 
         // Prepare the object for update using the new structure.
         $preparedObject = $this->prepareObjectForUpdate(

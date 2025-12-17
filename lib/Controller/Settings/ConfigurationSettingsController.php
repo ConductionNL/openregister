@@ -75,12 +75,12 @@ class ConfigurationSettingsController extends Controller
      */
     public function getRbacSettings(): JSONResponse
     {
-    try {
-        $data = $this->settingsService->getRbacSettingsOnly();
-        return new JSONResponse(data: $data);
-    } catch (Exception $e) {
-        return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-    }
+        try {
+            $data = $this->settingsService->getRbacSettingsOnly();
+            return new JSONResponse(data: $data);
+        } catch (Exception $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }
 
     }//end getRbacSettings()
 
@@ -430,4 +430,4 @@ class ConfigurationSettingsController extends Controller
     }//end createMissingObjectFields()
 
 
-    }//end class
+}//end class

@@ -55,7 +55,6 @@ class Version1Date20250904170000 extends SimpleMigrationStep
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
@@ -115,7 +114,6 @@ class Version1Date20250904170000 extends SimpleMigrationStep
      *
      * @return void
      */
-
     private function optimizeRelationshipTable($table, IOutput $output): void
     {
         $tableName = $table->getName();

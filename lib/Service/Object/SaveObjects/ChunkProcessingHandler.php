@@ -74,10 +74,10 @@ class ChunkProcessingHandler
      * @param bool  $_validation   Validation flag (reserved for future use).
      * @param bool  $_events       Events flag (reserved for future use).
      *
-     * @psalm-param    array<int, array<string, mixed>> $objects
-     * @psalm-param    array<int|string, Schema> $schemaCache
-     * @phpstan-param  array<int, array<string, mixed>> $objects
-     * @phpstan-param  array<int|string, Schema> $schemaCache
+     * @psalm-param   array<int, array<string, mixed>> $objects
+     * @psalm-param   array<int|string, Schema> $schemaCache
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     * @phpstan-param array<int|string, Schema> $schemaCache
      *
      * @return array Array containing saved, updated, invalid objects and statistics.
      *

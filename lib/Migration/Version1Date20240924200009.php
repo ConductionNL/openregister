@@ -39,9 +39,9 @@ class Version1Date20240924200009 extends SimpleMigrationStep
     /**
      * Execute actions before schema changes
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return void
      *
@@ -56,9 +56,9 @@ class Version1Date20240924200009 extends SimpleMigrationStep
     /**
      * Apply schema changes
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper|null
      *
@@ -151,9 +151,9 @@ class Version1Date20240924200009 extends SimpleMigrationStep
     /**
      * Performs actions after schema changes
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *

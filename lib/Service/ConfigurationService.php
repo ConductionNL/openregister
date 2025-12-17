@@ -265,6 +265,8 @@ class ConfigurationService
         UploadHandler $uploadHandler,
         string $appDataPath
     ) {
+        $this->logger = $logger;
+        $this->logger->debug('ConfigurationService constructor started.');
         // Store dependencies for use in service methods.
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -273,17 +275,18 @@ class ConfigurationService
         $this->appManager          = $appManager;
         $this->container           = $container;
         $this->appConfig           = $appConfig;
-        $this->logger        = $logger;
-        $this->client        = $client;
+        $this->client = $client;
+        $this->logger->debug('ConfigurationService about to assign objectService.');
         $this->objectService = $objectService;
-        $this->githubHandler = $githubHandler;
+        $this->logger->debug('ConfigurationService assigned objectService.');
+        $this->githubHandler  = $githubHandler;
         $this->gitlabHandler  = $gitlabHandler;
         $this->cacheHandler   = $cacheHandler;
         $this->previewHandler = $previewHandler;
         $this->exportHandler  = $exportHandler;
-        $this->importHandler = $importHandler;
-        $this->uploadHandler = $uploadHandler;
-        $this->appDataPath   = $appDataPath;
+        $this->importHandler  = $importHandler;
+        $this->uploadHandler  = $uploadHandler;
+        $this->appDataPath    = $appDataPath;
 
         // Wire dependencies into ImportHandler to avoid circular dependency issues.
         $this->importHandler->setObjectService($this->objectService);
@@ -513,8 +516,7 @@ class ConfigurationService
         ?string $appId=null,
         ?string $version=null,
         bool $force=false
-    ): array
-    {
+    ): array {
         return $this->importHandler->importFromJson($data, $configuration, $owner, $appId, $version, $force);
 
     }//end importFromJson()
@@ -567,8 +569,7 @@ class ConfigurationService
         ?string $appId=null,
         ?string $version=null,
         bool $force=false
-    ): Schema
-    {
+    ): Schema {
         return $this->importHandler->importSchema($data, $slugsAndIdsMap, $owner, $appId, $version, $force);
 
     }//end importSchema()
@@ -823,9 +824,7 @@ class ConfigurationService
             }
 
             $this->logger->info(
-                "Successfully fetched remote configuration with "
-                .count($remoteData['components']['schemas'] ?? [])." schemas and "
-                .count($remoteData['components']['registers'] ?? [])." registers"
+                "Successfully fetched remote configuration with ".count($remoteData['components']['schemas'] ?? [])." schemas and ".count($remoteData['components']['registers'] ?? [])." registers"
             );
 
             return $remoteData;
@@ -901,6 +900,7 @@ class ConfigurationService
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
         return $this->previewHandler->previewConfigurationChanges($configuration);
+
     }//end previewConfigurationChanges()
 
 
@@ -926,35 +926,35 @@ class ConfigurationService
     {
         $slug = strtolower($slug);
         return $this->previewHandler->previewRegisterChange($slug, $registerData);
-    /**
-     * Preview changes for a single schema
-     *
-     * @param string $slug       The schema slug
-     * @param array  $schemaData The schema data from remote configuration
-     *
-     * @return array Preview information for this schema
-     *
-     * @phpstan-return array{
-     *     type: string,
-     *     action: string,
-     *     slug: string,
-     *     title: string,
-     *     current: array|null,
-     *     proposed: array,
-     *     changes: array
-     * }
-     */
+        /*
+         * Preview changes for a single schema
+         *
+         * @param string $slug       The schema slug
+         * @param array  $schemaData The schema data from remote configuration
+         *
+         * @return array Preview information for this schema
+         *
+         * @phpstan-return array{
+         *     type: string,
+         *     action: string,
+         *     slug: string,
+         *     title: string,
+         *     current: array|null,
+         *     proposed: array,
+         *     changes: array
+         * }
+         */
         return $this->previewHandler->previewSchemaChange($slug, $schemaData);
 
-    }//end previewSchemaChange()
+    }//end previewRegisterChange()
 
 
     /**
      * Preview changes for a single object
      *
-     * @param array $objectData       The object data from remote configuration
-     * @param array $registerSlugToId Map of register slugs to IDs
-     * @param array $schemaSlugToId   Map of schema slugs to IDs
+     * @param array  $objectData       The object data from remote configuration
+     * @param array  $registerSlugToId Map of register slugs to IDs
+     * @param array  $schemaSlugToId   Map of schema slugs to IDs
      *
      * @return array Preview information for this object
      *
@@ -978,9 +978,9 @@ class ConfigurationService
     /**
      * Compare two arrays and return a list of differences
      *
-     * @param array  $current  The current data
-     * @param array  $proposed The proposed data
-     * @param string $prefix   Field name prefix for nested comparison
+     * @param array  $current          The current data
+     * @param array  $proposed         The proposed data
+     * @param string $prefix           Field name prefix for nested comparison
      *
      * @return array List of differences
      */
@@ -1045,7 +1045,7 @@ class ConfigurationService
 
         return $result;
 
-    }//end importConfigurationWithSelection()
+    }//end isSimpleArray()
 
 
     /**
@@ -1220,13 +1220,14 @@ class ConfigurationService
      * Delegates to PreviewHandler.
      *
      * @param Configuration $configuration Configuration to import
-     * @param array        $selection     Selection of items to import
+     * @param array         $selection     Selection of items to import
      *
      * @return array Import results
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
         return $this->previewHandler->importConfigurationWithSelection(configuration: $configuration, selection: $selection);
+
     }//end importConfigurationWithSelection()
 
 

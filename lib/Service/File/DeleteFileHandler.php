@@ -47,11 +47,11 @@ class DeleteFileHandler
     /**
      * Constructor for DeleteFileHandler.
      *
-     * @param IRootFolder          $rootFolder           Root folder for file operations.
-     * @param ReadFileHandler      $readFileHandler      Read file handler.
+     * @param IRootFolder           $rootFolder            Root folder for file operations.
+     * @param ReadFileHandler       $readFileHandler       Read file handler.
      * @param FileValidationHandler $fileValidationHandler File validation handler.
-     * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-     * @param LoggerInterface      $logger               Logger for logging operations.
+     * @param FileOwnershipHandler  $fileOwnershipHandler  File ownership handler.
+     * @param LoggerInterface       $logger                Logger for logging operations.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,

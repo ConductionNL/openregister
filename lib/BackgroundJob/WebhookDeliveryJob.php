@@ -171,7 +171,7 @@ class WebhookDeliveryJob extends QueuedJob
                     ]
                 );
             }//end if
-            
+
             if ($success === false) {
                 $this->logger->warning(
                     'Webhook delivery job failed',

@@ -1325,14 +1325,18 @@ class OrganisationService
      */
     public function getOrganisationForNewEntity(): string|null
     {
+        $this->logger->info('🔹 OrganisationService: getOrganisationForNewEntity called');
         $activeOrg = $this->getActiveOrganisation();
 
         if ($activeOrg !== null) {
+            $this->logger->info('🔹 OrganisationService: Found active organisation: '.$activeOrg->getUuid());
             return $activeOrg->getUuid();
         }
 
         // Fallback to default organisation.
+        $this->logger->info('🔹 OrganisationService: No active org, calling ensureDefaultOrganisation');
         $defaultOrg = $this->ensureDefaultOrganisation();
+        $this->logger->info('🔹 OrganisationService: Got default organisation: '.$defaultOrg->getUuid());
         return $defaultOrg->getUuid();
 
     }//end getOrganisationForNewEntity()

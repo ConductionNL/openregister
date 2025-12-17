@@ -237,12 +237,12 @@ class SolrManagementCommand extends Command
                     $output->writeln('<error>❌ Failed to create tenant collection</error>');
                     return self::FAILURE;
                 }
-                
+
                 $output->writeln('✅ Tenant collection ready with proper schema');
                 $docCount = $this->solrService->getDocumentCount();
                 $output->writeln('   Document count: <comment>'.$docCount.'</comment>');
             }//end if
-            
+
             if ($setupResult !== true) {
                 $output->writeln('<error>❌ SOLR setup failed - check logs for details</error>');
                 return self::FAILURE;
@@ -291,7 +291,7 @@ class SolrManagementCommand extends Command
                     if ($this->solrService->commit() === true) {
                         $output->writeln('✅ Changes committed successfully');
                     }
-                    
+
                     if ($this->solrService->commit() === false) {
                         $output->writeln('<error>⚠️  Commit failed, but optimization succeeded</error>');
                     }
@@ -299,7 +299,7 @@ class SolrManagementCommand extends Command
 
                 return self::SUCCESS;
             }//end if
-            
+
             // If optimize failed, return failure.
             $output->writeln('<error>❌ Index optimization failed</error>');
             return self::FAILURE;
@@ -342,7 +342,7 @@ class SolrManagementCommand extends Command
                     $output->writeln('<info>✅</info>');
                     $successCount++;
                 }
-                
+
                 if ($result['success'] === false) {
                     $output->writeln('<error>❌</error>');
                 }
@@ -354,7 +354,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('<comment>   SOLR caches are now pre-loaded for optimal performance.</comment>');
                 return self::SUCCESS;
             }
-            
+
             $output->writeln('<error>⚠️  Some warming queries failed ('.$successCount.'/'.count($warmQueries).' successful)</error>');
             return self::FAILURE;
         } catch (\Exception $e) {
@@ -390,7 +390,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('   📊 SOLR version: <comment>'.$connectionResult['details']['solr_version'].'</comment>');
                 $output->writeln('   🏗️  Mode: <comment>'.$connectionResult['details']['mode'].'</comment>');
             }
-            
+
             if ($connectionResult['success'] === false) {
                 $output->writeln('   <error>❌ Connection failed: '.$connectionResult['message'].'</error>');
                 $issues++;
@@ -406,7 +406,7 @@ class SolrManagementCommand extends Command
                 $docCount = $this->solrService->getDocumentCount();
                 $output->writeln('   📊 Document count: <comment>'.$docCount.'</comment>');
             }
-            
+
             if (empty($tenantResult) === true) {
                 $output->writeln('   <error>❌ Tenant collection not accessible</error>');
                 $issues++;
@@ -420,7 +420,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('   ✅ Search working ('.$searchResult['execution_time_ms'].'ms)');
                 $output->writeln('   📊 Total documents: <comment>'.$searchResult['total'].'</comment>');
             }
-            
+
             if ($searchResult['success'] === false) {
                 $output->writeln('   <error>❌ Search failed: '.($searchResult['error'] ?? 'Unknown error').'</error>');
                 $issues++;
@@ -440,7 +440,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('🎉 <info>All health checks passed! SOLR is healthy.</info>');
                 return self::SUCCESS;
             }
-            
+
             $output->writeln('<error>⚠️  Health check found '.$issues.' issues</error>');
             return self::FAILURE;
         } catch (\Exception $e) {
@@ -507,7 +507,7 @@ class SolrManagementCommand extends Command
                 if (empty($missingFields) === true) {
                     $output->writeln('✅ All expected fields are available');
                 }
-                
+
                 if (empty($missingFields) === false) {
                     $output->writeln('<error>⚠️  Missing fields: '.implode(', ', $missingFields).'</error>');
                 }
@@ -516,7 +516,7 @@ class SolrManagementCommand extends Command
                     $output->writeln('ℹ️  Additional fields: <comment>'.implode(', ', array_slice($extraFields, 0, 10)).'</comment>');
                 }
             }//end if
-            
+
             if ($testResult['success'] === false || empty($testResult['data']) === true) {
                 $output->writeln('<comment>⚠️  No documents available for schema analysis</comment>');
                 $output->writeln('<comment>   Create some objects first to validate the schema</comment>');
@@ -563,7 +563,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('<comment>   All documents have been removed from the index</comment>');
                 return self::SUCCESS;
             }
-            
+
             $output->writeln('<error>❌ Failed to clear index</error>');
             return self::FAILURE;
         } catch (\Exception $e) {
@@ -609,7 +609,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('   Total search time: <comment>'.round($serviceStats['search_time'] * 1000, 2).'ms</comment>');
                 $output->writeln('   Total index time: <comment>'.round($serviceStats['index_time'] * 1000, 2).'ms</comment>');
             }//end if
-            
+
             if ($dashboardStats['available'] === false) {
                 $output->writeln('<error>❌ SOLR statistics unavailable: '.($dashboardStats['error'] ?? 'Unknown error').'</error>');
                 return self::FAILURE;
