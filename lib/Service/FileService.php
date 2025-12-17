@@ -325,7 +325,6 @@ class FileService
      * @param IGroupManager             $groupManager              Group manager
      * @param LoggerInterface           $logger                    Logger
      * @param ObjectEntityMapper        $objectEntityMapper        Object entity mapper
-     * @param RegisterMapper            $registerMapper            Register mapper
      * @param IRootFolder               $rootFolder                Root folder
      * @param IManager                  $shareManager              Share manager
      * @param ISystemTagManager         $systemTagManager          System tag manager
@@ -352,7 +351,6 @@ class FileService
         IGroupManager $groupManager,
         LoggerInterface $logger,
         ObjectEntityMapper $objectEntityMapper,
-        // REMOVED: RegisterMapper $registerMapper (unused, caused circular dependency)
         IRootFolder $rootFolder,
         IManager $shareManager,
         ISystemTagManager $systemTagManager,
@@ -1313,7 +1311,7 @@ class FileService
      * @psalm-return   string
      * @phpstan-return string
      */
-    private function generateObjectTag(ObjectEntity|string $objectEntity): string
+    public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
         return $this->taggingHandler->generateObjectTag($objectEntity);
 

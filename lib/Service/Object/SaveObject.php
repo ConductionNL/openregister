@@ -322,7 +322,7 @@ class SaveObject
      *
      * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
      */
-    private function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
+    public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
         $relations = [];
 
@@ -344,11 +344,7 @@ class SaveObject
                     continue;
                 }
 
-                if (($prefix !== '') === true) {
-                    $currentPath = $prefix.'.'.$key;
-                } else {
-                    $currentPath = $key;
-                }
+                $currentPath = (($prefix !== '') === true) ? $prefix.'.'.$key : $key;
 
                 if (is_array($value) === true && empty($value) === true) {
                     // Check if this is an array property in the schema.
@@ -373,7 +369,9 @@ class SaveObject
                                 $relations[$currentPath.'.'.$index] = $item;
                             }
                         }
-                    } else {
+                    }
+                    
+                    if ($isArrayOfObjects === false) {
                         // For non-object arrays, check each item.
                         foreach ($value as $index => $item) {
                             if (is_array($item) === true) {
@@ -845,7 +843,9 @@ class SaveObject
             if ($value !== null && trim($value) !== '') {
                 $result    = str_replace($fullMatch, trim($value), $result);
                 $hasValues = true;
-            } else {
+            }
+            
+            if ($value === null || trim($value) === '') {
                 // Replace with empty string for missing/empty values.
                 $result = str_replace($fullMatch, '', $result);
             }
@@ -859,11 +859,7 @@ class SaveObject
         $result = preg_replace('/\s+/', ' ', $result);
         $result = trim($result);
 
-        if ($result !== '') {
-            return $result;
-        } else {
-            return null;
-        }
+        return ($result !== '') ? $result : null;
 
     }//end processTwigLikeTemplate()
 
@@ -963,7 +959,9 @@ class SaveObject
                     || $data[$key] === null
                     || $data[$key] === ''
                     || (is_array($data[$key]) === true && empty($data[$key]));
-            } else {
+            }
+            
+            if ($applyOnEmptyValues === false) {
                 // Default behavior: only apply if property is missing or null.
                 $shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
             }
@@ -981,7 +979,11 @@ class SaveObject
                     && str_contains(haystack: $defaultValue, needle: '{{') === true
                     && str_contains(haystack: $defaultValue, needle: '}}') === true) {
                     $renderedDefaultValues[$key] = $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
-                } else {
+                }
+                
+                if (is_string($defaultValue) === false
+                    || str_contains(haystack: $defaultValue, needle: '{{') === false
+                    || str_contains(haystack: $defaultValue, needle: '}}') === false) {
                     $renderedDefaultValues[$key] = $defaultValue;
                 }
             } catch (Exception $e) {
@@ -1167,11 +1169,9 @@ class SaveObject
             }
 
             // Convert object to array if needed.
-            if (is_object($data[$property]) === true) {
-                $objectData = (array) $data[$property];
-            } else {
-                $objectData = $data[$property];
-            }
+            $objectData = (is_object($data[$property]) === true) 
+                ? (array) $data[$property] 
+                : $data[$property];
 
             // Skip if the object is effectively empty (only contains empty values).
             if ($this->isEffectivelyEmptyObject($objectData) === true) {
@@ -1187,11 +1187,15 @@ class SaveObject
                     if (($definition['writeBack'] ?? null) !== null && $definition['writeBack'] === true) {
                         // Keep the property for write-back processing.
                         $data[$property] = $createdUuid;
-                    } else {
+                    }
+                    
+                    if (($definition['writeBack'] ?? null) === null || $definition['writeBack'] === false) {
                         // Remove the property (traditional cascading).
                         unset($data[$property]);
                     }
-                } else {
+                }
+                
+                if (($definition['inversedBy'] ?? null) === null) {
                     // Without inversedBy: store the created object's UUID.
                     $data[$property] = $createdUuid;
                 }
@@ -1219,11 +1223,15 @@ class SaveObject
                     if ($hasWriteBack === true) {
                         // Keep the property for write-back processing.
                         $data[$property] = $createdUuids;
-                    } else {
+                    }
+                    
+                    if ($hasWriteBack === false) {
                         // Remove the property (traditional cascading).
                         unset($data[$property]);
                     }
-                } else {
+                }
+                
+                if (($definition['inversedBy'] ?? null) === null && (($definition['items']['inversedBy'] ?? null) !== null) === false) {
                     // Without inversedBy: store the created objects' UUIDs.
                     $data[$property] = $createdUuids;
                 }
@@ -1348,7 +1356,9 @@ class SaveObject
                 if (in_array($objectId, $object[$inversedByProperty], true) === false) {
                     $object[$inversedByProperty][] = $objectId;
                 }
-            } else {
+            }
+            
+            if (($object[$inversedByProperty] ?? null) === null || is_array($object[$inversedByProperty]) === false) {
                 // Set as single value or create new array.
                 $object[$inversedByProperty] = $objectId;
             }
@@ -1367,7 +1377,9 @@ class SaveObject
         $uuid = null;
         if (($definition['inversedBy'] ?? null) !== null) {
             $uuid = $object['id'] ?? $object['@self']['id'] ?? null;
-        } else {
+        }
+        
+        if (($definition['inversedBy'] ?? null) === null) {
             // Remove any existing UUID/id fields to force new object creation.
             unset($object['id']);
             unset($object['@self']);
@@ -1627,18 +1639,20 @@ class SaveObject
 
                     if (empty($value) === true && $minItems > 0) {
                         // Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error.
-                    } else if (empty($value) === true && $minItems === 0) {
+                    }
+                    
+                    if (empty($value) === true && $minItems === 0) {
                         // Empty array is valid for arrays with no minItems constraint.
-                    } else {
+                    }
+                    
+                    if (empty($value) === false) {
                         // Handle array items that might contain empty strings.
                         $sanitizedArray = [];
                         $hasChanges     = false;
                         foreach ($value as $index => $item) {
+                            $sanitizedArray[$index] = ($item === '') ? null : $item;
                             if ($item === '') {
-                                $sanitizedArray[$index] = null;
                                 $hasChanges = true;
-                            } else {
-                                $sanitizedArray[$index] = $item;
                             }
                         }
 
@@ -1653,8 +1667,11 @@ class SaveObject
                 if ($isRequired === false) {
                     // Convert empty string to null for non-required scalar properties.
                     $sanitizedData[$propertyName] = null;
-                } else {
+                }
+                
+                if ($isRequired === true) {
                     // Keep empty string for required properties - will fail validation with clear error.
+                    // No action needed - property stays as is.
                 }
             }
         }//end foreach
@@ -1723,7 +1740,9 @@ class SaveObject
         // Set schema ID based on input type.
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
-        } else {
+        }
+        
+        if (($schema instanceof Schema) === false) {
             // Resolve schema reference if it's a string.
             if (is_string($schema) === true) {
                 $schemaId = $this->resolveSchemaReference($schema);
@@ -1732,7 +1751,9 @@ class SaveObject
                 }
 
                 $schema = $this->schemaMapper->find(id: $schemaId);
-            } else {
+            }
+            
+            if (is_string($schema) === false) {
                 $schemaId = $schema;
                 $schema   = $this->schemaMapper->find(id: $schema);
             }
@@ -1740,7 +1761,9 @@ class SaveObject
 
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
-        } else {
+        }
+        
+        if (($register instanceof Register) === false) {
             // Resolve register reference if it's a string.
             if (is_string($register) === true) {
                 $registerId = $this->resolveRegisterReference($register);
@@ -1749,7 +1772,9 @@ class SaveObject
                 }
 
                 $register = $this->registerMapper->find(id: $registerId);
-            } else {
+            }
+            
+            if (is_string($register) === false) {
                 $registerId = $register;
                 $register   = $this->registerMapper->find(id: $register);
             }
@@ -1914,18 +1939,14 @@ class SaveObject
         }
 
         // Determine register ID.
-        if ($savedEntity->getRegister() !== null) {
-            $registerId = (int) $savedEntity->getRegister();
-        } else {
-            $registerId = null;
-        }
+        $registerId = ($savedEntity->getRegister() !== null) 
+            ? (int) $savedEntity->getRegister() 
+            : null;
 
         // Determine schema ID.
-        if ($savedEntity->getSchema() !== null) {
-            $schemaId = (int) $savedEntity->getSchema();
-        } else {
-            $schemaId = null;
-        }
+        $schemaId = ($savedEntity->getSchema() !== null) 
+            ? (int) $savedEntity->getSchema() 
+            : null;
 
         // TODO: Implement cache invalidation for object changes.
         // This should use the CacheHandler to invalidate relevant caches after object operations.
@@ -2174,11 +2195,15 @@ class SaveObject
                             );
                     // Silently ignore invalid date formats.
                 }//end try
-            } else {
+            }//end if
+            
+            if (empty($publishedValue) === true) {
                 $this->logger->debug('Published value is empty, setting to null');
                 $objectEntity->setPublished(null);
             }//end if
-        } else {
+        }//end if
+        
+        if (array_key_exists('published', $selfData) === false) {
             $this->logger->debug('No published field found in selfData, setting to existing value');
             $objectEntity->setPublished($objectEntity->getPublished());
         }//end if
@@ -2283,18 +2308,14 @@ class SaveObject
         unset($data['@self'], $data['id']);
 
         // Set register ID based on input type.
-        if ($register instanceof Register === true) {
-            $registerId = $register->getId();
-        } else {
-            $registerId = $register;
-        }
+        $registerId = ($register instanceof Register === true) 
+            ? $register->getId() 
+            : $register;
 
         // Set schema ID based on input type.
-        if ($schema instanceof Schema === true) {
-            $schemaId = $schema->getId();
-        } else {
-            $schemaId = $schema;
-        }
+        $schemaId = ($schema instanceof Schema === true) 
+            ? $schema->getId() 
+            : $schema;
 
         // Prepare the object for update using the new structure.
         $preparedObject = $this->prepareObjectForUpdate(

@@ -419,7 +419,9 @@ class SettingsService
      */
     public function updateSearchBackendConfig(array $data): array
     {
-        return $this->searchBackendHandler->updateSearchBackendConfig($data);
+        // Extract backend string from data array.
+        $backend = $data['backend'] ?? $data['active'] ?? 'solr';
+        return $this->searchBackendHandler->updateSearchBackendConfig($backend);
 
     }//end updateSearchBackendConfig()
 
@@ -1147,12 +1149,12 @@ class SettingsService
 
                     // Re-save the object to trigger all business logic.
                     // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
-                    $objectData = $object->getRegister(); // Assuming this returns the object data array.
+                    $objectData = $object->getObject(); // Get the object business data.
                     $savedObject = $objectService->saveObject(
                         object: $objectData,
                         extend: [],
-                        register: $object->getObject(),
-                        schema: null,
+                        register: $object->getRegister(), // Get the register ID.
+                        schema: $object->getSchema(), // Get the schema ID.
                         uuid: $object->getUuid()
                     );
 
@@ -1345,12 +1347,12 @@ class SettingsService
 
                 // Re-save the object to trigger all business logic.
                 // ObjectService::saveObject signature: (array|ObjectEntity $object, ?array $extend, Register|string|int|null $register, Schema|string|int|null $schema, ?string $uuid, ...).
-                $objectData = $object->getRegister(); // Assuming this returns the object data array.
+                $objectData = $object->getObject(); // Get the object business data.
                 $savedObject = $objectService->saveObject(
                     object: $objectData,
                     extend: [],
-                    register: $object->getObject(),
-                    schema: null,
+                    register: $object->getRegister(), // Get the register ID.
+                    schema: $object->getSchema(), // Get the schema ID.
                     uuid: $object->getUuid()
                 );
 

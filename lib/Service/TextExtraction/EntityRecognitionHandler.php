@@ -528,7 +528,7 @@ class EntityRecognitionHandler
              * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance.
              */
 
-            $existingEntities = $this->entityMapper->findEntities($qb);
+            $existingEntities = $this->entityMapper->findEntitiesPublic($qb);
             if (empty($existingEntities) === false) {
                 $existing = $existingEntities[0];
                 // Update timestamp.

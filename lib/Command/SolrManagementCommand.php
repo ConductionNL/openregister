@@ -222,7 +222,8 @@ class SolrManagementCommand extends Command
             $solrSetup = new SetupHandler($this->solrService, $this->logger);
 
             // Run complete setup including schema field configuration.
-            if ($solrSetup->setupSolr() === true) {
+            $setupResult = $solrSetup->setupSolr();
+            if ($setupResult === true) {
                 $output->writeln('✅ Base SOLR infrastructure and schema configured');
                 $output->writeln('   • ConfigSet: <comment>openregister</comment>');
                 $output->writeln('   • Base collection: <comment>openregister</comment>');
@@ -242,7 +243,7 @@ class SolrManagementCommand extends Command
                 $output->writeln('   Document count: <comment>'.$docCount.'</comment>');
             }//end if
             
-            if ($result['success'] !== true) {
+            if ($setupResult !== true) {
                 $output->writeln('<error>❌ SOLR setup failed - check logs for details</error>');
                 return self::FAILURE;
             }//end if
@@ -299,10 +300,9 @@ class SolrManagementCommand extends Command
                 return self::SUCCESS;
             }//end if
             
-            if ($result['success'] !== true) {
-                $output->writeln('<error>❌ Index optimization failed</error>');
-                return self::FAILURE;
-            }
+            // If optimize failed, return failure.
+            $output->writeln('<error>❌ Index optimization failed</error>');
+            return self::FAILURE;
         } catch (\Exception $e) {
             $output->writeln('<error>❌ Optimization failed: '.$e->getMessage().'</error>');
             return self::FAILURE;

@@ -159,7 +159,31 @@ class ConversationController extends Controller
      *
      * @return JSONResponse List of conversations
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to fetch conversations', message?: string, results?: array<array{id: int, uuid: null|string, title: null|string, userId: null|string, organisation: null|string, agentId: int|null, metadata: array|null, deletedAt: null|string, created: null|string, updated: null|string}>, total?: int, limit?: int, offset?: int}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         error?: 'Failed to fetch conversations',
+     *         message?: string,
+     *         results?: array<
+     *             array{
+     *                 id: int,
+     *                 uuid: null|string,
+     *                 title: null|string,
+     *                 userId: null|string,
+     *                 organisation: null|string,
+     *                 agentId: int|null,
+     *                 metadata: array|null,
+     *                 deletedAt: null|string,
+     *                 created: null|string,
+     *                 updated: null|string
+     *             }
+     *         >,
+     *         total?: int,
+     *         limit?: int,
+     *         offset?: int
+     *     },
+     *     array<never, never>
+     * >
      */
     public function index(): JSONResponse
     {
@@ -250,7 +274,25 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string, messageCount?: int}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: 'Access denied'|'Conversation not found'|'Failed to fetch conversation',
+     *         message?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         title?: null|string,
+     *         userId?: null|string,
+     *         organisation?: null|string,
+     *         agentId?: int|null,
+     *         metadata?: array|null,
+     *         deletedAt?: null|string,
+     *         created?: null|string,
+     *         updated?: null|string,
+     *         messageCount?: int
+     *     },
+     *     array<never, never>
+     * >
      */
     public function show(string $uuid): JSONResponse
     {
@@ -263,7 +305,11 @@ class ConversationController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Validate Check access rights using method.
-            if ($this->conversationMapper->canUserAccessConversation(conversation: $conversation, userId: $this->userId, organisationUuid: $organisationUuid) === false) {
+            if ($this->conversationMapper->canUserAccessConversation(
+                conversation: $conversation,
+                userId: $this->userId,
+                organisationUuid: $organisationUuid
+            ) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -322,7 +368,28 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to fetch messages', message?: string, results?: list<array{content: null|string, conversationId: int|null, created: null|string, id: int, role: null|string, sources: array|null, uuid: null|string}>, total?: int, limit?: int, offset?: int}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: 'Access denied'|'Conversation not found'|'Failed to fetch messages',
+     *         message?: string,
+     *         results?: list<
+     *             array{
+     *                 content: null|string,
+     *                 conversationId: int|null,
+     *                 created: null|string,
+     *                 id: int,
+     *                 role: null|string,
+     *                 sources: array|null,
+     *                 uuid: null|string
+     *             }
+     *         >,
+     *         total?: int,
+     *         limit?: int,
+     *         offset?: int
+     *     },
+     *     array<never, never>
+     * >
      */
     public function messages(string $uuid): JSONResponse
     {
@@ -335,7 +402,11 @@ class ConversationController extends Controller
             $organisationUuid = $organisation?->getUuid();
 
             // Validate Check access rights using method.
-            if ($this->conversationMapper->canUserAccessConversation(conversation: $conversation, userId: $this->userId, organisationUuid: $organisationUuid) === false) {
+            if ($this->conversationMapper->canUserAccessConversation(
+                conversation: $conversation,
+                userId: $this->userId,
+                organisationUuid: $organisationUuid
+            ) === false) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Access denied',
@@ -408,7 +479,24 @@ class ConversationController extends Controller
      *
      * @return JSONResponse Created conversation
      *
-     * @psalm-return JSONResponse<201|500, array{error?: 'Failed to create conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     201|500,
+     *     array{
+     *         error?: 'Failed to create conversation',
+     *         message?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         title?: null|string,
+     *         userId?: null|string,
+     *         organisation?: null|string,
+     *         agentId?: int|null,
+     *         metadata?: array|null,
+     *         deletedAt?: null|string,
+     *         created?: null|string,
+     *         updated?: null|string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function create(): JSONResponse
     {
@@ -507,7 +595,24 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to update conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: 'Access denied'|'Conversation not found'|'Failed to update conversation',
+     *         message?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         title?: null|string,
+     *         userId?: null|string,
+     *         organisation?: null|string,
+     *         agentId?: int|null,
+     *         metadata?: array|null,
+     *         deletedAt?: null|string,
+     *         created?: null|string,
+     *         updated?: null|string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function update(string $uuid): JSONResponse
     {
@@ -595,7 +700,16 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to delete conversation', message: string, uuid?: string, archived?: true}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: 'Access denied'|'Conversation not found'|'Failed to delete conversation',
+     *         message: string,
+     *         uuid?: string,
+     *         archived?: true
+     *     },
+     *     array<never, never>
+     * >
      */
     public function destroy(string $uuid): JSONResponse
     {
@@ -710,7 +824,24 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to restore conversation', message?: string, id?: int, uuid?: null|string, title?: null|string, userId?: null|string, organisation?: null|string, agentId?: int|null, metadata?: array|null, deletedAt?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: 'Access denied'|'Conversation not found'|'Failed to restore conversation',
+     *         message?: string,
+     *         id?: int,
+     *         uuid?: null|string,
+     *         title?: null|string,
+     *         userId?: null|string,
+     *         organisation?: null|string,
+     *         agentId?: int|null,
+     *         metadata?: array|null,
+     *         deletedAt?: null|string,
+     *         created?: null|string,
+     *         updated?: null|string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function restore(string $uuid): JSONResponse
     {
@@ -783,7 +914,15 @@ class ConversationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Conversation not found'|'Failed to permanently delete conversation', message: string, uuid?: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: 'Access denied'|'Conversation not found'|'Failed to permanently delete conversation',
+     *         message: string,
+     *         uuid?: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function destroyPermanent(string $uuid): JSONResponse
     {

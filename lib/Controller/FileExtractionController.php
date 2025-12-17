@@ -77,7 +77,16 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array<never, never>, message?: 'This endpoint needs to be updated for chunk-based architecture'}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: string,
+     *         data?: array<never, never>,
+     *         message?: 'This endpoint needs to be updated for chunk-based architecture'
+     *     },
+     *     array<never, never>
+     * >
      */
     public function index(): JSONResponse
     {
@@ -115,7 +124,16 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404, array{success: bool, error?: 'File not found in extraction system', message?: string, data?: array<array<string, mixed>>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|404,
+     *     array{
+     *         success: bool,
+     *         error?: 'File not found in extraction system',
+     *         message?: string,
+     *         data?: array<array<string, mixed>>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function show(int $id): JSONResponse
     {
@@ -169,7 +187,15 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404|500, array{success: bool, error?: 'Extraction failed'|'File not found in Nextcloud', message: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|404|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Extraction failed'|'File not found in Nextcloud',
+     *         message: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
@@ -220,7 +246,21 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'File discovery failed', message: string, data?: array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'File discovery failed',
+     *         message: string,
+     *         data?: array{
+     *             discovered: int<0, max>,
+     *             failed: int<0, max>,
+     *             total: int<0, max>,
+     *             error?: string
+     *         }
+     *     },
+     *     array<never, never>
+     * >
      */
     public function discover(int $limit=100): JSONResponse
     {
@@ -262,7 +302,16 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Batch extraction failed', message: string, data?: array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Batch extraction failed',
+     *         message: string,
+     *         data?: array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *     },
+     *     array<never, never>
+     * >
      */
     public function extractAll(int $limit=100): JSONResponse
     {
@@ -301,7 +350,16 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Retry failed', message: string, data?: array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Retry failed',
+     *         message: string,
+     *         data?: array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *     },
+     *     array<never, never>
+     * >
      */
     public function retryFailed(int $limit=50): JSONResponse
     {
@@ -338,7 +396,22 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Failed to retrieve statistics', message?: string, data?: array{totalFiles: int, untrackedFiles: int, totalChunks: int, totalObjects: int, totalEntities: int}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Failed to retrieve statistics',
+     *         message?: string,
+     *         data?: array{
+     *             totalFiles: int,
+     *             untrackedFiles: int,
+     *             totalChunks: int,
+     *             totalObjects: int,
+     *             totalEntities: int
+     *         }
+     *     },
+     *     array<never, never>
+     * >
      */
     public function stats(): JSONResponse
     {
@@ -377,7 +450,16 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Cleanup failed', message: string, data?: array{deleted: 0, reasons: array<never, never>}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Cleanup failed',
+     *         message: string,
+     *         data?: array{deleted: 0, reasons: array<never, never>}
+     *     },
+     *     array<never, never>
+     * >
      */
     public function cleanup(): JSONResponse
     {
@@ -419,7 +501,16 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Failed to retrieve file types', message?: string, data?: array<never, never>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Failed to retrieve file types',
+     *         message?: string,
+     *         data?: array<never, never>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function fileTypes(): JSONResponse
     {
@@ -459,7 +550,25 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Vectorization failed', message?: string, data?: array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: 0|mixed, vectorized: 0|mixed, failed: 0|mixed, errors?: array}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         success: bool,
+     *         error?: 'Vectorization failed',
+     *         message?: string,
+     *         data?: array{
+     *             success: true,
+     *             message: string,
+     *             entity_type: string,
+     *             total_entities: int<0, max>,
+     *             total_items: 0|mixed,
+     *             vectorized: 0|mixed,
+     *             failed: 0|mixed,
+     *             errors?: array
+     *         }
+     *     },
+     *     array<never, never>
+     * >
      */
     public function vectorizeBatch(): JSONResponse
     {
