@@ -104,6 +104,7 @@ class RenderObject
      * @param ISystemTagManager      $systemTagManager   System tag manager for file tags.
      * @param ISystemTagObjectMapper $systemTagMapper    System tag object mapper for file tags.
      * @param CacheHandler           $cacheHandler       Cache service for performance optimization.
+     * @param CacheHandler           $objectCacheService Object cache service for optimized loading.
      * @param LoggerInterface        $logger             Logger for performance monitoring.
      */
     public function __construct(
@@ -114,6 +115,7 @@ class RenderObject
         private readonly ISystemTagManager $systemTagManager,
         private readonly ISystemTagObjectMapper $systemTagMapper,
         private readonly CacheHandler $cacheHandler,
+        private readonly CacheHandler $objectCacheService,
         private readonly LoggerInterface $logger
     ) {
 

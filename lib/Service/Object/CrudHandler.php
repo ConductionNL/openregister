@@ -22,8 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use Exception;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -53,10 +55,12 @@ class CrudHandler
      * Constructor
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
+     * @param ObjectService      $objectService      Object service for save/search operations
      * @param LoggerInterface    $logger             PSR-3 logger
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly ObjectService $objectService,
         private readonly LoggerInterface $logger
     ) {
 
@@ -174,6 +178,8 @@ class CrudHandler
                 return null;
             }
 
+            // This code is unreachable until TODO is implemented.
+            // @psalm-suppress NoValue - Dead code until find logic is implemented.
             $this->logger->debug(
                 message: '[CrudHandler] Object retrieved',
                 context: [
@@ -344,7 +350,7 @@ class CrudHandler
             $object = $this->get($objectId, $rbac, $_multitenancy);
 
             if ($object === null) {
-                throw new \Exception("Object not found: {$objectId}");
+                throw new Exception("Object not found: {$objectId}");
             }
 
             // Merge partial data with existing data.

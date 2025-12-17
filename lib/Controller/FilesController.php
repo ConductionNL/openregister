@@ -432,9 +432,10 @@ class FilesController extends Controller
                     'share'    => $data['share'] === 'true',
                     'tags'     => $tags,
                 ];
-            } else if (is_array($fileName) === true) {
+            } else if ($fileName !== null && is_array($fileName) === true) {
                 // Multiple file upload - $fileName is an array.
                 // Loop through each file using the count of 'name'.
+                /** @psalm-suppress NoValue - $fileName is guaranteed to be array at this point */
                 $fileCount = count($fileName);
                 for ($i = 0; $i < $fileCount; $i++) {
                     $tags = $data['tags'][$i] ?? '';

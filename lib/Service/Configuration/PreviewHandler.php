@@ -130,7 +130,13 @@ class PreviewHandler
      *     registers: array,
      *     schemas: array,
      *     objects: array,
-     *     metadata: array
+     *     metadata: array,
+     *     endpoints: array,
+     *     sources: array,
+     *     mappings: array,
+     *     jobs: array,
+     *     synchronizations: array,
+     *     rules: array
      * }|JSONResponse
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse

@@ -378,11 +378,9 @@ class FileTextController extends Controller
                 $options['chunk_size'] = $chunkSize;
             }
 
-            if ($chunkOverlap !== null) {
-                $options['chunk_overlap'] = $chunkOverlap;
-            }
-
-            $result = $this->solrFileService->processExtractedFile(fileId: $fileId, options: $options);
+            // Process unindexed chunks for all files (fileId and options are not supported by current API).
+            // TODO: Implement file-specific chunk processing with chunk size/overlap options.
+            $result = $this->indexService->processUnindexedChunks();
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
@@ -420,7 +418,7 @@ class FileTextController extends Controller
     public function getChunkingStats(): JSONResponse
     {
         try {
-            $stats = $this->solrFileService->getChunkingStats();
+            $stats = $this->indexService->getChunkingStats();
 
             return new JSONResponse(
                     data: [

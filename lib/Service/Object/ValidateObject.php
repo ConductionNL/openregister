@@ -44,6 +44,7 @@ use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use Opis\Uri\Uri;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handler class for validating objects in the OpenRegister application.
@@ -77,12 +78,14 @@ class ValidateObject
      * @param ObjectEntityMapper $objectMapper Object mapper.
      * @param SchemaMapper       $schemaMapper Schema mapper.
      * @param IURLGenerator      $urlGenerator URL generator.
+     * @param LoggerInterface    $logger       Logger for logging operations.
      */
     public function __construct(
         private IAppConfig $config,
         private ObjectEntityMapper $objectMapper,
         private SchemaMapper $schemaMapper,
-        private IURLGenerator $urlGenerator
+        private IURLGenerator $urlGenerator,
+        private LoggerInterface $logger
     ) {
 
     }//end __construct()
@@ -985,10 +988,8 @@ class ValidateObject
                     // At this point, $schema is string|null (not int, not Schema).
                     // Since we've already checked !== null, it must be string.
                     // Use type annotation to help Psalm understand.
-                    /*
-                     * @var string $schemaString
-                     */
-
+                    /** @var string $schemaString */
+                    /** @psalm-suppress NoValue - $schema is guaranteed to be string at this point */
                     $schemaString = $schema;
                     $schemaObject = $this->schemaMapper->find($schemaString)->getSchemaObject($this->urlGenerator);
                 }
@@ -1286,7 +1287,8 @@ class ValidateObject
                 if (is_array($missing) === true && count($missing) > 0) {
                     if (count($missing) === 1) {
                         $property = $missing[0];
-                        return "The required property ({$property}) is missing. "."Please provide a value for this property or set it to null if allowed.";
+                        return "The required property ({$property}) is missing. "
+                            ."Please provide a value for this property or set it to null if allowed.";
                     }
 
                     $missingList = implode(', ', $missing);
@@ -1300,17 +1302,23 @@ class ValidateObject
 
                 // Provide specific guidance for empty values.
                 if ($expectedType === 'object' && (is_array($value) === true && empty($value) === true)) {
-                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). "."For non-required object properties, you can set this to null to clear the field. "."For required object properties, provide a valid object with the necessary properties.";
+                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). "
+                        ."For non-required object properties, you can set this to null to clear the field. "
+                        ."For required object properties, provide a valid object with the necessary properties.";
                 }
 
                 if ($expectedType === 'array' && (is_array($value) === true && empty($value) === true)) {
-                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). "."This property likely has a minItems constraint. Please provide at least one item in the array.";
+                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). "
+                        ."This property likely has a minItems constraint. Please provide at least one item in the array.";
                 }
 
                 if ($expectedType === 'string' && $value === '') {
-                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. "."For non-required string properties, you can set this to null to clear the field. "."For required string properties, provide a valid string value.";
+                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. "
+                        ."For non-required string properties, you can set this to null to clear the field. "
+                        ."For required string properties, provide a valid string value.";
                 }
-                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. "."Please provide a value of the correct type.";
+                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. "
+                    ."Please provide a value of the correct type.";
 
             case 'minItems':
                 $minItems = $args['min'] ?? 0;
@@ -1319,7 +1327,8 @@ class ValidateObject
                 } else {
                     $actualItems = 0;
                 }
-                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. "."Please add more items to the array or set to null if the property is not required.";
+                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. "
+                    ."Please add more items to the array or set to null if the property is not required.";
 
             case 'maxItems':
                 $maxItems = $args['max'] ?? 0;
@@ -1328,11 +1337,13 @@ class ValidateObject
                 } else {
                     $actualItems = 0;
                 }
-                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. "."Please remove some items from the array.";
+                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. "
+                    ."Please remove some items from the array.";
 
             case 'format':
                 $format = $args['format'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "."Please provide a value in the correct format.";
+                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "
+                    ."Please provide a value in the correct format.";
 
             case 'minLength':
                 $minLength = $args['min'] ?? 0;
@@ -1343,9 +1354,11 @@ class ValidateObject
                 }
 
                 if ($actualLength === 0) {
-                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. "."Please provide a non-empty string value.";
+                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. "
+                        ."Please provide a non-empty string value.";
                 }
-                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. "."Please provide a longer string value.";
+                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. "
+                    ."Please provide a longer string value.";
 
             case 'maxLength':
                 $maxLength = $args['max'] ?? 0;
@@ -1354,7 +1367,8 @@ class ValidateObject
                 } else {
                     $actualLength = 0;
                 }
-                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. "."Please provide a shorter string value.";
+                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. "
+                    ."Please provide a shorter string value.";
 
             case 'minimum':
                 $minimum = $args['min'] ?? 0;
@@ -1376,13 +1390,15 @@ class ValidateObject
                             $allowedValues
                             )
                             );
-                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. "."Please choose one of the allowed values.";
+                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. "
+                        ."Please choose one of the allowed values.";
                 }
                 return "Property '{$propertyPath}' has an invalid value '{$value}'. "."Please provide one of the allowed values.";
 
             case 'pattern':
                 $pattern = $args['pattern'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. "."Please provide a value that matches the required pattern.";
+                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. "
+                    ."Please provide a value that matches the required pattern.";
 
             default:
                 // Check for sub-errors to provide more specific messages.
@@ -1390,7 +1406,8 @@ class ValidateObject
                 if (empty($subErrors) === false) {
                     return $this->formatValidationError($subErrors[0]);
                 }
-                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. "."Please check the property value and schema requirements.";
+                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. "
+                    ."Please check the property value and schema requirements.";
         }//end switch
 
     }//end formatValidationError()
@@ -1445,7 +1462,15 @@ class ValidateObject
      *
      * @return JSONResponse The formatted error response.
      *
-     * @psalm-return JSONResponse<400, array{status: 'error', message: 'Validation failed', errors: list{0?: array<array|mixed|null|string>|string,...}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     400,
+     *     array{
+     *         status: 'error',
+     *         message: 'Validation failed',
+     *         errors: list{0?: array<array|mixed|null|string>|string,...}
+     *     },
+     *     array<never, never>
+     * >
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {

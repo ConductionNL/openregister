@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\VectorizationService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -54,6 +55,7 @@ class VectorizationHandler
      * @param LoggerInterface      $logger               PSR-3 logger
      */
     public function __construct(
+        private readonly VectorizationService $vectorizationService,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {

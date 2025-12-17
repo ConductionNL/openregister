@@ -21,8 +21,9 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
-use stdClass;
+use ReflectionClass;
 use RuntimeException;
+use stdClass;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -668,6 +669,9 @@ class SettingsService
         int $batchSize=1000,
         array $schemaIds=[]
     ): array {
+        // NOTE: This method calls a deprecated method that always throws.
+        // TODO: Refactor to use IndexService->warmupIndex() directly.
+        /** @psalm-suppress NoValue - Method always throws, return is unreachable */
         return $this->solrSettingsHandler->warmupSolrIndex(
             $schemas,
             $maxObjects,
@@ -1492,7 +1496,7 @@ class SettingsService
             $schemas = $schemaMapper->findAll();
 
             // Use the existing analyzeAndResolveFieldConflicts method via reflection.
-            $reflection = new \ReflectionClass($solrSchemaService);
+            $reflection = new ReflectionClass($solrSchemaService);
             $method     = $reflection->getMethod('analyzeAndResolveFieldConflicts');
 
             $result = $method->invoke($solrSchemaService, $schemas);

@@ -19,6 +19,9 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
+use Exception;
+use RuntimeException;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\IAppConfig;
@@ -30,7 +33,6 @@ use OCP\IGroupManager;
 use OCP\IConfig;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
-use Exception;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -252,7 +254,7 @@ class OrganisationService
                 'organisation' => $organisationData,
             ];
         } catch (Exception $e) {
-            throw new \RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve Organisation settings: '.$e->getMessage());
         }//end try
 
     }//end getOrganisationSettingsOnly()
@@ -1270,8 +1272,8 @@ class OrganisationService
         if (($cachedData['created'] ?? null) !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['created']) === true) {
-                $organisation->setCreated(new \DateTime($cachedData['created']));
-            } else if ($cachedData['created'] instanceof \DateTime) {
+                $organisation->setCreated(new DateTime($cachedData['created']));
+            } else if ($cachedData['created'] instanceof DateTime) {
                 $organisation->setCreated($cachedData['created']);
             }
         }
@@ -1279,8 +1281,8 @@ class OrganisationService
         if (($cachedData['updated'] ?? null) !== null) {
             // Convert string back to DateTime if needed.
             if (is_string($cachedData['updated']) === true) {
-                $organisation->setUpdated(new \DateTime($cachedData['updated']));
-            } else if ($cachedData['updated'] instanceof \DateTime) {
+                $organisation->setUpdated(new DateTime($cachedData['updated']));
+            } else if ($cachedData['updated'] instanceof DateTime) {
                 $organisation->setUpdated($cachedData['updated']);
             }
         }

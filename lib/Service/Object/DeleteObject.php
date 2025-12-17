@@ -26,6 +26,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use DateTime;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -147,7 +148,7 @@ class DeleteObject
         
         $deletionData = [
             'deletedBy' => $userId,
-            'deletedAt' => (new \DateTime())->format(\DateTime::ATOM),
+            'deletedAt' => (new DateTime())->format(DateTime::ATOM),
             'objectId' => $objectEntity->getUuid(),
             'organisation' => $activeOrganisation,
         ];

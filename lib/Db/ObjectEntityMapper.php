@@ -224,7 +224,7 @@ class ObjectEntityMapper extends QBMapper
             // Create lock information as JSON object (locked is a JSON field, not a string).
             $lockData = json_encode([
                 'userId' => $userId,
-                'lockedAt' => (new \DateTime())->format(\DateTime::ATOM),
+                'lockedAt' => (new DateTime())->format(DateTime::ATOM),
                 'duration' => $lockDuration,
                 'organisation' => $activeOrganisation,
             ]);
@@ -994,8 +994,23 @@ class ObjectEntityMapper extends QBMapper
             $qb = $this->db->getQueryBuilder();
         $qb->select('*')->from('openregister_objects');
 
-        // Apply basic filters.
-        if ($includeDeleted === false) {
+        // **@SELF FILTER PROCESSING**: Handle @self.* filters from query.
+        // Process @self.deleted filter if present in filters array.
+        $hasDeletedFilter = false;
+        if ($filters !== null && isset($filters['@self.deleted'])) {
+            $deletedFilter = $filters['@self.deleted'];
+            if ($deletedFilter === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull('deleted'));
+            } elseif ($deletedFilter === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull('deleted'));
+            }
+            // Additional @self.deleted.* filters can be added here for nested properties
+            $hasDeletedFilter = true;
+        }
+
+        // Apply basic deleted filter ONLY if no @self.deleted filter was specified.
+        // Default behavior: exclude deleted objects unless explicitly filtered.
+        if ($hasDeletedFilter === false && $includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('deleted'));
         }
 
@@ -1088,13 +1103,20 @@ class ObjectEntityMapper extends QBMapper
         $offset = $query['_offset'] ?? 0;
         $sort   = $query['_order'] ?? [];
 
-        // Use findAll for basic searching.
+        // **DELETED FILTER HANDLING**: Check if @self.deleted filter is in query.
+        // If yes, include deleted objects and apply the filter. If no, exclude deleted objects.
+        $hasDeletedFilter = isset($query['@self.deleted']);
+        $includeDeleted = $hasDeletedFilter;
+
+        // Pass the entire query array so filters can be applied.
         return $this->findAll(
             limit: $limit,
             offset: $offset,
+            filters: $query,  // Pass full query so filters like @self.deleted are available
             sort: $sort,
             ids: $ids,
-            uses: $uses
+            uses: $uses,
+            includeDeleted: $includeDeleted
         );
 
     }//end searchObjects()
@@ -1118,8 +1140,21 @@ class ObjectEntityMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
-            ->from('openregister_objects')
-            ->where($qb->expr()->isNull('deleted'));
+            ->from('openregister_objects');
+
+        // **@SELF FILTER PROCESSING**: Handle @self.deleted filter from query.
+        // Check if @self.deleted filter is present in query.
+        if (isset($query['@self.deleted'])) {
+            $deletedFilter = $query['@self.deleted'];
+            if ($deletedFilter === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull('deleted'));
+            } elseif ($deletedFilter === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull('deleted'));
+            }
+        } else {
+            // Default behavior: exclude deleted objects unless explicitly filtered.
+            $qb->andWhere($qb->expr()->isNull('deleted'));
+        }
 
         // Apply ID filters.
         if ($ids !== null && empty($ids) === false) {

@@ -14,12 +14,13 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use Exception;
+use ReflectionClass;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use Psr\Log\LoggerInterface;
-use Exception;
 
 /**
  * Handles cascading object creation for inversedBy relationships.
@@ -76,7 +77,7 @@ class CascadingHandler
         // Pre-validation cascading to handle nested objects.
         try {
             // Get the URL generator from the SaveObject handler.
-            $urlGenerator         = new \ReflectionClass($this->saveHandler);
+            $urlGenerator         = new ReflectionClass($this->saveHandler);
             $urlGeneratorProperty = $urlGenerator->getProperty('urlGenerator');
             /*
              * @psalm-suppress UnusedMethodCall

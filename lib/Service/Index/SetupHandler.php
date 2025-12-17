@@ -337,7 +337,12 @@ class SetupHandler
 
         try {
             // Step 1: Verify SOLR connectivity.
-            $this->trackStep(stepNumber: 1, stepName: 'SOLR Connectivity', status: 'started', description: 'Verifying SOLR server connectivity and authentication');
+            $this->trackStep(
+                stepNumber: 1,
+                stepName: 'SOLR Connectivity',
+                status: 'started',
+                description: 'Verifying SOLR server connectivity and authentication'
+            );
 
             try {
                 if ($this->verifySolrConnectivity() === false) {
@@ -399,7 +404,12 @@ class SetupHandler
 
             // Step 2: Ensure tenant configSet exists.
             $tenantConfigSetName = $this->getTenantConfigSetName();
-            $this->trackStep(stepNumber: 2, stepName: 'EnsureTenantConfigSet', status: 'started', description: 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"');
+            $this->trackStep(
+                stepNumber: 2,
+                stepName: 'EnsureTenantConfigSet',
+                status: 'started',
+                description: 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"'
+            );
 
             try {
                 if ($this->ensureTenantConfigSet() === false) {
@@ -416,7 +426,8 @@ class SetupHandler
                                 'template'               => '_default',
                                 'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
                                 'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
-                                'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                                'actual_error'           => $errorDetails['error_message'] ??
+                                    'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
                                 'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
                                 'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
                                 'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
@@ -447,7 +458,12 @@ class SetupHandler
                     return false;
                 }//end if
 
-                $this->trackStep(stepNumber: 2, stepName: 'EnsureTenantConfigSet', status: 'completed', description: 'Tenant configSet "'.$tenantConfigSetName.'" is available');
+                $this->trackStep(
+                    stepNumber: 2,
+                    stepName: 'EnsureTenantConfigSet',
+                    status: 'completed',
+                    description: 'Tenant configSet "'.$tenantConfigSetName.'" is available'
+                );
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
@@ -474,7 +490,12 @@ class SetupHandler
             }//end try
 
             // Step 3: Force ConfigSet Propagation (always run for safety).
-            $this->trackStep(stepNumber: 3, stepName: 'ConfigSet Propagation', status: 'started', description: 'Forcing configSet propagation across SOLR cluster nodes');
+            $this->trackStep(
+                stepNumber: 3,
+                stepName: 'ConfigSet Propagation',
+                status: 'started',
+                description: 'Forcing configSet propagation across SOLR cluster nodes'
+            );
 
             try {
                 $propagationResult = $this->forceConfigSetPropagation($tenantConfigSetName);
@@ -559,7 +580,12 @@ class SetupHandler
 
             // Step 4: Ensure tenant collection exists.
             $tenantCollectionName = $this->getTenantCollectionName();
-            $this->trackStep(stepNumber: 4, stepName: 'Collection Creation', status: 'started', description: 'Checking and creating tenant collection "'.$tenantCollectionName.'"');
+            $this->trackStep(
+                stepNumber: 4,
+                stepName: 'Collection Creation',
+                status: 'started',
+                description: 'Checking and creating tenant collection "'.$tenantCollectionName.'"'
+            );
 
             try {
                 // Ensure tenant collection exists (using tenant-specific configSet).
@@ -602,7 +628,12 @@ class SetupHandler
                     return false;
                 }//end if
 
-                $this->trackStep(stepNumber: 4, stepName: 'Collection Creation', status: 'completed', description: 'Tenant collection "'.$tenantCollectionName.'" is available');
+                $this->trackStep(
+                    stepNumber: 4,
+                    stepName: 'Collection Creation',
+                    status: 'completed',
+                    description: 'Tenant collection "'.$tenantCollectionName.'" is available'
+                );
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
@@ -629,11 +660,21 @@ class SetupHandler
             }//end try
 
             // Step 5: Configure schema fields.
-            $this->trackStep(stepNumber: 5, stepName: 'Schema Configuration', status: 'started', description: 'Configuring schema fields for ObjectEntity metadata');
+            $this->trackStep(
+                stepNumber: 5,
+                stepName: 'Schema Configuration',
+                status: 'started',
+                description: 'Configuring schema fields for ObjectEntity metadata'
+            );
 
             try {
                 if ($this->configureSchemaFields() === false) {
-                    $this->trackStep(stepNumber: 5, stepName: 'Schema Configuration', status: 'failed', description: 'Failed to configure schema fields');
+                    $this->trackStep(
+                        stepNumber: 5,
+                        stepName: 'Schema Configuration',
+                        status: 'failed',
+                        description: 'Failed to configure schema fields'
+                    );
 
                     $this->lastErrorDetails = [
                         'operation'       => 'configureSchemaFields',
@@ -651,7 +692,12 @@ class SetupHandler
                     return false;
                 }
 
-                $this->trackStep(stepNumber: 5, stepName: 'Schema Configuration', status: 'completed', description: 'Schema fields configured successfully');
+                $this->trackStep(
+                    stepNumber: 5,
+                    stepName: 'Schema Configuration',
+                    status: 'completed',
+                    description: 'Schema fields configured successfully'
+                );
                 $this->infrastructureCreated['schema_fields_configured'] = true;
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
@@ -742,7 +788,9 @@ class SetupHandler
                         'total_steps'               => $this->setupProgress['total_steps'],
                         'solr_host'                 => $this->solrConfig['host'] ?? 'localhost',
                         'solr_port'                 => $this->solrConfig['port'] ?? '8983',
-                        'admin_ui_url'              => 'http://'.($this->solrConfig['host'] ?? 'localhost').':'.($this->solrConfig['port'] ?? '8983').'/solr/',
+                        'admin_ui_url'              => 'http://'.
+                            ($this->solrConfig['host'] ?? 'localhost').':'.
+                            ($this->solrConfig['port'] ?? '8983').'/solr/',
                     ]
                     );
 
@@ -1251,7 +1299,8 @@ class SetupHandler
             // Add specific error categorization.
             if (strpos($e->getMessage(), '401') !== false || strpos($e->getMessage(), 'Unauthorized') !== false) {
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
-                $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false && empty($this->solrConfig['password']) === false;
+                $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false
+                    && empty($this->solrConfig['password']) === false;
             } else if (strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
@@ -1633,7 +1682,11 @@ class SetupHandler
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
                     throw new Exception(
-                        "SOLR ConfigSet propagation timeout: The configSet was created successfully but is still propagating across the SOLR cluster. This is normal in distributed SOLR environments. Attempted {$attempt} times over {$totalElapsed} seconds. Please wait 2-5 minutes and try the setup again.",
+                        "SOLR ConfigSet propagation timeout: The configSet was created successfully "
+                        ."but is still propagating across the SOLR cluster. "
+                        ."This is normal in distributed SOLR environments. "
+                        ."Attempted {$attempt} times over {$totalElapsed} seconds. "
+                        ."Please wait 2-5 minutes and try the setup again.",
                         500,
                         new Exception(json_encode($retryDetails))
                     );
@@ -1708,9 +1761,41 @@ class SetupHandler
      *
      * @param string $configSetName ConfigSet name to force propagation for
      *
-     * @return (((int|null|string)[]|string)[]|bool|int|null|string)[] Result array with success status, operations performed, and details
+     * @return (((int|null|string)[]|string)[]|bool|int|null|string)[] Result array with success status,
+     *         operations performed, and details
      *
-     * @psalm-return array{success: bool, operations: array{configset_list_refresh: array{name: 'configset_list_refresh', description: 'List ConfigSets API call to trigger cache refresh', url: null|string, status: 'failed'|'success', http_status: int|null, response_size: int<0, max>, error: null|string}, cluster_status_sync: array{name: 'cluster_status_sync', description: 'Cluster Status API call to trigger ZooKeeper sync', url: null|string, status: 'failed'|'success', http_status: int|null, response_size: int<0, max>, error: null|string}}, successful_operations: 0|1|2, total_operations: 2, cluster_sync: 'failed'|'triggered', cache_refresh: 'failed'|'triggered', error: 'All propagation methods failed'|null, summary: array{configset_list_refresh: 'failed'|'success', cluster_status_sync: 'failed'|'success'}}
+     * @psalm-return array{
+     *     success: bool,
+     *     operations: array{
+     *         configset_list_refresh: array{
+     *             name: 'configset_list_refresh',
+     *             description: 'List ConfigSets API call to trigger cache refresh',
+     *             url: null|string,
+     *             status: 'failed'|'success',
+     *             http_status: int|null,
+     *             response_size: int<0, max>,
+     *             error: null|string
+     *         },
+     *         cluster_status_sync: array{
+     *             name: 'cluster_status_sync',
+     *             description: 'Cluster Status API call to trigger ZooKeeper sync',
+     *             url: null|string,
+     *             status: 'failed'|'success',
+     *             http_status: int|null,
+     *             response_size: int<0, max>,
+     *             error: null|string
+     *         }
+     *     },
+     *     successful_operations: 0|1|2,
+     *     total_operations: 2,
+     *     cluster_sync: 'failed'|'triggered',
+     *     cache_refresh: 'failed'|'triggered',
+     *     error: 'All propagation methods failed'|null,
+     *     summary: array{
+     *         configset_list_refresh: 'failed'|'success',
+     *         cluster_status_sync: 'failed'|'success'
+     *     }
+     * }
      */
     private function forceConfigSetPropagation(string $configSetName): array
     {
@@ -2355,9 +2440,19 @@ class SetupHandler
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return ((mixed|string|true)[]|bool|mixed|string)[] Result with success status, action taken, and error details
+     * @return ((mixed|string|true)[]|bool|mixed|string)[] Result with success status,
+     *         action taken, and error details
      *
-     * @psalm-return array{success: bool, action: string, error?: 'Unknown error'|mixed, details?: array{success?: mixed|true, reason?: 'Field exists with compatible configuration'|mixed,...}}
+     * @psalm-return array{
+     *     success: bool,
+     *     action: string,
+     *     error?: 'Unknown error'|mixed,
+     *     details?: array{
+     *         success?: mixed|true,
+     *         reason?: 'Field exists with compatible configuration'|mixed,
+     *         ...
+     *     }
+     * }
      */
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
@@ -2412,7 +2507,13 @@ class SetupHandler
      *
      * @return (bool|mixed|string)[] Result with success status and details
      *
-     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
+     * @psalm-return array{
+     *     success: bool,
+     *     error?: mixed|string,
+     *     exception_type?: get-class-of<$e, Exception>,
+     *     response_body?: string,
+     *     solr_response?: mixed
+     * }
      */
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2475,7 +2576,13 @@ class SetupHandler
      *
      * @return (bool|mixed|string)[] Result with success status and details
      *
-     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
+     * @psalm-return array{
+     *     success: bool,
+     *     error?: mixed|string,
+     *     exception_type?: get-class-of<$e, Exception>,
+     *     response_body?: string,
+     *     solr_response?: mixed
+     * }
      */
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2542,7 +2649,33 @@ class SetupHandler
      *
      * @return (bool|string)[][] Field definitions with SOLR type configuration
      *
-     * @psalm-return array{self_tenant: array{type: 'string', stored: true, indexed: true, multiValued: false, required: true, docValues: true}, self_object_id: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: false}, self_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false}, self_register: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true}, self_schema: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true}, self_schema_version: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true}, self_owner: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false}, self_organisation: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true}, self_application: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true}, self_name: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false}, self_description: array{type: 'text_general', stored: true, indexed: true, multiValued: false, docValues: false}, self_summary: array{type: 'text_general', stored: true, indexed: true, multiValued: false}, self_image: array{type: 'string', stored: true, indexed: false, multiValued: false}, self_slug: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_uri: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_version: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_size: array{type: 'string', stored: true, indexed: false, multiValued: false}, self_folder: array{type: 'string', stored: true, indexed: true, multiValued: false}, self_created: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_updated: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_published: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_depublished: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true}, self_relations: array{type: 'string', stored: true, indexed: true, multiValued: true}, self_files: array{type: 'string', stored: true, indexed: true, multiValued: true}, self_parent_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false}}
+     * @psalm-return array{
+     *     self_tenant: array{type: 'string', stored: true, indexed: true, multiValued: false, required: true, docValues: true},
+     *     self_object_id: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: false},
+     *     self_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
+     *     self_register: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_schema: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_schema_version: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_owner: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
+     *     self_organisation: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_application: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_name: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
+     *     self_description: array{type: 'text_general', stored: true, indexed: true, multiValued: false, docValues: false},
+     *     self_summary: array{type: 'text_general', stored: true, indexed: true, multiValued: false},
+     *     self_image: array{type: 'string', stored: true, indexed: false, multiValued: false},
+     *     self_slug: array{type: 'string', stored: true, indexed: true, multiValued: false},
+     *     self_uri: array{type: 'string', stored: true, indexed: true, multiValued: false},
+     *     self_version: array{type: 'string', stored: true, indexed: true, multiValued: false},
+     *     self_size: array{type: 'string', stored: true, indexed: false, multiValued: false},
+     *     self_folder: array{type: 'string', stored: true, indexed: true, multiValued: false},
+     *     self_created: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_updated: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_published: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_depublished: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
+     *     self_relations: array{type: 'string', stored: true, indexed: true, multiValued: true},
+     *     self_files: array{type: 'string', stored: true, indexed: true, multiValued: true},
+     *     self_parent_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false}
+     * }
      */
     public static function getObjectEntityFieldDefinitions(): array
     {

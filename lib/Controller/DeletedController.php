@@ -171,32 +171,30 @@ class DeletedController extends Controller
         $params = $this->extractRequestParameters();
 
         try {
-            // Get deleted objects using the mapper with includeDeleted = true and filter for only deleted objects.
-            $params['filters']['@self.deleted'] = 'IS NOT NULL';
+            // Use searchObjectsPaginated with @self.deleted filter to find deleted objects.
+            // Build query array with filter for deleted objects.
+            $query = [
+                '@self.deleted' => 'IS NOT NULL',
+                '_limit' => $params['limit'],
+                '_offset' => $params['offset'],
+                '_order' => $params['sort'],
+            ];
 
-            $objects = $this->objectEntityMapper->findAll(
-                limit: $params['limit'],
-                offset: $params['offset'],
-                filters: $params['filters'],
-                sort: $params['sort'],
-                search: $params['search'],
-                includeDeleted: true,  // Include deleted objects in the query.
+            // Merge any additional filters from request.
+            foreach ($params['filters'] as $key => $value) {
+                if ($key !== '@self.deleted') {
+                    $query[$key] = $value;
+                }
+            }
+
+            // Use ObjectService to search for deleted objects with deleted=true to include them.
+            $result = $this->objectService->searchObjectsPaginated(
+                query: $query,
+                deleted: true  // This tells the service to include deleted objects in the search
             );
 
-            // Filter to only show actually deleted objects (extra safety).
-            // Check that deleted is not null and not an empty array.
-            $deletedObjects = array_filter(
-                    $objects,
-                    function ($object) {
-                        $deleted = $object->getDeleted();
-                        return $deleted !== null && !empty($deleted);
-                    }
-            );
-
-            // Get total count for pagination.
-            $total = $this->objectEntityMapper->countAll(
-                filters: $params['filters']
-            );
+            $deletedObjects = $result['results'] ?? [];
+            $total = $result['total'] ?? 0;
 
             // Calculate pagination.
             $pages = 1;

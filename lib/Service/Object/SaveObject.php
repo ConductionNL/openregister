@@ -176,7 +176,8 @@ class SaveObject
         $cleanReference = $this->removeQueryParameters($reference);
 
         // First, try direct ID lookup (numeric ID or UUID).
-        if (is_numeric($cleanReference) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $cleanReference) === true) {
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+        if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === true) {
             try {
                 $schema = $this->schemaMapper->find(id: $cleanReference);
                 return (string) $schema->getId();
@@ -259,7 +260,8 @@ class SaveObject
         }
 
         // First, try direct ID lookup (numeric ID or UUID).
-        if (is_numeric($reference) === true || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $reference) === true) {
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+        if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === true) {
             try {
                 $register = $this->registerMapper->find($reference);
                 return (string) $register->getId();
@@ -975,7 +977,9 @@ class SaveObject
         $renderedDefaultValues = [];
         foreach ($defaultValues as $key => $defaultValue) {
             try {
-                if (is_string($defaultValue) === true && str_contains(haystack: $defaultValue, needle: '{{') === true && str_contains(haystack: $defaultValue, needle: '}}') === true) {
+                if (is_string($defaultValue) === true
+                    && str_contains(haystack: $defaultValue, needle: '{{') === true
+                    && str_contains(haystack: $defaultValue, needle: '}}') === true) {
                     $renderedDefaultValues[$key] = $this->twig->createTemplate($defaultValue)->render($objectEntity->getObjectArray());
                 } else {
                     $renderedDefaultValues[$key] = $defaultValue;
@@ -1140,9 +1144,13 @@ class SaveObject
 
             return $property['type'] === 'array'
                 && (isset($property['$ref']) || (($property['items']['$ref'] ?? null) !== null))
-                && (isset($property['inversedBy']) || (($property['items']['inversedBy'] ?? null) !== null) ||
-                    (isset($property['objectConfiguration']['handling']) && ($property['objectConfiguration']['handling'] === 'cascade'|| $property['objectConfiguration']['handling'] === 'related-object')) ||
-                    (isset($property['items']['objectConfiguration']['handling']) && ($property['items']['objectConfiguration']['handling'] === 'cascade' || $property['objectConfiguration']['handling'] === 'related-object')));
+                && (isset($property['inversedBy']) || (($property['items']['inversedBy'] ?? null) !== null)
+                    || (isset($property['objectConfiguration']['handling'])
+                        && ($property['objectConfiguration']['handling'] === 'cascade'
+                            || $property['objectConfiguration']['handling'] === 'related-object'))
+                    || (isset($property['items']['objectConfiguration']['handling'])
+                        && ($property['items']['objectConfiguration']['handling'] === 'cascade'
+                            || $property['objectConfiguration']['handling'] === 'related-object')));
           }
           );
 
@@ -1252,7 +1260,9 @@ class SaveObject
         $validObjects = array_filter(
             $propData,
             function ($object) {
-                return (is_array($object) === true && empty($object) === false && !(count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true)) || (is_string($object) === true && Uuid::isValid($object) === true);
+                return (is_array($object) === true && empty($object) === false
+                        && !(count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true))
+                    || (is_string($object) === true && Uuid::isValid($object) === true);
             }
         );
 
@@ -1419,12 +1429,18 @@ class SaveObject
             }
 
             // Check for inversedBy with writeBack in array items.
-            if ($property['type'] === 'array' && (($property['items']['inversedBy'] ?? null) !== null) && (($property['items']['writeBack'] ?? null) !== null) && $property['items']['writeBack'] === true) {
+            if ($property['type'] === 'array'
+                && (($property['items']['inversedBy'] ?? null) !== null)
+                && (($property['items']['writeBack'] ?? null) !== null)
+                && $property['items']['writeBack'] === true) {
                 return true;
             }
 
             // Check for inversedBy with writeBack at array property level (for array of objects).
-            if ($property['type'] === 'array' && (($property['items']['inversedBy'] ?? null) !== null) && (($property['writeBack'] ?? null) !== null) && $property['writeBack'] === true) {
+            if ($property['type'] === 'array'
+                && (($property['items']['inversedBy'] ?? null) !== null)
+                && (($property['writeBack'] ?? null) !== null)
+                && $property['writeBack'] === true) {
                 return true;
             }
 
@@ -1450,12 +1466,16 @@ class SaveObject
                 $targetSchema     = $definition['$ref'] ?? null;
                 $targetRegister   = $definition['register'] ?? $objectEntity->getRegister();
                 $removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-            } else if (($definition['items']['inversedBy'] ?? null) !== null && (($definition['items']['writeBack'] ?? null) !== null) && $definition['items']['writeBack'] === true) {
+            } else if (($definition['items']['inversedBy'] ?? null) !== null
+                && (($definition['items']['writeBack'] ?? null) !== null)
+                && $definition['items']['writeBack'] === true) {
                 $inverseProperty  = $definition['items']['inversedBy'];
                 $targetSchema     = $definition['items']['$ref'] ?? null;
                 $targetRegister   = $definition['items']['register'] ?? $objectEntity->getRegister();
                 $removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
-            } else if (($definition['items']['inversedBy'] ?? null) !== null && (($definition['writeBack'] ?? null) !== null) && $definition['writeBack'] === true) {
+            } else if (($definition['items']['inversedBy'] ?? null) !== null
+                && (($definition['writeBack'] ?? null) !== null)
+                && $definition['writeBack'] === true) {
                 // Handle array of objects with writeBack at array level.
                 $inverseProperty  = $definition['items']['inversedBy'];
                 $targetSchema     = $definition['items']['$ref'] ?? null;
@@ -1483,7 +1503,8 @@ class SaveObject
             $validUuids = array_filter(
             $targetUuids,
            function ($uuid) {
-                return empty($uuid) === false && is_string($uuid) && trim($uuid) !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+                $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+                return empty($uuid) === false && is_string($uuid) && trim($uuid) !== '' && preg_match($uuidPattern, $uuid);
            }
             );
 
@@ -1771,7 +1792,14 @@ class SaveObject
                 }
 
                 // Update the object.
-                return $this->updateObject(register: $register, schema: $schema, data: $data, existingObject: $preparedObject, folderId: $folderId, silent: $silent);
+                return $this->updateObject(
+                    register: $register,
+                    schema: $schema,
+                    data: $data,
+                    existingObject: $preparedObject,
+                    folderId: $folderId,
+                    silent: $silent
+                );
             } catch (DoesNotExistException $e) {
                 // Object not found, proceed with creating new object.
             } catch (Exception $e) {
@@ -1820,7 +1848,12 @@ class SaveObject
         try {
             foreach ($data as $propertyName => $value) {
                 if ($this->filePropertyHandler->isFileProperty(value: $value, schema: $schema, propertyName: $propertyName) === true) {
-                    $this->filePropertyHandler->handleFileProperty(objectEntity: $savedEntity, object: $data, propertyName: $propertyName, schema: $schema);
+                    $this->filePropertyHandler->handleFileProperty(
+                        objectEntity: $savedEntity,
+                        object: $data,
+                        propertyName: $propertyName,
+                        schema: $schema
+                    );
                     $filePropertiesProcessed = true;
                 }
             }
@@ -2195,7 +2228,8 @@ class SaveObject
         } catch (Exception $e) {
             // CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
             throw new Exception(
-                'Object data sanitization failed: '.$e->getMessage().'. This indicates invalid or corrupted object data that cannot be processed safely.',
+                'Object data sanitization failed: '.$e->getMessage()
+                    .'. This indicates invalid or corrupted object data that cannot be processed safely.',
                 0,
                 $e
             );
@@ -2289,7 +2323,12 @@ class SaveObject
         $filePropertiesProcessed = false;
         foreach ($data as $propertyName => $value) {
             if ($this->filePropertyHandler->isFileProperty(value: $value, schema: $schema, propertyName: $propertyName) === true) {
-                $this->filePropertyHandler->handleFileProperty(objectEntity: $updatedEntity, object: $data, propertyName: $propertyName, schema: $schema);
+                $this->filePropertyHandler->handleFileProperty(
+                    objectEntity: $updatedEntity,
+                    object: $data,
+                    propertyName: $propertyName,
+                    schema: $schema
+                );
                 $filePropertiesProcessed = true;
             }
         }

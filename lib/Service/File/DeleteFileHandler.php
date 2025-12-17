@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
