@@ -153,7 +153,29 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return array{total_count: 0|mixed, results: list{0?: array{repository: mixed, owner: string, repo: string, path: string, url: mixed, stars: 0|mixed, description: ''|mixed, name: string, branch: string, raw_url: string, sha: null|string, organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array},...}, page: int, per_page: int}
+     * @psalm-return array{
+     *     total_count: 0|mixed,
+     *     results: list{
+     *         0?: array{
+     *             repository: mixed,
+     *             owner: string,
+     *             repo: string,
+     *             path: string,
+     *             url: mixed,
+     *             stars: 0|mixed,
+     *             description: ''|mixed,
+     *             name: string,
+     *             branch: string,
+     *             raw_url: string,
+     *             sha: null|string,
+     *             organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed},
+     *             config: array
+     *         },
+     *         ...
+     *     },
+     *     page: int,
+     *     per_page: int
+     * }
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -318,15 +340,21 @@ class GitHubHandler
                 if (stripos($rawError, 'rate limit') !== false) {
                     $token = $this->config->getAppValue('openregister', 'github_api_token', '');
                     if (empty($token) === true) {
-                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). Please configure a GitHub API token in Settings to increase to 5,000 requests/hour (30/minute for Code Search).';
+                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). '
+                            .'Please configure a GitHub API token in Settings to increase to 5,000 requests/hour '
+                            .'(30/minute for Code Search).';
                     } else {
-                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). Please wait a few minutes before trying again. The discovery search makes multiple API calls to find configurations.';
+                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). '
+                            .'Please wait a few minutes before trying again. '
+                            .'The discovery search makes multiple API calls to find configurations.';
                     }
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
 
             case 401:
-                return 'GitHub API authentication failed. Please check your API token in Settings or remove it to use unauthenticated access (60 requests/hour limit).';
+                return 'GitHub API authentication failed. '
+                    .'Please check your API token in Settings or remove it to use unauthenticated access '
+                    .'(60 requests/hour limit).';
 
             case 404:
                 return 'Repository or resource not found on GitHub. Please check the repository exists and is public.';
@@ -423,7 +451,14 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return array{title: mixed|string, description: ''|mixed, version: 'v.unknown'|mixed, app: mixed|null, type: 'unknown'|mixed, openregister: mixed|null}|null
+     * @psalm-return array{
+     *     title: mixed|string,
+     *     description: ''|mixed,
+     *     version: 'v.unknown'|mixed,
+     *     app: mixed|null,
+     *     type: 'unknown'|mixed,
+     *     openregister: mixed|null
+     * }|null
      */
     public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
@@ -633,7 +668,21 @@ class GitHubHandler
      *
      * @since 0.2.10
      *
-     * @psalm-return list{0?: array{path: mixed, sha: mixed|null, url: mixed|null, config: array{title: mixed|string, description: ''|mixed, version: '1.0.0'|mixed, app: mixed|null, type: 'manual'|mixed}},...}
+     * @psalm-return list{
+     *     0?: array{
+     *         path: mixed,
+     *         sha: mixed|null,
+     *         url: mixed|null,
+     *         config: array{
+     *             title: mixed|string,
+     *             description: ''|mixed,
+     *             version: '1.0.0'|mixed,
+     *             app: mixed|null,
+     *             type: 'manual'|mixed
+     *         }
+     *     },
+     *     ...
+     * }
      */
     public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
     {

@@ -141,11 +141,11 @@ class FileService
     private ObjectEntityMapper $objectEntityMapper;
 
     /**
-     * Register mapper
+     * REMOVED: Register mapper (unused, caused circular dependency)
      *
-     * @var RegisterMapper
+     * @var RegisterMapper|null
      */
-    private RegisterMapper $registerMapper;
+    // private ?RegisterMapper $registerMapper;
 
     /**
      * Root folder
@@ -352,7 +352,7 @@ class FileService
         IGroupManager $groupManager,
         LoggerInterface $logger,
         ObjectEntityMapper $objectEntityMapper,
-        RegisterMapper $registerMapper,
+        // REMOVED: RegisterMapper $registerMapper (unused, caused circular dependency)
         IRootFolder $rootFolder,
         IManager $shareManager,
         ISystemTagManager $systemTagManager,
@@ -378,7 +378,7 @@ class FileService
         $this->groupManager = $groupManager;
         $this->logger       = $logger;
         $this->objectEntityMapper    = $objectEntityMapper;
-        $this->registerMapper        = $registerMapper;
+        // REMOVED: registerMapper assignment (unused, caused circular dependency).
         $this->rootFolder            = $rootFolder;
         $this->shareManager          = $shareManager;
         $this->systemTagManager      = $systemTagManager;

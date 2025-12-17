@@ -507,7 +507,9 @@ class ObjectService
 
         // If the object is not published, check the permissions.
         $now = new DateTime('now');
-        if ($object->getPublished() === null || $now < $object->getPublished() || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
+        if ($object->getPublished() === null
+            || $now < $object->getPublished()
+            || ($object->getDepublished() !== null && $object->getDepublished() <= $now)) {
             // Check user has permission to read this specific object (includes object owner check).
             $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $_rbac);
         }
@@ -904,7 +906,13 @@ class ObjectService
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 // This is an UPDATE operation.
                 if ($this->currentSchema !== null) {
-                    $this->checkPermission(schema: $this->currentSchema, action: 'update', userId: null, objectOwner: $existingObject->getOwner(), _rbac: $_rbac);
+                    $this->checkPermission(
+                        schema: $this->currentSchema,
+                        action: 'update',
+                        userId: null,
+                        objectOwner: $existingObject->getOwner(),
+                        _rbac: $_rbac
+                    );
                 }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Object not found, this is a CREATE operation with specific UUID.
@@ -928,7 +936,12 @@ class ObjectService
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         // ARCHITECTURAL DELEGATION: Delegate to CascadingHandler for all cascading logic.
-        [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(object: $object, schema: $parentSchema, uuid: $uuid, currentRegister: $this->currentRegister->getId());
+        [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(
+            object: $object,
+            schema: $parentSchema,
+            uuid: $uuid,
+            currentRegister: $this->currentRegister->getId()
+        );
 
         // Restore the parent object's register and schema context after cascading.
         $this->currentRegister = $parentRegister;
@@ -1028,7 +1041,13 @@ class ObjectService
             }
 
             // Check user has permission to delete this specific object.
-            $this->checkPermission(schema: $this->currentSchema, action: 'delete', userId: null, objectOwner: $objectToDelete->getOwner(), _rbac: $_rbac);
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'delete',
+                userId: null,
+                objectOwner: $objectToDelete->getOwner(),
+                _rbac: $_rbac
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Object doesn't exist, no permission check needed but let the deleteHandler handle this.
             if ($this->currentSchema !== null) {
@@ -1233,7 +1252,14 @@ class ObjectService
         }
 
         // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
-        return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $_rbac, _multitenancy: $_multitenancy, ids: $ids, uses: $uses);
+        return $this->objectEntityMapper->countSearchObjects(
+            query: $query,
+            _activeOrganisationUuid: $activeOrganisationUuid,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            ids: $ids,
+            uses: $uses
+        );
     }//end countSearchObjects()
 
 
@@ -1457,7 +1483,13 @@ class ObjectService
         ) {
             // Forward to Index service - let it handle availability checks and error handling.
             $indexService = $this->container->get(IndexService::class);
-            $result = $indexService->searchObjects(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted);
+            $result = $indexService->searchObjects(
+                query: $query,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                published: $published,
+                deleted: $deleted
+            );
             $result['@self']['source'] = 'index';
             $result['@self']['query'] = $query;
             $result['@self']['rbac'] =  $_rbac;
@@ -1468,7 +1500,15 @@ class ObjectService
         }
 
         // Use database search.
-        $result = $this->queryHandler->searchObjectsPaginatedDatabase(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, published: $published, deleted: $deleted, ids: $ids, uses: $uses);
+        $result = $this->queryHandler->searchObjectsPaginatedDatabase(
+            query: $query,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            published: $published,
+            deleted: $deleted,
+            ids: $ids,
+            uses: $uses
+        );
         $result['@self']['source'] = 'database';
         $result['@self']['query'] = $query;
         $result['@self']['rbac'] =  $_rbac;
@@ -1541,7 +1581,20 @@ class ObjectService
      *
      * @return \React\Promise\PromiseInterface Promise that resolves to search results array
      *
-     * @psalm-return PromiseInterface<array{results: mixed, total: mixed, page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>, offset: 0|mixed, facets: mixed, facetable?: mixed, next?: null|string, prev?: null|string}>
+     * @psalm-return PromiseInterface<
+     *     array{
+     *         results: mixed,
+     *         total: mixed,
+     *         page: float|int<1, max>|mixed,
+     *         pages: 1|float,
+     *         limit: int<1, max>,
+     *         offset: 0|mixed,
+     *         facets: mixed,
+     *         facetable?: mixed,
+     *         next?: null|string,
+     *         prev?: null|string
+     *     }
+     * >
      * @phpstan-return PromiseInterface<array<string, mixed>>
      *
      * @throws \OCP\DB\Exception If a database error occurs
@@ -1587,10 +1640,22 @@ class ObjectService
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function searchObjectsPaginatedSync(array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $published=false, bool $deleted=false): array
+    public function searchObjectsPaginatedSync(
+        array $query=[],
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        bool $published=false,
+        bool $deleted=false
+    ): array
     {
         // Execute the async version and wait for the result.
-        $promise = $this->searchObjectsPaginatedAsync(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy, _published: $published, _deleted: $deleted);
+        $promise = $this->searchObjectsPaginatedAsync(
+            query: $query,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            _published: $published,
+            _deleted: $deleted
+        );
 
         // Use React's await functionality to get the result synchronously.
         // Note: The async version already logs the search trail, so we don't need to log again.
@@ -1959,7 +2024,27 @@ class ObjectService
      * @phpstan-param  array $objectIds
      * @phpstan-param  array $mapping
      *
-     * @psalm-return   array{success: bool, statistics: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int<min, max>}, details: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings: list<'Some objects failed to migrate. Check details for specific errors.'>, errors: list{0?: string,...}}
+     * @psalm-return array{
+     *     success: bool,
+     *     statistics: array{
+     *         objectsMigrated: 0|1|2,
+     *         objectsFailed: int,
+     *         propertiesMapped: int<0, max>,
+     *         propertiesDiscarded: int<min, max>
+     *     },
+     *     details: list{
+     *         0?: array{
+     *             objectId: mixed,
+     *             objectTitle: mixed|null,
+     *             success: bool,
+     *             error: null|string,
+     *             newObjectId?: mixed
+     *         },
+     *         ...
+     *     },
+     *     warnings: list<'Some objects failed to migrate. Check details for specific errors.'>,
+     *     errors: list{0?: string,...}
+     * }
      * @phpstan-return array<string, mixed>
      *
      * @return (((bool|mixed|null|string)[]|int|string)[]|bool)[]
