@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Db\ObjectEntity;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use ReflectionClass;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -533,7 +534,7 @@ class QueryOptimizationHandler
             return $size;
         } else if (is_object($object) === true && $object instanceof ObjectEntity) {
             $size       = 0;
-            $reflection = new \ReflectionClass($object);
+            $reflection = new ReflectionClass($object);
             foreach ($reflection->getProperties() as $property) {
                 $property->setAccessible(true);
                 $value = $property->getValue($object);

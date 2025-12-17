@@ -176,7 +176,16 @@ class ObjectsController extends Controller
      *
      * @psalm-param array<int, mixed> $results
      *
-     * @psalm-return array{results: array<int, mixed>, total: int<0, max>, page: float|int<1, max>, pages: 1|float, limit: int<1, max>, offset: int<0, max>, next?: string, prev?: string}
+     * @psalm-return array{
+     *     results: array<int, mixed>,
+     *     total: int<0, max>,
+     *     page: float|int<1, max>,
+     *     pages: 1|float,
+     *     limit: int<1, max>,
+     *     offset: int<0, max>,
+     *     next?: string,
+     *     prev?: string
+     * }
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -200,7 +209,8 @@ class ObjectsController extends Controller
         }
 
         // If total is smaller than the number of results, set total to the number of results.
-        // @todo: this is a hack to ensure the pagination is correct when the total is not known. That sugjest that the underlaying count service has a problem that needs to be fixed instead.
+        // @todo: this is a hack to ensure the pagination is correct when the total is not known.
+        // That suggests that the underlying count service has a problem that needs to be fixed instead.
         if ($total < count($results)) {
             $total = count($results);
             $pages = max(1, ceil($total / $limit));
@@ -277,7 +287,18 @@ class ObjectsController extends Controller
      *               - schema: (string|null) Schema identifier
      *               - ids: (array|null) Specific IDs to filter
      *
-     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<never, never>|mixed, search: mixed|null, _extend: mixed|null, fields: mixed|null, unset: mixed|null, ids: array|null}
+     * @psalm-return array{
+     *     limit: int,
+     *     offset: int|null,
+     *     page: int|null,
+     *     filters: array,
+     *     sort: array<never, never>|mixed,
+     *     _search: mixed|null,
+     *     _extend: mixed|null,
+     *     _fields: mixed|null,
+     *     _unset: mixed|null,
+     *     ids: array|null
+     * }
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
@@ -312,16 +333,16 @@ class ObjectsController extends Controller
         }
 
         return [
-            'limit'   => $limit,
-            'offset'  => $offset,
-            'page'    => $page,
-            'filters' => $params,
-            'sort'    => ($params['order'] ?? $params['_order'] ?? []),
-            'search'  => ($params['_search'] ?? null),
-            'extend'  => ($params['extend'] ?? $params['_extend'] ?? null),
-            'fields'  => ($params['fields'] ?? $params['_fields'] ?? null),
-            'unset'   => ($params['unset'] ?? $params['_unset'] ?? null),
-            'ids'     => $ids,
+            'limit'    => $limit,
+            'offset'   => $offset,
+            'page'     => $page,
+            'filters'  => $params,
+            'sort'     => ($params['order'] ?? $params['_order'] ?? []),
+            '_search'  => ($params['_search'] ?? null),
+            '_extend'  => ($params['extend'] ?? $params['_extend'] ?? null),
+            '_fields'  => ($params['fields'] ?? $params['_fields'] ?? null),
+            '_unset'   => ($params['unset'] ?? $params['_unset'] ?? null),
+            'ids'      => $ids,
         ];
 
     }//end getConfig()
@@ -417,7 +438,11 @@ class ObjectsController extends Controller
         }
 
         // Build search query with resolved numeric IDs.
-        $query = $objectService->buildSearchQuery(requestParams: $this->request->getParams(), register: $resolved['register'], schema: $resolved['schema']);
+        $query = $objectService->buildSearchQuery(
+            requestParams: $this->request->getParams(),
+            register: $resolved['register'],
+            schema: $resolved['schema']
+        );
 
         // Extract filtering parameters from request.
         $params    = $this->request->getParams();
@@ -427,7 +452,13 @@ class ObjectsController extends Controller
         $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
-        $result = $objectService->searchObjectsPaginated(query: $query, _rbac: $rbac, _multitenancy: $multi, published: $published, deleted: $deleted);
+        $result = $objectService->searchObjectsPaginated(
+            query: $query,
+            _rbac: $rbac,
+            _multitenancy: $multi,
+            published: $published,
+            deleted: $deleted
+        );
 
         // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
         $response = new JSONResponse(data: $result);
@@ -492,7 +523,8 @@ class ObjectsController extends Controller
     /**
      * Shows a specific object from a register and schema
      *
-     * Retrieves and returns a single object from the specified register and schema, statusCode: * with support for field filtering and related object extension.
+     * Retrieves and returns a single object from the specified register and schema,
+     * with support for field filtering and related object extension.
      *
      * @param string        $id            The object ID
      * @param string        $register      The register slug or identifier
@@ -558,7 +590,15 @@ class ObjectsController extends Controller
         // If admin, disable multitenancy.
         // Find and validate the object.
         try {
-            $objectEntity = $this->objectService->find(id: $id, _extend: $extend, files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
+            $objectEntity = $this->objectService->find(
+                id: $id,
+                _extend: $extend,
+                files: false,
+                register: null,
+                schema: null,
+                _rbac: $rbac,
+                _multitenancy: $multi
+            );
             if ($objectEntity === null) {
                 return new JSONResponse(data: ['error' => "Object with id {$id} not found"], statusCode: Http::STATUS_NOT_FOUND);
             }
@@ -656,7 +696,13 @@ class ObjectsController extends Controller
             // Check if this is an array upload (multiple files with same field name).
             // PHP converts field names like "images[]" to "images" and structures data as arrays.
             /*
-             * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
+             * @var array{
+             *     name: array<int, string>|string,
+             *     type: array<int, string>|string,
+             *     tmp_name: array<int, string>|string,
+             *     error: array<int, int>|int,
+             *     size: array<int, int>|int
+             * } $fileData
              */
 
             /*
@@ -803,7 +849,13 @@ class ObjectsController extends Controller
             // Check if this is an array upload (multiple files with same field name).
             // PHP converts field names like "images[]" to "images" and structures data as arrays.
             /*
-             * @var array{name: array<int, string>|string, type: array<int, string>|string, tmp_name: array<int, string>|string, error: array<int, int>|int, size: array<int, int>|int} $fileData
+             * @var array{
+             *     name: array<int, string>|string,
+             *     type: array<int, string>|string,
+             *     tmp_name: array<int, string>|string,
+             *     error: array<int, int>|int,
+             *     size: array<int, int>|int
+             * } $fileData
              */
 
             /*
@@ -865,7 +917,15 @@ class ObjectsController extends Controller
         // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
         try {
-            $existingObject = $this->objectService->findSilent(id: $id, _extend: [], files: false, register: null, schema: null, _rbac: $rbac, _multitenancy: $multi);
+            $existingObject = $this->objectService->findSilent(
+                id: $id,
+                _extend: [],
+                files: false,
+                register: null,
+                schema: null,
+                _rbac: $rbac,
+                _multitenancy: $multi
+            );
 
             // Get the resolved register and schema IDs from the ObjectService.
             // This ensures proper handling of both numeric IDs and slug identifiers.
@@ -946,7 +1006,8 @@ class ObjectsController extends Controller
      * Patches (partially updates) an existing object
      *
      * Takes the request data, _multitenancy: merges it with the existing object data, persist: validates it against
-     * the schema, silent: and updates the object in the database. Only the provided fields are updated, validation: * while other fields remain unchanged. Handles validation errors appropriately.
+     * the schema, and updates the object in the database. Only the provided fields are updated,
+     * while other fields remain unchanged. Handles validation errors appropriately.
      *
      * @param string        $register      The register slug or identifier
      * @param string        $schema        The schema slug or identifier
@@ -1358,7 +1419,15 @@ class ObjectsController extends Controller
         $total = count($logs);
 
         // Return paginated results.
-        return new JSONResponse(data: $this->paginate(results: $logs, total: $total, limit: $config['limit'], offset: $config['offset'], page: $config['page']));
+        return new JSONResponse(
+            data: $this->paginate(
+                results: $logs,
+                total: $total,
+                limit: $config['limit'],
+                offset: $config['offset'],
+                page: $config['page']
+            )
+        );
 
     }//end logs()
 
@@ -1374,7 +1443,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\ObjectEntity, array<never, never>>
+     * @psalm-return JSONResponse<200, array{locked: true, ...<array-key, mixed>}, array<never, never>>
      */
     public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1415,7 +1484,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{message: 'Object unlocked successfully'}, array<never, never>>
+     * @psalm-return JSONResponse<200, array{message: 'Object unlocked successfully', locked: false, uuid: string}, array<never, never>>
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
@@ -1493,7 +1562,33 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, message?: 'Import successful', summary?: array<array{created: array, errors: array, found: int, unchanged: array, updated: array, schema: array{id: int, slug: null|string, title: null|string}, deduplication_efficiency?: string, performance?: array{efficiency: 0|float, objectsPerSecond: float, totalFound: int<0, max>, totalProcessed: int<0, max>, totalTime: float, totalTimeMs: float}}|mixed>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|500,
+     *     array{
+     *         error?: string,
+     *         message?: 'Import successful',
+     *         summary?: array<
+     *             array{
+     *                 created: array,
+     *                 errors: array,
+     *                 found: int,
+     *                 unchanged: array,
+     *                 updated: array,
+     *                 schema: array{id: int, slug: null|string, title: null|string},
+     *                 deduplication_efficiency?: string,
+     *                 performance?: array{
+     *                     efficiency: 0|float,
+     *                     objectsPerSecond: float,
+     *                     totalFound: int<0, max>,
+     *                     totalProcessed: int<0, max>,
+     *                     totalTime: float,
+     *                     totalTimeMs: float
+     *                 }
+     *             }|mixed
+     *         >
+     *     },
+     *     array<never, never>
+     * >
      */
     public function import(int $register): JSONResponse
     {
@@ -1669,7 +1764,33 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: true, sourceObject?: array, targetObject?: array, mergedObject?: mixed, actions?: array{properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...}, files: array<never, never>|mixed, relations: array{action: 'dropped'|'transferred', relations: array|null}, references: list{0?: array{objectId: mixed, title: mixed},...}}, statistics?: array{propertiesChanged: 0|1|2, filesTransferred: 0|mixed, filesDeleted: 0|mixed, relationsTransferred: 0|1|2, relationsDropped: int<0, max>, referencesUpdated: int}, warnings?: array, errors?: array<never, never>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         sourceObject?: array,
+     *         targetObject?: array,
+     *         mergedObject?: mixed,
+     *         actions?: array{
+     *             properties: list{0?: array{property: mixed, oldValue: mixed|null, newValue: mixed},...},
+     *             files: array<never, never>|mixed,
+     *             relations: array{action: 'dropped'|'transferred', relations: array|null},
+     *             references: list{0?: array{objectId: mixed, title: mixed},...}
+     *         },
+     *         statistics?: array{
+     *             propertiesChanged: 0|1|2,
+     *             filesTransferred: 0|mixed,
+     *             filesDeleted: 0|mixed,
+     *             relationsTransferred: 0|1|2,
+     *             relationsDropped: int<0, max>,
+     *             referencesUpdated: int
+     *         },
+     *         warnings?: array,
+     *         errors?: array<never, never>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function merge(
         string $id,
@@ -1727,7 +1848,32 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, success?: bool, statistics?: array{objectsMigrated: 0|1|2, objectsFailed: int, propertiesMapped: int<0, max>, propertiesDiscarded: int}, details?: list{0?: array{objectId: mixed, objectTitle: mixed|null, success: bool, error: null|string, newObjectId?: mixed},...}, warnings?: list<'Some objects failed to migrate. Check details for specific errors.'>, errors?: list{0?: string,...}}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: string,
+     *         success?: bool,
+     *         statistics?: array{
+     *             objectsMigrated: 0|1|2,
+     *             objectsFailed: int,
+     *             propertiesMapped: int<0, max>,
+     *             propertiesDiscarded: int
+     *         },
+     *         details?: list{
+     *             0?: array{
+     *                 objectId: mixed,
+     *                 objectTitle: mixed|null,
+     *                 success: bool,
+     *                 error: null|string,
+     *                 newObjectId?: mixed
+     *             },
+     *             ...
+     *         },
+     *         warnings?: list<'Some objects failed to migrate. Check details for specific errors.'>,
+     *         errors?: list{0?: string,...}
+     *     },
+     *     array<never, never>
+     * >
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -1923,7 +2069,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse Vectorization statistics
      *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, total_objects?: mixed, views?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: array<array-key, mixed>}, array<never, never>>
      */
     public function getObjectVectorizationStats(): JSONResponse
     {

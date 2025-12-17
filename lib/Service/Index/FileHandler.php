@@ -179,7 +179,7 @@ class FileHandler
      *
      * @return array Processing result with statistics
      *
-     * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array}}
+     * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array, execution_time_ms: float}}
      */
     public function processUnindexedChunks(?int $limit=null): array
     {

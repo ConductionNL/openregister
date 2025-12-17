@@ -299,7 +299,7 @@ class BulkIndexer
             ];
         } catch (\Exception $e) {
             $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.($totalIndexed ?? 0).', Batches: '.($batchCount ?? 0).')',
                 0,
                 $e

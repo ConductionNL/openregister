@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tool;
 
 use ReflectionMethod;
 use BadMethodCallException;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Agent;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -306,7 +307,7 @@ abstract class AbstractTool implements ToolInterface
             // isset() checks both existence and non-null value.
             if (isset($parameters[$param]) === false) {
                 // Throw exception with descriptive error message.
-                throw new \InvalidArgumentException("Missing required parameter: {$param}");
+                throw new InvalidArgumentException("Missing required parameter: {$param}");
             }
         }
 

@@ -24,6 +24,7 @@ use InvalidArgumentException;
 use OCP\IConfig;
 use OCP\AppFramework\IAppContainer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handler for SOLR settings and operations.
@@ -73,6 +74,13 @@ class SolrSettingsHandler
      */
     private string $appName;
 
+    /**
+     * Logger instance
+     *
+     * @var LoggerInterface|null
+     */
+    private ?LoggerInterface $logger = null;
+
 
     /**
      * Constructor for SolrSettingsHandler
@@ -80,6 +88,7 @@ class SolrSettingsHandler
      * @param IConfig            $config             Configuration service.
      * @param CacheHandler|null  $objectCacheService Object cache service (optional, lazy-loaded).
      * @param IAppContainer|null $container          Container for lazy loading (optional).
+     * @param LoggerInterface    $logger             Logger for logging operations.
      * @param string             $appName            Application name.
      *
      * @return void
@@ -88,11 +97,13 @@ class SolrSettingsHandler
         IConfig $config,
         ?CacheHandler $objectCacheService=null,
         ?IAppContainer $container=null,
+        ?LoggerInterface $logger=null,
         string $appName='openregister'
     ) {
         $this->config = $config;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
+        $this->logger            = $logger;
         $this->appName            = $appName;
 
     }//end __construct()
@@ -591,7 +602,7 @@ class SolrSettingsHandler
             $availableBackends = ['solr', 'elasticsearch'];
 
             if (in_array($backend, $availableBackends) === false) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     "Invalid backend '$backend'. Must be one of: ".implode(', ', $availableBackends)
                 );
             }

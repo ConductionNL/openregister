@@ -20,6 +20,7 @@
 namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
+use stdClass;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
@@ -450,7 +451,10 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate register detected during import from app '%s' (version %s). "."Register with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "."You can identify duplicates by checking registers with the same slug, uuid, or id.",
+            "Duplicate register detected during import from app '%s' (version %s). "
+            ."Register with slug '%s' has multiple entries in the database: %s. "
+            ."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "
+            ."You can identify duplicates by checking registers with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -529,7 +533,10 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate schema detected during import from app '%s' (version %s). "."Schema with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            "Duplicate schema detected during import from app '%s' (version %s). "
+            ."Schema with slug '%s' has multiple entries in the database: %s. "
+            ."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "
+            ."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -633,13 +640,13 @@ class ImportHandler
                     // Fix empty objects that became arrays during JSON deserialization.
                     if (($property['objectConfiguration'] ?? null) !== null) {
                         if (is_array($property['objectConfiguration']) === true && $property['objectConfiguration'] === []) {
-                            $property['objectConfiguration'] = new \stdClass();
+                            $property['objectConfiguration'] = new stdClass();
                         }
                     }
 
                     if (($property['fileConfiguration'] ?? null) !== null) {
                         if (is_array($property['fileConfiguration']) === true && $property['fileConfiguration'] === []) {
-                            $property['fileConfiguration'] = new \stdClass();
+                            $property['fileConfiguration'] = new stdClass();
                         }
                     }
 
@@ -651,13 +658,13 @@ class ImportHandler
 
                         if (($property['items']['objectConfiguration'] ?? null) !== null) {
                             if (is_array($property['items']['objectConfiguration']) === true && $property['items']['objectConfiguration'] === []) {
-                                $property['items']['objectConfiguration'] = new \stdClass();
+                                $property['items']['objectConfiguration'] = new stdClass();
                             }
                         }
 
                         if (($property['items']['fileConfiguration'] ?? null) !== null) {
                             if (is_array($property['items']['fileConfiguration']) === true && $property['items']['fileConfiguration'] === []) {
-                                $property['items']['fileConfiguration'] = new \stdClass();
+                                $property['items']['fileConfiguration'] = new stdClass();
                             }
                         }
                     }
@@ -705,7 +712,8 @@ class ImportHandler
                     }
 
                     // Handle register slug/ID in objectConfiguration (new structure).
-                    if (is_array($property['objectConfiguration'] ?? null) === true && ($property['objectConfiguration']['register'] ?? null) !== null) {
+                    if (is_array($property['objectConfiguration'] ?? null) === true
+                        && ($property['objectConfiguration']['register'] ?? null) !== null) {
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
@@ -718,7 +726,8 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '.'during schema property import (will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context '
+                                        .'during schema property import (will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
@@ -728,7 +737,8 @@ class ImportHandler
                     }//end if
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
-                    if (is_array($property['objectConfiguration'] ?? null) === true && ($property['objectConfiguration']['schema'] ?? null) !== null) {
+                    if (is_array($property['objectConfiguration'] ?? null) === true
+                        && ($property['objectConfiguration']['schema'] ?? null) !== null) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
                         if (empty($schemaSlug) === false) {
                             if (($this->schemasMap[$schemaSlug] ?? null) !== null) {

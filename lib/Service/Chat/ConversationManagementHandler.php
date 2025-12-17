@@ -20,8 +20,9 @@
 
 namespace OCA\OpenRegister\Service\Chat;
 
-use Exception;
 use DateTime;
+use Exception;
+use ReflectionClass;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Message;
@@ -213,7 +214,7 @@ class ConversationManagementHandler
             // Generate title based on provider.
             if ($chatProvider === 'fireworks') {
                 // Use ResponseGenerationHandler's Fireworks method.
-                $reflectionClass = new \ReflectionClass($this->responseHandler);
+                $reflectionClass = new ReflectionClass($this->responseHandler);
                 $method          = $reflectionClass->getMethod('callFireworksChatAPI');
                 $method->setAccessible(true);
 
@@ -520,7 +521,7 @@ class ConversationManagementHandler
         // Generate summary based on provider.
         if ($chatProvider === 'fireworks') {
             // Use ResponseGenerationHandler's Fireworks method via reflection.
-            $reflectionClass = new \ReflectionClass($this->responseHandler);
+            $reflectionClass = new ReflectionClass($this->responseHandler);
             $method          = $reflectionClass->getMethod('callFireworksChatAPI');
             $method->setAccessible(true);
 

@@ -135,7 +135,7 @@ class SchemaHandler
      *
      * @return array Result with success status and statistics
      *
-     * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float}
+     * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
     public function mirrorSchemas(bool $force=false): array
     {

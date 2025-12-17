@@ -90,7 +90,19 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|500, array{error?: string, success?: true, message?: 'Bulk delete operation completed successfully', deleted_count?: int<0, max>, deleted_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         message?: 'Bulk delete operation completed successfully',
+     *         deleted_count?: int<0, max>,
+     *         deleted_uuids?: array<int, int>,
+     *         requested_count?: int<0, max>,
+     *         skipped_count?: int<min, max>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function delete(string $register, string $schema): JSONResponse
     {
@@ -127,7 +139,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Bulk delete operation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Bulk delete operation failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end delete()
@@ -143,7 +158,20 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|500, array{error?: string, success: true, message: 'Bulk publish operation completed successfully', published_count: int<0, max>, published_uuids: array<int, string>, requested_count: int<0, max>, skipped_count: int<min, max>, datetime_used: bool|null|string}, array<never, never>>|JSONResponse<400|403|500, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|500,
+     *     array{
+     *         error?: string,
+     *         success: true,
+     *         message: 'Bulk publish operation completed successfully',
+     *         published_count: int<0, max>,
+     *         published_uuids: array<int, string>,
+     *         requested_count: int<0, max>,
+     *         skipped_count: int<min, max>,
+     *         datetime_used: bool|null|string
+     *     },
+     *     array<never, never>
+     * >|JSONResponse<400|403|500, array{error: string}, array<never, never>>
      */
     public function publish(string $register, string $schema): JSONResponse
     {
@@ -201,7 +229,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Bulk publish operation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Bulk publish operation failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end publish()
@@ -217,7 +248,20 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|500, array{error?: string, success: true, message: 'Bulk depublish operation completed successfully', depublished_count: int<0, max>, depublished_uuids: array<int, string>, requested_count: int<0, max>, skipped_count: int<min, max>, datetime_used: bool|null|string}, array<never, never>>|JSONResponse<400|403|500, array{error: string}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|500,
+     *     array{
+     *         error?: string,
+     *         success: true,
+     *         message: 'Bulk depublish operation completed successfully',
+     *         depublished_count: int<0, max>,
+     *         depublished_uuids: array<int, string>,
+     *         requested_count: int<0, max>,
+     *         skipped_count: int<min, max>,
+     *         datetime_used: bool|null|string
+     *     },
+     *     array<never, never>
+     * >|JSONResponse<400|403|500, array{error: string}, array<never, never>>
      */
     public function depublish(string $register, string $schema): JSONResponse
     {
@@ -275,7 +319,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Bulk depublish operation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Bulk depublish operation failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end depublish()
@@ -291,7 +338,18 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|500, array{error?: string, success?: true, message?: 'Bulk save operation completed successfully', saved_count?: mixed, saved_objects?: array<string, mixed>, requested_count?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         message?: 'Bulk save operation completed successfully',
+     *         saved_count?: mixed,
+     *         saved_objects?: array<string, mixed>,
+     *         requested_count?: int<0, max>
+     *     },
+     *     array<never, never>
+     * >
      */
     public function save(string $register, string $schema): JSONResponse
     {
@@ -354,7 +412,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Bulk save operation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Bulk save operation failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end save()
@@ -370,7 +431,19 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|404|500, array{error?: string, success?: true, message?: 'Schema objects publishing completed successfully', published_count?: int, published_uuids?: array<int, string>, schema_id?: int, publish_all?: bool}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|404|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         message?: 'Schema objects publishing completed successfully',
+     *         published_count?: int,
+     *         published_uuids?: array<int, string>,
+     *         schema_id?: int,
+     *         publish_all?: bool
+     *     },
+     *     array<never, never>
+     * >
      */
     public function publishSchema(string $register, string $schema): JSONResponse
     {
@@ -407,7 +480,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Schema objects publishing failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Schema objects publishing failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end publishSchema()
@@ -423,7 +499,19 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|404|500, array{error?: string, success?: true, message?: 'Schema objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, schema_id?: int, hard_delete?: bool}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|404|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         message?: 'Schema objects deletion completed successfully',
+     *         deleted_count?: int,
+     *         deleted_uuids?: array<int, string>,
+     *         schema_id?: int,
+     *         hard_delete?: bool
+     *     },
+     *     array<never, never>
+     * >
      */
     public function deleteSchema(string $register, string $schema): JSONResponse
     {
@@ -460,7 +548,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Schema objects deletion failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Schema objects deletion failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end deleteSchema()
@@ -475,7 +566,18 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|403|404|500, array{error?: string, success?: true, message?: 'Register objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, register_id?: int}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|403|404|500,
+     *     array{
+     *         error?: string,
+     *         success?: true,
+     *         message?: 'Register objects deletion completed successfully',
+     *         deleted_count?: int,
+     *         deleted_uuids?: array<int, string>,
+     *         register_id?: int
+     *     },
+     *     array<never, never>
+     * >
      */
     public function deleteRegister(string $register): JSONResponse
     {
@@ -506,7 +608,10 @@ class BulkController extends Controller
                     ]
                     );
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Register objects deletion failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(
+                data: ['error' => 'Register objects deletion failed: '.$e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
 
     }//end deleteRegister()
@@ -521,7 +626,32 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, valid_count?: int<0, max>, invalid_count?: int<0, max>, valid_objects?: list<array{data: array, id: int, name: null|string, uuid: null|string}>, invalid_objects?: list<array{data: array, errors: list<array{keyword: 'exception'|'validation'|mixed, message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>, id: int, name: null|string, uuid: null|string}>, schema_id?: int}, array<never, never>>
+     * @psalm-return JSONResponse<
+     *     200|400|401|403|404|500,
+     *     array{
+     *         error?: string,
+     *         valid_count?: int<0, max>,
+     *         invalid_count?: int<0, max>,
+     *         valid_objects?: list<array{data: array, id: int, name: null|string, uuid: null|string}>,
+     *         invalid_objects?: list<
+     *             array{
+     *                 data: array,
+     *                 errors: list<
+     *                     array{
+     *                         keyword: 'exception'|'validation'|mixed,
+     *                         message: mixed|non-falsy-string,
+     *                         path: 'general'|'unknown'|mixed
+     *                     }
+     *                 >,
+     *                 id: int,
+     *                 name: null|string,
+     *                 uuid: null|string
+     *             }
+     *         >,
+     *         schema_id?: int
+     *     },
+     *     array<never, never>
+     * >
      */
     public function validateSchema(string $schema): JSONResponse
     {

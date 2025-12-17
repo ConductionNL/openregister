@@ -2000,12 +2000,12 @@ class ObjectService
      * @param bool  $_rbac  Whether to apply RBAC filtering
      * @param bool  $_multitenancy Whether to apply multi-organization filtering
      *
-     * @return array Array of UUIDs of deleted objects
+     * @return array Array of IDs of deleted objects
      *
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     * @phpstan-return array<int, int>
+     * @psalm-return   array<int, int>
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {

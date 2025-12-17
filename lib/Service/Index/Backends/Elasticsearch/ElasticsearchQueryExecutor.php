@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index\Backends\Elasticsearch;
 
 use Exception;
+use stdClass;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -110,7 +111,7 @@ class ElasticsearchQueryExecutor
     {
         $query = [
             'query' => [
-                'match_all' => new \stdClass(),
+                'match_all' => new stdClass(),
         // Empty object.
             ],
             'from'  => 0,

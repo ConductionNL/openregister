@@ -66,6 +66,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
@@ -114,6 +115,7 @@ class SaveObjects
      * @param TransformationHandler   $transformationHandler   Handler for data transformation
      * @param PreparationHandler      $preparationHandler      Handler for data preparation
      * @param ChunkProcessingHandler  $chunkProcessingHandler  Handler for chunk processing
+     * @param OrganisationService    $organisationService     Organisation service for organisation operations
      * @param IUserSession            $userSession             User session for getting current user
      * @param LoggerInterface         $logger                  Logger for error and debug logging
      */
@@ -127,6 +129,7 @@ class SaveObjects
         private readonly TransformationHandler $transformationHandler,
         private readonly PreparationHandler $preparationHandler,
         private readonly ChunkProcessingHandler $chunkProcessingHandler,
+        private readonly OrganisationService $organisationService,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {

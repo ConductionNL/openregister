@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use DateTime;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use Psr\Log\LoggerInterface;
@@ -182,11 +183,11 @@ class LockHandler
 
             // Check if lock has expired (if lock_duration is set).
             if (empty($object['lock_duration']) === false) {
-                $lockDate     = new \DateTime($object['lock_date']);
+                $lockDate     = new DateTime($object['lock_date']);
                 $lockDuration = (int) $object['lock_duration'];
                 $expiryDate   = $lockDate->modify("+{$lockDuration} seconds");
 
-                if ($expiryDate < new \DateTime()) {
+                if ($expiryDate < new DateTime()) {
                     return false;
                     // Lock expired.
                 }
@@ -233,12 +234,12 @@ class LockHandler
 
             // Calculate expiry if duration is set.
             if (empty($object['lock_duration']) === false) {
-                $lockDate   = new \DateTime($object['lock_date']);
+                $lockDate   = new DateTime($object['lock_date']);
                 $duration   = (int) $object['lock_duration'];
                 $expiryDate = $lockDate->modify("+{$duration} seconds");
 
                 $lockInfo['expires_at'] = $expiryDate->format('Y-m-d H:i:s');
-                $lockInfo['is_expired'] = $expiryDate < new \DateTime();
+                $lockInfo['is_expired'] = $expiryDate < new DateTime();
             }
 
             return $lockInfo;

@@ -22,14 +22,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use DateTime;
+use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Service\ExportService;
+use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\FileService;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use DateTime;
 
 /**
  * ExportHandler
@@ -59,11 +64,17 @@ class ExportHandler
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
      * @param SchemaMapper       $schemaMapper       Schema mapper
+     * @param ExportService      $exportService      Export service
+     * @param ImportService      $importService      Import service
+     * @param FileService        $fileService        File service
      * @param LoggerInterface    $logger             PSR-3 logger
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
+        private readonly ExportService $exportService,
+        private readonly ImportService $importService,
+        private readonly FileService $fileService,
         private readonly LoggerInterface $logger
     ) {
 
@@ -224,7 +235,7 @@ class ExportHandler
             if ($extension === 'csv' && $schema === null) {
                 $schemas = $register->getSchemas();
                 if (empty($schemas) === true) {
-                    throw new \InvalidArgumentException('No schema found for register');
+                    throw new InvalidArgumentException('No schema found for register');
                 }
 
                 $schemaId = reset($schemas);
@@ -264,7 +275,7 @@ class ExportHandler
                     currentUser: $currentUser
                 );
             } else {
-                throw new \InvalidArgumentException("Unsupported file type: {$extension}");
+                throw new InvalidArgumentException("Unsupported file type: {$extension}");
             }//end if
 
             $this->logger->info(
@@ -320,7 +331,7 @@ class ExportHandler
 
             // Check if directory exists and has files.
             if (is_dir($objectDir) === false) {
-                throw new \Exception('Object has no files');
+                throw new Exception('Object has no files');
             }
 
             // Create ZIP of object files.
