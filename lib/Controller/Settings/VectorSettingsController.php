@@ -36,8 +36,6 @@ use Psr\Log\LoggerInterface;
  */
 class VectorSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -55,6 +53,4 @@ class VectorSettingsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
-
 }//end class

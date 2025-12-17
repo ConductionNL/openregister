@@ -31,8 +31,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251216100000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change schema to create webhook_logs table
      *
@@ -210,6 +208,4 @@ class Version1Date20251216100000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

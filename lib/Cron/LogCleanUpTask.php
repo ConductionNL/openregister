@@ -50,7 +50,6 @@ class LogCleanUpTask extends TimedJob
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor for the LogCleanUpTask
      *
@@ -79,7 +78,6 @@ class LogCleanUpTask extends TimedJob
         $this->setAllowParallelRuns(false);
 
     }//end __construct()
-
 
     /**
      * Execute the log cleanup task
@@ -127,6 +125,4 @@ class LogCleanUpTask extends TimedJob
         }//end try
 
     }//end run()
-
-
 }//end class

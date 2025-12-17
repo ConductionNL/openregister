@@ -42,8 +42,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class SolrDebugCommand extends Command
 {
-
-
     /**
      * Constructor
      *
@@ -68,7 +66,6 @@ class SolrDebugCommand extends Command
         parent::__construct();
 
     }//end __construct()
-
 
     /**
      * Configure the command
@@ -112,7 +109,6 @@ class SolrDebugCommand extends Command
             );
 
     }//end configure()
-
 
     /**
      * Execute the command
@@ -159,7 +155,6 @@ class SolrDebugCommand extends Command
 
     }//end execute()
 
-
     /**
      * Show tenant information
      *
@@ -195,7 +190,6 @@ class SolrDebugCommand extends Command
         $output->writeln('');
 
     }//end showTenantInfo()
-
 
     /**
      * Test SOLR setup
@@ -246,7 +240,6 @@ class SolrDebugCommand extends Command
         $output->writeln('');
 
     }//end testSetup()
-
 
     /**
      * Test SOLR connection
@@ -304,7 +297,6 @@ class SolrDebugCommand extends Command
 
     }//end testConnection()
 
-
     /**
      * Check existing cores/collections
      *
@@ -333,7 +325,6 @@ class SolrDebugCommand extends Command
         $output->writeln('');
 
     }//end checkCores()
-
 
     /**
      * Test SOLR Admin API directly
@@ -425,6 +416,4 @@ class SolrDebugCommand extends Command
         }
 
     }//end testSolrAdminAPI()
-
-
 }//end class

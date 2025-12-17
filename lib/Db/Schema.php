@@ -358,7 +358,6 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?DateTime $depublished = null;
 
-
     /**
      * Constructor for the Schema class
      *
@@ -400,7 +399,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the required data
      *
@@ -411,7 +409,6 @@ class Schema extends Entity implements JsonSerializable
         return ($this->required ?? []);
 
     }//end getRequired()
-
 
     /**
      * Get the properties data
@@ -424,7 +421,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end getProperties()
 
-
     /**
      * Get the archive data
      *
@@ -435,7 +431,6 @@ class Schema extends Entity implements JsonSerializable
         return ($this->archive ?? []);
 
     }//end getArchive()
-
 
     /**
      * Get JSON fields from the entity
@@ -458,7 +453,6 @@ class Schema extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Validate the schema properties
@@ -485,7 +479,6 @@ class Schema extends Entity implements JsonSerializable
         return $validator->validateProperties($this->properties);
 
     }//end validateProperties()
-
 
     /**
      * Validate the authorization structure for RBAC
@@ -536,7 +529,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end validateAuthorization()
 
-
     /**
      * Check if a user group has permission for a specific CRUD action
      *
@@ -586,7 +578,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end hasPermission()
 
-
     /**
      * Get all groups that have permission for a specific action
      *
@@ -610,7 +601,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->authorization[$action] ?? [];
 
     }//end getAuthorizedGroups()
-
 
     /**
      * Normalize inversedBy properties to ensure they are always strings
@@ -650,7 +640,6 @@ class Schema extends Entity implements JsonSerializable
         }//end foreach
 
     }//end normalizeInversedByProperties()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -739,7 +728,6 @@ class Schema extends Entity implements JsonSerializable
         return $this;
 
     }//end hydrate()
-
 
     /**
      * Serializes the schema to an array
@@ -830,7 +818,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * Converts schema to an object representation
      *
@@ -898,7 +885,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end getSchemaObject()
 
-
     /**
      * Set the slug, ensuring it is always lowercase
      *
@@ -917,7 +903,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setSlug()
 
-
     /**
      * Get the icon for the schema
      *
@@ -928,7 +913,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->icon;
 
     }//end getIcon()
-
 
     /**
      * Set the icon for the schema
@@ -943,7 +927,6 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('icon');
 
     }//end setIcon()
-
 
     /**
      * Get the configuration for the schema
@@ -971,7 +954,6 @@ class Schema extends Entity implements JsonSerializable
         return null;
 
     }//end getConfiguration()
-
 
     /**
      * Set the configuration for the schema with validation
@@ -1114,7 +1096,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setConfiguration()
 
-
     /**
      * Get whether this schema should be searchable in SOLR
      *
@@ -1125,7 +1106,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->searchable;
 
     }//end getSearchable()
-
 
     /**
      * Set whether this schema should be searchable in SOLR
@@ -1140,7 +1120,6 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('searchable');
 
     }//end setSearchable()
-
 
     /**
      * String representation of the schema
@@ -1166,7 +1145,6 @@ class Schema extends Entity implements JsonSerializable
         return 'Schema #'.($this->id ?? 'unknown');
 
     }//end __toString()
-
 
     /**
      * Get the pre-computed facet configuration
@@ -1200,7 +1178,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end getFacets()
 
-
     /**
      * Set the facet configuration
      *
@@ -1231,7 +1208,6 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('facets');
 
     }//end setFacets()
-
 
     /**
      * Regenerate facets from current schema properties
@@ -1293,7 +1269,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end regenerateFacetsFromProperties()
 
-
     /**
      * Determine the appropriate facet type for a property
      *
@@ -1339,16 +1314,17 @@ class Schema extends Entity implements JsonSerializable
 
     }//end determineFacetType()
 
-
     /**
      * Determine the appropriate facet type for a schema property
      *
      * @param array  $property  The property definition
      * @param string $fieldName The field name
      *
-     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
+     *
+     * @psalm-return 'date_histogram'|'terms'|null
      */
-    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
         // Check if explicitly marked as facetable.
         if (($property['facetable'] ?? null) !== null
@@ -1407,7 +1383,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end determineFacetTypeForProperty()
 
-
     /**
      * Determine facet type from property type
      *
@@ -1441,7 +1416,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end determineFacetTypeFromPropertyType()
 
-
     /**
      * Get the array of schema references that this schema must validate against (allOf)
      *
@@ -1455,7 +1429,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->allOf;
 
     }//end getAllOf()
-
 
     /**
      * Set the array of schema references that this schema must validate against (allOf)
@@ -1475,7 +1448,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setAllOf()
 
-
     /**
      * Get the array of schema references where instance must validate against exactly one (oneOf)
      *
@@ -1489,7 +1461,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->oneOf;
 
     }//end getOneOf()
-
 
     /**
      * Set the array of schema references where instance must validate against exactly one (oneOf)
@@ -1508,7 +1479,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setOneOf()
 
-
     /**
      * Get the array of schema references where instance must validate against at least one (anyOf)
      *
@@ -1522,7 +1492,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->anyOf;
 
     }//end getAnyOf()
-
 
     /**
      * Set the array of schema references where instance must validate against at least one (anyOf)
@@ -1541,7 +1510,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setAnyOf()
 
-
     /**
      * Get the publication timestamp
      *
@@ -1552,7 +1520,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->published;
 
     }//end getPublished()
-
 
     /**
      * Set the publication timestamp
@@ -1568,7 +1535,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end setPublished()
 
-
     /**
      * Get the depublication timestamp
      *
@@ -1579,7 +1545,6 @@ class Schema extends Entity implements JsonSerializable
         return $this->depublished;
 
     }//end getDepublished()
-
 
     /**
      * Set the depublication timestamp
@@ -1594,7 +1559,6 @@ class Schema extends Entity implements JsonSerializable
         $this->markFieldUpdated('depublished');
 
     }//end setDepublished()
-
 
     /**
      * Check if this schema is managed by any configuration
@@ -1626,7 +1590,6 @@ class Schema extends Entity implements JsonSerializable
 
     }//end isManagedByConfiguration()
 
-
     /**
      * Get the configuration that manages this schema
      *
@@ -1656,6 +1619,4 @@ class Schema extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
-
-
 }//end class

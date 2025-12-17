@@ -61,7 +61,6 @@ class ApplicationService
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -81,7 +80,6 @@ class ApplicationService
         $this->logger            = $logger;
 
     }//end __construct()
-
 
     /**
      * Get all applications
@@ -108,7 +106,6 @@ class ApplicationService
 
     }//end findAll()
 
-
     /**
      * Get a single application by ID
      *
@@ -129,7 +126,6 @@ class ApplicationService
         return $this->applicationMapper->find($id);
 
     }//end find()
-
 
     /**
      * Create a new application
@@ -163,7 +159,6 @@ class ApplicationService
         return $application;
 
     }//end create()
-
 
     /**
      * Update an existing application
@@ -202,7 +197,6 @@ class ApplicationService
 
     }//end update()
 
-
     /**
      * Delete an application
      *
@@ -239,7 +233,6 @@ class ApplicationService
 
     }//end delete()
 
-
     /**
      * Count total applications
      *
@@ -256,6 +249,4 @@ class ApplicationService
         return $this->applicationMapper->countAll();
 
     }//end countAll()
-
-
 }//end class

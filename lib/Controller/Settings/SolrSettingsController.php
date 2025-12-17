@@ -39,8 +39,6 @@ use Psr\Container\ContainerInterface;
  */
 class SolrSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -63,7 +61,6 @@ class SolrSettingsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get SOLR settings only
      *
@@ -85,7 +82,6 @@ class SolrSettingsController extends Controller
         }
 
     }//end getSolrSettings()
-
 
     /**
      * Update SOLR settings only
@@ -110,7 +106,6 @@ class SolrSettingsController extends Controller
 
     }//end updateSolrSettings()
 
-
     /**
      * Get Solr information and vector search capabilities
      *
@@ -119,8 +114,6 @@ class SolrSettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Solr information
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, solr?: array{available: false|mixed, version: '9.x (detection pending)'|'Unknown', vectorSupport: false, collections: array<array{id: mixed, name: mixed, documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}>, error: null|string}}, array<never, never>>
      */
@@ -152,6 +145,11 @@ class SolrSettingsController extends Controller
                         $collectionsList = $guzzleSolrService->listCollections();
                         // Transform to format expected by frontend (array of objects with 'name' and 'id').
                         $collections = array_map(
+                                /*
+                                 * @return (int|mixed|string)[]
+                                 *
+                                 * @psalm-return array{id: mixed, name: mixed, documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}
+                                 */
                                 function (array $collection): array {
                                     return [
                                         'id'            => $collection['name'],
@@ -209,7 +207,6 @@ class SolrSettingsController extends Controller
 
     }//end getSolrInfo()
 
-
     /**
      * Get comprehensive SOLR dashboard statistics
      *
@@ -234,7 +231,6 @@ class SolrSettingsController extends Controller
 
     }//end getSolrDashboardStats()
 
-
     /**
      * Get SOLR facet configuration
      *
@@ -256,7 +252,6 @@ class SolrSettingsController extends Controller
         }
 
     }//end getSolrFacetConfiguration()
-
 
     /**
      * Update SOLR facet configuration
@@ -281,15 +276,12 @@ class SolrSettingsController extends Controller
 
     }//end updateSolrFacetConfiguration()
 
-
     /**
      * Discover available SOLR facets
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Available SOLR facets
      *
      * @psalm-return JSONResponse<200|422, array{success: bool, message: string, facets: array<never, never>|mixed}, array<never, never>>
      */
@@ -334,15 +326,12 @@ class SolrSettingsController extends Controller
 
     }//end discoverSolrFacets()
 
-
     /**
      * Get SOLR facet configuration with discovery
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Discovered facets merged with current configuration
      *
      * @psalm-return JSONResponse<200|422|500, array{success: bool, message: string, error?: string, facets?: array{'@self'?: array<array>, object_fields?: array<array>}, global_settings?: array{show_count: true, show_empty: false, max_items: 10}|mixed}, array<never, never>>
      */
@@ -454,15 +443,12 @@ class SolrSettingsController extends Controller
 
     }//end getSolrFacetConfigWithDiscovery()
 
-
     /**
      * Update SOLR facet configuration with discovery
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Updated facet configuration
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message: string, error?: string, config?: array}, array<never, never>>
      */
@@ -491,6 +477,4 @@ class SolrSettingsController extends Controller
         }//end try
 
     }//end updateSolrFacetConfigWithDiscovery()
-
-
 }//end class

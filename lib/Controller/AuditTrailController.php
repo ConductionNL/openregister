@@ -35,8 +35,6 @@ use OCP\IRequest;
  */
 class AuditTrailController extends Controller
 {
-
-
     /**
      * Constructor for AuditTrailController
      *
@@ -54,7 +52,6 @@ class AuditTrailController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Extract pagination, filter, and search parameters from request
@@ -149,7 +146,6 @@ class AuditTrailController extends Controller
 
     }//end extractRequestParameters()
 
-
     /**
      * Get all audit trail logs
      *
@@ -186,7 +182,6 @@ class AuditTrailController extends Controller
 
     }//end index()
 
-
     /**
      * Get a specific audit trail log by ID
      *
@@ -218,7 +213,6 @@ class AuditTrailController extends Controller
         }
 
     }//end show()
-
 
     /**
      * Get logs for an object
@@ -271,17 +265,14 @@ class AuditTrailController extends Controller
 
     }//end objects()
 
-
     /**
      * Export audit trail logs in specified format
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing exported audit trail data
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, data?: array{content: mixed, filename: mixed, contentType: mixed, size: int<0, max>}}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, data?: array{content: bool|string, filename: string, contentType: string, size: int<0, max>}}, array<never, never>>
      */
     public function export(): JSONResponse
     {
@@ -337,15 +328,12 @@ class AuditTrailController extends Controller
 
     }//end export()
 
-
     /**
      * Delete a single audit trail log
      *
      * @param int $id The audit trail ID to delete
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing deletion result
      *
      * @NoCSRFRequired
      *
@@ -390,13 +378,10 @@ class AuditTrailController extends Controller
 
     }//end destroy()
 
-
     /**
      * Delete multiple audit trail logs based on filters or specific IDs
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing bulk deletion results
      *
      * @NoCSRFRequired
      *
@@ -448,13 +433,10 @@ class AuditTrailController extends Controller
 
     }//end destroyMultiple()
 
-
     /**
      * Clear all audit trail logs
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing clear all operation result
      *
      * @NoCSRFRequired
      *
@@ -496,6 +478,4 @@ class AuditTrailController extends Controller
         }//end try
 
     }//end clearAll()
-
-
 }//end class

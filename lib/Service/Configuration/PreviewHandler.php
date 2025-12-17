@@ -76,7 +76,6 @@ class PreviewHandler
      */
     private ?ConfigurationService $configurationService = null;
 
-
     /**
      * Constructor for PreviewHandler.
      *
@@ -95,7 +94,6 @@ class PreviewHandler
 
     }//end __construct()
 
-
     /**
      * Set the ConfigurationService dependency.
      *
@@ -112,7 +110,6 @@ class PreviewHandler
 
     }//end setConfigurationService()
 
-
     /**
      * Preview configuration changes.
      *
@@ -122,7 +119,7 @@ class PreviewHandler
      *
      * @param Configuration $configuration The configuration to preview.
      *
-     * @return array|JSONResponse Array of preview information or error response.
+     * @return (array|int|mixed|null|string)[][]|JSONResponse
      *
      * @throws Exception If configuration service not set.
      *
@@ -138,6 +135,8 @@ class PreviewHandler
      *     synchronizations: array,
      *     rules: array
      * }|JSONResponse
+     *
+     * @psalm-return JSONResponse<int, \JsonSerializable|\stdClass|array|null|scalar, array<string, mixed>>|array{registers: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects: list<array>, endpoints: array<never, never>, sources: array<never, never>, mappings: array<never, never>, jobs: array<never, never>, synchronizations: array<never, never>, rules: array<never, never>, metadata: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}
      */
     public function previewConfigurationChanges(Configuration $configuration): array|JSONResponse
     {
@@ -222,7 +221,6 @@ class PreviewHandler
 
     }//end previewConfigurationChanges()
 
-
     /**
      * Preview changes for a single register.
      *
@@ -294,7 +292,6 @@ class PreviewHandler
         return $preview;
 
     }//end previewRegisterChange()
-
 
     /**
      * Preview changes for a single schema.
@@ -368,7 +365,6 @@ class PreviewHandler
 
     }//end previewSchemaChange()
 
-
     /**
      * Placeholder method - will be populated with extracted method.
      *
@@ -377,6 +373,8 @@ class PreviewHandler
      * @param array $schemaSlugToId   Schema slug to ID map.
      *
      * @return array Preview information.
+     *
+     * @psalm-return array<never, never>
      */
     private function previewObjectChange(array $objectData, array $registerSlugToId, array $schemaSlugToId): array
     {
@@ -384,7 +382,6 @@ class PreviewHandler
         return [];
 
     }//end previewObjectChange()
-
 
     /**
      * Placeholder method - will be populated with extracted method.
@@ -394,6 +391,8 @@ class PreviewHandler
      * @param string $prefix   Prefix for nested keys.
      *
      * @return array Array of changes.
+     *
+     * @psalm-return array<never, never>
      */
     public function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
@@ -401,7 +400,6 @@ class PreviewHandler
         return [];
 
     }//end compareArrays()
-
 
     /**
      * Placeholder method - will be populated with extracted method.
@@ -412,6 +410,8 @@ class PreviewHandler
      * @return array Import results.
      *
      * @throws Exception If import fails.
+     *
+     * @psalm-return array<never, never>
      */
     public function importConfigurationWithSelection(Configuration $configuration, array $selection): array
     {
@@ -419,6 +419,4 @@ class PreviewHandler
         return [];
 
     }//end importConfigurationWithSelection()
-
-
 }//end class

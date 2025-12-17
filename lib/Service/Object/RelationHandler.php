@@ -41,8 +41,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class RelationHandler
 {
-
-
     /**
      * Constructor for RelationHandler.
      *
@@ -60,21 +58,21 @@ class RelationHandler
 
     }//end __construct()
 
-
     /**
      * Apply inversedBy filter to find objects by their inverse relations.
      *
      * @param array    &$filters        The filters array (passed by reference).
      * @param callable $findAllCallback Callback to findAll method.
      *
-     * @psalm-param   array<string, mixed> &$filters
-     * @psalm-param   callable(array): array $findAllCallback
+     * @psalm-param array<string, mixed> &$filters
+     * @psalm-param callable(array): array $findAllCallback
+     *
      * @phpstan-param array<string, mixed> &$filters
      * @phpstan-param callable(array): array $findAllCallback
      *
-     * @return array|null Array of IDs or null if no matches.
+     * @return ((mixed|null|string)[]|mixed|null|string)[]|null
      *
-     * @psalm-return   array<int, string>|null
+     * @psalm-return   array<array{name: mixed|null|string,...}|mixed|null|string>|null
      * @phpstan-return array<int, string>|null
      */
     public function applyInversedByFilter(array &$filters, callable $findAllCallback): array|null
@@ -161,7 +159,6 @@ class RelationHandler
 
     }//end applyInversedByFilter()
 
-
     /**
      * Extract related data from results (delegates to PerformanceHandler).
      *
@@ -186,21 +183,21 @@ class RelationHandler
 
     }//end extractRelatedData()
 
-
     /**
      * Extract all relationship IDs from objects with circuit breaker.
      *
      * @param array $objects Objects to extract relationships from.
      * @param array $_extend Properties to extend.
      *
-     * @psalm-param   array<int, ObjectEntity> $objects
-     * @psalm-param   array<int, string> $_extend
+     * @psalm-param array<int, ObjectEntity> $objects
+     * @psalm-param array<int, string> $_extend
+     *
      * @phpstan-param array<int, ObjectEntity> $objects
      * @phpstan-param array<int, string> $_extend
      *
-     * @return array Array of unique relationship IDs.
+     * @return string[]
      *
-     * @psalm-return   array<int, string>
+     * @psalm-return   array<int<0, max>, string>
      * @phpstan-return array<int, string>
      */
     public function extractAllRelationshipIds(array $objects, array $_extend): array
@@ -291,17 +288,18 @@ class RelationHandler
 
     }//end extractAllRelationshipIds()
 
-
     /**
      * Bulk load relationships in batches to prevent timeouts.
      *
      * @param array $relationshipIds Array of all relationship IDs to load.
      *
-     * @return array Array of objects indexed by ID/UUID for instant lookup.
+     * @return array[][][][][][][][]
      *
-     * @psalm-param    array<string> $relationshipIds
-     * @phpstan-param  array<string> $relationshipIds
-     * @psalm-return   array<string, ObjectEntity>
+     * @psalm-param array<string> $relationshipIds
+     *
+     * @phpstan-param array<string> $relationshipIds
+     *
+     * @psalm-return   array<array<array<array<array<array<array<array<array<never, never>>>>>>>>>
      * @phpstan-return array<string, ObjectEntity>
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
@@ -391,17 +389,18 @@ class RelationHandler
 
     }//end bulkLoadRelationshipsBatched()
 
-
     /**
      * Load a chunk of relationships optimized.
      *
      * @param array $relationshipIds Array of relationship IDs to load.
      *
-     * @return array Array of loaded ObjectEntity objects.
+     * @return ObjectEntity[]
      *
-     * @psalm-param    array<string> $relationshipIds
-     * @phpstan-param  array<string> $relationshipIds
-     * @psalm-return   array<int, ObjectEntity>
+     * @psalm-param array<string> $relationshipIds
+     *
+     * @phpstan-param array<string> $relationshipIds
+     *
+     * @psalm-return   list<OCA\OpenRegister\Db\ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array
@@ -426,7 +425,6 @@ class RelationHandler
 
     }//end loadRelationshipChunkOptimized()
 
-
     /**
      * Get object contracts.
      *
@@ -436,7 +434,9 @@ class RelationHandler
      * @param string $objectId Object ID or UUID.
      * @param array  $filters  Optional filters for pagination.
      *
-     * @return array Contracts data with pagination info.
+     * @return (array|int|mixed)[] Contracts data with pagination info.
+     *
+     * @psalm-return array{results: array|mixed, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
     public function getContracts(string $objectId, array $filters=[]): array
     {
@@ -481,7 +481,6 @@ class RelationHandler
 
     }//end getContracts()
 
-
     /**
      * Get objects that this object uses (outgoing relations).
      *
@@ -492,7 +491,9 @@ class RelationHandler
      * @param bool   $rbac     Apply RBAC filters.
      * @param bool   $multi    Apply multitenancy filters.
      *
-     * @return array Paginated results with related objects.
+     * @return (\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity[]|int|mixed)[]
+     *
+     * @psalm-return array{results: list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      */
     public function getUses(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
@@ -547,7 +548,6 @@ class RelationHandler
 
     }//end getUses()
 
-
     /**
      * Get objects that use this object (incoming relations).
      *
@@ -558,7 +558,9 @@ class RelationHandler
      * @param bool   $rbac     Apply RBAC filters.
      * @param bool   $multi    Apply multitenancy filters.
      *
-     * @return array Paginated results with referencing objects.
+     * @return (array|int|mixed|string)[] Paginated results with referencing objects.
+     *
+     * @psalm-return array{results: array<never, never>, total: 0, limit: 30|mixed, offset: 0|mixed, message?: 'Reverse relationship lookup not yet implemented'}
      */
     public function getUsedBy(string $objectId, array $query=[], bool $rbac=true, bool $_multitenancy=true): array
     {
@@ -607,6 +609,4 @@ class RelationHandler
         }//end try
 
     }//end getUsedBy()
-
-
 }//end class

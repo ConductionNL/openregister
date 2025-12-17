@@ -310,7 +310,6 @@ class SearchTrail extends Entity implements JsonSerializable
      */
     protected ?int $size = null;
 
-
     /**
      * Constructor for the SearchTrail class
      *
@@ -354,7 +353,6 @@ class SearchTrail extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the query parameters
      *
@@ -365,7 +363,6 @@ class SearchTrail extends Entity implements JsonSerializable
         return ($this->queryParameters ?? []);
 
     }//end getQueryParameters()
-
 
     /**
      * Get the filters
@@ -378,7 +375,6 @@ class SearchTrail extends Entity implements JsonSerializable
 
     }//end getFilters()
 
-
     /**
      * Get the sort parameters
      *
@@ -389,7 +385,6 @@ class SearchTrail extends Entity implements JsonSerializable
         return ($this->sortParameters ?? []);
 
     }//end getSortParameters()
-
 
     /**
      * Get JSON fields from the entity
@@ -412,7 +407,6 @@ class SearchTrail extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -445,7 +439,6 @@ class SearchTrail extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Set the register name
      *
@@ -459,7 +452,6 @@ class SearchTrail extends Entity implements JsonSerializable
 
     }//end setRegisterName()
 
-
     /**
      * Set the schema name
      *
@@ -472,7 +464,6 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->schemaName = $schemaName;
 
     }//end setSchemaName()
-
 
     /**
      * Convert entity to JSON serializable array
@@ -569,7 +560,6 @@ class SearchTrail extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the search trail
      *
@@ -599,6 +589,4 @@ class SearchTrail extends Entity implements JsonSerializable
         return 'Search Trail';
 
     }//end __toString()
-
-
 }//end class

@@ -32,14 +32,12 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250712080102 extends SimpleMigrationStep
 {
-
-
     /**
      * Pre-schema change operations
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return void
      *
@@ -48,16 +46,14 @@ class Version1Date20250712080102 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No pre-schema changes required.
-
     }//end preSchemaChange()
-
 
     /**
      * Create the search_trails table
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return ISchemaWrapper
      *
@@ -145,19 +141,18 @@ class Version1Date20250712080102 extends SimpleMigrationStep
             $table->addIndex(['register', 'schema'], 'search_trails_register_schema_index');
             $table->addIndex(['created', 'register'], 'search_trails_created_register_index');
             $table->addIndex(['user', 'created'], 'search_trails_user_created_index');
-        }
+        }//end if
 
         return $schema;
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change operations
      *
-     * @param IOutput                   $output         Output interface for migration progress
+     * @param IOutput                   $output        Output interface for migration progress
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
-     * @param array                     $options        Migration options
+     * @param array                     $options       Migration options
      *
      * @return void
      *
@@ -166,8 +161,5 @@ class Version1Date20250712080102 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         // No post-schema changes required.
-
     }//end postSchemaChange()
-
-
 }//end class

@@ -53,8 +53,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250902140000 extends SimpleMigrationStep
 {
-
-
     /**
      * Apply performance-critical database indexes
      *
@@ -116,6 +114,4 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

@@ -58,7 +58,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -76,7 +75,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger          = $logger;
 
     }//end __construct()
-
 
     /**
      * Fetch objects to vectorize based on views
@@ -132,7 +130,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 
     }//end fetchEntities()
 
-
     /**
      * Extract text from object by serializing it
      *
@@ -166,7 +163,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         ];
 
     }//end extractVectorizationItems()
-
 
     /**
      * Prepare metadata for object vector
@@ -271,7 +267,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 
     }//end prepareVectorMetadata()
 
-
     /**
      * Extract @self keys from object data
      *
@@ -288,7 +283,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         return array_keys($objectData['@self']);
 
     }//end extractSelfKeys()
-
 
     /**
      * Extract the first suitable string field from object data
@@ -326,7 +320,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 
     }//end extractFirstStringField()
 
-
     /**
      * Get object ID as identifier
      *
@@ -349,7 +342,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         return 'unknown';
 
     }//end getEntityIdentifier()
-
 
     /**
      * Serialize object to text for vectorization
@@ -382,6 +374,4 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         return json_encode($object, JSON_PRETTY_PRINT);
 
     }//end serializeObject()
-
-
 }//end class

@@ -45,8 +45,6 @@ use OCP\IRequest;
  */
 class FileExtractionController extends Controller
 {
-
-
     /**
      * Constructor
      *
@@ -66,7 +64,6 @@ class FileExtractionController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Get all files tracked in the extraction system.
@@ -112,7 +109,6 @@ class FileExtractionController extends Controller
 
     }//end index()
 
-
     /**
      * Get a single file's extraction information by ID.
      *
@@ -120,20 +116,9 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing file extraction information
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|404,
-     *     array{
-     *         success: bool,
-     *         error?: 'File not found in extraction system',
-     *         message?: string,
-     *         data?: array<array<string, mixed>>
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|404, array{success: bool, error?: 'File not found in extraction system', message?: string, data?: non-empty-list<array{checksum: null|string, chunkIndex: int, createdAt: null|string, embeddingProvider: null|string, endOffset: int, id: int, indexed: bool, language: null|string, languageConfidence: float|null, languageLevel: null|string, organisation: null|string, overlapSize: int, owner: null|string, positionReference: array|null, sourceId: int|null, sourceType: null|string, startOffset: int, updatedAt: null|string, uuid: null|string, vectorized: bool}>}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
@@ -170,7 +155,6 @@ class FileExtractionController extends Controller
         }//end try
 
     }//end show()
-
 
     /**
      * Extract text from a specific file by Nextcloud file ID.
@@ -231,7 +215,6 @@ class FileExtractionController extends Controller
 
     }//end extract()
 
-
     /**
      * Discover files in Nextcloud that aren't tracked yet.
      *
@@ -287,7 +270,6 @@ class FileExtractionController extends Controller
 
     }//end discover()
 
-
     /**
      * Extract text from all pending files (files already tracked with status='pending').
      *
@@ -338,7 +320,6 @@ class FileExtractionController extends Controller
 
     }//end extractAll()
 
-
     /**
      * Retry failed file extractions.
      *
@@ -385,7 +366,6 @@ class FileExtractionController extends Controller
         }
 
     }//end retryFailed()
-
 
     /**
      * Get extraction statistics
@@ -437,7 +417,6 @@ class FileExtractionController extends Controller
 
     }//end stats()
 
-
     /**
      * Clean up invalid file_texts entries
      *
@@ -488,7 +467,6 @@ class FileExtractionController extends Controller
 
     }//end cleanup()
 
-
     /**
      * Get file types with their file and chunk counts
      *
@@ -537,7 +515,6 @@ class FileExtractionController extends Controller
 
     }//end fileTypes()
 
-
     /**
      * Vectorize file chunks in batch
      *
@@ -546,29 +523,9 @@ class FileExtractionController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing vectorization batch results
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<
-     *     200|500,
-     *     array{
-     *         success: bool,
-     *         error?: 'Vectorization failed',
-     *         message?: string,
-     *         data?: array{
-     *             success: true,
-     *             message: string,
-     *             entity_type: string,
-     *             total_entities: int<0, max>,
-     *             total_items: 0|mixed,
-     *             vectorized: 0|mixed,
-     *             failed: 0|mixed,
-     *             errors?: array
-     *         }
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: 'Vectorization failed', message?: string, data?: array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}}}, array<never, never>>
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -608,6 +565,4 @@ class FileExtractionController extends Controller
         }//end try
 
     }//end vectorizeBatch()
-
-
 }//end class

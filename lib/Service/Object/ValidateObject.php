@@ -70,7 +70,6 @@ class ValidateObject
      */
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
-
     /**
      * Constructor for ValidateObject
      *
@@ -89,7 +88,6 @@ class ValidateObject
     ) {
 
     }//end __construct()
-
 
     /**
      * Pre-processes a schema object to resolve all schema references.
@@ -126,11 +124,10 @@ class ValidateObject
         // Process array items if present.
         if (($processedSchema->items ?? null) !== null) {
             // Skip processing if array items have been transformed to UUID type by OpenRegister logic.
-            if (($processedSchema->items->type ?? null) !== null && $processedSchema->items->type === 'string'
-                && (($processedSchema->items->pattern ?? null) !== null) && str_contains($processedSchema->items->pattern, 'uuid') === true
-            ) {
-                // Skip processing - already transformed.
-            } else {
+            $isAlreadyTransformed = (($processedSchema->items->type ?? null) !== null && $processedSchema->items->type === 'string'
+                && (($processedSchema->items->pattern ?? null) !== null) && str_contains($processedSchema->items->pattern, 'uuid') === true);
+
+            if ($isAlreadyTransformed === false) {
                 $processedSchema->items = $this->resolveSchemaProperty(propertySchema: $processedSchema->items, visited: $visited);
             }
         }
@@ -138,7 +135,6 @@ class ValidateObject
         return $processedSchema;
 
     }//end preprocessSchemaReferences()
-
 
     /**
      * Resolves schema references in a property definition.
@@ -203,20 +199,21 @@ class ValidateObject
                         }
 
                         return $unionSchema;
-                    } else {
-                        // For non-object properties, just return the resolved schema.
-                        // but preserve any additional properties from the original.
-                        foreach ($propertySchema as $key => $value) {
-                            if ($key !== '$ref') {
-                                $resolvedSchema->$key = $value;
-                            }
-                        }
+                    }
 
-                        return $resolvedSchema;
-                    }//end if
-                } else {
-                    // Could not resolve schema reference: $reference.
-                }//end if
+                    // For non-object properties, just return the resolved schema.
+                    // but preserve any additional properties from the original.
+                    foreach ($propertySchema as $key => $value) {
+                        if ($key !== '$ref') {
+                            $resolvedSchema->$key = $value;
+                        }
+                    }
+
+                    return $resolvedSchema;
+                }
+
+                // Could not resolve schema reference: $reference.
+            }//end if
             }//end if
         }//end if
 
@@ -238,7 +235,6 @@ class ValidateObject
         return $propertySchema;
 
     }//end resolveSchemaProperty()
-
 
     /**
      * Transforms OpenRegister-specific object configurations before validation.
@@ -267,7 +263,6 @@ class ValidateObject
         return $schemaObject;
 
     }//end transformOpenRegisterObjectConfigurations()
-
 
     /**
      * Transforms a single property based on OpenRegister object configuration.
@@ -345,7 +340,6 @@ class ValidateObject
 
     }//end transformPropertyForOpenRegister()
 
-
     /**
      * Transforms array items based on OpenRegister object configuration.
      *
@@ -381,7 +375,6 @@ class ValidateObject
 
     }//end transformArrayItemsForOpenRegister()
 
-
     /**
      * Transforms object properties based on OpenRegister object configuration.
      *
@@ -415,7 +408,6 @@ class ValidateObject
         }
 
     }//end transformObjectPropertyForOpenRegister()
-
 
     /**
      * Transforms an object property to expect UUID strings for related objects.
@@ -484,7 +476,6 @@ class ValidateObject
 
     }//end transformToUuidProperty()
 
-
     /**
      * Transforms an object property for nested objects, removing circular references.
      *
@@ -533,7 +524,6 @@ class ValidateObject
         }//end if
 
     }//end transformToNestedObjectProperty()
-
 
     /**
      * Transforms schema for validation by handling circular references, OpenRegister configurations, and schema resolution.
@@ -661,7 +651,6 @@ class ValidateObject
 
     }//end transformSchemaForValidation()
 
-
     /**
      * Cleans a schema object by removing all Nextcloud-specific metadata properties.
      * This ensures the schema is valid JSON Schema before validation.
@@ -716,7 +705,6 @@ class ValidateObject
         return $cleanedSchema;
 
     }//end cleanSchemaForValidation()
-
 
     /**
      * Cleans a property schema by removing metadata and handling special cases.
@@ -784,7 +772,6 @@ class ValidateObject
 
     }//end cleanPropertyForValidation()
 
-
     /**
      * Transforms array items for validation by converting object items to appropriate types.
      *
@@ -830,7 +817,6 @@ class ValidateObject
 
     }//end transformArrayItemsForValidation()
 
-
     /**
      * Transforms array items to expect UUID strings.
      *
@@ -852,7 +838,6 @@ class ValidateObject
         return $itemsSchema;
 
     }//end transformItemsToUuidStrings()
-
 
     /**
      * Transforms array items to a simple object structure.
@@ -882,7 +867,6 @@ class ValidateObject
         return $itemsSchema;
 
     }//end transformItemsToSimpleObject()
-
 
     /**
      * Checks if a property schema is a self-reference to the given schema slug.
@@ -920,7 +904,6 @@ class ValidateObject
 
     }//end isSelfReference()
 
-
     /**
      * Finds a schema by slug (case-insensitive).
      *
@@ -956,7 +939,6 @@ class ValidateObject
         return null;
 
     }//end findSchemaBySlug()
-
 
     /**
      * Validates an object against a schema.
@@ -1144,7 +1126,6 @@ class ValidateObject
 
     }//end validateObject()
 
-
     /**
      * Register a custom format validator with named parameters support
      *
@@ -1164,7 +1145,6 @@ class ValidateObject
         $validator->parser()->getFormatResolver()->register($type, $format, $resolver);
 
     }//end registerCustomFormat()
-
 
     /**
      * Resolves a schema from a given URI.
@@ -1220,7 +1200,6 @@ class ValidateObject
 
     }//end resolveSchema()
 
-
     /**
      * Removes query parameters from a reference string.
      *
@@ -1238,7 +1217,6 @@ class ValidateObject
         return $reference;
 
     }//end removeQueryParameters()
-
 
     /**
      * Generates a meaningful error message from a validation result.
@@ -1262,7 +1240,6 @@ class ValidateObject
         return $this->formatValidationError($error);
 
     }//end generateErrorMessage()
-
 
     /**
      * Formats a validation error into a user-friendly message.
@@ -1400,7 +1377,6 @@ class ValidateObject
 
     }//end formatValidationError()
 
-
     /**
      * Gets a human-readable type name for a value.
      *
@@ -1442,23 +1418,12 @@ class ValidateObject
 
     }//end getValueType()
 
-
     /**
      * Handles validation exceptions by formatting them into a JSON response.
      *
      * @param ValidationException|CustomValidationException $exception The validation exception.
      *
-     * @return JSONResponse The formatted error response.
-     *
-     * @psalm-return JSONResponse<
-     *     400,
-     *     array{
-     *         status: 'error',
-     *         message: 'Validation failed',
-     *         errors: list{0?: array<array|mixed|null|string>|string,...}
-     *     },
-     *     array<never, never>
-     * >
+     * @psalm-return JSONResponse<400, array{status: 'error', message: 'Validation failed', errors: list{0?: array<array|mixed|null|string>|string,...}}, array<never, never>>
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {
@@ -1492,7 +1457,6 @@ class ValidateObject
             );
 
     }//end handleValidationException()
-
 
     /**
      * Check of the value of a parameter, or a combination of parameters, is unique
@@ -1560,6 +1524,4 @@ class ValidateObject
         }//end if
 
     }//end validateUniqueFields()
-
-
 }//end class

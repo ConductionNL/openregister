@@ -28,8 +28,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107150000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create feedback table for storing user feedback on AI messages
      *
@@ -159,6 +157,4 @@ class Version1Date20251107150000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

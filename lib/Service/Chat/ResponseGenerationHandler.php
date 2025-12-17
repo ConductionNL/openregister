@@ -69,7 +69,6 @@ class ResponseGenerationHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -89,7 +88,6 @@ class ResponseGenerationHandler
         $this->logger          = $logger;
 
     }//end __construct()
-
 
     /**
      * Generate response using configured LLM provider
@@ -351,7 +349,6 @@ class ResponseGenerationHandler
 
     }//end generateResponse()
 
-
     /**
      * Call Fireworks AI chat API directly (simple version)
      *
@@ -448,7 +445,6 @@ class ResponseGenerationHandler
         return $data['choices'][0]['message']['content'];
 
     }//end callFireworksChatAPI()
-
 
     /**
      * Call Fireworks AI chat API with full message history
@@ -577,7 +573,6 @@ class ResponseGenerationHandler
 
     }//end callFireworksChatAPIWithHistory()
 
-
     /**
      * Get URL from LLPhant config object
      *
@@ -596,6 +591,4 @@ class ResponseGenerationHandler
         return 'default';
 
     }//end getLlphantUrl()
-
-
 }//end class

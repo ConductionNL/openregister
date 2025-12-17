@@ -65,7 +65,6 @@ class SolrWarmupJob extends QueuedJob
      */
     private const DEFAULT_MODE = 'serial';
 
-
     /**
      * Execute the SOLR warmup job
      *
@@ -205,7 +204,6 @@ class SolrWarmupJob extends QueuedJob
 
     }//end run()
 
-
     /**
      * Check if SOLR is available
      *
@@ -231,7 +229,6 @@ class SolrWarmupJob extends QueuedJob
         return true;
 
     }//end isSolrAvailable()
-
 
     /**
      * Calculate objects indexed per second
@@ -259,6 +256,4 @@ class SolrWarmupJob extends QueuedJob
         return 0.0;
 
     }//end calculateObjectsPerSecond()
-
-
 }//end class

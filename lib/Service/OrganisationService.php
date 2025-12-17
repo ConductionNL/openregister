@@ -152,7 +152,6 @@ class OrganisationService
      */
     private ?SettingsService $settingsService = null;
 
-
     /**
      * OrganisationService constructor
      *
@@ -188,7 +187,6 @@ class OrganisationService
 
     }//end __construct()
 
-
     /**
      * Ensure default organisation exists, create if needed
      * Uses static application-level caching for performance optimization
@@ -220,7 +218,6 @@ class OrganisationService
         return $defaultOrg;
 
     }//end ensureDefaultOrganisation()
-
 
     /**
      * Get Organisation settings only
@@ -259,7 +256,6 @@ class OrganisationService
 
     }//end getOrganisationSettingsOnly()
 
-
     /**
      * Get default organisation UUID from settings
      *
@@ -283,7 +279,6 @@ class OrganisationService
         }
 
     }//end getDefaultOrganisationUuid()
-
 
     /**
      * Fetch default organisation from database (cache miss fallback)
@@ -387,7 +382,6 @@ class OrganisationService
 
     }//end fetchDefaultOrganisationFromDatabase()
 
-
     /**
      * Cache default organisation in static memory for performance
      *
@@ -410,7 +404,6 @@ class OrganisationService
 
     }//end cacheDefaultOrganisation()
 
-
     /**
      * Get the current user
      *
@@ -422,15 +415,16 @@ class OrganisationService
 
     }//end getCurrentUser()
 
-
     /**
      * Get organisations for the current user
      *
      * @param bool $_useCache Whether to use session cache (temporarily disabled)
      *
-     * @return array Array of Organisation objects
+     * @return Organisation[]
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
      */
     public function getUserOrganisations(bool $_useCache=true): array
     {
@@ -458,14 +452,13 @@ class OrganisationService
 
     }//end getUserOrganisations()
 
-
     /**
      * Get the active organisation for the current user
      * Uses session caching to avoid repeated database calls for RBAC performance
      *
-     * @return Organisation|null The active organisation or null if none set
+     * @return OCA\OpenRegister\Db\Organisation|Organisation|null The active organisation or null if none set
      */
-    public function getActiveOrganisation(): ?Organisation
+    public function getActiveOrganisation(): Organisation|null
     {
         $user = $this->getCurrentUser();
         if ($user === null) {
@@ -510,7 +503,6 @@ class OrganisationService
         return $organisation;
 
     }//end getActiveOrganisation()
-
 
     /**
      * Set the active organisation for the current user
@@ -570,7 +562,6 @@ class OrganisationService
 
     }//end setActiveOrganisation()
 
-
     /**
      * Add a user to an organisation
      *
@@ -616,7 +607,6 @@ class OrganisationService
         }//end try
 
     }//end joinOrganisation()
-
 
     /**
      * Remove current user or specified user from an organisation
@@ -674,7 +664,6 @@ class OrganisationService
 
     }//end leaveOrganisation()
 
-
     /**
      * Generate a URL-friendly slug from a name
      *
@@ -699,7 +688,6 @@ class OrganisationService
         return $slug;
 
     }//end generateSlug()
-
 
     /**
      * Create a new organisation
@@ -779,7 +767,6 @@ class OrganisationService
 
     }//end createOrganisation()
 
-
     /**
      * Check if current user has access to an organisation
      *
@@ -808,7 +795,6 @@ class OrganisationService
         }
 
     }//end hasAccessToOrganisation()
-
 
     /**
      * Get user organisation statistics
@@ -846,7 +832,6 @@ class OrganisationService
 
     }//end getUserOrganisationStats()
 
-
     /**
      * Clear default organisation cache (public method for external use)
      *
@@ -860,7 +845,6 @@ class OrganisationService
         $this->logger->info(message: 'Cleared default organisation static cache');
 
     }//end clearDefaultOrganisationCache()
-
 
     /**
      * Clear all organisation cache for current user
@@ -896,7 +880,6 @@ class OrganisationService
 
     }//end clearCache()
 
-
     /**
      * Get all users in the admin group
      *
@@ -921,7 +904,6 @@ class OrganisationService
                 );
 
     }//end getAdminGroupUsers()
-
 
     /**
      * Add all admin group users to an organisation
@@ -961,7 +943,6 @@ class OrganisationService
         return $organisation;
 
     }//end addAdminUsersToOrganisation()
-
 
     /**
      * Add admin group to organisation authorization with full permissions
@@ -1014,7 +995,6 @@ class OrganisationService
 
     }//end addAdminGroupToAuthorization()
 
-
     /**
      * Check if admin group is already in authorization configuration
      *
@@ -1054,15 +1034,14 @@ class OrganisationService
 
     }//end hasAdminGroupInAuthorization()
 
-
     /**
      * Fetch active organisation from database (cache miss fallback)
      *
      * @param string $userId The user ID to fetch active organisation for
      *
-     * @return Organisation|null The active organisation or null if none set
+     * @return OCA\OpenRegister\Db\Organisation|Organisation|null The active organisation or null if none set
      */
-    private function fetchActiveOrganisationFromDatabase(string $userId): ?Organisation
+    private function fetchActiveOrganisationFromDatabase(string $userId): Organisation|null
     {
         // Get active organisation UUID from user configuration (persistent).
         $activeUuid = $this->config->getUserValue(
@@ -1191,7 +1170,6 @@ class OrganisationService
 
     }//end fetchActiveOrganisationFromDatabase()
 
-
     /**
      * Cache active organisation in session for performance
      *
@@ -1231,7 +1209,6 @@ class OrganisationService
                 );
 
     }//end cacheActiveOrganisation()
-
 
     /**
      * Reconstruct Organisation object from cached data
@@ -1291,7 +1268,6 @@ class OrganisationService
 
     }//end reconstructOrganisationFromCache()
 
-
     /**
      * Clear active organisation cache for a specific user
      *
@@ -1315,7 +1291,6 @@ class OrganisationService
                 );
 
     }//end clearActiveOrganisationCache()
-
 
     /**
      * Get the organisation UUID to use for creating new entities
@@ -1341,7 +1316,6 @@ class OrganisationService
 
     }//end getOrganisationForNewEntity()
 
-
     /**
      * Get the default organisation UUID from config
      *
@@ -1357,7 +1331,6 @@ class OrganisationService
         return null;
 
     }//end getDefaultOrganisationId()
-
 
     /**
      * Format created date for JSON serialization
@@ -1377,7 +1350,6 @@ class OrganisationService
 
     }//end formatCreatedDate()
 
-
     /**
      * Format updated date for JSON serialization
      *
@@ -1396,7 +1368,6 @@ class OrganisationService
 
     }//end formatUpdatedDate()
 
-
     /**
      * Set the default organisation UUID in config
      *
@@ -1410,7 +1381,6 @@ class OrganisationService
         $this->clearDefaultOrganisationCache();
 
     }//end setDefaultOrganisationId()
-
 
     /**
      * Get UUIDs of active organisation and all its parent organisations
@@ -1428,9 +1398,9 @@ class OrganisationService
      *
      * This is used by MultiTenancyTrait for filtering queries to include parent resources.
      *
-     * @return (mixed|null|string)[] Array of organisation UUIDs (active org + all parents)
+     * @return (mixed|null|string)[]
      *
-     * @psalm-return array{0?: mixed|null|string,...}
+     * @psalm-return list{0?: null|string,...}
      */
     public function getUserActiveOrganisations(): array
     {
@@ -1464,6 +1434,4 @@ class OrganisationService
         return $orgUuids;
 
     }//end getUserActiveOrganisations()
-
-
 }//end class

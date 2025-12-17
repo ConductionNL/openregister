@@ -54,7 +54,6 @@ class CreateFileHandler
      */
     private ?FileService $fileService = null;
 
-
     /**
      * Constructor for CreateFileHandler.
      *
@@ -76,7 +75,6 @@ class CreateFileHandler
 
     }//end __construct()
 
-
     /**
      * Set the FileService instance for cross-handler coordination.
      *
@@ -89,7 +87,6 @@ class CreateFileHandler
         $this->fileService = $fileService;
 
     }//end setFileService()
-
 
     /**
      * Add a file to an object with content, tags, and sharing.
@@ -194,7 +191,6 @@ class CreateFileHandler
 
     }//end addFile()
 
-
     /**
      * Save a file (upsert operation - create or update).
      *
@@ -265,6 +261,4 @@ class CreateFileHandler
         }//end try
 
     }//end saveFile()
-
-
 }//end class

@@ -35,7 +35,6 @@ class ViewCreatedEvent extends Event
      */
     private View $view;
 
-
     /**
      * Constructor for ViewCreatedEvent.
      *
@@ -50,7 +49,6 @@ class ViewCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created view.
      *
@@ -61,6 +59,4 @@ class ViewCreatedEvent extends Event
         return $this->view;
 
     }//end getView()
-
-
 }//end class

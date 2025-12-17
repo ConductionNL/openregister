@@ -91,7 +91,6 @@ class LogService
      */
     private readonly SchemaMapper $schemaMapper;
 
-
     /**
      * Constructor for LogService
      *
@@ -117,7 +116,6 @@ class LogService
         $this->schemaMapper       = $schemaMapper;
 
     }//end __construct()
-
 
     /**
      * Get logs for an object
@@ -182,7 +180,6 @@ class LogService
 
     }//end getLogs()
 
-
     /**
      * Count logs for an object
      *
@@ -232,7 +229,6 @@ class LogService
 
     }//end count()
 
-
     /**
      * Get all audit trail logs with optional filtering
      *
@@ -260,7 +256,6 @@ class LogService
 
     }//end getAllLogs()
 
-
     /**
      * Count all audit trail logs with optional filtering
      *
@@ -277,7 +272,6 @@ class LogService
 
     }//end countAllLogs()
 
-
     /**
      * Get a single audit trail log by ID
      *
@@ -292,7 +286,6 @@ class LogService
 
     }//end getLog()
 
-
     /**
      * Export audit trail logs with specified format and filters
      *
@@ -306,7 +299,7 @@ class LogService
      *                       metadata - search:
      *                       (string|null) Search term
      *
-     * @return (bool|string)[] Array containing: - content: (string) Exported content - filename: (string) Suggested filename - contentType: (string) MIME content type
+     * @return (bool|string)[]
      *
      * @throws \InvalidArgumentException If unsupported format is specified
      *
@@ -340,7 +333,6 @@ class LogService
 
     }//end exportLogs()
 
-
     /**
      * Delete a single audit trail log by ID
      *
@@ -361,7 +353,6 @@ class LogService
         }
 
     }//end deleteLog()
-
 
     /**
      * Delete multiple audit trail logs based on filters
@@ -421,7 +412,6 @@ class LogService
         }//end try
 
     }//end deleteLogs()
-
 
     /**
      * Prepare logs data for export by filtering and formatting fields
@@ -492,7 +482,6 @@ class LogService
 
     }//end prepareLogsForExport()
 
-
     /**
      * Export data to CSV format
      *
@@ -534,7 +523,6 @@ class LogService
 
     }//end exportToCsv()
 
-
     /**
      * Export data to JSON format
      *
@@ -553,7 +541,6 @@ class LogService
         ];
 
     }//end exportToJson()
-
 
     /**
      * Export data to XML format
@@ -584,7 +571,6 @@ class LogService
         ];
 
     }//end exportToXml()
-
 
     /**
      * Export data to plain text format
@@ -619,7 +605,6 @@ class LogService
 
     }//end exportToTxt()
 
-
     /**
      * Get changes formatted as JSON string or original value
      *
@@ -636,6 +621,4 @@ class LogService
         return (string) $changed;
 
     }//end getChangesFormatted()
-
-
 }//end class

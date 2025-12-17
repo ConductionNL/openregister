@@ -36,8 +36,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107190000 extends SimpleMigrationStep
 {
-
-
     /**
      * Modify the database schema
      *
@@ -81,7 +79,6 @@ class Version1Date20251107190000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change hook
      *
@@ -99,6 +96,4 @@ class Version1Date20251107190000 extends SimpleMigrationStep
         $output->info(message: '   Default organisation is now managed via configuration');
 
     }//end postSchemaChange()
-
-
 }//end class

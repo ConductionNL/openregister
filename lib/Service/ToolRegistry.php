@@ -91,7 +91,6 @@ class ToolRegistry
      */
     private bool $loaded = false;
 
-
     /**
      * Constructor
      *
@@ -106,7 +105,6 @@ class ToolRegistry
         $this->logger          = $logger;
 
     }//end __construct()
-
 
     /**
      * Load all tools by dispatching registration event
@@ -137,7 +135,6 @@ class ToolRegistry
                 );
 
     }//end loadTools()
-
 
     /**
      * Register a tool
@@ -191,7 +188,6 @@ class ToolRegistry
 
     }//end registerTool()
 
-
     /**
      * Get a tool by ID
      *
@@ -211,7 +207,6 @@ class ToolRegistry
 
     }//end getTool()
 
-
     /**
      * Get all registered tools
      *
@@ -229,7 +224,6 @@ class ToolRegistry
         return $result;
 
     }//end getAllTools()
-
 
     /**
      * Get tools by their IDs
@@ -256,6 +250,4 @@ class ToolRegistry
         return $result;
 
     }//end getTools()
-
-
 }//end class

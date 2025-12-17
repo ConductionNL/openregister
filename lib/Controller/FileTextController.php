@@ -43,8 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileTextController extends Controller
 {
-
-
     /**
      * Constructor
      *
@@ -67,7 +65,6 @@ class FileTextController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get extracted text for a file
      *
@@ -76,8 +73,6 @@ class FileTextController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse File text data
      *
      * @psalm-return JSONResponse<404|500, array{success: false, message: string, file_id?: int}, array<never, never>>
      */
@@ -115,7 +110,6 @@ class FileTextController extends Controller
 
     }//end getFileText()
 
-
     /**
      * Extract text from a file (force re-extraction)
      *
@@ -124,8 +118,6 @@ class FileTextController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Extraction result
      *
      * @psalm-return JSONResponse<200|500|501, array{success: bool, message: string}, array<never, never>>
      */
@@ -168,15 +160,12 @@ class FileTextController extends Controller
 
     }//end extractFileText()
 
-
     /**
      * Bulk extract text from multiple files
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Bulk extraction results
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, processed?: int<0, max>, failed?: int<0, max>, total?: int<0, max>}, array<never, never>>
      */
@@ -215,15 +204,12 @@ class FileTextController extends Controller
 
     }//end bulkExtract()
 
-
     /**
      * Get file text extraction statistics
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Statistics
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{totalFiles: int, untrackedFiles: int, totalChunks: int, totalObjects: int, totalEntities: int}}, array<never, never>>
      */
@@ -257,7 +243,6 @@ class FileTextController extends Controller
 
     }//end getStats()
 
-
     /**
      * Delete file text by file ID
      *
@@ -266,8 +251,6 @@ class FileTextController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Deletion result
      *
      * @psalm-return JSONResponse<500|501, array{success: false, message: string}, array<never, never>>
      */
@@ -303,7 +286,6 @@ class FileTextController extends Controller
         }//end try
 
     }//end deleteFileText()
-
 
     /**
      * Process extracted files and index their chunks to SOLR
@@ -354,7 +336,6 @@ class FileTextController extends Controller
 
     }//end processAndIndexExtracted()
 
-
     /**
      * Process and index a single extracted file
      *
@@ -403,7 +384,6 @@ class FileTextController extends Controller
 
     }//end processAndIndexFile()
 
-
     /**
      * Get chunking statistics
      *
@@ -411,9 +391,7 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Chunking statistics
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{available: bool, collection?: string, total_extracted?: 0|mixed, total_chunks_indexed?: 0|mixed, unique_files_indexed?: 0|mixed, pending_indexing?: 0|mixed, error?: 'fileCollection not configured'}}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}}, array<never, never>>
      */
     public function getChunkingStats(): JSONResponse
     {
@@ -444,6 +422,4 @@ class FileTextController extends Controller
         }//end try
 
     }//end getChunkingStats()
-
-
 }//end class

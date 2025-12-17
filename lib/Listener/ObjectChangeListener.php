@@ -47,8 +47,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectChangeListener implements IEventListener
 {
-
-
     /**
      * Constructor
      *
@@ -65,7 +63,6 @@ class ObjectChangeListener implements IEventListener
     ) {
 
     }//end __construct()
-
 
     /**
      * Handle object events
@@ -114,7 +111,6 @@ class ObjectChangeListener implements IEventListener
 
     }//end handle()
 
-
     /**
      * Process extraction based on configured mode
      *
@@ -149,7 +145,6 @@ class ObjectChangeListener implements IEventListener
         }//end switch
 
     }//end processExtractionMode()
-
 
     /**
      * Process immediate synchronous extraction
@@ -187,7 +182,6 @@ class ObjectChangeListener implements IEventListener
 
     }//end processImmediateExtraction()
 
-
     /**
      * Queue background job for extraction
      *
@@ -224,7 +218,6 @@ class ObjectChangeListener implements IEventListener
 
     }//end processBackgroundExtraction()
 
-
     /**
      * Handle cron mode (skip processing)
      *
@@ -241,7 +234,6 @@ class ObjectChangeListener implements IEventListener
 
     }//end processCronMode()
 
-
     /**
      * Handle manual mode (skip processing)
      *
@@ -257,7 +249,6 @@ class ObjectChangeListener implements IEventListener
                 );
 
     }//end processManualMode()
-
 
     /**
      * Handle unknown extraction mode (fallback to background)
@@ -280,6 +271,4 @@ class ObjectChangeListener implements IEventListener
         $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
 
     }//end processUnknownMode()
-
-
 }//end class

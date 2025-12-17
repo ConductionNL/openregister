@@ -65,7 +65,6 @@ class FacetsHandler
      */
     private SchemaMapper $schemaMapper;
 
-
     /**
      * Constructor.
      *
@@ -87,7 +86,6 @@ class FacetsHandler
 
     }//end __construct()
 
-
     /**
      * Get simple facets using the new handlers.
      *
@@ -101,7 +99,9 @@ class FacetsHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array Simple facet data using the new handlers.
+     * @return ((((int|mixed|string)[]|int|mixed|string)[]|mixed|string)[]|mixed|string)[][] Simple facet data using the new handlers.
+     *
+     * @psalm-return array<array<array{type?: 'date_histogram'|'range'|'terms', buckets?: list{0?: array{key: mixed|string, results: int, from?: mixed, to?: mixed, label?: string}|mixed,...}, interval?: string, 0?: array{key: mixed|string, results: int, from?: mixed, to?: mixed}|mixed,...}|mixed|string>>
      */
     public function getSimpleFacets(array $query=[]): array
     {
@@ -167,7 +167,6 @@ class FacetsHandler
 
     }//end getSimpleFacets()
 
-
     /**
      * Get facetable fields from schemas.
      *
@@ -180,7 +179,9 @@ class FacetsHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array Facetable fields with their configuration based on schema definitions.
+     * @return array[] Facetable fields with their configuration based on schema definitions.
+     *
+     * @psalm-return array<string, array>
      */
     public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
     {
@@ -225,7 +226,6 @@ class FacetsHandler
 
     }//end getFacetableFieldsFromSchemas()
 
-
     /**
      * Get schemas for query context.
      *
@@ -237,7 +237,9 @@ class FacetsHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @return array Array of Schema objects.
+     * @return \OCA\OpenRegister\Db\Schema[] Array of Schema objects.
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\Schema>
      */
     private function getSchemasForQuery(array $baseQuery): array
     {
@@ -264,7 +266,6 @@ class FacetsHandler
 
     }//end getSchemasForQuery()
 
-
     /**
      * Check if a property is facetable.
      *
@@ -278,14 +279,15 @@ class FacetsHandler
 
     }//end isPropertyFacetable()
 
-
     /**
      * Generate field configuration from property definition.
      *
      * @param string $propertyKey The property key.
      * @param array  $property    The property definition.
      *
-     * @return array|null Field configuration or null if not suitable for faceting.
+     * @return (array|mixed|string)[]|null Field configuration or null if not suitable for faceting.
+     *
+     * @psalm-return array{type: string, format: string, title: mixed|string, description: mixed|string, facet_types: array, source: 'schema', example?: mixed, cardinality?: string, minimum?: mixed, maximum?: mixed, intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
     private function generateFieldConfigFromProperty(string $propertyKey, array $property): array|null
     {
@@ -351,14 +353,15 @@ class FacetsHandler
 
     }//end generateFieldConfigFromProperty()
 
-
     /**
      * Determine facet types based on property type and format.
      *
      * @param string $type   The property type.
      * @param string $format The property format.
      *
-     * @return array Array of suitable facet types.
+     * @return string[] Array of suitable facet types.
+     *
+     * @psalm-return list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}
      */
     private function determineFacetTypesFromProperty(string $type, string $format): array
     {
@@ -388,14 +391,15 @@ class FacetsHandler
 
     }//end determineFacetTypesFromProperty()
 
-
     /**
      * Merge field configurations from multiple schemas.
      *
      * @param array $existing The existing field configuration.
      * @param array $new      The new field configuration.
      *
-     * @return array Merged field configuration.
+     * @return (array|mixed)[] Merged field configuration.
+     *
+     * @psalm-return array{facet_types: array, title?: mixed, description?: mixed, example?: mixed,...}
      */
     private function mergeFieldConfigs(array $existing, array $new): array
     {
@@ -423,6 +427,4 @@ class FacetsHandler
         return $merged;
 
     }//end mergeFieldConfigs()
-
-
 }//end class

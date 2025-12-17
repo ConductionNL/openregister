@@ -39,8 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class CascadingHandler
 {
-
-
     /**
      * Constructor for CascadingHandler.
      *
@@ -58,7 +56,6 @@ class CascadingHandler
 
     }//end __construct()
 
-
     /**
      * Handle pre-validation cascading for inversedBy properties.
      *
@@ -70,7 +67,9 @@ class CascadingHandler
      * @param string|null $uuid            Object UUID (generated if null).
      * @param int         $currentRegister Current register ID.
      *
-     * @return array Array containing [processed object, uuid].
+     * @return ((array|mixed|string)[]|null|string)[] Array containing [processed object, uuid].
+     *
+     * @psalm-return list{array<array|mixed|string>, null|string}
      */
     public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, int $currentRegister): array
     {
@@ -166,7 +165,6 @@ class CascadingHandler
 
     }//end handlePreValidationCascading()
 
-
     /**
      * Create a related object and return its UUID.
      *
@@ -246,6 +244,4 @@ class CascadingHandler
         }//end try
 
     }//end createRelatedObject()
-
-
 }//end class

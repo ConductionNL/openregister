@@ -38,7 +38,6 @@ class DepublishObject
      */
     private readonly ObjectEntityMapper $objectEntityMapper;
 
-
     /**
      * Constructor for DepublishObject
      *
@@ -50,7 +49,6 @@ class DepublishObject
         $this->objectEntityMapper = $objectEntityMapper;
 
     }//end __construct()
-
 
     /**
      * Depublish an object
@@ -88,6 +86,4 @@ class DepublishObject
         return $this->objectEntityMapper->update($object);
 
     }//end depublish()
-
-
 }//end class

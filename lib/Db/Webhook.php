@@ -220,7 +220,6 @@ class Webhook extends Entity implements JsonSerializable
      */
     protected ?string $configuration = null;
 
-
     /**
      * Constructor
      */
@@ -251,7 +250,6 @@ class Webhook extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get events as array
      *
@@ -262,7 +260,6 @@ class Webhook extends Entity implements JsonSerializable
         return json_decode($this->events, true) ?? [];
 
     }//end getEventsArray()
-
 
     /**
      * Set events from array
@@ -276,7 +273,6 @@ class Webhook extends Entity implements JsonSerializable
         $this->setEvents(json_encode($events));
 
     }//end setEventsArray()
-
 
     /**
      * Get headers as array
@@ -292,7 +288,6 @@ class Webhook extends Entity implements JsonSerializable
         return json_decode($this->headers, true) ?? [];
 
     }//end getHeadersArray()
-
 
     /**
      * Set headers from array
@@ -312,7 +307,6 @@ class Webhook extends Entity implements JsonSerializable
 
     }//end setHeadersArray()
 
-
     /**
      * Get filters as array
      *
@@ -327,7 +321,6 @@ class Webhook extends Entity implements JsonSerializable
         return json_decode($this->filters, true) ?? [];
 
     }//end getFiltersArray()
-
 
     /**
      * Set filters from array
@@ -347,7 +340,6 @@ class Webhook extends Entity implements JsonSerializable
 
     }//end setFiltersArray()
 
-
     /**
      * Get configuration as array
      *
@@ -362,7 +354,6 @@ class Webhook extends Entity implements JsonSerializable
         return json_decode($this->configuration, true) ?? [];
 
     }//end getConfigurationArray()
-
 
     /**
      * Set configuration from array
@@ -381,7 +372,6 @@ class Webhook extends Entity implements JsonSerializable
         $this->setConfiguration(json_encode($configuration));
 
     }//end setConfigurationArray()
-
 
     /**
      * Check if event matches webhook
@@ -414,7 +404,6 @@ class Webhook extends Entity implements JsonSerializable
         return false;
 
     }//end matchesEvent()
-
 
     /**
      * JSON serialize the entity
@@ -457,7 +446,6 @@ class Webhook extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
 
     /**
      * Hydrate entity from array
@@ -547,6 +535,4 @@ class Webhook extends Entity implements JsonSerializable
         return $this;
 
     }//end hydrate()
-
-
 }//end class

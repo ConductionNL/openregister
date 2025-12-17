@@ -50,7 +50,6 @@ class UploadHandler
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor for UploadHandler.
      *
@@ -66,7 +65,6 @@ class UploadHandler
 
     }//end __construct()
 
-
     /**
      * Gets the uploaded json from the request data and returns it as a PHP array.
      *
@@ -76,12 +74,14 @@ class UploadHandler
      * @param array      $data          All request params.
      * @param array|null $uploadedFiles The uploaded files array.
      *
-     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
+     * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @throws Exception
      * @throws GuzzleException
+     *
+     * @psalm-return JSONResponse<400, array{error?: string, 'MIME-type'?: string, message?: 'Expected only 1 file.', 'Content-Type'?: string}, array<never, never>>|array
      */
-    public function getUploadedJson(array $data, ?array $uploadedFiles): array | JSONResponse
+    public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {
         // Define the allowed keys for input validation.
         $allowedKeys = ['url', 'json'];
@@ -113,7 +113,6 @@ class UploadHandler
         return $this->getJSONfromBody($data['json']);
 
     }//end getUploadedJson()
-
 
     /**
      * Decode file content or URL response.
@@ -158,7 +157,6 @@ class UploadHandler
 
     }//end decode()
 
-
     /**
      * Recursively converts stdClass objects to arrays to ensure consistent data structure.
      *
@@ -185,7 +183,6 @@ class UploadHandler
         return $data;
 
     }//end ensureArrayStructure()
-
 
     /**
      * Gets uploaded file content from a file in the api request as PHP array.
@@ -224,13 +221,12 @@ class UploadHandler
 
     }//end getJSONfromFile()
 
-
     /**
      * Uses Guzzle to call the given URL and returns response as PHP array.
      *
      * @param string $url The URL to call.
      *
-     * @return JSONResponse|array The response from the call converted to PHP array or JSONResponse in case of an error.
+     * @return JSONResponse|array
      *
      * @throws GuzzleException
      *
@@ -264,7 +260,6 @@ class UploadHandler
 
     }//end getJSONfromURL()
 
-
     /**
      * Uses the given string or array as PHP array for creating/updating an object.
      *
@@ -294,6 +289,4 @@ class UploadHandler
         return $phpArray;
 
     }//end getJSONfromBody()
-
-
 }//end class

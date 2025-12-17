@@ -39,8 +39,6 @@ use Exception;
  */
 class RegisterNotFoundException extends Exception
 {
-
-
     /**
      * RegisterNotFoundException constructor
      *
@@ -66,6 +64,4 @@ class RegisterNotFoundException extends Exception
         parent::__construct($message, $code, $previous);
 
     }//end __construct()
-
-
 }//end class

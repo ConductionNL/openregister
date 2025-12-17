@@ -35,7 +35,6 @@ class ObjectCreatingEvent extends Event
      */
     private ObjectEntity $object;
 
-
     /**
      * Constructor for ObjectCreatedEvent
      *
@@ -50,7 +49,6 @@ class ObjectCreatingEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created object entity
      *
@@ -61,6 +59,4 @@ class ObjectCreatingEvent extends Event
         return $this->object;
 
     }//end getObject()
-
-
 }//end class

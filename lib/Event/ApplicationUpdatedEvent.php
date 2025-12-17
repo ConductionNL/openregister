@@ -46,7 +46,6 @@ class ApplicationUpdatedEvent extends Event
      */
     private Application $oldApplication;
 
-
     /**
      * Constructor for ApplicationUpdatedEvent.
      *
@@ -63,7 +62,6 @@ class ApplicationUpdatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated application
      *
@@ -75,7 +73,6 @@ class ApplicationUpdatedEvent extends Event
 
     }//end getNewApplication()
 
-
     /**
      * Get the original application
      *
@@ -86,6 +83,4 @@ class ApplicationUpdatedEvent extends Event
         return $this->oldApplication;
 
     }//end getOldApplication()
-
-
 }//end class

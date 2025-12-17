@@ -42,7 +42,6 @@ class ObjectUpdatingEvent extends Event
      */
     private ObjectEntity $oldObject;
 
-
     /**
      * Constructor for ObjectUpdatedEvent
      *
@@ -59,7 +58,6 @@ class ObjectUpdatingEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the updated object entity
      *
@@ -71,7 +69,6 @@ class ObjectUpdatingEvent extends Event
 
     }//end getNewObject()
 
-
     /**
      * Get the original object entity
      *
@@ -82,6 +79,4 @@ class ObjectUpdatingEvent extends Event
         return $this->oldObject;
 
     }//end getOldObject()
-
-
 }//end class

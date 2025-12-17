@@ -43,8 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class FilePropertyHandler
 {
-
-
     /**
      * Constructor for FilePropertyHandler.
      *
@@ -57,7 +55,6 @@ class FilePropertyHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Processes uploaded files from multipart/form-data and injects them into object data.
@@ -140,7 +137,6 @@ class FilePropertyHandler
         return $data;
 
     }//end processUploadedFiles()
-
 
     /**
      * Check if a value should be treated as a file property
@@ -263,7 +259,6 @@ class FilePropertyHandler
 
     }//end isFileProperty()
 
-
     /**
      * Checks if an array represents a file object.
      *
@@ -307,7 +302,6 @@ class FilePropertyHandler
         return $hasFileProperties;
 
     }//end isFileObject()
-
 
     /**
      * Handles a file property during save with validation and proper ID storage.
@@ -450,7 +444,6 @@ class FilePropertyHandler
 
     }//end handleFileProperty()
 
-
     /**
      * Processes a single file property with validation, tagging, and storage.
      *
@@ -506,7 +499,6 @@ class FilePropertyHandler
         }
 
     }//end processSingleFileProperty()
-
 
     /**
      * Processes string file input (base64, data URI, or URL).
@@ -579,7 +571,6 @@ class FilePropertyHandler
 
     }//end processStringFileInput()
 
-
     /**
      * Processes file object input (existing file object).
      *
@@ -651,7 +642,6 @@ class FilePropertyHandler
 
     }//end processFileObjectInput()
 
-
     /**
      * Fetches file content from a URL.
      *
@@ -690,7 +680,6 @@ class FilePropertyHandler
         return $content;
 
     }//end fetchFileFromUrl()
-
 
     /**
      * Parses file data from URL fetch results.
@@ -739,7 +728,6 @@ class FilePropertyHandler
         ];
 
     }//end parseFileDataFromUrl()
-
 
     /**
      * Validates an existing file against property configuration.
@@ -795,7 +783,6 @@ class FilePropertyHandler
 
     }//end validateExistingFileAgainstConfig()
 
-
     /**
      * Applies auto tags to an existing file (non-destructive).
      *
@@ -844,7 +831,6 @@ class FilePropertyHandler
         }
 
     }//end applyAutoTagsToExistingFile()
-
 
     /**
      * Parses file data from various formats (data URI, base64) and extracts metadata.
@@ -907,7 +893,6 @@ class FilePropertyHandler
 
     }//end parseFileData()
 
-
     /**
      * Validates a file against property configuration.
      *
@@ -961,7 +946,6 @@ class FilePropertyHandler
         }
 
     }//end validateFileAgainstConfig()
-
 
     /**
      * Blocks executable files from being uploaded for security.
@@ -1031,7 +1015,6 @@ class FilePropertyHandler
         }
 
     }//end blockExecutableFiles()
-
 
     /**
      * Detects executable magic bytes in file content.
@@ -1108,15 +1091,12 @@ class FilePropertyHandler
 
     }//end detectExecutableMagicBytes()
 
-
     /**
      * Generates a filename for a file property.
      *
      * @param string   $propertyName The property name.
      * @param string   $extension    The file extension.
      * @param int|null $index        Optional array index.
-     *
-     * @return string The generated filename.
      *
      * @psalm-param string $propertyName
      * @psalm-param string $extension
@@ -1137,7 +1117,6 @@ class FilePropertyHandler
         return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
 
     }//end generateFileName()
-
 
     /**
      * Prepares auto tags for a file based on property configuration.
@@ -1191,13 +1170,10 @@ class FilePropertyHandler
 
     }//end prepareAutoTags()
 
-
     /**
      * Gets file extension from MIME type.
      *
      * @param string $mimeType The MIME type.
-     *
-     * @return string The file extension.
      *
      * @psalm-param string $mimeType
      *
@@ -1269,13 +1245,12 @@ class FilePropertyHandler
 
     }//end getExtensionFromMimeType()
 
-
     /**
      * Gets a list of common file extensions that indicate downloadable files.
      *
-     * @return array<int, string> The list of file extensions.
+     * @return string[]
      *
-     * @psalm-return   list<string>
+     * @psalm-return   list{'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf', 'txt', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
      * @phpstan-return array<int, string>
      */
     private function getCommonFileExtensions(): array
@@ -1343,13 +1318,12 @@ class FilePropertyHandler
 
     }//end getCommonFileExtensions()
 
-
     /**
      * Gets a list of dangerous executable extensions to block.
      *
-     * @return array<int, string> The list of dangerous extensions.
+     * @return string[]
      *
-     * @psalm-return   list<string>
+     * @psalm-return   list{'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'vbe', 'js', 'jse', 'wsf', 'wsh', 'ps1', 'dll', 'sh', 'bash', 'csh', 'ksh', 'zsh', 'run', 'bin', 'app', 'deb', 'rpm', 'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar', 'py', 'pyc', 'pyo', 'pyw', 'pl', 'pm', 'cgi', 'rb', 'rbw', 'jar', 'war', 'ear', 'class', 'appimage', 'snap', 'flatpak', 'dmg', 'pkg', 'command', 'apk', 'elf', 'out', 'o', 'so', 'dylib'}
      * @phpstan-return array<int, string>
      */
     private function getDangerousExecutableExtensions(): array
@@ -1422,13 +1396,12 @@ class FilePropertyHandler
 
     }//end getDangerousExecutableExtensions()
 
-
     /**
      * Gets a list of executable MIME types to block.
      *
-     * @return array<int, string> The list of executable MIME types.
+     * @return string[]
      *
-     * @psalm-return   list<string>
+     * @psalm-return   list{'application/x-executable', 'application/x-sharedlib', 'application/x-dosexec', 'application/x-msdownload', 'application/x-msdos-program', 'application/x-sh', 'application/x-shellscript', 'application/x-php', 'application/x-httpd-php', 'text/x-php', 'text/x-shellscript', 'text/x-script.python', 'application/x-python-code', 'application/java-archive'}
      * @phpstan-return array<int, string>
      */
     private function getExecutableMimeTypes(): array
@@ -1451,6 +1424,4 @@ class FilePropertyHandler
         ];
 
     }//end getExecutableMimeTypes()
-
-
 }//end class

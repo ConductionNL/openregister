@@ -161,7 +161,6 @@ class SchemaCacheHandler
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -185,7 +184,6 @@ class SchemaCacheHandler
         $this->logger       = $logger;
 
     }//end __construct()
-
 
     /**
      * Get cached schema object by ID
@@ -235,7 +233,6 @@ class SchemaCacheHandler
 
     }//end getSchema()
 
-
     /**
      * Clear cache for a specific schema
      *
@@ -272,7 +269,6 @@ class SchemaCacheHandler
 
     }//end clearSchemaCache()
 
-
     /**
      * Cache a schema object
      *
@@ -300,7 +296,6 @@ class SchemaCacheHandler
 
     }//end cacheSchema()
 
-
     /**
      * Cache schema configuration
      *
@@ -318,7 +313,6 @@ class SchemaCacheHandler
 
     }//end cacheSchemaConfiguration()
 
-
     /**
      * Cache schema properties
      *
@@ -335,7 +329,6 @@ class SchemaCacheHandler
         $this->setCachedData(schemaId: $schema->getId(), cacheKey: self::CACHE_KEY_PROPERTIES, data: $properties, ttl: $ttl);
 
     }//end cacheSchemaProperties()
-
 
     /**
      * Invalidate cache for a specific schema
@@ -399,7 +392,6 @@ class SchemaCacheHandler
 
     }//end invalidateForSchemaChange()
 
-
     /**
      * Clear all schema caches (Administrative Operation)
      *
@@ -436,14 +428,11 @@ class SchemaCacheHandler
 
     }//end clearAllCaches()
 
-
     /**
      * Clean expired cache entries
      *
      * This method removes expired cache entries from the database.
      * Should be called periodically via cron job.
-     *
-     * @return int Number of deleted entries
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -476,11 +465,10 @@ class SchemaCacheHandler
 
     }//end cleanExpiredEntries()
 
-
     /**
      * Get comprehensive cache statistics
      *
-     * @return (int|string)[] Cache statistics array
+     * @return (int|string)[]
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
@@ -510,7 +498,6 @@ class SchemaCacheHandler
 
     }//end getCacheStatistics()
 
-
     /**
      * Build cache key for a schema and cache type
      *
@@ -524,7 +511,6 @@ class SchemaCacheHandler
         return "schema_{$schemaId}_{$cacheKey}";
 
     }//end buildCacheKey()
-
 
     /**
      * Get cached data from database
@@ -562,7 +548,6 @@ class SchemaCacheHandler
         return json_decode($result['cache_data'], true);
 
     }//end getCachedData()
-
 
     /**
      * Set cached data in database
@@ -620,7 +605,6 @@ class SchemaCacheHandler
 
     }//end setCachedData()
 
-
     /**
      * Remove cached data from database
      *
@@ -640,7 +624,6 @@ class SchemaCacheHandler
         $qb->executeStatement();
 
     }//end removeCachedData()
-
 
     /**
      * Serialize schema object for caching
@@ -693,7 +676,6 @@ class SchemaCacheHandler
 
     }//end serializeSchemaForCache()
 
-
     /**
      * Reconstruct schema object from cached data
      *
@@ -742,6 +724,4 @@ class SchemaCacheHandler
         }//end try
 
     }//end reconstructSchemaFromCache()
-
-
 }//end class

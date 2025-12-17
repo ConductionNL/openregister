@@ -83,7 +83,6 @@ private ?CacheHandler $objectCacheService = null;
      */
 private ?IAppContainer $container = null;
 
-
     /**
      * Constructor for CacheSettingsHandler
      *
@@ -110,16 +109,17 @@ public function __construct(
 
 }//end __construct()
 
-
     /**
      * Get comprehensive cache statistics from actual cache systems(not database)
      *
      * Provides detailed insights into cache usage and performance by querying
      * the actual cache backends rather than database tables for better performance.
      *
-     * @return array Comprehensive cache statistics from cache systems
+     * @return (((int|mixed)[]|bool|float|int|mixed|string)[]|string)[] Comprehensive cache statistics from cache systems
      *
      * @throws \RuntimeException If cache statistics retrieval fails
+     *
+     * @psalm-return array{overview: array{totalCacheSize: 0|mixed, totalCacheEntries: 0|mixed, overallHitRate: float, averageResponseTime: float, cacheEfficiency: float}, services: array{object: array{entries: 0|mixed, hits: 0|mixed, requests: 0|mixed, memoryUsage: 0|mixed}, schema: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}, facet: array{entries: 0, hits: 0, requests: 0, memoryUsage: 0}}, names: array{cache_size: 0|mixed, hit_rate: float|mixed, hits: 0|mixed, misses: 0|mixed, warmups: 0|mixed, enabled: bool}, distributed: array{type: 'distributed'|'none', backend: string, available: bool, error?: string, keyCount?: 'Unknown', size?: 'Unknown'}, performance: array{averageHitTime: 0|float, averageMissTime: 0|float, performanceGain: 0|float, optimalHitRate: float, currentTrend?: 'improving'}, lastUpdated: string, error?: string}
      */
     public function getCacheStats(): array
     {
@@ -208,7 +208,6 @@ public function __construct(
 
     }//end getCacheStats()
 
-
     /**
      * Get cached object statistics to avoid expensive operations on every request
      *
@@ -259,7 +258,6 @@ public function __construct(
 
      }//end getCachedObjectStats()
 
-
      /**
       * Calculate hit rate from cache statistics
       *
@@ -278,7 +276,6 @@ public function __construct(
          }
 
      }//end calculateHitRate()
-
 
      /**
       * Get distributed cache statistics from Nextcloud's cache factory
@@ -311,11 +308,10 @@ public function __construct(
 
      }//end getDistributedCacheStats()
 
-
      /**
       * Get cache performance metrics for the last period
       *
-      * @return (float|string)[] Performance metrics
+      * @return (float|string)[]
       *
       * @psalm-return array{averageHitTime: float, averageMissTime: float, performanceGain: float, optimalHitRate: float, currentTrend: 'improving'}
       */
@@ -337,7 +333,6 @@ public function __construct(
 
      }//end getCachePerformanceMetrics()
 
-
      /**
       * Clear cache with granular control
       *
@@ -345,13 +340,12 @@ public function __construct(
       * @param string|null $userId   Specific user ID to clear cache for (if supported)
       * @param array       $_options Additional options for cache clearing
       *
-      * @return (array[]|int|mixed|null|string)[] Results of cache clearing operations
+      * @return (((float|int[]|mixed|string)[]|bool|int|mixed|string)[][]|int|mixed|null|string)[]
       *
       * @throws \RuntimeException If cache clearing fails
       *
-      * @psalm-return array{type: string, userId: null|string, timestamp: string, results: array{names?: array, distributed?: array, facet?: array, schema?: array, object?: array}, errors: array<never, never>, totalCleared: 0|mixed}
-      *
-      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+      * @psalm-return     array{type: string, userId: null|string, timestamp: string, results: array{names?: array{service: 'names', cleared: 0|mixed, success: bool, error?: string, before?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}, after?: array{name_cache_size: int|mixed, name_hits: int|mixed, name_misses: int|mixed}}, distributed?: array{service: 'distributed', cleared: 'all'|0, success: bool, error?: string}, facet?: array{service: 'facet', cleared: int, success: bool, error?: string, before?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}, after?: array{total_entries: int, by_type: array<int>, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_facet_cache', query_time: string, timestamp: int<1, max>}}, schema?: array{service: 'schema', cleared: 0|mixed, success: bool, error?: string, before?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}, after?: array{total_entries: int, entries_with_ttl: int, memory_cache_size: int<0, max>, cache_table: 'openregister_schema_cache', query_time: string, timestamp: int<1, max>, entries?: mixed}}, object?: array{service: 'object', cleared: 0|mixed, success: bool, error?: string, before?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed, after?: array{hits: int, misses: int, preloads: int, query_hits: int, query_misses: int, name_hits: int, name_misses: int, name_warmups: int, hit_rate: float, query_hit_rate: float, name_hit_rate: float, cache_size: int, query_cache_size: int, name_cache_size: int}|mixed}}, errors: array<never, never>, totalCleared: 0|mixed}
+      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
       */
      public function clearCache(string $type='all', ?string $userId=null, array $_options=[]): array
      {
@@ -410,7 +404,6 @@ public function __construct(
 
      }//end clearCache()
 
-
      /**
       * Clear object cache service
       *
@@ -459,7 +452,6 @@ public function __construct(
          }//end try
 
      }//end clearObjectCache()
-
 
      /**
       * Clear object names cache specifically
@@ -518,13 +510,12 @@ public function __construct(
 
      }//end clearNamesCache()
 
-
      /**
       * Warmup object names cache manually
       *
-      * @return ((int|mixed)[]|bool|int|mixed|string)[] Warmup operation results
+      * @return ((int|mixed)[]|bool|int|mixed|string)[]
       *
-      * @psalm-return array{success: bool, error?: string, loaded_names: int|mixed, execution_time?: string, before?: array{name_cache_size: int|mixed, name_warmups: int|mixed}, after?: array{name_cache_size: int|mixed, name_warmups: int|mixed}}
+      * @psalm-return array{success: bool, error?: string, loaded_names: int<0, max>|mixed, execution_time?: string, before?: array{name_cache_size: int<0, max>|mixed, name_warmups: int|mixed}, after?: array{name_cache_size: int<0, max>|mixed, name_warmups: int|mixed}}
       */
      public function warmupNamesCache(): array
      {
@@ -572,7 +563,6 @@ public function __construct(
          }//end try
 
      }//end warmupNamesCache()
-
 
      /**
       * Clear schema cache service
@@ -623,7 +613,6 @@ public function __construct(
 
      }//end clearSchemaCache()
 
-
      /**
       * Clear facet cache service
       *
@@ -660,7 +649,6 @@ public function __construct(
 
      }//end clearFacetCache()
 
-
      /**
       * Clear distributed cache
       *
@@ -694,6 +682,4 @@ public function __construct(
          }
 
      }//end clearDistributedCache()
-
-
 }//end class

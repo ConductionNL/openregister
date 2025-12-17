@@ -31,8 +31,6 @@ use OCP\Migration\IOutput;
  */
 class Version1Date20250626031231 extends SimpleMigrationStep
 {
-
-
     /**
      * Change schema to ensure source field has proper defaults
      *
@@ -72,6 +70,4 @@ class Version1Date20250626031231 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

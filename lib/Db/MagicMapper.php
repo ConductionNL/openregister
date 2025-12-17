@@ -203,7 +203,6 @@ class MagicMapper
      */
     private ?MagicFacetHandler $facetHandler = null;
 
-
     /**
      * Constructor for MagicMapper service
      *
@@ -239,7 +238,6 @@ class MagicMapper
         $this->initializeHandlers();
 
     }//end __construct()
-
 
     /**
      * Initialize specialized handler instances
@@ -282,7 +280,6 @@ class MagicMapper
 
     }//end initializeHandlers()
 
-
     /**
      * Create or update table for a specific register+schema combination
      *
@@ -295,7 +292,7 @@ class MagicMapper
      *
      * @throws Exception If table creation/update fails
      *
-     * @return bool True if table was created/updated successfully
+     * @return true True if table was created/updated successfully
      */
     public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force=false): bool
     {
@@ -364,7 +361,6 @@ class MagicMapper
 
     }//end ensureTableForRegisterSchema()
 
-
     /**
      * Get table name for a specific register+schema combination
      *
@@ -395,7 +391,6 @@ class MagicMapper
         return $tableName;
 
     }//end getTableNameForRegisterSchema()
-
 
     /**
      * Check if a specialized table exists for register+schema combination
@@ -468,7 +463,6 @@ class MagicMapper
 
     }//end existsTableForRegisterSchema()
 
-
     /**
      * Save objects to register+schema-specific table
      *
@@ -478,9 +472,9 @@ class MagicMapper
      *
      * @throws Exception If save operation fails
      *
-     * @return string[] Array of saved object UUIDs
+     * @return string[]
      *
-     * @psalm-return list{0?: string,...}
+     * @psalm-return list<non-empty-string>
      */
     public function saveObjectsToRegisterSchemaTable(array $objects, Register $register, Schema $schema): array
     {
@@ -531,7 +525,6 @@ class MagicMapper
 
     }//end saveObjectsToRegisterSchemaTable()
 
-
     /**
      * Search objects in register+schema-specific table
      *
@@ -541,7 +534,9 @@ class MagicMapper
      *
      * @throws Exception If search operation fails
      *
-     * @return array Array of ObjectEntity objects
+     * @return OCA\OpenRegister\Db\ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
      */
     public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array
     {
@@ -575,7 +570,6 @@ class MagicMapper
 
     }//end searchObjectsInRegisterSchemaTable()
 
-
     /**
      * Get cache key for register+schema combination
      *
@@ -589,7 +583,6 @@ class MagicMapper
         return $registerId.'_'.$schemaId;
 
     }//end getCacheKey()
-
 
     /**
      * Check if table exists in database (bypassing cache)
@@ -621,7 +614,6 @@ class MagicMapper
 
     }//end checkTableExistsInDatabase()
 
-
     /**
      * Invalidate table cache for specific register+schema
      *
@@ -638,7 +630,6 @@ class MagicMapper
         $this->logger->debug('Invalidated table cache', ['cacheKey' => $cacheKey]);
 
     }//end invalidateTableCache()
-
 
     /**
      * Create table for specific register+schema combination
@@ -694,7 +685,6 @@ class MagicMapper
         return true;
 
     }//end createTableForRegisterSchema()
-
 
     /**
      * Update existing table for register+schema changes
@@ -762,7 +752,6 @@ class MagicMapper
 
     }//end updateTableForRegisterSchema()
 
-
     /**
      * Build table columns from JSON schema properties
      *
@@ -771,9 +760,9 @@ class MagicMapper
      *
      * @param Schema $schema The schema to analyze
      *
-     * @return array Array of column definitions
+     * @return (bool|int|mixed|null|string)[][]
      *
-     * @psalm-return array<array-key, array{autoincrement?: bool, default?: mixed, index?: bool, length?: int, name: string, nullable: bool, precision?: int, primary?: bool, scale?: int, type: string, unique?: bool}>
+     * @psalm-return array<array{name: string, type: string, nullable: bool, index?: bool, length?: int, unique?: bool, autoincrement?: true, primary?: true, default?: mixed|null, precision?: 10, scale?: 2}>
      */
     private function buildTableColumnsFromSchema(Schema $schema): array
     {
@@ -809,7 +798,6 @@ class MagicMapper
         return $columns;
 
     }//end buildTableColumnsFromSchema()
-
 
     /**
      * Get metadata columns from ObjectEntity
@@ -1008,7 +996,6 @@ class MagicMapper
 
     }//end getMetadataColumns()
 
-
     /**
      * Map JSON schema property to SQL column definition
      *
@@ -1019,7 +1006,7 @@ class MagicMapper
      *
      * @psalm-param SchemaPropertyConfig $propertyConfig
      *
-     * @psalm-return array{name: string, type: string, nullable: bool, length?: int, default?: mixed|null, index?: bool, unique?: bool, precision?: 10, scale?: 2}
+     * @psalm-return array{name: string, type: string, nullable: bool, index?: bool, length?: int<min, 320>, default?: mixed|null, precision?: 10, scale?: 2}
      */
     private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array
     {
@@ -1081,7 +1068,6 @@ class MagicMapper
         }//end switch
 
     }//end mapSchemaPropertyToColumn()
-
 
     /**
      * Map string property to SQL column
@@ -1162,7 +1148,6 @@ class MagicMapper
 
     }//end mapStringProperty()
 
-
     /**
      * Map integer property to SQL column
      *
@@ -1208,7 +1193,6 @@ class MagicMapper
 
     }//end mapIntegerProperty()
 
-
     /**
      * Map number property to SQL column
      *
@@ -1245,7 +1229,6 @@ class MagicMapper
 
     }//end mapNumberProperty()
 
-
     /**
      * Create table with specified columns
      *
@@ -1281,7 +1264,6 @@ class MagicMapper
                 );
 
     }//end createTable()
-
 
     /**
      * Add column to table definition
@@ -1330,7 +1312,6 @@ class MagicMapper
         }
 
     }//end addColumnToTable()
-
 
     /**
      * Create indexes for table performance
@@ -1393,7 +1374,6 @@ class MagicMapper
         }//end try
 
     }//end createTableIndexes()
-
 
     /**
      * Save single object to register+schema-specific table
@@ -1461,7 +1441,6 @@ class MagicMapper
 
     }//end saveObjectToRegisterSchemaTable()
 
-
     /**
      * Prepare object data for storage in register+schema table
      *
@@ -1469,7 +1448,7 @@ class MagicMapper
      * @param Register $register   The register context
      * @param Schema   $schema     The schema for validation
      *
-     * @return (false|mixed|null|string)[] Prepared data with metadata and schema fields
+     * @return (false|mixed|null|string)[]
      *
      * @psalm-return array<string, false|mixed|null|string>
      */
@@ -1579,7 +1558,6 @@ class MagicMapper
 
     }//end prepareObjectDataForTable()
 
-
     /**
      * Execute search in register+schema-specific table
      *
@@ -1590,9 +1568,9 @@ class MagicMapper
      *
      * @throws Exception If search fails
      *
-     * @return ObjectEntity[] Array of ObjectEntity objects
+     * @return ObjectEntity[]
      *
-     * @psalm-return list{0?: ObjectEntity,...}
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
     private function executeRegisterSchemaTableSearch(array $query, Register $register, Schema $schema, string $tableName): array
     {
@@ -1660,7 +1638,6 @@ class MagicMapper
         }//end try
 
     }//end executeRegisterSchemaTableSearch()
-
 
     /**
      * Convert database row back to ObjectEntity
@@ -1742,7 +1719,6 @@ class MagicMapper
 
     }//end convertRowToObjectEntity()
 
-
     /**
      * Check if register+schema table exists (with caching)
      *
@@ -1756,7 +1732,6 @@ class MagicMapper
         return $this->existsTableForRegisterSchema($register, $schema);
 
     }//end tableExistsForRegisterSchema()
-
 
     /**
      * Sanitize table name for database safety
@@ -1786,7 +1761,6 @@ class MagicMapper
 
     }//end sanitizeTableName()
 
-
     /**
      * Sanitize column name for database safety
      *
@@ -1815,7 +1789,6 @@ class MagicMapper
 
     }//end sanitizeColumnName()
 
-
     /**
      * Check if register+schema combination has changed since last table update
      *
@@ -1836,7 +1809,6 @@ class MagicMapper
         return $currentVersion !== $newVersion;
 
     }//end hasRegisterSchemaChanged()
-
 
     /**
      * Store register+schema version for change detection
@@ -1862,7 +1834,6 @@ class MagicMapper
 
     }//end storeRegisterSchemaVersion()
 
-
     /**
      * Get stored register+schema version
      *
@@ -1884,7 +1855,6 @@ class MagicMapper
         }
 
     }//end getStoredRegisterSchemaVersion()
-
 
     /**
      * Calculate register+schema version hash for change detection
@@ -1914,7 +1884,6 @@ class MagicMapper
         return md5(json_encode($combinedData));
 
     }//end calculateRegisterSchemaVersion()
-
 
     /**
      * Apply search filters to query builder
@@ -1949,7 +1918,6 @@ class MagicMapper
 
     }//end applySearchFilters()
 
-
     /**
      * Add WHERE condition to query builder
      *
@@ -1973,7 +1941,6 @@ class MagicMapper
         }
 
     }//end addWhereCondition()
-
 
     /**
      * Find object in register+schema table by UUID
@@ -2014,7 +1981,6 @@ class MagicMapper
 
     }//end findObjectInRegisterSchemaTable()
 
-
     /**
      * Insert object into register+schema table
      *
@@ -2037,7 +2003,6 @@ class MagicMapper
         $qb->executeStatement();
 
     }//end insertObjectInRegisterSchemaTable()
-
 
     /**
      * Update object in register+schema table
@@ -2066,7 +2031,6 @@ class MagicMapper
         $qb->executeStatement();
 
     }//end updateObjectInRegisterSchemaTable()
-
 
     /**
      * Get existing table columns
@@ -2114,7 +2078,6 @@ class MagicMapper
         }//end try
 
     }//end getExistingTableColumns()
-
 
     /**
      * Update table structure with new columns
@@ -2165,7 +2128,6 @@ class MagicMapper
 
     }//end updateTableStructure()
 
-
     /**
      * Update table indexes
      *
@@ -2181,7 +2143,6 @@ class MagicMapper
         $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
 
     }//end updateTableIndexes()
-
 
     /**
      * Drop table
@@ -2232,7 +2193,6 @@ class MagicMapper
 
     }//end dropTable()
 
-
     /**
      * Check if string is valid JSON
      *
@@ -2247,7 +2207,6 @@ class MagicMapper
         return json_last_error() === JSON_ERROR_NONE;
 
     }//end isJsonString()
-
 
     /**
      * Clear all caches for MagicMapper
@@ -2282,7 +2241,6 @@ class MagicMapper
         }//end if
 
     }//end clearCache()
-
 
     /**
      * Get all existing register+schema tables
@@ -2352,7 +2310,6 @@ class MagicMapper
 
     }//end getExistingRegisterSchemaTables()
 
-
     /**
      * Check if MagicMapper is enabled for a register+schema combination
      *
@@ -2380,7 +2337,6 @@ class MagicMapper
 
     }//end isMagicMappingEnabled()
 
-
     /**
      * BACKWARD COMPATIBILITY: Check if MagicMapper is enabled for a schema only
      *
@@ -2402,6 +2358,4 @@ class MagicMapper
         return $globalEnabled === 'true';
 
     }//end isMagicMappingEnabledForSchema()
-
-
 }//end class

@@ -35,7 +35,6 @@ class OrganisationDeletedEvent extends Event
      */
     private Organisation $organisation;
 
-
     /**
      * Constructor for OrganisationDeletedEvent.
      *
@@ -50,7 +49,6 @@ class OrganisationDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted organisation.
      *
@@ -61,6 +59,4 @@ class OrganisationDeletedEvent extends Event
         return $this->organisation;
 
     }//end getOrganisation()
-
-
 }//end class

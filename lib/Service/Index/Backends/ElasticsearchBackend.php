@@ -33,16 +33,40 @@ use Psr\Log\LoggerInterface;
 class ElasticsearchBackend implements SearchBackendInterface
 {
 
+    /**
+     * Elasticsearch HTTP client for making requests
+     *
+     * @var ElasticsearchHttpClient
+     */
     private readonly ElasticsearchHttpClient $httpClient;
 
+    /**
+     * Elasticsearch index manager for index operations
+     *
+     * @var ElasticsearchIndexManager
+     */
     private readonly ElasticsearchIndexManager $indexManager;
 
+    /**
+     * Elasticsearch document indexer for indexing operations
+     *
+     * @var ElasticsearchDocumentIndexer
+     */
     private readonly ElasticsearchDocumentIndexer $indexer;
 
+    /**
+     * Elasticsearch query executor for search operations
+     *
+     * @var ElasticsearchQueryExecutor
+     */
     private readonly ElasticsearchQueryExecutor $queryExecutor;
 
+    /**
+     * PSR-3 logger instance
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
-
 
     /**
      * Constructor
@@ -68,7 +92,6 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end __construct()
 
-
     /**
      * Index an object.
      *
@@ -79,7 +102,6 @@ class ElasticsearchBackend implements SearchBackendInterface
         return $this->indexer->indexObject($object, $commit);
 
     }//end indexObject()
-
 
     /**
      * Index multiple objects.
@@ -92,7 +114,6 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end bulkIndexObjects()
 
-
     /**
      * Delete an object.
      *
@@ -104,11 +125,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end deleteObject()
 
-
     /**
      * Delete objects by query.
      *
-     * @return array|bool Array with details if $returnDetails is true, otherwise bool
+     * @return int[]|true Array with details if $returnDetails is true, otherwise bool
+     *
+     * @psalm-return array{deleted: 0}|true
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -118,11 +140,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end deleteByQuery()
 
-
     /**
      * Search with pagination.
      *
-     * @return array Search results with pagination metadata
+     * @return ((array|mixed)[]|int|mixed)[] Search results with pagination metadata
+     *
+     * @psalm-return array{total: 0|mixed, results: array<never, array<never, never>|mixed>, page: 1, limit: 10|mixed}
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -148,7 +171,6 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end searchObjectsPaginated()
 
-
     /**
      * Get document count.
      *
@@ -159,7 +181,6 @@ class ElasticsearchBackend implements SearchBackendInterface
         return $this->queryExecutor->getDocumentCount();
 
     }//end getDocumentCount()
-
 
     /**
      * Commit changes (refresh index).
@@ -174,7 +195,6 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end commit()
 
-
     /**
      * Search objects.
      *
@@ -186,11 +206,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end search()
 
-
     /**
      * Reindex all objects.
      *
-     * @return array Reindexing results
+     * @return (int|string|true)[] Reindexing results
+     *
+     * @psalm-return array{success: true, indexed: 0, message: 'Reindexing should be called via IndexService'}
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -204,11 +225,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end reindexAll()
 
-
     /**
      * Warmup index (ensure it exists).
      *
-     * @return array Warmup results
+     * @return (string|true)[] Warmup results
+     *
+     * @psalm-return array{success: true, index: string, message: 'Index warmed up'}
      */
     public function warmupIndex(
         array $schemas=[],
@@ -229,7 +251,6 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end warmupIndex()
 
-
     /**
      * Check if backend is available.
      *
@@ -241,11 +262,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end isAvailable()
 
-
     /**
      * Test connection to backend.
      *
-     * @return array Connection test results
+     * @return (bool|int|string)[] Connection test results
+     *
+     * @psalm-return array{success: bool, error?: string, document_count?: int}
      */
     public function testConnection(bool $includeCollectionTests=true): array
     {
@@ -264,11 +286,10 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end testConnection()
 
-
     /**
      * Optimize index.
      *
-     * @return bool True on success
+     * @return true True on success
      */
     public function optimize(): bool
     {
@@ -277,11 +298,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end optimize()
 
-
     /**
      * Clear index.
      *
-     * @return array Clear operation results
+     * @return int[] Clear operation results
+     *
+     * @psalm-return array{deleted: 0}
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -289,7 +311,6 @@ class ElasticsearchBackend implements SearchBackendInterface
         return ['deleted' => 0];
 
     }//end clearIndex()
-
 
     /**
      * Get backend configuration.
@@ -302,11 +323,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end getConfig()
 
-
     /**
      * Get backend statistics.
      *
-     * @return array Backend statistics
+     * @return (int|string)[] Backend statistics
+     *
+     * @psalm-return array{document_count: int, backend: 'elasticsearch'}
      */
     public function getStats(): array
     {
@@ -317,11 +339,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end getStats()
 
-
     /**
      * Create collection/index.
      *
-     * @return array Creation results
+     * @return bool[] Creation results
+     *
+     * @psalm-return array{success: bool}
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -330,11 +353,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end createCollection()
 
-
     /**
      * Delete collection/index.
      *
-     * @return array Deletion results
+     * @return bool[] Deletion results
+     *
+     * @psalm-return array{success: bool}
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -343,7 +367,6 @@ class ElasticsearchBackend implements SearchBackendInterface
         return ['success' => $success];
 
     }//end deleteCollection()
-
 
     /**
      * Check if collection exists.
@@ -356,11 +379,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end collectionExists()
 
-
     /**
      * List all collections.
      *
-     * @return array List of collection names
+     * @return string[] List of collection names
+     *
+     * @psalm-return list{string}
      */
     public function listCollections(): array
     {
@@ -369,11 +393,10 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end listCollections()
 
-
     /**
      * Index generic documents.
      *
-     * @return bool True on success
+     * @return true True on success
      */
     public function index(array $documents): bool
     {
@@ -383,11 +406,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end index()
 
-
     /**
      * Get field types.
      *
      * @return array Field types
+     *
+     * @psalm-return array<never, never>
      */
     public function getFieldTypes(string $collection): array
     {
@@ -395,11 +419,10 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end getFieldTypes()
 
-
     /**
      * Add field type.
      *
-     * @return bool True on success
+     * @return true True on success
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
@@ -407,11 +430,12 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end addFieldType()
 
-
     /**
      * Get fields.
      *
      * @return array Field definitions
+     *
+     * @psalm-return array<never, never>
      */
     public function getFields(string $collection): array
     {
@@ -419,17 +443,16 @@ class ElasticsearchBackend implements SearchBackendInterface
 
     }//end getFields()
 
-
     /**
      * Add or update field.
      *
      * @return string Status message
+     *
+     * @psalm-return 'skipped'
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
         return 'skipped';
 
     }//end addOrUpdateField()
-
-
 }//end class

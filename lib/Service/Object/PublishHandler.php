@@ -43,8 +43,6 @@ use DateTime;
  */
 class PublishHandler
 {
-
-
     /**
      * Constructor
      *
@@ -57,7 +55,6 @@ class PublishHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Publish an object
@@ -130,7 +127,6 @@ class PublishHandler
 
     }//end publish()
 
-
     /**
      * Depublish an object
      *
@@ -199,7 +195,6 @@ class PublishHandler
 
     }//end depublish()
 
-
     /**
      * Check if object is published
      *
@@ -248,7 +243,6 @@ class PublishHandler
 
     }//end isPublished()
 
-
     /**
      * Get publication status information
      *
@@ -256,7 +250,9 @@ class PublishHandler
      *
      * @param ObjectEntity $object Object to check
      *
-     * @return array Publication status information
+     * @return (bool|mixed|null)[] Publication status information
+     *
+     * @psalm-return array{is_published: bool, publication_date: mixed|null, depublication_date: mixed|null, publication_scheduled: bool, depublication_scheduled: bool}
      */
     public function getPublicationStatus(ObjectEntity $object): array
     {
@@ -293,6 +289,4 @@ class PublishHandler
         return $status;
 
     }//end getPublicationStatus()
-
-
 }//end class

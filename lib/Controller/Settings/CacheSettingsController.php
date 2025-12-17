@@ -37,8 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class CacheSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -58,7 +56,6 @@ class CacheSettingsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Get comprehensive cache statistics and performance metrics.
@@ -84,7 +81,6 @@ class CacheSettingsController extends Controller
         }
 
     }//end getCacheStats()
-
 
     /**
      * Clear cache with granular control.
@@ -114,7 +110,6 @@ class CacheSettingsController extends Controller
 
     }//end clearCache()
 
-
     /**
      * Warmup object names cache manually.
      *
@@ -139,7 +134,6 @@ class CacheSettingsController extends Controller
         }
 
     }//end warmupNamesCache()
-
 
     /**
      * Clear a specific SOLR collection by name
@@ -193,6 +187,4 @@ class CacheSettingsController extends Controller
         }//end try
 
     }//end clearSpecificCollection()
-
-
 }//end class

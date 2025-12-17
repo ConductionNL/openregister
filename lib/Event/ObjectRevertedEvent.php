@@ -43,7 +43,6 @@ class ObjectRevertedEvent extends Event
      */
     private $until;
 
-
     /**
      * Constructor for ObjectRevertedEvent
      *
@@ -60,7 +59,6 @@ class ObjectRevertedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the reverted object entity
      *
@@ -72,7 +70,6 @@ class ObjectRevertedEvent extends Event
 
     }//end getObject()
 
-
     /**
      * Get the reversion point
      *
@@ -83,6 +80,4 @@ class ObjectRevertedEvent extends Event
         return $this->until;
 
     }//end getRevertPoint()
-
-
 }//end class

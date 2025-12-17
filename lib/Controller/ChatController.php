@@ -137,7 +137,6 @@ class ChatController extends Controller
      */
     private readonly string $userId;
 
-
     /**
      * Constructor
      *
@@ -188,7 +187,6 @@ class ChatController extends Controller
 
     }//end __construct()
 
-
     /**
      * Returns the template of the main chat page
      *
@@ -214,17 +212,14 @@ class ChatController extends Controller
 
     }//end page()
 
-
     /**
      * Send a chat message in a conversation and get AI response
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing sent message details
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, message: array{id: int, uuid: null|string, conversationId: int|null, role: null|string, content: null|string, sources: array|null, created: null|string}|string, title?: null|string, conversation?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, message: string, sources?: list<array>, timings?: array, conversation?: null|string}, array<never, never>>
      */
     public function sendMessage(): JSONResponse
     {
@@ -389,17 +384,14 @@ class ChatController extends Controller
 
     }//end sendMessage()
 
-
     /**
      * Get conversation history (messages)
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing conversation history
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: list<array{content: null|string, conversationId: int|null, created: null|string, id: int, role: null|string, sources: array|null, uuid: null|string}>, total?: int, conversationId?: int}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: list<array{content: null|string, conversationId: int|null, created: null|string, id: int, role: null|string, sources: array|null, uuid: null|string}>, total?: int, conversationId?: int}, array<never, never>>
      */
     public function getHistory(): JSONResponse
     {
@@ -476,17 +468,14 @@ class ChatController extends Controller
 
     }//end getHistory()
 
-
     /**
      * Clear conversation history (soft delete)
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing clear history operation result
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>
      */
     public function clearHistory(): JSONResponse
     {
@@ -556,7 +545,6 @@ class ChatController extends Controller
 
     }//end clearHistory()
 
-
     /**
      * Submit or update feedback on a message
      *
@@ -567,11 +555,9 @@ class ChatController extends Controller
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing feedback submission result
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, message?: string, id?: int, uuid?: string, messageId?: int, conversationId?: int, agentId?: int, userId?: string, organisation?: null|string, type?: string, comment?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, message?: string, id?: int, uuid?: string, messageId?: int, conversationId?: int, agentId?: int, userId?: string, organisation?: null|string, type?: string, comment?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
@@ -688,7 +674,6 @@ class ChatController extends Controller
 
     }//end sendFeedback()
 
-
     /**
      * Get chat statistics
      *
@@ -747,6 +732,4 @@ class ChatController extends Controller
         }//end try
 
     }//end getChatStats()
-
-
 }//end class

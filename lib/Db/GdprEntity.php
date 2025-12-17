@@ -130,7 +130,6 @@ class GdprEntity extends Entity implements JsonSerializable
     public const CATEGORY_SENSITIVE = 'sensitive_pii';
     public const CATEGORY_BUSINESS  = 'business_data';
 
-
     /**
      * Constructor.
      */
@@ -148,7 +147,6 @@ class GdprEntity extends Entity implements JsonSerializable
         $this->addType('updatedAt', 'datetime');
 
     }//end __construct()
-
 
     /**
      * JSON serialization.
@@ -174,6 +172,4 @@ class GdprEntity extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

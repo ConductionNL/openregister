@@ -40,8 +40,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -61,7 +59,6 @@ class FileSettingsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Get File Management settings
@@ -84,7 +81,6 @@ class FileSettingsController extends Controller
         }
 
     }//end getFileSettings()
-
 
     /**
      * Update File Management settings
@@ -130,7 +126,6 @@ class FileSettingsController extends Controller
         }//end try
 
     }//end updateFileSettings()
-
 
     /**
      * Test Dolphin API connection
@@ -216,15 +211,12 @@ class FileSettingsController extends Controller
 
     }//end testDolphinConnection()
 
-
     /**
      * Get file collection field status
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Field status for file collection
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'files', status?: mixed}, array<never, never>>
      */
@@ -253,15 +245,12 @@ class FileSettingsController extends Controller
 
     }//end getFileCollectionFields()
 
-
     /**
      * Create missing fields in file collection
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Creation results
      *
      * @psalm-return JSONResponse<200|400|500, array{success: false|mixed, message: string, collection?: 'files'}, array<never, never>>
      */
@@ -321,15 +310,12 @@ class FileSettingsController extends Controller
 
     }//end createMissingFileFields()
 
-
     /**
      * Warmup files - Extract text and index in SOLR file collection
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Warmup results
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message: string, files_processed?: int<0, max>, indexed?: 0|mixed, failed?: 0|mixed, errors?: array, mode?: mixed}, array<never, never>>
      */
@@ -432,7 +418,6 @@ class FileSettingsController extends Controller
 
     }//end warmupFiles()
 
-
     /**
      * Index a specific file in SOLR
      *
@@ -491,15 +476,12 @@ class FileSettingsController extends Controller
 
     }//end indexFile()
 
-
     /**
      * Reindex all files
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Reindex results
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message: string, indexed?: 0|mixed, files_processed?: int<0, max>, failed?: mixed, errors?: array}, array<never, never>>
      */
@@ -568,7 +550,6 @@ class FileSettingsController extends Controller
 
     }//end reindexFiles()
 
-
     /**
      * Get file index statistics
      *
@@ -605,7 +586,6 @@ class FileSettingsController extends Controller
         }//end try
 
     }//end getFileIndexStats()
-
 
     /**
      * Get file extraction statistics
@@ -691,6 +671,4 @@ class FileSettingsController extends Controller
         }//end try
 
     }//end getFileExtractionStats()
-
-
 }//end class

@@ -59,7 +59,6 @@ class EmbeddingGeneratorHandler
      */
     private array $generatorCache = [];
 
-
     /**
      * Constructor
      *
@@ -70,7 +69,6 @@ class EmbeddingGeneratorHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Get or create embedding generator for a configuration
@@ -118,20 +116,20 @@ class EmbeddingGeneratorHandler
 
     }//end getGenerator()
 
-
     /**
      * Get default dimensions for a model
      *
      * @param string $model Model name
      *
      * @return int Default dimensions
+     *
+     * @psalm-return 384|1536|3072
      */
     public function getDefaultDimensions(string $model): int
     {
         return self::EMBEDDING_DIMENSIONS[$model] ?? 1536;
 
     }//end getDefaultDimensions()
-
 
     /**
      * Create OpenAI embedding generator
@@ -165,7 +163,6 @@ class EmbeddingGeneratorHandler
         };
 
     }//end createOpenAIGenerator()
-
 
     /**
      * Create Fireworks AI embedding generator
@@ -207,7 +204,6 @@ class EmbeddingGeneratorHandler
              */
             private readonly \Psr\Log\LoggerInterface $logger;
 
-
             /**
              * Constructor
              *
@@ -223,7 +219,6 @@ class EmbeddingGeneratorHandler
                 $this->config = $config;
                 $this->logger = $logger;
             }//end __construct()
-
 
             /**
              * Embed text using Fireworks AI API
@@ -294,7 +289,6 @@ class EmbeddingGeneratorHandler
                 return $data['data'][0]['embedding'];
             }//end embedText()
 
-
             /**
              * Get embedding length
              *
@@ -314,7 +308,6 @@ class EmbeddingGeneratorHandler
                 };
             }//end getEmbeddingLength()
 
-
             /**
              * Embed a document
              *
@@ -327,7 +320,6 @@ class EmbeddingGeneratorHandler
                 $document->embedding = $this->embedText($document->content);
                 return $document;
             }//end embedDocument()
-
 
             /**
              * Embed multiple documents
@@ -344,12 +336,9 @@ class EmbeddingGeneratorHandler
 
                 return $documents;
             }//end embedDocuments()
-
-
         };
 
     }//end createFireworksGenerator()
-
 
     /**
      * Create Ollama embedding generator
@@ -368,6 +357,4 @@ class EmbeddingGeneratorHandler
         return new OllamaEmbeddingGenerator($ollamaConfig);
 
     }//end createOllamaGenerator()
-
-
 }//end class

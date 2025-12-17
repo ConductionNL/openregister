@@ -39,8 +39,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251216110000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change database schema
      *
@@ -80,6 +78,4 @@ class Version1Date20251216110000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

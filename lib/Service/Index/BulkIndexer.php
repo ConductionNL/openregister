@@ -87,7 +87,6 @@ class BulkIndexer
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * BulkIndexer constructor
      *
@@ -117,7 +116,6 @@ class BulkIndexer
 
     }//end __construct()
 
-
     /**
      * Bulk index objects (simple batch operation)
      *
@@ -127,9 +125,11 @@ class BulkIndexer
      * @param array $objects Objects to index
      * @param bool  $commit  Whether to commit
      *
-     * @return array Results
+     * @return (false|string)[] Results
      *
      * @todo Extract implementation from SolrBackend
+     *
+     * @psalm-return array{success: false, message: 'Method not yet extracted to BulkIndexer'}
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -142,7 +142,6 @@ class BulkIndexer
 
     }//end bulkIndexObjects()
 
-
     /**
      * Bulk index objects from database in batches
      *
@@ -154,9 +153,11 @@ class BulkIndexer
      * @param array $solrFieldTypes Field types for validation
      * @param array $schemaIds      Schema IDs to filter (empty = all searchable)
      *
-     * @return array Results with statistics
+     * @return (bool|int|string)[] Results with statistics
      *
      * @throws \RuntimeException If indexing fails
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, batches: int<0, max>, batch_size?: int, skipped_non_searchable?: int, error?: 'Search backend is not available'}
      */
     public function bulkIndexFromDatabase(
         int $batchSize=1000,
@@ -307,7 +308,6 @@ class BulkIndexer
 
     }//end bulkIndexFromDatabase()
 
-
     /**
      * Count searchable objects in database
      *
@@ -329,7 +329,6 @@ class BulkIndexer
 
     }//end countSearchableObjects()
 
-
     /**
      * Fetch searchable objects from database
      *
@@ -337,7 +336,9 @@ class BulkIndexer
      * @param int   $offset    Offset for pagination
      * @param array $schemaIds Schema IDs to filter
      *
-     * @return array Array of ObjectEntity objects
+     * @return \OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
      */
     private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds=[]): array
     {
@@ -353,13 +354,14 @@ class BulkIndexer
 
     }//end fetchSearchableObjects()
 
-
     /**
      * Get IDs of searchable schemas
      *
      * @param array $schemaIds Schema IDs to filter (empty = all searchable)
      *
-     * @return array Array of searchable schema IDs
+     * @return (int|string)[] Array of searchable schema IDs
+     *
+     * @psalm-return list<int|string>
      */
     private function getSearchableSchemaIds(array $schemaIds=[]): array
     {
@@ -392,6 +394,4 @@ class BulkIndexer
         return $searchableIds;
 
     }//end getSearchableSchemaIds()
-
-
 }//end class

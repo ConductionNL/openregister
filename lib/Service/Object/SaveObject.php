@@ -111,8 +111,12 @@ class SaveObject
 
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
+    /**
+     * Twig template engine instance
+     *
+     * @var Environment
+     */
     private Environment $twig;
-
 
     /**
      * Constructor for SaveObject handler.
@@ -149,7 +153,6 @@ class SaveObject
         $this->twig = new Environment($arrayLoader);
 
     }//end __construct()
-
 
     /**
      * Resolves a schema reference to a schema ID.
@@ -219,7 +222,6 @@ class SaveObject
 
     }//end resolveSchemaReference()
 
-
     /**
      * Removes query parameters from a reference string.
      *
@@ -237,7 +239,6 @@ class SaveObject
         return $reference;
 
     }//end removeQueryParameters()
-
 
     /**
      * Resolves a register reference to a register ID.
@@ -306,7 +307,6 @@ class SaveObject
         return null;
 
     }//end resolveRegisterReference()
-
 
     /**
      * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
@@ -426,7 +426,6 @@ class SaveObject
 
     }//end scanForRelations()
 
-
     /**
      * Determines if a string value should be treated as a reference to another object
      *
@@ -481,7 +480,6 @@ class SaveObject
 
     }//end isReference()
 
-
     /**
      * Updates the relations property of an object entity
      *
@@ -502,7 +500,6 @@ class SaveObject
         return $objectEntity;
 
     }//end updateObjectRelations()
-
 
     /**
      * Hydrates object metadata fields based on schema configuration.
@@ -732,7 +729,6 @@ class SaveObject
 
     }//end hydrateObjectMetadata()
 
-
     /**
      * Gets a value from an object using dot notation path.
      *
@@ -744,7 +740,6 @@ class SaveObject
      * @psalm-return   string|null
      * @phpstan-return string|null
      */
-
 
     /**
      * Get value from nested array using dot notation path
@@ -776,7 +771,6 @@ class SaveObject
 
     }//end getValueFromPath()
 
-
     /**
      * Extracts metadata value from object data with support for twig-like concatenation.
      *
@@ -806,7 +800,6 @@ class SaveObject
         return $this->getValueFromPath(data: $data, path: $fieldPath);
 
     }//end extractMetadataValue()
-
 
     /**
      * Processes twig-like templates by extracting field values and concatenating them.
@@ -863,7 +856,6 @@ class SaveObject
 
     }//end processTwigLikeTemplate()
 
-
     /**
      * Creates a URL-friendly slug from a metadata value.
      *
@@ -888,7 +880,6 @@ class SaveObject
         return $this->createSlug(trim($value));
 
     }//end createSlugFromValue()
-
 
     /**
      * Set default values and constant values for properties based on the schema.
@@ -1013,7 +1004,6 @@ class SaveObject
 
     }//end setDefaultValues()
 
-
     /**
      * Generates a slug for an object based on its data and schema configuration.
      *
@@ -1052,7 +1042,6 @@ class SaveObject
 
     }//end generateSlug()
 
-
     /**
      * Creates a URL-friendly slug from a string.
      *
@@ -1080,7 +1069,6 @@ class SaveObject
         return $text;
 
     }//end createSlug()
-
 
     /**
      * Cascade objects from the data to separate objects.
@@ -1244,7 +1232,6 @@ class SaveObject
 
     }//end cascadeObjects()
 
-
     /**
      * Cascade multiple objects from an array of objects in the data.
      *
@@ -1318,7 +1305,6 @@ class SaveObject
         return $createdUuids;
 
     }//end cascadeMultipleObjects()
-
 
     /**
      * Cascade a single object form an object in the source data
@@ -1399,7 +1385,6 @@ class SaveObject
         }
 
     }//end cascadeSingleObject()
-
 
     /**
      * Handles inverse relations write-back by updating target objects to include reference to current object
@@ -1574,7 +1559,6 @@ class SaveObject
 
     }//end handleInverseRelationsWriteBack()
 
-
     /**
      * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
      *
@@ -1682,7 +1666,6 @@ class SaveObject
         return $sanitizedData;
 
     }//end sanitizeEmptyStringsForObjectProperties()
-
 
     /**
      * Saves an object.
@@ -1959,7 +1942,6 @@ class SaveObject
 
     }//end saveObject()
 
-
     /**
      * Prepares an object for creation by applying all necessary transformations.
      *
@@ -2077,7 +2059,6 @@ class SaveObject
 
     }//end prepareObjectForCreation()
 
-
     /**
      * Prepares an object for update by applying all necessary transformations.
      *
@@ -2132,7 +2113,6 @@ class SaveObject
         return $existingObject;
 
     }//end prepareObjectForUpdate()
-
 
     /**
      * Sets @self metadata properties on an object entity.
@@ -2230,7 +2210,6 @@ class SaveObject
 
     }//end setSelfMetadata()
 
-
     /**
      * Prepares object data by applying all necessary transformations.
      *
@@ -2267,7 +2246,6 @@ class SaveObject
         return $data;
 
     }//end prepareObjectData()
-
 
     /**
      * Updates an existing object.
@@ -2376,7 +2354,6 @@ class SaveObject
 
     }//end updateObject()
 
-
     /**
      * Check if an object is effectively empty (contains only empty values)
      *
@@ -2412,7 +2389,6 @@ class SaveObject
         return true;
 
     }//end isEffectivelyEmptyObject()
-
 
     /**
      * Check if a value is not empty (contains meaningful data)
@@ -2460,7 +2436,6 @@ class SaveObject
 
     }//end isValueNotEmpty()
 
-
     /**
      * Check if audit trails are enabled in the settings
      *
@@ -2478,6 +2453,4 @@ class SaveObject
         }
 
     }//end isAuditTrailsEnabled()
-
-
 }//end class

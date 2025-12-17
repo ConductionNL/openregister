@@ -45,7 +45,6 @@ class OpenRegisterAdmin implements ISettings
      */
     private IConfig $config;
 
-
     /**
      * Constructor
      *
@@ -58,7 +57,6 @@ class OpenRegisterAdmin implements ISettings
         $this->l      = $l;
 
     }//end __construct()
-
 
     /**
      * Get the admin settings form
@@ -77,7 +75,6 @@ class OpenRegisterAdmin implements ISettings
 
     }//end getForm()
 
-
     /**
      * Get the section identifier
      *
@@ -92,7 +89,6 @@ class OpenRegisterAdmin implements ISettings
         return $sectionName;
 
     }//end getSection()
-
 
     /**
      * Get the priority of this settings form
@@ -109,6 +105,4 @@ class OpenRegisterAdmin implements ISettings
         return 11;
 
     }//end getPriority()
-
-
 }//end class

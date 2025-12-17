@@ -56,7 +56,6 @@ class DocumentBuilder
      */
     private readonly ?RegisterMapper $registerMapper;
 
-
     /**
      * DocumentBuilder constructor
      *
@@ -78,7 +77,6 @@ class DocumentBuilder
 
     }//end __construct()
 
-
     /**
      * Create a Solr document from an ObjectEntity
      *
@@ -88,7 +86,9 @@ class DocumentBuilder
      * @param ObjectEntity $object         The object to convert
      * @param array        $solrFieldTypes Available Solr field types (unused for now)
      *
-     * @return array The Solr document
+     * @return (false|int|mixed|null|string)[] The Solr document
+     *
+     * @psalm-return array{_text: false|string,...}
      */
     public function createDocument(
         ObjectEntity $object,
@@ -133,11 +133,9 @@ class DocumentBuilder
 
     }//end createDocument()
 
-
     // ========================================================================
     // EXTRACTED METHODS - Migrated from SolrBackend
     // ========================================================================
-
 
     /**
      * Flatten relations array for SOLR - extract all values from relations key-value pairs
@@ -146,9 +144,9 @@ class DocumentBuilder
      *
      * @param mixed $relations Relations data from ObjectEntity (e.g., {"modules.0":"uuid", "other.1":"value"})
      *
-     * @return string[] Simple array of strings for SOLR multi-valued field (e.g., ["uuid", "value"])
+     * @return string[]
      *
-     * @psalm-return list{0?: string,...}
+     * @psalm-return list<string>
      */
     public function flattenRelationsForSolr($relations): array
     {
@@ -207,7 +205,6 @@ class DocumentBuilder
 
     }//end flattenRelationsForSolr()
 
-
     /**
      * Flatten files array for SOLR to prevent document multiplication
      *
@@ -215,7 +212,9 @@ class DocumentBuilder
      *
      * @param mixed $files Files data from ObjectEntity
      *
-     * @return array Simple array of strings for SOLR multi-valued field
+     * @return (mixed|string)[] Simple array of strings for SOLR multi-valued field
+     *
+     * @psalm-return list<mixed|string>
      */
     public function flattenFilesForSolr($files): array
     {
@@ -246,7 +245,6 @@ class DocumentBuilder
 
     }//end flattenFilesForSolr()
 
-
     /**
      * Extract ID/UUID from an object/array
      *
@@ -272,7 +270,6 @@ class DocumentBuilder
 
     }//end extractIdFromObject()
 
-
     /**
      * Extract array fields from dot-notation relations
      *
@@ -284,7 +281,9 @@ class DocumentBuilder
      *
      * @param array $relations The relations array from ObjectEntity
      *
-     * @return array Associative array of field names to their array values
+     * @return array[] Associative array of field names to their array values
+     *
+     * @psalm-return array<string, array<int, mixed>>
      */
     public function extractArraysFromRelations(array $relations): array
     {
@@ -340,7 +339,6 @@ class DocumentBuilder
 
     }//end extractArraysFromRelations()
 
-
     /**
      * Extract indexable values from an array for SOLR indexing
      *
@@ -353,6 +351,8 @@ class DocumentBuilder
      * @param string $fieldName  Field name for logging
      *
      * @return string[] Array of indexable string values
+     *
+     * @psalm-return list<string>
      */
     public function extractIndexableArrayValues(array $arrayValue, string $fieldName): array
     {
@@ -390,7 +390,6 @@ class DocumentBuilder
 
     }//end extractIndexableArrayValues()
 
-
     /**
      * Map field name and type to appropriate SOLR field name
      *
@@ -415,7 +414,6 @@ class DocumentBuilder
         return $fieldName;
 
     }//end mapFieldToSolrType()
-
 
     /**
      * Convert value to appropriate format for SOLR
@@ -501,7 +499,6 @@ class DocumentBuilder
 
     }//end convertValueForSolr()
 
-
     /**
      * Truncate field value to respect SOLR's byte limit
      *
@@ -548,7 +545,6 @@ class DocumentBuilder
 
     }//end truncateFieldValue()
 
-
     /**
      * Check if a field should be truncated based on schema definition
      *
@@ -585,7 +581,6 @@ class DocumentBuilder
         return false;
 
     }//end shouldTruncateField()
-
 
     /**
      * Validate field for SOLR indexing
@@ -650,7 +645,6 @@ class DocumentBuilder
 
     }//end validateFieldForSolr()
 
-
     /**
      * Check if a value is compatible with a SOLR field type
      *
@@ -704,11 +698,9 @@ class DocumentBuilder
 
     }//end isValueCompatibleWithSolrType()
 
-
     // ========================================================================
     // RESOLVER METHODS - ID Resolution
     // ========================================================================
-
 
     /**
      * Resolve register value to integer ID
@@ -764,7 +756,6 @@ class DocumentBuilder
 
     }//end resolveRegisterToId()
 
-
     /**
      * Resolve schema value to integer ID
      *
@@ -818,6 +809,4 @@ class DocumentBuilder
         return 0;
 
     }//end resolveSchemaToId()
-
-
 }//end class

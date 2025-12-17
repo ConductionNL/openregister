@@ -68,7 +68,6 @@ class MessageHistoryHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -88,7 +87,6 @@ class MessageHistoryHandler
         $this->logger = $logger;
 
     }//end __construct()
-
 
     /**
      * Build message history array for LLM
@@ -171,7 +169,6 @@ class MessageHistoryHandler
 
     }//end buildMessageHistory()
 
-
     /**
      * Store a message in the database
      *
@@ -216,6 +213,4 @@ class MessageHistoryHandler
         return $message;
 
     }//end storeMessage()
-
-
 }//end class

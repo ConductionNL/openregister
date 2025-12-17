@@ -74,7 +74,6 @@ class ConfigurationCheckJob extends TimedJob
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -115,7 +114,6 @@ class ConfigurationCheckJob extends TimedJob
         }
 
     }//end __construct()
-
 
     /**
      * Run the background job
@@ -158,7 +156,6 @@ class ConfigurationCheckJob extends TimedJob
 
     }//end run()
 
-
     /**
      * Check if the job is currently disabled via configuration
      *
@@ -175,7 +172,6 @@ class ConfigurationCheckJob extends TimedJob
         return false;
 
     }//end isJobDisabled()
-
 
     /**
      * Check a single configuration for updates
@@ -225,7 +221,6 @@ class ConfigurationCheckJob extends TimedJob
 
     }//end checkSingleConfiguration()
 
-
     /**
      * Handle automatic update of a configuration
      *
@@ -255,7 +250,6 @@ class ConfigurationCheckJob extends TimedJob
 
     }//end handleAutoUpdate()
 
-
     /**
      * Send update notification for a configuration
      *
@@ -276,6 +270,4 @@ class ConfigurationCheckJob extends TimedJob
         }
 
     }//end sendUpdateNotification()
-
-
 }//end class

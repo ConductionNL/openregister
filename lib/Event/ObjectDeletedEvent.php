@@ -35,7 +35,6 @@ class ObjectDeletedEvent extends Event
      */
     private ObjectEntity $object;
 
-
     /**
      * Constructor for ObjectDeletedEvent
      *
@@ -50,7 +49,6 @@ class ObjectDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted object entity
      *
@@ -61,6 +59,4 @@ class ObjectDeletedEvent extends Event
         return $this->object;
 
     }//end getObject()
-
-
 }//end class

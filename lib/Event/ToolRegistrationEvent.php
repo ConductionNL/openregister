@@ -67,7 +67,6 @@ class ToolRegistrationEvent extends Event
      */
     private ToolRegistry $registry;
 
-
     /**
      * Constructor
      *
@@ -79,7 +78,6 @@ class ToolRegistrationEvent extends Event
         $this->registry = $registry;
 
     }//end __construct()
-
 
     /**
      * Register a tool
@@ -103,6 +101,4 @@ class ToolRegistrationEvent extends Event
         $this->registry->registerTool(id: $id, tool: $tool, metadata: $metadata);
 
     }//end registerTool()
-
-
 }//end class

@@ -72,7 +72,6 @@ class FacetHandler
      */
     private ?IMemcache $facetCache = null;
 
-
     /**
      * Constructor for FacetHandler.
      *
@@ -111,7 +110,6 @@ class FacetHandler
         }
 
     }//end __construct()
-
 
     /**
      * Get facets for objects based on query.
@@ -187,24 +185,24 @@ class FacetHandler
 
     }//end getFacetsForObjects()
 
-
     /**
      * Get facetable fields for discovery.
      *
-     * **PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets stored in database
+     * PERFORMANCE OPTIMIZED**: Uses pre-computed schema facets stored in database
      * instead of runtime analysis for lightning-fast _facetable=true requests.
      *
      * @param array $baseQuery  Base query filters to apply for context.
      * @param int   $sampleSize Sample size (kept for backward compatibility).
      *
-     * @psalm-param   array<string, mixed> $baseQuery
-     * @psalm-param   int $sampleSize
+     * @psalm-param array<string, mixed> $baseQuery
+     * @psalm-param int $sampleSize
+     *
      * @phpstan-param array<string, mixed> $baseQuery
      * @phpstan-param int $sampleSize
      *
-     * @return array Facetable field information.
+     * @return array[]
      *
-     * @psalm-return   array<string, mixed>
+     * @psalm-return   array{'@self': array, object_fields: array}
      * @phpstan-return array<string, mixed>
      */
     public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
@@ -232,13 +230,12 @@ class FacetHandler
 
     }//end getFacetableFields()
 
-
     /**
      * Get metadata facetable fields.
      *
-     * @return array<int, string> List of metadata field names that are facetable.
+     * @return string[]
      *
-     * @psalm-return   list<string>
+     * @psalm-return   list{'register', 'schema', 'owner', 'organisation', 'created', 'updated'}
      * @phpstan-return array<int, string>
      */
     public function getMetadataFacetableFields(): array
@@ -254,21 +251,19 @@ class FacetHandler
 
     }//end getMetadataFacetableFields()
 
-
     /**
      * Calculate facet count for performance metrics.
      *
      * @param bool  $hasFacets Whether facets were requested.
      * @param array $query     The query array.
      *
-     * @psalm-param   bool $hasFacets
-     * @psalm-param   array<string, mixed> $query
+     * @psalm-param bool $hasFacets
+     * @psalm-param array<string, mixed> $query
+     *
      * @phpstan-param bool $hasFacets
      * @phpstan-param array<string, mixed> $query
      *
-     * @return int The facet count.
-     *
-     * @psalm-return   int
+     * @psalm-return   int<0, max>
      * @phpstan-return int
      */
     public function getFacetCount(bool $hasFacets, array $query): int
@@ -285,7 +280,6 @@ class FacetHandler
         return 0;
 
     }//end getFacetCount()
-
 
     /**
      * Calculate Facets with Intelligent Fallback Strategy.
@@ -363,7 +357,6 @@ class FacetHandler
 
     }//end calculateFacetsWithFallback()
 
-
     /**
      * Generate cache key for facet responses.
      *
@@ -402,7 +395,6 @@ class FacetHandler
 
     }//end generateFacetCacheKey()
 
-
     /**
      * Get cached facet response.
      *
@@ -431,7 +423,6 @@ class FacetHandler
         return null;
 
     }//end getCachedFacetResponse()
-
 
     /**
      * Cache facet response for future requests.
@@ -472,7 +463,6 @@ class FacetHandler
 
     }//end cacheFacetResponse()
 
-
     /**
      * Count total results across all facet buckets.
      *
@@ -500,7 +490,6 @@ class FacetHandler
 
     }//end countFacetResults()
 
-
     /**
      * Check if query has restrictive filters that might eliminate all results.
      *
@@ -526,13 +515,14 @@ class FacetHandler
 
     }//end hasRestrictiveFilters()
 
-
     /**
      * Get schemas relevant to the current query (cached for performance).
      *
      * @param array $baseQuery Base query with register/schema filters.
      *
-     * @return array Array of Schema objects.
+     * @return Schema[] Array of Schema objects.
+     *
+     * @psalm-return array<Schema>
      */
     private function getSchemasForQuery(array $baseQuery): array
     {
@@ -557,7 +547,6 @@ class FacetHandler
         return $this->schemaMapper->findAll(limit: null);
 
     }//end getSchemasForQuery()
-
 
     /**
      * Get facetable fields from schema configurations.
@@ -623,6 +612,4 @@ class FacetHandler
         return $facetableFields;
 
     }//end getFacetableFieldsFromSchemas()
-
-
 }//end class

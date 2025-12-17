@@ -38,8 +38,6 @@ use Exception;
  */
 class DataManipulationHandler
 {
-
-
     /**
      * Get a value from nested array using dot notation path
      *
@@ -74,7 +72,6 @@ class DataManipulationHandler
 
     }//end getValueFromPath()
 
-
     /**
      * Generate a unique slug from a given value
      *
@@ -83,7 +80,7 @@ class DataManipulationHandler
      *
      * @param string $value The value to convert to a slug.
      *
-     * @return string|null The generated slug or null if generation failed
+     * @return null|string The generated slug or null if generation failed
      */
     public function generateSlugFromValue(string $value): string|null
     {
@@ -105,7 +102,6 @@ class DataManipulationHandler
         }
 
     }//end generateSlugFromValue()
-
 
     /**
      * Create a URL-friendly slug from a string
@@ -136,7 +132,6 @@ class DataManipulationHandler
         return $text;
 
     }//end createSlugHelper()
-
 
     /**
      * Map properties from source data to target structure
@@ -172,6 +167,4 @@ class DataManipulationHandler
         return $mappedData;
 
     }//end mapObjectProperties()
-
-
 }//end class

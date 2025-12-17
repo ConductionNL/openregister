@@ -49,7 +49,6 @@ class Version1Date20251114130000 extends SimpleMigrationStep
      */
     private IDBConnection $connection;
 
-
     /**
      * Constructor
      *
@@ -60,7 +59,6 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         $this->connection = $connection;
 
     }//end __construct()
-
 
     /**
      * Migrate extend values to allOf before schema change
@@ -120,7 +118,6 @@ class Version1Date20251114130000 extends SimpleMigrationStep
 
     }//end preSchemaChange()
 
-
     /**
      * Remove extend column from schemas table
      *
@@ -164,6 +161,4 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

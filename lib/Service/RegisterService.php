@@ -86,7 +86,6 @@ class RegisterService
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -115,7 +114,6 @@ class RegisterService
 
     }//end __construct()
 
-
     /**
      * Find a register by ID with optional extensions
      *
@@ -136,7 +134,6 @@ class RegisterService
         return $this->registerMapper->find(id: $id, _extend: $_extend);
 
     }//end find()
-
 
     /**
      * Find all registers with optional filters and extensions
@@ -176,7 +173,6 @@ class RegisterService
 
     }//end findAll()
 
-
     /**
      * Create a new register from array data.
      *
@@ -213,7 +209,6 @@ class RegisterService
 
     }//end createFromArray()
 
-
     /**
      * Update an existing register from array data.
      *
@@ -236,7 +231,6 @@ class RegisterService
 
     }//end updateFromArray()
 
-
     /**
      * Delete a register.
      *
@@ -253,7 +247,6 @@ class RegisterService
         return $this->registerMapper->delete($register);
 
     }//end delete()
-
 
     /**
      * Ensure folder exists for a Register.
@@ -297,6 +290,4 @@ class RegisterService
         }//end if
 
     }//end ensureRegisterFolderExists()
-
-
 }//end class

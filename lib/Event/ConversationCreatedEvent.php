@@ -35,7 +35,6 @@ class ConversationCreatedEvent extends Event
      */
     private Conversation $conversation;
 
-
     /**
      * Constructor for ConversationCreatedEvent.
      *
@@ -50,7 +49,6 @@ class ConversationCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created conversation.
      *
@@ -61,6 +59,4 @@ class ConversationCreatedEvent extends Event
         return $this->conversation;
 
     }//end getConversation()
-
-
 }//end class

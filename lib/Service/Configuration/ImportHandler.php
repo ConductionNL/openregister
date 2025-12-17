@@ -138,7 +138,6 @@ class ImportHandler
      */
     private array $schemasMap = [];
 
-
     /**
      * Constructor for ImportHandler.
      *
@@ -175,7 +174,6 @@ class ImportHandler
 
     }//end __construct()
 
-
     /**
      * Set the ObjectService dependency.
      *
@@ -192,7 +190,6 @@ class ImportHandler
 
     }//end setObjectService()
 
-
     /**
      * Set the OpenConnector ConfigurationService dependency.
      *
@@ -208,7 +205,6 @@ class ImportHandler
         $this->openConnectorConfigurationService = $service;
 
     }//end setOpenConnectorConfigurationService()
-
 
     /**
      * Decode JSON or YAML string data into PHP array.
@@ -248,7 +244,6 @@ class ImportHandler
 
     }//end decode()
 
-
     /**
      * Recursively converts stdClass objects to arrays.
      *
@@ -274,16 +269,17 @@ class ImportHandler
 
     }//end ensureArrayStructure()
 
-
     /**
      * Get JSON data from uploaded file.
      *
      * @param array       $uploadedFile The uploaded file data.
      * @param string|null $_type        Unused parameter.
      *
-     * @return array|JSONResponse The decoded array or error response.
+     * @return JSONResponse|array The decoded array or error response.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     *
+     * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
     public function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -306,15 +302,16 @@ class ImportHandler
 
     }//end getJSONfromFile()
 
-
     /**
      * Fetch JSON from URL using HTTP GET.
      *
      * @param string $url The URL to fetch.
      *
-     * @return array|JSONResponse The decoded array or error response.
+     * @return JSONResponse|array The decoded array or error response.
      *
      * @throws GuzzleException
+     *
+     * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -339,13 +336,14 @@ class ImportHandler
 
     }//end getJSONfromURL()
 
-
     /**
      * Get JSON data from request body.
      *
      * @param array|string $phpArray The request body data.
      *
-     * @return array|JSONResponse The processed array or error response.
+     * @return JSONResponse|array The processed array or error response.
+     *
+     * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      */
     public function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -364,7 +362,6 @@ class ImportHandler
         return $phpArray;
 
     }//end getJSONfromBody()
-
 
     /**
      * Import a register from configuration data.
@@ -433,7 +430,6 @@ class ImportHandler
 
     }//end importRegister()
 
-
     /**
      * Handle duplicate register error during import.
      *
@@ -441,11 +437,11 @@ class ImportHandler
      * @param string $appId   The application ID attempting the import.
      * @param string $version The version being imported.
      *
-     * @return void
+     * @return never
      *
      * @throws Exception Always throws with duplicate register information.
      */
-    private function handleDuplicateRegisterError(string $slug, string $appId, string $version): void
+    private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate registers.
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
@@ -462,7 +458,6 @@ class ImportHandler
         throw new Exception($errorMessage);
 
     }//end handleDuplicateRegisterError()
-
 
     /**
      * Get detailed information about duplicate registers.
@@ -512,7 +507,6 @@ class ImportHandler
 
     }//end getDuplicateRegisterInfo()
 
-
     /**
      * Handle duplicate schema error during import.
      *
@@ -520,11 +514,11 @@ class ImportHandler
      * @param string $appId   The application ID attempting the import.
      * @param string $version The version being imported.
      *
-     * @return void
+     * @return never
      *
      * @throws Exception Always throws with duplicate schema information.
      */
-    private function handleDuplicateSchemaError(string $slug, string $appId, string $version): void
+    private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate schemas.
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
@@ -541,7 +535,6 @@ class ImportHandler
         throw new Exception($errorMessage);
 
     }//end handleDuplicateSchemaError()
-
 
     /**
      * Get detailed information about duplicate schemas.
@@ -590,7 +583,6 @@ class ImportHandler
         }//end try
 
     }//end getDuplicateSchemaInfo()
-
 
     /**
      * Import a schema from configuration data.
@@ -886,7 +878,6 @@ class ImportHandler
         }//end try
 
     }//end importSchema()
-
 
     /**
      * Import configuration data from JSON structure.
@@ -1260,7 +1251,6 @@ class ImportHandler
 
     }//end importFromJson()
 
-
     /**
      * Import configuration from an app's JSON data.
      *
@@ -1544,7 +1534,6 @@ class ImportHandler
 
     }//end importFromApp()
 
-
     /**
      * Import configuration from a file path.
      *
@@ -1636,7 +1625,6 @@ class ImportHandler
         }//end try
 
     }//end importFromFilePath()
-
 
     /**
      * Create or update a Configuration entity to track imports.
@@ -1795,6 +1783,4 @@ class ImportHandler
         }//end try
 
     }//end createOrUpdateConfiguration()
-
-
 }//end class

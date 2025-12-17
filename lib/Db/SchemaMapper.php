@@ -131,7 +131,6 @@ class SchemaMapper extends QBMapper
     // Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
     // We assign it in the constructor to make it available to the trait methods.
 
-
     /**
      * Constructor
      *
@@ -170,7 +169,6 @@ class SchemaMapper extends QBMapper
         $this->appConfig = $appConfig;
 
     }//end __construct()
-
 
     /**
      * Finds a schema by id, with optional extension for statistics
@@ -247,7 +245,6 @@ class SchemaMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find schema by slug
      *
@@ -266,7 +263,6 @@ class SchemaMapper extends QBMapper
         }
 
     }//end findBySlug()
-
 
     /**
      * Finds multiple schemas by id
@@ -301,7 +297,6 @@ class SchemaMapper extends QBMapper
 
     }//end findMultiple()
 
-
     /**
      * Find multiple schemas by IDs using a single optimized query
      *
@@ -309,7 +304,7 @@ class SchemaMapper extends QBMapper
      *
      * @param array $ids Array of schema IDs to find
      *
-     * @return Entity&Schema[] Associative array of ID => Schema entity
+     * @return Entity&Schema[]
      *
      * @psalm-return array<Entity&Schema>
      */
@@ -339,7 +334,6 @@ class SchemaMapper extends QBMapper
 
     }//end findMultipleOptimized()
 
-
     /**
      * Finds all schemas, files: with optional extension for statistics
      *
@@ -353,13 +347,12 @@ class SchemaMapper extends QBMapper
      * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return Schema[] The schemas, multi: possibly with stats
+     * @return Schema[]
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @psalm-return     list<OCA\OpenRegister\Db\Schema>
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
         ?int $limit=null,
@@ -426,7 +419,6 @@ class SchemaMapper extends QBMapper
 
     }//end findAll()
 
-
     /**
      * Inserts a schema entity into the database
      *
@@ -457,7 +449,6 @@ class SchemaMapper extends QBMapper
         return $entity;
 
     }//end insert()
-
 
     /**
      * Ensures that a schema object has a UUID and a slug.
@@ -576,7 +567,6 @@ class SchemaMapper extends QBMapper
 
     }//end cleanObject()
 
-
     /**
      * Recursively enforce that $ref is always a string in all properties and array items
      *
@@ -619,7 +609,6 @@ class SchemaMapper extends QBMapper
 
     }//end enforceRefIsStringRecursive()
 
-
     /**
      * Creates a schema from an array
      *
@@ -653,7 +642,6 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end createFromArray()
-
 
     /**
      * Updates a schema entity in the database
@@ -705,7 +693,6 @@ class SchemaMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Updates a schema from an array
      *
@@ -738,7 +725,6 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end updateFromArray()
-
 
     /**
      * Delete a schema
@@ -793,7 +779,6 @@ class SchemaMapper extends QBMapper
 
     }//end delete()
 
-
     /**
      * Get the number of registers associated with each schema
      *
@@ -802,7 +787,7 @@ class SchemaMapper extends QBMapper
      * @phpstan-return array<int,int>  Associative array of schema ID => register count
      *
      * @psalm-return array<int, int>
-     * @return       int[] Associative array of schema ID => register count
+     * @return       int[]
      */
     public function getRegisterCountPerSchema(): array
     {
@@ -831,7 +816,6 @@ class SchemaMapper extends QBMapper
 
     }//end getRegisterCountPerSchema()
 
-
     /**
      * Get all schema ID to slug mappings
      *
@@ -853,7 +837,6 @@ class SchemaMapper extends QBMapper
 
     }//end getIdToSlugMap()
 
-
     /**
      * Get all schema slug to ID mappings
      *
@@ -874,7 +857,6 @@ class SchemaMapper extends QBMapper
         return $mappings;
 
     }//end getSlugToIdMap()
-
 
     /**
      * Find schemas that have properties referencing the given schema
@@ -929,7 +911,6 @@ class SchemaMapper extends QBMapper
         return $relatedSchemas;
 
     }//end getRelated()
-
 
     /**
      * Recursively check if properties contain a reference to the target schema
@@ -1003,7 +984,6 @@ class SchemaMapper extends QBMapper
 
     }//end hasReferenceToSchema()
 
-
     /**
      * Generate facet configuration from schema properties
      *
@@ -1059,19 +1039,20 @@ class SchemaMapper extends QBMapper
 
     }//end generateFacetConfiguration()
 
-
     /**
      * Determine the appropriate facet type for a schema property
      *
-     * **PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
+     * PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
      * property characteristics, names, and explicit facetable markers.
      *
      * @param array  $property  The property definition
      * @param string $fieldName The field name
      *
-     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
+     *
+     * @psalm-return 'date_histogram'|'terms'|null
      */
-    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
         // Check if explicitly marked as facetable.
         if (($property['facetable'] ?? null) !== null
@@ -1130,7 +1111,6 @@ class SchemaMapper extends QBMapper
 
     }//end determineFacetTypeForProperty()
 
-
     /**
      * Determine facet type from property characteristics
      *
@@ -1163,7 +1143,6 @@ class SchemaMapper extends QBMapper
         return 'terms';
 
     }//end determineFacetTypeFromProperty()
-
 
     /**
      * Resolve schema composition by merging referenced schemas
@@ -1223,7 +1202,6 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end resolveSchemaExtension()
-
 
     /**
      * Resolve allOf composition pattern
@@ -1294,7 +1272,6 @@ class SchemaMapper extends QBMapper
 
     }//end resolveAllOf()
 
-
     /**
      * Resolve oneOf composition pattern
      *
@@ -1332,7 +1309,6 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end resolveOneOf()
-
 
     /**
      * Resolve anyOf composition pattern
@@ -1372,7 +1348,6 @@ class SchemaMapper extends QBMapper
 
     }//end resolveAnyOf()
 
-
     /**
      * Load a schema by ID, UUID, or slug
      *
@@ -1404,7 +1379,6 @@ class SchemaMapper extends QBMapper
         }
 
     }//end loadSchema()
-
 
     /**
      * Merge parent and child schema properties (without validation)
@@ -1442,7 +1416,6 @@ class SchemaMapper extends QBMapper
         return $merged;
 
     }//end mergeSchemaProperties()
-
 
     /**
      * Merge parent and child schema properties WITH Liskov Substitution validation
@@ -1509,7 +1482,6 @@ class SchemaMapper extends QBMapper
 
     }//end mergeSchemaPropertiesWithValidation()
 
-
     /**
      * Perform deep merge of a single property definition (WITHOUT validation)
      *
@@ -1552,7 +1524,6 @@ class SchemaMapper extends QBMapper
         return $merged;
 
     }//end deepMergeProperty()
-
 
     /**
      * Perform deep merge of a single property WITH Liskov Substitution validation
@@ -1698,7 +1669,6 @@ class SchemaMapper extends QBMapper
 
     }//end deepMergePropertyWithValidation()
 
-
     /**
      * Validate that a constraint change does not relax validation
      *
@@ -1793,7 +1763,6 @@ class SchemaMapper extends QBMapper
 
     }//end validateConstraintChange()
 
-
     /**
      * Validate that replacing a property doesn't relax constraints
      *
@@ -1822,7 +1791,6 @@ class SchemaMapper extends QBMapper
         }
 
     }//end validateConstraintAddition()
-
 
     /**
      * Extract the delta (differences) between parent schemas and child schema properties
@@ -1865,7 +1833,6 @@ class SchemaMapper extends QBMapper
         return $schema;
 
     }//end extractSchemaDelta()
-
 
     /**
      * Extract delta for allOf composition (multiple parents)
@@ -1931,7 +1898,6 @@ class SchemaMapper extends QBMapper
 
     }//end extractAllOfDelta()
 
-
     /**
      * Extract properties that differ from parent
      *
@@ -1974,7 +1940,6 @@ class SchemaMapper extends QBMapper
 
     }//end extractPropertyDelta()
 
-
     /**
      * Check if two property definitions are different
      *
@@ -1992,7 +1957,6 @@ class SchemaMapper extends QBMapper
         return json_encode($parentProperty) !== json_encode($childProperty);
 
     }//end arePropertiesDifferent()
-
 
     /**
      * Extract nested property delta for object properties
@@ -2029,7 +1993,6 @@ class SchemaMapper extends QBMapper
         return $delta;
 
     }//end extractNestedPropertyDelta()
-
 
     /**
      * Find schemas that compose with a given schema
@@ -2125,6 +2088,4 @@ class SchemaMapper extends QBMapper
         return $uuids;
 
     }//end findExtendedBy()
-
-
 }//end class

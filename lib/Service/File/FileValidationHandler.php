@@ -45,8 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileValidationHandler
 {
-
-
     /**
      * Constructor for FileValidationHandler.
      *
@@ -61,7 +59,6 @@ class FileValidationHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Block executable files from being uploaded for security reasons.
@@ -173,7 +170,6 @@ class FileValidationHandler
 
     }//end blockExecutableFile()
 
-
     /**
      * Detects executable magic bytes in file content.
      *
@@ -236,7 +232,6 @@ class FileValidationHandler
         }
 
     }//end detectExecutableMagicBytes()
-
 
     /**
      * Check file ownership and fix it if needed to prevent "File not found" errors.
@@ -334,7 +329,6 @@ class FileValidationHandler
 
     }//end checkOwnership()
 
-
     /**
      * Set file ownership to the OpenRegister user.
      *
@@ -383,7 +377,6 @@ class FileValidationHandler
 
     }//end ownFile()
 
-
     /**
      * Get the OpenRegister user from the session.
      *
@@ -408,6 +401,4 @@ class FileValidationHandler
         return $user;
 
     }//end getUser()
-
-
 }//end class

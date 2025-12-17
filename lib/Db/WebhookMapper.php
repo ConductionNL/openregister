@@ -91,7 +91,6 @@ class WebhookMapper extends QBMapper
      */
     private readonly IGroupManager $groupManager;
 
-
     /**
      * Constructor
      *
@@ -123,16 +122,15 @@ class WebhookMapper extends QBMapper
 
     }//end __construct()
 
-
     /**
      * Find all webhooks
      *
      * Retrieves all webhooks with organisation filtering for multi-tenancy.
      * Returns only webhooks belonging to the current organisation.
      *
-     * @return Webhook[] Array of webhook entities
+     * @return Webhook[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+     * @psalm-return list<OCA\OpenRegister\Db\Webhook>
      */
     public function findAll(): array
     {
@@ -156,7 +154,6 @@ class WebhookMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findAll()
-
 
     /**
      * Find a single webhook by ID
@@ -195,7 +192,6 @@ class WebhookMapper extends QBMapper
 
     }//end find()
 
-
     /**
      * Find all enabled webhooks
      *
@@ -227,7 +223,6 @@ class WebhookMapper extends QBMapper
 
     }//end findEnabled()
 
-
     /**
      * Find webhooks that match an event
      *
@@ -251,7 +246,6 @@ class WebhookMapper extends QBMapper
                 );
 
     }//end findForEvent()
-
 
     /**
      * Insert a new webhook
@@ -283,7 +277,6 @@ class WebhookMapper extends QBMapper
 
     }//end insert()
 
-
     /**
      * Update an existing webhook
      *
@@ -308,7 +301,6 @@ class WebhookMapper extends QBMapper
 
     }//end update()
 
-
     /**
      * Delete a webhook
      *
@@ -328,7 +320,6 @@ class WebhookMapper extends QBMapper
         return parent::delete($entity);
 
     }//end delete()
-
 
     /**
      * Update webhook statistics
@@ -365,7 +356,6 @@ class WebhookMapper extends QBMapper
 
     }//end updateStatistics()
 
-
     /**
      * Create webhook from array
      *
@@ -381,7 +371,6 @@ class WebhookMapper extends QBMapper
         return $this->insert($webhook);
 
     }//end createFromArray()
-
 
     /**
      * Update webhook from array
@@ -401,7 +390,6 @@ class WebhookMapper extends QBMapper
         return $this->update($webhook);
 
     }//end updateFromArray()
-
 
     /**
      * Check if the webhooks table exists
@@ -426,6 +414,4 @@ class WebhookMapper extends QBMapper
         }
 
     }//end tableExists()
-
-
 }//end class

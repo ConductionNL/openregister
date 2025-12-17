@@ -30,7 +30,6 @@ class SchemaMapper
 
     private readonly LoggerInterface $logger;
 
-
     /**
      * SchemaMapper constructor
      *
@@ -45,7 +44,6 @@ class SchemaMapper
 
     }//end __construct()
 
-
     /**
      * Map OpenRegister schema to search backend schema
      *
@@ -53,7 +51,9 @@ class SchemaMapper
      *
      * @return array Search backend schema
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     *
+     * @psalm-return array<never, never>
      */
     public function mapToBackendSchema(array $schema): array
     {
@@ -62,7 +62,6 @@ class SchemaMapper
         return [];
 
     }//end mapToBackendSchema()
-
 
     /**
      * Map field types from OpenRegister to search backend
@@ -76,6 +75,4 @@ class SchemaMapper
         return $fieldType;
 
     }//end mapFieldType()
-
-
 }//end class

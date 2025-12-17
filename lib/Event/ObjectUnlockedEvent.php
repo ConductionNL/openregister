@@ -35,7 +35,6 @@ class ObjectUnlockedEvent extends Event
      */
     private ObjectEntity $object;
 
-
     /**
      * Constructor for ObjectUnlockedEvent
      *
@@ -50,7 +49,6 @@ class ObjectUnlockedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the unlocked object entity
      *
@@ -61,6 +59,4 @@ class ObjectUnlockedEvent extends Event
         return $this->object;
 
     }//end getObject()
-
-
 }//end class

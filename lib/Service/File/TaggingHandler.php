@@ -51,7 +51,6 @@ class TaggingHandler
      */
     private const FILE_TAG_TYPE = 'files';
 
-
     /**
      * Constructor for TaggingHandler.
      *
@@ -66,7 +65,6 @@ class TaggingHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Attach tags to a file.
@@ -135,7 +133,6 @@ class TaggingHandler
 
     }//end attachTagsToFile()
 
-
     /**
      * Find tag by name or create it if it doesn't exist.
      *
@@ -176,16 +173,16 @@ class TaggingHandler
 
     }//end findOrCreateTag()
 
-
     /**
      * Get tags for a file.
      *
      * @param string $fileId The file ID.
      *
-     * @return array Array of tag names.
+     * @return string[]
      *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     public function getFileTags(string $fileId): array
     {
@@ -214,7 +211,6 @@ class TaggingHandler
 
     }//end getFileTags()
 
-
     /**
      * Generate an object tag from an object entity.
      *
@@ -234,14 +230,14 @@ class TaggingHandler
 
     }//end generateObjectTag()
 
-
     /**
      * Get all system tags.
      *
-     * @return array Array of all tag names.
+     * @return string[]
      *
      * @phpstan-return array<int, string>
-     * @psalm-return   array<int, string>
+     *
+     * @psalm-return list<string>
      */
     public function getAllTags(): array
     {
@@ -260,6 +256,4 @@ class TaggingHandler
         }
 
     }//end getAllTags()
-
-
 }//end class

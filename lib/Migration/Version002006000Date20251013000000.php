@@ -30,8 +30,6 @@ use OCP\Migration\SimpleMigrationStep;
 
 class Version002006000Date20251013000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create file texts table for storing extracted text content.
      *
@@ -274,7 +272,6 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change hook for logging.
      *
@@ -291,6 +288,4 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
         $output->info(message: 'File texts table created successfully');
 
     }//end postSchemaChange()
-
-
 }//end class

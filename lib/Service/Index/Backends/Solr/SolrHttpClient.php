@@ -63,7 +63,6 @@ class SolrHttpClient
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -84,7 +83,6 @@ class SolrHttpClient
 
     }//end __construct()
 
-
     /**
      * Initialize Solr configuration from settings.
      *
@@ -104,7 +102,6 @@ class SolrHttpClient
         ];
 
     }//end initializeConfig()
-
 
     /**
      * Initialize HTTP client for Solr requests.
@@ -128,7 +125,6 @@ class SolrHttpClient
 
     }//end initializeHttpClient()
 
-
     /**
      * Check if Solr is configured.
      *
@@ -142,7 +138,6 @@ class SolrHttpClient
 
     }//end isConfigured()
 
-
     /**
      * Get Solr configuration.
      *
@@ -154,7 +149,6 @@ class SolrHttpClient
 
     }//end getConfig()
 
-
     /**
      * Get HTTP client.
      *
@@ -165,7 +159,6 @@ class SolrHttpClient
         return $this->httpClient;
 
     }//end getHttpClient()
-
 
     /**
      * Build base Solr URL.
@@ -182,7 +175,6 @@ class SolrHttpClient
 
     }//end buildSolrBaseUrl()
 
-
     /**
      * Get endpoint URL for a collection.
      *
@@ -198,7 +190,6 @@ class SolrHttpClient
         return "{$baseUrl}/{$core}";
 
     }//end getEndpointUrl()
-
 
     /**
      * Make a GET request to Solr.
@@ -223,7 +214,6 @@ class SolrHttpClient
         }//end try
 
     }//end get()
-
 
     /**
      * Make a POST request to Solr.
@@ -251,7 +241,6 @@ class SolrHttpClient
 
     }//end post()
 
-
     /**
      * Get tenant-specific collection name.
      *
@@ -274,6 +263,4 @@ class SolrHttpClient
         return $baseCollectionName;
 
     }//end getTenantSpecificCollectionName()
-
-
 }//end class

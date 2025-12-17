@@ -38,8 +38,6 @@ use OCP\Migration\IOutput;
  */
 class Version1Date20250622212509 extends SimpleMigrationStep
 {
-
-
     /**
      * Change schema for migration
      *
@@ -260,7 +258,6 @@ class Version1Date20250622212509 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post schema change hook
      *
@@ -276,6 +273,4 @@ class Version1Date20250622212509 extends SimpleMigrationStep
     {
 
     }//end postSchemaChange()
-
-
 }//end class

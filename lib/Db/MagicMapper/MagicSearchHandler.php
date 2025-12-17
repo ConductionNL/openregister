@@ -55,8 +55,6 @@ use DateTime;
  */
 class MagicSearchHandler
 {
-
-
     /**
      * Constructor for MagicSearchHandler
      *
@@ -69,7 +67,6 @@ class MagicSearchHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Search objects in a specific register-schema table using clean query structure
@@ -167,7 +164,6 @@ class MagicSearchHandler
 
     }//end searchObjects()
 
-
     /**
      * Apply basic filters like deleted and published status
      *
@@ -201,7 +197,6 @@ class MagicSearchHandler
 
     }//end applyBasicFilters()
 
-
     /**
      * Apply metadata filters to the query
      *
@@ -227,7 +222,6 @@ class MagicSearchHandler
         }
 
     }//end applyMetadataFilters()
-
 
     /**
      * Apply object field filters based on schema properties
@@ -261,7 +255,6 @@ class MagicSearchHandler
 
     }//end applyObjectFilters()
 
-
     /**
      * Apply ID-based filtering (UUID, slug, etc.)
      *
@@ -278,7 +271,6 @@ class MagicSearchHandler
         $qb->andWhere($orX);
 
     }//end applyIdFilters()
-
 
     /**
      * Apply full-text search across relevant columns
@@ -313,7 +305,6 @@ class MagicSearchHandler
 
     }//end applyFullTextSearch()
 
-
     /**
      * Apply sorting to the query
      *
@@ -346,7 +337,6 @@ class MagicSearchHandler
 
     }//end applySorting()
 
-
     /**
      * Execute search query and convert results to ObjectEntity objects
      *
@@ -377,7 +367,6 @@ class MagicSearchHandler
         return $objects;
 
     }//end executeSearchQuery()
-
 
     /**
      * Convert database row from dynamic table to ObjectEntity
@@ -496,7 +485,6 @@ class MagicSearchHandler
 
     }//end convertRowToObjectEntity()
 
-
     /**
      * Sanitize column name for safe database usage
      *
@@ -518,6 +506,4 @@ class MagicSearchHandler
         return substr($sanitized, 0, 64);
 
     }//end sanitizeColumnName()
-
-
 }//end class

@@ -58,8 +58,6 @@ use OCP\IDBConnection;
  */
 class EndpointLogMapper extends QBMapper
 {
-
-
     /**
      * Constructor
      *
@@ -77,7 +75,6 @@ class EndpointLogMapper extends QBMapper
 
     }//end __construct()
 
-
     /**
      * Find all endpoint logs
      *
@@ -87,9 +84,9 @@ class EndpointLogMapper extends QBMapper
      * @param int|null $limit  Maximum number of results to return (null = no limit)
      * @param int|null $offset Starting offset for pagination (null = no offset)
      *
-     * @return EndpointLog[] Array of endpoint log entities
+     * @return EndpointLog[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
+     * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -115,7 +112,6 @@ class EndpointLogMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findAll()
-
 
     /**
      * Find logs by endpoint ID
@@ -157,7 +153,6 @@ class EndpointLogMapper extends QBMapper
 
     }//end findByEndpoint()
 
-
     /**
      * Find a single log by ID
      *
@@ -184,7 +179,6 @@ class EndpointLogMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
     /**
      * Get statistics for endpoint logs
@@ -240,6 +234,4 @@ class EndpointLogMapper extends QBMapper
         ];
 
     }//end getStatistics()
-
-
 }//end class

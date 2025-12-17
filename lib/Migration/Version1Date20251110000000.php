@@ -50,8 +50,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251110000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add parent column and constraints to organisations table
      *
@@ -143,7 +141,6 @@ class Version1Date20251110000000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change operations
      *
@@ -172,6 +169,4 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         $output->info(message: '✅ Migration completed successfully');
 
     }//end postSchemaChange()
-
-
 }//end class

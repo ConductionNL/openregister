@@ -103,7 +103,6 @@ class TextExtractionService
      */
     private const FIXED_SIZE = 'FIXED_SIZE';
 
-
     /**
      * Constructor
      *
@@ -134,7 +133,6 @@ class TextExtractionService
     ) {
 
     }//end __construct()
-
 
     /**
      * Extract text from a file by Nextcloud file ID
@@ -236,7 +234,6 @@ class TextExtractionService
                 );
 
     }//end extractFile()
-
 
     /**
      * Extract text from an object by object ID
@@ -372,7 +369,6 @@ class TextExtractionService
 
     }//end extractObject()
 
-
     /**
      * Determine whether the latest chunks already reflect the current source state.
      *
@@ -405,7 +401,6 @@ class TextExtractionService
         return $latestChunkTimestamp >= $sourceTimestamp;
 
     }//end isSourceUpToDate()
-
 
     /**
      * Extract and sanitize text for a given source.
@@ -474,7 +469,6 @@ class TextExtractionService
 
     }//end extractSourceText()
 
-
     /**
      * Lightweight placeholder for language detection.
      *
@@ -482,7 +476,7 @@ class TextExtractionService
      *
      * @return (float|null|string)[]
      *
-     * @psalm-return array{language: 'en'|'nl'|null, language_level: null, language_confidence: float|null, detection_method: string}
+     * @psalm-return array{language: 'en'|'nl'|null, language_level: null, language_confidence: float|null, detection_method: 'heuristic'|'none'}
      */
     private function detectLanguageSignals(string $text): array
     {
@@ -506,7 +500,6 @@ class TextExtractionService
         ];
 
     }//end detectLanguageSignals()
-
 
     /**
      * Convert a text payload into chunk DTOs ready for persistence.
@@ -569,7 +562,6 @@ class TextExtractionService
 
     }//end textToChunks()
 
-
     /**
      * Build a structured position reference for traceability.
      *
@@ -600,7 +592,6 @@ class TextExtractionService
         ];
 
     }//end buildPositionReference()
-
 
     /**
      * Persist textual chunks for a source.
@@ -656,7 +647,6 @@ class TextExtractionService
 
     }//end persistChunksForSource()
 
-
     /**
      * Create a Chunk entity from an array payload.
      *
@@ -708,7 +698,6 @@ class TextExtractionService
         return $chunk;
 
     }//end hydrateChunkEntity()
-
 
     /**
      * Persist the metadata chunk that stores provenance details.
@@ -771,7 +760,6 @@ class TextExtractionService
 
     }//end persistMetadataChunk()
 
-
     /**
      * Prepare metadata content for the metadata chunk.
      *
@@ -806,7 +794,6 @@ class TextExtractionService
         ];
 
     }//end summarizeMetadataPayload()
-
 
     /**
      * Perform actual text extraction from a file
@@ -914,7 +901,6 @@ class TextExtractionService
 
     }//end performTextExtraction()
 
-
     /**
      * Discover files in Nextcloud that aren't tracked in the extraction system yet
      *
@@ -986,7 +972,6 @@ class TextExtractionService
         }//end try
 
     }//end discoverUntrackedFiles()
-
 
     /**
      * Extract text from files that don't have chunks yet
@@ -1060,7 +1045,6 @@ class TextExtractionService
 
     }//end extractPendingFiles()
 
-
     /**
      * Retry file extractions by forcing re-extraction
      *
@@ -1103,7 +1087,6 @@ class TextExtractionService
 
     }//end retryFailedExtractions()
 
-
     /**
      * Get extraction statistics
      *
@@ -1133,7 +1116,6 @@ class TextExtractionService
         ];
 
     }//end getStats()
-
 
     /**
      * Safely count rows in a table (returns zero if table is missing)
@@ -1167,7 +1149,6 @@ class TextExtractionService
         }//end try
 
     }//end getTableCountSafe()
-
 
     /**
      * Sanitize extracted text for safe database storage
@@ -1210,7 +1191,6 @@ class TextExtractionService
         return trim($text);
 
     }//end sanitizeText()
-
 
     /**
      * Extract text from PDF file using Smalot PdfParser
@@ -1292,7 +1272,6 @@ class TextExtractionService
         }//end try
 
     }//end extractPdf()
-
 
     /**
      * Extract text from Word document (DOCX/DOC) using PhpWord
@@ -1389,7 +1368,6 @@ class TextExtractionService
         }//end try
 
     }//end extractWord()
-
 
     /**
      * Extract text from spreadsheet (XLSX/XLS) using PhpSpreadsheet
@@ -1501,7 +1479,6 @@ class TextExtractionService
 
     }//end extractSpreadsheet()
 
-
     /**
      * Chunk a document into smaller pieces for processing
      *
@@ -1568,7 +1545,6 @@ class TextExtractionService
 
     }//end chunkDocument()
 
-
     /**
      * Clean text by removing excessive whitespace and normalizing
      *
@@ -1591,7 +1567,6 @@ class TextExtractionService
         return trim($text);
 
     }//end cleanText()
-
 
     /**
      * Chunk text using fixed size with overlap
@@ -1659,7 +1634,6 @@ class TextExtractionService
 
     }//end chunkFixedSize()
 
-
     /**
      * Chunk text recursively by trying different separators
      *
@@ -1674,7 +1648,9 @@ class TextExtractionService
      * @param int    $chunkSize    Target chunk size
      * @param int    $chunkOverlap Overlap size
      *
-     * @return array Array of chunk objects with text, start_offset, end_offset
+     * @return (int|mixed|string)[][] Array of chunk objects with text, start_offset, end_offset
+     *
+     * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
      */
     private function chunkRecursive(string $text, int $chunkSize, int $chunkOverlap): array
     {
@@ -1709,7 +1685,6 @@ class TextExtractionService
         return $this->recursiveSplit(text: $text, separators: $separators, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
 
     }//end chunkRecursive()
-
 
     /**
      * Recursively split text using different separators
@@ -1825,7 +1800,6 @@ class TextExtractionService
 
     }//end recursiveSplit()
 
-
     /**
      * Check if MIME type is a Word document
      *
@@ -1843,7 +1817,6 @@ class TextExtractionService
         return in_array($mimeType, $wordTypes, true) === true;
 
     }//end isWordDocument()
-
 
     /**
      * Check if MIME type is a spreadsheet
@@ -1863,7 +1836,6 @@ class TextExtractionService
 
     }//end isSpreadsheet()
 
-
     /**
      * Get detection method name based on language
      *
@@ -1882,7 +1854,6 @@ class TextExtractionService
         return 'heuristic';
 
     }//end getDetectionMethod()
-
 
     /**
      * Calculate average chunk size from chunks array
@@ -1914,6 +1885,4 @@ class TextExtractionService
         return round($totalSize / count($chunks), 2);
 
     }//end calculateAvgChunkSize()
-
-
 }//end class

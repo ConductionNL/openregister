@@ -75,7 +75,6 @@ class WarmupHandler
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * WarmupHandler constructor
      *
@@ -101,7 +100,6 @@ class WarmupHandler
         $this->logger        = $logger;
 
     }//end __construct()
-
 
     /**
      * Warm up the index
@@ -169,6 +167,4 @@ class WarmupHandler
         }//end try
 
     }//end warmupIndex()
-
-
 }//end class

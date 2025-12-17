@@ -155,7 +155,6 @@ class EntityRelation extends Entity implements JsonSerializable
      */
     protected ?DateTime $createdAt = null;
 
-
     /**
      * Constructor.
      */
@@ -177,7 +176,6 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType('createdAt', 'datetime');
 
     }//end __construct()
-
 
     /**
      * JSON serialization.
@@ -207,6 +205,4 @@ class EntityRelation extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

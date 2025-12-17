@@ -50,7 +50,6 @@ class ObjectsTool extends AbstractTool
      */
     private ObjectService $objectService;
 
-
     /**
      * Constructor
      *
@@ -68,7 +67,6 @@ class ObjectsTool extends AbstractTool
 
     }//end __construct()
 
-
     /**
      * Get tool name
      *
@@ -82,7 +80,6 @@ class ObjectsTool extends AbstractTool
 
     }//end getName()
 
-
     /**
      * Get tool description
      *
@@ -95,7 +92,6 @@ class ObjectsTool extends AbstractTool
         return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.';
 
     }//end getDescription()
-
 
     /**
      * Get function definitions for LLphant
@@ -209,7 +205,6 @@ class ObjectsTool extends AbstractTool
 
     }//end getFunctions()
 
-
     /**
      * Execute a function
      *
@@ -241,7 +236,6 @@ class ObjectsTool extends AbstractTool
         }
 
     }//end executeFunction()
-
 
     /**
      * Search for objects
@@ -306,7 +300,6 @@ class ObjectsTool extends AbstractTool
 
     }//end searchObjects()
 
-
     /**
      * Get a specific object
      *
@@ -341,7 +334,6 @@ class ObjectsTool extends AbstractTool
         );
 
     }//end getObject()
-
 
     /**
      * Create a new object
@@ -387,7 +379,6 @@ class ObjectsTool extends AbstractTool
 
     }//end createObject()
 
-
     /**
      * Update an existing object
      *
@@ -432,7 +423,6 @@ class ObjectsTool extends AbstractTool
 
     }//end updateObject()
 
-
     /**
      * Delete an object
      *
@@ -460,6 +450,4 @@ class ObjectsTool extends AbstractTool
         );
 
     }//end deleteObject()
-
-
 }//end class

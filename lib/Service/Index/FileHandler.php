@@ -44,8 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileHandler
 {
-
-
     /**
      * Constructor
      *
@@ -61,7 +59,6 @@ class FileHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Index file chunks to Solr fileCollection.
@@ -125,7 +122,6 @@ class FileHandler
 
     }//end indexFileChunks()
 
-
     /**
      * Get statistics for files in Solr.
      *
@@ -167,7 +163,6 @@ class FileHandler
 
     }//end getFileStats()
 
-
     /**
      * Process and index chunks for unindexed files.
      *
@@ -177,9 +172,9 @@ class FileHandler
      *
      * @param int|null $limit Maximum number of files to process
      *
-     * @return array Processing result with statistics
+     * @return ((float|int|string[])[]|true)[]
      *
-     * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array, execution_time_ms: float}}
+     * @psalm-return array{success: true, stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: int, errors: list<non-empty-string>, execution_time_ms: float}}
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -271,7 +266,6 @@ class FileHandler
 
     }//end processUnindexedChunks()
 
-
     /**
      * Get chunking statistics.
      *
@@ -294,7 +288,6 @@ class FileHandler
         ];
 
     }//end getChunkingStats()
-
 
     /**
      * Index files by their IDs.
@@ -334,7 +327,6 @@ class FileHandler
 
     }//end indexFiles()
 
-
     /**
      * Get file indexing statistics.
      *
@@ -364,6 +356,4 @@ class FileHandler
         }//end try
 
     }//end getFileIndexStats()
-
-
 }//end class

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * OpenAPI Specification (OAS) Service
  *
  * This service generates OpenAPI Specification (OAS) documentation for registers and schemas.
@@ -62,7 +62,7 @@ class OasService
      *
      * @var array<string, mixed> OpenAPI specification array
      */
-    private array $oas=[];
+    private array $oas = [];
 
     /**
      * Register mapper
@@ -120,7 +120,7 @@ class OasService
 
         // Step 3: Extract unique schema IDs from all registers.
         // Multiple registers may share schemas, so we deduplicate.
-        $schemaIds=[];
+        $schemaIds = [];
         foreach ($registers ?? [] as $register) {
             $schemaIds = array_merge($schemaIds, $register->getSchemas());
         }
@@ -130,7 +130,7 @@ class OasService
 
         // Step 4: Get all schemas using unique schema IDs and index by schema ID.
         // Indexing by ID allows fast lookup when processing registers.
-        $schemas=[];
+        $schemas = [];
         foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds) as $schema) {
             $schemas[$schema->getId()] = $schema;
         }
@@ -176,8 +176,8 @@ class OasService
             }
 
             // Step 8b: Enrich schema definition with OpenAPI-specific properties.
-            $schemaDefinition     = $this->enrichSchema($schema);
-            $sanitizedSchemaName  = $this->sanitizeSchemaName($schemaTitle);
+            $schemaDefinition    = $this->enrichSchema($schema);
+            $sanitizedSchemaName = $this->sanitizeSchemaName($schemaTitle);
 
             // Step 8c: Validate schema definition before adding to components.
             if (empty($schemaDefinition) === false && is_array($schemaDefinition) === true) {
@@ -190,7 +190,7 @@ class OasService
                 ];
             } else {
             }//end if
-        }
+        }//end foreach
 
         // Initialize paths array.
         $this->oas['paths'] = [];
@@ -217,7 +217,6 @@ class OasService
 
     }//end createOas()
 
-
     /**
      * Get the base OAS file as array
      *
@@ -241,7 +240,6 @@ class OasService
 
     }//end getBaseOas()
 
-
     /**
      * Extended endpoints that should be included in OAS generation
      * This whitelist ensures only stable, public-facing endpoints are documented
@@ -264,9 +262,9 @@ class OasService
      *
      * @param object $schema The schema object
      *
-     * @return ((array|mixed)[]|string)[] The valid OpenAPI schema definition
+     * @return (((array[]|mixed|string|true)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{type: 'object', 'x-tags': list{mixed}, properties: array<array>}
+     * @psalm-return array{type: 'object', 'x-tags': list{mixed}, properties: array<array{type?: 'string'|mixed, format?: 'uuid'|mixed, readOnly?: mixed|true, example?: '123e4567-e89b-12d3-a456-426614174000'|mixed, description?: 'Object metadata including timestamps, ownership, and system information'|'Property value'|'The unique identifier for the object.'|mixed, '$ref'?: '#/components/schemas/@self'|mixed, title?: mixed, writeOnly?: mixed, nullable?: mixed, not?: mixed, oneOf?: mixed, anyOf?: mixed, allOf?: mixed|non-empty-list<non-empty-array>, additionalProperties?: mixed, items?: mixed, properties?: mixed, required?: mixed, minProperties?: mixed, maxProperties?: mixed, uniqueItems?: mixed, minItems?: mixed, maxItems?: mixed, pattern?: mixed, minLength?: mixed, maxLength?: mixed, exclusiveMinimum?: mixed, minimum?: mixed, exclusiveMaximum?: mixed, maximum?: mixed, multipleOf?: mixed, const?: mixed, enum?: mixed, default?: mixed, examples?: mixed}>}
      */
     private function enrichSchema(object $schema): array
     {
@@ -279,7 +277,7 @@ class OasService
                 'readOnly'    => true,
                 'description' => 'Object metadata including timestamps, ownership, and system information',
             ],
-            'id' => [
+            'id'    => [
                 'type'        => 'string',
                 'format'      => 'uuid',
                 'readOnly'    => true,
@@ -300,8 +298,6 @@ class OasService
         ];
 
     }//end enrichSchema()
-
-
 
     /**
      * Sanitize property definition to be valid OpenAPI schema
@@ -361,7 +357,7 @@ class OasService
         }
 
         // Start with a clean definition.
-        $cleanDef=[];
+        $cleanDef = [];
 
         // Standard OpenAPI schema keywords that are allowed.
         $allowedSchemaKeywords = [
@@ -425,7 +421,7 @@ class OasService
                 unset($cleanDef['allOf']);
             } else {
                 // Validate each allOf element.
-                $validAllOfItems=[];
+                $validAllOfItems = [];
                 foreach ($cleanDef['allOf'] ?? [] as $item) {
                     // Each allOf item must be an object/array.
                     if (is_array($item) === true && empty($item) === false) {
@@ -440,7 +436,7 @@ class OasService
                     $cleanDef['allOf'] = $validAllOfItems;
                 }
             }
-        }
+        }//end if
 
         // $ref must be a non-empty string, remove if empty.
         if (($cleanDef['$ref'] ?? null) !== null && (empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false) === true) {
@@ -465,7 +461,6 @@ class OasService
         return $cleanDef;
 
     }//end sanitizePropertyDefinition()
-
 
     /**
      * Add CRUD paths for a schema.
@@ -493,7 +488,6 @@ class OasService
         ];
 
     }//end addCrudPaths()
-
 
     /**
      * Add extended paths for a schema using whitelist approach
@@ -537,15 +531,13 @@ class OasService
                         'post' => $this->createUnlockOperation($schema),
                     ];
                     break;
-            }
-        }
+            }//end switch
+        }//end foreach
 
         // Note: By default, NO extended endpoints are included.
         // To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant.
         // This ensures a clean, minimal API specification focused on core CRUD operations.
-
     }//end addExtendedPaths()
-
 
     /**
      * Create common query parameters for object operations
@@ -553,51 +545,9 @@ class OasService
      * @param bool   $isCollection Whether this is for a collection endpoint
      * @param object $schema       The schema object for generating dynamic filter parameters (only used for collection endpoints)
      *
-     * @return ((array|string)[]|false|mixed|string)[][] Array of common query parameters
+     * @return ((array|string)[]|false|mixed|string)[][]
      *
-     * @psalm-return list{
-     *     0: array{
-     *         name: '_extend'|mixed,
-     *         in: 'query',
-     *         required: false,
-     *         description: string,
-     *         schema: array{type: string, items?: array<never, never>},
-     *         example?: 'property1,property2,property3'
-     *     },
-     *     1?: array{
-     *         name: mixed|string,
-     *         in: 'query',
-     *         required: false,
-     *         description: string,
-     *         schema: array{type: string, items?: array<never, never>},
-     *         example?: string
-     *     },
-     *     2?: array{
-     *         name: mixed|string,
-     *         in: 'query',
-     *         required: false,
-     *         description: string,
-     *         schema: array{type: string, items?: array<never, never>},
-     *         example?: string
-     *     },
-     *     3?: array{
-     *         name: mixed|string,
-     *         in: 'query',
-     *         required: false,
-     *         description: string,
-     *         schema: array{type: string, items?: array<never, never>},
-     *         example?: string
-     *     },
-     *     4?: array{
-     *         name: mixed|string,
-     *         in: 'query',
-     *         required: false,
-     *         description: string,
-     *         schema: array{type: string, items?: array<never, never>},
-     *         example?: string
-     *     },
-     *     ...
-     * }
+     * @psalm-return list{0: array{name: '_extend'|mixed, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: 'property1,property2,property3'}, 1?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 2?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 3?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 4?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string},...}
      */
     private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
     {
@@ -673,7 +623,7 @@ class OasService
                     // Array types require an items field.
                     if ($propertyType === 'array') {
                         $paramSchema['items'] = [
-// Default array item type for query parameters.
+                        // Default array item type for query parameters.
                         ];
                     }
 
@@ -684,14 +634,13 @@ class OasService
                         'description' => 'Filter results by '.$propertyName,
                         'schema'      => $paramSchema,
                     ];
-                }
+                }//end foreach
             }//end if
         }//end if
 
         return $parameters;
 
     }//end createCommonQueryParameters()
-
 
     /**
      * Get OpenAPI type for a property definition
@@ -727,44 +676,14 @@ class OasService
 
     }//end getPropertyType()
 
-
     /**
      * Create GET collection operation.
      *
      * @param object $schema The schema object
      *
-     * @return (array|string)[] The operation definition
+     * @return ((((((string|string[])[][]|string)[][][][]|string)[]|false|mixed|string)[]|mixed|string)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{string},
-     *     description: string,
-     *     parameters: array,
-     *     responses: array{
-     *         200: array{
-     *             description: string,
-     *             content: array{
-     *                 'application/json': array{
-     *                     schema: array{
-     *                         allOf: list{
-     *                             array{'$ref': '#/components/schemas/PaginatedResponse'},
-     *                             array{
-     *                                 type: 'object',
-     *                                 properties: array{
-     *                                     results: array{
-     *                                         type: 'array',
-     *                                         items: array{'$ref': string}
-     *                                     }
-     *                                 }
-     *                             }
-     *                         }
-     *                     }
-     *                 }
-     *             }
-     *         }
-     *     }
-     * }}
+     * @psalm-return array{summary: string, operationId: string, tags: list{string}, description: string, parameters: list{0: array{name: '_extend'|mixed, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: 'property1,property2,property3'}, 1?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 2?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 3?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 4?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string},...}, responses: array{200: array{description: string, content: array{'application/json': array{schema: array{allOf: list{array{'$ref': '#/components/schemas/PaginatedResponse'}, array{type: 'object', properties: array{results: array{type: 'array', items: array{'$ref': string}}}}}}}}}}}
      */
     private function createGetCollectionOperation(object $schema): array
     {
@@ -798,10 +717,10 @@ class OasService
                                         '$ref' => '#/components/schemas/PaginatedResponse',
                                     ],
                                     [
-                                        'type' => 'object',
+                                        'type'       => 'object',
                                         'properties' => [
                                             'results' => [
-                                                'type' => 'array',
+                                                'type'  => 'array',
                                                 'items' => [
                                                     '$ref' => '#/components/schemas/'.$sanitizedSchemaName,
                                                 ],
@@ -818,40 +737,14 @@ class OasService
 
     }//end createGetCollectionOperation()
 
-
     /**
      * Create GET operation.
      *
      * @param object $schema The schema object
      *
-     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[] The operation definition
+     * @return ((((string|string[][])[]|bool|mixed|string)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: array{
-     *         0: array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }|mixed,
-     *         ...
-     *     },
-     *     responses: array{
-     *         200: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': string}}}
-     *         },
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}, array{name: '_extend'|mixed, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: 'property1,property2,property3'},...}, responses: array{200: array{description: string, content: array{'application/json': array{schema: array{'$ref': string}}}}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}}}
      */
     private function createGetOperation(object $schema): array
     {
@@ -908,44 +801,14 @@ class OasService
 
     }//end createGetOperation()
 
-
     /**
      * Create PUT operation
      *
      * @param object $schema The schema object
      *
-     * @return (((((string|string[])[]|string)[]|string|true)[]|mixed|true)[]|string)[] The operation definition
+     * @return (((((string|string[])[]|string)[]|bool|mixed|string)[]|mixed|true)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: array{
-     *         0: array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }|mixed,
-     *         ...
-     *     },
-     *     requestBody: array{
-     *         required: true,
-     *         content: array{'application/json': array{schema: array{'$ref': string}}}
-     *     },
-     *     responses: array{
-     *         200: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': string}}}
-     *         },
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}, array{name: '_extend'|mixed, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: 'property1,property2,property3'},...}, requestBody: array{required: true, content: array{'application/json': array{schema: array{'$ref': string}}}}, responses: array{200: array{description: string, content: array{'application/json': array{schema: array{'$ref': string}}}}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}}}
      */
     private function createPutOperation(object $schema): array
     {
@@ -981,11 +844,8 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.
-                                $this->sanitizeSchemaName(
-                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true)
-                                        ? $schema->getTitle()
-                                        : 'UnknownSchema'
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                                 ),
                         ],
                     ],
@@ -997,11 +857,8 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.
-                                $this->sanitizeSchemaName(
-                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true)
-                                        ? $schema->getTitle()
-                                        : 'UnknownSchema'
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                                 ),
                             ],
                         ],
@@ -1022,31 +879,14 @@ class OasService
 
     }//end createPutOperation()
 
-
     /**
      * Create POST operation.
      *
      * @param object $schema The schema object
      *
-     * @return (array|string)[] The operation definition
+     * @return (((((string|string[])[]|string)[]|false|mixed|string)[]|mixed|true)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: array,
-     *     requestBody: array{
-     *         required: true,
-     *         content: array{'application/json': array{schema: array{'$ref': string}}}
-     *     },
-     *     responses: array{
-     *         201: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': string}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{0: array{name: '_extend'|mixed, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: 'property1,property2,property3'}, 1?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 2?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 3?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 4?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string},...}, requestBody: array{required: true, content: array{'application/json': array{schema: array{'$ref': string}}}}, responses: array{201: array{description: string, content: array{'application/json': array{schema: array{'$ref': string}}}}}}
      */
     private function createPostOperation(object $schema): array
     {
@@ -1061,11 +901,8 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.
-                                $this->sanitizeSchemaName(
-                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true)
-                                        ? $schema->getTitle()
-                                        : 'UnknownSchema'
+                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                                 ),
                         ],
                     ],
@@ -1077,11 +914,8 @@ class OasService
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.
-                                $this->sanitizeSchemaName(
-                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true)
-                                        ? $schema->getTitle()
-                                        : 'UnknownSchema'
+                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                                 ),
                             ],
                         ],
@@ -1092,36 +926,14 @@ class OasService
 
     }//end createPostOperation()
 
-
     /**
      * Create DELETE operation
      *
      * @param object $schema The schema object
      *
-     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[] The operation definition
+     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: list{
-     *         array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }
-     *     },
-     *     responses: array{
-     *         204: array{description: string},
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}}, responses: array{204: array{description: string}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}}}
      */
     private function createDeleteOperation(object $schema): array
     {
@@ -1161,46 +973,14 @@ class OasService
 
     }//end createDeleteOperation()
 
-
     /**
      * Create logs operation
      *
      * @param object $schema The schema object
      *
-     * @return (((((string|string[])[][]|string)[]|string|true)[]|mixed)[]|string)[] The operation definition
+     * @return (((((string|string[])[][]|string)[]|string|true)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: list{
-     *         array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }
-     *     },
-     *     responses: array{
-     *         200: array{
-     *             description: 'Audit logs retrieved successfully',
-     *             content: array{
-     *                 'application/json': array{
-     *                     schema: array{
-     *                         type: 'array',
-     *                         items: array{'$ref': '#/components/schemas/AuditTrail'}
-     *                     }
-     *                 }
-     *             }
-     *         },
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}}, responses: array{200: array{description: 'Audit logs retrieved successfully', content: array{'application/json': array{schema: array{type: 'array', items: array{'$ref': '#/components/schemas/AuditTrail'}}}}}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}}}
      */
     private function createLogsOperation(object $schema): array
     {
@@ -1250,46 +1030,14 @@ class OasService
 
     }//end createLogsOperation()
 
-
     /**
      * Create get files operation
      *
      * @param object $schema The schema object
      *
-     * @return (((((string|string[])[][]|string)[]|string|true)[]|mixed)[]|string)[] The operation definition
+     * @return (((((string|string[])[][]|string)[]|string|true)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: list{
-     *         array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }
-     *     },
-     *     responses: array{
-     *         200: array{
-     *             description: 'Files retrieved successfully',
-     *             content: array{
-     *                 'application/json': array{
-     *                     schema: array{
-     *                         type: 'array',
-     *                         items: array{'$ref': '#/components/schemas/File'}
-     *                     }
-     *                 }
-     *             }
-     *         },
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}}, responses: array{200: array{description: 'Files retrieved successfully', content: array{'application/json': array{schema: array{type: 'array', items: array{'$ref': '#/components/schemas/File'}}}}}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}}}
      */
     private function createGetFilesOperation(object $schema): array
     {
@@ -1339,56 +1087,14 @@ class OasService
 
     }//end createGetFilesOperation()
 
-
     /**
      * Create post file operation
      *
      * @param object $schema The schema object
      *
-     * @return ((((((string|string[])[]|string)[]|string)[]|string|true)[]|mixed|true)[]|string)[] The operation definition
+     * @return ((((((string|string[])[]|string)[]|string)[]|string|true)[]|mixed|true)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: list{
-     *         array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }
-     *     },
-     *     requestBody: array{
-     *         required: true,
-     *         content: array{
-     *             'multipart/form-data': array{
-     *                 schema: array{
-     *                     type: 'object',
-     *                     properties: array{
-     *                         file: array{
-     *                             type: 'string',
-     *                             format: 'binary',
-     *                             description: 'The file to upload'
-     *                         }
-     *                     }
-     *                 }
-     *             }
-     *         }
-     *     },
-     *     responses: array{
-     *         201: array{
-     *             description: 'File uploaded successfully',
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/File'}}}
-     *         },
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         }
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}}, requestBody: array{required: true, content: array{'multipart/form-data': array{schema: array{type: 'object', properties: array{file: array{type: 'string', format: 'binary', description: 'The file to upload'}}}}}}, responses: array{201: array{description: 'File uploaded successfully', content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/File'}}}}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}}}
      */
     private function createPostFileOperation(object $schema): array
     {
@@ -1452,40 +1158,14 @@ class OasService
 
     }//end createPostFileOperation()
 
-
     /**
      * Create lock operation
      *
      * @param object $schema The schema object
      *
-     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[] The operation definition
+     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: list{
-     *         array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }
-     *     },
-     *     responses: array{
-     *         200: array{
-     *             description: 'Object locked successfully',
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Lock'}}}
-     *         },
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         },
-     *         409: array{description: 'Object is already locked'}
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}}, responses: array{200: array{description: 'Object locked successfully', content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Lock'}}}}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}, 409: array{description: 'Object is already locked'}}}
      */
     private function createLockOperation(object $schema): array
     {
@@ -1535,37 +1215,14 @@ class OasService
 
     }//end createLockOperation()
 
-
     /**
      * Create unlock operation
      *
      * @param object $schema The schema object
      *
-     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[] The operation definition
+     * @return ((((string|string[][])[]|string|true)[]|mixed)[]|string)[]
      *
-     * @psalm-return array{
-     *     summary: string,
-     *     operationId: string,
-     *     tags: list{mixed},
-     *     description: string,
-     *     parameters: list{
-     *         array{
-     *             name: 'id',
-     *             in: 'path',
-     *             required: true,
-     *             description: string,
-     *             schema: array{type: 'string', format: 'uuid'}
-     *         }
-     *     },
-     *     responses: array{
-     *         200: array{description: 'Object unlocked successfully'},
-     *         404: array{
-     *             description: string,
-     *             content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}
-     *         },
-     *         409: array{description: 'Object is not locked or locked by another user'}
-     *     }
-     * }
+     * @psalm-return array{summary: string, operationId: string, tags: list{mixed}, description: string, parameters: list{array{name: 'id', in: 'path', required: true, description: string, schema: array{type: 'string', format: 'uuid'}}}, responses: array{200: array{description: 'Object unlocked successfully'}, 404: array{description: string, content: array{'application/json': array{schema: array{'$ref': '#/components/schemas/Error'}}}}, 409: array{description: 'Object is not locked or locked by another user'}}}
      */
     private function createUnlockOperation(object $schema): array
     {
@@ -1608,7 +1265,6 @@ class OasService
 
     }//end createUnlockOperation()
 
-
     /**
      * Convert string to slug
      *
@@ -1622,7 +1278,6 @@ class OasService
 
     }//end slugify()
 
-
     /**
      * Convert string to PascalCase
      *
@@ -1635,7 +1290,6 @@ class OasService
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify($string))));
 
     }//end pascalCase()
-
 
     /**
      * Sanitize schema names to be OpenAPI compliant
@@ -1670,12 +1324,11 @@ class OasService
 
         // Ensure it starts with a letter (prepend 'Schema_' if it starts with number).
         if (preg_match('/^[0-9]/', $sanitized) === true) {
-            $sanitized = 'Schema_' . $sanitized;
+            $sanitized = 'Schema_'.$sanitized;
         }
 
         return $sanitized;
     }//end sanitizeSchemaName()
-
 
     /**
      * Validate OpenAPI specification integrity
@@ -1715,7 +1368,6 @@ class OasService
         }
     }//end validateOasIntegrity()
 
-
     /**
      * Validate schema references recursively
      *
@@ -1731,14 +1383,14 @@ class OasService
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
             } else {
-                $validAllOfItems=[];
+                $validAllOfItems = [];
                 foreach ($schema['allOf'] ?? [] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
                     } else {
                         // Validate each allOf item has required structure.
                         if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
                             $validAllOfItems[] = $item;
-                        } elseif (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
+                        } else if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
                             $validAllOfItems[] = $item;
                         } else {
                         }
@@ -1751,8 +1403,8 @@ class OasService
                 } else {
                     $schema['allOf'] = $validAllOfItems;
                 }
-            }
-        }
+            }//end if
+        }//end if
 
         // Check $ref validity.
         if (($schema['$ref'] ?? null) !== null) {
@@ -1761,8 +1413,9 @@ class OasService
             } else {
                 // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-                if (strpos($schema['$ref'], '#/components/schemas/') === 0 &&
-                    isset($this->oas['components']['schemas'][$refPath]) === false) {
+                if (strpos($schema['$ref'], '#/components/schemas/') === 0
+                    && isset($this->oas['components']['schemas'][$refPath]) === false
+                ) {
                 }
             }
         }
@@ -1780,6 +1433,4 @@ class OasService
             $this->validateSchemaReferences($schema['items'], "{$context}.items");
         }
     }//end validateSchemaReferences()
-
-
 }//end class

@@ -44,8 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class SearchQueryHandler
 {
-
-
     /**
      * SearchQueryHandler constructor.
      *
@@ -63,7 +61,6 @@ class SearchQueryHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Build search query from request parameters
@@ -244,7 +241,6 @@ class SearchQueryHandler
 
     }//end buildSearchQuery()
 
-
     /**
      * Apply view filters to a query
      *
@@ -359,7 +355,6 @@ class SearchQueryHandler
 
     }//end applyViewsToQuery()
 
-
     /**
      * Check if SOLR search engine is available
      *
@@ -375,7 +370,6 @@ class SearchQueryHandler
         }
 
     }//end isSolrAvailable()
-
 
     /**
      * Clean and normalize query parameters
@@ -441,7 +435,6 @@ class SearchQueryHandler
 
     }//end cleanQuery()
 
-
     /**
      * Add pagination URLs to search results
      *
@@ -487,7 +480,6 @@ class SearchQueryHandler
 
     }//end addPaginationUrls()
 
-
     /**
      * Get URL separator character (? or &)
      *
@@ -496,6 +488,8 @@ class SearchQueryHandler
      * @param string $url URL to check.
      *
      * @return string '?' if URL has no query string, '&' otherwise
+     *
+     * @psalm-return '&'|'?'
      */
     private function getUrlSeparator(string $url): string
     {
@@ -506,7 +500,6 @@ class SearchQueryHandler
         return '&';
 
     }//end getUrlSeparator()
-
 
     /**
      * Log search trail entry
@@ -548,7 +541,6 @@ class SearchQueryHandler
 
     }//end logSearchTrail()
 
-
     /**
      * Check if search trails are enabled in the settings
      *
@@ -569,6 +561,4 @@ class SearchQueryHandler
         }
 
     }//end isSearchTrailsEnabled()
-
-
 }//end class

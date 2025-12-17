@@ -65,7 +65,6 @@ class RevertHandler
      */
     private ObjectEntityMapper $objectEntityMapper;
 
-
     /**
      * Revert an object to a previous state
      *
@@ -123,6 +122,4 @@ class RevertHandler
         return $savedObject;
 
     }//end revert()
-
-
 }//end class

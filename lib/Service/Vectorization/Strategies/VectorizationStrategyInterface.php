@@ -29,8 +29,6 @@ namespace OCA\OpenRegister\Service\Vectorization\Strategies;
  */
 interface VectorizationStrategyInterface
 {
-
-
     /**
      * Fetch entities to vectorize based on options
      *
@@ -43,7 +41,6 @@ interface VectorizationStrategyInterface
      * @return array Array of entities to vectorize
      */
     public function fetchEntities(array $options): array;
-
 
     /**
      * Extract vectorization items from an entity
@@ -61,7 +58,6 @@ interface VectorizationStrategyInterface
      * @return array Array of items, each with 'text' and other data
      */
     public function extractVectorizationItems($entity): array;
-
 
     /**
      * Prepare metadata for vector storage
@@ -81,7 +77,6 @@ interface VectorizationStrategyInterface
      */
     public function prepareVectorMetadata($entity, array $item): array;
 
-
     /**
      * Get a unique identifier for an entity (for logging/errors)
      *
@@ -90,6 +85,4 @@ interface VectorizationStrategyInterface
      * @return string|int Identifier
      */
     public function getEntityIdentifier($entity);
-
-
 }//end interface

@@ -22,8 +22,6 @@ use Opis\JsonSchema\Format;
 
 class BsnFormat implements Format
 {
-
-
     /**
      * Validates if a given value conforms to the Dutch BSN (Burgerservicenummer) format.
      *
@@ -62,6 +60,4 @@ class BsnFormat implements Format
         return ($control % 11) === 0;
 
     }//end validate()
-
-
 }//end class

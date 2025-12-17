@@ -116,7 +116,6 @@ class Message extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
-
     /**
      * Message constructor
      *
@@ -132,7 +131,6 @@ class Message extends Entity implements JsonSerializable
         $this->addType('created', 'datetime');
 
     }//end __construct()
-
 
     /**
      * Serialize the message to JSON
@@ -162,6 +160,4 @@ class Message extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

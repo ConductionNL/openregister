@@ -40,8 +40,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251115000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add configuration management columns to configurations table
      *
@@ -179,6 +177,4 @@ class Version1Date20251115000000 extends SimpleMigrationStep
         return $schema;
 
     }//end changeSchema()
-
-
 }//end class

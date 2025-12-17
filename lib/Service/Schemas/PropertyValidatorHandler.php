@@ -96,7 +96,6 @@ class PropertyValidatorHandler
         'semver',
     ];
 
-
     /**
      * Validate a property definition against JSON Schema rules
      *
@@ -193,7 +192,6 @@ class PropertyValidatorHandler
 
     }//end validateProperty()
 
-
     /**
      * Validate an entire properties object
      *
@@ -217,7 +215,6 @@ class PropertyValidatorHandler
         return true;
 
     }//end validateProperties()
-
 
     /**
      * Validate file-specific properties
@@ -326,6 +323,4 @@ class PropertyValidatorHandler
         return true;
 
     }//end validateFileProperty()
-
-
 }//end class

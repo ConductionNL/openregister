@@ -50,8 +50,6 @@ use Psr\Log\LoggerInterface;
  */
 class IndexService
 {
-
-
     /**
      * Constructor
      *
@@ -71,11 +69,9 @@ class IndexService
 
     }//end __construct()
 
-
     // ========================================================================
     // FILE OPERATIONS
     // ========================================================================
-
 
     /**
      * Index file chunks to search backend.
@@ -86,14 +82,15 @@ class IndexService
      * @param array $chunks   Array of chunk entities from database
      * @param array $metadata File metadata
      *
-     * @return array Indexing result
+     * @return (bool|int|string)[] Indexing result
+     *
+     * @psalm-return array{success: bool, indexed: int, collection: string}
      */
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
         return $this->fileHandler->indexFileChunks(fileId: $fileId, chunks: $chunks, metadata: $metadata);
 
     }//end indexFileChunks()
-
 
     /**
      * Process and index unindexed file chunks.
@@ -102,7 +99,9 @@ class IndexService
      *
      * @param int|null $limit Maximum number of files to process
      *
-     * @return array Processing result
+     * @return ((array|float|int)[]|bool)[] Processing result
+     *
+     * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array, execution_time_ms: float}}
      */
     public function processUnindexedChunks(?int $limit=null): array
     {
@@ -110,13 +109,14 @@ class IndexService
 
     }//end processUnindexedChunks()
 
-
     /**
      * Get file indexing statistics.
      *
      * Delegates to FileHandler.
      *
-     * @return array Statistics
+     * @return (bool|int|string)[] Statistics
+     *
+     * @psalm-return array{available: bool, collection?: string, document_count?: int, error?: string}
      */
     public function getFileStats(): array
     {
@@ -124,13 +124,14 @@ class IndexService
 
     }//end getFileStats()
 
-
     /**
      * Get chunking statistics.
      *
      * Delegates to FileHandler.
      *
-     * @return array Statistics
+     * @return int[] Statistics
+     *
+     * @psalm-return array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}
      */
     public function getChunkingStats(): array
     {
@@ -138,11 +139,9 @@ class IndexService
 
     }//end getChunkingStats()
 
-
     // ========================================================================
     // OBJECT OPERATIONS
     // ========================================================================
-
 
     /**
      * Search objects in search backend.
@@ -174,7 +173,6 @@ class IndexService
 
     }//end searchObjects()
 
-
     /**
      * Commit pending changes to search backend.
      *
@@ -187,7 +185,6 @@ class IndexService
         return $this->objectHandler->commit();
 
     }//end commit()
-
 
     /**
      * Index an object to the search backend.
@@ -205,7 +202,6 @@ class IndexService
 
     }//end indexObject()
 
-
     /**
      * Delete an object from the search backend.
      *
@@ -222,11 +218,9 @@ class IndexService
 
     }//end deleteObject()
 
-
     // ========================================================================
     // SCHEMA OPERATIONS
     // ========================================================================
-
 
     /**
      * Ensure vector field type exists in a collection.
@@ -252,7 +246,6 @@ class IndexService
 
     }//end ensureVectorFieldType()
 
-
     /**
      * Mirror OpenRegister schemas to search backend.
      *
@@ -260,14 +253,15 @@ class IndexService
      *
      * @param bool $force Force recreation of existing fields
      *
-     * @return array Result with statistics
+     * @return (array|bool|float|mixed|string)[] Result with statistics
+     *
+     * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
     public function mirrorSchemas(bool $force=false): array
     {
         return $this->schemaHandler->mirrorSchemas(force: $force);
 
     }//end mirrorSchemas()
-
 
     /**
      * Get collection field status.
@@ -284,7 +278,6 @@ class IndexService
 
     }//end getCollectionFieldStatus()
 
-
     /**
      * Get object collection field status.
      *
@@ -298,13 +291,14 @@ class IndexService
 
     }//end getObjectCollectionFieldStatus()
 
-
     /**
      * Get fields configuration from search backend.
      *
      * Delegates to SearchBackendInterface.
      *
-     * @return array Fields configuration
+     * @return (array|true)[] Fields configuration
+     *
+     * @psalm-return array{success: true, fields: array}
      */
     public function getFieldsConfiguration(): array
     {
@@ -316,7 +310,6 @@ class IndexService
         ];
 
     }//end getFieldsConfiguration()
-
 
     /**
      * Create missing fields in a collection.
@@ -339,11 +332,9 @@ class IndexService
 
     }//end createMissingFields()
 
-
     // ========================================================================
     // GENERAL OPERATIONS
     // ========================================================================
-
 
     /**
      * Check if search backend is available.
@@ -367,7 +358,6 @@ class IndexService
         }//end try
 
     }//end isAvailable()
-
 
     /**
      * Test connection to search backend.
@@ -396,7 +386,6 @@ class IndexService
 
     }//end testConnection()
 
-
     /**
      * Get search backend statistics.
      *
@@ -422,13 +411,14 @@ class IndexService
 
     }//end getStats()
 
-
     /**
      * Get comprehensive dashboard statistics.
      *
      * Combines statistics from all handlers.
      *
-     * @return array Dashboard statistics
+     * @return (array|bool|string)[] Dashboard statistics
+     *
+     * @psalm-return array{available: bool, error?: string, backend?: array, files?: array{available: bool, collection?: string, document_count?: int, error?: string}, chunks?: array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}}
      */
     public function getDashboardStats(): array
     {
@@ -459,7 +449,6 @@ class IndexService
 
     }//end getDashboardStats()
 
-
     /**
      * Optimize the search backend.
      *
@@ -480,7 +469,6 @@ class IndexService
         }//end try
 
     }//end optimize()
-
 
     /**
      * Clear all documents from a collection.
@@ -510,7 +498,6 @@ class IndexService
 
     }//end clearIndex()
 
-
     /**
      * Get search backend configuration.
      *
@@ -533,7 +520,6 @@ class IndexService
 
     }//end getConfig()
 
-
     /**
      * Reindex all objects in the system.
      *
@@ -555,7 +541,6 @@ class IndexService
 
     }//end reindexAll()
 
-
     /**
      * Fix mismatched fields in the schema.
      *
@@ -574,7 +559,6 @@ class IndexService
         );
 
     }//end fixMismatchedFields()
-
 
     /**
      * Index files by their IDs.
@@ -595,7 +579,6 @@ class IndexService
 
     }//end indexFiles()
 
-
     /**
      * Get file indexing statistics.
      *
@@ -608,7 +591,6 @@ class IndexService
         return $this->fileHandler->getFileIndexStats();
 
     }//end getFileIndexStats()
-
 
     /**
      * Warm up the search index.
@@ -643,11 +625,9 @@ class IndexService
 
     }//end warmupIndex()
 
-
     // ========================================================================
     // BACKEND ACCESS & DELEGATION METHODS (Restored for compatibility)
     // ========================================================================
-
 
     /**
      * Get the search backend instance.
@@ -661,7 +641,6 @@ class IndexService
         return $this->searchBackend;
 
     }//end getBackend()
-
 
     /**
      * Search objects with pagination.
@@ -709,7 +688,6 @@ class IndexService
 
     }//end searchObjectsPaginated()
 
-
     /**
      * Get document count in the index.
      *
@@ -723,7 +701,6 @@ class IndexService
 
     }//end getDocumentCount()
 
-
     /**
      * Check if a collection exists.
      *
@@ -736,7 +713,6 @@ class IndexService
         return $this->searchBackend->collectionExists($collectionName);
 
     }//end collectionExists()
-
 
     /**
      * Create a new collection.
@@ -752,7 +728,6 @@ class IndexService
 
     }//end createCollection()
 
-
     /**
      * Test connectivity only (without collection tests).
      *
@@ -766,11 +741,9 @@ class IndexService
 
     }//end testConnectivityOnly()
 
-
     // ========================================================================
     // SOLR-SPECIFIC METHODS (Restored for compatibility)
     // ========================================================================
-
 
     /**
      * Ensure tenant-specific collection exists.
@@ -780,9 +753,11 @@ class IndexService
      *
      * @param string|null $tenant Tenant identifier
      *
-     * @return array Collection info
+     * @return (null|string|true)[] Collection info
      *
      * @throws Exception If backend is not Solr
+     *
+     * @psalm-return array{collection: string, exists: true, tenant: null|string}
      */
     public function ensureTenantCollection(?string $tenant=null): array
     {
@@ -799,7 +774,6 @@ class IndexService
         ];
 
     }//end ensureTenantCollection()
-
 
     /**
      * Get tenant-specific collection name.
@@ -822,7 +796,6 @@ class IndexService
 
     }//end getTenantSpecificCollectionName()
 
-
     /**
      * Get Solr endpoint URL.
      *
@@ -839,7 +812,6 @@ class IndexService
         return $config['endpoint'] ?? '';
 
     }//end getEndpointUrl()
-
 
     /**
      * Build Solr base URL.
@@ -866,16 +838,17 @@ class IndexService
 
     }//end buildSolrBaseUrl()
 
-
     /**
      * Get Solr-specific configuration.
      *
      * Returns configuration specific to Solr backend.
      * Only works with Solr backend.
      *
-     * @return array Solr configuration
+     * @return (int|mixed|string)[] Solr configuration
      *
      * @throws Exception If backend is not Solr
+     *
+     * @psalm-return array{endpoint: ''|mixed, collection: 'openregister'|mixed, username: ''|mixed, password: ''|mixed, timeout: 30|mixed}
      */
     public function getSolrConfig(): array
     {
@@ -891,7 +864,6 @@ class IndexService
         ];
 
     }//end getSolrConfig()
-
 
     /**
      * Get HTTP client for Solr operations.
@@ -913,6 +885,4 @@ class IndexService
         throw new Exception('HTTP client not available for current backend');
 
     }//end getHttpClient()
-
-
 }//end class

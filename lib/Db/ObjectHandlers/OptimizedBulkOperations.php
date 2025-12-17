@@ -46,8 +46,18 @@ use Psr\Log\LoggerInterface;
 class OptimizedBulkOperations
 {
 
+    /**
+     * Database connection instance
+     *
+     * @var IDBConnection
+     */
     private IDBConnection $db;
 
+    /**
+     * PSR-3 logger instance
+     *
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
     /**
@@ -71,7 +81,6 @@ class OptimizedBulkOperations
      */
     private const MAX_PARAMETERS = 32000;
 
-
     /**
      * Constructor
      *
@@ -84,7 +93,6 @@ class OptimizedBulkOperations
         $this->logger = $logger;
 
     }//end __construct()
-
 
     /**
      * Ultra-fast unified bulk operations using INSERT...ON DUPLICATE KEY UPDATE
@@ -175,7 +183,6 @@ class OptimizedBulkOperations
         return $processedUUIDs;
 
     }//end ultraFastUnifiedBulkSave()
-
 
     /**
      * Process a unified chunk using memory-intensive INSERT...ON DUPLICATE KEY UPDATE
@@ -337,7 +344,6 @@ class OptimizedBulkOperations
 
     }//end processUnifiedChunk()
 
-
     /**
      * Build massive INSERT...ON DUPLICATE KEY UPDATE SQL statement
      *
@@ -418,7 +424,6 @@ class OptimizedBulkOperations
 
     }//end buildMassiveInsertOnDuplicateKeyUpdateSQL()
 
-
     /**
      * Unify insert and update objects into consistent format for bulk processing
      *
@@ -477,7 +482,6 @@ class OptimizedBulkOperations
 
     }//end unifyObjectFormats()
 
-
     /**
      * Map object data columns to actual database column names
      *
@@ -486,9 +490,9 @@ class OptimizedBulkOperations
      *
      * @param array $objectColumns Array of column names from object data
      *
-     * @return string[] Array of actual database column names
+     * @return string[]
      *
-     * @psalm-return list{0?: string,...}
+     * @psalm-return list<'application'|'authorization'|'created'|'deleted'|'depublished'|'description'|'expires'|'files'|'folder'|'geo'|'groups'|'image'|'locked'|'name'|'object'|'organisation'|'owner'|'published'|'register'|'relations'|'retention'|'schema'|'schemaVersion'|'size'|'slug'|'summary'|'updated'|'uri'|'uuid'|'validation'|'version'>
      */
     private function mapObjectColumnsToDatabase(array $objectColumns): array
     {
@@ -561,7 +565,6 @@ class OptimizedBulkOperations
         return $mappedColumns;
 
     }//end mapObjectColumnsToDatabase()
-
 
     /**
      * Extract the appropriate value for a database column from object data
@@ -663,7 +666,6 @@ class OptimizedBulkOperations
 
     }//end extractColumnValue()
 
-
     /**
      * Convert datetime value to MySQL format
      *
@@ -687,6 +689,4 @@ class OptimizedBulkOperations
         return $dateTime->format('Y-m-d H:i:s');
 
     }//end convertDateTimeToMySQLFormat()
-
-
 }//end class

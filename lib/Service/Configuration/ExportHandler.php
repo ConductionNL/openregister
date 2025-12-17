@@ -87,7 +87,6 @@ class ExportHandler
      */
     private array $schemasMap = [];
 
-
     /**
      * Constructor for ExportHandler.
      *
@@ -111,7 +110,6 @@ class ExportHandler
         $this->logger = $logger;
 
     }//end __construct()
-
 
     /**
      * Export configuration to OpenAPI format.
@@ -289,7 +287,6 @@ class ExportHandler
 
     }//end exportConfig()
 
-
     /**
      * Export a register to OpenAPI format.
      *
@@ -315,7 +312,6 @@ class ExportHandler
 
     }//end exportRegister()
 
-
     /**
      * Export a schema to OpenAPI format.
      *
@@ -327,9 +323,9 @@ class ExportHandler
      * @param array  $schemaIdsAndSlugsMap   Map of schema IDs to slugs.
      * @param array  $registerIdsAndSlugsMap Map of register IDs to slugs.
      *
-     * @return array The OpenAPI schema specification with IDs converted to slugs.
+     * @return ((mixed|string[])[]|bool|int|null|string)[]
      *
-     * @psalm-return array<string, mixed>
+     * @psalm-return array{uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}
      */
     private function exportSchema(Schema $schema, array $schemaIdsAndSlugsMap, array $registerIdsAndSlugsMap): array
     {
@@ -492,7 +488,6 @@ class ExportHandler
 
     }//end exportSchema()
 
-
     /**
      * Get the last segment of a URL if it is numeric.
      *
@@ -525,6 +520,4 @@ class ExportHandler
         }
 
     }//end getLastNumericSegment()
-
-
 }//end class

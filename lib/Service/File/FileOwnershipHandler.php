@@ -58,7 +58,6 @@ class FileOwnershipHandler
      */
     private const APP_GROUP = 'openregister';
 
-
     /**
      * Constructor for FileOwnershipHandler.
      *
@@ -75,7 +74,6 @@ class FileOwnershipHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Gets or creates the OpenRegister user for file operations.
@@ -123,7 +121,6 @@ class FileOwnershipHandler
 
     }//end getUser()
 
-
     /**
      * Get the currently active user from the session.
      *
@@ -140,7 +137,6 @@ class FileOwnershipHandler
         return $this->userSession->getUser();
 
     }//end getCurrentUser()
-
 
     /**
      * Transfer file ownership to OpenRegister user and share with current user.
@@ -217,7 +213,6 @@ class FileOwnershipHandler
 
     }//end transferFileOwnershipIfNeeded()
 
-
     /**
      * Transfer folder ownership to OpenRegister user and share with current user.
      *
@@ -292,6 +287,4 @@ class FileOwnershipHandler
         }//end try
 
     }//end transferFolderOwnershipIfNeeded()
-
-
 }//end class

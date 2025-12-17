@@ -35,7 +35,6 @@ class AgentDeletedEvent extends Event
      */
     private Agent $agent;
 
-
     /**
      * Constructor for AgentDeletedEvent.
      *
@@ -50,7 +49,6 @@ class AgentDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted agent.
      *
@@ -61,6 +59,4 @@ class AgentDeletedEvent extends Event
         return $this->agent;
 
     }//end getAgent()
-
-
 }//end class

@@ -81,7 +81,6 @@ class CacheHandler
      */
     private readonly OrganisationService $organisationService;
 
-
     /**
      * CacheHandler constructor
      *
@@ -99,7 +98,6 @@ class CacheHandler
         $this->organisationService = $organisationService;
 
     }//end __construct()
-
 
     /**
      * Get configurations for the active organisation
@@ -141,6 +139,4 @@ class CacheHandler
         return $configurations;
 
     }//end getConfigurationsForActiveOrganisation()
-
-
 }//end class

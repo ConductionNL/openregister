@@ -36,8 +36,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251106000001 extends SimpleMigrationStep
 {
-
-
     /**
      * Add missing columns to agents table
      *
@@ -119,6 +117,4 @@ class Version1Date20251106000001 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

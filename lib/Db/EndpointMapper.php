@@ -91,7 +91,6 @@ class EndpointMapper extends QBMapper
      */
     private readonly IGroupManager $groupManager;
 
-
     /**
      * EndpointMapper constructor
      *
@@ -123,7 +122,6 @@ class EndpointMapper extends QBMapper
 
     }//end __construct()
 
-
     /**
      * Find all endpoints
      *
@@ -133,9 +131,9 @@ class EndpointMapper extends QBMapper
      * @param int|null $limit  Maximum number of results to return (null = no limit)
      * @param int|null $offset Starting offset for pagination (null = no offset)
      *
-     * @return Endpoint[] Array of endpoint entities
+     * @return Endpoint[]
      *
-     * @psalm-return list<\OCA\OpenRegister\Db\Endpoint>
+     * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
      */
     public function findAll(?int $limit=null, ?int $offset=null): array
     {
@@ -164,7 +162,6 @@ class EndpointMapper extends QBMapper
         return $this->findEntities($qb);
 
     }//end findAll()
-
 
     /**
      * Find a single endpoint by ID
@@ -197,7 +194,6 @@ class EndpointMapper extends QBMapper
         return $this->findEntity($qb);
 
     }//end find()
-
 
     /**
      * Create a new endpoint from array data
@@ -235,7 +231,6 @@ class EndpointMapper extends QBMapper
 
     }//end createFromArray()
 
-
     /**
      * Update an endpoint from array data
      *
@@ -272,7 +267,6 @@ class EndpointMapper extends QBMapper
 
     }//end updateFromArray()
 
-
     /**
      * Delete an endpoint
      *
@@ -294,6 +288,4 @@ class EndpointMapper extends QBMapper
         return parent::delete($entity);
 
     }//end delete()
-
-
 }//end class

@@ -29,14 +29,33 @@ use Psr\Log\LoggerInterface;
 class ElasticsearchHttpClient
 {
 
+    /**
+     * Guzzle HTTP client for making requests
+     *
+     * @var GuzzleClient
+     */
     private GuzzleClient $httpClient;
 
+    /**
+     * Elasticsearch configuration settings
+     *
+     * @var array<string, mixed>
+     */
     private array $config = [];
 
+    /**
+     * Settings service for retrieving configuration
+     *
+     * @var SettingsService
+     */
     private readonly SettingsService $settingsService;
 
+    /**
+     * PSR-3 logger instance
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
-
 
     /**
      * Constructor
@@ -56,7 +75,6 @@ class ElasticsearchHttpClient
 
     }//end __construct()
 
-
     /**
      * Initialize Elasticsearch configuration from settings.
      *
@@ -75,7 +93,6 @@ class ElasticsearchHttpClient
         ];
 
     }//end initializeConfig()
-
 
     /**
      * Initialize HTTP client for Elasticsearch requests.
@@ -99,7 +116,6 @@ class ElasticsearchHttpClient
 
     }//end initializeHttpClient()
 
-
     /**
      * Build Elasticsearch base URL.
      *
@@ -116,7 +132,6 @@ class ElasticsearchHttpClient
 
     }//end buildBaseUrl()
 
-
     /**
      * Build endpoint URL for a specific index.
      *
@@ -127,7 +142,6 @@ class ElasticsearchHttpClient
         return $this->buildBaseUrl().'/'.$index;
 
     }//end getEndpointUrl()
-
 
     /**
      * Execute GET request.
@@ -152,7 +166,6 @@ class ElasticsearchHttpClient
         }
 
     }//end get()
-
 
     /**
      * Execute POST request.
@@ -182,7 +195,6 @@ class ElasticsearchHttpClient
         }
 
     }//end post()
-
 
     /**
      * Execute POST request with raw body (for bulk API).
@@ -216,7 +228,6 @@ class ElasticsearchHttpClient
 
     }//end postRaw()
 
-
     /**
      * Execute PUT request.
      *
@@ -246,7 +257,6 @@ class ElasticsearchHttpClient
 
     }//end put()
 
-
     /**
      * Execute DELETE request.
      *
@@ -271,7 +281,6 @@ class ElasticsearchHttpClient
 
     }//end delete()
 
-
     /**
      * Get HTTP client instance.
      *
@@ -283,18 +292,18 @@ class ElasticsearchHttpClient
 
     }//end getHttpClient()
 
-
     /**
      * Get Elasticsearch configuration.
      *
      * @return array Configuration array
+     *
+     * @psalm-return array<string, mixed>
      */
     public function getConfig(): array
     {
         return $this->config;
 
     }//end getConfig()
-
 
     /**
      * Check if Elasticsearch is configured.
@@ -306,6 +315,4 @@ class ElasticsearchHttpClient
         return $this->config['enabled'] ?? false;
 
     }//end isConfigured()
-
-
 }//end class

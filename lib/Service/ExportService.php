@@ -64,12 +64,11 @@ class ExportService
     private readonly IGroupManager $groupManager;
 
     /**
-     * Object entity mapper for direct object operations
+     * Object service for optimized object operations
      *
-     * @var ObjectEntityMapper
+     * @var ObjectService
      */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
+    private readonly ObjectService $objectService;
 
     /**
      * Constructor for the ExportService
@@ -83,19 +82,17 @@ class ExportService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function __construct(
-        ObjectEntityMapper $objectEntityMapper,
+        ObjectEntityMapper $_objectEntityMapper,
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
-        IGroupManager $groupManager
-        // REFACTORED: Removed ObjectService dependency to break circular dependency.
-        // Now using ObjectEntityMapper directly for searching objects.
+        IGroupManager $groupManager,
+        ObjectService $objectService
     ) {
-        $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
+        $this->objectService  = $objectService;
 
     }//end __construct()
-
 
     /**
      * Check if the given user is in the admin group
@@ -121,7 +118,6 @@ class ExportService
         return $adminGroup->inGroup($user);
 
     }//end isUserAdmin()
-
 
     /**
      * Export data to Excel format
@@ -156,7 +152,6 @@ class ExportService
 
     }//end exportToExcel()
 
-
     /**
      * Export data to CSV format
      *
@@ -183,7 +178,6 @@ class ExportService
         return ob_get_clean();
 
     }//end exportToCsv()
-
 
     /**
      * Populate a worksheet with data
@@ -258,13 +252,8 @@ class ExportService
             '_includeDeleted' => false,
         ];
 
-        // REFACTORED: Use ObjectEntityMapper directly instead of ObjectService to break circular dependency.
-        $objects = $this->objectEntityMapper->findAll(
-            limit: null,
-            offset: null,
-            filters: $query,
-            searchConditions: null,
-            searchParams: null,
+        $objects = $this->objectService->searchObjects(
+            query: $query,
             _rbac: true,
         // Apply RBAC filtering.
             _multitenancy: true,
@@ -283,7 +272,6 @@ class ExportService
         }
 
     }//end populateSheet()
-
 
     /**
      * Get headers for export
@@ -360,7 +348,6 @@ class ExportService
         return $headers;
 
     }//end getHeaders()
-
 
     /**
      * Get value from object for given header
@@ -474,7 +461,6 @@ class ExportService
 
     }//end getObjectValue()
 
-
     /**
      * Convert a value to a string representation
      *
@@ -511,19 +497,18 @@ class ExportService
 
     }//end convertValueToString()
 
-
     /**
      * Get all schemas for a register
      *
      * @param Register $register The register to get schemas for
      *
-     * @return array Array of Schema objects
+     * @return Schema[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Schema>
      */
     private function getSchemasForRegister(Register $register): array
     {
         return $this->registerMapper->getSchemasByRegisterId($register->getId());
 
     }//end getSchemasForRegister()
-
-
 }//end class

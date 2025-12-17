@@ -46,7 +46,6 @@ class ConfigurationUpdatedEvent extends Event
      */
     private Configuration $oldConfiguration;
 
-
     /**
      * Constructor for ConfigurationUpdatedEvent.
      *
@@ -62,6 +61,4 @@ class ConfigurationUpdatedEvent extends Event
         $this->oldConfiguration = $oldConfiguration;
 
     }//end __construct()
-
-
 }//end class

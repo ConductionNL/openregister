@@ -83,7 +83,6 @@ class ObjectsController extends Controller
      */
     private readonly ImportService $importService;
 
-
     /**
      * Constructor for the ObjectsController
      *
@@ -130,7 +129,6 @@ class ObjectsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Check if the current user is in the admin group.
      *
@@ -153,7 +151,6 @@ class ObjectsController extends Controller
         return in_array('admin', $userGroups);
 
     }//end isCurrentUserAdmin()
-
 
     /**
      * Private helper method to handle pagination of results.
@@ -263,7 +260,6 @@ class ObjectsController extends Controller
 
     }//end paginate()
 
-
     /**
      * Helper method to get configuration array from the current request (LEGACY)
      *
@@ -347,7 +343,6 @@ class ObjectsController extends Controller
 
     }//end getConfig()
 
-
     /**
      * Helper method to resolve register and schema slugs to numeric IDs
      *
@@ -395,7 +390,6 @@ class ObjectsController extends Controller
         ];
 
     }//end resolveRegisterSchemaIds()
-
 
     /**
      * Retrieves a list of all objects for a specific register and schema
@@ -473,7 +467,6 @@ class ObjectsController extends Controller
 
     }//end index()
 
-
     /**
      * Retrieves a list of all objects across all registers and schemas
      *
@@ -518,7 +511,6 @@ class ObjectsController extends Controller
         return new JSONResponse(data: $result);
 
     }//end objects()
-
 
     /**
      * Shows a specific object from a register and schema
@@ -622,7 +614,6 @@ class ObjectsController extends Controller
 
     }//end show()
 
-
     /**
      * Creates a new object in the specified register and schema
      *
@@ -633,13 +624,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the created object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<201|403|404, array, array<never, never>>|JSONResponse<400, string, array<never, never>>
+     * @psalm-return JSONResponse<201|403|404, array{'@self'?: array{name: mixed|null|string,...}|mixed, message?: mixed|string, error?: mixed|string,...}, array<never, never>>|JSONResponse<400, string, array<never, never>>
      */
     public function create(
         string $register,
@@ -814,7 +803,6 @@ class ObjectsController extends Controller
         return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
 
     }//end create()
-
 
     /**
      * Updates an existing object
@@ -1037,7 +1025,6 @@ class ObjectsController extends Controller
 
     }//end update()
 
-
     /**
      * Patches (partially updates) an existing object
      *
@@ -1149,7 +1136,6 @@ class ObjectsController extends Controller
 
     }//end patch()
 
-
     /**
      * Deletes an object
      *
@@ -1198,7 +1184,6 @@ class ObjectsController extends Controller
 
     }//end destroy()
 
-
     /**
      * Retrieves call logs for a object
      *
@@ -1209,15 +1194,13 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the call logs
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @todo Implement contract functionality to handle object contracts and their relationships
      *
-     * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200, array{results: array<int, mixed>, total: int<0, max>, page: float|int<1, max>, pages: 1|float, limit: int<1, max>, offset: int<0, max>, next?: string, prev?: string}, array<never, never>>
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1272,7 +1255,6 @@ class ObjectsController extends Controller
 
     }//end contracts()
 
-
     /**
      * Retrieves all objects that this object references
      *
@@ -1316,7 +1298,6 @@ class ObjectsController extends Controller
         return new JSONResponse(data: $result);
 
     }//end uses()
-
 
     /**
      * Retrieves all objects that use a object
@@ -1362,7 +1343,6 @@ class ObjectsController extends Controller
 
     }//end used()
 
-
     /**
      * Retrieves logs for an object
      *
@@ -1373,13 +1353,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the logs
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
+     * @psalm-return JSONResponse<200|404, array{results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: string, prev?: string, message?: 'Object does not belong to specified register/schema'|'Object not found'}, array<never, never>>
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1467,7 +1445,6 @@ class ObjectsController extends Controller
 
     }//end logs()
 
-
     /**
      * Lock an object
      *
@@ -1506,7 +1483,6 @@ class ObjectsController extends Controller
 
     }//end lock()
 
-
     /**
      * Unlock an object
      *
@@ -1538,7 +1514,6 @@ class ObjectsController extends Controller
                 );
 
     }//end unlock()
-
 
     /**
      * Export objects to specified format
@@ -1587,7 +1562,6 @@ class ObjectsController extends Controller
         );
 
     }//end export()
-
 
     /**
      * Import objects into a register
@@ -1676,7 +1650,6 @@ class ObjectsController extends Controller
 
     }//end import()
 
-
     /**
      * Publish an object
      *
@@ -1687,13 +1660,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the published object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array, array<never, never>>
+     * @psalm-return JSONResponse<200|400, array{error?: mixed|string, name?: mixed|null|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
      */
     public function publish(
         string $id,
@@ -1730,7 +1701,6 @@ class ObjectsController extends Controller
 
     }//end publish()
 
-
     /**
      * Depublish an object
      *
@@ -1741,13 +1711,11 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return JSONResponse A JSON response containing the depublished object
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400, array, array<never, never>>
+     * @psalm-return JSONResponse<200|400, array{error?: mixed|string, name?: mixed|null|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
      */
     public function depublish(
         string $id,
@@ -1783,7 +1751,6 @@ class ObjectsController extends Controller
         }
 
     }//end depublish()
-
 
     /**
      * Merge two objects
@@ -1870,7 +1837,6 @@ class ObjectsController extends Controller
         }//end try
 
     }//end merge()
-
 
     /**
      * Migrate objects between registers and/or schemas
@@ -1968,7 +1934,6 @@ class ObjectsController extends Controller
 
     }//end migrate()
 
-
     /**
      * Download all files of an object as a ZIP archive
      *
@@ -2054,7 +2019,6 @@ class ObjectsController extends Controller
 
     }//end downloadFiles()
 
-
     /**
      * Start batch vectorization of objects
      *
@@ -2062,9 +2026,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Batch vectorization status
-     *
-     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array}, array<never, never>>
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -2096,7 +2058,6 @@ class ObjectsController extends Controller
         }//end try
 
     }//end vectorizeBatch()
-
 
     /**
      * Get object vectorization statistics
@@ -2139,7 +2100,6 @@ class ObjectsController extends Controller
 
     }//end getObjectVectorizationStats()
 
-
     /**
      * Get count of objects for vectorization
      *
@@ -2180,6 +2140,4 @@ class ObjectsController extends Controller
         }//end try
 
     }//end getObjectVectorizationCount()
-
-
 }//end class

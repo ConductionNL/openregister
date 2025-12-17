@@ -335,7 +335,6 @@ class Configuration extends Entity implements JsonSerializable
      */
     protected $updated = null;
 
-
     /**
      * Constructor to set up the entity with required types
      */
@@ -378,7 +377,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Validate UUID format
      *
@@ -396,7 +394,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
     }//end isValidUuid()
-
 
     /**
      * Get JSON fields from the entity
@@ -419,7 +416,6 @@ class Configuration extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -461,7 +457,6 @@ class Configuration extends Entity implements JsonSerializable
         return $this;
 
     }//end hydrate()
-
 
     /**
      * Serialize the entity to JSON
@@ -549,7 +544,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * Check if a remote update is available
      *
@@ -567,7 +561,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end hasUpdateAvailable()
 
-
     /**
      * Check if this configuration is from a remote source
      *
@@ -578,7 +571,6 @@ class Configuration extends Entity implements JsonSerializable
         return in_array($this->sourceType, ['github', 'gitlab', 'url']);
 
     }//end isRemoteSource()
-
 
     /**
      * Check if this configuration is local
@@ -591,7 +583,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end isLocalSource()
 
-
     /**
      * Check if this configuration is manually created
      *
@@ -602,7 +593,6 @@ class Configuration extends Entity implements JsonSerializable
         return $this->sourceType === 'manual';
 
     }//end isManualSource()
-
 
     /**
      * String representation of the configuration
@@ -634,7 +624,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end __toString()
 
-
     /**
      * Get lastChecked date formatted as ISO 8601 string or null
      *
@@ -649,7 +638,6 @@ class Configuration extends Entity implements JsonSerializable
         return null;
 
     }//end getLastCheckedFormatted()
-
 
     /**
      * Get lastSyncDate formatted as ISO 8601 string or null
@@ -666,7 +654,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end getLastSyncDateFormatted()
 
-
     /**
      * Get created date formatted as ISO 8601 string or null
      *
@@ -682,7 +669,6 @@ class Configuration extends Entity implements JsonSerializable
 
     }//end getCreatedFormatted()
 
-
     /**
      * Get updated date formatted as ISO 8601 string or null
      *
@@ -697,6 +683,4 @@ class Configuration extends Entity implements JsonSerializable
         return null;
 
     }//end getUpdatedFormatted()
-
-
 }//end class

@@ -53,7 +53,6 @@ class FileFormattingHandler
      */
     private ?FileService $fileService = null;
 
-
     /**
      * Constructor for FileFormattingHandler.
      *
@@ -71,7 +70,6 @@ class FileFormattingHandler
 
     }//end __construct()
 
-
     /**
      * Set the FileService instance for cross-handler coordination.
      *
@@ -85,7 +83,6 @@ class FileFormattingHandler
 
     }//end setFileService()
 
-
     /**
      * Format a single file Node into a metadata array.
      *
@@ -95,10 +92,10 @@ class FileFormattingHandler
      *
      * @param Node $file The file node to format.
      *
-     * @psalm-return   array<string, mixed>
+     * @psalm-return   array{labels: list<string>,...}
      * @phpstan-return array<string, mixed>
      *
-     * @return array Formatted file metadata.
+     * @return (float|int|null|string[])[]
      *
      * @throws Exception If formatting fails.
      */
@@ -159,7 +156,6 @@ class FileFormattingHandler
 
     }//end formatFile()
 
-
     /**
      * Format multiple files with filtering, sorting, and pagination.
      *
@@ -170,14 +166,15 @@ class FileFormattingHandler
      * @param Node[] $files         Array of Node files to format.
      * @param array  $requestParams Optional request parameters for filtering.
      *
-     * @psalm-param   array<int, Node> $files
-     * @psalm-param   array<string, mixed> $requestParams
+     * @psalm-param array<int, Node> $files
+     * @psalm-param array<string, mixed> $requestParams
+     *
      * @phpstan-param array<int, Node> $files
      * @phpstan-param array<string, mixed> $requestParams
      *
-     * @return array Formatted response with files, pagination, and metadata.
+     * @return (array[]|int)[]
      *
-     * @psalm-return   array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
+     * @psalm-return   array{results: list<array<string, mixed>>, total: int<0, max>, page: int<1, max>, pages: int, limit: int<1, 100>, offset: int<0, max>}
      * @phpstan-return array{results: array<int, array<string, mixed>>, total: int, page: int, pages: int, limit: int, offset: int}
      *
      * @throws InvalidPathException If any file path is invalid.
@@ -215,7 +212,6 @@ class FileFormattingHandler
         ];
 
     }//end formatFiles()
-
 
     /**
      * Extract and normalize filter parameters from request.
@@ -298,7 +294,6 @@ class FileFormattingHandler
         return $filters;
 
     }//end extractFilterParameters()
-
 
     /**
      * Apply filters to formatted files.
@@ -435,6 +430,4 @@ class FileFormattingHandler
         );
 
     }//end applyFileFilters()
-
-
 }//end class

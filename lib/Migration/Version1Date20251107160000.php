@@ -39,8 +39,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107160000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add UUID column to file_texts table
      *
@@ -98,7 +96,6 @@ class Version1Date20251107160000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-migration actions
      *
@@ -122,6 +119,4 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         $output->info(message: '✅ Migration complete - UUIDs will be generated on-demand');
 
     }//end postSchemaChange()
-
-
 }//end class

@@ -54,8 +54,6 @@ use Psr\Log\LoggerInterface;
  */
 class MagicRbacHandler
 {
-
-
     /**
      * Constructor for MagicRbacHandler
      *
@@ -88,7 +86,6 @@ class MagicRbacHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Apply access rules for unauthenticated users
@@ -123,7 +120,6 @@ class MagicRbacHandler
 
     }//end applyUnauthenticatedAccess()
 
-
     /**
      * Check if RBAC is enabled in app configuration
      *
@@ -141,7 +137,6 @@ class MagicRbacHandler
         return $enabled === true;
 
     }//end isRbacEnabled()
-
 
     /**
      * Check if RBAC admin override is enabled in app configuration
@@ -161,6 +156,4 @@ class MagicRbacHandler
         return $adminOverride === true;
 
     }//end isAdminOverrideEnabled()
-
-
 }//end class

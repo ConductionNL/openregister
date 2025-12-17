@@ -42,8 +42,6 @@ use OCP\IDBConnection;
  */
 class DataAccessProfileMapper extends QBMapper
 {
-
-
     /**
      * Constructor
      *
@@ -54,6 +52,4 @@ class DataAccessProfileMapper extends QBMapper
         parent::__construct($db, 'openregister_data_access_profiles', DataAccessProfile::class);
 
     }//end __construct()
-
-
 }//end class

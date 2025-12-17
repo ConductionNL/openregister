@@ -35,7 +35,6 @@ class ViewDeletedEvent extends Event
      */
     private View $view;
 
-
     /**
      * Constructor for ViewDeletedEvent.
      *
@@ -50,7 +49,6 @@ class ViewDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted view.
      *
@@ -61,6 +59,4 @@ class ViewDeletedEvent extends Event
         return $this->view;
 
     }//end getView()
-
-
 }//end class

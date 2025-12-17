@@ -76,7 +76,6 @@ class WebhookDeliveryJob extends QueuedJob
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -105,7 +104,6 @@ class WebhookDeliveryJob extends QueuedJob
         $this->logger         = $logger;
 
     }//end __construct()
-
 
     /**
      * Run the background job
@@ -197,6 +195,4 @@ class WebhookDeliveryJob extends QueuedJob
         }//end try
 
     }//end run()
-
-
 }//end class

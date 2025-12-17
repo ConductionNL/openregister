@@ -41,8 +41,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107180000 extends SimpleMigrationStep
 {
-
-
     /**
      * Modify the database schema
      *
@@ -112,7 +110,6 @@ class Version1Date20251107180000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema change hook
      *
@@ -131,6 +128,4 @@ class Version1Date20251107180000 extends SimpleMigrationStep
         $output->info(message: '   Tools can be enabled per agent via the Edit Agent modal');
 
     }//end postSchemaChange()
-
-
 }//end class

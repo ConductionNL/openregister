@@ -54,7 +54,6 @@ class SearchTrailService
      */
     private int $retentionDays = 365;
 
-
     /**
      * Constructor for SearchTrailService
      *
@@ -88,7 +87,6 @@ class SearchTrailService
         }
 
     }//end __construct()
-
 
     /**
      * Create a search trail log entry
@@ -145,7 +143,6 @@ class SearchTrailService
 
     }//end createSearchTrail()
 
-
     /**
      * Clean up expired search trails
      *
@@ -196,7 +193,6 @@ class SearchTrailService
         }//end try
 
     }//end clearExpiredSearchTrails()
-
 
     /**
      * Get paginated search trail logs
@@ -250,7 +246,6 @@ class SearchTrailService
 
     }//end getSearchTrails()
 
-
     /**
      * Get a specific search trail by ID
      *
@@ -271,16 +266,15 @@ class SearchTrailService
 
     }//end getSearchTrail()
 
-
     /**
      * Get comprehensive search statistics
      *
      * @param DateTime|null $from Start date for statistics
      * @param DateTime|null $to   End date for statistics
      *
-     * @return ((float|int|null|string)[]|float|int|mixed)[]
+     * @return ((float|int|null|string)[]|float|int)[]
      *
-     * @psalm-return array{searches_with_results: mixed, searches_without_results: mixed, success_rate: 0|float, unique_search_terms: int, unique_users: int, avg_searches_per_session: float, avg_object_views_per_session: float, unique_organizations: 0, query_complexity: array{simple: 0|float, medium: 0|float, complex: 0|float}, period: array{from: null|string, to: null|string, days: int<min, max>|null}, daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,...}
+     * @psalm-return array{total_searches: int<min, max>, total_results: int, avg_results_per_search: float, avg_response_time: float, non_empty_searches: int, searches_with_results: int, searches_without_results: int, success_rate: 0|float, unique_search_terms: int<0, max>, unique_users: int<0, max>, avg_searches_per_session: float, avg_object_views_per_session: float, unique_organizations: 0, query_complexity: array{simple: 0|float, medium: 0|float, complex: 0|float}, period: array{from: null|string, to: null|string, days: int<min, max>|null}, daily_averages?: array{searches_per_day: float, results_per_day: float}}
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -350,7 +344,6 @@ class SearchTrailService
 
     }//end getSearchStatistics()
 
-
     /**
      * Get popular search terms with enhanced analytics
      *
@@ -358,14 +351,9 @@ class SearchTrailService
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return (array|float|int)[] Enhanced popular search terms data
+     * @return (((float|int|mixed|string)[]|null|string)[]|int)[]
      *
-     * @psalm-return array{
-     *     terms: array,
-     *     total_unique_terms: int<0, max>,
-     *     total_searches: float|int,
-     *     period: array{from: null|string, to: null|string}
-     * }
+     * @psalm-return array{terms: array<array{term: mixed, count: int, avg_results: float, avg_response_time: float, percentage: 0|float, effectiveness: 'high'|'low'}>, total_unique_terms: int<0, max>, total_searches: int, period: array{from: null|string, to: null|string}}
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -404,7 +392,6 @@ class SearchTrailService
 
     }//end getPopularSearchTerms()
 
-
     /**
      * Get search activity patterns by time period
      *
@@ -412,9 +399,9 @@ class SearchTrailService
      * @param DateTime|null $from     Start date filter
      * @param DateTime|null $to       End date filter
      *
-     * @return (array|string)[]
+     * @return (((float|int|mixed)[]|float|int|mixed|null|string)[]|string)[]
      *
-     * @psalm-return array{activity: array, insights: array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}, interval: string, period: array{from: null|string, to: null|string}}
+     * @psalm-return array{activity: array<array{period: mixed, count: int, avg_results: float, avg_response_time: float}>, insights: array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}, interval: string, period: array{from: null|string, to: null|string}}
      */
     public function getSearchActivity(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -435,21 +422,15 @@ class SearchTrailService
 
     }//end getSearchActivity()
 
-
     /**
      * Get search statistics by register and schema with insights
      *
      * @param DateTime|null $from Start date filter
      * @param DateTime|null $to   End date filter
      *
-     * @return (((mixed|string)[]|null|string)[]|float|int)[] Enhanced register/schema statistics
+     * @return (((float|int|mixed|string)[]|null|string)[]|int)[]
      *
-     * @psalm-return array{
-     *     statistics: list<array{performance_rating: string, ...}>,
-     *     total_combinations: int<0, max>,
-     *     total_searches: float|int,
-     *     period: array{from: null|string, to: null|string}
-     * }
+     * @psalm-return array{statistics: list<array{avg_response_time: float, avg_results: float, count: int, percentage: 0|float, performance_rating: string, register: mixed, register_uuid: mixed, schema: mixed, schema_uuid: mixed}>, total_combinations: int<0, max>, total_searches: int, period: array{from: null|string, to: null|string}}
      */
     public function getRegisterSchemaStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -491,7 +472,6 @@ class SearchTrailService
 
     }//end getRegisterSchemaStatistics()
 
-
     /**
      * Get user agent statistics with browser insights
      *
@@ -499,9 +479,9 @@ class SearchTrailService
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return (array|int)[]
+     * @return ((((int|string)|float|mixed|string[])[]|null|string)[]|int)[]
      *
-     * @psalm-return array{user_agents: array, browser_distribution: list<array{browser: array-key, count: 0|mixed, percentage: 0|float}>, total_user_agents: int<0, max>, period: array{from: null|string, to: null|string}}
+     * @psalm-return array{user_agents: array<array{user_agent: mixed, count: int, avg_results: float, avg_response_time: float, browser_info: array{browser: string, version: string, full_string: string}}>, browser_distribution: list<array{browser: array-key, count: 0|mixed, percentage: 0|float}>, total_user_agents: int<0, max>, period: array{from: null|string, to: null|string}}
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -529,7 +509,6 @@ class SearchTrailService
         ];
 
     }//end getUserAgentStatistics()
-
 
     /**
      * Clean up old search trail logs
@@ -578,7 +557,6 @@ class SearchTrailService
         }//end try
 
     }//end cleanupSearchTrails()
-
 
     /**
      * Process configuration parameters for search trail operations
@@ -696,7 +674,6 @@ class SearchTrailService
 
     }//end processConfig()
 
-
     /**
      * Calculate activity insights from search activity data
      *
@@ -741,7 +718,6 @@ class SearchTrailService
 
     }//end calculateActivityInsights()
 
-
     /**
      * Calculate trend direction from count data
      *
@@ -780,7 +756,6 @@ class SearchTrailService
 
     }//end calculateTrend()
 
-
     /**
      * Calculate performance rating for register/schema statistics
      *
@@ -805,7 +780,6 @@ class SearchTrailService
         }
 
     }//end calculatePerformanceRating()
-
 
     /**
      * Parse user agent string to extract browser information
@@ -844,7 +818,6 @@ class SearchTrailService
         ];
 
     }//end parseUserAgent()
-
 
     /**
      * Aggregate user agent statistics by browser type
@@ -890,7 +863,6 @@ class SearchTrailService
         return $distribution;
 
     }//end aggregateByBrowser()
-
 
     /**
      * Enrich search trails with register and schema names
@@ -972,7 +944,6 @@ class SearchTrailService
 
     }//end enrichTrailsWithNames()
 
-
     /**
      * Calculate total number of pages
      *
@@ -990,6 +961,4 @@ class SearchTrailService
         return (int) ceil($total / $limit);
 
     }//end calculatePages()
-
-
 }//end class

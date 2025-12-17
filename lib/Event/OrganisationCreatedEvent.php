@@ -43,7 +43,6 @@ class OrganisationCreatedEvent extends Event
      */
     private Organisation $organisation;
 
-
     /**
      * OrganisationCreatedEvent constructor
      *
@@ -56,7 +55,6 @@ class OrganisationCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the organisation that was created
      *
@@ -67,6 +65,4 @@ class OrganisationCreatedEvent extends Event
         return $this->organisation;
 
     }//end getOrganisation()
-
-
 }//end class

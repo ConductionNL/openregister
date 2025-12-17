@@ -35,7 +35,6 @@ class SourceDeletedEvent extends Event
      */
     private Source $source;
 
-
     /**
      * Constructor for SourceDeletedEvent.
      *
@@ -50,7 +49,6 @@ class SourceDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted source.
      *
@@ -61,6 +59,4 @@ class SourceDeletedEvent extends Event
         return $this->source;
 
     }//end getSource()
-
-
 }//end class

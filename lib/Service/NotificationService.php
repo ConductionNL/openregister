@@ -72,7 +72,6 @@ class NotificationService
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Send notification about configuration update availability
      *
@@ -147,7 +146,6 @@ class NotificationService
 
     }//end notifyConfigurationUpdate()
 
-
     /**
      * Send update notification to a specific user
      *
@@ -193,7 +191,6 @@ class NotificationService
 
     }//end sendUpdateNotification()
 
-
     /**
      * Mark configuration update notification as processed.
      *
@@ -216,6 +213,4 @@ class NotificationService
         $this->logger->info(message: "Marked configuration {$configuration->getTitle()} notifications as processed");
 
     }//end markConfigurationUpdated()
-
-
 }//end class

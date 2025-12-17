@@ -65,7 +65,6 @@ class OrganisationController extends Controller
      */
     private LoggerInterface $logger;
 
-
     /**
      * OrganisationController constructor
      *
@@ -89,7 +88,6 @@ class OrganisationController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get user's organisations and active organisation
      *
@@ -97,9 +95,7 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse User's organisations and statistics
-     *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve organisations', total?: int<0, max>, active?: array|null, results?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve organisations', total?: int<0, max>, active?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|null, results?: array}, array<never, never>>
      */
     public function index(): JSONResponse
     {
@@ -125,7 +121,6 @@ class OrganisationController extends Controller
         }
 
     }//end index()
-
 
     /**
      * Set the active organisation for the current user
@@ -186,7 +181,6 @@ class OrganisationController extends Controller
 
     }//end setActive()
 
-
     /**
      * Get the current active organisation
      *
@@ -231,7 +225,6 @@ class OrganisationController extends Controller
         }//end try
 
     }//end getActive()
-
 
     /**
      * Create a new organisation
@@ -292,7 +285,6 @@ class OrganisationController extends Controller
 
     }//end create()
 
-
     /**
      * Join an organisation by UUID
      *
@@ -350,7 +342,6 @@ class OrganisationController extends Controller
         }//end try
 
     }//end join()
-
 
     /**
      * Leave an organisation by UUID (or remove specified user from organisation)
@@ -414,7 +405,6 @@ class OrganisationController extends Controller
 
     }//end leave()
 
-
     /**
      * Get organisation details by UUID
      *
@@ -471,7 +461,6 @@ class OrganisationController extends Controller
         }//end try
 
     }//end show()
-
 
     /**
      * Update organisation details
@@ -609,7 +598,6 @@ class OrganisationController extends Controller
 
     }//end update()
 
-
     /**
      * Patch organisation details (alias for update)
      *
@@ -618,7 +606,10 @@ class OrganisationController extends Controller
      * @return JSONResponse Updated organisation data.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400|403, array{error?: string, id?: int, uuid?: null|string, slug?: null|string, name?: null|string, description?: null|string, users?: array, groups?: array|null, owner?: null|string, active?: bool|null, parent?: null|string, children?: array, quota?: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization?: array, created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function patch(string $uuid): JSONResponse
     {
@@ -626,19 +617,16 @@ class OrganisationController extends Controller
 
     }//end patch()
 
-
     /**
      * Search organisations by name with pagination (for joining)
      *
      * @param string $query Search query.
      *
-     * @return JSONResponse List of matching organisations with pagination info.
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Search failed', organisations?: array<array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, groups: array|null, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|mixed>, limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: 'Search failed', organisations?: array<array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, groups: array|null, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}>, limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>}, array<never, never>>
      */
     public function search(string $query=''): JSONResponse
     {
@@ -701,7 +689,6 @@ class OrganisationController extends Controller
 
     }//end search()
 
-
     /**
      * Clear organisation cache for current user
      *
@@ -742,7 +729,6 @@ class OrganisationController extends Controller
 
     }//end clearCache()
 
-
     /**
      * Get system statistics about organisations (admin only)
      *
@@ -750,9 +736,7 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Organisation statistics
-     *
-     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve statistics', statistics?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve statistics', statistics?: array{total: int}}, array<never, never>>
      */
     public function stats(): JSONResponse
     {
@@ -783,7 +767,6 @@ class OrganisationController extends Controller
 
     }//end stats()
 
-
     /**
      * Generate a URL-friendly slug from a name
      *
@@ -808,6 +791,4 @@ class OrganisationController extends Controller
         return $slug;
 
     }//end generateSlug()
-
-
 }//end class

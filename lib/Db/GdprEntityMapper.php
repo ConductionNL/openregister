@@ -38,8 +38,6 @@ use OCP\IDBConnection;
  */
 class GdprEntityMapper extends QBMapper
 {
-
-
     /**
      * Constructor.
      *
@@ -50,7 +48,6 @@ class GdprEntityMapper extends QBMapper
         parent::__construct($db, 'openregister_entities', GdprEntity::class);
 
     }//end __construct()
-
 
     /**
      * Public wrapper for findEntities (parent protected method).
@@ -64,6 +61,4 @@ class GdprEntityMapper extends QBMapper
         return parent::findEntities($query);
 
     }//end findEntitiesPublic()
-
-
 }//end class

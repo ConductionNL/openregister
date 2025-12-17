@@ -96,7 +96,6 @@ class ConfigurationController extends Controller
      */
     private IAppManager $appManager;
 
-
     /**
      * Constructor
      *
@@ -133,7 +132,6 @@ class ConfigurationController extends Controller
 
     }//end __construct()
 
-
     /**
      * Get all configurations.
      *
@@ -158,7 +156,6 @@ class ConfigurationController extends Controller
         }//end try
 
     }//end index()
-
 
     /**
      * Get a single configuration by ID.
@@ -189,17 +186,14 @@ class ConfigurationController extends Controller
 
     }//end show()
 
-
     /**
      * Enrich configuration details by fetching actual file contents
      *
      * @NoAdminRequired
      *
-     * @return JSONResponse JSON response containing enriched configuration details
-     *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|400|401|403|404|500, array{error?: string, title?: mixed|string, description?: ''|mixed, version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed, openregister?: mixed|null}, array<never, never>>
+     * @psalm-return JSONResponse<int, array{error?: string, title?: mixed|string, description?: ''|mixed, version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed, openregister?: mixed|null}, array<never, never>>
      */
     public function enrichDetails(): JSONResponse
     {
@@ -254,15 +248,12 @@ class ConfigurationController extends Controller
 
     }//end enrichDetails()
 
-
     /**
      * Create a new configuration.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse The created configuration
      *
      * @psalm-return JSONResponse<201, Configuration, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
      */
@@ -309,7 +300,6 @@ class ConfigurationController extends Controller
 
     }//end create()
 
-
     /**
      * Update an existing configuration.
      *
@@ -318,8 +308,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse The updated configuration
      *
      * @psalm-return JSONResponse<200, Configuration, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
@@ -413,7 +401,6 @@ class ConfigurationController extends Controller
 
     }//end update()
 
-
     /**
      * Delete a configuration.
      *
@@ -446,7 +433,6 @@ class ConfigurationController extends Controller
 
     }//end destroy()
 
-
     /**
      * Check remote version of a configuration.
      *
@@ -455,8 +441,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Version information
      *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, hasUpdate?: bool, localVersion?: null|string, remoteVersion?: null|string, lastChecked?: null|string, message?: string}, array<never, never>>
      */
@@ -490,16 +474,18 @@ class ConfigurationController extends Controller
 
     }//end checkVersion()
 
-
     /**
      * Preview configuration changes.
      *
      * @param int $id The configuration ID
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
      * @return JSONResponse Preview of changes
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: 'Configuration not found'|'Failed to preview configuration changes', registers?: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas?: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects?: list<array{action: string, changes: array, current: array|null, proposed: array, register: string, schema: string, slug: string, title: string, type: string}>, endpoints?: array<never, never>, sources?: array<never, never>, mappings?: array<never, never>, jobs?: array<never, never>, synchronizations?: array<never, never>, rules?: array<never, never>, metadata?: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}, array<never, never>>|JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>
      */
     public function preview(int $id): JSONResponse
     {
@@ -523,7 +509,6 @@ class ConfigurationController extends Controller
 
     }//end preview()
 
-
     /**
      * Import configuration with user selection.
      *
@@ -532,8 +517,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Import results
      *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, registersCount?: int<0, max>, schemasCount?: int<0, max>, objectsCount?: int<0, max>}, array<never, never>>
      */
@@ -581,7 +564,6 @@ class ConfigurationController extends Controller
 
     }//end import()
 
-
     /**
      * Export configuration to download or GitHub.
      *
@@ -620,7 +602,6 @@ class ConfigurationController extends Controller
 
     }//end export()
 
-
     /**
      * Discover OpenRegister configurations on GitHub or GitLab
      *
@@ -628,11 +609,9 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Search results
-     *
      * @since 0.2.10
      *
-     * @psalm-return JSONResponse<200|400|500, array, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, total_count?: int<0, max>|mixed, results?: list{0?: array{repository?: mixed, owner?: string, repo?: string, path: mixed|string, url: ''|mixed, stars?: 0|mixed, description?: ''|mixed, name: string, branch?: string, raw_url?: string, sha?: null|string, organization?: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array, project_id?: mixed, ref?: 'main'|mixed}|mixed,...}, page?: int, per_page?: int}, array<never, never>>
      */
     public function discover(): JSONResponse
     {
@@ -683,7 +662,6 @@ class ConfigurationController extends Controller
 
     }//end discover()
 
-
     /**
      * Get branches from a GitHub repository
      *
@@ -691,11 +669,9 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse List of branches
-     *
      * @since 0.2.10
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array<array{name: mixed, commit: mixed|null, protected: false|mixed}>}, array<never, never>>
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -727,7 +703,6 @@ class ConfigurationController extends Controller
 
     }//end getGitHubBranches()
 
-
     /**
      * Get repositories that the authenticated user has access to
      *
@@ -735,9 +710,7 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse List of repositories
-     *
-     * @psalm-return JSONResponse<200|500, array{error?: string, repositories?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|500, array{error?: string, repositories?: array<array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}>}, array<never, never>>
      */
     public function getGitHubRepositories(): JSONResponse
     {
@@ -774,7 +747,6 @@ class ConfigurationController extends Controller
 
     }//end getGitHubRepositories()
 
-
     /**
      * Get configuration files from a GitHub repository
      *
@@ -782,11 +754,9 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse List of configuration files
-     *
      * @since 0.2.10
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: list{0?: array{path: mixed, sha: mixed|null, url: mixed|null, config: array{title: mixed|string, description: ''|mixed, version: '1.0.0'|mixed, app: mixed|null, type: 'manual'|mixed}},...}}, array<never, never>>
      */
     public function getGitHubConfigurations(): JSONResponse
     {
@@ -820,7 +790,6 @@ class ConfigurationController extends Controller
 
     }//end getGitHubConfigurations()
 
-
     /**
      * Get branches from a GitLab project
      *
@@ -828,11 +797,9 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse List of branches
-     *
      * @since 0.2.10
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array<array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}>}, array<never, never>>
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -869,7 +836,6 @@ class ConfigurationController extends Controller
 
     }//end getGitLabBranches()
 
-
     /**
      * Get configuration files from a GitLab project
      *
@@ -877,11 +843,9 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse List of configuration files
-     *
      * @since 0.2.10
      *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: array}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>}, array<never, never>>
      */
     public function getGitLabConfigurations(): JSONResponse
     {
@@ -920,7 +884,6 @@ class ConfigurationController extends Controller
 
     }//end getGitLabConfigurations()
 
-
     /**
      * Import configuration from GitHub
      *
@@ -929,8 +892,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response containing import result from GitHub
      *
      * @since 0.2.10
      *
@@ -1055,7 +1016,6 @@ class ConfigurationController extends Controller
 
     }//end importFromGitHub()
 
-
     /**
      * Import configuration from GitLab
      *
@@ -1064,8 +1024,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response containing import result from GitLab
      *
      * @since 0.2.10
      *
@@ -1197,7 +1155,6 @@ class ConfigurationController extends Controller
 
     }//end importFromGitLab()
 
-
     /**
      * Import configuration from URL
      *
@@ -1206,8 +1163,6 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response containing import result from URL
      *
      * @since 0.2.10
      *
@@ -1332,7 +1287,6 @@ class ConfigurationController extends Controller
 
     }//end importFromUrl()
 
-
     /**
      * Publish a local configuration to GitHub
      *
@@ -1345,9 +1299,7 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Publish result
-     *
-     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: string, configurationId?: int, commit_sha?: mixed, commit_url?: mixed, file_url?: mixed, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
+     * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: string, configurationId?: int, commit_sha?: mixed|null, commit_url?: mixed|null, file_url?: mixed|null, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
     {
@@ -1509,7 +1461,6 @@ class ConfigurationController extends Controller
 
     }//end publishToGitHub()
 
-
     /**
      * Get error message for existing configuration.
      *
@@ -1525,7 +1476,6 @@ class ConfigurationController extends Controller
         return $message;
 
     }//end getExistingConfigErrorMessage()
-
 
     /**
      * Get indexing note based on branch information.
@@ -1544,7 +1494,6 @@ class ConfigurationController extends Controller
         return 'File published successfully. GitHub Code Search indexing may take a few minutes.';
 
     }//end getIndexingNote()
-
 
     /**
      * Convert a string to snake_case
@@ -1573,6 +1522,4 @@ class ConfigurationController extends Controller
         return $string;
 
     }//end toSnakeCase()
-
-
 }//end class

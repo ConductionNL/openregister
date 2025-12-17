@@ -71,7 +71,6 @@ class UploadService
      */
     private readonly Client $client;
 
-
     /**
      * Gets the uploaded JSON from the request data and returns it as a PHP array
      *
@@ -114,7 +113,6 @@ class UploadService
 
     }//end getUploadedJson()
 
-
     /**
      * Remove internal parameters from data array
      *
@@ -136,15 +134,16 @@ class UploadService
 
     }//end removeInternalParameters()
 
-
     /**
      * Validate that an upload source is provided
      *
      * @param array<string, mixed> $data Input data array.
      *
      * @return JSONResponse|null Error response if validation fails, null if valid.
+     *
+     * @psalm-return JSONResponse<400, array{error: 'Missing one of these keys in your POST body: file, url or json.'}, array<never, never>>|null
      */
-    private function validateUploadSource(array $data): ?JSONResponse
+    private function validateUploadSource(array $data): JSONResponse|null
     {
         $allowedKeys  = ['file', 'url', 'json'];
         $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
@@ -160,28 +159,24 @@ class UploadService
 
     }//end validateUploadSource()
 
-
     /**
      * Process file upload source
      *
      * @param mixed $file File upload data.
      *
-     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     * @return never Processed data or error response.
      *
      * @throws \Exception If file processing fails.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
-    private function processFileUpload(mixed $_file): array | JSONResponse
+    private function processFileUpload(mixed $_file): never
     {
         // @todo use .json file content from POST as $json.
         // Method always throws, so this is unreachable but kept for API compatibility.
         $this->getJSONfromFile();
-        // This line is never reached as getJSONfromFile() always throws.
-        return [];
 
     }//end processFileUpload()
-
 
     /**
      * Process URL upload source
@@ -213,7 +208,6 @@ class UploadService
 
     }//end processUrlUpload()
 
-
     /**
      * Process direct JSON upload
      *
@@ -238,7 +232,6 @@ class UploadService
         return $phpArray;
 
     }//end processJsonUpload()
-
 
     /**
      * Uses Guzzle to call the given URL and returns response as PHP array
@@ -292,7 +285,6 @@ class UploadService
 
     }//end getJSONfromURL()
 
-
     /**
      * Gets JSON content from an uploaded file.
      *
@@ -307,6 +299,4 @@ class UploadService
         throw new Exception('File upload handling is not yet implemented');
 
     }//end getJSONfromFile()
-
-
 }//end class

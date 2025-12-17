@@ -65,7 +65,6 @@ class SearchBackendHandler
      */
     private string $appName;
 
-
     /**
      * Constructor for SearchBackendHandler
      *
@@ -85,7 +84,6 @@ class SearchBackendHandler
         $this->appName = $appName;
 
     }//end __construct()
-
 
     /**
      * Get search backend configuration.
@@ -116,7 +114,6 @@ class SearchBackendHandler
 
     }//end getSearchBackendConfig()
 
-
     /**
      * Update search backend configuration.
      *
@@ -124,9 +121,11 @@ class SearchBackendHandler
      *
      * @param string $backend Backend name ('solr', 'elasticsearch', etc).
      *
-     * @return array Updated backend configuration.
+     * @return (int|string[])[] Updated backend configuration.
      *
      * @throws \RuntimeException If backend configuration update fails.
+     *
+     * @psalm-return array{active: 'elasticsearch'|'solr', available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
      */
     public function updateSearchBackendConfig(string $backend): array
     {
@@ -161,6 +160,4 @@ class SearchBackendHandler
         }//end try
 
     }//end updateSearchBackendConfig()
-
-
 }//end class

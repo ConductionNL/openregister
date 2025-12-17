@@ -90,7 +90,6 @@ class SolrBackend implements SearchBackendInterface
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -123,7 +122,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end __construct()
 
-
     /**
      * Test if the backend is available.
      *
@@ -137,13 +135,14 @@ class SolrBackend implements SearchBackendInterface
 
     }//end isAvailable()
 
-
     /**
      * Test connection with diagnostics.
      *
      * @param bool $includeCollectionTests Include collection tests
      *
-     * @return array Test results
+     * @return (bool|null|string)[] Test results
+     *
+     * @psalm-return array{success: bool, configured?: true, collection?: null|string, collection_exists?: bool, error?: 'Solr is not configured'}
      */
     public function testConnection(bool $includeCollectionTests=true): array
     {
@@ -169,7 +168,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end testConnection()
 
-
     /**
      * Index a single object.
      *
@@ -183,7 +181,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->indexer->indexObject($object, $commit);
 
     }//end indexObject()
-
 
     /**
      * Index multiple objects in bulk.
@@ -199,7 +196,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end bulkIndexObjects()
 
-
     /**
      * Delete an object from the index.
      *
@@ -213,7 +209,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->indexer->deleteObject($objectId, $commit);
 
     }//end deleteObject()
-
 
     /**
      * Delete objects by query.
@@ -229,7 +224,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->indexer->deleteByQuery($query, $commit, $returnDetails);
 
     }//end deleteByQuery()
-
 
     /**
      * Search with pagination.
@@ -253,7 +247,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end searchObjectsPaginated()
 
-
     /**
      * Get document count.
      *
@@ -264,7 +257,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->indexer->getDocumentCount();
 
     }//end getDocumentCount()
-
 
     /**
      * Commit changes.
@@ -277,7 +269,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end commit()
 
-
     /**
      * Optimize the index.
      *
@@ -288,7 +279,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->indexer->optimize();
 
     }//end optimize()
-
 
     /**
      * Clear the index.
@@ -303,7 +293,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end clearIndex()
 
-
     /**
      * Warm up the index.
      *
@@ -317,7 +306,9 @@ class SolrBackend implements SearchBackendInterface
      * @param int    $batchSize     Batch size
      * @param array  $schemaIds     Schema IDs
      *
-     * @return array Results
+     * @return (bool|string)[] Results
+     *
+     * @psalm-return array{success: true, message: 'Simplified warmup - collection exists', collection_exists: bool}
      */
     public function warmupIndex(
         array $schemas=[],
@@ -345,7 +336,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end warmupIndex()
 
-
     /**
      * Get backend configuration.
      *
@@ -357,7 +347,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end getConfig()
 
-
     /**
      * Get backend statistics.
      *
@@ -368,7 +357,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->queryExecutor->getStats();
 
     }//end getStats()
-
 
     /**
      * Create a collection.
@@ -384,7 +372,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end createCollection()
 
-
     /**
      * Delete a collection.
      *
@@ -397,7 +384,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->collectionManager->deleteCollection($collectionName);
 
     }//end deleteCollection()
-
 
     /**
      * Check if collection exists.
@@ -412,7 +398,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end collectionExists()
 
-
     /**
      * List all collections.
      *
@@ -423,7 +408,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->collectionManager->listCollections();
 
     }//end listCollections()
-
 
     /**
      * Index generic documents.
@@ -438,7 +422,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end index()
 
-
     /**
      * Perform generic search.
      *
@@ -452,7 +435,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end search()
 
-
     /**
      * Get field types for collection.
      *
@@ -465,7 +447,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->schemaManager->getFieldTypes($collection);
 
     }//end getFieldTypes()
-
 
     /**
      * Add field type.
@@ -481,7 +462,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end addFieldType()
 
-
     /**
      * Get fields for collection.
      *
@@ -494,7 +474,6 @@ class SolrBackend implements SearchBackendInterface
         return $this->schemaManager->getFields($collection);
 
     }//end getFields()
-
 
     /**
      * Add or update field.
@@ -510,7 +489,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end addOrUpdateField()
 
-
     /**
      * Reindex all objects.
      *
@@ -521,7 +499,9 @@ class SolrBackend implements SearchBackendInterface
      * @param int         $batchSize      Batch size
      * @param string|null $collectionName Collection name
      *
-     * @return array Results
+     * @return (false|int|mixed|string)[] Results
+     *
+     * @psalm-return array{success: false|mixed, message: 'Index cleared (simplified reindex)', indexed: 0}
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
     {
@@ -545,7 +525,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end reindexAll()
 
-
     /**
      * Get raw Solr fields for facet configuration.
      *
@@ -560,7 +539,6 @@ class SolrBackend implements SearchBackendInterface
 
     }//end getRawSolrFieldsForFacetConfiguration()
 
-
     /**
      * Get HTTP client instance.
      *
@@ -573,6 +551,4 @@ class SolrBackend implements SearchBackendInterface
         return $this->httpClient;
 
     }//end getHttpClient()
-
-
 }//end class

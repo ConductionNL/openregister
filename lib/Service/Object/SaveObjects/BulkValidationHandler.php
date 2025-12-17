@@ -44,8 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class BulkValidationHandler
 {
-
-
     /**
      * Constructor for BulkValidationHandler.
      *
@@ -56,7 +54,6 @@ class BulkValidationHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Performs comprehensive schema analysis for bulk optimization.
@@ -71,12 +68,9 @@ class BulkValidationHandler
      *
      * @param Schema $schema The schema to analyze.
      *
-     * @return array Analysis results with:
-     *               - metadataFields: Metadata field mappings.
-     *               - inverseProperties: Inverse relation configurations.
-     *               - validationRequired: Whether hard validation is enabled.
-     *               - properties: Schema properties array.
-     *               - configuration: Schema configuration array.
+     * @return (((bool|mixed)[]|mixed)[]|bool|null)[] Analysis results with: - metadataFields: Metadata field mappings. - inverseProperties: Inverse relation configurations. - validationRequired: Whether hard validation is enabled. - properties: Schema properties array. - configuration: Schema configuration array.
+     *
+     * @psalm-return array{metadataFields: array<string, mixed>, inverseProperties: array<array{inversedBy: mixed, writeBack: bool, isArray: bool}>, validationRequired: bool, properties: array|null, configuration: array|null}
      */
     public function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
@@ -145,7 +139,6 @@ class BulkValidationHandler
 
     }//end performComprehensiveSchemaAnalysis()
 
-
     /**
      * Cast mixed values to proper boolean.
      *
@@ -177,7 +170,6 @@ class BulkValidationHandler
 
     }//end castToBoolean()
 
-
     /**
      * Handles pre-validation cascading for a single object in bulk context.
      *
@@ -187,7 +179,9 @@ class BulkValidationHandler
      * @param array       $object The object data.
      * @param null|string $uuid   The object UUID (for updates).
      *
-     * @return array Array with [object, uuid].
+     * @return (array|string)[] Array with [object, uuid].
+     *
+     * @psalm-return list{array, string}
      */
     public function handlePreValidationCascading(array $object, ?string $uuid): array
     {
@@ -200,6 +194,4 @@ class BulkValidationHandler
         return [$object, $uuid];
 
     }//end handlePreValidationCascading()
-
-
 }//end class

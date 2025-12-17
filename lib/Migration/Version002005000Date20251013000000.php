@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version002005000Date20251013000000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create metrics table for performance and usage tracking.
      *
@@ -183,7 +181,6 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Rollback migration.
      *
@@ -200,6 +197,4 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
         return null;
 
     }//end postSchemaChange()
-
-
 }//end class

@@ -42,8 +42,6 @@ use OCP\IRequest;
  */
 class UiController extends Controller
 {
-
-
     /**
      * Constructor for UiController
      *
@@ -61,7 +59,6 @@ class UiController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Returns the base SPA template response with permissive connect-src for API calls
@@ -107,7 +104,6 @@ class UiController extends Controller
 
     }//end makeSpaResponse()
 
-
     /**
      * Returns the registers page template
      *
@@ -115,12 +111,14 @@ class UiController extends Controller
      * client-side by the Single Page Application.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response
+     * @return TemplateResponse The SPA template response
      *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function registers(): TemplateResponse
     {
@@ -129,7 +127,6 @@ class UiController extends Controller
 
     }//end registers()
 
-
     /**
      * Returns the register details page template
      *
@@ -137,12 +134,14 @@ class UiController extends Controller
      * client-side by the Single Page Application.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response
+     * @return TemplateResponse The SPA template response
      *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function registersDetails(): TemplateResponse
     {
@@ -151,7 +150,6 @@ class UiController extends Controller
 
     }//end registersDetails()
 
-
     /**
      * Returns the schemas page template
      *
@@ -159,12 +157,12 @@ class UiController extends Controller
      * client-side by the Single Page Application.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function schemas(): TemplateResponse
     {
@@ -173,7 +171,6 @@ class UiController extends Controller
 
     }//end schemas()
 
-
     /**
      * Returns the schema details page template
      *
@@ -181,12 +178,12 @@ class UiController extends Controller
      * client-side by the Single Page Application.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function schemasDetails(): TemplateResponse
     {
@@ -194,17 +191,16 @@ class UiController extends Controller
 
     }//end schemasDetails()
 
-
     /**
      * Returns the sources page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function sources(): TemplateResponse
     {
@@ -212,17 +208,16 @@ class UiController extends Controller
 
     }//end sources()
 
-
     /**
      * Returns the organisation page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function organisation(): TemplateResponse
     {
@@ -230,17 +225,16 @@ class UiController extends Controller
 
     }//end organisation()
 
-
     /**
      * Returns the objects page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function objects(): TemplateResponse
     {
@@ -248,17 +242,16 @@ class UiController extends Controller
 
     }//end objects()
 
-
     /**
      * Returns the tables page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function tables(): TemplateResponse
     {
@@ -266,17 +259,16 @@ class UiController extends Controller
 
     }//end tables()
 
-
     /**
      * Returns the chat page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function chat(): TemplateResponse
     {
@@ -284,17 +276,16 @@ class UiController extends Controller
 
     }//end chat()
 
-
     /**
      * Returns the configurations page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function configurations(): TemplateResponse
     {
@@ -302,17 +293,16 @@ class UiController extends Controller
 
     }//end configurations()
 
-
     /**
      * Returns the deleted objects page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function deleted(): TemplateResponse
     {
@@ -320,17 +310,16 @@ class UiController extends Controller
 
     }//end deleted()
 
-
     /**
      * Returns the audit trail page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function auditTrail(): TemplateResponse
     {
@@ -338,17 +327,16 @@ class UiController extends Controller
 
     }//end auditTrail()
 
-
     /**
      * Returns the search trail page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function searchTrail(): TemplateResponse
     {
@@ -356,17 +344,16 @@ class UiController extends Controller
 
     }//end searchTrail()
 
-
     /**
      * Returns the webhooks page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function webhooks(): TemplateResponse
     {
@@ -374,17 +361,16 @@ class UiController extends Controller
 
     }//end webhooks()
 
-
     /**
      * Returns the webhook logs page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function webhooksLogs(): TemplateResponse
     {
@@ -392,24 +378,22 @@ class UiController extends Controller
 
     }//end webhooksLogs()
 
-
     /**
      * Returns the entities page template.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function entities(): TemplateResponse
     {
         return $this->makeSpaResponse();
 
     }//end entities()
-
 
     /**
      * Render endpoints UI
@@ -418,19 +402,18 @@ class UiController extends Controller
      * This route is used when users navigate to the endpoints section of the application.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function endpoints(): TemplateResponse
     {
         return $this->makeSpaResponse();
 
     }//end endpoints()
-
 
     /**
      * Render endpoint logs UI
@@ -439,18 +422,16 @@ class UiController extends Controller
      * This route is used when users navigate to the endpoint logs section.
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return TemplateResponse The template response.
-     *
      * @phpstan-return TemplateResponse
-     * @psalm-return   TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function endpointLogs(): TemplateResponse
     {
         return $this->makeSpaResponse();
 
     }//end endpointLogs()
-
-
 }//end class

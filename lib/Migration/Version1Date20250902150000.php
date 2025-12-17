@@ -53,8 +53,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250902150000 extends SimpleMigrationStep
 {
-
-
     /**
      * Add facets column to schemas table for performance optimization
      *
@@ -94,7 +92,6 @@ class Version1Date20250902150000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Post-schema changes to regenerate facets for existing schemas
      *
@@ -113,6 +110,4 @@ class Version1Date20250902150000 extends SimpleMigrationStep
         $output->info('Facets column added. Run `occ openregister:regenerate-facets` to populate facet data for existing schemas.');
 
     }//end postSchemaChange()
-
-
 }//end class

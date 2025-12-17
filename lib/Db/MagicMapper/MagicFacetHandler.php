@@ -54,8 +54,6 @@ use Psr\Log\LoggerInterface;
  */
 class MagicFacetHandler
 {
-
-
     /**
      * Constructor for MagicFacetHandler
      *
@@ -68,7 +66,6 @@ class MagicFacetHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Get facet data for a metadata field
@@ -104,7 +101,6 @@ class MagicFacetHandler
         }
 
     }//end getMetadataFieldFacet()
-
 
     /**
      * Get facet data for a schema property field
@@ -147,7 +143,6 @@ class MagicFacetHandler
         }
 
     }//end getSchemaPropertyFacet()
-
 
     /**
      * Get terms facet for a specific column
@@ -213,7 +208,6 @@ class MagicFacetHandler
         }//end try
 
     }//end getTermsFacet()
-
 
     /**
      * Get date histogram facet for a date/datetime column
@@ -293,7 +287,6 @@ class MagicFacetHandler
         }//end try
 
     }//end getDateHistogramFacet()
-
 
     /**
      * Get range facet for numerical columns
@@ -379,7 +372,6 @@ class MagicFacetHandler
 
     }//end getRangeFacet()
 
-
     /**
      * Apply base query filters to facet queries
      *
@@ -453,7 +445,6 @@ class MagicFacetHandler
         }
 
     }//end applyBaseFilters()
-
 
     /**
      * Get facetable metadata fields
@@ -546,13 +537,12 @@ class MagicFacetHandler
 
     }//end getMetadataFacetableFields()
 
-
     /**
      * Get facetable fields from schema properties
      *
      * @param Schema $schema Schema to analyze
      *
-     * @return (mixed|string|string[])[][]
+     * @return (mixed|string[])[][]
      *
      * @psalm-return array<array{type: 'string'|mixed, format: ''|mixed, title: mixed, description: mixed|string, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}}>
      */
@@ -576,7 +566,6 @@ class MagicFacetHandler
         return $facetableFields;
 
     }//end getSchemaFacetableFields()
-
 
     /**
      * Determine appropriate facet types for a property
@@ -616,7 +605,6 @@ class MagicFacetHandler
 
     }//end determineFacetTypes()
 
-
     /**
      * Get date format string for SQL DATE_FORMAT based on interval
      *
@@ -642,7 +630,6 @@ class MagicFacetHandler
         }
 
     }//end getDateFormatForInterval()
-
 
     /**
      * Generate automatic ranges based on data distribution
@@ -719,7 +706,6 @@ class MagicFacetHandler
 
     }//end generateAutoRanges()
 
-
     /**
      * Sanitize column name for safe database usage
      *
@@ -741,6 +727,4 @@ class MagicFacetHandler
         return substr($sanitized, 0, 64);
 
     }//end sanitizeColumnName()
-
-
 }//end class

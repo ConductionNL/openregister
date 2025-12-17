@@ -37,8 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class ApiTokenSettingsController extends Controller
 {
-
-
     /**
      * Constructor.
      *
@@ -58,7 +56,6 @@ class ApiTokenSettingsController extends Controller
         parent::__construct(appName: $appName, request: $request);
 
     }//end __construct()
-
 
     /**
      * Get API tokens for GitHub and GitLab
@@ -107,15 +104,12 @@ class ApiTokenSettingsController extends Controller
 
     }//end getApiTokens()
 
-
     /**
      * Save API tokens for GitHub and GitLab
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse Success or error message
      *
      * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, message?: 'API tokens saved successfully'}, array<never, never>>
      */
@@ -158,7 +152,6 @@ class ApiTokenSettingsController extends Controller
         }//end try
 
     }//end saveApiTokens()
-
 
     /**
      * Test GitHub API token
@@ -218,7 +211,6 @@ class ApiTokenSettingsController extends Controller
         }//end try
 
     }//end testGitHubToken()
-
 
     /**
      * Test GitLab API token
@@ -285,6 +277,4 @@ class ApiTokenSettingsController extends Controller
         }//end try
 
     }//end testGitLabToken()
-
-
 }//end class

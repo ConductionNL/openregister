@@ -54,7 +54,6 @@ class SolrCollectionManager
      */
     private array $config;
 
-
     /**
      * Constructor
      *
@@ -72,7 +71,6 @@ class SolrCollectionManager
         $this->config     = $httpClient->getConfig();
 
     }//end __construct()
-
 
     /**
      * Check if a collection exists.
@@ -100,7 +98,6 @@ class SolrCollectionManager
         }//end try
 
     }//end collectionExists()
-
 
     /**
      * Get the active collection name.
@@ -130,16 +127,17 @@ class SolrCollectionManager
 
     }//end getActiveCollectionName()
 
-
     /**
      * Create a Solr collection.
      *
      * @param string $name   Collection name
      * @param array  $config Configuration options
      *
-     * @return array Result with success status
+     * @return (mixed|string|true)[] Result with success status
      *
      * @throws Exception If creation fails
+     *
+     * @psalm-return array{success: true, message: 'Collection created successfully', collection: string, configSet: 'openregister_configset'|mixed}
      */
     public function createCollection(string $name, array $config=[]): array
     {
@@ -194,13 +192,14 @@ class SolrCollectionManager
 
     }//end createCollection()
 
-
     /**
      * Delete a Solr collection.
      *
      * @param string|null $collectionName Collection name (null = active collection)
      *
-     * @return array Result with success status
+     * @return (bool|string)[] Result with success status
+     *
+     * @psalm-return array{success: bool, message: string, exception?: string, collection?: string}
      */
     public function deleteCollection(?string $collectionName=null): array
     {
@@ -270,7 +269,6 @@ class SolrCollectionManager
 
     }//end deleteCollection()
 
-
     /**
      * List all Solr collections.
      *
@@ -294,7 +292,6 @@ class SolrCollectionManager
         }//end try
 
     }//end listCollections()
-
 
     /**
      * List all ConfigSets.
@@ -320,14 +317,15 @@ class SolrCollectionManager
 
     }//end listConfigSets()
 
-
     /**
      * Create a ConfigSet.
      *
      * @param string $name          ConfigSet name
      * @param string $baseConfigSet Base ConfigSet to copy from
      *
-     * @return array Result with success status
+     * @return (bool|mixed|string)[] Result with success status
+     *
+     * @psalm-return array{success: bool, message: 'ConfigSet created successfully'|'Exception during ConfigSet creation'|'Failed to create ConfigSet'|mixed, exception?: string, name?: string}
      */
     public function createConfigSet(string $name, string $baseConfigSet='_default'): array
     {
@@ -372,13 +370,14 @@ class SolrCollectionManager
 
     }//end createConfigSet()
 
-
     /**
      * Delete a ConfigSet.
      *
      * @param string $name ConfigSet name
      *
-     * @return array Result with success status
+     * @return (bool|mixed|string)[] Result with success status
+     *
+     * @psalm-return array{success: bool, message: 'ConfigSet deleted successfully'|'Exception during ConfigSet deletion'|'Failed to delete ConfigSet'|mixed, exception?: string, name?: string}
      */
     public function deleteConfigSet(string $name): array
     {
@@ -416,6 +415,4 @@ class SolrCollectionManager
         }//end try
 
     }//end deleteConfigSet()
-
-
 }//end class

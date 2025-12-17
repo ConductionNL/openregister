@@ -38,8 +38,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251102150000 extends SimpleMigrationStep
 {
-
-
     /**
      * Update views table structure
      *
@@ -112,6 +110,4 @@ class Version1Date20251102150000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

@@ -140,7 +140,6 @@ class View extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Constructor for View entity
      *
@@ -159,7 +158,6 @@ class View extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the favoredBy array
      *
@@ -170,7 +168,6 @@ class View extends Entity implements JsonSerializable
         return $this->favoredBy ?? [];
 
     }//end getFavoredBy()
-
 
     /**
      * Set the favoredBy array
@@ -186,7 +183,6 @@ class View extends Entity implements JsonSerializable
 
     }//end setFavoredBy()
 
-
     /**
      * Get the organisation UUID
      *
@@ -198,15 +194,14 @@ class View extends Entity implements JsonSerializable
 
     }//end getOrganisation()
 
-
     /**
      * Get the array version of this entity
      *
      * Converts the entity to an array representation
      *
-     * @return (array|bool|int|null|string)[] Array representation of the entity
+     * @return (array|bool|int|null|string)[]
      *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}
      */
     public function jsonSerialize(): array
     {
@@ -254,7 +249,6 @@ class View extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * Get created timestamp formatted.
      *
@@ -270,7 +264,6 @@ class View extends Entity implements JsonSerializable
 
     }//end getCreatedFormatted()
 
-
     /**
      * Get updated timestamp formatted.
      *
@@ -285,7 +278,6 @@ class View extends Entity implements JsonSerializable
         return null;
 
     }//end getUpdatedFormatted()
-
 
     /**
      * Get managed by configuration formatted.
@@ -307,7 +299,6 @@ class View extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfigurationFormatted()
-
 
     /**
      * Hydrate the entity from an array
@@ -372,7 +363,6 @@ class View extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Set the configuration that manages this view (transient property)
      *
@@ -385,7 +375,6 @@ class View extends Entity implements JsonSerializable
         $this->managedByConfiguration = $configuration;
 
     }//end setManagedByConfigurationEntity()
-
 
     /**
      * Get the configuration that manages this view
@@ -416,6 +405,4 @@ class View extends Entity implements JsonSerializable
         return null;
 
     }//end getManagedByConfiguration()
-
-
 }//end class

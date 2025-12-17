@@ -50,7 +50,6 @@ class RegisterTool extends AbstractTool
      */
     private RegisterService $registerService;
 
-
     /**
      * Constructor
      *
@@ -68,7 +67,6 @@ class RegisterTool extends AbstractTool
 
     }//end __construct()
 
-
     /**
      * Get tool name
      *
@@ -82,7 +80,6 @@ class RegisterTool extends AbstractTool
 
     }//end getName()
 
-
     /**
      * Get tool description
      *
@@ -95,7 +92,6 @@ class RegisterTool extends AbstractTool
         return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.';
 
     }//end getDescription()
-
 
     /**
      * Get function definitions for LLphant
@@ -201,7 +197,6 @@ class RegisterTool extends AbstractTool
 
     }//end getFunctions()
 
-
     /**
      * Execute a function
      *
@@ -233,7 +228,6 @@ class RegisterTool extends AbstractTool
         }
 
     }//end executeFunction()
-
 
     /**
      * List registers
@@ -272,7 +266,6 @@ class RegisterTool extends AbstractTool
 
     }//end listRegisters()
 
-
     /**
      * Get a specific register
      *
@@ -304,7 +297,6 @@ class RegisterTool extends AbstractTool
         );
 
     }//end getRegister()
-
 
     /**
      * Create a new register
@@ -344,7 +336,6 @@ class RegisterTool extends AbstractTool
         );
 
     }//end createRegister()
-
 
     /**
      * Update an existing register
@@ -389,7 +380,6 @@ class RegisterTool extends AbstractTool
 
     }//end updateRegister()
 
-
     /**
      * Delete a register
      *
@@ -412,6 +402,4 @@ class RegisterTool extends AbstractTool
         );
 
     }//end deleteRegister()
-
-
 }//end class

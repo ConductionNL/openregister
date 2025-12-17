@@ -33,8 +33,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251103120000 extends SimpleMigrationStep
 {
-
-
     /**
      * Rename the table from openregister_views to openregister_view
      *
@@ -114,7 +112,6 @@ class Version1Date20251103120000 extends SimpleMigrationStep
 
     }//end changeSchema()
 
-
     /**
      * Copy data from old table to new table and drop old table
      *
@@ -144,6 +141,4 @@ class Version1Date20251103120000 extends SimpleMigrationStep
         }//end if
 
     }//end postSchemaChange()
-
-
 }//end class

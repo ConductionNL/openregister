@@ -65,7 +65,6 @@ class ObjectTextExtractionJob extends QueuedJob
      */
     private TextExtractionService $textExtractionService;
 
-
     /**
      * Constructor
      *
@@ -87,7 +86,6 @@ class ObjectTextExtractionJob extends QueuedJob
         $this->textExtractionService = $textExtractionService;
 
     }//end __construct()
-
 
     /**
      * Run the background job
@@ -159,6 +157,4 @@ class ObjectTextExtractionJob extends QueuedJob
         }//end try
 
     }//end run()
-
-
 }//end class

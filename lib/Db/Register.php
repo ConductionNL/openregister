@@ -223,7 +223,6 @@ class Register extends Entity implements JsonSerializable
      */
     protected ?DateTime $depublished = null;
 
-
     /**
      * Constructor for the Register class
      *
@@ -253,7 +252,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the schemas data
      *
@@ -264,7 +262,6 @@ class Register extends Entity implements JsonSerializable
         return ($this->schemas ?? []);
 
     }//end getSchemas()
-
 
     /**
      * Set the schemas data
@@ -302,7 +299,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end setSchemas()
 
-
     /**
      * Get JSON fields from the entity
      *
@@ -324,7 +320,6 @@ class Register extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -361,13 +356,12 @@ class Register extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return ((int|mixed|null|string|string[])[]|int|null|string)[] Array of serializable entity data
+     * @return ((int|mixed|null|string[])[]|int|null|string)[] Array of serializable entity data
      *
      * @psalm-return array{
      *     id: int,
@@ -491,7 +485,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the register
      *
@@ -518,7 +511,6 @@ class Register extends Entity implements JsonSerializable
         return 'Register #'.($this->id ?? 'unknown');
 
     }//end __toString()
-
 
     /**
      * Check if this register is managed by any configuration
@@ -550,7 +542,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end isManagedByConfiguration()
 
-
     /**
      * Get the configuration that manages this register
      *
@@ -581,7 +572,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end getManagedByConfiguration()
 
-
     /**
      * Get the publication timestamp
      *
@@ -592,7 +582,6 @@ class Register extends Entity implements JsonSerializable
         return $this->published;
 
     }//end getPublished()
-
 
     /**
      * Set the publication timestamp
@@ -608,7 +597,6 @@ class Register extends Entity implements JsonSerializable
 
     }//end setPublished()
 
-
     /**
      * Get the depublication timestamp
      *
@@ -619,7 +607,6 @@ class Register extends Entity implements JsonSerializable
         return $this->depublished;
 
     }//end getDepublished()
-
 
     /**
      * Set the depublication timestamp
@@ -634,6 +621,4 @@ class Register extends Entity implements JsonSerializable
         $this->markFieldUpdated('depublished');
 
     }//end setDepublished()
-
-
 }//end class

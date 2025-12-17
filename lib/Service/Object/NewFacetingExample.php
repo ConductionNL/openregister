@@ -30,8 +30,6 @@ use OCA\OpenRegister\Service\ObjectService;
  */
 class NewFacetingExample
 {
-
-
     /**
      * Constructor for NewFacetingExample
      *
@@ -42,7 +40,6 @@ class NewFacetingExample
     ) {
 
     }//end __construct()
-
 
     /**
      * Example 1: Basic Terms Faceting
@@ -69,7 +66,6 @@ class NewFacetingExample
         return $this->objectService->getFacetsForObjects($query);
 
     }//end basicTermsFaceting()
-
 
     /**
      * Example 2: Date Histogram Faceting
@@ -103,7 +99,6 @@ class NewFacetingExample
         return $this->objectService->getFacetsForObjects($query);
 
     }//end dateHistogramFaceting()
-
 
     /**
      * Example 3: Range Faceting
@@ -140,7 +135,6 @@ class NewFacetingExample
         return $this->objectService->getFacetsForObjects($query);
 
     }//end rangeFaceting()
-
 
     /**
      * Example 4: Complete E-commerce Faceting
@@ -213,7 +207,6 @@ class NewFacetingExample
 
     }//end ecommerceFaceting()
 
-
     /**
      * Example 5: Paginated Search with Facets
      *
@@ -253,7 +246,6 @@ class NewFacetingExample
         return $this->objectService->searchObjectsPaginated($query);
 
     }//end paginatedSearchWithFacets()
-
 
     /**
      * Example 6: Migration from Legacy getFacets
@@ -316,7 +308,6 @@ class NewFacetingExample
         ];
 
     }//end migrationExample()
-
 
     /**
      * Example 7: Advanced Filtering with Facets
@@ -382,7 +373,6 @@ class NewFacetingExample
 
     }//end advancedFilteringWithFacets()
 
-
     /**
      * Example 8: Performance Optimized Faceting
      *
@@ -425,6 +415,4 @@ class NewFacetingExample
         return $this->objectService->getFacetsForObjects($query);
 
     }//end performanceOptimizedFaceting()
-
-
 }//end class

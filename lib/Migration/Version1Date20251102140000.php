@@ -39,8 +39,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251102140000 extends SimpleMigrationStep
 {
-
-
     /**
      * Create views table
      *
@@ -205,6 +203,4 @@ class Version1Date20251102140000 extends SimpleMigrationStep
         return null;
 
     }//end changeSchema()
-
-
 }//end class

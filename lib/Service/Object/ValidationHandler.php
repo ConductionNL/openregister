@@ -42,8 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class ValidationHandler
 {
-
-
     /**
      * Constructor for ValidationHandler.
      *
@@ -58,7 +56,6 @@ class ValidationHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Handles validation exceptions by delegating to ValidateObject handler.
@@ -75,7 +72,6 @@ class ValidationHandler
         return $this->validateHandler->handleValidationException($exception);
 
     }//end handleValidationException()
-
 
     /**
      * Validates that required fields are present in bulk objects.
@@ -117,7 +113,6 @@ class ValidationHandler
         }
 
     }//end validateRequiredFields()
-
 
     /**
      * Validates all objects for a given schema.
@@ -210,7 +205,6 @@ class ValidationHandler
 
     }//end validateObjectsBySchema()
 
-
     /**
      * Validate all objects belonging to a specific schema (comprehensive version).
      *
@@ -302,7 +296,6 @@ class ValidationHandler
 
     }//end validateSchemaObjects()
 
-
     /**
      * Apply inversedBy filter to query filters.
      *
@@ -311,7 +304,9 @@ class ValidationHandler
      *
      * @param array $filters Query filters to process (passed by reference).
      *
-     * @return array|null Array of matching IDs, empty array if no matches, or null if filtered to zero results.
+     * @return array Array of matching IDs, empty array if no matches, or null if filtered to zero results.
+     *
+     * @psalm-return array<never, never>
      */
     public function applyInversedByFilter(array &$filters): array|null
     {
@@ -320,6 +315,4 @@ class ValidationHandler
         return [];
 
     }//end applyInversedByFilter()
-
-
 }//end class

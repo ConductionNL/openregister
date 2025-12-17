@@ -49,8 +49,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class CloudEventFormatter
 {
-
-
     /**
      * Format an event payload as a CloudEvent
      *
@@ -62,7 +60,9 @@ class CloudEventFormatter
      * @param string|null $source    Event source (defaults to '/apps/openregister')
      * @param string|null $subject   Event subject (optional)
      *
-     * @return array CloudEvent-formatted payload
+     * @return (array|null|string)[] CloudEvent-formatted payload
+     *
+     * @psalm-return array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: 'application/json', subject: null|string, dataschema: null, data: array, openregister: array{app: 'openregister', version: '1.0.0'}}
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -101,7 +101,6 @@ class CloudEventFormatter
 
     }//end formatAsCloudEvent()
 
-
     /**
      * Format a request as a CloudEvent
      *
@@ -113,7 +112,9 @@ class CloudEventFormatter
      * @param string   $eventType The event type (e.g., 'object.creating', 'object.updating')
      * @param array    $data      Additional event data
      *
-     * @return array CloudEvent-formatted payload
+     * @return ((array|false|mixed|string)[]|null|string)[] CloudEvent-formatted payload
+     *
+     * @psalm-return array{specversion: '1.0', type: string, source: string, id: string, time: string, datacontenttype: string, subject: null|string, dataschema: null, data: array{method: mixed|string, path: false|mixed|string, queryParams: array|mixed, headers: array|mixed, body: array|mixed,...}, openregister: array{app: 'openregister', version: '1.0.0'}}
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -174,7 +175,6 @@ class CloudEventFormatter
 
     }//end formatRequestAsCloudEvent()
 
-
     /**
      * Get event source from request
      *
@@ -201,7 +201,6 @@ class CloudEventFormatter
         return $host.'/apps/openregister';
 
     }//end getSource()
-
 
     /**
      * Get event subject from request
@@ -231,7 +230,6 @@ class CloudEventFormatter
 
     }//end getSubject()
 
-
     /**
      * Get request headers
      *
@@ -239,7 +237,9 @@ class CloudEventFormatter
      *
      * @param IRequest $request The HTTP request
      *
-     * @return array Request headers
+     * @return string[] Request headers
+     *
+     * @psalm-return array{'X-Requested-With'?: string, 'User-Agent'?: string, Authorization?: string, Accept?: string, 'Content-Type'?: string}
      */
     private function getRequestHeaders(IRequest $request): array
     {
@@ -265,7 +265,6 @@ class CloudEventFormatter
 
     }//end getRequestHeaders()
 
-
     /**
      * Get content type header from request
      *
@@ -287,7 +286,6 @@ class CloudEventFormatter
 
     }//end getContentTypeHeader()
 
-
     /**
      * Get application version
      *
@@ -301,6 +299,4 @@ class CloudEventFormatter
         return '1.0.0';
 
     }//end getAppVersion()
-
-
 }//end class

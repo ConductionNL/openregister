@@ -116,7 +116,6 @@ class EndpointLog extends Entity implements JsonSerializable
      */
     protected int $size = 4096;
 
-
     /**
      * EndpointLog constructor
      *
@@ -150,7 +149,6 @@ class EndpointLog extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Get the request data
      *
@@ -162,7 +160,6 @@ class EndpointLog extends Entity implements JsonSerializable
 
     }//end getRequest()
 
-
     /**
      * Get the response data
      *
@@ -173,7 +170,6 @@ class EndpointLog extends Entity implements JsonSerializable
         return $this->response;
 
     }//end getResponse()
-
 
     /**
      * Get array of field names that are JSON type
@@ -194,7 +190,6 @@ class EndpointLog extends Entity implements JsonSerializable
         );
 
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity from an array of data
@@ -228,7 +223,6 @@ class EndpointLog extends Entity implements JsonSerializable
 
     }//end hydrate()
 
-
     /**
      * Calculate and set the size of this log entry
      *
@@ -253,7 +247,6 @@ class EndpointLog extends Entity implements JsonSerializable
 
     }//end calculateSize()
 
-
     /**
      * Get the size of this log entry in bytes
      *
@@ -267,7 +260,6 @@ class EndpointLog extends Entity implements JsonSerializable
         return $this->size;
 
     }//end getSize()
-
 
     /**
      * Set the size of this log entry in bytes
@@ -286,7 +278,6 @@ class EndpointLog extends Entity implements JsonSerializable
         $this->size = $size;
 
     }//end setSize()
-
 
     /**
      * Serialize the entity to JSON format
@@ -329,6 +320,4 @@ class EndpointLog extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

@@ -49,8 +49,6 @@ use Psr\Log\LoggerInterface;
  */
 class CrudHandler
 {
-
-
     /**
      * Constructor
      *
@@ -66,7 +64,6 @@ class CrudHandler
 
     }//end __construct()
 
-
     /**
      * List objects with filters and pagination
      *
@@ -79,9 +76,11 @@ class CrudHandler
      * @param string|null $uses          Optional object ID that results must use
      * @param array|null  $views         Optional view filters
      *
-     * @return array Paginated results with objects
+     * @return (array|int)[] Paginated results with objects
      *
      * @throws \Exception If listing fails
+     *
+     * @psalm-return array{results: array<never, never>, total: 0}
      */
     public function list(
         array $query=[],
@@ -139,7 +138,6 @@ class CrudHandler
 
     }//end list()
 
-
     /**
      * Get a single object by ID
      *
@@ -147,11 +145,11 @@ class CrudHandler
      * @param bool   $rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
-     * @return ObjectEntity|null Object entity or null if not found
+     * @return null Object entity or null if not found
      *
      * @throws \Exception If retrieval fails
      */
-    public function get(string $objectId, bool $rbac=true, bool $_multitenancy=true): ?ObjectEntity
+    public function get(string $objectId, bool $rbac=true, bool $_multitenancy=true)
     {
         $this->logger->debug(
             message: '[CrudHandler] Getting object',
@@ -202,7 +200,6 @@ class CrudHandler
 
     }//end get()
 
-
     /**
      * Create a new object
      *
@@ -210,11 +207,11 @@ class CrudHandler
      * @param bool  $rbac          Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
      *
-     * @return ObjectEntity Created object
+     * @return null Created object
      *
      * @throws \Exception If creation fails
      */
-    public function create(array $data, bool $rbac=true, bool $_multitenancy=true): ObjectEntity
+    public function create(array $data, bool $rbac=true, bool $_multitenancy=true)
     {
         $this->logger->info(
             message: '[CrudHandler] Creating object',
@@ -256,7 +253,6 @@ class CrudHandler
 
     }//end create()
 
-
     /**
      * Update an existing object (full update)
      *
@@ -265,7 +261,7 @@ class CrudHandler
      * @param bool   $rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
-     * @return ObjectEntity Updated object
+     * @return null Updated object
      *
      * @throws \Exception If update fails
      */
@@ -274,7 +270,7 @@ class CrudHandler
         array $data,
         bool $rbac=true,
         bool $_multitenancy=true
-    ): ObjectEntity {
+    ) {
         $this->logger->info(
             message: '[CrudHandler] Updating object',
             context: [
@@ -315,7 +311,6 @@ class CrudHandler
         }//end try
 
     }//end update()
-
 
     /**
      * Patch an existing object (partial update)
@@ -387,7 +382,6 @@ class CrudHandler
 
     }//end patch()
 
-
     /**
      * Delete an object
      *
@@ -395,7 +389,7 @@ class CrudHandler
      * @param bool   $rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
-     * @return bool True if deleted successfully
+     * @return true True if deleted successfully
      *
      * @throws \Exception If deletion fails
      */
@@ -436,7 +430,6 @@ class CrudHandler
 
     }//end delete()
 
-
     /**
      * Build search query from request parameters
      *
@@ -445,6 +438,8 @@ class CrudHandler
      * @param string|null $schema        Optional schema ID/slug
      *
      * @return array Normalized search query
+     *
+     * @psalm-return array<string, mixed>
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -467,6 +462,4 @@ class CrudHandler
         );
 
     }//end buildSearchQuery()
-
-
 }//end class

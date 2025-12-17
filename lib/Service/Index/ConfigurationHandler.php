@@ -55,7 +55,6 @@ class ConfigurationHandler
      */
     private ?GuzzleClient $httpClient = null;
 
-
     /**
      * Constructor for ConfigurationHandler.
      *
@@ -70,7 +69,6 @@ class ConfigurationHandler
         $this->initializeHttpClient();
 
     }//end __construct()
-
 
     /**
      * Initialize SOLR configuration.
@@ -94,7 +92,6 @@ class ConfigurationHandler
         }
 
     }//end initializeConfig()
-
 
     /**
      * Initialize HTTP client with authentication support.
@@ -144,7 +141,6 @@ class ConfigurationHandler
 
     }//end initializeHttpClient()
 
-
     /**
      * Check if Solr is properly configured.
      *
@@ -168,7 +164,6 @@ class ConfigurationHandler
 
     }//end isSolrConfigured()
 
-
     /**
      * Get tenant-specific collection name (legacy method, currently returns base name).
      *
@@ -185,7 +180,6 @@ class ConfigurationHandler
         return $baseCollectionName;
 
     }//end getTenantSpecificCollectionName()
-
 
     /**
      * Build SOLR base URL from configuration.
@@ -230,30 +224,29 @@ class ConfigurationHandler
 
     }//end buildSolrBaseUrl()
 
-
     /**
      * Get the configured HTTP client.
      *
-     * @return GuzzleClient HTTP client instance.
+     * @return GuzzleClient|null HTTP client instance.
      */
-    public function getHttpClient(): GuzzleClient
+    public function getHttpClient(): GuzzleClient|null
     {
         return $this->httpClient;
 
     }//end getHttpClient()
 
-
     /**
      * Get the Solr configuration array.
      *
-     * @return array Solr configuration.
+     * @return (bool|int|string)[] Solr configuration.
+     *
+     * @psalm-return array{enabled: bool, host?: string, port?: int|string, core?: string, path?: string, username?: string, password?: string}
      */
     public function getSolrConfig(): array
     {
         return $this->solrConfig;
 
     }//end getSolrConfig()
-
 
     /**
      * Get the endpoint URL for a specific collection.
@@ -271,13 +264,14 @@ class ConfigurationHandler
 
     }//end getEndpointUrl()
 
-
     /**
      * Get configuration status for a specific setting.
      *
      * @param string $key Configuration key to check.
      *
      * @return string Status description.
+     *
+     * @psalm-return '✓ Configured'|'✗ Not configured'
      */
     public function getConfigStatus(string $key): string
     {
@@ -288,7 +282,6 @@ class ConfigurationHandler
         return '✗ Not configured';
 
     }//end getConfigStatus()
-
 
     /**
      * Get port configuration status.
@@ -307,7 +300,6 @@ class ConfigurationHandler
 
     }//end getPortStatus()
 
-
     /**
      * Get core configuration status.
      *
@@ -319,6 +311,4 @@ class ConfigurationHandler
         return '✓ Core: '.$core;
 
     }//end getCoreStatus()
-
-
 }//end class

@@ -79,7 +79,6 @@ class LockingHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -102,7 +101,6 @@ class LockingHandler
         $this->logger          = $logger;
 
     }//end __construct()
-
 
     /**
      * Lock an object
@@ -163,7 +161,6 @@ class LockingHandler
 
     }//end lockObject()
 
-
     /**
      * Unlock an object
      *
@@ -213,6 +210,4 @@ class LockingHandler
         return $object;
 
     }//end unlockObject()
-
-
 }//end class

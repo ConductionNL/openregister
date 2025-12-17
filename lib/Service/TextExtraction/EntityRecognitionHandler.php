@@ -83,7 +83,6 @@ class EntityRecognitionHandler
     public const CATEGORY_CONTEXTUAL_DATA = 'contextual_data';
     public const CATEGORY_TEMPORAL_DATA   = 'temporal_data';
 
-
     /**
      * Constructor.
      *
@@ -103,7 +102,6 @@ class EntityRecognitionHandler
 
     }//end __construct()
 
-
     /**
      * Process chunks for a source and extract entities.
      *
@@ -117,13 +115,11 @@ class EntityRecognitionHandler
      *                           - confidence_threshold: minimum confidence (default: 0.5).
      *                           - context_window: characters around entity (default: 50).
      *
-     * @return array{
-     *     chunks_processed: int,
-     *     entities_found: int,
-     *     relations_created: int
-     * }
+     * @return int[]
      *
      * @throws Exception When processing fails.
+     *
+     * @psalm-return array{chunks_processed: int<0, max>, entities_found: int, relations_created: int}
      */
     public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
     {
@@ -186,7 +182,6 @@ class EntityRecognitionHandler
 
     }//end processSourceChunks()
 
-
     /**
      * Extract entities from a text chunk.
      *
@@ -197,13 +192,11 @@ class EntityRecognitionHandler
      *                       - confidence_threshold: minimum confidence (default: 0.5).
      *                       - context_window: characters around entity (default: 50).
      *
-     * @return array{
-     *     entities_found: int,
-     *     relations_created: int,
-     *     entities: list<array{type: string, value: string, confidence: float}>
-     * }
+     * @return ((float|string)[][]|int)[]
      *
      * @throws Exception When extraction fails.
+     *
+     * @psalm-return array{entities_found: int<0, max>, relations_created: int<0, max>, entities: list<array{confidence: float, type: string, value: string}>}
      */
     public function extractFromChunk(Chunk $chunk, array $options=[]): array
     {
@@ -310,7 +303,6 @@ class EntityRecognitionHandler
 
     }//end extractFromChunk()
 
-
     /**
      * Detect entities in text using specified method.
      *
@@ -340,7 +332,6 @@ class EntityRecognitionHandler
 
     }//end detectEntities()
 
-
     /**
      * Detect entities using regex patterns.
      *
@@ -348,14 +339,9 @@ class EntityRecognitionHandler
      * @param array|null $entityTypes         Entity types to detect.
      * @param float      $confidenceThreshold Minimum confidence.
      *
-     * @return array<int, array{
-     *     type: string,
-     *     value: string,
-     *     category: string,
-     *     position_start: int,
-     *     position_end: int,
-     *     confidence: float
-     * }>
+     * @return (float|int|string)[][]
+     *
+     * @psalm-return array<int<0, max>, array{type: 'EMAIL'|'IBAN'|'PHONE', value: string, category: 'personal_data'|'sensitive_pii', position_start: int, position_end: int<min, max>, confidence: float}>
      */
     private function detectWithRegex(string $text, ?array $entityTypes, float $confidenceThreshold): array
     {
@@ -419,7 +405,6 @@ class EntityRecognitionHandler
 
     }//end detectWithRegex()
 
-
     /**
      * Detect entities using Presidio service.
      *
@@ -445,7 +430,6 @@ class EntityRecognitionHandler
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
 
     }//end detectWithPresidio()
-
 
     /**
      * Detect entities using LLM.
@@ -473,7 +457,6 @@ class EntityRecognitionHandler
 
     }//end detectWithLLM()
 
-
     /**
      * Detect entities using hybrid approach (combines multiple methods).
      *
@@ -500,7 +483,6 @@ class EntityRecognitionHandler
         return $regexEntities;
 
     }//end detectWithHybrid()
-
 
     /**
      * Find or create an entity.
@@ -554,7 +536,6 @@ class EntityRecognitionHandler
 
     }//end findOrCreateEntity()
 
-
     /**
      * Get category for entity type.
      *
@@ -575,7 +556,6 @@ class EntityRecognitionHandler
 
     }//end getCategoryForType()
 
-
     /**
      * Extract context around entity position.
      *
@@ -594,6 +574,4 @@ class EntityRecognitionHandler
         return substr($text, $start, $end - $start);
 
     }//end extractContext()
-
-
 }//end class

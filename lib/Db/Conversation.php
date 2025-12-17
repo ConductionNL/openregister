@@ -147,7 +147,6 @@ class Conversation extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Conversation constructor
      *
@@ -167,7 +166,6 @@ class Conversation extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Soft delete the conversation
      *
@@ -180,7 +178,6 @@ class Conversation extends Entity implements JsonSerializable
 
     }//end softDelete()
 
-
     /**
      * Restore soft deleted conversation
      *
@@ -192,7 +189,6 @@ class Conversation extends Entity implements JsonSerializable
         return $this;
 
     }//end restore()
-
 
     /**
      * Serialize the conversation to JSON
@@ -228,6 +224,4 @@ class Conversation extends Entity implements JsonSerializable
         ];
 
     }//end jsonSerialize()
-
-
 }//end class

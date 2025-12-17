@@ -97,7 +97,6 @@ class SetupHandler
      */
     private array $setupProgress = [];
 
-
     /**
      * Initialize SOLR setup manager
      *
@@ -127,7 +126,6 @@ class SetupHandler
                 );
 
     }//end __construct()
-
 
     /**
      * Track a setup step with detailed information
@@ -169,7 +167,6 @@ class SetupHandler
 
     }//end trackStep()
 
-
     /**
      * Build SOLR URL using IndexService base URL method for consistency
      *
@@ -185,7 +182,6 @@ class SetupHandler
         return $baseUrl.$path;
 
     }//end buildSolrUrl()
-
 
     /**
      * Initialize all setup steps as pending to show complete progress view
@@ -218,7 +214,6 @@ class SetupHandler
 
     }//end initializeAllSteps()
 
-
     /**
      * Get tenant-specific collection name using IndexService
      *
@@ -236,7 +231,6 @@ class SetupHandler
         return $this->solrService->getTenantSpecificCollectionName($baseCollectionName);
 
     }//end getTenantCollectionName()
-
 
     /**
      * Get tenant ID from IndexService
@@ -257,7 +251,6 @@ class SetupHandler
         return 'default';
 
     }//end getTenantId()
-
 
     /**
      * Get tenant-specific configSet name
@@ -301,7 +294,6 @@ class SetupHandler
         return $tenantSpecificName;
 
     }//end getTenantConfigSetName()
-
 
     /**
      * Run complete SOLR setup for OpenRegister multi-tenant architecture
@@ -823,7 +815,6 @@ class SetupHandler
 
     }//end setupSolr()
 
-
     /**
      * Verify SOLR connectivity using IndexService for consistency
      *
@@ -903,7 +894,6 @@ class SetupHandler
 
     }//end verifySolrConnectivity()
 
-
     /**
      * Check if all components in a connection test were successful
      *
@@ -922,7 +912,6 @@ class SetupHandler
         return true;
 
     }//end allComponentsSuccessful()
-
 
     /**
      * Ensures the tenant-specific configSet exists in SOLR.
@@ -974,7 +963,6 @@ class SetupHandler
         return $this->uploadConfigSet($tenantConfigSetName);
 
     }//end ensureTenantConfigSet()
-
 
     /**
      * Check if a SOLR configSet exists
@@ -1062,7 +1050,6 @@ class SetupHandler
         return $exists;
 
     }//end configSetExists()
-
 
     /**
      * Create a new SOLR configSet based on an existing template
@@ -1401,7 +1388,6 @@ class SetupHandler
 
     }//end createConfigSet()
 
-
     /**
      * Ensure the tenant-specific collection exists for this instance
      *
@@ -1564,7 +1550,6 @@ class SetupHandler
 
     }//end ensureTenantCollectionExists()
 
-
     /**
      * Create collection with retry logic for configSet propagation delays
      *
@@ -1714,7 +1699,6 @@ class SetupHandler
 
     }//end createCollectionWithRetry()
 
-
     /**
      * Check if error message indicates configSet propagation delay
      *
@@ -1744,7 +1728,6 @@ class SetupHandler
         return false;
 
     }//end isConfigSetPropagationError()
-
 
     /**
      * Try to force configSet propagation across SOLR cluster nodes
@@ -1943,7 +1926,6 @@ class SetupHandler
 
     }//end forceConfigSetPropagation()
 
-
     /**
      * Create a new SOLR collection using a configSet (SolrCloud)
      *
@@ -2114,7 +2096,6 @@ class SetupHandler
         }//end try
 
     }//end createCollection()
-
 
     /**
      * Upload a configSet from ZIP file to SOLR
@@ -2337,7 +2318,6 @@ class SetupHandler
 
     }//end uploadConfigSet()
 
-
     /**
      * Configure SOLR schema fields for OpenRegister ObjectEntity metadata
      *
@@ -2426,26 +2406,15 @@ class SetupHandler
 
     }//end configureSchemaFields()
 
-
     /**
      * Add or update a schema field with detailed tracking
      *
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return ((mixed|string|true)[]|bool|mixed|string)[] Result with success status,
-     *         action taken, and error details
+     * @return ((mixed|string|true)[]|bool|mixed|string)[]
      *
-     * @psalm-return array{
-     *     success: bool,
-     *     action: string,
-     *     error?: 'Unknown error'|mixed,
-     *     details?: array{
-     *         success?: mixed|true,
-     *         reason?: 'Field exists with compatible configuration'|mixed,
-     *         ...
-     *     }
-     * }
+     * @psalm-return array{success: bool, action: string, error?: 'Unknown error'|mixed, details?: array{success?: mixed|true, reason?: 'Field exists with compatible configuration'|mixed,...}}
      */
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
@@ -2491,22 +2460,15 @@ class SetupHandler
 
     }//end addOrUpdateSchemaFieldWithTracking()
 
-
     /**
      * Add a schema field and return detailed result
      *
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return (bool|mixed|string)[] Result with success status and details
+     * @return (bool|mixed|string)[]
      *
-     * @psalm-return array{
-     *     success: bool,
-     *     error?: mixed|string,
-     *     exception_type?: get-class-of<$e, Exception>,
-     *     response_body?: string,
-     *     solr_response?: mixed
-     * }
+     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
      */
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2560,22 +2522,15 @@ class SetupHandler
 
     }//end addSchemaFieldWithResult()
 
-
     /**
      * Replace a schema field and return detailed result
      *
      * @param string $fieldName   Name of the field
      * @param array  $fieldConfig Field configuration
      *
-     * @return (bool|mixed|string)[] Result with success status and details
+     * @return (bool|mixed|string)[]
      *
-     * @psalm-return array{
-     *     success: bool,
-     *     error?: mixed|string,
-     *     exception_type?: get-class-of<$e, Exception>,
-     *     response_body?: string,
-     *     solr_response?: mixed
-     * }
+     * @psalm-return array{success: bool, error?: mixed|string, exception_type?: get-class-of<$e, Exception>, response_body?: string, solr_response?: mixed}
      */
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
@@ -2628,7 +2583,6 @@ class SetupHandler
         }//end try
 
     }//end replaceSchemaFieldWithResult()
-
 
     /**
      * Get field definitions for ObjectEntity metadata fields (shared method)
@@ -2871,7 +2825,6 @@ class SetupHandler
 
     }//end getObjectEntityFieldDefinitions()
 
-
     /**
      * Add a new field to the SOLR schema
      *
@@ -2939,7 +2892,6 @@ class SetupHandler
         }//end try
 
     }//end addSchemaField()
-
 
     /**
      * Replace an existing field in the SOLR schema
@@ -3009,7 +2961,6 @@ class SetupHandler
 
     }//end replaceSchemaField()
 
-
     /**
      * Validate that SOLR setup is complete and functional (SolrCloud)
      *
@@ -3063,7 +3014,6 @@ class SetupHandler
 
     }//end validateSetup()
 
-
     /**
      * Test that a collection responds to queries correctly (SolrCloud)
      *
@@ -3098,6 +3048,4 @@ class SetupHandler
         return ($data['responseHeader']['status'] ?? -1) === 0;
 
     }//end testCollectionQuery()
-
-
 }//end class

@@ -51,7 +51,6 @@ class ValidationOperationsHandler
      */
     private IAppContainer $container;
 
-
     public function __construct(
         private readonly ValidateObject $validateHandler,
         private readonly SchemaMapper $schemaMapper,
@@ -62,18 +61,16 @@ class ValidationOperationsHandler
 
     }//end __construct()
 
-
     /**
      * Get ObjectService via lazy loading to break circular dependency.
      *
-     * @return \OCA\OpenRegister\Service\ObjectService
+     * @return null
      */
-    private function getObjectService(): \OCA\OpenRegister\Service\ObjectService
+    private function getObjectService()
     {
-        return null; // CIRCULAR FIX.
-
+        return null;
+        // CIRCULAR FIX.
     }//end getObjectService()
-
 
     /**
      * Validate all objects in the system.
@@ -81,14 +78,11 @@ class ValidationOperationsHandler
      * Iterates through all objects, validates each against its schema,
      * and generates a comprehensive validation report with statistics.
      *
-     * @return array Validation results including:
-     *               - total_objects: Total number of objects validated.
-     *               - valid_objects: Number of valid objects.
-     *               - invalid_objects: Number of invalid objects.
-     *               - validation_errors: Array of validation errors with details.
-     *               - summary: Summary statistics including success rate.
+     * @return (((\Opis\JsonSchema\Errors\ValidationError|mixed|null|string[])[]|bool|float|int)[]|int)[]
      *
      * @throws Exception If validation operation fails.
+     *
+     * @psalm-return array{total_objects: int<0, max>, valid_objects: 0|1|2, invalid_objects: int, validation_errors: list<array{errors: Opis\JsonSchema\Errors\ValidationError|list{non-falsy-string}|null, object_id: mixed, object_name: mixed, register: mixed, schema: mixed}>, summary: array{validation_success_rate: 100|float, has_errors: bool, error_count: int<0, max>}}
      */
     public function validateAllObjects(): array
     {
@@ -140,7 +134,7 @@ class ValidationOperationsHandler
         }//end foreach
 
         // Create summary with validation statistics.
-        $validationSuccessRate=100;
+        $validationSuccessRate = 100;
         if ($validationResults['total_objects'] > 0) {
             $validationSuccessRate = round(
                 ($validationResults['valid_objects'] / $validationResults['total_objects']) * 100,
@@ -157,6 +151,4 @@ class ValidationOperationsHandler
         return $validationResults;
 
     }//end validateAllObjects()
-
-
 }//end class

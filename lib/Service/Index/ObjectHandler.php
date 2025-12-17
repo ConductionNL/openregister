@@ -48,8 +48,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectHandler
 {
-
-
     /**
      * Constructor
      *
@@ -67,7 +65,6 @@ class ObjectHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Search objects in Solr.
@@ -109,7 +106,6 @@ class ObjectHandler
 
     }//end searchObjects()
 
-
     /**
      * Build Solr query from OpenRegister query parameters.
      *
@@ -119,7 +115,9 @@ class ObjectHandler
      * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
-     * @return array Solr query parameters
+     * @return (int|mixed|string[])[] Solr query parameters
+     *
+     * @psalm-return array{q: '*:*'|mixed, start: 0|mixed, rows: 10|mixed, fq?: list{0: '-deleted:true'|'published:true', 1?: '-deleted:true'}}
      */
     private function buildSolrQuery(array $query, bool $rbac, bool $multitenancy, bool $published, bool $deleted): array
     {
@@ -156,13 +154,14 @@ class ObjectHandler
 
     }//end buildSolrQuery()
 
-
     /**
      * Convert Solr response to OpenRegister format.
      *
      * @param array $solrResults Solr search results
      *
-     * @return array OpenRegister formatted results
+     * @return (array|int|mixed)[] OpenRegister formatted results
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, start: 0|mixed}
      */
     private function convertToOpenRegisterFormat(array $solrResults): array
     {
@@ -176,7 +175,6 @@ class ObjectHandler
         ];
 
     }//end convertToOpenRegisterFormat()
-
 
     /**
      * Commit changes to Solr.
@@ -211,7 +209,6 @@ class ObjectHandler
         }//end try
 
     }//end commit()
-
 
     /**
      * Reindex all objects in the system.
@@ -252,6 +249,4 @@ class ObjectHandler
         }//end try
 
     }//end reindexAll()
-
-
 }//end class

@@ -54,7 +54,6 @@ class SolrQueryExecutor
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -74,7 +73,6 @@ class SolrQueryExecutor
         $this->logger            = $logger;
 
     }//end __construct()
-
 
     /**
      * Execute a search query.
@@ -132,7 +130,6 @@ class SolrQueryExecutor
 
     }//end search()
 
-
     /**
      * Search with pagination.
      *
@@ -181,13 +178,14 @@ class SolrQueryExecutor
 
     }//end searchPaginated()
 
-
     /**
      * Build Solr query from OpenRegister query format.
      *
      * @param array $query OpenRegister query
      *
-     * @return array Solr query parameters
+     * @return (int|mixed|string)[] Solr query parameters
+     *
+     * @psalm-return array{q: '*:*'|mixed, start: int, rows: int, sort?: string, fl?: mixed|string}
      */
     private function buildSolrQuery(array $query): array
     {
@@ -210,7 +208,6 @@ class SolrQueryExecutor
         return $solrQuery;
 
     }//end buildSolrQuery()
-
 
     /**
      * Translate sort field to Solr format.
@@ -235,14 +232,15 @@ class SolrQueryExecutor
 
     }//end translateSortField()
 
-
     /**
      * Convert Solr response to OpenRegister paginated format.
      *
      * @param array $solrResult Solr search result
      * @param array $query      Original query
      *
-     * @return array Paginated result
+     * @return (array|int|mixed)[] Paginated result
+     *
+     * @psalm-return array{results: array<never, never>|mixed, total: 0|mixed, limit: int, offset: 0|mixed, page: int, pages: int}
      */
     private function convertToPaginatedFormat(array $solrResult, array $query): array
     {
@@ -264,7 +262,6 @@ class SolrQueryExecutor
         ];
 
     }//end convertToPaginatedFormat()
-
 
     /**
      * Inspect index with a query.
@@ -297,11 +294,12 @@ class SolrQueryExecutor
 
     }//end inspectIndex()
 
-
     /**
      * Get statistics about the index.
      *
-     * @return array Statistics
+     * @return (bool|int|mixed|null|string)[] Statistics
+     *
+     * @psalm-return array{available: bool, collection: null|string, error?: string, documents?: 0|mixed, status?: 'OK'}
      */
     public function getStats(): array
     {
@@ -333,6 +331,4 @@ class SolrQueryExecutor
         }//end try
 
     }//end getStats()
-
-
 }//end class

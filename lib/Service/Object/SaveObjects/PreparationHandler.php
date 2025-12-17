@@ -52,36 +52,34 @@ class PreparationHandler
      *
      * @var array<int, Register>
      */
-    private static array $registerCache=[];
+    private static array $registerCache = [];
 
     /**
      * Static cache for schemas to avoid repeated DB queries.
      *
      * @var array<int, Schema>
      */
-    private static array $schemaCache=[];
-
+    private static array $schemaCache = [];
 
     /**
      * Constructor for PreparationHandler.
      *
-     * @param SaveObject            $saveHandler         Handler for save operations.
-     * @param SchemaMapper          $schemaMapper        Mapper for schema operations.
+     * @param SaveObject            $saveHandler           Handler for save operations.
+     * @param SchemaMapper          $schemaMapper          Mapper for schema operations.
      * @param BulkValidationHandler $bulkValidationHandler Handler for schema analysis.
-     * @param OrganisationService   $organisationService Service for organisation operations.
-     * @param IUserSession          $userSession         User session for owner assignment.
-     * @param LoggerInterface       $logger              Logger for logging operations.
+     * @param OrganisationService   $organisationService   Service for organisation operations.
+     * @param IUserSession          $userSession           User session for owner assignment.
+     * @param LoggerInterface       $logger                Logger for logging operations.
      */
     public function __construct(
-    private readonly SaveObject $saveHandler,
-    private readonly SchemaMapper $schemaMapper,
-    private readonly BulkValidationHandler $bulkValidationHandler,
-    // REMOVED: private readonly.
-    private readonly IUserSession $userSession,
-    private readonly LoggerInterface $logger
+        private readonly SaveObject $saveHandler,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly BulkValidationHandler $bulkValidationHandler,
+        // REMOVED: private readonly.
+        private readonly IUserSession $userSession,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
-
 
     /**
      * Prepare objects for bulk save operations.
@@ -99,9 +97,9 @@ class PreparationHandler
      *
      * @throws Exception If schema not found or other preparation errors.
      *
-     * @psalm-param array<int, array<string, mixed>> $objects
-     * @phpstan-param array<int, array<string, mixed>> $objects
-     * @psalm-return array{0: array<int, array<string, mixed>>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
+     * @psalm-param    array<int, array<string, mixed>> $objects
+     * @phpstan-param  array<int, array<string, mixed>> $objects
+     * @psalm-return   array{0: array<int, array<string, mixed>>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
      * @phpstan-return array{0: array<int, array<string, mixed>>, 1: array<int|string, Schema>, 2: array<int, array<string, mixed>>}
      */
     public function prepareObjectsForBulkSave(array $objects): array
@@ -111,13 +109,13 @@ class PreparationHandler
             return [[], [], []];
         }
 
-        $preparedObjects=[];
+        $preparedObjects = [];
         $schemaCache     = [];
         $schemaAnalysis  = [];
         $invalidObjects  = [];
 
         // PERFORMANCE OPTIMIZATION: Build comprehensive schema analysis cache first.
-        $schemaIds=[];
+        $schemaIds = [];
         foreach ($objects as $object) {
             $selfData = $object['@self'] ?? [];
             $schemaId = $selfData['schema'] ?? null;
@@ -160,7 +158,7 @@ class PreparationHandler
             $providedId = $selfData['id'] ?? null;
             if (($providedId === null) === true || empty(trim($providedId)) === true) {
                 // No ID provided or empty - generate new UUID.
-                $selfData['id'] = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+                $selfData['id']  = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $object['@self'] = $selfData;
             }
 
@@ -195,26 +193,32 @@ class PreparationHandler
             $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);
 
             // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
-            $config = $schema->getConfiguration();
+            $config      = $schema->getConfiguration();
             $isNewObject = empty($selfData['id']) === true || isset($selfData['id']) === false;
             if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
                 // Check if published date was already set from @self data (CSV).
                 $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
                 if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
-                    $this->logger->debug('Auto-publishing NEW object in bulk creation', [
-                        'schema' => $schema->getTitle(),
-                        'autoPublish' => true,
-                        'isNewObject' => true,
-                        'publishedFromCsv' => false
-                    ]);
+                    $this->logger->debug(
+                            'Auto-publishing NEW object in bulk creation',
+                            [
+                                'schema'           => $schema->getTitle(),
+                                'autoPublish'      => true,
+                                'isNewObject'      => true,
+                                'publishedFromCsv' => false,
+                            ]
+                            );
                     $tempEntity->setPublished(new DateTime());
-                } elseif ($publishedFromCsv === true) {
-                    $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
-                        'schema' => $schema->getTitle(),
-                        'publishedFromCsv' => true,
-                        'csvPublishedDate' => $selfData['published']
-                    ]);
-                }
+                } else if ($publishedFromCsv === true) {
+                    $this->logger->debug(
+                            'Skipping auto-publish - published date provided from CSV',
+                            [
+                                'schema'           => $schema->getTitle(),
+                                'publishedFromCsv' => true,
+                                'csvPublishedDate' => $selfData['published'],
+                            ]
+                            );
+                }//end if
             }//end if
 
             // Extract hydrated metadata back to object's @self data.
@@ -240,12 +244,12 @@ class PreparationHandler
             }
 
             if ($tempEntity->getPublished() !== null) {
-                $publishedFormatted = $tempEntity->getPublished()->format('c');
+                $publishedFormatted    = $tempEntity->getPublished()->format('c');
                 $selfData['published'] = $publishedFormatted;
             }
 
             if ($tempEntity->getDepublished() !== null) {
-                $depublishedFormatted = $tempEntity->getDepublished()->format('c');
+                $depublishedFormatted    = $tempEntity->getDepublished()->format('c');
                 $selfData['depublished'] = $depublishedFormatted;
             }
 
@@ -269,7 +273,6 @@ class PreparationHandler
         return [array_values($preparedObjects), $schemaCache, $invalidObjects];
     }//end prepareObjectsForBulkSave()
 
-
     /**
      * Load schema with caching.
      *
@@ -291,7 +294,6 @@ class PreparationHandler
         return $schema;
     }//end loadSchemaWithCache()
 
-
     /**
      * Get schema analysis with caching.
      *
@@ -304,7 +306,6 @@ class PreparationHandler
         // Delegate to BulkValidationHandler for comprehensive schema analysis.
         return $this->bulkValidationHandler->performComprehensiveSchemaAnalysis($schema);
     }//end getSchemaAnalysisWithCache()
-
 
     /**
      * Handle pre-validation cascading.
@@ -320,7 +321,6 @@ class PreparationHandler
         [$processedObject, $_] = $this->bulkValidationHandler->handlePreValidationCascading($object, $uuid);
         return $processedObject;
     }//end handlePreValidationCascading()
-
 
     /**
      * Handle bulk inverse relations with analysis.

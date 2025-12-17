@@ -31,8 +31,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectHandler implements TextExtractionHandlerInterface
 {
-
-
     /**
      * Constructor.
      *
@@ -52,7 +50,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
     }//end __construct()
 
-
     /**
      * Get the source type this handler supports.
      *
@@ -65,7 +62,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
         return 'object';
 
     }//end getSourceType()
-
 
     /**
      * Extract text from an object.
@@ -193,7 +189,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
     }//end extractText()
 
-
     /**
      * Check if object needs extraction.
      *
@@ -219,7 +214,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
         return $latestChunkTimestamp < $sourceTimestamp;
 
     }//end needsExtraction()
-
 
     /**
      * Get object metadata.
@@ -249,7 +243,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
     }//end getSourceMetadata()
 
-
     /**
      * Get object modification timestamp.
      *
@@ -267,7 +260,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
         }
 
     }//end getSourceTimestamp()
-
 
     /**
      * Recursively extract text from nested arrays/objects.
@@ -320,6 +312,4 @@ class ObjectHandler implements TextExtractionHandlerInterface
         return implode("\n", $textParts);
 
     }//end extractTextFromArray()
-
-
 }//end class

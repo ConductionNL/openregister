@@ -35,7 +35,6 @@ class ConfigurationCreatedEvent extends Event
      */
     private Configuration $configuration;
 
-
     /**
      * Constructor for ConfigurationCreatedEvent.
      *
@@ -50,7 +49,6 @@ class ConfigurationCreatedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the created configuration.
      *
@@ -61,6 +59,4 @@ class ConfigurationCreatedEvent extends Event
         return $this->configuration;
 
     }//end getConfiguration()
-
-
 }//end class

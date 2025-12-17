@@ -54,7 +54,6 @@ class SolrSchemaManager
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -74,7 +73,6 @@ class SolrSchemaManager
         $this->logger            = $logger;
 
     }//end __construct()
-
 
     /**
      * Get field types for a collection.
@@ -118,7 +116,6 @@ class SolrSchemaManager
         }//end try
 
     }//end getFieldTypes()
-
 
     /**
      * Add a field type to a collection.
@@ -170,7 +167,6 @@ class SolrSchemaManager
 
     }//end addFieldType()
 
-
     /**
      * Get fields for a collection.
      *
@@ -213,7 +209,6 @@ class SolrSchemaManager
         }//end try
 
     }//end getFields()
-
 
     /**
      * Add or update a field in a collection.
@@ -291,7 +286,6 @@ class SolrSchemaManager
 
     }//end addOrUpdateField()
 
-
     /**
      * Delete a field from a collection.
      *
@@ -335,7 +329,6 @@ class SolrSchemaManager
 
     }//end deleteField()
 
-
     /**
      * Get schema configuration for a collection.
      *
@@ -362,6 +355,4 @@ class SolrSchemaManager
         }//end try
 
     }//end getSchema()
-
-
 }//end class

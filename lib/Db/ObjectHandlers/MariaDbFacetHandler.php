@@ -32,8 +32,6 @@ use OCP\IDBConnection;
  */
 class MariaDbFacetHandler
 {
-
-
     /**
      * Constructor for the MariaDbFacetHandler
      *
@@ -44,7 +42,6 @@ class MariaDbFacetHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Get terms facet for a JSON object field
@@ -63,7 +60,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array Terms facet data with buckets containing key and results
+     * @return (((int|mixed|string)[]|mixed)[]|string)[] Terms facet data with buckets containing key and results
+     *
+     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: mixed|string, results: int},...}}
      */
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
@@ -115,7 +114,6 @@ class MariaDbFacetHandler
         ];
 
     }//end getTermsFacet()
-
 
     /**
      * Check if a field commonly contains arrays
@@ -172,7 +170,6 @@ class MariaDbFacetHandler
 
     }//end fieldContainsArrays()
 
-
     /**
      * Get terms facet for an array field
      *
@@ -189,9 +186,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|string)[][]|string)[] Terms facet data with buckets containing key and results
+     * @return ((int|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'terms', buckets: list{0?: array{key: string, results: int},...}}
+     * @psalm-return array{type: 'terms', buckets: list<array{key: non-empty-string, results: 0|1|2|3|4}>}
      */
     private function getTermsFacetForArrayField(string $field, array $baseQuery): array
     {
@@ -265,7 +262,6 @@ class MariaDbFacetHandler
 
     }//end getTermsFacetForArrayField()
 
-
     /**
      * Normalize a value for faceting
      *
@@ -302,7 +298,6 @@ class MariaDbFacetHandler
 
     }//end normalizeValue()
 
-
     /**
      * Get date histogram facet for a JSON object field
      *
@@ -322,9 +317,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed)[][]|string)[] Date histogram facet data
+     * @return ((int|mixed)[][]|string)[]
      *
-     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list{0?: array{key: mixed, results: int},...}}
+     * @psalm-return array{type: 'date_histogram', interval: string, buckets: list<array{key: mixed, results: int}>}
      */
     public function getDateHistogramFacet(string $field, string $interval, array $baseQuery=[]): array
     {
@@ -372,7 +367,6 @@ class MariaDbFacetHandler
 
     }//end getDateHistogramFacet()
 
-
     /**
      * Get range facet for a JSON object field
      *
@@ -392,9 +386,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return ((int|mixed|string)[][]|string)[] Range facet data
+     * @return ((int|mixed|string)[][]|string)[]
      *
-     * @psalm-return array{type: 'range', buckets: list{0?: array{key: string, results: int, from?: mixed, to?: mixed},...}}
+     * @psalm-return array{type: 'range', buckets: list<array{from?: mixed, key: string, results: int, to?: mixed}>}
      */
     public function getRangeFacet(string $field, array $ranges, array $baseQuery=[]): array
     {
@@ -460,7 +454,6 @@ class MariaDbFacetHandler
         ];
 
     }//end getRangeFacet()
-
 
     /**
      * Apply base query filters to the query builder
@@ -537,7 +530,6 @@ class MariaDbFacetHandler
 
     }//end applyBaseFilters()
 
-
     /**
      * Apply full-text search to the query builder
      *
@@ -601,7 +593,6 @@ class MariaDbFacetHandler
 
     }//end applyFullTextSearch()
 
-
     /**
      * Apply IDs filter to the query builder
      *
@@ -662,7 +653,6 @@ class MariaDbFacetHandler
         }
 
     }//end applyIdsFilter()
-
 
     /**
      * Apply metadata filters with advanced operator support
@@ -780,7 +770,6 @@ class MariaDbFacetHandler
 
     }//end applyMetadataFilters()
 
-
     /**
      * Apply object field filters with advanced operator support
      *
@@ -845,7 +834,6 @@ class MariaDbFacetHandler
 
     }//end applyObjectFieldFilters()
 
-
     /**
      * Apply simple object field filter (backwards compatibility)
      *
@@ -870,7 +858,6 @@ class MariaDbFacetHandler
         $queryBuilder->andWhere($singleValueConditions);
 
     }//end applySimpleObjectFieldFilter()
-
 
     /**
      * Add object field value condition (exact match and array containment)
@@ -911,7 +898,6 @@ class MariaDbFacetHandler
                 );
 
     }//end addObjectFieldValueCondition()
-
 
     /**
      * Apply object field operator
@@ -1028,7 +1014,6 @@ class MariaDbFacetHandler
 
     }//end applyObjectFieldOperator()
 
-
     /**
      * Get date format string for histogram interval
      *
@@ -1057,7 +1042,6 @@ class MariaDbFacetHandler
 
     }//end getDateFormatForInterval()
 
-
     /**
      * Generate a human-readable key for a range
      *
@@ -1083,7 +1067,6 @@ class MariaDbFacetHandler
 
     }//end generateRangeKey()
 
-
     /**
      * Get sample objects for field analysis
      *
@@ -1098,9 +1081,9 @@ class MariaDbFacetHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array[] Array of object data for analysis
+     * @return array[]
      *
-     * @psalm-return list{0?: array,...}
+     * @psalm-return list<array>
      */
     private function getSampleObjects(array $baseQuery, int $sampleSize): array
     {
@@ -1127,7 +1110,6 @@ class MariaDbFacetHandler
         return $objects;
 
     }//end getSampleObjects()
-
 
     /**
      * Analyze fields in an object recursively
@@ -1217,7 +1199,6 @@ class MariaDbFacetHandler
 
     }//end analyzeObjectFields()
 
-
     /**
      * Record the type of a value in field analysis
      *
@@ -1244,7 +1225,6 @@ class MariaDbFacetHandler
 
     }//end recordValueType()
 
-
     /**
      * Record a sample value in field analysis
      *
@@ -1269,7 +1249,6 @@ class MariaDbFacetHandler
         }
 
     }//end recordSampleValue()
-
 
     /**
      * Determine the type of a value
@@ -1318,7 +1297,6 @@ class MariaDbFacetHandler
 
     }//end determineValueType()
 
-
     /**
      * Check if a string value looks like a date
      *
@@ -1356,7 +1334,6 @@ class MariaDbFacetHandler
 
     }//end looksLikeDate()
 
-
     /**
      * Convert a value to string representation
      *
@@ -1390,7 +1367,6 @@ class MariaDbFacetHandler
 
     }//end valueToString()
 
-
     /**
      * Determine field configuration based on analysis
      *
@@ -1403,7 +1379,7 @@ class MariaDbFacetHandler
      * @psalm-param string $fieldPath
      * @psalm-param array<string, mixed> $analysis
      *
-     * @return (array|false|mixed|string)[]|null Field configuration or null if not suitable for faceting
+     * @return (array|false|mixed|string)[]|null
      *
      * @psalm-return array{type: string, description: string, sample_values: array, appearance_rate: mixed, is_array: false|mixed, facet_types: list{0: 'date_histogram'|'range'|'terms', 1?: 'range'|'terms'}, cardinality?: 'binary'|'low'|'numeric', intervals?: list{'day', 'week', 'month', 'year'}}|null
      */
@@ -1468,7 +1444,6 @@ class MariaDbFacetHandler
 
     }//end determineFieldConfiguration()
 
-
     /**
      * Check if an analysis represents an array of simple values
      *
@@ -1512,7 +1487,6 @@ class MariaDbFacetHandler
 
     }//end isArrayOfSimpleValues()
 
-
     /**
      * Get the primary type from type analysis
      *
@@ -1545,6 +1519,4 @@ class MariaDbFacetHandler
         return null;
 
     }//end getPrimaryType()
-
-
 }//end class

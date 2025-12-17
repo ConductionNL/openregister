@@ -81,7 +81,6 @@ class WebhookRetryJob extends TimedJob
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -109,7 +108,6 @@ class WebhookRetryJob extends TimedJob
         $this->setInterval(self::DEFAULT_INTERVAL);
 
     }//end __construct()
-
 
     /**
      * Run the retry job
@@ -226,6 +224,4 @@ class WebhookRetryJob extends TimedJob
         }//end foreach
 
     }//end run()
-
-
 }//end class

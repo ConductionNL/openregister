@@ -29,14 +29,33 @@ use Psr\Log\LoggerInterface;
 class ElasticsearchDocumentIndexer
 {
 
+    /**
+     * Elasticsearch HTTP client for making requests
+     *
+     * @var ElasticsearchHttpClient
+     */
     private readonly ElasticsearchHttpClient $httpClient;
 
+    /**
+     * Elasticsearch index manager for index operations
+     *
+     * @var ElasticsearchIndexManager
+     */
     private readonly ElasticsearchIndexManager $indexManager;
 
+    /**
+     * Document builder for preparing documents
+     *
+     * @var DocumentBuilder
+     */
     private readonly DocumentBuilder $documentBuilder;
 
+    /**
+     * PSR-3 logger instance
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
-
 
     /**
      * Constructor
@@ -58,7 +77,6 @@ class ElasticsearchDocumentIndexer
         $this->logger          = $logger;
 
     }//end __construct()
-
 
     /**
      * Index a single object.
@@ -114,14 +132,15 @@ class ElasticsearchDocumentIndexer
 
     }//end indexObject()
 
-
     /**
      * Index multiple objects in bulk.
      *
      * @param array $objects Objects to index
      * @param bool  $refresh Whether to refresh after bulk
      *
-     * @return array Results with success/failure counts
+     * @return (bool|int|string)[] Results with success/failure counts
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<min, max>, error?: string}
      */
     public function bulkIndexObjects(array $objects, bool $refresh=false): array
     {
@@ -228,7 +247,6 @@ class ElasticsearchDocumentIndexer
 
     }//end bulkIndexObjects()
 
-
     /**
      * Delete an object from the index.
      *
@@ -275,7 +293,6 @@ class ElasticsearchDocumentIndexer
 
     }//end deleteObject()
 
-
     /**
      * Clear all documents from index.
      *
@@ -309,6 +326,4 @@ class ElasticsearchDocumentIndexer
         }//end try
 
     }//end clearIndex()
-
-
 }//end class

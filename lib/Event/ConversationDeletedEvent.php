@@ -35,7 +35,6 @@ class ConversationDeletedEvent extends Event
      */
     private Conversation $conversation;
 
-
     /**
      * Constructor for ConversationDeletedEvent.
      *
@@ -50,7 +49,6 @@ class ConversationDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted conversation.
      *
@@ -61,6 +59,4 @@ class ConversationDeletedEvent extends Event
         return $this->conversation;
 
     }//end getConversation()
-
-
 }//end class

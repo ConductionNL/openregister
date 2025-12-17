@@ -35,7 +35,6 @@ class ConfigurationDeletedEvent extends Event
      */
     private Configuration $configuration;
 
-
     /**
      * Constructor for ConfigurationDeletedEvent.
      *
@@ -50,7 +49,6 @@ class ConfigurationDeletedEvent extends Event
 
     }//end __construct()
 
-
     /**
      * Get the deleted configuration.
      *
@@ -61,6 +59,4 @@ class ConfigurationDeletedEvent extends Event
         return $this->configuration;
 
     }//end getConfiguration()
-
-
 }//end class

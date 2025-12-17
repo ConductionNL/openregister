@@ -30,8 +30,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileHandler implements TextExtractionHandlerInterface
 {
-
-
     /**
      * Constructor.
      *
@@ -49,7 +47,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
     }//end __construct()
 
-
     /**
      * Get the source type this handler supports.
      *
@@ -62,7 +59,6 @@ class FileHandler implements TextExtractionHandlerInterface
         return 'file';
 
     }//end getSourceType()
-
 
     /**
      * Extract text from a file.
@@ -143,7 +139,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
     }//end extractText()
 
-
     /**
      * Check if file needs extraction.
      *
@@ -170,7 +165,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
     }//end needsExtraction()
 
-
     /**
      * Get file metadata.
      *
@@ -193,7 +187,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
     }//end getSourceMetadata()
 
-
     /**
      * Get file modification timestamp.
      *
@@ -211,7 +204,6 @@ class FileHandler implements TextExtractionHandlerInterface
         }
 
     }//end getSourceTimestamp()
-
 
     /**
      * Perform text extraction from file based on MIME type.
@@ -256,7 +248,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
     }//end performTextExtraction()
 
-
     /**
      * Detect language from text.
      *
@@ -279,6 +270,4 @@ class FileHandler implements TextExtractionHandlerInterface
         ];
 
     }//end detectLanguage()
-
-
 }//end class

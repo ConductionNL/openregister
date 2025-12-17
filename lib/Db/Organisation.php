@@ -224,7 +224,6 @@ class Organisation extends Entity implements JsonSerializable
      */
     public ?int $userCount = null;
 
-
     /**
      * Organisation constructor
      *
@@ -250,7 +249,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end __construct()
 
-
     /**
      * Validate UUID format
      *
@@ -268,7 +266,6 @@ class Organisation extends Entity implements JsonSerializable
         }
 
     }//end isValidUuid()
-
 
     /**
      * Add a user to this organisation
@@ -291,7 +288,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this;
 
     }//end addUser()
-
 
     /**
      * Remove a user from this organisation
@@ -325,7 +321,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end removeUser()
 
-
     /**
      * Check if a user belongs to this organisation
      *
@@ -339,7 +334,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end hasUser()
 
-
     /**
      * Get all users in this organisation
      *
@@ -350,7 +344,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this->users ?? [];
 
     }//end getUserIds()
-
 
     /**
      * Get a specific role by ID or name
@@ -376,7 +369,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end getRole()
 
-
     /**
      * Get all groups in this organisation
      *
@@ -387,7 +379,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this->groups ?? [];
 
     }//end getGroups()
-
 
     /**
      * Set all groups for this organisation
@@ -404,7 +395,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end setGroups()
 
-
     /**
      * Get whether this organisation is active
      *
@@ -415,7 +405,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this->active ?? true;
 
     }//end getActive()
-
 
     /**
      * Set whether this organisation is active
@@ -438,7 +427,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this;
 
     }//end setActive()
-
 
     /**
      * Get default authorization structure for organisations
@@ -550,7 +538,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end getDefaultAuthorization()
 
-
     /**
      * Get authorization rules for this organisation
      *
@@ -561,7 +548,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this->authorization ?? $this->getDefaultAuthorization();
 
     }//end getAuthorization()
-
 
     /**
      * Set authorization rules for this organisation
@@ -578,7 +564,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end setAuthorization()
 
-
     /**
      * Get parent organisation UUID
      *
@@ -589,7 +574,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this->parent;
 
     }//end getParent()
-
 
     /**
      * Set parent organisation UUID
@@ -605,7 +589,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this;
 
     }//end setParent()
-
 
     /**
      * Set child organisation UUIDs
@@ -623,7 +606,6 @@ class Organisation extends Entity implements JsonSerializable
         return $this;
 
     }//end setChildren()
-
 
     /**
      * JSON serialization for API responses
@@ -704,7 +686,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end jsonSerialize()
 
-
     /**
      * String representation of the organisation
      *
@@ -725,7 +706,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end __toString()
 
-
     /**
      * Get created date formatted as ISO 8601 string or null
      *
@@ -741,7 +721,6 @@ class Organisation extends Entity implements JsonSerializable
 
     }//end getCreatedFormatted()
 
-
     /**
      * Get updated date formatted as ISO 8601 string or null
      *
@@ -756,6 +735,4 @@ class Organisation extends Entity implements JsonSerializable
         return null;
 
     }//end getUpdatedFormatted()
-
-
 }//end class

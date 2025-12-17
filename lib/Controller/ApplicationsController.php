@@ -77,7 +77,6 @@ class ApplicationsController extends Controller
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -109,7 +108,6 @@ class ApplicationsController extends Controller
 
     }//end __construct()
 
-
     /**
      * Render the Applications page
      *
@@ -134,7 +132,6 @@ class ApplicationsController extends Controller
         );
 
     }//end page()
-
 
     /**
      * Get all applications
@@ -207,7 +204,6 @@ class ApplicationsController extends Controller
 
     }//end index()
 
-
     /**
      * Get a single application
      *
@@ -254,7 +250,6 @@ class ApplicationsController extends Controller
 
     }//end show()
 
-
     /**
      * Create a new application
      *
@@ -262,8 +257,6 @@ class ApplicationsController extends Controller
      * Validates input and returns created application or error.
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing created application
      *
      * @NoCSRFRequired
      *
@@ -303,7 +296,6 @@ class ApplicationsController extends Controller
 
     }//end create()
 
-
     /**
      * Update an existing application
      *
@@ -313,8 +305,6 @@ class ApplicationsController extends Controller
      * @param int $id Application database ID
      *
      * @NoAdminRequired
-     *
-     * @return JSONResponse JSON response containing updated application
      *
      * @NoCSRFRequired
      *
@@ -359,7 +349,6 @@ class ApplicationsController extends Controller
 
     }//end update()
 
-
     /**
      * Patch (partially update) an application
      *
@@ -382,7 +371,6 @@ class ApplicationsController extends Controller
         return $this->update($id);
 
     }//end patch()
-
 
     /**
      * Delete an application
@@ -430,7 +418,6 @@ class ApplicationsController extends Controller
 
     }//end destroy()
 
-
     /**
      * Extract limit parameter from request params
      *
@@ -454,7 +441,6 @@ class ApplicationsController extends Controller
         return null;
 
     }//end extractLimit()
-
 
     /**
      * Extract offset parameter from request params
@@ -480,7 +466,6 @@ class ApplicationsController extends Controller
 
     }//end extractOffset()
 
-
     /**
      * Extract page parameter from request params
      *
@@ -504,6 +489,4 @@ class ApplicationsController extends Controller
         return null;
 
     }//end extractPage()
-
-
 }//end class

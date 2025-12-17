@@ -42,8 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class PerformanceHandler
 {
-
-
     /**
      * PerformanceHandler constructor.
      *
@@ -56,7 +54,6 @@ class PerformanceHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Optimize request for performance
@@ -121,7 +118,6 @@ class PerformanceHandler
 
     }//end optimizeRequestForPerformance()
 
-
     /**
      * Determine if this is a simple request that can use the fast path
      *
@@ -168,7 +164,6 @@ class PerformanceHandler
 
     }//end isSimpleRequest()
 
-
     /**
      * Optimize extend queries for performance
      *
@@ -201,7 +196,6 @@ class PerformanceHandler
 
     }//end optimizeExtendQueries()
 
-
     /**
      * Preload critical entities for cache warmup
      *
@@ -225,7 +219,6 @@ class PerformanceHandler
 
     }//end preloadCriticalEntities()
 
-
     /**
      * Extract related data from search results
      *
@@ -236,7 +229,9 @@ class PerformanceHandler
      * @param bool                $includeRelated      Whether to include related object IDs.
      * @param bool                $includeRelatedNames Whether to include related object names.
      *
-     * @return array<string, mixed> Related data array
+     * @return string[][] Related data array
+     *
+     * @psalm-return array{related?: list<string>, relatedNames?: array<string, string>}
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -302,7 +297,6 @@ class PerformanceHandler
 
     }//end extractRelatedData()
 
-
     /**
      * Check if a value is a UUID string
      *
@@ -323,7 +317,6 @@ class PerformanceHandler
 
     }//end isUuid()
 
-
     /**
      * Get cached entities or use fallback function
      *
@@ -341,7 +334,6 @@ class PerformanceHandler
 
     }//end getCachedEntities()
 
-
     /**
      * Get facet count from query parameters
      *
@@ -349,6 +341,8 @@ class PerformanceHandler
      * @param array<string, mixed> $query     The search query.
      *
      * @return int Number of facets requested
+     *
+     * @psalm-return int<0, max>
      */
     public function getFacetCount(bool $hasFacets, array $query): int
     {
@@ -359,7 +353,6 @@ class PerformanceHandler
         return 0;
 
     }//end getFacetCount()
-
 
     /**
      * Calculate total pages for pagination
@@ -379,7 +372,6 @@ class PerformanceHandler
 
     }//end calculateTotalPages()
 
-
     /**
      * Calculate extend count from extend parameter
      *
@@ -388,6 +380,8 @@ class PerformanceHandler
      * @param mixed $extend Extend parameter (array or string).
      *
      * @return int Extend count
+     *
+     * @psalm-return int<0, max>
      */
     public function calculateExtendCount(mixed $extend): int
     {
@@ -406,6 +400,4 @@ class PerformanceHandler
         return 0;
 
     }//end calculateExtendCount()
-
-
 }//end class

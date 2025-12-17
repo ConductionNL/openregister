@@ -81,7 +81,6 @@ class GitHubHandler
      */
     private ICache $cache;
 
-
     /**
      * GitHubHandler constructor
      *
@@ -103,11 +102,10 @@ class GitHubHandler
 
     }//end __construct()
 
-
     /**
      * Get authentication headers for GitHub API
      *
-     * @return string[] Headers array
+     * @return string[]
      *
      * @psalm-return array{Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization?: string}
      */
@@ -137,7 +135,6 @@ class GitHubHandler
 
     }//end getHeaders()
 
-
     /**
      * Search for OpenRegister configurations on GitHub
      *
@@ -147,35 +144,13 @@ class GitHubHandler
      * @param int    $page    Page number for pagination
      * @param int    $perPage Results per page (max 100)
      *
-     * @return ((array|int|mixed|null|string)[][]|int|mixed)[] Search results with repository info and file details
+     * @return ((array|int|mixed|null|string)[][]|int|mixed)[]
      *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
      *
-     * @psalm-return array{
-     *     total_count: 0|mixed,
-     *     results: list{
-     *         0?: array{
-     *             repository: mixed,
-     *             owner: string,
-     *             repo: string,
-     *             path: string,
-     *             url: mixed,
-     *             stars: 0|mixed,
-     *             description: ''|mixed,
-     *             name: string,
-     *             branch: string,
-     *             raw_url: string,
-     *             sha: null|string,
-     *             organization: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed},
-     *             config: array
-     *         },
-     *         ...
-     *     },
-     *     page: int,
-     *     per_page: int
-     * }
+     * @psalm-return array{total_count: 0|mixed, results: list<array{branch: string, config: array, description: ''|mixed, name: string, organization: array{avatar_url: ''|mixed, name: string, type: 'User'|mixed, url: ''|mixed}, owner: string, path: string, raw_url: non-empty-string, repo: string, repository: mixed, sha: null|string, stars: 0|mixed, url: mixed}>, page: int, per_page: int}
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -322,7 +297,6 @@ class GitHubHandler
 
     }//end searchConfigurations()
 
-
     /**
      * Get user-friendly error message based on GitHub API error
      *
@@ -369,7 +343,6 @@ class GitHubHandler
         }//end switch
 
     }//end getGitHubErrorMessage()
-
 
     /**
      * Get enriched configuration details from cache or fetch if not cached
@@ -429,7 +402,6 @@ class GitHubHandler
         return $enriched;
 
     }//end getEnrichedConfigDetails()
-
 
     /**
      * Enrich configuration metadata by fetching actual file contents
@@ -515,7 +487,6 @@ class GitHubHandler
 
     }//end enrichConfigurationDetails()
 
-
     /**
      * Get list of branches for a repository
      *
@@ -552,6 +523,11 @@ class GitHubHandler
             $branches = json_decode($response->getBody(), true);
 
             return array_map(
+                /*
+                 * @return (false|mixed|null)[]
+                 *
+                 * @psalm-return array{name: mixed, commit: mixed|null, protected: false|mixed}
+                 */
                 function (array $branch): array {
                     return [
                         'name'      => $branch['name'],
@@ -574,7 +550,6 @@ class GitHubHandler
         }//end try
 
     }//end getBranches()
-
 
     /**
      * Get file content from a repository
@@ -642,7 +617,6 @@ class GitHubHandler
 
     }//end getFileContent()
 
-
     /**
      * List OpenRegister configuration files in a repository
      *
@@ -656,27 +630,13 @@ class GitHubHandler
      * @param string $branch Branch name (default: main)
      * @param string $path   Directory path to search (default: root)
      *
-     * @return ((mixed|null|string)[]|mixed|null)[][] List of configuration files with metadata
+     * @return ((mixed|null|string)[]|mixed|null)[][]
      *
      * @throws \Exception If API request fails
      *
      * @since 0.2.10
      *
-     * @psalm-return list{
-     *     0?: array{
-     *         path: mixed,
-     *         sha: mixed|null,
-     *         url: mixed|null,
-     *         config: array{
-     *             title: mixed|string,
-     *             description: ''|mixed,
-     *             version: '1.0.0'|mixed,
-     *             app: mixed|null,
-     *             type: 'manual'|mixed
-     *         }
-     *     },
-     *     ...
-     * }
+     * @psalm-return list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, path: mixed, sha: mixed|null, url: mixed|null}>
      */
     public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
     {
@@ -743,7 +703,6 @@ class GitHubHandler
 
     }//end listConfigurationFiles()
 
-
     /**
      * Parse and validate a configuration file
      *
@@ -787,7 +746,6 @@ class GitHubHandler
         }//end try
 
     }//end parseConfigurationFile()
-
 
     /**
      * Get repositories that the authenticated user has access to
@@ -852,6 +810,11 @@ class GitHubHandler
             $repos = json_decode($response->getBody(), true);
 
             return array_map(
+                /*
+                 * @return (mixed|string)[]
+                 *
+                 * @psalm-return array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}
+                 */
                 function (array $repo): array {
                     return [
                         'id'             => $repo['id'],
@@ -898,7 +861,6 @@ class GitHubHandler
         }//end try
 
     }//end getRepositories()
-
 
     /**
      * Get repository information including default branch
@@ -959,7 +921,6 @@ class GitHubHandler
         }//end try
 
     }//end getRepositoryInfo()
-
 
     /**
      * Publish a configuration file to GitHub
@@ -1101,7 +1062,6 @@ class GitHubHandler
 
     }//end publishConfiguration()
 
-
     /**
      * Get file SHA for a specific file (needed for updates)
      *
@@ -1155,7 +1115,6 @@ class GitHubHandler
 
     }//end getFileSha()
 
-
     /**
      * Get user-specific GitHub token
      *
@@ -1174,7 +1133,6 @@ class GitHubHandler
 
     }//end getUserToken()
 
-
     /**
      * Set user-specific GitHub token
      *
@@ -1192,7 +1150,6 @@ class GitHubHandler
         }
 
     }//end setUserToken()
-
 
     /**
      * Validate GitHub token by making a test API request
@@ -1235,6 +1192,4 @@ class GitHubHandler
         }//end try
 
     }//end validateToken()
-
-
 }//end class

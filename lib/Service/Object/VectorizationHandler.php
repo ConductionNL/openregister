@@ -45,8 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 class VectorizationHandler
 {
-
-
     /**
      * Constructor
      *
@@ -62,7 +60,6 @@ class VectorizationHandler
 
     }//end __construct()
 
-
     /**
      * Vectorize objects in batch
      *
@@ -71,9 +68,11 @@ class VectorizationHandler
      * @param array|null $views     Optional view filters
      * @param int        $batchSize Number of objects to process per batch
      *
-     * @return array Vectorization results
+     * @return (((int|string)[]|mixed)[]|int|mixed|string|true)[] Vectorization results
      *
      * @throws \Exception If vectorization fails
+     *
+     * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}, processed?: mixed}
      */
     public function vectorizeBatch(?array $views=null, int $batchSize=25): array
     {
@@ -120,7 +119,6 @@ class VectorizationHandler
 
     }//end vectorizeBatch()
 
-
     /**
      * Get vectorization statistics
      *
@@ -128,9 +126,11 @@ class VectorizationHandler
      *
      * @param array|null $views Optional view filters
      *
-     * @return array Statistics data
+     * @return (array|int|null)[] Statistics data
      *
      * @throws \Exception If stats retrieval fails
+     *
+     * @psalm-return array{total_objects: int<0, max>, views: array|null}
      */
     public function getStatistics(?array $views=null): array
     {
@@ -170,7 +170,6 @@ class VectorizationHandler
         }//end try
 
     }//end getStatistics()
-
 
     /**
      * Get count of objects available for vectorization
@@ -213,6 +212,4 @@ class VectorizationHandler
         }//end try
 
     }//end getCount()
-
-
 }//end class

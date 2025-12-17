@@ -52,7 +52,6 @@ class FilePublishingHandler
      */
     private ?FileService $fileService = null;
 
-
     /**
      * Constructor for FilePublishingHandler.
      *
@@ -68,7 +67,6 @@ class FilePublishingHandler
 
     }//end __construct()
 
-
     /**
      * Set the FileService instance for cross-handler coordination.
      *
@@ -81,7 +79,6 @@ class FilePublishingHandler
         $this->fileService = $fileService;
 
     }//end setFileService()
-
 
     /**
      * Publish a file by creating a public share link.
@@ -211,7 +208,6 @@ class FilePublishingHandler
 
     }//end publishFile()
 
-
     /**
      * Unpublish a file by removing public share links.
      *
@@ -338,7 +334,6 @@ class FilePublishingHandler
 
     }//end unpublishFile()
 
-
     /**
      * Create a ZIP archive of all files for an object.
      *
@@ -348,12 +343,13 @@ class FilePublishingHandler
      * @param ObjectEntity|string $object  The object entity or ID.
      * @param string|null         $zipName Optional custom name for the ZIP file.
      *
-     * @return array{path: string, filename: string, size: int, mimeType: string} Result array with ZIP file information.
+     * @return (int|string)[]
      *
      * @throws Exception If ZIP creation fails.
      *
      * @phpstan-return array{path: string, filename: string, size: int, mimeType: string}
-     * @psalm-return   array{path: string, filename: string, size: int, mimeType: string}
+     *
+     * @psalm-return array{path: string, filename: string, size: int, mimeType: 'application/zip'}
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
@@ -465,13 +461,10 @@ class FilePublishingHandler
 
     }//end createObjectFilesZip()
 
-
     /**
      * Get a human-readable error message for ZipArchive error codes.
      *
      * @param int $errorCode The ZipArchive error code.
-     *
-     * @return string Error message for the given ZIP error code.
      *
      * @psalm-return   string
      * @phpstan-return string
@@ -507,6 +500,4 @@ class FilePublishingHandler
         };//end match
 
     }//end getZipErrorMessage()
-
-
 }//end class

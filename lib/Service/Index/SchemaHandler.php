@@ -41,8 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaHandler
 {
-
-
     /**
      * Constructor
      *
@@ -60,7 +58,6 @@ class SchemaHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Ensure vector field type exists in a Solr collection.
@@ -124,7 +121,6 @@ class SchemaHandler
 
     }//end ensureVectorFieldType()
 
-
     /**
      * Mirror OpenRegister schemas to Solr with intelligent conflict resolution.
      *
@@ -133,9 +129,9 @@ class SchemaHandler
      *
      * @param bool $force Force recreation of existing fields
      *
-     * @return array Result with success status and statistics
+     * @return ((int|mixed)[]|bool|float|mixed|string)[]
      *
-     * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
+     * @psalm-return array{success: bool, error?: string, stats: array{schemas_processed: 0|1|2, fields_created: 0|mixed, fields_updated: 0|mixed, conflicts_resolved: 0, errors: 0|1|2, core_fields_created?: 52}, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
     public function mirrorSchemas(bool $force=false): array
     {
@@ -231,7 +227,6 @@ class SchemaHandler
 
     }//end mirrorSchemas()
 
-
     /**
      * Analyze schemas for field type conflicts and resolve them.
      *
@@ -240,7 +235,9 @@ class SchemaHandler
      *
      * @param array $schemas Array of Schema entities
      *
-     * @return array Analysis result with fields, conflicts, and resolutions
+     * @return (((mixed|string)[]|string)[]|string)[][] Analysis result with fields, conflicts, and resolutions
+     *
+     * @psalm-return array{fields: array<non-empty-list<array{schema_id: mixed, type: string}>>, conflicts: array<array<int<0, max>, string>>, resolved: array<string>}
      */
     private function analyzeAndResolveFieldConflicts(array $schemas): array
     {
@@ -299,7 +296,6 @@ class SchemaHandler
 
     }//end analyzeAndResolveFieldConflicts()
 
-
     /**
      * Get the most permissive type from an array of types.
      *
@@ -335,14 +331,15 @@ class SchemaHandler
 
     }//end getMostPermissiveType()
 
-
     /**
      * Generate Solr field definitions from an OpenRegister schema.
      *
      * @param mixed $schema        Schema entity
      * @param array $resolvedTypes Resolved field types from conflict analysis
      *
-     * @return array Solr field definitions
+     * @return (bool|mixed|string)[][] Solr field definitions
+     *
+     * @psalm-return array<string, array{name: string, type: mixed|string, indexed: true, stored: true, multiValued: bool}>
      */
     private function generateSolrFieldsFromSchema($schema, array $resolvedTypes): array
     {
@@ -368,7 +365,6 @@ class SchemaHandler
 
     }//end generateSolrFieldsFromSchema()
 
-
     /**
      * Generate Solr-safe field name.
      *
@@ -384,7 +380,6 @@ class SchemaHandler
         return $safe;
 
     }//end generateSolrFieldName()
-
 
     /**
      * Determine Solr field type from property definition.
@@ -408,7 +403,6 @@ class SchemaHandler
 
     }//end determineSolrFieldType()
 
-
     /**
      * Check if a field should be multi-valued.
      *
@@ -430,7 +424,6 @@ class SchemaHandler
         return false;
 
     }//end isMultiValued()
-
 
     /**
      * Ensure core metadata fields exist in Solr.
@@ -471,11 +464,12 @@ class SchemaHandler
 
     }//end ensureCoreMetadataFields()
 
-
     /**
      * Get core metadata field definitions.
      *
-     * @return array Core field definitions
+     * @return (string|true)[][] Core field definitions
+     *
+     * @psalm-return array{id: array{name: 'id', type: 'string', indexed: true, stored: true, required: true}, uuid: array{name: 'uuid', type: 'string', indexed: true, stored: true}, name: array{name: 'name', type: 'text', indexed: true, stored: true}, title: array{name: 'title', type: 'text', indexed: true, stored: true}, summary: array{name: 'summary', type: 'text', indexed: true, stored: true}, description: array{name: 'description', type: 'text', indexed: true, stored: true}, created: array{name: 'created', type: 'date', indexed: true, stored: true}, updated: array{name: 'updated', type: 'date', indexed: true, stored: true}, published: array{name: 'published', type: 'boolean', indexed: true, stored: true}, deleted: array{name: 'deleted', type: 'boolean', indexed: true, stored: true}, owner: array{name: 'owner', type: 'string', indexed: true, stored: true}, organisation: array{name: 'organisation', type: 'string', indexed: true, stored: true}, register: array{name: 'register', type: 'string', indexed: true, stored: true}, schema: array{name: 'schema', type: 'string', indexed: true, stored: true}}
      */
     private function getCoreMetadataFields(): array
     {
@@ -498,14 +492,15 @@ class SchemaHandler
 
     }//end getCoreMetadataFields()
 
-
     /**
      * Apply Solr field definitions to the backend.
      *
      * @param array $solrFields Field definitions
      * @param bool  $force      Force update existing fields
      *
-     * @return array Result with created/updated counts
+     * @return int[] Result with created/updated counts
+     *
+     * @psalm-return array{created: int<0, max>, updated: int<0, max>}
      */
     private function applySolrFields(array $solrFields, bool $force): array
     {
@@ -539,7 +534,6 @@ class SchemaHandler
 
     }//end applySolrFields()
 
-
     /**
      * Get field status for a collection.
      *
@@ -547,7 +541,9 @@ class SchemaHandler
      *
      * @param string $collection Collection name
      *
-     * @return array Field status information
+     * @return (array|int|string)[] Field status information
+     *
+     * @psalm-return array{collection: string, error?: string, existing_fields?: array, missing_fields?: array, total_fields?: int<0, max>, expected_fields?: int<0, max>}
      */
     public function getCollectionFieldStatus(string $collection): array
     {
@@ -590,7 +586,6 @@ class SchemaHandler
 
     }//end getCollectionFieldStatus()
 
-
     /**
      * Create missing fields in a collection.
      *
@@ -598,7 +593,9 @@ class SchemaHandler
      * @param array  $missingFields Missing field definitions
      * @param bool   $dryRun        Preview without making changes
      *
-     * @return array Result with success status and statistics
+     * @return ((int|string)[]|mixed|true)[] Result with success status and statistics
+     *
+     * @psalm-return array{success: true, created?: mixed, failed?: mixed, dry_run?: true, fields_to_add?: list<array-key>}
      */
     public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
     {
@@ -628,7 +625,6 @@ class SchemaHandler
         ];
 
     }//end createMissingFields()
-
 
     /**
      * Fix mismatched fields in the schema.
@@ -670,6 +666,4 @@ class SchemaHandler
         }//end try
 
     }//end fixMismatchedFields()
-
-
 }//end class

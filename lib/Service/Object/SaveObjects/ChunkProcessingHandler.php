@@ -38,8 +38,6 @@ use Psr\Log\LoggerInterface;
  */
 class ChunkProcessingHandler
 {
-
-
     /**
      * Constructor for ChunkProcessingHandler.
      *
@@ -54,7 +52,6 @@ class ChunkProcessingHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Process a chunk of objects for bulk save operations.
@@ -306,6 +303,4 @@ class ChunkProcessingHandler
         return $result;
 
     }//end processObjectsChunk()
-
-
 }//end class

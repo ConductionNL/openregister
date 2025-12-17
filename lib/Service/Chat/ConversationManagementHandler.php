@@ -101,7 +101,6 @@ class ConversationManagementHandler
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -127,7 +126,6 @@ class ConversationManagementHandler
         $this->logger = $logger;
 
     }//end __construct()
-
 
     /**
      * Generate a conversation title from the first user message
@@ -260,7 +258,6 @@ class ConversationManagementHandler
 
     }//end generateConversationTitle()
 
-
     /**
      * Generate fallback title from message
      *
@@ -288,7 +285,6 @@ class ConversationManagementHandler
         return $title;
 
     }//end generateFallbackTitle()
-
 
     /**
      * Ensure conversation title is unique for user-agent combination
@@ -357,7 +353,6 @@ class ConversationManagementHandler
         return $uniqueTitle;
 
     }//end ensureUniqueTitle()
-
 
     /**
      * Check if conversation needs summarization and create summary
@@ -437,7 +432,6 @@ class ConversationManagementHandler
         }//end try
 
     }//end checkAndSummarize()
-
 
     /**
      * Generate summary of messages
@@ -547,6 +541,4 @@ class ConversationManagementHandler
         }//end if
 
     }//end generateSummary()
-
-
 }//end class

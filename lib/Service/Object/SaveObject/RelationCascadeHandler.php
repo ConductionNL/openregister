@@ -45,8 +45,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class RelationCascadeHandler
 {
-
-
     /**
      * Constructor for RelationCascadeHandler.
      *
@@ -63,7 +61,6 @@ class RelationCascadeHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Resolves a schema reference to a schema ID.
@@ -123,7 +120,6 @@ class RelationCascadeHandler
 
     }//end resolveSchemaReference()
 
-
     /**
      * Removes query parameters from a reference string.
      *
@@ -140,7 +136,6 @@ class RelationCascadeHandler
         return $reference;
 
     }//end removeQueryParameters()
-
 
     /**
      * Resolves a register reference to a register ID.
@@ -199,7 +194,6 @@ class RelationCascadeHandler
 
     }//end resolveRegisterReference()
 
-
     /**
      * Recursively scans for relations in data that need to be resolved.
      *
@@ -257,7 +251,6 @@ class RelationCascadeHandler
 
     }//end scanForRelations()
 
-
     /**
      * Gets a property definition from properties array by path.
      *
@@ -281,7 +274,6 @@ class RelationCascadeHandler
 
     }//end getPropertyDefinition()
 
-
     /**
      * Checks if an array contains references.
      *
@@ -300,7 +292,6 @@ class RelationCascadeHandler
         return false;
 
     }//end isArrayOfReferences()
-
 
     /**
      * Checks if a value looks like an object reference.
@@ -324,7 +315,6 @@ class RelationCascadeHandler
         return false;
 
     }//end looksLikeObjectReference()
-
 
     /**
      * Determines if a value is a reference to another object.
@@ -361,7 +351,6 @@ class RelationCascadeHandler
 
     }//end isReference()
 
-
     /**
      * Updates object relations by resolving references to actual object UUIDs.
      *
@@ -395,7 +384,6 @@ class RelationCascadeHandler
         return $objectEntity;
 
     }//end updateObjectRelations()
-
 
     /**
      * Resolves a relation path in object data.
@@ -451,7 +439,6 @@ class RelationCascadeHandler
 
     }//end resolveRelationPath()
 
-
     /**
      * Extracts UUID from a reference string.
      *
@@ -490,7 +477,6 @@ class RelationCascadeHandler
         return null;
 
     }//end extractUuidFromReference()
-
 
     /**
      * Cascades object creation for inversedBy properties.
@@ -538,7 +524,6 @@ class RelationCascadeHandler
 
     }//end cascadeObjects()
 
-
     /**
      * Checks if array contains only scalar values.
      *
@@ -558,7 +543,6 @@ class RelationCascadeHandler
 
     }//end isArrayOfScalars()
 
-
     /**
      * Cascades creation of multiple related objects.
      *
@@ -566,7 +550,9 @@ class RelationCascadeHandler
      * @param array        $property     The property definition.
      * @param array        $propData     The property data (array of objects).
      *
-     * @return array Array of created object UUIDs.
+     * @return string[] Array of created object UUIDs.
+     *
+     * @psalm-return list<string>
      */
     public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -588,7 +574,6 @@ class RelationCascadeHandler
 
     }//end cascadeMultipleObjects()
 
-
     /**
      * Cascades creation of a single related object.
      *
@@ -596,9 +581,9 @@ class RelationCascadeHandler
      * @param array        $definition   The property definition containing $ref and inversedBy.
      * @param array        $object       The nested object data to create.
      *
-     * @return string|null The UUID of the created object or null.
+     * @return null The UUID of the created object or null.
      */
-    public function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
+    public function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object)
     {
         // TODO: Implement actual cascading logic.
         // This requires access to ObjectService which would create circular dependency.
@@ -608,7 +593,6 @@ class RelationCascadeHandler
         return null;
 
     }//end cascadeSingleObject()
-
 
     /**
      * Handles inverse relation write-back operations.
@@ -632,6 +616,4 @@ class RelationCascadeHandler
         return $data;
 
     }//end handleInverseRelationsWriteBack()
-
-
 }//end class

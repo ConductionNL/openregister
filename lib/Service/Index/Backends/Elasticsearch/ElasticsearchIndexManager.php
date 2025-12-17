@@ -27,12 +27,26 @@ use Psr\Log\LoggerInterface;
 class ElasticsearchIndexManager
 {
 
+    /**
+     * Elasticsearch HTTP client for making requests
+     *
+     * @var ElasticsearchHttpClient
+     */
     private readonly ElasticsearchHttpClient $httpClient;
 
+    /**
+     * PSR-3 logger instance
+     *
+     * @var LoggerInterface
+     */
     private readonly LoggerInterface $logger;
 
+    /**
+     * Active Elasticsearch index name
+     *
+     * @var string
+     */
     private string $activeIndex = 'openregister';
-
 
     /**
      * Constructor
@@ -48,7 +62,6 @@ class ElasticsearchIndexManager
         $this->logger     = $logger;
 
     }//end __construct()
-
 
     /**
      * Check if index exists.
@@ -67,7 +80,6 @@ class ElasticsearchIndexManager
         }
 
     }//end indexExists()
-
 
     /**
      * Create index with mapping.
@@ -117,7 +129,6 @@ class ElasticsearchIndexManager
 
     }//end createIndex()
 
-
     /**
      * Delete index.
      *
@@ -154,7 +165,6 @@ class ElasticsearchIndexManager
 
     }//end deleteIndex()
 
-
     /**
      * Ensure index exists, create if not.
      *
@@ -176,7 +186,6 @@ class ElasticsearchIndexManager
 
     }//end ensureIndex()
 
-
     /**
      * Get active index name.
      *
@@ -187,7 +196,6 @@ class ElasticsearchIndexManager
         return $this->activeIndex;
 
     }//end getActiveIndexName()
-
 
     /**
      * Get index stats.
@@ -211,7 +219,6 @@ class ElasticsearchIndexManager
         }
 
     }//end getIndexStats()
-
 
     /**
      * Refresh index to make documents searchable.
@@ -237,6 +244,4 @@ class ElasticsearchIndexManager
         }
 
     }//end refreshIndex()
-
-
 }//end class

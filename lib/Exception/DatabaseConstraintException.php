@@ -52,7 +52,6 @@ class DatabaseConstraintException extends Exception
      */
     private readonly int $httpStatusCode;
 
-
     /**
      * Constructor
      *
@@ -68,7 +67,6 @@ class DatabaseConstraintException extends Exception
 
     }//end __construct()
 
-
     /**
      * Get the HTTP status code for this exception
      *
@@ -82,7 +80,6 @@ class DatabaseConstraintException extends Exception
         return $this->httpStatusCode;
 
     }//end getHttpStatusCode()
-
 
     /**
      * Create a DatabaseConstraintException from a database exception
@@ -110,7 +107,6 @@ class DatabaseConstraintException extends Exception
         return new self($userMessage, (int) $dbException->getCode(), 409, $dbException);
 
     }//end fromDatabaseException()
-
 
     /**
      * Parse database constraint error messages and return user-friendly messages
@@ -184,6 +180,4 @@ class DatabaseConstraintException extends Exception
         return "There was a database error while saving your {$entityType}. Please try again or contact support if the problem persists.";
 
     }//end parseConstraintError()
-
-
 }//end class

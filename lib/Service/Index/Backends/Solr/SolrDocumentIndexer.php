@@ -63,7 +63,6 @@ class SolrDocumentIndexer
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
@@ -86,7 +85,6 @@ class SolrDocumentIndexer
         $this->logger            = $logger;
 
     }//end __construct()
-
 
     /**
      * Index a single object.
@@ -136,14 +134,15 @@ class SolrDocumentIndexer
 
     }//end indexObject()
 
-
     /**
      * Index multiple objects in bulk.
      *
      * @param array $objects Array of ObjectEntity objects
      * @param bool  $commit  Whether to commit immediately
      *
-     * @return array Result with statistics
+     * @return (bool|int|string)[] Result with statistics
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
@@ -214,7 +213,6 @@ class SolrDocumentIndexer
 
     }//end bulkIndexObjects()
 
-
     /**
      * Index raw documents (not ObjectEntity).
      *
@@ -258,7 +256,6 @@ class SolrDocumentIndexer
         }//end try
 
     }//end indexDocuments()
-
 
     /**
      * Delete an object from the index.
@@ -310,7 +307,6 @@ class SolrDocumentIndexer
 
     }//end deleteObject()
 
-
     /**
      * Delete documents by query.
      *
@@ -318,7 +314,9 @@ class SolrDocumentIndexer
      * @param bool   $commit        Whether to commit immediately
      * @param bool   $returnDetails Whether to return detailed results
      *
-     * @return array|bool Results or boolean
+     * @return (array|bool|string)[]|bool Results or boolean
+     *
+     * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
@@ -377,7 +375,6 @@ class SolrDocumentIndexer
 
     }//end deleteByQuery()
 
-
     /**
      * Commit changes to Solr.
      *
@@ -411,13 +408,14 @@ class SolrDocumentIndexer
 
     }//end commit()
 
-
     /**
      * Clear all documents from the index.
      *
      * @param string|null $collectionName Collection to clear (null = active collection)
      *
-     * @return array Result with statistics
+     * @return (bool|string)[] Result with statistics
+     *
+     * @psalm-return array{success: bool, message: string, collection?: string}
      */
     public function clearIndex(?string $collectionName=null): array
     {
@@ -464,7 +462,6 @@ class SolrDocumentIndexer
 
     }//end clearIndex()
 
-
     /**
      * Optimize the Solr index.
      *
@@ -500,7 +497,6 @@ class SolrDocumentIndexer
 
     }//end optimize()
 
-
     /**
      * Get document count in the index.
      *
@@ -530,6 +526,4 @@ class SolrDocumentIndexer
         }//end try
 
     }//end getDocumentCount()
-
-
 }//end class

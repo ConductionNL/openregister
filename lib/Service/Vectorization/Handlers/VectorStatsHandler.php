@@ -38,8 +38,6 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class VectorStatsHandler
 {
-
-
     /**
      * Constructor
      *
@@ -56,7 +54,6 @@ class VectorStatsHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Get vector statistics
@@ -90,11 +87,12 @@ class VectorStatsHandler
 
     }//end getStats()
 
-
     /**
      * Get vector statistics from database
      *
-     * @return array Statistics from database
+     * @return (int|int[])[] Statistics from database
+     *
+     * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int>, object_vectors: int, file_vectors: int}
      */
     private function getStatsFromDatabase(): array
     {
@@ -141,7 +139,6 @@ class VectorStatsHandler
 
     }//end getStatsFromDatabase()
 
-
     /**
      * Get vector statistics from Solr collections
      *
@@ -174,7 +171,11 @@ class VectorStatsHandler
                 ];
             }
 
-            $settings         = $this->settingsService->getSettings();
+            $settings = $this->settingsService->getSettings();
+            // Get vector field from LLM configuration, default to '_embedding_'.
+            /*
+             * @psalm-suppress InvalidArrayOffset
+             */
             $vectorField      = $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
             $objectCollection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
             $fileCollection   = $settings['solr']['fileCollection'] ?? null;
@@ -251,7 +252,6 @@ class VectorStatsHandler
 
     }//end getStatsFromSolr()
 
-
     /**
      * Count vectors in a specific Solr collection
      *
@@ -315,6 +315,4 @@ class VectorStatsHandler
         ];
 
     }//end countVectorsInCollection()
-
-
 }//end class

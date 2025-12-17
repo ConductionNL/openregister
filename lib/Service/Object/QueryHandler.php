@@ -49,8 +49,6 @@ use React\Async;
  */
 class QueryHandler
 {
-
-
     /**
      * Constructor for QueryHandler.
      *
@@ -75,7 +73,6 @@ class QueryHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Count search objects matching the query.
@@ -120,7 +117,6 @@ class QueryHandler
 
     }//end countSearchObjects()
 
-
     /**
      * Search objects using clean query structure.
      *
@@ -131,16 +127,17 @@ class QueryHandler
      * @param string|null $uses          Optional uses parameter.
      * @param array|null  $views         Optional view IDs to apply.
      *
-     * @psalm-param   array<string, mixed> $query
-     * @psalm-param   array<int, string>|null $ids
-     * @psalm-param   array<int, string>|null $views
+     * @psalm-param array<string, mixed> $query
+     * @psalm-param array<int, string>|null $ids
+     * @psalm-param array<int, string>|null $views
+     *
      * @phpstan-param array<string, mixed> $query
      * @phpstan-param array<int, string>|null $ids
      * @phpstan-param array<int, string>|null $views
      *
-     * @return array|int Array of ObjectEntity objects or count if _count is true.
+     * @return (OCA\OpenRegister\Db\ObjectEntity|\OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity)[]|int
      *
-     * @psalm-return   array<int, ObjectEntity>|int
+     * @psalm-return   int<0, max>|list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity|OCA\OpenRegister\Service\Object\OCA\OpenRegister\Db\ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>|int
      *
      * @throws \OCP\DB\Exception If a database error occurs.
@@ -256,7 +253,6 @@ class QueryHandler
 
     }//end searchObjects()
 
-
     /**
      * Search objects with pagination (main entry point).
      *
@@ -355,7 +351,6 @@ class QueryHandler
         return $result;
 
     }//end searchObjectsPaginated()
-
 
     /**
      * Database-based paginated search (extracted from main method).
@@ -528,7 +523,6 @@ class QueryHandler
 
     }//end searchObjectsPaginatedDatabase()
 
-
     /**
      * Synchronous wrapper for async paginated search (used for complex requests).
      *
@@ -569,7 +563,6 @@ class QueryHandler
 
     }//end searchObjectsPaginatedSync()
 
-
     /**
      * Async paginated search with concurrent promise execution.
      *
@@ -579,11 +572,11 @@ class QueryHandler
      * @param bool  $_published    Whether to filter by published status.
      * @param bool  $_deleted      Whether to include deleted objects.
      *
-     * @return PromiseInterface Promise resolving to paginated search results.
+     * @psalm-param array<string, mixed> $query
      *
-     * @psalm-param    array<string, mixed> $query
-     * @phpstan-param  array<string, mixed> $query
-     * @psalm-return   PromiseInterface
+     * @phpstan-param array<string, mixed> $query
+     *
+     * @psalm-return   PromiseInterface<array{results: mixed, total: mixed, page: float|int<1, max>|mixed, pages: 1|float, limit: int<1, max>, offset: 0|mixed, facets: mixed, facetable?: mixed}>
      * @phpstan-return PromiseInterface
      */
     public function searchObjectsPaginatedAsync(
@@ -775,6 +768,4 @@ class QueryHandler
         );
 
     }//end searchObjectsPaginatedAsync()
-
-
 }//end class

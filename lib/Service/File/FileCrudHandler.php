@@ -49,8 +49,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileCrudHandler
 {
-
-
     /**
      * Constructor for FileCrudHandler.
      *
@@ -72,7 +70,6 @@ class FileCrudHandler
 
     }//end __construct()
 
-
     /**
      * Create a folder at the specified path.
      *
@@ -83,13 +80,14 @@ class FileCrudHandler
      *
      * @throws Exception If folder creation fails.
      *
-     * @return Node The created or existing folder node.
+     * @return never
      *
      * @psalm-return   Node
      * @phpstan-return Node
-     * @todo           Extract full implementation from FileService::createFolder()
+     *
+     * @todo Extract full implementation from FileService::createFolder()
      */
-    public function createFolder(string $folderPath): Node
+    public function createFolder(string $folderPath)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -101,7 +99,6 @@ class FileCrudHandler
         throw new Exception("FileCrudHandler::createFolder() - Full implementation pending Phase 2 extraction");
 
     }//end createFolder()
-
 
     /**
      * Add a new file to an object's folder.
@@ -117,15 +114,18 @@ class FileCrudHandler
      *
      * @throws Exception If file creation fails.
      *
-     * @return File The created file.
+     * @return never
      *
-     * @psalm-param    array<int, string> $tags
-     * @phpstan-param  array<int, string> $tags
+     * @psalm-param array<int, string> $tags
+     *
+     * @phpstan-param array<int, string> $tags
+     *
      * @psalm-return   File
      * @phpstan-return File
-     * @todo           Extract full implementation from FileService::addFile()
+     *
+     * @todo Extract full implementation from FileService::addFile()
      */
-    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[]): File
+    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -138,7 +138,6 @@ class FileCrudHandler
         throw new Exception("FileCrudHandler::addFile() - Full implementation pending Phase 2 extraction");
 
     }//end addFile()
-
 
     /**
      * Update an existing file's content and/or tags.
@@ -153,15 +152,18 @@ class FileCrudHandler
      *
      * @throws Exception If file update fails.
      *
-     * @return File The updated file.
+     * @return never
      *
-     * @psalm-param    array<int, string> $tags
-     * @phpstan-param  array<int, string> $tags
+     * @psalm-param array<int, string> $tags
+     *
+     * @phpstan-param array<int, string> $tags
+     *
      * @psalm-return   File
      * @phpstan-return File
-     * @todo           Extract full implementation from FileService::updateFile()
+     *
+     * @todo Extract full implementation from FileService::updateFile()
      */
-    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
+    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null)
     {
         // TODO: Extract full implementation from FileService
         // This is one of the most complex methods involving:
@@ -175,7 +177,6 @@ class FileCrudHandler
 
     }//end updateFile()
 
-
     /**
      * Delete a file.
      *
@@ -187,13 +188,14 @@ class FileCrudHandler
      *
      * @throws Exception If file deletion fails.
      *
-     * @return bool True if successful, false if file didn't exist.
+     * @return never
      *
      * @psalm-return   bool
      * @phpstan-return bool
-     * @todo           Extract full implementation from FileService::deleteFile()
+     *
+     * @todo Extract full implementation from FileService::deleteFile()
      */
-    public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
+    public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -204,7 +206,6 @@ class FileCrudHandler
 
     }//end deleteFile()
 
-
     /**
      * Get a file by identifier (ID or name/path) and optional object context.
      *
@@ -214,13 +215,14 @@ class FileCrudHandler
      * @param ObjectEntity|string|null $object The object or object ID context.
      * @param string|int               $file   The file name/path or ID.
      *
-     * @return File|null The file if found, null otherwise.
+     * @return never
      *
      * @psalm-return   File|null
      * @phpstan-return File|null
-     * @todo           Extract full implementation from FileService::getFile()
+     *
+     * @todo Extract full implementation from FileService::getFile()
      */
-    public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
+    public function getFile(ObjectEntity|string|null $object=null, string|int $file='')
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -231,7 +233,6 @@ class FileCrudHandler
 
     }//end getFile()
 
-
     /**
      * Get a file by its Nextcloud file ID.
      *
@@ -240,13 +241,14 @@ class FileCrudHandler
      *
      * @param int $fileId The Nextcloud file ID.
      *
-     * @return File|null The file node or null if not found.
+     * @return never
      *
      * @psalm-return   File|null
      * @phpstan-return File|null
-     * @todo           Extract full implementation from FileService::getFileById()
+     *
+     * @todo Extract full implementation from FileService::getFileById()
      */
-    public function getFileById(int $fileId): ?File
+    public function getFileById(int $fileId)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -255,7 +257,6 @@ class FileCrudHandler
         throw new Exception("FileCrudHandler::getFileById() - Full implementation pending Phase 2 extraction");
 
     }//end getFileById()
-
 
     /**
      * Get all files for an object.
@@ -266,13 +267,14 @@ class FileCrudHandler
      * @param ObjectEntity|string $object          The object or object ID.
      * @param bool|null           $sharedFilesOnly Whether to return only shared files.
      *
-     * @return Node[] Array of file nodes.
+     * @return never
      *
      * @psalm-return   array<int, Node>
      * @phpstan-return array<int, Node>
-     * @todo           Extract full implementation from FileService::getFiles()
+     *
+     * @todo Extract full implementation from FileService::getFiles()
      */
-    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
+    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -282,7 +284,6 @@ class FileCrudHandler
         throw new Exception("FileCrudHandler::getFiles() - Full implementation pending Phase 2 extraction");
 
     }//end getFiles()
-
 
     /**
      * Save a file (create new or update existing).
@@ -298,15 +299,18 @@ class FileCrudHandler
      *
      * @throws Exception If file save fails.
      *
-     * @return File The saved file.
+     * @return never
      *
-     * @psalm-param    array<int, string> $tags
-     * @phpstan-param  array<int, string> $tags
+     * @psalm-param array<int, string> $tags
+     *
+     * @phpstan-param array<int, string> $tags
+     *
      * @psalm-return   File
      * @phpstan-return File
-     * @todo           Extract full implementation from FileService::saveFile()
+     *
+     * @todo Extract full implementation from FileService::saveFile()
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[]): File
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
     {
         // TODO: Extract full implementation from FileService
         // This is an upsert operation that:
@@ -316,6 +320,4 @@ class FileCrudHandler
         throw new Exception("FileCrudHandler::saveFile() - Full implementation pending Phase 2 extraction");
 
     }//end saveFile()
-
-
 }//end class

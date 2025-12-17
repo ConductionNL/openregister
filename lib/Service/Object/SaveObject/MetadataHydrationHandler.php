@@ -39,8 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class MetadataHydrationHandler
 {
-
-
     /**
      * Constructor for MetadataHydrationHandler.
      *
@@ -51,7 +49,6 @@ class MetadataHydrationHandler
     ) {
 
     }//end __construct()
-
 
     /**
      * Hydrates simple object metadata from schema configuration.
@@ -115,7 +112,6 @@ class MetadataHydrationHandler
 
     }//end hydrateObjectMetadata()
 
-
     /**
      * Gets a value from an object using dot notation path.
      *
@@ -151,7 +147,6 @@ class MetadataHydrationHandler
 
     }//end getValueFromPath()
 
-
     /**
      * Extracts metadata value from object data with support for twig-like concatenation.
      *
@@ -179,7 +174,6 @@ class MetadataHydrationHandler
 
     }//end extractMetadataValue()
 
-
     /**
      * Processes twig-like templates by extracting field values and concatenating them.
      *
@@ -190,7 +184,7 @@ class MetadataHydrationHandler
      * @param array  $data     The object data.
      * @param string $template The twig-like template string.
      *
-     * @return string|null The processed result or null if no values found.
+     * @return null|string The processed result or null if no values found.
      */
     public function processTwigLikeTemplate(array $data, string $template): string|null
     {
@@ -234,7 +228,6 @@ class MetadataHydrationHandler
 
     }//end processTwigLikeTemplate()
 
-
     /**
      * Creates a URL-friendly slug from a metadata value.
      *
@@ -256,7 +249,6 @@ class MetadataHydrationHandler
         return $this->createSlug(trim($value));
 
     }//end createSlugFromValue()
-
 
     /**
      * Generates a slug for an object based on schema configuration.
@@ -314,7 +306,6 @@ class MetadataHydrationHandler
 
     }//end generateSlug()
 
-
     /**
      * Creates a URL-friendly slug from text.
      *
@@ -349,6 +340,4 @@ class MetadataHydrationHandler
         return $slug;
 
     }//end createSlug()
-
-
 }//end class
