@@ -209,6 +209,7 @@ class DocumentProcessingHandler
         string $outputName
     ): File {
         // Get the file content as a stream and save to a temp file.
+        /** @psalm-suppress UndefinedInterfaceMethod - fopen exists on File implementation */
         $stream   = $node->fopen('r');
         $tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
         if ($tempFile === false) {
@@ -355,6 +356,7 @@ class DocumentProcessingHandler
         string $outputName
     ): File {
         // Get file content.
+        /** @psalm-suppress UndefinedInterfaceMethod - getContent exists on File implementation */
         $content = $node->getContent();
         if ($content === false) {
             throw new Exception('Failed to get content from file: '.$node->getPath());

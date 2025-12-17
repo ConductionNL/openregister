@@ -490,7 +490,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IGroupManager'),
                     $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(ObjectEntityMapper::class),
+                    // REMOVED: ObjectEntityMapper (unused, caused circular dependency)
                     $container->get(OrganisationMapper::class),
                     $container->get(SchemaCacheHandler::class),
                     $container->get(FacetCacheHandler::class),
@@ -690,7 +690,9 @@ class Application extends App implements IBootstrap
                         'interval'  => '24 hours (daily at 00:00)',
                     ]
                 );
-            } else {
+            }
+            
+            if ($jobList->has(SolrNightlyWarmupJob::class, null) === true) {
                 $logger->debug('SOLR Nightly Warmup Job already registered');
             }
 
@@ -704,7 +706,9 @@ class Application extends App implements IBootstrap
                         'interval'  => '15 minutes',
                     ]
                 );
-            } else {
+            }
+            
+            if ($jobList->has(CronFileTextExtractionJob::class, null) === true) {
                 $logger->debug('Cron File Text Extraction Job already registered');
             }
 
@@ -719,7 +723,9 @@ class Application extends App implements IBootstrap
                         'interval'  => '5 minutes',
                     ]
                 );
-            } else {
+            }
+            
+            if ($jobList->has($webhookRetryJobClass, null) === true) {
                 $logger->debug('Webhook Retry Job already registered');
             }
         } catch (\Exception $e) {

@@ -188,23 +188,9 @@ class AgentsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination parameters.
-            if (($params['_limit'] ?? null) !== null) {
-                $limit = (int) $params['_limit'];
-            } else {
-                $limit = 50;
-            }
-
-            if (($params['_offset'] ?? null) !== null) {
-                $offset = (int) $params['_offset'];
-            } else {
-                $offset = 0;
-            }
-
-            if (($params['_page'] ?? null) !== null) {
-                $page = (int) $params['_page'];
-            } else {
-                $page = null;
-            }
+            $limit = (int) ($params['_limit'] ?? 50);
+            $offset = (int) ($params['_offset'] ?? 0);
+            $page = isset($params['_page']) ? (int) $params['_page'] : null;
 
             // Convert page to offset if provided (page-based pagination).
             if ($page !== null) {
@@ -212,16 +198,18 @@ class AgentsController extends Controller
             }
 
             // Get agents with RBAC filtering (handled in mapper layer).
+            // Filter by organisation for multi-tenancy if organisation is set.
             if ($organisationUuid !== null) {
-                // Filter by organisation for multi-tenancy.
                 $agents = $this->agentMapper->findByOrganisation(
                     organisationUuid: $organisationUuid,
                     userId: $this->userId,
                     limit: $limit,
                     offset: $offset
                 );
-            } else {
-                // Get all agents (for global/legacy agents without organisation).
+            }
+            
+            // Get all agents (for global/legacy agents without organisation).
+            if ($organisationUuid === null) {
                 $agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);
             }
 

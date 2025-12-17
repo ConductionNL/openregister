@@ -245,9 +245,11 @@ class VectorSearchHandler
                     'wt'   => 'json',
                 ];
 
+                /** @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation */
                 $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/select";
 
                 try {
+                    /** @psalm-suppress UndefinedInterfaceMethod */
                     $response = $solrBackend->getHttpClient()->get(
                         $solrUrl,
                         ['query' => $queryParams]

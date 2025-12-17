@@ -1298,10 +1298,12 @@ class ObjectEntityMapper extends QBMapper
 
         // Search in the object JSON field for the search term.
         if ($partialMatch === true) {
+            /** @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation */
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
             );
         } else {
+            /** @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation */
             $qb->andWhere(
                 $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
             );

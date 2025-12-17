@@ -164,7 +164,9 @@ class SolrNightlyWarmupJob extends TimedJob
 
                 // Log performance statistics for monitoring.
                 $this->logPerformanceStats(result: $result, executionTime: $executionTime, logger: $logger);
-            } else {
+            }//end if
+            
+            if (($result['success'] ?? false) === false) {
                 $logger->error(
                         '❌ SOLR Nightly Warmup Job Failed',
                         [

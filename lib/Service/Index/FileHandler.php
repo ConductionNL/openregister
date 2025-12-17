@@ -346,6 +346,7 @@ class FileHandler
     {
         try {
             // Delegate to search backend.
+            /** @psalm-suppress UndefinedInterfaceMethod - getFileIndexStats may exist on specific backend implementations */
             return $this->searchBackend->getFileIndexStats();
         } catch (Exception $e) {
             $this->logger->error(

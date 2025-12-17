@@ -221,11 +221,11 @@ class SettingsService
     private LoggerInterface $logger;
 
     /**
-     * Object entity mapper
+     * REMOVED: Object entity mapper (unused, caused circular dependency)
      *
-     * @var ObjectEntityMapper
+     * @var ObjectEntityMapper|null
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    // private ?ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Organisation mapper
@@ -326,7 +326,7 @@ class SettingsService
         ICacheFactory $cacheFactory,
         IGroupManager $groupManager,
         LoggerInterface $logger,
-        ObjectEntityMapper $objectEntityMapper,
+        // REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency)
         OrganisationMapper $organisationMapper,
         SchemaCacheHandler $schemaCacheService,
         FacetCacheHandler $schemaFacetCacheService,
@@ -350,7 +350,7 @@ class SettingsService
         $this->cacheFactory     = $cacheFactory;
         $this->groupManager     = $groupManager;
         $this->logger           = $logger;
-        $this->objectEntityMapper      = $objectEntityMapper;
+        // REMOVED: objectEntityMapper assignment (unused, caused circular dependency).
         $this->organisationMapper      = $organisationMapper;
         $this->schemaCacheService      = $schemaCacheService;
         $this->schemaFacetCacheService = $schemaFacetCacheService;

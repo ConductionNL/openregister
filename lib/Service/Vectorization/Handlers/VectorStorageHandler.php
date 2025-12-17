@@ -324,7 +324,9 @@ class VectorStorageHandler
             );
 
             // Perform atomic update in Solr.
+            /** @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation */
             $solrUrl  = $solrBackend->buildSolrBaseUrl()."/{$collection}/update?commit=true";
+            /** @psalm-suppress UndefinedInterfaceMethod */
             $response = $solrBackend->getHttpClient()->post(
                 $solrUrl,
                 [
