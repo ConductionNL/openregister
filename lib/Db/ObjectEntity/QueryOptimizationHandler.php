@@ -553,3 +553,4 @@ class QueryOptimizationHandler
 
     }//end estimateObjectSize()
 }//end class
+

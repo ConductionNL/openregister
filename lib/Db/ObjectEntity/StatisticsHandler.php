@@ -376,3 +376,4 @@ class StatisticsHandler
 
     }//end getSizeDistributionChartData()
 }//end class
+
