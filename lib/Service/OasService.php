@@ -112,9 +112,8 @@ class OasService
 
         // Step 2: Get registers to document.
         // If registerId provided, get only that register; otherwise get all registers.
-        if ($registerId === null) {
-            $registers = $this->registerMapper->findAll();
-        } else {
+        $registers = $this->registerMapper->findAll();
+        if ($registerId !== null) {
             $registers = [$this->registerMapper->find($registerId)];
         }
 
@@ -188,8 +187,7 @@ class OasService
                     'name'        => $schemaTitle,
                     'description' => $schema->getDescription() ?? 'Operations for '.$schemaTitle,
                 ];
-            } else {
-            }//end if
+            }
         }//end foreach
 
         // Initialize paths array.
@@ -214,7 +212,6 @@ class OasService
         $this->validateOasIntegrity();
 
         return $this->oas;
-
     }//end createOas()
 
     /**
@@ -237,7 +234,6 @@ class OasService
         }
 
         return $oas;
-
     }//end getBaseOas()
 
     /**
@@ -296,7 +292,6 @@ class OasService
             'x-tags'     => [$schema->getTitle()],
             'properties' => $cleanProperties,
         ];
-
     }//end enrichSchema()
 
     /**
@@ -419,7 +414,9 @@ class OasService
         if (($cleanDef['allOf'] ?? null) !== null) {
             if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
-            } else {
+            }
+
+            if (is_array($cleanDef['allOf']) === true && empty($cleanDef['allOf']) === false) {
                 // Validate each allOf element.
                 $validAllOfItems = [];
                 foreach ($cleanDef['allOf'] ?? [] as $item) {
@@ -432,7 +429,9 @@ class OasService
                 // If no valid items remain, remove allOf.
                 if (empty($validAllOfItems) === true) {
                     unset($cleanDef['allOf']);
-                } else {
+                }
+
+                if (empty($validAllOfItems) === false) {
                     $cleanDef['allOf'] = $validAllOfItems;
                 }
             }
@@ -459,7 +458,6 @@ class OasService
         }
 
         return $cleanDef;
-
     }//end sanitizePropertyDefinition()
 
     /**
@@ -486,7 +484,6 @@ class OasService
             'put'    => $this->createPutOperation($schema),
             'delete' => $this->createDeleteOperation($schema),
         ];
-
     }//end addCrudPaths()
 
     /**
@@ -639,7 +636,6 @@ class OasService
         }//end if
 
         return $parameters;
-
     }//end createCommonQueryParameters()
 
     /**
@@ -673,7 +669,6 @@ class OasService
 
         // Default to string if type cannot be determined.
         return 'string';
-
     }//end getPropertyType()
 
     /**
@@ -734,7 +729,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createGetCollectionOperation()
 
     /**
@@ -749,10 +743,9 @@ class OasService
     private function createGetOperation(object $schema): array
     {
         // Get schema name for components reference.
+        $schemaName = 'UnknownSchema';
         if (($schema->getTitle() !== null) === true && ($schema->getTitle() !== '') === true) {
             $schemaName = $schema->getTitle();
-        } else {
-            $schemaName = 'UnknownSchema';
         }
 
         return [
@@ -798,7 +791,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createGetOperation()
 
     /**
@@ -813,10 +805,9 @@ class OasService
     private function createPutOperation(object $schema): array
     {
         // Determine schema name.
+        $schemaName = 'UnknownSchema';
         if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
             $schemaName = $schema->getTitle();
-        } else {
-            $schemaName = 'UnknownSchema';
         }
 
         return [
@@ -845,8 +836,8 @@ class OasService
                     'application/json' => [
                         'schema' => [
                             '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
-                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
-                                ),
+                                (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
+                            ),
                         ],
                     ],
                 ],
@@ -876,7 +867,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createPutOperation()
 
     /**
@@ -902,8 +892,8 @@ class OasService
                     'application/json' => [
                         'schema' => [
                             '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
-                                    (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
-                                ),
+                                (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
+                            ),
                         ],
                     ],
                 ],
@@ -923,7 +913,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createPostOperation()
 
     /**
@@ -970,7 +959,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createDeleteOperation()
 
     /**
@@ -1027,7 +1015,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createLogsOperation()
 
     /**
@@ -1084,7 +1071,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createGetFilesOperation()
 
     /**
@@ -1155,7 +1141,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createPostFileOperation()
 
     /**
@@ -1212,7 +1197,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createLockOperation()
 
     /**
@@ -1262,7 +1246,6 @@ class OasService
                 ],
             ],
         ];
-
     }//end createUnlockOperation()
 
     /**
@@ -1275,7 +1258,6 @@ class OasService
     private function slugify(string $string): string
     {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string), '-'));
-
     }//end slugify()
 
     /**
@@ -1288,7 +1270,6 @@ class OasService
     private function pascalCase(string $string): string
     {
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify($string))));
-
     }//end pascalCase()
 
     /**
@@ -1382,25 +1363,32 @@ class OasService
         if (($schema['allOf'] ?? null) !== null) {
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
-            } else {
+            }
+
+            if (is_array($schema['allOf']) === true && empty($schema['allOf']) === false) {
                 $validAllOfItems = [];
                 foreach ($schema['allOf'] ?? [] as $_index => $item) {
                     if (is_array($item) === false || empty($item) === true) {
-                    } else {
-                        // Validate each allOf item has required structure.
-                        if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
-                            $validAllOfItems[] = $item;
-                        } else if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
-                            $validAllOfItems[] = $item;
-                        } else {
-                        }
+                        continue;
+                    }
+
+                    // Validate each allOf item has required structure.
+                    if (($item['$ref'] ?? null) !== null && empty($item['$ref']) === false && is_string($item['$ref']) === true) {
+                        $validAllOfItems[] = $item;
+                        continue;
+                    }
+
+                    if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
+                        $validAllOfItems[] = $item;
                     }
                 }
 
                 // If no valid items remain, remove allOf.
                 if (empty($validAllOfItems) === true) {
                     unset($schema['allOf']);
-                } else {
+                }
+
+                if (empty($validAllOfItems) === false) {
                     $schema['allOf'] = $validAllOfItems;
                 }
             }//end if
@@ -1410,7 +1398,9 @@ class OasService
         if (($schema['$ref'] ?? null) !== null) {
             if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
                 unset($schema['$ref']);
-            } else {
+            }
+
+            if (empty($schema['$ref']) === false && is_string($schema['$ref']) === true) {
                 // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
                 if (strpos($schema['$ref'], '#/components/schemas/') === 0

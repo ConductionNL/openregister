@@ -311,52 +311,44 @@ class View extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): static
     {
+        $this->setUuid(null);
         if (($object['uuid'] ?? null) !== null) {
             $this->setUuid($object['uuid']);
-        } else {
-            $this->setUuid(null);
         }
 
+        $this->setName(null);
         if (($object['name'] ?? null) !== null) {
             $this->setName($object['name']);
-        } else {
-            $this->setName(null);
         }
 
+        $this->setDescription(null);
         if (($object['description'] ?? null) !== null) {
             $this->setDescription($object['description']);
-        } else {
-            $this->setDescription(null);
         }
 
+        $this->setOwner(null);
         if (($object['owner'] ?? null) !== null) {
             $this->setOwner($object['owner']);
-        } else {
-            $this->setOwner(null);
         }
 
+        $this->setIsPublic(false);
         if (($object['isPublic'] ?? null) !== null) {
             $this->setIsPublic($object['isPublic']);
-        } else {
-            $this->setIsPublic(false);
         }
 
+        $this->setIsDefault(false);
         if (($object['isDefault'] ?? null) !== null) {
             $this->setIsDefault($object['isDefault']);
-        } else {
-            $this->setIsDefault(false);
         }
 
+        $this->setQuery([]);
         if (($object['query'] ?? null) !== null) {
             $this->setQuery($object['query']);
-        } else {
-            $this->setQuery([]);
         }
 
+        $this->setFavoredBy([]);
         if (($object['favoredBy'] ?? null) !== null) {
             $this->setFavoredBy($object['favoredBy']);
-        } else {
-            $this->setFavoredBy([]);
         }
 
         return $this;

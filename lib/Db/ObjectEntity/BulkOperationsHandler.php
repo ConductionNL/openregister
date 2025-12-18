@@ -106,7 +106,6 @@ class BulkOperationsHandler
         $this->logger = $logger;
         $this->queryBuilderHandler = $queryBuilderHandler;
         $this->tableName           = $tableName;
-
     }//end __construct()
 
     /**
@@ -128,7 +127,6 @@ class BulkOperationsHandler
         );
 
         return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
-
     }//end ultraFastBulkSave()
 
     /**
@@ -175,7 +173,6 @@ class BulkOperationsHandler
         }//end try
 
         return $deletedObjectIds;
-
     }//end deleteObjects()
 
     /**
@@ -216,7 +213,6 @@ class BulkOperationsHandler
         }
 
         return $publishedObjectIds;
-
     }//end publishObjects()
 
     /**
@@ -257,7 +253,6 @@ class BulkOperationsHandler
         }
 
         return $depublishedObjectIds;
-
     }//end depublishObjects()
 
     /**
@@ -306,7 +301,6 @@ class BulkOperationsHandler
             'published_uuids' => $uuids,
             'schema_id'       => $schemaId,
         ];
-
     }//end publishObjectsBySchema()
 
     /**
@@ -358,7 +352,6 @@ class BulkOperationsHandler
             'deleted_uuids' => $deletedUuids,
             'schema_id'     => $schemaId,
         ];
-
     }//end deleteObjectsBySchema()
 
     /**
@@ -405,7 +398,6 @@ class BulkOperationsHandler
             'deleted_uuids' => $deletedUuids,
             'register_id'   => $registerId,
         ];
-
     }//end deleteObjectsByRegister()
 
     /**
@@ -449,7 +441,6 @@ class BulkOperationsHandler
 
             throw $e;
         }//end try
-
     }//end processInsertChunk()
 
     /**
@@ -493,7 +484,6 @@ class BulkOperationsHandler
 
             throw $e;
         }//end try
-
     }//end processUpdateChunk()
 
     /**
@@ -560,7 +550,6 @@ class BulkOperationsHandler
         }
 
         return $optimalChunkSize;
-
     }//end calculateOptimalChunkSize()
 
     /**
@@ -610,7 +599,6 @@ class BulkOperationsHandler
         }//end if
 
         return 0;
-
     }//end estimateObjectSize()
 
     /**
@@ -672,7 +660,6 @@ class BulkOperationsHandler
         }
 
         return $optimalBatchSize;
-
     }//end calculateOptimalBatchSize()
 
     /**
@@ -755,20 +742,20 @@ class BulkOperationsHandler
                     $stmt   = $this->db->prepare($batchSql);
                     $result = $stmt->execute($parameters);
 
-                    if ($result !== false) {
-                        $batchSuccess = true;
-                    } else {
+                    if ($result === false) {
                         throw new Exception('Statement execution returned false');
                     }
+
+                    $batchSuccess = true;
                 } catch (Exception $e) {
                     $batchRetryCount++;
                     $this->logger->error('Error executing batch', ['attempt' => $batchRetryCount, 'error' => $e->getMessage()]);
 
-                    if ($batchRetryCount <= $maxBatchRetries) {
-                        sleep(2);
-                    } else {
+                    if ($batchRetryCount > $maxBatchRetries) {
                         throw $e;
                     }
+
+                    sleep(2);
                 }
             }//end while
 
@@ -785,7 +772,6 @@ class BulkOperationsHandler
         }//end for
 
         return $insertedIds;
-
     }//end bulkInsert()
 
     /**
@@ -847,7 +833,6 @@ class BulkOperationsHandler
         }//end foreach
 
         return $updatedIds;
-
     }//end bulkUpdate()
 
     /**
@@ -897,9 +882,13 @@ class BulkOperationsHandler
             foreach ($objects as $object) {
                 if ($hardDelete === true) {
                     $hardDeleteIds[] = $object['id'];
-                } else if (empty($object['deleted']) === true) {
+                }
+
+                if ($hardDelete === false && empty($object['deleted']) === true) {
                     $softDeleteIds[] = $object['id'];
-                } else {
+                }
+
+                if ($hardDelete === false && empty($object['deleted']) === false) {
                     $hardDeleteIds[] = $object['id'];
                 }
 
@@ -915,11 +904,11 @@ class BulkOperationsHandler
                         'deleted',
                         $qb->createNamedParameter(
                             json_encode(
-                                    [
-                                        'timestamp' => $currentTime,
-                                        'reason'    => 'bulk_delete',
-                                    ]
-                                    )
+                                [
+                                    'timestamp' => $currentTime,
+                                    'reason'    => 'bulk_delete',
+                                ]
+                            )
                         )
                     )
                     ->where($qb->expr()->in('id', $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
@@ -941,7 +930,6 @@ class BulkOperationsHandler
         }//end foreach
 
         return $deletedIds;
-
     }//end bulkDelete()
 
     /**
@@ -961,12 +949,13 @@ class BulkOperationsHandler
         }
 
         // Determine the published value.
+        $publishedValue = (new DateTime())->format('Y-m-d H:i:s');
         if ($datetime === false) {
             $publishedValue = null;
-        } else if ($datetime instanceof \DateTime) {
+        }
+
+        if ($datetime instanceof \DateTime) {
             $publishedValue = $datetime->format('Y-m-d H:i:s');
-        } else {
-            $publishedValue = (new DateTime())->format('Y-m-d H:i:s');
         }
 
         // Process publishes in smaller chunks.
@@ -996,10 +985,9 @@ class BulkOperationsHandler
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($this->tableName);
 
+                $qb->set('published', $qb->createNamedParameter($publishedValue));
                 if ($publishedValue === null) {
                     $qb->set('published', $qb->createNamedParameter(null));
-                } else {
-                    $qb->set('published', $qb->createNamedParameter($publishedValue));
                 }
 
                 $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
@@ -1014,7 +1002,6 @@ class BulkOperationsHandler
         }//end foreach
 
         return $publishedIds;
-
     }//end bulkPublish()
 
     /**
@@ -1034,12 +1021,13 @@ class BulkOperationsHandler
         }
 
         // Determine the depublished value.
+        $depublishedValue = (new DateTime())->format('Y-m-d H:i:s');
         if ($datetime === false) {
             $depublishedValue = null;
-        } else if ($datetime instanceof \DateTime) {
+        }
+
+        if ($datetime instanceof \DateTime) {
             $depublishedValue = $datetime->format('Y-m-d H:i:s');
-        } else {
-            $depublishedValue = (new DateTime())->format('Y-m-d H:i:s');
         }
 
         // Process depublishes in smaller chunks.
@@ -1069,10 +1057,9 @@ class BulkOperationsHandler
                 $qb = $this->db->getQueryBuilder();
                 $qb->update($this->tableName);
 
+                $qb->set('depublished', $qb->createNamedParameter($depublishedValue));
                 if ($depublishedValue === null) {
                     $qb->set('depublished', $qb->createNamedParameter(null));
-                } else {
-                    $qb->set('depublished', $qb->createNamedParameter($depublishedValue));
                 }
 
                 $qb->where($qb->expr()->in('id', $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)));
@@ -1087,7 +1074,6 @@ class BulkOperationsHandler
         }//end foreach
 
         return $depublishedIds;
-
     }//end bulkDepublish()
 
     /**
@@ -1113,7 +1099,6 @@ class BulkOperationsHandler
         }
 
         return $columns;
-
     }//end getEntityColumns()
 
     /**
@@ -1138,11 +1123,11 @@ class BulkOperationsHandler
         } catch (\ReflectionException $e) {
             // Try getter method.
             $getterMethod = 'get'.ucfirst($column);
-            if (method_exists($entity, $getterMethod) === true) {
-                $value = $entity->$getterMethod();
-            } else {
+            if (method_exists($entity, $getterMethod) === false) {
                 return null;
             }
+
+            $value = $entity->$getterMethod();
         }
 
         // Handle DateTime objects.
@@ -1171,6 +1156,5 @@ class BulkOperationsHandler
         }
 
         return $value;
-
     }//end getEntityValue()
 }//end class

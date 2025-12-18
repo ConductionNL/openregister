@@ -126,7 +126,6 @@ class ObjectsController extends Controller
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
         $this->importService = $importService;
-
     }//end __construct()
 
     /**
@@ -149,7 +148,6 @@ class ObjectsController extends Controller
 
         $userGroups = $this->groupManager->getUserGroupIds($user);
         return in_array('admin', $userGroups);
-
     }//end isCurrentUserAdmin()
 
     /**
@@ -231,10 +229,9 @@ class ObjectsController extends Controller
             $nextPage = $page + 1;
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
+                $nextUrl .= '&page='.$nextPage;
                 if (strpos($nextUrl, '?') === false) {
                     $nextUrl .= '?page='.$nextPage;
-                } else {
-                    $nextUrl .= '&page='.$nextPage;
                 }
             }
 
@@ -246,10 +243,9 @@ class ObjectsController extends Controller
             $prevPage = $page - 1;
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
+                $prevUrl .= '&page='.$prevPage;
                 if (strpos($prevUrl, '?') === false) {
                     $prevUrl .= '?page='.$prevPage;
-                } else {
-                    $prevUrl .= '&page='.$prevPage;
                 }
             }
 
@@ -257,7 +253,6 @@ class ObjectsController extends Controller
         }
 
         return $paginatedResults;
-
     }//end paginate()
 
     /**
@@ -306,21 +301,23 @@ class ObjectsController extends Controller
         unset($params['_route']);
 
         // Extract and normalize parameters.
-        $limit = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
+        $limit  = (int) ($params['limit'] ?? $params['_limit'] ?? 20);
+        $offset = null;
+        if (($params['_offset'] ?? null) !== null) {
+            $offset = (int) $params['_offset'];
+        }
+
         if (($params['offset'] ?? null) !== null) {
             $offset = (int) $params['offset'];
-        } else if (($params['_offset'] ?? null) !== null) {
-            $offset = (int) $params['_offset'];
-        } else {
-            $offset = null;
+        }
+
+        $page = null;
+        if (($params['_page'] ?? null) !== null) {
+            $page = (int) $params['_page'];
         }
 
         if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else if (($params['_page'] ?? null) !== null) {
-            $page = (int) $params['_page'];
-        } else {
-            $page = null;
         }
 
         // If we have a page but no offset, calculate the offset.
@@ -340,7 +337,6 @@ class ObjectsController extends Controller
             '_unset'  => ($params['unset'] ?? $params['_unset'] ?? null),
             'ids'     => $ids,
         ];
-
     }//end getConfig()
 
     /**
@@ -388,7 +384,6 @@ class ObjectsController extends Controller
             'register' => $resolvedRegisterId,
             'schema'   => $resolvedSchemaId,
         ];
-
     }//end resolveRegisterSchemaIds()
 
     /**
@@ -464,7 +459,6 @@ class ObjectsController extends Controller
         }
 
         return $response;
-
     }//end index()
 
     /**
@@ -509,7 +503,6 @@ class ObjectsController extends Controller
         $result = $objectService->searchObjectsPaginated($query);
 
         return new JSONResponse(data: $result);
-
     }//end objects()
 
     /**
@@ -611,7 +604,6 @@ class ObjectsController extends Controller
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
-
     }//end show()
 
     /**
@@ -753,13 +745,15 @@ class ObjectsController extends Controller
                         'size'     => $sizeArray[$i] ?? 0,
                     ];
                 }
-            } else {
-                // Handle single file upload.
-                $uploadedFile = $this->request->getUploadedFile($fieldName);
-                if ($uploadedFile !== null) {
-                    $uploadedFiles[$fieldName] = $uploadedFile;
-                }
+
+                continue;
             }//end if
+
+            // Handle single file upload.
+            $uploadedFile = $this->request->getUploadedFile($fieldName);
+            if ($uploadedFile !== null) {
+                $uploadedFiles[$fieldName] = $uploadedFile;
+            }
         }//end foreach
 
         // Determine RBAC and multitenancy settings based on admin status.
@@ -768,10 +762,9 @@ class ObjectsController extends Controller
         // If admin, disable RBAC.
         // Note: multitenancy is disabled for admins via $rbac flag.
         // Determine uploaded files value.
+        $uploadedFilesValue = null;
         if (empty($uploadedFiles) === false) {
             $uploadedFilesValue = $uploadedFiles;
-        } else {
-            $uploadedFilesValue = null;
         }
 
         // Save the object.
@@ -779,13 +772,13 @@ class ObjectsController extends Controller
             // Use the object service to validate and save the object.
             $objectToSave = $object;
             $objectEntity = $objectService->saveObject(
-                    object: $objectToSave,
-                    register: $register,
-                    schema: $schema,
-                    _rbac: $rbac,
-                    _multitenancy: true,
-                    uuid: null,
-                    uploadedFiles: $uploadedFilesValue
+                object: $objectToSave,
+                register: $register,
+                schema: $schema,
+                _rbac: $rbac,
+                _multitenancy: true,
+                uuid: null,
+                uploadedFiles: $uploadedFilesValue
             );
 
             // TODO: Unlock the object after saving using LockingHandler through ObjectService.
@@ -801,7 +794,6 @@ class ObjectsController extends Controller
 
         // Return the created object.
         return new JSONResponse(data: $objectEntity->jsonSerialize(), statusCode: 201);
-
     }//end create()
 
     /**
@@ -923,13 +915,15 @@ class ObjectsController extends Controller
                         'size'     => $sizeArray[$i] ?? 0,
                     ];
                 }
-            } else {
-                // Handle single file upload.
-                $uploadedFile = $this->request->getUploadedFile($fieldName);
-                if ($uploadedFile !== null) {
-                    $uploadedFiles[$fieldName] = $uploadedFile;
-                }
+
+                continue;
             }//end if
+
+            // Handle single file upload.
+            $uploadedFile = $this->request->getUploadedFile($fieldName);
+            if ($uploadedFile !== null) {
+                $uploadedFiles[$fieldName] = $uploadedFile;
+            }
         }//end foreach
 
         // Determine RBAC and multitenancy settings based on admin status.
@@ -970,11 +964,11 @@ class ObjectsController extends Controller
             ) {
                 // Return a "locked" error with the user who has the lock.
                 return new JSONResponse(
-                        data: [
-                            'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
-                            'lockedBy' => $existingObject->getLockedBy(),
-                        ],
-                        statusCode: 423
+                    data: [
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                        'lockedBy' => $existingObject->getLockedBy(),
+                    ],
+                    statusCode: 423
                 );
             }
         } catch (DoesNotExistException $exception) {
@@ -987,23 +981,22 @@ class ObjectsController extends Controller
         }//end try
 
         // Determine uploaded files value.
+        $uploadedFilesValue = null;
         if (empty($uploadedFiles) === false) {
             $uploadedFilesValue = $uploadedFiles;
-        } else {
-            $uploadedFilesValue = null;
         }
 
         // Update the object.
         try {
             // Use the object service to validate and update the object.
             $objectEntity = $objectService->saveObject(
-                    register: $register,
-                    schema: $schema,
-                    object: $object,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    uuid: $id,
-                    uploadedFiles: $uploadedFilesValue
+                register: $register,
+                schema: $schema,
+                object: $object,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                uuid: $id,
+                uploadedFiles: $uploadedFilesValue
             );
 
             // Unlock the object after saving.
@@ -1022,7 +1015,6 @@ class ObjectsController extends Controller
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
-
     }//end update()
 
     /**
@@ -1094,11 +1086,11 @@ class ObjectsController extends Controller
             ) {
                 // Return a "locked" error with the user who has the lock.
                 return new JSONResponse(
-                        data: [
-                            'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
-                            'lockedBy' => $existingObject->getLockedBy(),
-                        ],
-                        statusCode: 423
+                    data: [
+                        'error'    => 'Object is locked by '.$existingObject->getLockedBy(),
+                        'lockedBy' => $existingObject->getLockedBy(),
+                    ],
+                    statusCode: 423
                 );
             }
 
@@ -1133,7 +1125,6 @@ class ObjectsController extends Controller
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }
-
     }//end patch()
 
     /**
@@ -1181,7 +1172,6 @@ class ObjectsController extends Controller
             // Handle all exceptions (including RBAC permission errors and object not found).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
-
     }//end destroy()
 
     /**
@@ -1215,21 +1205,23 @@ class ObjectsController extends Controller
         $limit = (int) ($requestParams['limit'] ?? $requestParams['_limit'] ?? 20);
 
         // Determine offset value.
+        $offset = null;
+        if (isset($requestParams['_offset']) === true) {
+            $offset = (int) $requestParams['_offset'];
+        }
+
         if (isset($requestParams['offset']) === true) {
             $offset = (int) $requestParams['offset'];
-        } else if (isset($requestParams['_offset']) === true) {
-            $offset = (int) $requestParams['_offset'];
-        } else {
-            $offset = null;
         }
 
         // Determine page value.
+        $page = null;
+        if (isset($requestParams['_page']) === true) {
+            $page = (int) $requestParams['_page'];
+        }
+
         if (isset($requestParams['page']) === true) {
             $page = (int) $requestParams['page'];
-        } else if (isset($requestParams['_page']) === true) {
-            $page = (int) $requestParams['_page'];
-        } else {
-            $page = null;
         }
 
         // Build filters array.
@@ -1244,15 +1236,14 @@ class ObjectsController extends Controller
 
         // Return empty paginated response.
         return new JSONResponse(
-                data: $this->paginate(
-                        results: $result['results'] ?? [],
-                        total: $result['total'] ?? 0,
-                        limit: $limit,
-                        offset: $offset,
-                        page: $page
-                        )
+            data: $this->paginate(
+                results: $result['results'] ?? [],
+                total: $result['total'] ?? 0,
+                limit: $limit,
+                offset: $offset,
+                page: $page
+            )
         );
-
     }//end contracts()
 
     /**
@@ -1296,7 +1287,6 @@ class ObjectsController extends Controller
 
         // Return the result directly from ObjectService.
         return new JSONResponse(data: $result);
-
     }//end uses()
 
     /**
@@ -1340,7 +1330,6 @@ class ObjectsController extends Controller
 
         // Return the result directly from ObjectService.
         return new JSONResponse(data: $result);
-
     }//end used()
 
     /**
@@ -1387,20 +1376,22 @@ class ObjectsController extends Controller
         // If objectSchema is an array/object, files: get slug and id.
         $objectSchemaSlug = null;
         if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
-            $objectSchemaId = (string) $objectSchema['id'];
+            $objectSchemaId   = (string) $objectSchema['id'];
+            $objectSchemaSlug = null;
             if (isset($objectSchema['slug']) === true) {
                 $objectSchemaSlug = strtolower($objectSchema['slug']);
-            } else {
-                $objectSchemaSlug = null;
             }
-        } else if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
-            $objectSchemaId = (string) $objectSchema->id;
+        }
+
+        if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
+            $objectSchemaId   = (string) $objectSchema->id;
+            $objectSchemaSlug = null;
             if (isset($objectSchema->slug) === true) {
                 $objectSchemaSlug = strtolower($objectSchema->slug);
-            } else {
-                $objectSchemaSlug = null;
             }
-        } else {
+        }
+
+        if (is_array($objectSchema) === false && is_object($objectSchema) === false) {
             $objectSchemaId = (string) $objectSchema;
         }
 
@@ -1442,7 +1433,6 @@ class ObjectsController extends Controller
                 page: $config['page']
             )
         );
-
     }//end logs()
 
     /**
@@ -1480,7 +1470,6 @@ class ObjectsController extends Controller
 
         // Return response with locked status for test compatibility.
         return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
-
     }//end lock()
 
     /**
@@ -1506,13 +1495,12 @@ class ObjectsController extends Controller
 
         // Return response with locked status for test compatibility.
         return new JSONResponse(
-                data: [
-                    'message' => 'Object unlocked successfully',
-                    'locked'  => false,
-                    'uuid'    => $id,
-                ]
-                );
-
+            data: [
+                'message' => 'Object unlocked successfully',
+                'locked'  => false,
+                'uuid'    => $id,
+            ]
+        );
     }//end unlock()
 
     /**
@@ -1560,7 +1548,6 @@ class ObjectsController extends Controller
             filename: $result['filename'],
             contentType: $result['mimetype']
         );
-
     }//end export()
 
     /**
@@ -1647,7 +1634,6 @@ class ObjectsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end import()
 
     /**
@@ -1698,7 +1684,6 @@ class ObjectsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }
-
     }//end publish()
 
     /**
@@ -1749,7 +1734,6 @@ class ObjectsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }
-
     }//end depublish()
 
     /**
@@ -1835,7 +1819,6 @@ class ObjectsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end merge()
 
     /**
@@ -1931,7 +1914,6 @@ class ObjectsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end migrate()
 
     /**
@@ -2002,9 +1984,9 @@ class ObjectsController extends Controller
 
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
-                    $zipContent,
-                    $zipInfo['filename'],
-                    $zipInfo['mimeType']
+                $zipContent,
+                $zipInfo['filename'],
+                $zipInfo['mimeType']
             );
         } catch (DoesNotExistException $exception) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
@@ -2016,7 +1998,6 @@ class ObjectsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end downloadFiles()
 
     /**
@@ -2042,21 +2023,20 @@ class ObjectsController extends Controller
             );
 
             return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'data'    => $result,
-                    ]
-                    );
+                data: [
+                    'success' => true,
+                    'data'    => $result,
+                ]
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
-
     }//end vectorizeBatch()
 
     /**
@@ -2083,21 +2063,20 @@ class ObjectsController extends Controller
             $stats = $this->objectService->getVectorizationStatistics(views: $views);
 
             return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'stats'   => $stats,
-                    ]
-                    );
+                data: [
+                    'success' => true,
+                    'stats'   => $stats,
+                ]
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
-
     }//end getObjectVectorizationStats()
 
     /**
@@ -2124,20 +2103,19 @@ class ObjectsController extends Controller
             $count = $this->objectService->getVectorizationCount(schemas: $schemas);
 
             return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'count'   => $count,
-                    ]
-                    );
+                data: [
+                    'success' => true,
+                    'count'   => $count,
+                ]
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'error'   => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                data: [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
         }//end try
-
     }//end getObjectVectorizationCount()
 }//end class

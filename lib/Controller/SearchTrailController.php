@@ -64,28 +64,31 @@ class SearchTrailController extends Controller
         $params = $this->request->getParams();
 
         // Extract pagination parameters (prioritize underscore-prefixed versions).
+        $limit = 20;
         if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
-        } else if (($params['limit'] ?? null) !== null) {
-            $limit = (int) $params['limit'];
-        } else {
-            $limit = 20;
         }
 
+        if (($params['limit'] ?? null) !== null) {
+            $limit = (int) $params['limit'];
+        }
+
+        $offset = null;
         if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
-        } else if (($params['offset'] ?? null) !== null) {
-            $offset = (int) $params['offset'];
-        } else {
-            $offset = null;
         }
 
+        if (($params['offset'] ?? null) !== null) {
+            $offset = (int) $params['offset'];
+        }
+
+        $page = null;
         if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
-        } else if (($params['page'] ?? null) !== null) {
+        }
+
+        if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else {
-            $page = null;
         }
 
         // If we have a page but no offset, calculate the offset.
@@ -97,13 +100,12 @@ class SearchTrailController extends Controller
         $search = $params['_search'] ?? $params['search'] ?? null;
 
         // Extract sort parameters (prioritize underscore-prefixed versions).
-        $sort = [];
+        $sort            = [];
+        $sort['created'] = 'DESC';
         if (($params['_sort'] ?? null) !== null || (($params['sort'] ?? null) !== null) === true) {
             $sortField        = $params['_sort'] ?? $params['sort'] ?? 'created';
             $sortOrder        = $params['_order'] ?? $params['order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
-        } else {
-            $sort['created'] = 'DESC';
         }
 
         // Extract date filters.
@@ -248,7 +250,7 @@ class SearchTrailController extends Controller
                 // Also handle legacy 'page' parameter.
                 $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$nextPage, $nextUrl);
                 if (strpos($nextUrl, '_page=') === false) {
-                    $separator = '?';
+                    $separator = '&';
                     if (strpos($nextUrl, '?') !== false) {
                         $separator = '&';
                     }
@@ -268,7 +270,7 @@ class SearchTrailController extends Controller
                 // Also handle legacy 'page' parameter.
                 $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$prevPage, $prevUrl);
                 if (strpos($prevUrl, '_page=') === false) {
-                    $separator = '?';
+                    $separator = '&';
                     if (strpos($prevUrl, '?') !== false) {
                         $separator = '&';
                     }

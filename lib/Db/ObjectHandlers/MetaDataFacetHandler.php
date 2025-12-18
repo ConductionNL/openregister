@@ -40,7 +40,6 @@ class MetaDataFacetHandler
     public function __construct(
         private readonly IDBConnection $db
     ) {
-
     }//end __construct()
 
     /**
@@ -98,7 +97,6 @@ class MetaDataFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-
     }//end getTermsFacet()
 
     /**
@@ -127,7 +125,6 @@ class MetaDataFacetHandler
 
         // Return the mapped column name or original field name if no mapping exists.
         return $fieldMappings[$field] ?? $field;
-
     }//end mapMetadataFieldToColumn()
 
     /**
@@ -161,9 +158,9 @@ class MetaDataFacetHandler
         $dateFormat = $this->getDateFormatForInterval($interval);
 
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
-                'date_key'
-            )
+            $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
+            'date_key'
+        )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where($queryBuilder->expr()->isNotNull($field))
@@ -188,7 +185,6 @@ class MetaDataFacetHandler
             'interval' => $interval,
             'buckets'  => $buckets,
         ];
-
     }//end getDateHistogramFacet()
 
     /**
@@ -263,7 +259,6 @@ class MetaDataFacetHandler
             'type'    => 'range',
             'buckets' => $buckets,
         ];
-
     }//end getRangeFacet()
 
     /**
@@ -328,17 +323,16 @@ class MetaDataFacetHandler
 
         // Apply JSON object field filters (non-@self filters).
         $objectFilters = array_filter(
-                $baseQuery,
-                function ($key) {
-                    return $key !== '@self' && str_starts_with($key, '_') === false;
-                },
-                ARRAY_FILTER_USE_KEY
-                );
+            $baseQuery,
+            function ($key) {
+                return $key !== '@self' && str_starts_with($key, '_') === false;
+            },
+            ARRAY_FILTER_USE_KEY
+        );
 
         if (empty($objectFilters) === false) {
             $this->applyObjectFieldFilters(queryBuilder: $queryBuilder, objectFilters: $objectFilters);
         }
-
     }//end applyBaseFilters()
 
     /**
@@ -401,7 +395,6 @@ class MetaDataFacetHandler
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
-
     }//end applyFullTextSearch()
 
     /**
@@ -428,11 +421,12 @@ class MetaDataFacetHandler
 
         // Separate integer IDs from string UUIDs.
         foreach ($ids as $id) {
-            if (is_numeric($id) === true) {
-                $integerIds[] = (int) $id;
-            } else {
+            if (is_numeric($id) === false) {
                 $stringIds[] = (string) $id;
+                continue;
             }
+
+            $integerIds[] = (int) $id;
         }
 
         // Create OR condition for ID or UUID matching.
@@ -462,7 +456,6 @@ class MetaDataFacetHandler
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
-
     }//end applyIdsFilter()
 
     /**
@@ -489,13 +482,16 @@ class MetaDataFacetHandler
             if (is_array($value) === false) {
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                } else if ($value === 'IS NULL') {
-                    $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                } else {
-                    // Simple equals (case insensitive for strings).
-                    $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
+                    continue;
                 }
 
+                if ($value === 'IS NULL') {
+                    $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+                    continue;
+                }
+
+                // Simple equals (case insensitive for strings).
+                $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($value)));
                 continue;
             }
 
@@ -541,42 +537,44 @@ class MetaDataFacetHandler
                         $queryBuilder->andWhere($queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter($operatorValue)));
                         break;
                     case 'exists':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
-                        } else {
+                        if ($operatorValue !== true && $operatorValue !== 'true') {
                             $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
+                            break;
                         }
+
+                        $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
                         break;
                     case 'empty':
-                        if ($operatorValue === true || $operatorValue === 'true') {
+                        if ($operatorValue !== true && $operatorValue !== 'true') {
                             $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->orX(
+                                $queryBuilder->expr()->andX(
+                                    $queryBuilder->expr()->isNotNull($field),
+                                    $queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
+                                )
+                            );
+                            break;
+                        }
+
+                        $queryBuilder->andWhere(
+                            $queryBuilder->expr()->orX(
                                 $queryBuilder->expr()->isNull($field),
                                 $queryBuilder->expr()->eq($field, $queryBuilder->createNamedParameter(''))
                             )
-                                    );
-                        } else {
-                            $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->andX(
-                                $queryBuilder->expr()->isNotNull($field),
-                                $queryBuilder->expr()->neq($field, $queryBuilder->createNamedParameter(''))
-                            )
-                                    );
-                        }
+                        );
                         break;
                     case 'null':
-                        if ($operatorValue === true || $operatorValue === 'true') {
-                            $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
-                        } else {
+                        if ($operatorValue !== true && $operatorValue !== 'true') {
                             $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($field));
+                            break;
                         }
+
+                        $queryBuilder->andWhere($queryBuilder->expr()->isNull($field));
                         break;
 
                     case 'or':
+                        $values = $operatorValue;
                         if (is_string($operatorValue) === true) {
                             $values = array_map('trim', explode(',', $operatorValue));
-                        } else {
-                            $values = $operatorValue;
                         }
 
                         $orConditions = $queryBuilder->expr()->orX();
@@ -595,7 +593,6 @@ class MetaDataFacetHandler
                 }//end switch
             }//end foreach
         }//end foreach
-
     }//end applyMetadataFilters()
 
     /**
@@ -628,19 +625,22 @@ class MetaDataFacetHandler
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
-                } else if ($value === 'IS NULL') {
+                    continue;
+                }
+
+                if ($value === 'IS NULL') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
-                } else {
-                    // Simple equals with both exact match and array containment.
-                    $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
+                    continue;
                 }
 
+                // Simple equals with both exact match and array containment.
+                $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $value);
                 continue;
-            }
+            }//end if
 
             // Handle array of values (OR condition) - backwards compatibility.
             if (($value[0] ?? null) !== null && is_string($value[0]) === false) {
@@ -659,7 +659,6 @@ class MetaDataFacetHandler
                 $this->applyObjectFieldOperator(queryBuilder: $queryBuilder, jsonPath: $jsonPath, operator: $operator, operatorValue: $operatorValue);
             }
         }//end foreach
-
     }//end applyObjectFieldFilters()
 
     /**
@@ -684,7 +683,6 @@ class MetaDataFacetHandler
         $singleValueConditions = $queryBuilder->expr()->orX();
         $this->addObjectFieldValueCondition(queryBuilder: $queryBuilder, conditions: $singleValueConditions, jsonPath: $jsonPath, value: $value);
         $queryBuilder->andWhere($singleValueConditions);
-
     }//end applySimpleObjectFieldFilter()
 
     /**
@@ -724,7 +722,6 @@ class MetaDataFacetHandler
                 $queryBuilder->createNamedParameter(1)
             )
         );
-
     }//end addObjectFieldValueCondition()
 
     /**
@@ -784,62 +781,64 @@ class MetaDataFacetHandler
                 $queryBuilder->andWhere($queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter($operatorValue)));
                 break;
             case 'exists':
-                if ($operatorValue === true || $operatorValue === 'true') {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                        )
-                    );
-                } else {
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNull(
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->isNotNull(
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                    )
+                );
                 break;
             case 'empty':
-                if ($operatorValue === true || $operatorValue === 'true') {
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
-                            $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                            ),
-                            $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
-                    )
-                            );
-                } else {
-                    $queryBuilder->andWhere(
-                            $queryBuilder->expr()->andX(
-                        $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                        $queryBuilder->expr()->andX(
+                            $queryBuilder->expr()->isNotNull(
+                                $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                             ),
                             $queryBuilder->expr()->neq($jsonExtract, $queryBuilder->createNamedParameter(''))
-                    )
-                            );
-                }
-                break;
-            case 'null':
-                if ($operatorValue === true || $operatorValue === 'true') {
-                    $queryBuilder->andWhere(
-                        $queryBuilder->expr()->isNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
-                } else {
+                    break;
+                }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull(
+                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                        ),
+                        $queryBuilder->expr()->eq($jsonExtract, $queryBuilder->createNamedParameter(''))
+                    )
+                );
+                break;
+            case 'null':
+                if ($operatorValue !== true && $operatorValue !== 'true') {
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->isNotNull(
                             $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
                         )
                     );
+                    break;
                 }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->isNull(
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
+                    )
+                );
                 break;
             default:
                 // Default to simple filter for unknown operators.
                 $this->applySimpleObjectFieldFilter(queryBuilder: $queryBuilder, jsonPath: $jsonPath, value: $operatorValue);
                 break;
         }//end switch
-
     }//end applyObjectFieldOperator()
 
     /**
@@ -867,7 +866,6 @@ class MetaDataFacetHandler
             default:
                 return '%Y-%m';
         }
-
     }//end getDateFormatForInterval()
 
     /**
@@ -885,14 +883,17 @@ class MetaDataFacetHandler
     {
         if (($range['from'] ?? null) !== null && (($range['to'] ?? null) !== null) === true) {
             return $range['from'].'-'.$range['to'];
-        } else if (($range['from'] ?? null) !== null) {
-            return $range['from'].'+';
-        } else if (($range['to'] ?? null) !== null) {
-            return '0-'.$range['to'];
-        } else {
-            return 'all';
         }
 
+        if (($range['from'] ?? null) !== null) {
+            return $range['from'].'+';
+        }
+
+        if (($range['to'] ?? null) !== null) {
+            return '0-'.$range['to'];
+        }
+
+        return 'all';
     }//end generateRangeKey()
 
     /**
@@ -920,11 +921,11 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                if ($title !== false) {
-                    return (string) $title;
-                } else {
+                if ($title === false) {
                     return "Register $value";
                 }
+
+                return (string) $title;
             } catch (\Exception $e) {
                 return "Register $value";
             }
@@ -938,11 +939,11 @@ class MetaDataFacetHandler
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $value)));
                 $result = $qb->executeQuery();
                 $title  = $result->fetchOne();
-                if ($title !== false) {
-                    return (string) $title;
-                } else {
+                if ($title === false) {
                     return "Schema $value";
                 }
+
+                return (string) $title;
             } catch (\Exception $e) {
                 return "Schema $value";
             }
@@ -950,7 +951,6 @@ class MetaDataFacetHandler
 
         // For other fields, return the value as-is.
         return (string) $value;
-
     }//end getFieldLabel()
 
     /**
@@ -1054,7 +1054,6 @@ class MetaDataFacetHandler
         }
 
         return $facetableFields;
-
     }//end getFacetableFields()
 
     /**
@@ -1088,7 +1087,6 @@ class MetaDataFacetHandler
         $count  = (int) $result->fetchOne();
 
         return $count > 0;
-
     }//end hasFieldData()
 
     /**
@@ -1142,7 +1140,6 @@ class MetaDataFacetHandler
         }
 
         return $samples;
-
     }//end getSampleValues()
 
     /**
@@ -1186,6 +1183,5 @@ class MetaDataFacetHandler
         }
 
         return null;
-
     }//end getDateRange()
 }//end class

@@ -527,7 +527,6 @@ class RenderObject
 
         return $propertyValue;
         // Return unchanged if not a file ID.
-
     }//end hydrateFileProperty()
 
     /**
@@ -983,60 +982,59 @@ class RenderObject
                 // Reset array keys.
                 $dataDot->set(keys: $key, value: array_values($renderedValue));
                 continue;
-            }
+            }//end if
 
             // Skip if the value starts with '@' or '_'.
             if (is_string($value) === true && ((str_starts_with(haystack: $value, needle: '@') === true) || (str_starts_with(haystack: $value, needle: '_') === true)) === true) {
                 continue;
             }
 
-                if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-                    $path         = parse_url($value, PHP_URL_PATH);
-                    $pathExploded = explode('/', $path);
-                    $value        = end($pathExploded);
-                }
+            if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+                $path         = parse_url($value, PHP_URL_PATH);
+                $pathExploded = explode('/', $path);
+                $value        = end($pathExploded);
+            }
 
-                // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
-                $object = $this->getObject(id: $value);
+            // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
+            $object = $this->getObject(id: $value);
 
-                if ($object === null) {
-                    // If not in cache, this object wasn't preloaded - skip it to prevent N+1.
-                    $this->logger->debug(
-                            'Single object not found in preloaded cache - skipping to prevent N+1 query',
-                            [
-                                'identifier' => $value,
-                                'context'    => 'extend_single_processing',
-                            ]
-                            );
-                    continue;
-                }
+            if ($object === null) {
+                // If not in cache, this object wasn't preloaded - skip it to prevent N+1.
+                $this->logger->debug(
+                    'Single object not found in preloaded cache - skipping to prevent N+1 query',
+                    [
+                        'identifier' => $value,
+                        'context'    => 'extend_single_processing',
+                    ]
+                );
+                continue;
+            }
 
-                $subExtend = $keyExtends;
-                if ($allFlag === true) {
-                    $subExtend = array_merge(['all'], $keyExtends);
-                }
+            $subExtend = $keyExtends;
+            if ($allFlag === true) {
+                $subExtend = array_merge(['all'], $keyExtends);
+            }
 
-                $rendered = $this->renderEntity(
-                    entity: $object,
-                    _extend: $subExtend,
-                    depth: $depth + 1,
-                    filter: [],
-                    fields: [],
-                    unset: [],
-                    visitedIds: $visitedIds
-                )->jsonSerialize();
+            $rendered = $this->renderEntity(
+                entity: $object,
+                _extend: $subExtend,
+                depth: $depth + 1,
+                filter: [],
+                fields: [],
+                unset: [],
+                visitedIds: $visitedIds
+            )->jsonSerialize();
 
-                if (in_array($object->getUuid(), $visitedIds, true) === true) {
-                    $rendered = ['@circular' => true, 'id' => $object->getUuid()];
-                }
+            if (in_array($object->getUuid(), $visitedIds, true) === true) {
+                $rendered = ['@circular' => true, 'id' => $object->getUuid()];
+            }
 
-                if (is_numeric($override) === false) {
-                    $dataDot->set(keys: $override, value: $rendered);
-                    continue;
-                }
+            if (is_numeric($override) === false) {
+                $dataDot->set(keys: $override, value: $rendered);
+                continue;
+            }
 
-                $dataDot->set(keys: $key, value: $rendered);
-            }//end if
+            $dataDot->set(keys: $key, value: $rendered);
         }//end foreach
 
         return $dataDot->jsonSerialize();

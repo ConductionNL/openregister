@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Schema Service
  *
@@ -143,7 +144,6 @@ class SchemaService
                 'total_recommendations'            => count($newPropertySuggestions) + count($existingPropertySuggestions),
             ],
         ];
-
     }//end exploreSchemaProperties()
 
     /**
@@ -228,7 +228,6 @@ class SchemaService
             'usage_stats' => $usageStats,
             'data_types'  => $dataTypes,
         ];
-
     }//end analyzeObjectProperties()
 
     /**
@@ -284,13 +283,14 @@ class SchemaService
                 }
 
                 // Check if this is an associative array (object-like).
-                if (array_is_list($value) === false) {
-                    // Treat associative arrays as objects.
-                    $analysis['object_structure'] = $this->analyzeObjectStructure($value);
-                } else {
+                if (array_is_list($value) === true) {
                     // Analyze array structure for list arrays.
                     $analysis['array_structure'] = $this->analyzezArrayStructure($value);
+                    break;
                 }
+
+                // Treat associative arrays as objects.
+                $analysis['object_structure'] = $this->analyzeObjectStructure($value);
                 break;
 
             case 'object':
@@ -300,7 +300,6 @@ class SchemaService
         }//end switch
 
         return $analysis;
-
     }//end analyzePropertyValue()
 
     /**
@@ -379,7 +378,6 @@ class SchemaService
         }
 
         return null;
-
     }//end detectStringFormat()
 
     /**
@@ -397,10 +395,12 @@ class SchemaService
 
         // Check for numeric strings (could be integers).
         if (is_numeric($value) === true) {
+            if (ctype_digit($value) === false) {
+                $patterns[] = 'float_string';
+            }
+
             if (ctype_digit($value) === true) {
                 $patterns[] = 'integer_string';
-            } else {
-                $patterns[] = 'float_string';
             }
         }
 
@@ -437,7 +437,6 @@ class SchemaService
         }
 
         return $patterns;
-
     }//end analyzeStringPattern()
 
     /**
@@ -458,11 +457,7 @@ class SchemaService
         }
 
         // Add unique examples (limit to avoid memory issues).
-        if (count($existingAnalysis['examples']) >= 10) {
-            $existingAnalysis['examples'][] = $newAnalysis['examples'][0];
-            $existingAnalysis['examples']   = array_unique($existingAnalysis['examples'], SORT_REGULAR);
-            $existingAnalysis['examples']   = array_slice($existingAnalysis['examples'], 0, 5);
-        } else {
+        if (count($existingAnalysis['examples']) < 10) {
             foreach ($newAnalysis['examples'] as $example) {
                 if (in_array($example, $existingAnalysis['examples'], true) === false) {
                     $existingAnalysis['examples'][] = $example;
@@ -470,6 +465,12 @@ class SchemaService
             }
 
             $existingAnalysis['examples'] = array_slice($existingAnalysis['examples'], 0, 5);
+        }
+
+        if (count($existingAnalysis['examples']) >= 10) {
+            $existingAnalysis['examples'][] = $newAnalysis['examples'][0];
+            $existingAnalysis['examples']   = array_unique($existingAnalysis['examples'], SORT_REGULAR);
+            $existingAnalysis['examples']   = array_slice($existingAnalysis['examples'], 0, 5);
         }
 
         // Update length ranges.
@@ -506,13 +507,15 @@ class SchemaService
 
         // Merge object structure analysis.
         if ($newAnalysis['object_structure'] !== null) {
-            if ($existingAnalysis['object_structure'] === null) {
-                $existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
-            } else {
+            if ($existingAnalysis['object_structure'] !== null) {
                 $this->mergeObjectStructures(
                     existingStructure: $existingAnalysis['object_structure'],
                     newStructure: $newAnalysis['object_structure']
                 );
+            }
+
+            if ($existingAnalysis['object_structure'] === null) {
+                $existingAnalysis['object_structure'] = $newAnalysis['object_structure'];
             }
         }
 
@@ -522,7 +525,6 @@ class SchemaService
                 $existingAnalysis['array_structure'] = $newAnalysis['array_structure'];
             }
         }
-
     }//end mergePropertyAnalysis()
 
     /**
@@ -565,10 +567,9 @@ class SchemaService
 
         if ($newPriority > $existingPriority) {
             return $newFormat;
-        } else {
-            return $existingFormat;
         }
 
+        return $existingFormat;
     }//end consolidateFormatDetection()
 
     /**
@@ -590,9 +591,13 @@ class SchemaService
             // Handle type promotion (integer -> number).
             if ($existingRange['type'] === 'integer' && $newRange['type'] === 'number') {
                 $existingRange['type'] = 'number';
-            } else if ($existingRange['type'] === 'number' && $newRange['type'] === 'integer') {
+            }
+
+            if ($existingRange['type'] === 'number' && $newRange['type'] === 'integer') {
                 // Keep as number.
-            } else {
+            }
+
+            if ($existingRange['type'] !== 'integer' && $existingRange['type'] !== 'number') {
                 // Incompatible types, default to number.
                 return [
                     'type' => 'number',
@@ -607,7 +612,6 @@ class SchemaService
             'min'  => min($existingRange['min'], $newRange['min']),
             'max'  => max($existingRange['max'], $newRange['max']),
         ];
-
     }//end mergeNumericRanges()
 
     /**
@@ -660,7 +664,6 @@ class SchemaService
             'keys'   => array_keys($array),
             'length' => count($array),
         ];
-
     }//end analyzezArrayStructure()
 
     /**
@@ -689,7 +692,6 @@ class SchemaService
             'keys'      => $keys,
             'key_count' => count($keys),
         ];
-
     }//end analyzeObjectStructure()
 
     /**
@@ -707,7 +709,6 @@ class SchemaService
             $existingStructure['keys']      = array_unique(array_merge($existingStructure['keys'], $newStructure['keys']));
             $existingStructure['key_count'] = count($existingStructure['keys']);
         }
-
     }//end mergeObjectStructures()
 
     /**
@@ -753,24 +754,21 @@ class SchemaService
             $recommendedType = $this->recommendPropertyType($analysis);
 
             // Determine max length value.
+            $maxLengthValue = null;
             if ($analysis['max_length'] > 0) {
                 $maxLengthValue = $analysis['max_length'];
-            } else {
-                $maxLengthValue = null;
             }
 
             // Determine min length value.
+            $minLengthValue = null;
             if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
                 $minLengthValue = $analysis['min_length'];
-            } else {
-                $minLengthValue = null;
             }
 
             // Determine type variations.
+            $typeVariations = null;
             if (count($analysis['types']) > 1) {
                 $typeVariations = $analysis['types'];
-            } else {
-                $typeVariations = null;
             }
 
             $suggestion = [
@@ -821,21 +819,20 @@ class SchemaService
 
         // Sort suggestions by confidence and usage.
         usort(
-                $suggestions,
-                function ($a, $b) {
-                    $confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
-                    $confCompare     = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
+            $suggestions,
+            function ($a, $b) {
+                $confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
+                $confCompare     = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
 
-                    if ($confCompare !== 0) {
-                        return $confCompare;
-                    }
-
-                    return $b['usage_percentage'] - $a['usage_percentage'];
+                if ($confCompare !== 0) {
+                    return $confCompare;
                 }
-                );
+
+                return $b['usage_percentage'] - $a['usage_percentage'];
+            }
+        );
 
         return $suggestions;
-
     }//end generateSuggestions()
 
     /**
@@ -868,33 +865,31 @@ class SchemaService
 
             if (empty($improvement['issues']) === false) {
                 $usagePercentage = $analysis['usage_percentage'] ?? 0;
+                $confidence      = 'low';
+                if ($usagePercentage >= 50) {
+                    $confidence = 'medium';
+                }
+
                 if ($usagePercentage >= 80) {
                     $confidence = 'high';
-                } else if ($usagePercentage >= 50) {
-                    $confidence = 'medium';
-                } else {
-                    $confidence = 'low';
                 }
 
                 // Determine max length value.
+                $maxLengthValue = null;
                 if ($analysis['max_length'] > 0) {
                     $maxLengthValue = $analysis['max_length'];
-                } else {
-                    $maxLengthValue = null;
                 }
 
                 // Determine min length value.
+                $minLengthValue = null;
                 if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
                     $minLengthValue = $analysis['min_length'];
-                } else {
-                    $minLengthValue = null;
                 }
 
                 // Determine type variations.
+                $typeVariations = null;
                 if (count($analysis['types']) > 1) {
                     $typeVariations = $analysis['types'];
-                } else {
-                    $typeVariations = null;
                 }
 
                 $suggestion = [
@@ -922,21 +917,20 @@ class SchemaService
 
         // Sort improvements by confidence and usage.
         usort(
-                $improvements,
-                function ($a, $b) {
-                    $confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
-                    $confCompare     = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
+            $improvements,
+            function ($a, $b) {
+                $confidenceOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
+                $confCompare     = $confidenceOrder[$a['confidence']] - $confidenceOrder[$b['confidence']];
 
-                    if ($confCompare !== 0) {
-                        return $confCompare;
-                    }
-
-                    return $b['usage_percentage'] - $a['usage_percentage'];
+                if ($confCompare !== 0) {
+                    return $confCompare;
                 }
-                );
+
+                return $b['usage_percentage'] - $a['usage_percentage'];
+            }
+        );
 
         return $improvements;
-
     }//end analyzeExistingProperties()
 
     /**
@@ -1122,7 +1116,6 @@ class SchemaService
             'suggestions'      => $suggestions,
             'recommended_type' => $recommendedType,
         ];
-
     }//end comparePropertyWithAnalysis()
 
     /**
@@ -1152,7 +1145,6 @@ class SchemaService
 
         $lowerPropertyName = strtolower($propertyName);
         return in_array($lowerPropertyName, $internalPatterns, true);
-
     }//end isInternalProperty()
 
     /**
@@ -1271,7 +1263,6 @@ class SchemaService
             default:
                 return 'string';
         }
-
     }//end recommendPropertyType()
 
     /**
@@ -1300,7 +1291,6 @@ class SchemaService
         return $uniqueCount <= ($totalExamples / 2) &&
                (empty($analysis['types']) === false) &&
                $analysis['types'][0] === 'string';
-
     }//end detectEnumLike()
 
     /**
@@ -1316,14 +1306,13 @@ class SchemaService
     {
         $uniqueValues = array_unique($examples);
         return array_values(
-                array_filter(
+            array_filter(
                 $uniqueValues,
                 function ($value) {
                     return $value !== null && $value !== '';
                 }
-                )
-                );
-
+            )
+        );
     }//end extractEnumValues()
 
     /**
@@ -1350,7 +1339,6 @@ class SchemaService
         }
 
         return $properties;
-
     }//end generateNestedProperties()
 
     /**
@@ -1391,7 +1379,6 @@ class SchemaService
         }//end if
 
         return ['type' => 'string'];
-
     }//end generateArrayItemType()
 
     /**
@@ -1437,6 +1424,5 @@ class SchemaService
             $this->logger->error(message: 'Failed to update schema '.$schemaId.': '.$e->getMessage());
             throw new Exception('Failed to update schema properties: '.$e->getMessage());
         }//end try
-
     }//end updateSchemaFromExploration()
 }//end class
