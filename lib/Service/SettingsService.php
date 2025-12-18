@@ -1695,8 +1695,8 @@ class SettingsService
         try {
             $this->logger->info('[SettingsService] Rebase requested', ['options' => $options]);
 
-            // Get current settings.
-            $currentSettings = $this->getSettings();
+            // Get current settings (currently unused but kept for potential future use).
+            // $currentSettings = $this->getSettings();
 
             // Determine what to rebase.
             $components = $options['components'] ?? ['all'];

@@ -353,6 +353,7 @@ class CrudHandler
             $mergedData   = array_merge($existingData, $data);
 
             // Save merged data.
+            // Note: $multi (multitenancy) parameter currently unused but kept for API consistency.
             $updatedObject = $this->objectService->saveObject(
                 objectId: $objectId,
                 object: $mergedData,

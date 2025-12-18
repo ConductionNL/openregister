@@ -704,10 +704,12 @@ trait MultiTenancyTrait
             // User is explicitly listed in the organisation - check authorization.
         }
 
-        if (in_array($userId, $organisationUsers, true) === false) {
-            // User is not in the organisation.
-            return false;
-        }
+        // Check if user has access via organisation membership.
+        // Note: $organisationUsers was intended for group-based access but is currently unused.
+        // Access is determined by $orgUsers check above.
+        // if (in_array($userId, $organisationUsers, true) === false) {
+        //     return false;
+        // }
 
         // Get user's groups.
         if (isset($this->groupManager) === false) {

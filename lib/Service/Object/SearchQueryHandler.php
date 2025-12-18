@@ -406,8 +406,9 @@ class SearchQueryHandler
         // 3. Process parameters (no nested loops).
         foreach ($normalized as $key => $value) {
             if (preg_match('/^(.*)_(in|gt|lt|gte|lte|isnull)$/', $key, $matches) === 1) {
-                $matches[0];
-                [$_fullMatch, $base, $suffix] = $matches;
+                // Suppress unused variable warning for $matches[0] (full match).
+                unset($matches[0]);
+                [$base, $suffix] = array_values($matches);
 
                 switch ($suffix) {
                     case 'in':

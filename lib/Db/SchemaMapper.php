@@ -1309,6 +1309,8 @@ class SchemaMapper extends QBMapper
         $allOf         = $schema->getAllOf() ?? [];
 
         foreach ($allProperties as $propName => $propDef) {
+            // Suppress unused variable warning for $propDef - only processing property names.
+            unset($propDef);
             $isNative = isset($nativeProperties[$propName]);
 
             $metadata[$propName] = [

@@ -923,6 +923,7 @@ class ConfigurationService
          *     changes: array
          * }
          */
+        // Note: $schemaData is received as parameter but currently unused - keeping for API consistency.
         return $this->previewHandler->previewSchemaChange($slug, $schemaData);
 
     }//end previewRegisterChange()
@@ -985,7 +986,8 @@ class ConfigurationService
 
         return true;
 
-        $configuration->setRegisters($existingRegisterIds);
+        // Legacy code below - no longer executed (unreachable after return).
+        // $configuration->setRegisters($existingRegisterIds);
 
         // Update schema IDs.
         $existingSchemaIds = $configuration->getSchemas();

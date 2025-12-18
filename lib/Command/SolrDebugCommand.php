@@ -225,8 +225,8 @@ class SolrDebugCommand extends Command
             $output->writeln('<error>IndexService creation requires dependency injection - not yet implemented</error>');
             return;
             // Test setup.
-            $setup  = new SetupHandler($solrService, $this->logger);
-            $result = $setup->setupSolr();
+            // $setup  = new SetupHandler($solrService, $this->logger);
+            // $result = $setup->setupSolr();
 
             if ($result === true) {
                 $output->writeln('<info>✅ SOLR setup completed successfully</info>');
@@ -381,8 +381,10 @@ class SolrDebugCommand extends Command
                 $output->writeln("  <info>✅ Found $collectionCount collections (SolrCloud mode)</info>");
                 // Iterate over collections directly to get string keys.
                 // Collection names in Solr are always strings.
-                foreach ($collectionsData['cluster']['collections'] as $collectionName => $_collectionData) {
+                foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionData) {
                     // $collectionName is guaranteed to be a string when iterating over array.
+                    // $collectionData contains collection metadata but we only display the name.
+                    unset($collectionData); // Suppress unused variable warning.
                     $output->writeln("    - <comment>".$collectionName."</comment>");
                 }
             }

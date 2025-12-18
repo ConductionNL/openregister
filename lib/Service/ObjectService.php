@@ -56,8 +56,6 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Service\Object\PublishObject;
-use OCA\OpenRegister\Service\Object\DepublishObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\PublishHandler;
@@ -189,11 +187,9 @@ class ObjectService
      * @param SaveObjects                    $saveObjectsHandler             Handler for bulk object saving operations.
      * @param SearchQueryHandler             $searchQueryHandler             Handler for search query operations.
      * @param ValidateObject                 $validateHandler                Handler for object validation.
-     * @param PublishObject                  $publishHandler                 Handler for object publication.
-     * @param DepublishObject                $depublishHandler               Handler for object depublication.
      * @param LockHandler                    $lockHandler                    Handler for object locking.
      * @param AuditHandler                   $auditHandler                   Handler for audit trail operations.
-     * @param PublishHandler                 $publishHandlerNew              Handler for publication workflow.
+     * @param PublishHandler                 $publishHandler                 Handler for publication workflow.
      * @param RelationHandler                $relationHandler                Handler for object relationships.
      * @param MergeHandler                   $mergeHandler                   Handler for merge and migration.
      * @param ExportHandler                  $exportHandler                  Handler for export/import operations.
@@ -234,12 +230,10 @@ class ObjectService
         private readonly SaveObjects $saveObjectsHandler,
         private readonly SearchQueryHandler $searchQueryHandler,
         private readonly ValidateObject $validateHandler,
-        private readonly PublishObject $publishHandler,
-        private readonly DepublishObject $depublishHandler,
         // New handlers - TESTING FIRST 5:
         private readonly LockHandler $lockHandler,
         private readonly AuditHandler $auditHandler,
-        private readonly PublishHandler $publishHandlerNew,
+        private readonly PublishHandler $publishHandler,
         private readonly RelationHandler $relationHandler,
         private readonly MergeHandler $mergeHandler,
         // REFACTORED: CrudHandler removed - was unimplemented stub causing circular dependency.
@@ -767,8 +761,9 @@ class ObjectService
     ): int {
         // Add register and schema IDs to filters// Ensure we have both register and schema set.
         if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
-            // $filters is intentionally unused here as we're modifying $config directly.
-            $_filters = ['register' => $this->currentRegister->getId()];
+            // Note: $_filters was intended for filter building but is currently unused.
+            // Filters are applied directly to $config instead.
+            // $_filters = ['register' => $this->currentRegister->getId()];
         }
 
         if ($this->currentSchema !== null && empty($config['filers']['schema']) === true) {
@@ -1812,8 +1807,8 @@ class ObjectService
      */
     public function depublish(string $uuid=null, ?\DateTime $date=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
-        // Use the depublish handler to depublish the object.
-        return $this->depublishHandler->depublish(
+        // Use the publish handler to depublish the object.
+        return $this->publishHandler->depublish(
             uuid: $uuid,
             date: $date,
             _rbac: $_rbac,
@@ -2450,8 +2445,8 @@ class ObjectService
         bool $_multitenancy=true
     ): ObjectEntity {
         // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() with ID.
-        // Get existing object and merge with new data.
-        $existing   = $this->objectEntityMapper->find((int) $objectId);
+        // Get existing object and merge with new data (currently unused but kept for reference).
+        // $existing = $this->objectEntityMapper->find((int) $objectId);
         $data['id'] = $objectId;
         return $this->saveObject(object: $data);
 

@@ -318,7 +318,9 @@ class PreparationHandler
     private function handlePreValidationCascading(array $object, string $uuid): array
     {
         // Delegate to BulkValidationHandler for pre-validation cascading.
-        [$processedObject, $_] = $this->bulkValidationHandler->handlePreValidationCascading($object, $uuid);
+        [$processedObject, $processedUuid] = $this->bulkValidationHandler->handlePreValidationCascading($object, $uuid);
+        // Suppress unused variable warning for $processedUuid - it's part of the tuple return.
+        unset($processedUuid);
         return $processedObject;
     }//end handlePreValidationCascading()
 

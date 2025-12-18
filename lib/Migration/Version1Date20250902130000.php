@@ -83,8 +83,8 @@ class Version1Date20250902130000 extends SimpleMigrationStep
             return;
         }
 
-        // Get database connection for raw SQL.
-        $connection = \OC::$server->getDatabaseConnection();
+        // Get database connection for raw SQL (currently unused but reserved for future use).
+        // $connection = \OC::$server->getDatabaseConnection();
 
         // Skip complex index creation for now to avoid MySQL key length issues.
         // TODO: Add indexes after app is enabled.

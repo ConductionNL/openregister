@@ -114,6 +114,8 @@ class FileHandler
             $indexedCount = 0;
         }
 
+        // Note: Collection name is set above based on backend type.
+        // Returning it in the result for API consistency.
         return [
             'success'    => $success,
             'indexed'    => $indexedCount,
@@ -142,6 +144,7 @@ class FileHandler
 
             $documentCount = $searchResults['response']['numFound'] ?? 0;
 
+            // Note: Collection name is determined earlier based on backend type.
             return [
                 'available'      => true,
                 'collection'     => $collection,
