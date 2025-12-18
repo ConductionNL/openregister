@@ -57,12 +57,11 @@ class PerformanceOptimizationHandler
     public function getActiveOrganisationForContext()
     {
         try {
-            $activeOrganisation = null;
-            // TODO: Implement organisation retrieval.
-            // When implemented, uncomment:
+            // TODO: Implement organisation retrieval when service is available.
+            // $activeOrganisation = $this->organisationService->getActiveOrganisation();
             // if ($activeOrganisation !== null) {
-            // return $activeOrganisation->getUuid().
-            // }.
+            //     return $activeOrganisation->getUuid();
+            // }
             return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.

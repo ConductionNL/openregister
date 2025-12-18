@@ -895,7 +895,9 @@ class SetupHandler
      */
     private function allComponentsSuccessful(array $components): bool
     {
-        foreach ($components as $_component => $result) {
+        foreach ($components as $componentName => $result) {
+            // Suppress unused variable warning for $componentName - only checking results.
+            unset($componentName);
             if (($result['success'] ?? false) === false) {
                 return false;
             }
@@ -1503,11 +1505,12 @@ class SetupHandler
                 ]
             );
 
-            // Determine SOLR response value.
-            $solrResponseValue = $solrResponse;
-            if ($retryDetails === true) {
-                $solrResponseValue = $retryDetails;
-            }
+            // Determine SOLR response value for error details.
+            // Note: $retryDetails is checked but $solrResponseValue calculation was incorrect.
+            // Simplified to just use $solrResponse directly.
+            // if ($retryDetails === true) {
+            //     $solrResponseValue = $retryDetails;
+            // }
 
             $this->lastErrorDetails = [
                 'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',

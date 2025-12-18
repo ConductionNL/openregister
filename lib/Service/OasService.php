@@ -804,11 +804,11 @@ class OasService
      */
     private function createPutOperation(object $schema): array
     {
-        // Determine schema name.
-        $schemaName = 'UnknownSchema';
-        if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
-            $schemaName = $schema->getTitle();
-        }
+        // Determine schema name (currently unused but kept for potential future use).
+        // $schemaName = 'UnknownSchema';
+        // if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
+        //     $schemaName = $schema->getTitle();
+        // }
 
         return [
             'summary'     => 'Update a '.$schema->getTitle().' object',
@@ -1367,7 +1367,9 @@ class OasService
 
             if (is_array($schema['allOf']) === true && empty($schema['allOf']) === false) {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] ?? [] as $_index => $item) {
+                foreach ($schema['allOf'] ?? [] as $index => $item) {
+                    // Suppress unused variable warning for $index - only processing items.
+                    unset($index);
                     if (is_array($item) === false || empty($item) === true) {
                         continue;
                     }

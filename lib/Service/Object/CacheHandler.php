@@ -461,7 +461,9 @@ class CacheHandler
      */
     private function extractTextFromArray(array $data, array &$textContent): void
     {
-        foreach ($data as $_key => $value) {
+        foreach ($data as $key => $value) {
+            // Suppress unused variable warning for $key - only processing values.
+            unset($key);
             if (is_string($value) === true) {
                 $textContent[] = $value;
             } else if (is_array($value) === true) {

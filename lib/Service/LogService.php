@@ -168,6 +168,11 @@ class LogService
         // Step 3: Add object ID to filters to restrict logs to this object.
         $filters           = $config['filters'] ?? [];
         $filters['object'] = $object->getId();
+        
+        // Note: We do NOT add register/schema filters here because:
+        // 1. The object already ensures it belongs to the correct register/schema
+        // 2. Adding those filters can cause issues if register/schema have been recreated with same slug
+        // 3. The object ID is sufficient to uniquely identify audit trails
 
         // Step 4: Retrieve logs from audit trail mapper with pagination and filtering.
         return $this->auditTrailMapper->findAll(

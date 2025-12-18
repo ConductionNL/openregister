@@ -685,7 +685,8 @@ class ImportService
         }//end if
 
         // NO ERROR SUPPRESSION: Row parsing errors will bubble up immediately - no need to collect them.
-        $processingTime = microtime(true) - $startTime;
+        // Note: Processing time calculation removed as it was unused.
+        // $processingTime = microtime(true) - $startTime;
 
         return $summary;
     }//end processSpreadsheetBatch()

@@ -364,8 +364,8 @@ class SaveObjects
             $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
             $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
             // TODO: Renamed from 'skipped'.
-            // Calculate chunk processing time and speed.
-            $chunkTime = microtime(true) - $chunkStart;
+            // Calculate chunk processing time and speed (currently unused but kept for future logging).
+            // $chunkTime = microtime(true) - $chunkStart;
 
             // Store per-chunk statistics for transparency and debugging.
             if (isset($result['chunkStatistics']) === false) {
@@ -941,7 +941,9 @@ class SaveObjects
         $preparedObjects = [];
         $invalidObjects  = [];
 
-        foreach ($objects as $_index => $object) {
+        foreach ($objects as $index => $object) {
+            // Suppress unused variable warning for $index - it's part of foreach iteration.
+            unset($index);
             // NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
             $selfData = $object['@self'] ?? [];
 

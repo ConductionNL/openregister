@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use Psr\Log\LoggerInterface;
 
@@ -47,10 +48,12 @@ class LockHandler
      * Constructor
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging actions
      * @param LoggerInterface    $logger             PSR-3 logger
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
     ) {
 
@@ -83,9 +86,18 @@ class LockHandler
         );
 
         try {
+            // Get the object before locking for audit trail.
+            $objectBefore = $this->objectEntityMapper->find($identifier);
+            
             // NOTE: lockObject is deprecated - this will throw BadMethodCallException.
             // Should use LockingHandler through ObjectService instead.
-            $object = $this->objectEntityMapper->lockObject($identifier, $duration);
+            $lockResult = $this->objectEntityMapper->lockObject($identifier, $duration);
+
+            // Reload the object after locking to get updated state.
+            $objectAfter = $this->objectEntityMapper->find($identifier);
+
+            // Record lock action in audit trail.
+            $this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'lock');
 
             $this->logger->info(
                 message: '[LockHandler] Object locked successfully',
@@ -95,7 +107,7 @@ class LockHandler
                 ]
             );
 
-            return $object;
+            return $lockResult;
         } catch (LockedException $e) {
             $this->logger->warning(
                 message: '[LockHandler] Object is already locked',
@@ -137,8 +149,17 @@ class LockHandler
         );
 
         try {
+            // Get the object before unlocking for audit trail.
+            $objectBefore = $this->objectEntityMapper->find($identifier);
+            
             // Call the mapper's unlock method.
             $this->objectEntityMapper->unlockObject(uuid: $identifier);
+
+            // Reload the object after unlocking to get updated state.
+            $objectAfter = $this->objectEntityMapper->find($identifier);
+
+            // Record unlock action in audit trail.
+            $this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
 
             $this->logger->info(
                 message: '[LockHandler] Object unlocked successfully',

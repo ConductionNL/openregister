@@ -416,6 +416,8 @@ class QueryOptimizationHandler
     public function hasJsonFilters(array $filters): bool
     {
         foreach ($filters as $key => $value) {
+            // Suppress unused variable warning for $value - only checking keys.
+            unset($value);
             // Check for dot-notation in filter keys (indicates JSON path queries).
             if (strpos($key, '.') !== false && $key !== 'schema.id') {
                 return true;

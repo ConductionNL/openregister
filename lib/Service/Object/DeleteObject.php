@@ -292,13 +292,12 @@ class DeleteObject
     private function deleteObjectFolder(ObjectEntity $objectEntity): void
     {
         try {
-            $folder = null;
-            // TODO: $this->fileService->getObjectFolder($objectEntity);
-            // When implemented, uncomment:
+            // TODO: Implement folder deletion when fileService is available.
+            // $folder = $this->fileService->getObjectFolder($objectEntity);
             // if ($folder !== null) {
-            // $folder->delete().
-            // $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId()).
-            // }.
+            //     $folder->delete();
+            //     $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
+            // }
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.
             $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());

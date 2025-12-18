@@ -2161,7 +2161,7 @@ class MagicMapper
     private function isJsonString(string $string): bool
     {
         // Decode JSON to check for errors via json_last_error().
-        $decoded = json_decode($string);
+        json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
     }//end isJsonString()
 

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use DateTime;
@@ -47,10 +48,12 @@ class PublishHandler
      * Constructor
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logging actions
      * @param LoggerInterface    $logger             PSR-3 logger
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
     ) {
 
@@ -74,36 +77,48 @@ class PublishHandler
     public function publish(
         string $uuid,
         ?DateTime $date=null,
-        bool $rbac=true,
-        bool $multitenancy=true
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         $this->logger->debug(
             message: '[PublishHandler] Publishing object',
             context: [
                 'uuid'         => $uuid,
                 'date'         => $date?->format('Y-m-d H:i:s'),
-                'rbac'         => $rbac,
-                'multitenancy' => $multitenancy,
+                'rbac'         => $_rbac,
+                'multitenancy' => $_multitenancy,
             ]
         );
 
         try {
-            // Fetch object.
-            $object = $this->objectEntityMapper->find(
+            // Fetch object before modification.
+            $objectBefore = $this->objectEntityMapper->find(
                 $uuid,
-                _rbac: $rbac,
-                _multitenancy: $multitenancy
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
+
+            // Clone the object to preserve the old state.
+            $objectBeforeClone = clone $objectBefore;
 
             // Set publication date (now if not provided).
             $publicationDate = $date ?? new DateTime();
-            $object->setPublicationDate($publicationDate);
+            $objectBefore->setPublished($publicationDate);
 
             // Clear depublication date if set.
-            $object->setDepublicationDate(null);
+            $objectBefore->setDepublished(null);
 
             // Save object.
-            $object = $this->objectEntityMapper->update(entity: $object);
+            $object = $this->objectEntityMapper->update(entity: $objectBefore);
+
+            // Record publish action in audit trail (with before/after states).
+            try {
+                error_log('[PublishHandler] About to create audit trail for publish action');
+                $auditTrail = $this->auditTrailMapper->createAuditTrail(old: $objectBeforeClone, new: $object, action: 'publish');
+                error_log('[PublishHandler] Audit trail created: ' . $auditTrail->getId());
+            } catch (\Exception $auditError) {
+                error_log('[PublishHandler] Failed to create audit trail: ' . $auditError->getMessage());
+            }
 
             $this->logger->info(
                 message: '[PublishHandler] Object published successfully',
@@ -145,33 +160,40 @@ class PublishHandler
     public function depublish(
         string $uuid,
         ?DateTime $date=null,
-        bool $rbac=true,
-        bool $multitenancy=true
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity {
         $this->logger->debug(
             message: '[PublishHandler] Depublishing object',
             context: [
                 'uuid'         => $uuid,
                 'date'         => $date?->format('Y-m-d H:i:s'),
-                'rbac'         => $rbac,
-                'multitenancy' => $multitenancy,
+                'rbac'         => $_rbac,
+                'multitenancy' => $_multitenancy,
             ]
         );
 
         try {
-            // Fetch object.
-            $object = $this->objectEntityMapper->find(
+            // Fetch object before modification.
+            $objectBefore = $this->objectEntityMapper->find(
                 $uuid,
-                _rbac: $rbac,
-                _multitenancy: $multitenancy
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
+
+            // Clone the object to preserve the old state.
+            $objectBeforeClone = clone $objectBefore;
 
             // Set depublication date (now if not provided).
             $depublicationDate = $date ?? new DateTime();
-            $object->setDepublicationDate($depublicationDate);
+            $objectBefore->setDepublished($depublicationDate);
 
-            // Save object.
-            $object = $this->objectEntityMapper->update(entity: $object);
+            // Clear publication date if set.
+            $objectBefore->setPublished(null);
+            $object = $this->objectEntityMapper->update(entity: $objectBefore);
+
+            // Record depublish action in audit trail (with before/after states).
+            $this->auditTrailMapper->createAuditTrail(old: $objectBeforeClone, new: $object, action: 'depublish');
 
             $this->logger->info(
                 message: '[PublishHandler] Object depublished successfully',

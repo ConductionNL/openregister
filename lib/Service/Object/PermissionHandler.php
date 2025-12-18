@@ -365,15 +365,14 @@ class PermissionHandler
     public function getActiveOrganisationForContext()
     {
         try {
-            $activeOrganisation = null;
-            // TODO: Get without service
-            // When implemented, uncomment:
+            // TODO: Get active organisation without service dependency.
+            // $activeOrganisation = ... implementation needed ...
             // if (is_array($activeOrganisation) === true && isset($activeOrganisation['uuid']) === true) {
-            // return $activeOrganisation['uuid'];
+            //     return $activeOrganisation['uuid'];
             // }
             // if (is_string($activeOrganisation) === true) {
-            // return $activeOrganisation.
-            // }.
+            //     return $activeOrganisation;
+            // }
             return null;
         } catch (Exception $e) {
             return null;

@@ -250,7 +250,9 @@ class ValidateObject
             return $schemaObject;
         }
 
-        foreach ($schemaObject->properties as $_propertyName => $propertySchema) {
+        foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+            // Suppress unused variable warning for $propertyName - only processing schemas.
+            unset($propertyName);
             $this->transformPropertyForOpenRegister($propertySchema);
         }
 
@@ -326,7 +328,9 @@ class ValidateObject
 
         // Recursively transform nested properties.
         if (($propertySchema->properties ?? null) !== null) {
-            foreach ($propertySchema->properties ?? [] as $_nestedPropertyName => $nestedPropertySchema) {
+            foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
+                // Suppress unused variable warning for $nestedPropertyName - only processing schemas.
+                unset($nestedPropertyName);
                 $this->transformPropertyForOpenRegister($nestedPropertySchema);
             }
         }
@@ -539,7 +543,9 @@ class ValidateObject
 
         $propertiesArray = (array) $schemaObject->properties;
         // Step 1: Handle circular references.
-        foreach ($propertiesArray as $_propertyName => $propertySchema) {
+        foreach ($propertiesArray as $propertyName => $propertySchema) {
+            // Suppress unused variable warning for $propertyName - only processing schemas.
+            unset($propertyName);
             // Check if this property has a $ref that references the current schema.
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.

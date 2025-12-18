@@ -535,10 +535,9 @@ class ConfigurationMapper extends QBMapper
         // Organisation service was removed from mapper (services should not be in mappers).
         // Cache invalidation is handled at service layer instead.
         return;
-        $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
-
-        // Remove from session.
-        $this->session->remove($sessionKey);
+        // Legacy code - no longer used.
+        // $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
+        // $this->session->remove($sessionKey);
 
     }//end invalidateConfigurationCache()
 }//end class

@@ -129,6 +129,8 @@ class AuditTrailController extends Controller
                             '_order',
                             '_route',
                             'id',
+                            'register',
+                            'schema',
                         ]
                         );
             },

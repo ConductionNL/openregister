@@ -1916,12 +1916,12 @@ class SaveObject
         // Update the object with the modified data (file IDs instead of content).
         // $savedEntity->setObject($data);
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately.
-        // Determine operation type.
-        if ($uuid === true) {
-            $operation = 'update';
-        } else {
-            $operation = 'create';
-        }
+        // Determine operation type (currently unused but kept for potential future use).
+        // if ($uuid === true) {
+        //     $operation = 'update';
+        // } else {
+        //     $operation = 'create';
+        // }
 
         // Determine register ID.
         $registerId = ($savedEntity->getRegister() !== null) ? (int) $savedEntity->getRegister() : null;
@@ -2098,9 +2098,10 @@ class SaveObject
 
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
-        // Update object relations.
+        // Update object relations (result currently unused but operation has side effects).
         try {
-            $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
+            // $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
+            $this->updateObjectRelations($existingObject, $preparedData, $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
             throw new Exception(
