@@ -498,7 +498,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Person Schema {{$timestamp}}\",\n  \"description\": \"Schema for Newman testing\",\n  \"organisation\": \"{{org_uuid}}\",\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"required\": true},\n    \"age\": {\"type\": \"integer\"},\n    \"active\": {\"type\": \"boolean\", \"default\": true}\n  }\n}"
+          "raw": "{\n  \"title\": \"Person Schema {{$timestamp}}\",\n  \"description\": \"Schema for Newman testing\",\n  \"organisation\": \"{{org_uuid}}\",\n  \"hardValidation\": true,\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"required\": true},\n    \"age\": {\"type\": \"integer\"},\n    \"active\": {\"type\": \"boolean\", \"default\": true}\n  }\n}"
         },
         "url": {
           "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
@@ -4105,7 +4105,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"LivingThing\",\n  \"description\": \"Base schema for all living things\",\n  \"properties\": {\n    \"alive\": {\n      \"type\": \"boolean\",\n      \"title\": \"Is Alive\"\n    }\n  },\n  \"required\": [\n    \"alive\"\n  ]\n}"
+              "raw": "{\n  \"title\": \"LivingThing {{$timestamp}}\",\n  \"description\": \"Base schema for all living things\",\n  \"properties\": {\n    \"alive\": {\n      \"type\": \"boolean\",\n      \"title\": \"Is Alive\"\n    }\n  },\n  \"required\": [\n    \"alive\"\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
@@ -4152,7 +4152,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Person\",\n  \"description\": \"Person schema inheriting from LivingThing\",\n  \"allOf\": [\"{{grandparent_schema_id}}\"],\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"title\": \"Name\"}\n  },\n  \"required\": [\"name\"]\n}"
+              "raw": "{\n  \"title\": \"Person {{$timestamp}}\",\n  \"description\": \"Person schema inheriting from LivingThing\",\n  \"allOf\": [\"{{grandparent_schema_id}}\"],\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"title\": \"Name\"}\n  },\n  \"required\": [\"name\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
@@ -4243,7 +4243,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Employee\",\n  \"description\": \"Employee schema - 3-level inheritance\",\n  \"allOf\": [\"{{parent_schema_id}}\"],\n  \"properties\": {\n    \"employeeId\": {\"type\": \"string\", \"title\": \"Employee ID\"}\n  },\n  \"required\": [\"employeeId\"]\n}"
+              "raw": "{\n  \"title\": \"Employee {{$timestamp}}\",\n  \"description\": \"Employee schema - 3-level inheritance\",\n  \"allOf\": [\"{{parent_schema_id}}\"],\n  \"properties\": {\n    \"employeeId\": {\"type\": \"string\", \"title\": \"Employee ID\"}\n  },\n  \"required\": [\"employeeId\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
@@ -4339,7 +4339,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Addressable\",\n  \"description\": \"Schema for entities with addresses\",\n  \"properties\": {\n    \"address\": {\n      \"type\": \"string\",\n      \"title\": \"Address\"\n    }\n  },\n  \"required\": [\n    \"address\"\n  ]\n}"
+              "raw": "{\n  \"title\": \"Addressable {{$timestamp}}\",\n  \"description\": \"Schema for entities with addresses\",\n  \"properties\": {\n    \"address\": {\n      \"type\": \"string\",\n      \"title\": \"Address\"\n    }\n  },\n  \"required\": [\n    \"address\"\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
@@ -4384,7 +4384,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Customer\",\n  \"description\": \"Customer with multiple parent schemas\",\n  \"allOf\": [\"{{parent_schema_id}}\", \"{{parent2_schema_id}}\"],\n  \"properties\": {\n    \"customerId\": {\"type\": \"string\"}\n  },\n  \"required\": [\"customerId\"]\n}"
+              "raw": "{\n  \"title\": \"Customer {{$timestamp}}\",\n  \"description\": \"Customer with multiple parent schemas\",\n  \"allOf\": [\"{{parent_schema_id}}\", \"{{parent2_schema_id}}\"],\n  \"properties\": {\n    \"customerId\": {\"type\": \"string\"}\n  },\n  \"required\": [\"customerId\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",

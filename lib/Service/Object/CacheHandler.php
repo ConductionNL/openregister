@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
  */
 class CacheHandler
 {
+
     /**
      * In-memory cache of objects indexed by ID/UUID
      *
@@ -141,9 +142,9 @@ class CacheHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly OrganisationMapper $organisationMapper,
         private readonly LoggerInterface $logger,
-        ?ICacheFactory $cacheFactory = null,
-        ?IUserSession $userSession = null,
-        ?IAppContainer $container = null
+        ?ICacheFactory $cacheFactory=null,
+        ?IUserSession $userSession=null,
+        ?IAppContainer $container=null
     ) {
         // Initialize query cache if available.
         if ($cacheFactory !== null) {
@@ -154,8 +155,8 @@ class CacheHandler
                 $this->logger->warning(
                     'Failed to initialize distributed caches',
                     [
-                            'error' => $e->getMessage(),
-                        ]
+                        'error' => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -196,8 +197,8 @@ class CacheHandler
             $this->logger->debug(
                 'IndexService not available',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return null;
         }
@@ -259,7 +260,7 @@ class CacheHandler
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function indexObjectInSolr(ObjectEntity $object, bool $commit = false): bool
+    private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
     {
         // Get index service using factory pattern (performance optimized).
         $indexService = $this->getIndexService();
@@ -273,23 +274,23 @@ class CacheHandler
         $this->logger->info(
             '🔥 DEBUGGING: indexObjectInSolr called',
             [
-                    'app'                     => 'openregister',
-                    'object_id'               => $object->getId(),
-                    'object_uuid'             => $object->getUuid(),
-                    'object_name'             => $object->getName(),
-                    'index_service_available' => $indexService !== null,
-                    'index_is_available'      => $indexIsAvailable,
-                ]
+                'app'                     => 'openregister',
+                'object_id'               => $object->getId(),
+                'object_uuid'             => $object->getUuid(),
+                'object_name'             => $object->getName(),
+                'index_service_available' => $indexService !== null,
+                'index_is_available'      => $indexIsAvailable,
+            ]
         );
 
         if ($indexService === null || $indexService->isAvailable() === false) {
             $this->logger->debug(
                 'Index service unavailable, skipping indexing',
                 [
-                        'object_id'               => $object->getId(),
-                        'index_service_available' => $indexService !== null,
-                        'index_is_available'      => $indexIsAvailable,
-                    ]
+                    'object_id'               => $object->getId(),
+                    'index_service_available' => $indexService !== null,
+                    'index_is_available'      => $indexIsAvailable,
+                ]
             );
             return true;
             // Graceful degradation.
@@ -302,11 +303,11 @@ class CacheHandler
             $this->logger->error(
                 'Object indexing failed',
                 [
-                        'object_id' => $object->getId(),
-                        'uuid'      => $object->getUuid(),
-                        'schema'    => $object->getSchema(),
-                        'register'  => $object->getRegister(),
-                    ]
+                    'object_id' => $object->getId(),
+                    'uuid'      => $object->getUuid(),
+                    'schema'    => $object->getSchema(),
+                    'register'  => $object->getRegister(),
+                ]
             );
             return $result;
         }
@@ -314,11 +315,11 @@ class CacheHandler
         $this->logger->debug(
             '🔍 OBJECT INDEXED',
             [
-                    'object_id' => $object->getId(),
-                    'uuid'      => $object->getUuid(),
-                    'schema'    => $object->getSchema(),
-                    'register'  => $object->getRegister(),
-                ]
+                'object_id' => $object->getId(),
+                'uuid'      => $object->getUuid(),
+                'schema'    => $object->getSchema(),
+                'register'  => $object->getRegister(),
+            ]
         );
 
         return $result;
@@ -334,7 +335,7 @@ class CacheHandler
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function removeObjectFromSolr(ObjectEntity $object, bool $commit = false): bool
+    private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
     {
         // Get index service using factory pattern (performance optimized).
         $indexService = $this->getIndexService();
@@ -350,9 +351,9 @@ class CacheHandler
                 $this->logger->debug(
                     '🗑️  OBJECT REMOVED FROM INDEX',
                     [
-                            'object_id' => $object->getId(),
-                            'uuid'      => $object->getUuid(),
-                        ]
+                        'object_id' => $object->getId(),
+                        'uuid'      => $object->getUuid(),
+                    ]
                 );
             }
 
@@ -361,9 +362,9 @@ class CacheHandler
             $this->logger->warning(
                 'Failed to remove object from search index',
                 [
-                        'object_id' => $object->getId(),
-                        'error'     => $e->getMessage(),
-                    ]
+                    'object_id' => $object->getId(),
+                    'error'     => $e->getMessage(),
+                ]
             );
             return true;
             // Don't fail the whole operation for index issues.
@@ -380,7 +381,7 @@ class CacheHandler
      *
      * @return array Dynamic search fields
      */
-    private function extractDynamicFieldsFromObject(array $objectData, string $prefix = ''): array
+    private function extractDynamicFieldsFromObject(array $objectData, string $prefix=''): array
     {
         $dynamicFields = [];
 
@@ -390,37 +391,37 @@ class CacheHandler
                 continue;
             }
 
-            $fieldName = $prefix . $key;
+            $fieldName = $prefix.$key;
 
             if (is_array($value) === true) {
                 if (($value[0] ?? null) === null) {
                     // Nested object - recurse with dot notation.
-                    $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName . '_');
+                    $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
                     $dynamicFields = array_merge($dynamicFields, $nestedFields);
                     continue;
                 }
 
                 // Multi-value array.
-                $dynamicFields[$fieldName . '_ss'] = $value;
+                $dynamicFields[$fieldName.'_ss'] = $value;
                 // Also add as text for searching.
-                $dynamicFields[$fieldName . '_txt'] = implode(' ', array_filter($value, 'is_string'));
+                $dynamicFields[$fieldName.'_txt'] = implode(' ', array_filter($value, 'is_string'));
                 continue;
             }
 
             if (is_string($value) === true) {
-                $dynamicFields[$fieldName . '_s']   = $value;
-                $dynamicFields[$fieldName . '_txt'] = $value;
-            } elseif (is_int($value) === true || is_float($value) === true) {
+                $dynamicFields[$fieldName.'_s']   = $value;
+                $dynamicFields[$fieldName.'_txt'] = $value;
+            } else if (is_int($value) === true || is_float($value) === true) {
                 $suffix = '_f';
                 if (is_int($value) === true) {
                     $suffix = '_i';
                 }
 
-                $dynamicFields[$fieldName . $suffix] = $value;
-            } elseif (is_bool($value) === true) {
-                $dynamicFields[$fieldName . '_b'] = $value;
-            } elseif ($this->isDateString($value) === true) {
-                $dynamicFields[$fieldName . '_dt'] = $this->formatDateForSolr($value);
+                $dynamicFields[$fieldName.$suffix] = $value;
+            } else if (is_bool($value) === true) {
+                $dynamicFields[$fieldName.'_b'] = $value;
+            } else if ($this->isDateString($value) === true) {
+                $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr($value);
             }//end if
         }//end foreach
 
@@ -463,7 +464,7 @@ class CacheHandler
         foreach ($data as $_key => $value) {
             if (is_string($value) === true) {
                 $textContent[] = $value;
-            } elseif (is_array($value) === true) {
+            } else if (is_array($value) === true) {
                 $this->extractTextFromArray(data: $value, textContent: $textContent);
             }
         }
@@ -559,9 +560,9 @@ class CacheHandler
             $this->logger->error(
                 'Bulk preload failed in CacheHandler',
                 [
-                        'exception'         => $e->getMessage(),
-                        'identifiersToLoad' => count($identifiersToLoad),
-                    ]
+                    'exception'         => $e->getMessage(),
+                    'identifiersToLoad' => count($identifiersToLoad),
+                ]
             );
             return [];
         }//end try
@@ -629,13 +630,13 @@ class CacheHandler
         return array_merge(
             $this->stats,
             [
-                    'hit_rate'         => round($hitRate, 2),
-                    'query_hit_rate'   => round($queryHitRate, 2),
-                    'name_hit_rate'    => round($nameHitRate, 2),
-                    'cache_size'       => count($this->objectCache),
-                    'query_cache_size' => count($this->inMemoryQueryCache),
-                    'name_cache_size'  => count($this->nameCache),
-                ]
+                'hit_rate'         => round($hitRate, 2),
+                'query_hit_rate'   => round($queryHitRate, 2),
+                'name_hit_rate'    => round($nameHitRate, 2),
+                'cache_size'       => count($this->objectCache),
+                'query_cache_size' => count($this->inMemoryQueryCache),
+                'name_cache_size'  => count($this->nameCache),
+            ]
         );
     }//end getStats()
 
@@ -649,7 +650,7 @@ class CacheHandler
      *
      * @return void
      */
-    public function clearSearchCache(?string $pattern = null): void
+    public function clearSearchCache(?string $pattern=null): void
     {
         // Clear in-memory cache.
         if ($pattern !== null) {
@@ -676,9 +677,9 @@ class CacheHandler
                 $this->logger->warning(
                     'Failed to clear search cache',
                     [
-                            'error'   => $e->getMessage(),
-                            'pattern' => $pattern,
-                        ]
+                        'error'   => $e->getMessage(),
+                        'pattern' => $pattern,
+                    ]
                 );
             }
         }
@@ -699,7 +700,7 @@ class CacheHandler
      *
      * @return void
      */
-    private function clearSchemaRelatedCaches(?int $schemaId = null, ?int $registerId = null, string $operation = 'unknown'): void
+    private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
     {
         $startTime = microtime(true);
 
@@ -717,22 +718,22 @@ class CacheHandler
                 $this->logger->debug(
                     'Schema-related distributed caches cleared',
                     [
-                            'schemaId'   => $schemaId,
-                            'registerId' => $registerId,
-                            'operation'  => $operation,
-                            'strategy'   => 'nuclear_clear',
-                        ]
+                        'schemaId'   => $schemaId,
+                        'registerId' => $registerId,
+                        'operation'  => $operation,
+                        'strategy'   => 'nuclear_clear',
+                    ]
                 );
             } catch (\Exception $e) {
                 $this->logger->warning(
                     'Failed to clear schema-related distributed caches',
                     [
-                            'schemaId' => $schemaId,
-                            'error'    => $e->getMessage(),
-                        ]
+                        'schemaId' => $schemaId,
+                        'error'    => $e->getMessage(),
+                    ]
                 );
             }//end try
-        }
+        }//end if
 
         if ($schemaId === null) {
             // Fallback: clear all search caches if no specific schema.
@@ -750,13 +751,13 @@ class CacheHandler
         $this->logger->info(
             'Schema-related caches cleared for CUD operation',
             [
-                    'schemaId'      => $schemaId,
-                    'registerId'    => $registerId,
-                    'operation'     => $operation,
-                    'executionTime' => $executionTime . 'ms',
-                    'impact'        => 'all_users_affected',
-                    'strategy'      => $strategy,
-                ]
+                'schemaId'      => $schemaId,
+                'registerId'    => $registerId,
+                'operation'     => $operation,
+                'executionTime' => $executionTime.'ms',
+                'impact'        => 'all_users_affected',
+                'strategy'      => $strategy,
+            ]
         );
     }//end clearSchemaRelatedCaches()
 
@@ -774,10 +775,10 @@ class CacheHandler
      * @return void
      */
     public function invalidateForObjectChange(
-        ?ObjectEntity $object = null,
-        string $operation = 'unknown',
-        ?int $registerId = null,
-        ?int $schemaId = null
+        ?ObjectEntity $object=null,
+        string $operation='unknown',
+        ?int $registerId=null,
+        ?int $schemaId=null
     ): void {
         $startTime = microtime(true);
 
@@ -809,7 +810,7 @@ class CacheHandler
                 if (($object->getId() !== null) === true && (string) $object->getId() !== $object->getUuid()) {
                     $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
-            } elseif ($operation === 'delete') {
+            } else if ($operation === 'delete') {
                 // Remove from search index with immediate commit for instant visibility.
                 $this->removeObjectFromSolr(object: $object, commit: true);
 
@@ -832,13 +833,13 @@ class CacheHandler
         $this->logger->info(
             'Schema-wide cache invalidated for CRUD operation',
             [
-                    'operation'     => $operation,
-                    'registerId'    => $registerId,
-                    'schemaId'      => $schemaId,
-                    'objectId'      => $object?->getId(),
-                    'executionTime' => $executionTime . 'ms',
-                    'scope'         => 'all_users_in_schema',
-                ]
+                'operation'     => $operation,
+                'registerId'    => $registerId,
+                'schemaId'      => $schemaId,
+                'objectId'      => $object?->getId(),
+                'executionTime' => $executionTime.'ms',
+                'scope'         => 'all_users_in_schema',
+            ]
         );
     }//end invalidateForObjectChange()
 
@@ -868,9 +869,9 @@ class CacheHandler
         $this->logger->debug(
             'Individual object cleared from cache',
             [
-                    'objectId'   => $object->getId(),
-                    'objectUuid' => $object->getUuid(),
-                ]
+                'objectId'   => $object->getId(),
+                'objectUuid' => $object->getUuid(),
+            ]
         );
     }//end clearObjectFromCache()
 
@@ -928,7 +929,7 @@ class CacheHandler
             );
         }
 
-        return 'search_' . hash('sha256', json_encode($keyComponents));
+        return 'search_'.hash('sha256', json_encode($keyComponents));
     }//end generateSearchCacheKey()
 
     /**
@@ -961,8 +962,8 @@ class CacheHandler
                 $this->logger->warning(
                     'Failed to clear distributed query cache',
                     [
-                            'error' => $e->getMessage(),
-                        ]
+                        'error' => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -975,8 +976,8 @@ class CacheHandler
                 $this->logger->warning(
                     'Failed to clear distributed name cache',
                     [
-                            'error' => $e->getMessage(),
-                        ]
+                        'error' => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -986,8 +987,8 @@ class CacheHandler
         $this->logger->info(
             'All object caches cleared (including name cache)',
             [
-                    'executionTime' => $executionTime . 'ms',
-                ]
+                'executionTime' => $executionTime.'ms',
+            ]
         );
     }//end clearAllCaches()
 
@@ -1018,7 +1019,7 @@ class CacheHandler
      *
      * @return void
      */
-    public function setObjectName(string|int $identifier, string $name, int $ttl = 3600): void
+    public function setObjectName(string|int $identifier, string $name, int $ttl=3600): void
     {
         $key = (string) $identifier;
 
@@ -1031,14 +1032,14 @@ class CacheHandler
         // Store in distributed cache if available.
         if ($this->nameDistributedCache !== null) {
             try {
-                $this->nameDistributedCache->set('name_' . $key, $name, $ttl);
+                $this->nameDistributedCache->set('name_'.$key, $name, $ttl);
             } catch (\Exception $e) {
                 $this->logger->warning(
                     'Failed to cache object name in distributed cache',
                     [
-                            'identifier' => $key,
-                            'error'      => $e->getMessage(),
-                        ]
+                        'identifier' => $key,
+                        'error'      => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -1046,10 +1047,10 @@ class CacheHandler
         $this->logger->debug(
             '💾 OBJECT NAME CACHED',
             [
-                    'identifier' => $key,
-                    'name'       => $name,
-                    'ttl'        => $ttl . 's',
-                ]
+                'identifier' => $key,
+                'name'       => $name,
+                'ttl'        => $ttl.'s',
+            ]
         );
     }//end setObjectName()
 
@@ -1077,7 +1078,7 @@ class CacheHandler
         // Check distributed cache.
         if ($this->nameDistributedCache !== null) {
             try {
-                $cachedName = $this->nameDistributedCache->get('name_' . $key);
+                $cachedName = $this->nameDistributedCache->get('name_'.$key);
                 if ($cachedName !== null) {
                     // Store in in-memory cache for faster future access.
                     $this->nameCache[$key] = $cachedName;
@@ -1089,9 +1090,9 @@ class CacheHandler
                 $this->logger->warning(
                     'Failed to get object name from distributed cache',
                     [
-                            'identifier' => $key,
-                            'error'      => $e->getMessage(),
-                        ]
+                        'identifier' => $key,
+                        'error'      => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -1124,9 +1125,9 @@ class CacheHandler
             $this->logger->debug(
                 'Failed to load entity for name lookup',
                 [
-                        'identifier' => $key,
-                        'error'      => $e->getMessage(),
-                    ]
+                    'identifier' => $key,
+                    'error'      => $e->getMessage(),
+                ]
             );
         }//end try
 
@@ -1174,7 +1175,7 @@ class CacheHandler
             $distributedResults = [];
             foreach ($missingIdentifiers as $key) {
                 try {
-                    $cachedName = $this->nameDistributedCache->get('name_' . $key);
+                    $cachedName = $this->nameDistributedCache->get('name_'.$key);
                     if ($cachedName !== null) {
                         $distributedResults[$key] = $cachedName;
                         $this->nameCache[$key]    = $cachedName;
@@ -1225,9 +1226,9 @@ class CacheHandler
                 $this->logger->error(
                     'Failed to bulk load names from database',
                     [
-                            'identifiers' => count($missingIdentifiers),
-                            'error'       => $e->getMessage(),
-                        ]
+                        'identifiers' => count($missingIdentifiers),
+                        'error'       => $e->getMessage(),
+                    ]
                 );
             }//end try
         }//end if
@@ -1245,12 +1246,12 @@ class CacheHandler
         $this->logger->debug(
             '📦 BULK NAME LOOKUP COMPLETED',
             [
-                    'requested'             => count($identifiers),
-                    'total_found'           => count($results),
-                    'uuid_results_returned' => count($uuidResults),
-                    'cache_hits'            => count($identifiers) - count($missingIdentifiers),
-                    'db_loads'              => count($missingIdentifiers),
-                ]
+                'requested'             => count($identifiers),
+                'total_found'           => count($results),
+                'uuid_results_returned' => count($uuidResults),
+                'cache_hits'            => count($identifiers) - count($missingIdentifiers),
+                'db_loads'              => count($missingIdentifiers),
+            ]
         );
 
         return $uuidResults;
@@ -1269,7 +1270,7 @@ class CacheHandler
      * @phpstan-return array<string, string>
      * @psalm-return   array<string, string>
      */
-    public function getAllObjectNames(bool $forceWarmup = false): array
+    public function getAllObjectNames(bool $forceWarmup=false): array
     {
         $startTime = microtime(true);
 
@@ -1295,11 +1296,11 @@ class CacheHandler
         $this->logger->info(
             '📋 ALL OBJECT NAMES RETRIEVED',
             [
-                    'total_cached'        => count($this->nameCache),
-                    'uuid_names_returned' => count($uuidNames),
-                    'warmup_triggered'    => $shouldWarmup,
-                    'execution_time'      => $executionTime . 'ms',
-                ]
+                'total_cached'        => count($this->nameCache),
+                'uuid_names_returned' => count($uuidNames),
+                'warmup_triggered'    => $shouldWarmup,
+                'execution_time'      => $executionTime.'ms',
+            ]
         );
 
         return $uuidNames;
@@ -1353,11 +1354,11 @@ class CacheHandler
             $this->logger->info(
                 '🔥 NAME CACHE WARMED UP',
                 [
-                        'organisations_processed' => count($organisations),
-                        'objects_processed'       => count($objects),
-                        'total_names_cached'      => $loadedCount,
-                        'execution_time'          => $executionTime . 'ms',
-                    ]
+                    'organisations_processed' => count($organisations),
+                    'objects_processed'       => count($objects),
+                    'total_names_cached'      => $loadedCount,
+                    'execution_time'          => $executionTime.'ms',
+                ]
             );
 
             return $loadedCount;
@@ -1365,8 +1366,8 @@ class CacheHandler
             $this->logger->error(
                 'Name cache warmup failed',
                 [
-                        'error' => $e->getMessage(),
-                    ]
+                    'error' => $e->getMessage(),
+                ]
             );
             return 0;
         }//end try
@@ -1393,8 +1394,8 @@ class CacheHandler
                 $this->logger->warning(
                     'Failed to clear distributed name cache',
                     [
-                            'error' => $e->getMessage(),
-                        ]
+                        'error' => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -1436,7 +1437,7 @@ class CacheHandler
         }
 
         try {
-            $result  = $indexService->commit();
+            $result = $indexService->commit();
             // Determine message based on result.
             $message = 'Commit failed';
             if ($result === true) {
@@ -1472,7 +1473,7 @@ class CacheHandler
         }
 
         try {
-            $result  = $indexService->optimize();
+            $result = $indexService->optimize();
             // Determine message based on result.
             $message = 'Optimization failed';
             if ($result === true) {
@@ -1508,7 +1509,7 @@ class CacheHandler
         }
 
         try {
-            $result  = $indexService->clearIndex();
+            $result = $indexService->clearIndex();
             // Determine message based on result.
             $message = 'Index clear failed';
             if (($result['success'] === true) === true) {

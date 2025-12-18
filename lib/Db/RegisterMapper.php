@@ -244,10 +244,9 @@ class RegisterMapper extends QBMapper
         // Published registers can bypass multi-tenancy restrictions if configured
         // applyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config.
+        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         if ($published !== null) {
             $enablePublished = $published;
-        } else {
-            $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         }
 
         // Log multitenancy configuration.

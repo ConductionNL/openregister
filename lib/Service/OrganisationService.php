@@ -234,12 +234,11 @@ class OrganisationService
             $organisationConfig = $this->appConfig->getValueString('openregister', 'organisation', '');
 
             $organisationData = [];
-            if (empty($organisationConfig) === true) {
-                $organisationData = [
-                    'default_organisation'             => null,
-                    'auto_create_default_organisation' => true,
-                ];
-            } else {
+            $organisationData = [
+                'default_organisation'             => null,
+                'auto_create_default_organisation' => true,
+            ];
+            if (empty($organisationConfig) === false) {
                 $storedData       = json_decode($organisationConfig, true);
                 $organisationData = [
                     'default_organisation'             => $storedData['default_organisation'] ?? null,
@@ -288,10 +287,9 @@ class OrganisationService
     private function fetchDefaultOrganisationFromDatabase(): Organisation
     {
         // Try to get default organisation UUID from settings.
+        $defaultOrgUuid = $this->getDefaultOrganisationUuid();
         if ($this->settingsService !== null) {
             $defaultOrgUuid = $this->settingsService->getDefaultOrganisationUuid();
-        } else {
-            $defaultOrgUuid = $this->getDefaultOrganisationUuid();
         }
 
         try {

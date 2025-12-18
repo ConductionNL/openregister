@@ -338,11 +338,11 @@ class MagicMapperTest extends TestCase
 
 
     /**
-     * Test table existence checking with caching
+     * Test table existence checking with caching for private tableExists method
      *
      * @return void
      */
-    public function testTableExistenceCheckingWithCaching(): void
+    public function testPrivateTableExistsMethodWithCaching(): void
     {
         $tableName = 'oc_openregister_table_test';
         
@@ -369,7 +369,7 @@ class MagicMapperTest extends TestCase
         $result2 = $method->invoke($this->magicMapper, $tableName);
         $this->assertTrue($result2);
 
-    }//end testTableExistenceCheckingWithCaching()
+    }//end testPrivateTableExistsMethodWithCaching()
 
 
     /**

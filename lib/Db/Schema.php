@@ -621,7 +621,10 @@ class Schema extends Entity implements JsonSerializable
             if (($property['inversedBy'] ?? null) !== null) {
                 if (is_array($property['inversedBy']) === true && (($property['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
-                } else if (is_string($property['inversedBy']) === false) {
+                    continue;
+                }
+
+                if (is_string($property['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['inversedBy']);
                 }
@@ -632,7 +635,10 @@ class Schema extends Entity implements JsonSerializable
             if (($property['items']['inversedBy'] ?? null) !== null) {
                 if (is_array($property['items']['inversedBy']) === true && (($property['items']['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
-                } else if (is_string($property['items']['inversedBy']) === false) {
+                    continue;
+                }
+
+                if (is_string($property['items']['inversedBy']) === false) {
                     // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['items']['inversedBy']);
                 }
@@ -868,17 +874,18 @@ class Schema extends Entity implements JsonSerializable
 
                 $nestedProperty->properties          = $nestedProperties;
                 $schema->properties->{$propertyName} = $nestedProperty;
-            } else {
-                $prop = new stdClass();
-                foreach ($property as $key => $value) {
-                    // Skip 'required' property on this level.
-                    if ($key !== 'required' && (empty($value) === false)) {
-                        $prop->{$key} = $value;
-                    }
-                }
-
-                $schema->properties->{$propertyName} = $prop;
+                continue;
             }//end if
+
+            $prop = new stdClass();
+            foreach ($property as $key => $value) {
+                // Skip 'required' property on this level.
+                if ($key !== 'required' && (empty($value) === false)) {
+                    $prop->{$key} = $value;
+                }
+            }
+
+            $schema->properties->{$propertyName} = $prop;
         }//end foreach
 
         return $schema;
@@ -1039,10 +1046,9 @@ class Schema extends Entity implements JsonSerializable
                         throw new InvalidArgumentException("Configuration '{$key}' must be a string or null");
                     }
 
+                    $validatedConfig[$key] = $value;
                     if ($value === '') {
                         $validatedConfig[$key] = null;
-                    } else {
-                        $validatedConfig[$key] = $value;
                     }
                     break;
 
@@ -1086,9 +1092,8 @@ class Schema extends Entity implements JsonSerializable
             }//end switch
         }//end foreach
 
-        if (empty($validatedConfig) === true) {
-            $this->configuration = null;
-        } else {
+        $this->configuration = null;
+        if (empty($validatedConfig) === false) {
             $this->configuration = $validatedConfig;
         }
 

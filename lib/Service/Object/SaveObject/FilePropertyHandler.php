@@ -18,7 +18,6 @@ use Exception;
 use finfo;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 
@@ -53,7 +52,6 @@ class FilePropertyHandler
         // REMOVED: private readonly.
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -128,14 +126,14 @@ class FilePropertyHandler
                 }
 
                 $data[$cleanFieldName][] = $dataUri;
-            } else {
-                // For single fields, set directly.
-                $data[$fieldName] = $dataUri;
+                continue;
             }
+
+            // For single fields, set directly.
+            $data[$fieldName] = $dataUri;
         }//end foreach
 
         return $data;
-
     }//end processUploadedFiles()
 
     /**
@@ -256,7 +254,6 @@ class FilePropertyHandler
         }//end if
 
         return false;
-
     }//end isFileProperty()
 
     /**
@@ -300,7 +297,6 @@ class FilePropertyHandler
         }
 
         return $hasFileProperties;
-
     }//end isFileObject()
 
     /**
@@ -347,10 +343,9 @@ class FilePropertyHandler
 
         // Determine if this is a direct file property or array[file].
         $isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
+        $fileConfig      = $propertyConfig;
         if ($isArrayProperty === true) {
             $fileConfig = ($propertyConfig['items'] ?? []);
-        } else {
-            $fileConfig = $propertyConfig;
         }
 
         // Validate that the property is configured for files.
@@ -392,10 +387,9 @@ class FilePropertyHandler
             }//end if
 
             // Set property to null or empty array.
+            $object[$propertyName] = null;
             if ($isArrayProperty === true) {
                 $object[$propertyName] = [];
-            } else {
-                $object[$propertyName] = null;
             }
 
             return;
@@ -425,7 +419,9 @@ class FilePropertyHandler
 
             // Replace the file content with file IDs in the object data.
             $object[$propertyName] = $fileIds;
-        } else {
+        }//end if
+
+        if ($isArrayProperty === false) {
             // Handle single file.
             if ($this->isFileProperty(value: $fileValue) === true) {
                 $fileId = $this->processSingleFileProperty(
@@ -441,7 +437,6 @@ class FilePropertyHandler
                 }
             }
         }//end if
-
     }//end handleFileProperty()
 
     /**
@@ -488,16 +483,17 @@ class FilePropertyHandler
             if (is_string($fileInput) === true) {
                 // Handle string inputs (base64, data URI, or URL).
                 return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
-            } else if (is_array($fileInput) === true && $this->isFileObject($fileInput) === true) {
+            }
+
+            if (is_array($fileInput) === true && $this->isFileObject($fileInput) === true) {
                 // Handle file object input.
                 return $this->processFileObjectInput(objectEntity: $objectEntity, fileObject: $fileInput, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
-            } else {
-                throw new Exception("Unsupported file input type for property '$propertyName'");
             }
+
+            throw new Exception("Unsupported file input type for property '$propertyName'");
         } catch (Exception $e) {
             throw $e;
         }
-
     }//end processSingleFileProperty()
 
     /**
@@ -541,7 +537,12 @@ class FilePropertyHandler
             // Fetch file content from URL.
             $fileContent = $this->fetchFileFromUrl($fileInput);
             $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
-        } else {
+        }
+
+        if (is_string($fileInput) === false
+            || (filter_var($fileInput, FILTER_VALIDATE_URL) === false
+            && (str_starts_with($fileInput, 'http://') === false && str_starts_with($fileInput, 'https://') === false))
+        ) {
             // Parse as base64 or data URI.
             $fileData = $this->parseFileData($fileInput);
         }
@@ -568,7 +569,6 @@ class FilePropertyHandler
         // tags: $autoTags.
         // );.
         return $file->getId();
-
     }//end processStringFileInput()
 
     /**
@@ -631,15 +631,18 @@ class FilePropertyHandler
         // This requires downloadUrl or accessUrl to fetch content.
         if (($fileObject['downloadUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['downloadUrl'];
-        } else if (($fileObject['accessUrl'] ?? null) !== null) {
+        }
+
+        if (($fileObject['accessUrl'] ?? null) !== null) {
             $fileUrl = $fileObject['accessUrl'];
-        } else {
+        }
+
+        if (($fileObject['downloadUrl'] ?? null) === null && ($fileObject['accessUrl'] ?? null) === null) {
             throw new Exception("File object for property '$propertyName' has no downloadable URL");
         }
 
         // Fetch and process as URL.
         return $this->processStringFileInput(objectEntity: $objectEntity, fileInput: $fileUrl, propertyName: $propertyName, fileConfig: $fileConfig, index: $index);
-
     }//end processFileObjectInput()
 
     /**
@@ -678,7 +681,6 @@ class FilePropertyHandler
         }
 
         return $content;
-
     }//end fetchFileFromUrl()
 
     /**
@@ -726,7 +728,6 @@ class FilePropertyHandler
             'extension' => $extension,
             'size'      => strlen($content),
         ];
-
     }//end parseFileDataFromUrl()
 
     /**
@@ -755,10 +756,9 @@ class FilePropertyHandler
      */
     private function validateExistingFileAgainstConfig(File $file, array $fileConfig, string $propertyName, ?int $index=null): void
     {
+        $errorPrefix = "Existing file at $propertyName";
         if ($index !== null) {
             $errorPrefix = "Existing file at $propertyName[$index]";
-        } else {
-            $errorPrefix = "Existing file at $propertyName";
         }
 
         // Validate MIME type.
@@ -780,7 +780,6 @@ class FilePropertyHandler
                 );
             }
         }
-
     }//end validateExistingFileAgainstConfig()
 
     /**
@@ -829,7 +828,6 @@ class FilePropertyHandler
                 // Log but don't fail - auto tagging is not critical.
             }
         }
-
     }//end applyAutoTagsToExistingFile()
 
     /**
@@ -862,10 +860,14 @@ class FilePropertyHandler
                 if ($content === false) {
                     throw new Exception('Invalid base64 content in data URI');
                 }
-            } else {
+            }
+
+            if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches) !== 1) {
                 throw new Exception('Invalid data URI format');
             }
-        } else {
+        }
+
+        if (strpos($fileContent, 'data:') !== 0) {
             // Handle plain base64 content.
             $content = base64_decode($fileContent, true);
             // Strict mode.
@@ -890,7 +892,6 @@ class FilePropertyHandler
             'extension' => $extension,
             'size'      => strlen($content),
         ];
-
     }//end parseFileData()
 
     /**
@@ -944,7 +945,6 @@ class FilePropertyHandler
                 );
             }
         }
-
     }//end validateFileAgainstConfig()
 
     /**
@@ -1013,7 +1013,6 @@ class FilePropertyHandler
                 "$errorPrefix has executable MIME type '{$fileData['mimeType']}'. "."Executable files are blocked for security reasons."
             );
         }
-
     }//end blockExecutableFiles()
 
     /**
@@ -1088,7 +1087,6 @@ class FilePropertyHandler
                 "$errorPrefix contains PHP code. "."PHP files are blocked for security reasons."
             );
         }
-
     }//end detectExecutableMagicBytes()
 
     /**
@@ -1115,7 +1113,6 @@ class FilePropertyHandler
         $indexSuffix = $index !== null ? "_$index" : '';
 
         return "{$propertyName}{$indexSuffix}_{$timestamp}.{$extension}";
-
     }//end generateFileName()
 
     /**
@@ -1167,7 +1164,6 @@ class FilePropertyHandler
         }//end foreach
 
         return $processedTags;
-
     }//end prepareAutoTags()
 
     /**
@@ -1242,7 +1238,6 @@ class FilePropertyHandler
         ];
 
         return $mimeToExtension[$mimeType] ?? 'bin';
-
     }//end getExtensionFromMimeType()
 
     /**
@@ -1315,7 +1310,6 @@ class FilePropertyHandler
             'deb',
             'rpm',
         ];
-
     }//end getCommonFileExtensions()
 
     /**
@@ -1393,7 +1387,6 @@ class FilePropertyHandler
             'so',
             'dylib',
         ];
-
     }//end getDangerousExecutableExtensions()
 
     /**
@@ -1422,6 +1415,5 @@ class FilePropertyHandler
             'application/x-python-code',
             'application/java-archive',
         ];
-
     }//end getExecutableMimeTypes()
 }//end class

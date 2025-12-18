@@ -224,7 +224,9 @@ class ConfigurationController extends Controller
             $details = null;
             if ($source === 'github') {
                 $details = $this->githubHandler->enrichConfigurationDetails(owner: $owner, repo: $repo, path: $path, branch: $branch);
-            } else if ($source === 'gitlab') {
+            }
+
+            if ($source === 'gitlab') {
                 // GitLab enrichment can be added later if needed.
                 $this->logger->warning('GitLab enrichment not yet implemented');
             }
@@ -272,10 +274,9 @@ class ConfigurationController extends Controller
             $version = $data['version'] ?? '1.0.0';
             $configuration->setVersion($version);
             // For local configurations, sync version to localVersion.
+            $configuration->setLocalVersion($data['localVersion'] ?? null);
             if ($configuration->getIsLocal() === true) {
                 $configuration->setLocalVersion($data['localVersion'] ?? $version);
-            } else {
-                $configuration->setLocalVersion($data['localVersion'] ?? null);
             }
 
             $configuration->setRegisters($data['registers'] ?? []);
@@ -640,7 +641,9 @@ class ConfigurationController extends Controller
                 $this->logger->info('About to call GitHub search service');
                 $results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitHub search completed', ['result_count' => count($results['results'] ?? [])]);
-            } else {
+            }
+
+            if ($source !== 'github') {
                 $this->logger->info('About to call GitLab search service');
                 $results = $this->gitlabHandler->searchConfigurations(search: $search, page: $page);
                 $this->logger->info('GitLab search completed', ['result_count' => count($results['results'] ?? [])]);
@@ -715,17 +718,15 @@ class ConfigurationController extends Controller
     public function getGitHubRepositories(): JSONResponse
     {
         try {
-            $data = $this->request->getParams();
+            $data    = $this->request->getParams();
+            $page    = 1;
+            $perPage = 100;
             if (($data['page'] ?? null) !== null) {
                 $page = (int) $data['page'];
-            } else {
-                $page = 1;
             }
 
             if (($data['per_page'] ?? null) !== null) {
                 $perPage = (int) $data['per_page'];
-            } else {
-                $perPage = 100;
             }
 
             $this->logger->info(

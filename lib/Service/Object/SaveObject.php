@@ -945,7 +945,7 @@ class SaveObject
 
             // Determine if default should be applied based on behavior.
             $shouldApplyDefault = false;
-            
+
             if ($defaultBehavior === 'falsy') {
                 // Apply default if property is missing, null, empty string, or empty array/object.
                 $shouldApplyDefault = isset($data[$key]) === false

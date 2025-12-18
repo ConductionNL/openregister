@@ -59,7 +59,6 @@ class SearchQueryHandler
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -108,27 +107,32 @@ class SearchQueryHandler
                     if ($index === $lastIndex) {
                         // Last part: assign the value.
                         $current[$part] = $value;
-                    } else {
-                        // Intermediate part: create nested array if needed.
-                        if (isset($current[$part]) === false) {
-                            $current[$part] = [];
-                        } else {
-                            // Ensure it's an array, reset if not.
-                            /*
-                             * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
-                             */
-                            if (is_array($current[$part]) === false) {
-                                $current[$part] = [];
-                            }
-                        }
-
-                        $current = &$current[$part];
+                        continue;
                     }
+
+                    // Intermediate part: create nested array if needed.
+                    if (isset($current[$part]) === false) {
+                        $current[$part] = [];
+                    }
+
+                    if (isset($current[$part]) === true) {
+                        // Ensure it's an array, reset if not.
+                        /*
+                         * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
+                         */
+                        if (is_array($current[$part]) === false) {
+                            $current[$part] = [];
+                        }
+                    }
+
+                    $current = &$current[$part];
                 }//end foreach
-            } else {
-                // No underscores: use as-is.
-                $fixedParams[$key] = $value;
+
+                continue;
             }//end if
+
+            // No underscores: use as-is.
+            $fixedParams[$key] = $value;
         }//end foreach
 
         // STEP 2: Remove system parameters that shouldn't be used as filters.
@@ -169,11 +173,10 @@ class SearchQueryHandler
              */
 
             $registerValue = $register;
+            $query['@self']['register'] = (int) $registerValue;
             if (is_array($registerValue) === true) {
                 // Convert array values to integers.
                 $query['@self']['register'] = array_map('intval', $registerValue);
-            } else {
-                $query['@self']['register'] = (int) $registerValue;
             }
         }
 
@@ -183,11 +186,10 @@ class SearchQueryHandler
              */
 
             $schemaValue = $schema;
+            $query['@self']['schema'] = (int) $schemaValue;
             if (is_array($schemaValue) === true) {
                 // Convert array values to integers.
                 $query['@self']['schema'] = array_map('intval', $schemaValue);
-            } else {
-                $query['@self']['schema'] = (int) $schemaValue;
             }
         }
 
@@ -204,10 +206,12 @@ class SearchQueryHandler
                 if (isset($query['@self'][$key]) === false) {
                     $query['@self'][$key] = $value;
                 }
-            } else {
-                // This is an object field filter.
-                $objectFilters[$key] = $value;
+
+                continue;
             }
+
+            // This is an object field filter.
+            $objectFilters[$key] = $value;
         }
 
         // Add object field filters directly to query.
@@ -238,7 +242,6 @@ class SearchQueryHandler
         $query = array_merge($query, $specialParams);
 
         return $query;
-
     }//end buildSearchQuery()
 
     /**
@@ -317,17 +320,15 @@ class SearchQueryHandler
 
                 // Apply search terms.
                 if (empty($viewQuery['searchTerms']) === false) {
+                    $searchTerms = $viewQuery['searchTerms'];
                     if (is_array($viewQuery['searchTerms']) === true) {
                         $searchTerms = implode(' ', $viewQuery['searchTerms']);
-                    } else {
-                        $searchTerms = $viewQuery['searchTerms'];
                     }
 
                     // Merge with existing search if present.
+                    $query['_search'] = $searchTerms;
                     if (isset($query['_search']) === true && empty($query['_search']) === false) {
                         $query['_search'] .= ' '.$searchTerms;
-                    } else {
-                        $query['_search'] = $searchTerms;
                     }
                 }//end if
 
@@ -352,7 +353,6 @@ class SearchQueryHandler
         }//end foreach
 
         return $query;
-
     }//end applyViewsToQuery()
 
     /**
@@ -368,7 +368,6 @@ class SearchQueryHandler
         } catch (Exception $e) {
             return false;
         }
-
     }//end isSolrAvailable()
 
     /**
@@ -426,13 +425,14 @@ class SearchQueryHandler
                         }
                         break;
                 }//end switch
-            } else {
-                $newParameters[$key] = $value;
+
+                continue;
             }//end if
+
+            $newParameters[$key] = $value;
         }//end foreach
 
         return $newParameters;
-
     }//end cleanQuery()
 
     /**
@@ -477,7 +477,6 @@ class SearchQueryHandler
 
             $paginatedResults['prev'] = $prevUrl;
         }
-
     }//end addPaginationUrls()
 
     /**
@@ -498,7 +497,6 @@ class SearchQueryHandler
         }
 
         return '&';
-
     }//end getUrlSeparator()
 
     /**
@@ -538,7 +536,6 @@ class SearchQueryHandler
         } catch (Exception $e) {
             // Log the error but don't fail the request.
         }
-
     }//end logSearchTrail()
 
     /**
@@ -559,6 +556,5 @@ class SearchQueryHandler
             );
             return true;
         }
-
     }//end isSearchTrailsEnabled()
 }//end class

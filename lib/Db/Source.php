@@ -381,15 +381,15 @@ class Source extends Entity implements JsonSerializable
      */
     private function getManagedByConfigurationData(): array|null
     {
-        if ($this->managedByConfiguration !== null) {
-            return [
-                'id'    => $this->managedByConfiguration->getId(),
-                'uuid'  => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ];
+        if ($this->managedByConfiguration === null) {
+            return null;
         }
 
-        return null;
+        return [
+            'id'    => $this->managedByConfiguration->getId(),
+            'uuid'  => $this->managedByConfiguration->getUuid(),
+            'title' => $this->managedByConfiguration->getTitle(),
+        ];
 
     }//end getManagedByConfigurationData()
 }//end class

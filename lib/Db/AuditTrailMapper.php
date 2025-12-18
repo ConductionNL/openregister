@@ -159,19 +159,24 @@ class AuditTrailMapper extends QBMapper
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($field));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($field));
-            } else {
-                // Handle comma-separated values (e.g., action=create,update).
-                // Cast to string to handle integer filter values.
-                $valueStr = (string) $value;
-                if (strpos($valueStr, ',') !== false) {
-                    $values = array_map('trim', explode(',', $valueStr));
-                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
-                } else {
-                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-                }
+                continue;
             }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($field));
+                continue;
+            }
+
+            // Handle comma-separated values (e.g., action=create,update).
+            // Cast to string to handle integer filter values.
+            $valueStr = (string) $value;
+            if (strpos($valueStr, ',') !== false) {
+                $values = array_map('trim', explode(',', $valueStr));
+                $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
         }//end foreach
 
         // Add search on changed field if search term provided.
@@ -207,10 +212,9 @@ class AuditTrailMapper extends QBMapper
                 continue;
             }
 
+            $direction = 'ASC';
             if (strtoupper($direction) === 'DESC') {
                 $direction = 'DESC';
-            } else {
-                $direction = 'ASC';
             }
 
             $qb->addOrderBy($field, $direction);
@@ -244,25 +248,27 @@ class AuditTrailMapper extends QBMapper
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
         // Determine the action based on the presence of old and new objects.
+        $objectEntity = $new;
         if ($new === null && $action === 'update') {
             $action       = 'delete';
             $objectEntity = $old;
-        } else if ($old === null && $action === 'update') {
+        }
+
+        if ($old === null && $action === 'update') {
             $action       = 'create';
             $objectEntity = $new;
-        } else if ($action === 'delete') {
+        }
+
+        if ($action === 'delete') {
             $objectEntity = $old;
-        } else {
-            $objectEntity = $new;
         }
 
         // Initialize an array to store changed fields.
         $changed = [];
         if ($action !== 'delete' && $action !== 'read') {
+            $oldArray = [];
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
-            } else {
-                $oldArray = [];
             }
 
             $newArray = $new->jsonSerialize();
@@ -298,6 +304,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setUuid((string) Uuid::v4());
         // $auditTrail->setObject($objectEntity->getId()); @todo change migration!!
         $auditTrail->setObject($objectEntity->getId());
+        $auditTrail->setObjectUuid($objectEntity->getUuid());
         $auditTrail->setAction($action);
         $auditTrail->setChanged($changed);
 
@@ -365,13 +372,10 @@ class AuditTrailMapper extends QBMapper
                                     )
                             )
                     );
-        } else if (is_string($until) === true) {
-            if ($this->isSemanticVersion($until) === true) {
-                // Handle semantic version.
-                $qb->andWhere(
-                        $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
-                        );
-            } else {
+        }
+
+        if (is_string($until) === true) {
+            if ($this->isSemanticVersion($until) === false) {
                 // Handle audit trail ID.
                 $qb->andWhere(
                         $qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
@@ -387,6 +391,13 @@ class AuditTrailMapper extends QBMapper
                                                 )
                                         )
                                 )
+                        );
+            }
+
+            if ($this->isSemanticVersion($until) === true) {
+                // Handle semantic version.
+                $qb->andWhere(
+                        $qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
                         );
             }//end if
         }//end if
@@ -852,10 +863,9 @@ class AuditTrailMapper extends QBMapper
 
             // Calculate percentages.
             foreach ($actionData as &$action) {
+                $action['percentage'] = 0;
                 if ($total > 0) {
                     $action['percentage'] = round(($action['count'] / $total) * 100, 2);
-                } else {
-                    $action['percentage'] = 0;
                 }
             }
 

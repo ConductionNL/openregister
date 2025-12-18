@@ -381,10 +381,9 @@ class Application extends Entity implements JsonSerializable
     public function setActive(mixed $active): static
     {
         // Handle various input types defensively (including empty strings from API).
-        if ($active === '' || $active === null) {
-            $this->active = true;
-            // Default to true for applications.
-        } else {
+        $this->active = true;
+        // Default to true for applications.
+        if ($active !== '' && $active !== null) {
             $this->active = (bool) $active;
         }
 

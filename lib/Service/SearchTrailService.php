@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SearchTrailService
  *
@@ -85,7 +86,6 @@ class SearchTrailService
         if ($selfClearing !== null) {
             $this->selfClearingEnabled = $selfClearing;
         }
-
     }//end __construct()
 
     /**
@@ -140,7 +140,6 @@ class SearchTrailService
             // Wrap exception with more context for debugging.
             throw new Exception("Search trail creation failed: ".$e->getMessage(), 0, $e);
         }//end try
-
     }//end createSearchTrail()
 
     /**
@@ -169,12 +168,11 @@ class SearchTrailService
             $deletedCount = $this->searchTrailMapper->clearLogs();
 
             // ClearLogs returns boolean, not count.
+            $deletedValue = 0;
+            $message      = "Self-clearing: no expired entries to delete";
             if ($deletedCount === true) {
                 $deletedValue = 1;
                 $message      = "Self-clearing: deleted expired search trail entries";
-            } else {
-                $deletedValue = 0;
-                $message      = "Self-clearing: no expired entries to delete";
             }
 
             return [
@@ -191,7 +189,6 @@ class SearchTrailService
                 'message' => 'Self-clearing operation failed',
             ];
         }//end try
-
     }//end clearExpiredSearchTrails()
 
     /**
@@ -243,7 +240,6 @@ class SearchTrailService
             'limit'   => $processedConfig['limit'],
             'offset'  => $processedConfig['offset'],
         ];
-
     }//end getSearchTrails()
 
     /**
@@ -263,7 +259,6 @@ class SearchTrailService
         $enrichedTrails = $this->enrichTrailsWithNames([$trail]);
 
         return $enrichedTrails[0];
-
     }//end getSearchTrail()
 
     /**
@@ -283,10 +278,9 @@ class SearchTrailService
         // Add additional calculated metrics.
         $baseStats['searches_with_results']    = $baseStats['non_empty_searches'];
         $baseStats['searches_without_results'] = $baseStats['total_searches'] - $baseStats['non_empty_searches'];
+        $baseStats['success_rate'] = 0;
         if ($baseStats['total_searches'] > 0) {
             $baseStats['success_rate'] = round(($baseStats['non_empty_searches'] / $baseStats['total_searches']) * 100, 2);
-        } else {
-            $baseStats['success_rate'] = 0;
         }
 
         // Get unique search terms count.
@@ -305,25 +299,23 @@ class SearchTrailService
         $baseStats['unique_organizations'] = 0;
 
         // Add query complexity analysis (placeholder implementation).
+        $baseStats['query_complexity'] = [
+            'simple'  => 0,
+            'medium'  => 0,
+            'complex' => 0,
+        ];
         if ($baseStats['total_searches'] > 0) {
             $baseStats['query_complexity'] = [
                 'simple'  => round($baseStats['total_searches'] * 0.6),
                 'medium'  => round($baseStats['total_searches'] * 0.3),
                 'complex' => round($baseStats['total_searches'] * 0.1),
             ];
-        } else {
-            $baseStats['query_complexity'] = [
-                'simple'  => 0,
-                'medium'  => 0,
-                'complex' => 0,
-            ];
         }
 
         // Add period information.
+        $days = null;
         if ($from !== null && $to !== null) {
             $days = $from->diff($to)->days + 1;
-        } else {
-            $days = null;
         }
 
         $baseStats['period'] = [
@@ -341,7 +333,6 @@ class SearchTrailService
         }
 
         return $baseStats;
-
     }//end getSearchStatistics()
 
     /**
@@ -362,23 +353,21 @@ class SearchTrailService
         // Add enhanced analytics.
         $totalSearches = array_sum(array_column($terms, 'count'));
         $enhancedTerms = array_map(
-                function ($term) use ($totalSearches) {
-                    if ($totalSearches > 0) {
-                        $term['percentage'] = round(($term['count'] / $totalSearches) * 100, 2);
-                    } else {
-                        $term['percentage'] = 0;
-                    }
+            function ($term) use ($totalSearches) {
+                $term['percentage'] = 0;
+                if ($totalSearches > 0) {
+                    $term['percentage'] = round(($term['count'] / $totalSearches) * 100, 2);
+                }
 
-                    if ($term['avg_results'] > 0) {
-                        $term['effectiveness'] = 'high';
-                    } else {
-                        $term['effectiveness'] = 'low';
-                    }
+                $term['effectiveness'] = 'low';
+                if ($term['avg_results'] > 0) {
+                    $term['effectiveness'] = 'high';
+                }
 
-                    return $term;
-                },
-                $terms
-                );
+                return $term;
+            },
+            $terms
+        );
 
         return [
             'terms'              => $enhancedTerms,
@@ -389,7 +378,6 @@ class SearchTrailService
                 'to'   => $to?->format('Y-m-d H:i:s'),
             ],
         ];
-
     }//end getPopularSearchTerms()
 
     /**
@@ -419,7 +407,6 @@ class SearchTrailService
                 'to'   => $to?->format('Y-m-d H:i:s'),
             ],
         ];
-
     }//end getSearchActivity()
 
     /**
@@ -438,27 +425,26 @@ class SearchTrailService
 
         $totalSearches = array_sum(array_column($stats, 'count'));
         $enhancedStats = array_map(
-                function ($stat) use ($totalSearches) {
-                    if ($totalSearches > 0) {
-                        $stat['percentage'] = round(($stat['count'] / $totalSearches) * 100, 2);
-                    } else {
-                        $stat['percentage'] = 0;
-                    }
+            function ($stat) use ($totalSearches) {
+                $stat['percentage'] = 0;
+                if ($totalSearches > 0) {
+                    $stat['percentage'] = round(($stat['count'] / $totalSearches) * 100, 2);
+                }
 
-                    $stat['performance_rating'] = $this->calculatePerformanceRating($stat);
+                $stat['performance_rating'] = $this->calculatePerformanceRating($stat);
 
-                    return $stat;
-                },
-                $stats
-                );
+                return $stat;
+            },
+            $stats
+        );
 
         // Sort by usage percentage.
         usort(
-                $enhancedStats,
-                function ($a, $b) {
-                    return $b['percentage'] <=> $a['percentage'];
-                }
-                );
+            $enhancedStats,
+            function ($a, $b) {
+                return $b['percentage'] <=> $a['percentage'];
+            }
+        );
 
         return [
             'statistics'         => $enhancedStats,
@@ -469,7 +455,6 @@ class SearchTrailService
                 'to'   => $to?->format('Y-m-d H:i:s'),
             ],
         ];
-
     }//end getRegisterSchemaStatistics()
 
     /**
@@ -488,12 +473,12 @@ class SearchTrailService
         $stats = $this->searchTrailMapper->getUserAgentStatistics(limit: $limit, from: $from, to: $to);
 
         $enhancedStats = array_map(
-                function ($stat) {
-                    $stat['browser_info'] = $this->parseUserAgent(userAgent: $stat['user_agent']);
-                    return $stat;
-                },
-                $stats
-                );
+            function ($stat) {
+                $stat['browser_info'] = $this->parseUserAgent(userAgent: $stat['user_agent']);
+                return $stat;
+            },
+            $stats
+        );
 
         // Aggregate by browser type.
         $browserStats = $this->aggregateByBrowser($enhancedStats);
@@ -507,7 +492,6 @@ class SearchTrailService
                 'to'   => $to?->format('Y-m-d H:i:s'),
             ],
         ];
-
     }//end getUserAgentStatistics()
 
     /**
@@ -533,12 +517,11 @@ class SearchTrailService
             $deletedCount = $this->searchTrailMapper->clearLogs();
 
             // ClearLogs returns boolean, not count.
+            $deletedValue = 0;
+            $message      = "No expired entries to delete";
             if ($deletedCount === true) {
                 $deletedValue = 1;
                 $message      = "Successfully deleted expired search trail entries";
-            } else {
-                $deletedValue = 0;
-                $message      = "No expired entries to delete";
             }
 
             return [
@@ -555,7 +538,6 @@ class SearchTrailService
                 'message' => 'Cleanup operation failed',
             ];
         }//end try
-
     }//end cleanupSearchTrails()
 
     /**
@@ -671,7 +653,6 @@ class SearchTrailService
         }
 
         return $processed;
-
     }//end processConfig()
 
     /**
@@ -715,7 +696,6 @@ class SearchTrailService
             'average_searches_per_period' => round($avgCount, 2),
             'total_periods'               => count($activity),
         ];
-
     }//end calculateActivityInsights()
 
     /**
@@ -748,12 +728,13 @@ class SearchTrailService
 
         if ($slope > 0.1) {
             return 'increasing';
-        } else if ($slope < -0.1) {
-            return 'decreasing';
-        } else {
-            return 'stable';
         }
 
+        if ($slope < -0.1) {
+            return 'decreasing';
+        }
+
+        return 'stable';
     }//end calculateTrend()
 
     /**
@@ -771,14 +752,17 @@ class SearchTrailService
         // Rate based on results and response time.
         if ($avgResults >= 10 && $avgResponseTime <= 100) {
             return 'excellent';
-        } else if ($avgResults >= 5 && $avgResponseTime <= 200) {
-            return 'good';
-        } else if ($avgResults >= 1 && $avgResponseTime <= 500) {
-            return 'average';
-        } else {
-            return 'poor';
         }
 
+        if ($avgResults >= 5 && $avgResponseTime <= 200) {
+            return 'good';
+        }
+
+        if ($avgResults >= 1 && $avgResponseTime <= 500) {
+            return 'average';
+        }
+
+        return 'poor';
     }//end calculatePerformanceRating()
 
     /**
@@ -816,7 +800,6 @@ class SearchTrailService
             'version'     => 'unknown',
             'full_string' => $userAgent,
         ];
-
     }//end parseUserAgent()
 
     /**
@@ -847,10 +830,9 @@ class SearchTrailService
         $distribution = [];
 
         foreach ($browserCounts as $browser => $count) {
+            $percentage = 0;
             if ($total > 0) {
                 $percentage = round(($count / $total) * 100, 2);
-            } else {
-                $percentage = 0;
             }
 
             $distribution[] = [
@@ -861,7 +843,6 @@ class SearchTrailService
         }
 
         return $distribution;
-
     }//end aggregateByBrowser()
 
     /**
@@ -941,7 +922,6 @@ class SearchTrailService
         }
 
         return $trails;
-
     }//end enrichTrailsWithNames()
 
     /**
@@ -959,6 +939,5 @@ class SearchTrailService
         }
 
         return (int) ceil($total / $limit);
-
     }//end calculatePages()
 }//end class

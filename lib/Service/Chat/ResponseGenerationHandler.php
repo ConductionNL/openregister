@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Chat Response Generation Handler
  *
@@ -16,7 +17,6 @@
  *
  * @link https://www.OpenRegister.nl
  */
-
 
 namespace OCA\OpenRegister\Service\Chat;
 
@@ -86,7 +86,6 @@ class ResponseGenerationHandler
         $this->settingsService = $settingsService;
         $this->toolHandler     = $toolHandler;
         $this->logger          = $logger;
-
     }//end __construct()
 
     /**
@@ -176,18 +175,19 @@ class ResponseGenerationHandler
                 $config      = new OllamaConfig();
                 $config->url = rtrim($ollamaConfig['url'], '/').'/api/';
                 // Use agent model if set and not empty, otherwise fallback to global config.
-                $agentModel = $agent?->getModel();
+                $agentModel    = $agent?->getModel();
+                $config->model = ($ollamaConfig['chatModel'] ?? 'llama2');
                 if (empty($agentModel) === false) {
                     $config->model = $agentModel;
-                } else {
-                    $config->model = ($ollamaConfig['chatModel'] ?? 'llama2');
                 }
 
                 // Set temperature from agent or default.
                 if ($agent?->getTemperature() !== null) {
                     $config->modelOptions['temperature'] = $agent->getTemperature();
                 }
-            } else {
+            }//end if
+
+            if ($chatProvider !== 'ollama') {
                 // OpenAI and Fireworks use OpenAIConfig.
                 $config = new OpenAIConfig();
 
@@ -199,11 +199,10 @@ class ResponseGenerationHandler
 
                     $config->apiKey = $openaiConfig['apiKey'];
                     // Use agent model if set and not empty, otherwise fallback to global config.
-                    $agentModel = $agent?->getModel();
+                    $agentModel    = $agent?->getModel();
+                    $config->model = ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
                     if (empty($agentModel) === false) {
                         $config->model = $agentModel;
-                    } else {
-                        $config->model = ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
                     }
 
                     if (empty($openaiConfig['organizationId']) === false) {
@@ -221,11 +220,10 @@ class ResponseGenerationHandler
 
                     $config->apiKey = $fireworksConfig['apiKey'];
                     // Use agent model if set and not empty, otherwise fallback to global config.
-                    $agentModel = $agent?->getModel();
+                    $agentModel    = $agent?->getModel();
+                    $config->model = ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
                     if (empty($agentModel) === false) {
                         $config->model = $agentModel;
-                    } else {
-                        $config->model = ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
                     }
 
                     // Fireworks AI uses OpenAI-compatible API.
@@ -235,7 +233,9 @@ class ResponseGenerationHandler
                     }
 
                     $config->url = $baseUrl;
-                } else {
+                }//end if
+
+                if ($chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
                     throw new Exception("Unsupported chat provider: {$chatProvider}");
                 }//end if
 
@@ -301,7 +301,9 @@ class ResponseGenerationHandler
                 $llmStartTime = microtime(true);
                 $response     = $chat->generateChat($messageHistory);
                 $llmTime      = microtime(true) - $llmStartTime;
-            } else {
+            }//end if
+
+            if ($chatProvider !== 'ollama') {
                 // OpenAI chat.
                 $chat = new OpenAIChat($config);
 
@@ -346,7 +348,6 @@ class ResponseGenerationHandler
             );
             throw new Exception('Failed to generate response: '.$e->getMessage());
         }//end try
-
     }//end generateResponse()
 
     /**
@@ -417,33 +418,34 @@ class ResponseGenerationHandler
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
                 throw new Exception('Authentication failed. Please check your Fireworks API key.');
-            } else if ($httpCode === 404) {
-                throw new Exception("Model not found: {$model}. Please check the model name.");
-            } else if ($httpCode === 429) {
-                throw new Exception('Rate limit exceeded. Please try again later.');
-            } else {
-                throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
             }
+
+            if ($httpCode === 404) {
+                throw new Exception("Model not found: {$model}. Please check the model name.");
+            }
+
+            if ($httpCode === 429) {
+                throw new Exception('Rate limit exceeded. Please try again later.');
+            }
+
+            throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
         }
 
+        $data = [];
         if (is_string($response) === true) {
             $data = json_decode($response, true);
-        } else {
-            $data = [];
         }
 
         if (isset($data['choices'][0]['message']['content']) === false) {
+            $responseStr = 'Invalid response';
             if (is_string($response) === true) {
                 $responseStr = $response;
-            } else {
-                $responseStr = 'Invalid response';
             }
 
             throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
-
     }//end callFireworksChatAPI()
 
     /**
@@ -544,33 +546,34 @@ class ResponseGenerationHandler
             // Make error messages user-friendly.
             if ($httpCode === 401 || $httpCode === 403) {
                 throw new Exception('Authentication failed. Please check your Fireworks API key.');
-            } else if ($httpCode === 404) {
-                throw new Exception("Model not found: {$model}. Please check the model name.");
-            } else if ($httpCode === 429) {
-                throw new Exception('Rate limit exceeded. Please try again later.');
-            } else {
-                throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
             }
+
+            if ($httpCode === 404) {
+                throw new Exception("Model not found: {$model}. Please check the model name.");
+            }
+
+            if ($httpCode === 429) {
+                throw new Exception('Rate limit exceeded. Please try again later.');
+            }
+
+            throw new Exception("Fireworks API error (HTTP {$httpCode}): {$errorMessage}");
         }
 
+        $data = [];
         if (is_string($response) === true) {
             $data = json_decode($response, true);
-        } else {
-            $data = [];
         }
 
         if (isset($data['choices'][0]['message']['content']) === false) {
+            $responseStr = 'Invalid response';
             if (is_string($response) === true) {
                 $responseStr = $response;
-            } else {
-                $responseStr = 'Invalid response';
             }
 
             throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
-
     }//end callFireworksChatAPIWithHistory()
 
     /**
@@ -589,6 +592,5 @@ class ResponseGenerationHandler
         }
 
         return 'default';
-
     }//end getLlphantUrl()
 }//end class

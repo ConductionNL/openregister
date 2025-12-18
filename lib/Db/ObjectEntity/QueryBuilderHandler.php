@@ -118,4 +118,3 @@ class QueryBuilderHandler
 
     }//end getMaxAllowedPacketSize()
 }//end class
-

@@ -841,7 +841,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         // Check if lock has expired.
-        $now        = new DateTime();
+        $now = new DateTime();
+
+        // Check if expiration key exists.
+        if (isset($this->locked['expiration']) === false) {
+            return false;
+        }
+
         $expiration = new DateTime($this->locked['expiration']);
 
         return $now < $expiration;

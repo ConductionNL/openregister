@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Multi-Tenancy Trait
  *
@@ -95,7 +96,6 @@ trait MultiTenancyTrait
 
         // Fallback if mapper not available.
         return $this->getDefaultOrganisationUuid();
-
     }//end getActiveOrganisationUuid()
 
     /**
@@ -138,7 +138,6 @@ trait MultiTenancyTrait
         }
 
         return null;
-
     }//end getDefaultOrganisationUuid()
 
     /**
@@ -184,7 +183,6 @@ trait MultiTenancyTrait
 
         // Fall back to just the active organisation.
         return [$activeOrgUuid];
-
     }//end getActiveOrganisationUuids()
 
     /**
@@ -211,7 +209,6 @@ trait MultiTenancyTrait
         $multitenancyData = json_decode($multitenancyConfig, true);
         $bypassEnabled    = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
         return $bypassEnabled;
-
     }//end shouldPublishedObjectsBypassMultiTenancy()
 
     /**
@@ -226,12 +223,11 @@ trait MultiTenancyTrait
         }
 
         $user = $this->userSession->getUser();
-        if (($user !== null) === true) {
-            return $user->getUID();
-        } else {
+        if (($user !== null) === false) {
             return null;
         }
 
+        return $user->getUID();
     }//end getCurrentUserId()
 
     /**
@@ -251,7 +247,6 @@ trait MultiTenancyTrait
         }
 
         return $this->groupManager->isAdmin($userId);
-
     }//end isCurrentUserAdmin()
 
     /**
@@ -325,11 +320,10 @@ trait MultiTenancyTrait
             return;
         }
 
-        $user = $this->userSession->getUser();
+        $user   = $this->userSession->getUser();
+        $userId = null;
         if (($user !== null) === true) {
             $userId = $user->getUID();
-        } else {
-            $userId = null;
         }
 
         // For unauthenticated requests, no automatic access.
@@ -346,10 +340,9 @@ trait MultiTenancyTrait
         $activeOrganisationUuids = $this->getActiveOrganisationUuids();
 
         // Build fully qualified column name.
+        $organisationColumn = $columnName;
         if ($tableAlias !== null && $tableAlias !== '') {
             $organisationColumn = $tableAlias.'.'.$columnName;
-        } else {
-            $organisationColumn = $columnName;
         }
 
         // Check if published entities should bypass multi-tenancy (works for objects, schemas, registers).
@@ -399,16 +392,14 @@ trait MultiTenancyTrait
             // The depublished check here only applies to the published bypass (entities from OTHER organizations).
             if ($publishedBypassEnabled === true && $enablePublished === true) {
                 $now = (new DateTime())->format('Y-m-d H:i:s');
+                $publishedColumn   = 'published';
+                $depublishedColumn = 'depublished';
                 if ($tableAlias !== null && $tableAlias !== '') {
                     $publishedColumn = $tableAlias.'.published';
-                } else {
-                    $publishedColumn = 'published';
                 }
 
                 if ($tableAlias !== null && $tableAlias !== '') {
                     $depublishedColumn = $tableAlias.'.depublished';
-                } else {
-                    $depublishedColumn = 'depublished';
                 }
 
                 // Published bypass condition: entity must be published AND not depublished.
@@ -429,7 +420,9 @@ trait MultiTenancyTrait
                 // Use raw SQL to create an always-false condition (1 = 0).
                 // Note: Using raw SQL instead of literal() as it avoids query builder interpretation issues.
                 $qb->andWhere('1 = 0');
-            } else {
+            }
+
+            if (empty($conditions) === false) {
                 // Create orX with at least one condition to avoid deprecation warning.
                 $orgConditions = call_user_func_array([$qb->expr(), 'orX'], $conditions);
                 $qb->andWhere($orgConditions);
@@ -465,16 +458,14 @@ trait MultiTenancyTrait
         $orgConditions = $qb->expr()->orX();
 
         // Prepare published/depublished column names for checks.
+        $publishedColumn   = 'published';
+        $depublishedColumn = 'depublished';
         if ($tableAlias !== null && $tableAlias !== '') {
             $publishedColumn = $tableAlias.'.published';
-        } else {
-            $publishedColumn = 'published';
         }
 
         if ($tableAlias !== null && $tableAlias !== '') {
             $depublishedColumn = $tableAlias.'.depublished';
-        } else {
-            $depublishedColumn = 'depublished';
         }
 
         $now = (new DateTime())->format('Y-m-d H:i:s');
@@ -498,17 +489,19 @@ trait MultiTenancyTrait
             // Condition 2: Entity from parent organizations (children can see all parent objects, including depublished).
             // Only add this if there are parent organizations.
             $parentOrgs = array_filter(
-                    $activeOrganisationUuids,
-                    function ($uuid) use ($directActiveOrgUuid) {
-                        return $uuid !== $directActiveOrgUuid;
-                    }
-                    );
+                $activeOrganisationUuids,
+                function ($uuid) use ($directActiveOrgUuid) {
+                    return $uuid !== $directActiveOrgUuid;
+                }
+            );
             if (count($parentOrgs) > 0) {
                 $orgConditions->add(
                     $qb->expr()->in($organisationColumn, $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY))
                 );
             }
-        } else {
+        }
+
+        if ($directActiveOrgUuid === null) {
             // No direct active org, just match active orgs (children can see all parent items).
             $orgConditions->add(
                 $qb->expr()->in($organisationColumn, $qb->createNamedParameter($activeOrganisationUuids, IQueryBuilder::PARAM_STR_ARRAY))
@@ -558,7 +551,6 @@ trait MultiTenancyTrait
 
         // Apply the conditions.
         $qb->andWhere($orgConditions);
-
     }//end applyOrganisationFilter()
 
     /**
@@ -584,7 +576,6 @@ trait MultiTenancyTrait
         if ($activeOrgUuid !== null) {
             $entity->setOrganisation($activeOrgUuid);
         }
-
     }//end setOrganisationOnCreate()
 
     /**
@@ -621,7 +612,6 @@ trait MultiTenancyTrait
         if ($user !== null) {
             $entity->setOwner($user->getUID());
         }
-
     }//end setOwnerOnCreate()
 
     /**
@@ -658,7 +648,6 @@ trait MultiTenancyTrait
                 Response::HTTP_FORBIDDEN
             );
         }
-
     }//end verifyOrganisationAccess()
 
     /**
@@ -713,7 +702,9 @@ trait MultiTenancyTrait
         $orgUsers = $activeOrg->getUserIds();
         if (in_array($userId, $orgUsers) === true) {
             // User is explicitly listed in the organisation - check authorization.
-        } else {
+        }
+
+        if (in_array($userId, $organisationUsers, true) === false) {
             // User is not in the organisation.
             return false;
         }
@@ -771,7 +762,6 @@ trait MultiTenancyTrait
 
         // No matching permission found.
         return false;
-
     }//end hasRbacPermission()
 
     /**
@@ -792,6 +782,5 @@ trait MultiTenancyTrait
                 Response::HTTP_FORBIDDEN
             );
         }
-
     }//end verifyRbacPermission()
 }//end trait
