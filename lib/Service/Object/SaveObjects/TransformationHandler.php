@@ -183,8 +183,8 @@ class TransformationHandler
 
             // DATABASE-MANAGED: created and updated are handled by database DEFAULT and ON UPDATE clauses.
             // METADATA EXTRACTION: Skip redundant extraction as prepareSingleSchemaObjectsOptimized already handles this.
-            // with enhanced twig-like concatenation support. This redundant extraction was overwriting the.
-            // properly extracted metadata with simpler getValueFromPath results.
+            // With enhanced twig-like concatenation support. This redundant extraction was overwriting the.
+            // Properly extracted metadata with simpler getValueFromPath results.
             // DEBUG: Log mixed schema object structure.
             $this->logger->info(
                 "[SaveObjects] DEBUG - Mixed schema object structure",

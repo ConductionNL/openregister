@@ -348,7 +348,7 @@ class BulkRelationHandler
 
         // Save all modified objects in bulk.
         // TEMPORARILY DISABLED: Skip secondary bulk save to isolate double prefix issue.
-        // if (!empty($objectsToUpdate)) {
+        // If (!empty($objectsToUpdate)) {
         // NO ERROR SUPPRESSION: Let bulk writeBack update errors bubble up immediately!
         // $this->objectEntityMapper->saveObjects([], $objectsToUpdate);
         // }.

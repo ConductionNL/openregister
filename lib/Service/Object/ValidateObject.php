@@ -95,8 +95,9 @@ class ValidateObject
      * any "#/components/schemas/[slug]" references with the actual schema definitions.
      * This ensures the validation library can work with fully resolved schemas.
      *
-     * @param object $schemaObject The schema object to process
-     * @param array  $visited      Array to track visited schemas to prevent infinite loops
+     * @param object $schemaObject         The schema object to process
+     * @param array  $visited              Array to track visited schemas to prevent infinite loops
+     * @param bool   $_skipUuidTransformed Whether to skip UUID transformation (unused)
      *
      * @return object The processed schema object with resolved references
      */
@@ -200,7 +201,7 @@ class ValidateObject
                     }//end if
 
                     // For non-object properties, just return the resolved schema.
-                    // but preserve any additional properties from the original.
+                    // But preserve any additional properties from the original.
                     foreach ($propertySchema as $key => $value) {
                         if ($key !== '$ref') {
                             $resolvedSchema->$key = $value;
@@ -468,7 +469,7 @@ class ValidateObject
         ];
 
         $objectSchema->description = 'Related object (can be full object or UUID reference)';
-        // end if
+        // End if.
     }//end transformToUuidProperty()
 
     /**
@@ -653,8 +654,8 @@ class ValidateObject
      * Cleans a schema object by removing all Nextcloud-specific metadata properties.
      * This ensures the schema is valid JSON Schema before validation.
      *
-     * @param object $schemaObject The schema object to clean
-     * @param bool   $isArrayItems Whether this is cleaning array items (more aggressive cleaning)
+     * @param object $schemaObject  The schema object to clean
+     * @param bool   $_isArrayItems Whether this is cleaning array items (more aggressive cleaning)
      *
      * @return object The cleaned schema object
      */
@@ -936,7 +937,7 @@ class ValidateObject
      * @param array           $object       The object to validate.
      * @param Schema|int|null $schema       The schema or schema ID to validate against.
      * @param object          $schemaObject A custom schema object for validation.
-     * @param int             $depth        The depth level for validation.
+     * @param int             $_depth       The depth level for validation (unused).
      *
      * @return ValidationResult The result of the validation.
      */
@@ -948,7 +949,7 @@ class ValidateObject
     ): ValidationResult {
 
         // Use == because === will never be true when comparing stdClass-instances.
-        // phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
+        // Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
         if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
@@ -961,9 +962,11 @@ class ValidateObject
                 /*
                  * @var string $schemaString
                  */
+
                 /*
                  * @psalm-suppress NoValue - $schema is guaranteed to be string at this point
                  */
+
                 $schemaString = $schema;
                 $schemaObject = $this->schemaMapper->find($schemaString)->getSchemaObject($this->urlGenerator);
             }
@@ -1249,7 +1252,7 @@ class ValidateObject
                 if (is_array($missing) === true && count($missing) > 0) {
                     if (count($missing) === 1) {
                         $property = $missing[0];
-                        return "The required property ({$property}) is missing. "."Please provide a value for this property or set it to null if allowed.";
+                        return "The required property ({$property}) is missing. Please provide a value for this property or set it to null if allowed.";
                     }
 
                     $missingList = implode(', ', $missing);
@@ -1263,17 +1266,17 @@ class ValidateObject
 
                 // Provide specific guidance for empty values.
                 if ($expectedType === 'object' && (is_array($value) === true && empty($value) === true)) {
-                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). "."For non-required object properties, you can set this to null to clear the field. "."For required object properties, provide a valid object with the necessary properties.";
+                    return "Property '{$propertyPath}' should be an object but received an empty object ({}). For non-required object properties, you can set this to null to clear the field. For required object properties, provide a valid object with the necessary properties.";
                 }
 
                 if ($expectedType === 'array' && (is_array($value) === true && empty($value) === true)) {
-                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). "."This property likely has a minItems constraint. Please provide at least one item in the array.";
+                    return "Property '{$propertyPath}' should be a non-empty array but received an empty array ([]). This property likely has a minItems constraint. Please provide at least one item in the array.";
                 }
 
                 if ($expectedType === 'string' && $value === '') {
-                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. "."For non-required string properties, you can set this to null to clear the field. "."For required string properties, provide a valid string value.";
+                    return "Property '{$propertyPath}' should be a non-empty string but received an empty string. For non-required string properties, you can set this to null to clear the field. For required string properties, provide a valid string value.";
                 }
-                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. "."Please provide a value of the correct type.";
+                return "Property '{$propertyPath}' should be of type '{$expectedType}' but is '{$actualType}'. Please provide a value of the correct type.";
 
             case 'minItems':
                 $minItems    = $args['min'] ?? 0;
@@ -1281,7 +1284,7 @@ class ValidateObject
                 if (is_array($value) === true) {
                     $actualItems = count($value);
                 }
-                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. "."Please add more items to the array or set to null if the property is not required.";
+                return "Property '{$propertyPath}' should have at least {$minItems} items, but has {$actualItems}. Please add more items to the array or set to null if the property is not required.";
 
             case 'maxItems':
                 $maxItems    = $args['max'] ?? 0;
@@ -1289,7 +1292,7 @@ class ValidateObject
                 if (is_array($value) === true) {
                     $actualItems = count($value);
                 }
-                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. "."Please remove some items from the array.";
+                return "Property '{$propertyPath}' should have at most {$maxItems} items, but has {$actualItems}. Please remove some items from the array.";
 
             case 'format':
                 $format = $args['format'] ?? 'unknown';

@@ -186,7 +186,7 @@ class BulkValidationHandler
     public function handlePreValidationCascading(array $object, ?string $uuid): array
     {
         // SIMPLIFIED: For bulk operations, we skip complex cascading for now.
-        // and handle it later in individual object processing if needed.
+        // And handle it later in individual object processing if needed.
         if ($uuid === null) {
             $uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
         }

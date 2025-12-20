@@ -217,7 +217,7 @@ class FileHandler implements TextExtractionHandlerInterface
     {
         try {
             // This is a simplified version - the actual extraction logic
-            // should be moved from TextExtractionService here.
+            // Should be moved from TextExtractionService here.
             // For now, delegate to existing extraction methods.
             $content = $file->getContent();
 
@@ -226,7 +226,7 @@ class FileHandler implements TextExtractionHandlerInterface
             }
 
             // For other types, we'd need to use the extraction methods
-            // from TextExtractionService (PDF, DOCX, etc.).
+            // From TextExtractionService (PDF, DOCX, etc.).
             // This should be refactored to use IndexService if needed.
             $this->logger->warning(
                     '[FileHandler] Complex extraction not yet implemented',

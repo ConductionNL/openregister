@@ -192,9 +192,6 @@ class ObjectService
      * @param PublishHandler                 $publishHandler                 Handler for publication workflow.
      * @param RelationHandler                $relationHandler                Handler for object relationships.
      * @param MergeHandler                   $mergeHandler                   Handler for merge and migration.
-     * @param ExportHandler                  $exportHandler                  Handler for export/import operations.
-     * @param VectorizationHandler           $vectorizationHandler           Handler for vectorization operations.
-     * @param CrudHandler                    $crudHandler                    Handler for CRUD operations.
      * @param BulkOperationsHandler          $bulkOperationsHandler          Handler for bulk operations.
      * @param FacetHandler                   $facetHandler                   Handler for facet operations.
      * @param MetadataHandler                $metadataHandler                Handler for metadata operations.
@@ -203,6 +200,8 @@ class ObjectService
      * @param RevertHandler                  $revertHandler                  Handler for revert operations.
      * @param UtilityHandler                 $utilityHandler                 Handler for utility operations.
      * @param ValidationHandler              $validationHandler              Handler for validation operations.
+     * @param CascadingHandler               $cascadingHandler               Handler for cascading operations.
+     * @param MigrationHandler               $migrationHandler               Handler for migration operations.
      * @param RegisterMapper                 $registerMapper                 Mapper for register operations.
      * @param SchemaMapper                   $schemaMapper                   Mapper for schema operations.
      * @param ViewMapper                     $viewMapper                     Mapper for view operations.
@@ -219,7 +218,7 @@ class ObjectService
      * @param IAppContainer                  $container                      Application container.
      */
     public function __construct(
-        // Legacy handlers - TESTING:
+        // Legacy handlers - TESTING:..
         private readonly DataManipulationHandler $dataManipulationHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
@@ -230,7 +229,7 @@ class ObjectService
         private readonly SaveObjects $saveObjectsHandler,
         private readonly SearchQueryHandler $searchQueryHandler,
         private readonly ValidateObject $validateHandler,
-        // New handlers - TESTING FIRST 5:
+        // New handlers - TESTING FIRST 5:.
         private readonly LockHandler $lockHandler,
         private readonly AuditHandler $auditHandler,
         private readonly PublishHandler $publishHandler,
@@ -242,8 +241,8 @@ class ObjectService
         // TODO: CIRCULAR DEPENDENCY ISSUE - These handlers still cause timeouts.
         // Temporarily disabled until full architectural refactoring is complete.
         // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
-        // private readonly ExportHandler $exportHandler,
-        // private readonly VectorizationHandler $vectorizationHandler,
+        // Private readonly ExportHandler $exportHandler,
+        // Private readonly VectorizationHandler $vectorizationHandler,
         // STILL COMMENTED - Second half:
         // REFACTORED: Re-enabled legacy handlers - they have clean dependencies (no circular loops).
         private readonly FacetHandler $facetHandler,
@@ -459,7 +458,7 @@ class ObjectService
      * Finds an object by ID or UUID and renders it.
      *
      * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $extend        Properties to extend the object with.
+     * @param array|null               $_extend       Properties to extend the object with (unused).
      * @param bool                     $files         Whether to include file information.
      * @param Register|string|int|null $register      The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
@@ -503,11 +502,13 @@ class ObjectService
         );
 
         // If the object is not found, return null.
+
         /*
          * Suppress type check - GetObject::find() may return null
          *
          * @psalm-suppress TypeDoesNotContainNull - GetObject::find() may return null
          */
+
         if ($object === null) {
             return null;
         }
@@ -558,7 +559,7 @@ class ObjectService
      * retrieve an object without logging the read action.
      *
      * @param string                   $id            The ID of the object to get.
-     * @param array|null               $extend        Properties to extend the object with.
+     * @param array|null               $_extend       Properties to extend the object with (unused).
      * @param bool                     $files         Include file information.
      * @param Register|string|int|null $register      The register object or its ID/UUID.
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
@@ -728,6 +729,7 @@ class ObjectService
          *
          * @psalm-suppress UndefinedFunction - React\Async\await is from external library
          */
+
         $objects = Async\await(all($promises));
 
         return $objects;
@@ -759,11 +761,12 @@ class ObjectService
     public function count(
         array $config=[]
     ): int {
-        // Add register and schema IDs to filters// Ensure we have both register and schema set.
+        // Add register and schema IDs to filters.
+        // Ensure we have both register and schema set.
         if ($this->currentRegister !== null && empty($config['filers']['register']) === true) {
             // Note: $_filters was intended for filter building but is currently unused.
             // Filters are applied directly to $config instead.
-            // $_filters = ['register' => $this->currentRegister->getId()];
+            // $_filters = ['register' => $this->currentRegister->getId()];.
         }
 
         if ($this->currentSchema !== null && empty($config['filers']['schema']) === true) {
@@ -1576,8 +1579,8 @@ class ObjectService
      * @param array<string, mixed> $query         The search query array (same structure as searchObjectsPaginated)
      * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool                 $published     Whether to filter by published status (default: false)
-     * @param bool                 $deleted       Whether to include deleted objects (default: false)
+     * @param bool                 $_published    Whether to filter by published status (default: false).
+     * @param bool                 $_deleted      Whether to include deleted objects (default: false).
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query

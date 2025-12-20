@@ -31,6 +31,7 @@ use DateTime;
 use stdClass;
 use GuzzleHttp\Client;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -292,7 +293,8 @@ class ConfigurationController extends Controller
 
             $this->logger->info(message: "Created configuration: {$created->getTitle()} (ID: {$created->getId()})");
 
-            return new JSONResponse(data: $created, statusCode: 201);
+            // Return 201 Created with explicit status code.
+            return new JSONResponse($created->jsonSerialize(), Http::STATUS_CREATED);
         } catch (Exception $e) {
             $this->logger->error(message: 'Failed to create configuration: '.$e->getMessage());
 
@@ -991,7 +993,7 @@ class ConfigurationController extends Controller
             $configuration->setLastSyncDate(new DateTime());
 
             // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
-            // but we need to save the sync status.
+            // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitHub");
@@ -1130,7 +1132,7 @@ class ConfigurationController extends Controller
             $configuration->setLastSyncDate(new DateTime());
 
             // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
-            // but we need to save the sync status.
+            // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from GitLab");
@@ -1262,7 +1264,7 @@ class ConfigurationController extends Controller
             $configuration->setLastSyncDate(new DateTime());
 
             // The importFromJson already updates the configuration with entity IDs via createOrUpdateConfiguration.
-            // but we need to save the sync status.
+            // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
             $this->logger->info("Successfully imported configuration {$configuration->getTitle()} from URL");

@@ -333,7 +333,7 @@ trait MultiTenancyTrait
             }
 
             // @todo this prevents non logged in access to published objects, we need to allow this so fix this.
-            // return $qb;
+            // Return $qb;
         }
 
         // Get active organisation. UUIDs (active + all parents).
@@ -707,8 +707,8 @@ trait MultiTenancyTrait
         // Check if user has access via organisation membership.
         // Note: $organisationUsers was intended for group-based access but is currently unused.
         // Access is determined by $orgUsers check above.
-        // if (in_array($userId, $organisationUsers, true) === false) {
-        // return false;
+        // If (in_array($userId, $organisationUsers, true) === false) {
+        // Return false;
         // }
         // Get user's groups.
         if (isset($this->groupManager) === false) {

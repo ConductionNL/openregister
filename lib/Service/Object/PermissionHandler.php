@@ -367,11 +367,11 @@ class PermissionHandler
         try {
             // TODO: Get active organisation without service dependency.
             // $activeOrganisation = ... implementation needed ...
-            // if (is_array($activeOrganisation) === true && isset($activeOrganisation['uuid']) === true) {
-            // return $activeOrganisation['uuid'];
+            // If (is_array($activeOrganisation) === true && isset($activeOrganisation['uuid']) === true) {
+            // Return $activeOrganisation['uuid'];
             // }
-            // if (is_string($activeOrganisation) === true) {
-            // return $activeOrganisation;
+            // If (is_string($activeOrganisation) === true) {
+            // Return $activeOrganisation;
             // }
             return null;
         } catch (Exception $e) {

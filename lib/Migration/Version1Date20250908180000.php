@@ -52,7 +52,7 @@ class Version1Date20250908180000 extends SimpleMigrationStep
         $schemaClosure();
 
         // This migration requires raw SQL as Nextcloud's schema wrapper doesn't.
-        // support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
+        // Support the ON UPDATE CURRENT_TIMESTAMP syntax directly.
         $output->info(message: '🔧 This migration requires manual SQL execution for ON UPDATE functionality');
         $output->info(message: 'ℹ️  Nextcloud schema wrapper has limited support for MySQL-specific timestamp features');
 

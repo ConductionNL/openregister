@@ -50,8 +50,17 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectLockedEvent;
+use OCA\OpenRegister\Event\ObjectUnlockedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IConfig;
 use OCP\IUserSession;
@@ -214,6 +223,7 @@ class MagicMapper
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations
      * @param RegisterMapper     $registerMapper     Mapper for register operations
      * @param IConfig            $config             Nextcloud config for settings
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for audit trail events
      * @param IUserSession       $userSession        User session for authentication context
      * @param IGroupManager      $groupManager       Group manager for RBAC operations
      * @param IUserManager       $userManager        User manager for user operations
@@ -227,6 +237,7 @@ class MagicMapper
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IConfig $config,
+        private readonly IEventDispatcher $eventDispatcher,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
@@ -752,7 +763,10 @@ class MagicMapper
      *
      * @return (bool|int|mixed|null|string)[][]
      *
+     * @phpcs:disable Generic.Files.LineLength.TooLong
      * @psalm-return array<array{name: string, type: string, nullable: bool, index?: bool, length?: int, unique?: bool, autoincrement?: true, primary?: true, default?: mixed|null, precision?: 10, scale?: 2}>
+     *
+     * @phpcs:enable
      */
     private function buildTableColumnsFromSchema(Schema $schema): array
     {
@@ -793,7 +807,10 @@ class MagicMapper
      *
      * @return (bool|int|string)[][]
      *
+     * @phpcs:disable Generic.Files.LineLength.TooLong
      * @psalm-return array{_id: array{name: '_id', type: 'bigint', nullable: false, autoincrement: true, primary: true}, _uuid: array{name: '_uuid', type: 'string', length: 36, nullable: false, unique: true, index: true}, _slug: array{name: '_slug', type: 'string', length: 255, nullable: true, index: true}, _uri: array{name: '_uri', type: 'text', nullable: true}, _version: array{name: '_version', type: 'string', length: 50, nullable: true}, _register: array{name: '_register', type: 'string', length: 255, nullable: false, index: true}, _schema: array{name: '_schema', type: 'string', length: 255, nullable: false, index: true}, _owner: array{name: '_owner', type: 'string', length: 64, nullable: true, index: true}, _organisation: array{name: '_organisation', type: 'string', length: 36, nullable: true, index: true}, _application: array{name: '_application', type: 'string', length: 255, nullable: true}, _folder: array{name: '_folder', type: 'string', length: 255, nullable: true}, _name: array{name: '_name', type: 'string', length: 255, nullable: true, index: true}, _description: array{name: '_description', type: 'text', nullable: true}, _summary: array{name: '_summary', type: 'text', nullable: true}, _image: array{name: '_image', type: 'text', nullable: true}, _size: array{name: '_size', type: 'string', length: 50, nullable: true}, _schema_version: array{name: '_schema_version', type: 'string', length: 50, nullable: true}, _created: array{name: '_created', type: 'datetime', nullable: true, index: true}, _updated: array{name: '_updated', type: 'datetime', nullable: true, index: true}, _published: array{name: '_published', type: 'datetime', nullable: true, index: true}, _depublished: array{name: '_depublished', type: 'datetime', nullable: true, index: true}, _expires: array{name: '_expires', type: 'datetime', nullable: true, index: true}, _files: array{name: '_files', type: 'json', nullable: true}, _relations: array{name: '_relations', type: 'json', nullable: true}, _locked: array{name: '_locked', type: 'json', nullable: true}, _authorization: array{name: '_authorization', type: 'json', nullable: true}, _validation: array{name: '_validation', type: 'json', nullable: true}, _deleted: array{name: '_deleted', type: 'json', nullable: true}, _geo: array{name: '_geo', type: 'json', nullable: true}, _retention: array{name: '_retention', type: 'json', nullable: true}, _groups: array{name: '_groups', type: 'json', nullable: true}}
+     *
+     * @phpcs:enable
      */
     private function getMetadataColumns(): array
     {
@@ -994,7 +1011,10 @@ class MagicMapper
      *
      * @psalm-param SchemaPropertyConfig $propertyConfig
      *
+     * @phpcs:disable Generic.Files.LineLength.TooLong
      * @psalm-return array{name: string, type: string, nullable: bool, index?: bool, length?: int<min, 320>, default?: mixed|null, precision?: 10, scale?: 2}
+     *
+     * @phpcs:enable
      */
     private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array
     {
@@ -1024,7 +1044,7 @@ class MagicMapper
                     'name'     => $columnName,
                     'type'     => 'boolean',
                     'nullable' => in_array($propertyName, $propertyConfig['required'] ?? []) === false,
-                    // propertyConfig may contain 'default' key even if not in type definition.
+                    // PropertyConfig may contain 'default' key even if not in type definition.
                     'default'  => $defaultValue,
                 ];
 
@@ -1168,7 +1188,7 @@ class MagicMapper
             'name'     => $columnName,
             'type'     => $intType,
             'nullable' => $isRequired === false,
-            // propertyConfig may contain 'default' key even if not in type definition.
+            // PropertyConfig may contain 'default' key even if not in type definition.
             'default'  => $defaultValue,
             'index'    => true,
         // Integer fields are often used for filtering.
@@ -1202,7 +1222,7 @@ class MagicMapper
             'precision' => 10,
             'scale'     => 2,
             'nullable'  => $isRequired === false,
-            // propertyConfig may contain 'default' key even if not in type definition.
+            // PropertyConfig may contain 'default' key even if not in type definition.
             'default'   => $defaultValue,
             'index'     => true,
         // Numeric fields are often used for filtering.
@@ -1295,8 +1315,8 @@ class MagicMapper
      * Create indexes for table performance
      *
      * @param string   $tableName The table name
-     * @param Register $register  The register context
-     * @param Schema   $schema    The schema for index analysis
+     * @param Register $_register The register context (unused)
+     * @param Schema   $_schema   The schema for index analysis (unused)
      *
      * @return void
      *
@@ -1306,6 +1326,7 @@ class MagicMapper
     {
         try {
             // Create unique index on UUID.
+            // Phpcs:ignore Generic.Files.LineLength.TooLong
             $this->db->executeStatement(
                 "CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$tableName} (".self::METADATA_PREFIX."uuid)"
             );
@@ -2476,6 +2497,9 @@ class MagicMapper
         Register $register,
         Schema $schema
     ): ObjectEntity {
+        // Dispatch creating event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
+
         // Ensure table exists.
         $this->ensureTableForRegisterSchema($register, $schema);
 
@@ -2520,6 +2544,9 @@ class MagicMapper
             $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
         }
 
+        // Dispatch created event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($entity));
+
         return $entity;
 
     }//end insertObjectEntity()
@@ -2540,6 +2567,12 @@ class MagicMapper
         Register $register,
         Schema $schema
     ): ObjectEntity {
+        // Fetch old object for event dispatching.
+        $oldObject = $this->findInRegisterSchemaTable($entity->getUuid(), $register, $schema);
+
+        // Dispatch updating event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity, $oldObject));
+
         $tableName = $this->getTableNameForRegisterSchema($register, $schema);
         $uuid      = $entity->getUuid();
 
@@ -2566,6 +2599,9 @@ class MagicMapper
             tableName: $tableName
         );
 
+        // Dispatch updated event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($entity, $oldObject));
+
         return $entity;
 
     }//end updateObjectEntity()
@@ -2590,6 +2626,9 @@ class MagicMapper
         Schema $schema,
         bool $hardDelete=false
     ): ObjectEntity {
+        // Dispatch deleting event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent($entity));
+
         $tableName = $this->getTableNameForRegisterSchema($register, $schema);
         $uuid      = $entity->getUuid();
 
@@ -2639,6 +2678,9 @@ class MagicMapper
             );
         }//end if
 
+        // Dispatch deleted event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent($entity));
+
         return $entity;
 
     }//end deleteObjectEntity()
@@ -2675,6 +2717,9 @@ class MagicMapper
             ]
         );
 
+        // Dispatch locked event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectLockedEvent::class, new ObjectLockedEvent($entity));
+
         return $entity;
 
     }//end lockObjectEntity()
@@ -2705,6 +2750,9 @@ class MagicMapper
             'Unlocked object in register+schema table',
             ['uuid' => $entity->getUuid()]
         );
+
+        // Dispatch unlocked event for audit trails.
+        $this->eventDispatcher->dispatch(ObjectUnlockedEvent::class, new ObjectUnlockedEvent($entity));
 
         return $entity;
 

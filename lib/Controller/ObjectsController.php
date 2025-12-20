@@ -258,9 +258,9 @@ class ObjectsController extends Controller
     /**
      * Helper method to get configuration array from the current request (LEGACY)
      *
-     * @param string|null $register Optional register identifier
-     * @param string|null $schema   Optional schema identifier
-     * @param array|null  $ids      Optional array of specific IDs to filter
+     * @param string|null $_register Optional register identifier (unused).
+     * @param string|null $_schema   Optional schema identifier (unused).
+     * @param array|null  $ids       Optional array of specific IDs to filter
      *
      * @return (array|int|mixed|null)[] Configuration array containing:
      *
@@ -1366,9 +1366,9 @@ class ObjectsController extends Controller
 
         // Normalize and compare register.
         $objectRegister = $object->getRegister();
-        // could be ID or slug.
+        // Could be ID or slug.
         $objectSchema = $object->getSchema();
-        // could be ID, schema: slug, _extend: or array/object.
+        // Could be ID, schema: slug, _extend: or array/object.
         // Normalize requested register.
         $requestedRegister = $register;
         $requestedSchema   = $schema;

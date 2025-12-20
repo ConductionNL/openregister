@@ -218,7 +218,7 @@ class SetupHandler
      */
     private function getTenantCollectionName(): string
     {
-        // solrConfig may contain 'core' key even if not in type definition.
+        // SolrConfig may contain 'core' key even if not in type definition.
         $baseCollectionName = 'openregister';
         if (is_array($this->solrConfig) === true && array_key_exists('core', $this->solrConfig) === true) {
             $baseCollectionName = $this->solrConfig['core'];
@@ -234,7 +234,7 @@ class SetupHandler
      */
     private function getTenantId(): string
     {
-        // getTenantId doesn't exist, use getTenantSpecificCollectionName to derive tenant ID.
+        // GetTenantId doesn't exist, use getTenantSpecificCollectionName to derive tenant ID.
         // Extract tenant ID from collection name or use a default.
         $collectionName = $this->solrService->getTenantSpecificCollectionName('openregister');
         // Extract tenant ID from collection name pattern (e.g., "openregister_nc_xxx" -> "nc_xxx").
@@ -254,7 +254,7 @@ class SetupHandler
     private function getTenantConfigSetName(): string
     {
         // Use the configSet from configuration (defaults to '_default').
-        // solrConfig may contain 'configSet' key even if not in type definition.
+        // SolrConfig may contain 'configSet' key even if not in type definition.
         $configSetName = '_default';
         if (is_array($this->solrConfig) === true && array_key_exists('configSet', $this->solrConfig) === true) {
             $configSetName = $this->solrConfig['configSet'];
@@ -1508,7 +1508,7 @@ class SetupHandler
             // Determine SOLR response value for error details.
             // Note: $retryDetails is checked but $solrResponseValue calculation was incorrect.
             // Simplified to just use $solrResponse directly.
-            // if ($retryDetails === true) {
+            // If ($retryDetails === true) {
             // $solrResponseValue = $retryDetails;
             // }
             $this->lastErrorDetails = [
@@ -2232,7 +2232,7 @@ class SetupHandler
 
                 // Force configSet propagation immediately after successful upload.
                 // This proactively triggers cache refresh and ZooKeeper sync to reduce.
-                // the likelihood of propagation delays when creating collections.
+                // The likelihood of propagation delays when creating collections.
                 $propagationResult = $this->forceConfigSetPropagation($configSetName);
                 $this->logger->info(
                     'ConfigSet propagation attempted after upload',

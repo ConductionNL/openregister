@@ -140,7 +140,7 @@ class ConfigurationMapper extends QBMapper
      * @throws MultipleObjectsReturnedException
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(int $id): Configuration
+    public function find(int $id, bool $_multitenancy = true): Configuration
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -151,8 +151,10 @@ class ConfigurationMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter unless explicitly disabled.
+        if ($_multitenancy === true) {
+            $this->applyOrganisationFilter($qb);
+        }
 
         return $this->findEntity($qb);
 
@@ -370,8 +372,9 @@ class ConfigurationMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Get old state before update.
-        $oldEntity = $this->find($entity->getId());
+        // Get old state before update (disable multitenancy filtering).
+        // When updating, we need to find the configuration regardless of organisation.
+        $oldEntity = $this->find($entity->getId(), _multitenancy: false);
 
         $entity->setUpdated(new DateTime());
 
@@ -446,7 +449,9 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        $object = $this->find(id: $id);
+        // Disable multitenancy filtering for update operations.
+        // When updating by ID, we want to find the configuration regardless of organisation.
+        $object = $this->find(id: $id, _multitenancy: false);
 
         // Set or update the version.
         if (isset($data['version']) === false) {
@@ -481,7 +486,8 @@ class ConfigurationMapper extends QBMapper
         ?int $offset=null,
         ?array $filters=[],
         ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?array $searchParams=[],
+        bool $_multitenancy=true
     ): array {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -514,8 +520,10 @@ class ConfigurationMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        // Apply organisation filter unless explicitly disabled.
+        if ($_multitenancy === true) {
+            $this->applyOrganisationFilter($qb);
+        }
 
         // Execute the query and return the results.
         return $this->findEntities($qb);

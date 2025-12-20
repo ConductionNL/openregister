@@ -1358,7 +1358,7 @@ class ImportHandler
 
                 // Set additional metadata from x-openregister if available.
                 // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation).
-                // are not imported as they are instance-specific settings.
+                // Are not imported as they are instance-specific settings.
                 if (($xOpenregister['sourceType'] ?? null) !== null) {
                     $configuration->setSourceType($xOpenregister['sourceType']);
                 }

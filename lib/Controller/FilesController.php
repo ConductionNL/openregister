@@ -118,7 +118,7 @@ class FilesController extends Controller
     ): JSONResponse {
         // Note: $register and $schema are route parameters for API consistency.
         // They are part of the URL structure (/api/objects/{register}/{schema}/{id}/files)
-        // but only $id is used to fetch files.
+        // But only $id is used to fetch files.
         // Reference them to satisfy static analysis.
         $routeParams = ['register' => $register, 'schema' => $schema];
         unset($routeParams);

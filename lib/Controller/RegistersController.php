@@ -936,7 +936,7 @@ class RegistersController extends Controller
                     }
 
                     // Import the data and get the result.
-                    // importFromJson requires a Configuration entity as second parameter.
+                    // ImportFromJson requires a Configuration entity as second parameter.
                     // For now, pass null and let the service handle it (will throw if required).
                     $configuration = null;
                     // TODO: Get or create Configuration entity if needed.

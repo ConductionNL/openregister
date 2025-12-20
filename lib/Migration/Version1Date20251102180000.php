@@ -140,7 +140,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep
             // Use try-catch in case roles column doesn't exist.
             try {
                 // Update groups column from roles column where groups is empty or null.
-                // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must be on single line.
+                // Phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must be on single line.
                 $sql    = 'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL';
                 $result = $connection->executeUpdate($sql);
 

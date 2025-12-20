@@ -108,7 +108,7 @@ class SearchController extends Controller
 
         // Step 3: Build search parameters for SOLR query.
         // Note: This is a simplified search endpoint. For full Nextcloud search integration,
-        // use the ObjectsProvider which implements IFilteringProvider.
+        // Use the ObjectsProvider which implements IFilteringProvider.
         $searchParams = [
             'q'     => $processedQuery,
             'start' => (int) ($this->request->getParam('offset', 0)),

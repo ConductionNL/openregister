@@ -796,7 +796,7 @@ class GitHubHandler
                 [
                     'query'   => [
                         'type'      => 'all',
-                // all, owner, member.
+                // All, owner, member.
                         'sort'      => 'updated',
                         'direction' => 'desc',
                         'page'      => $page,

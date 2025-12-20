@@ -712,7 +712,7 @@ class MariaDbSearchHandler
             // _search now only covers: name, description, summary for sub-500ms performance.
             //
             // If comprehensive JSON search is needed, use specific object field filters instead:.
-            // e.g., ?fieldName=searchTerm rather than ?_search=searchTerm.
+            // E.g., ?fieldName=searchTerm rather than ?_search=searchTerm.
             //
             // Original code (DISABLED for performance):.
             // $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";

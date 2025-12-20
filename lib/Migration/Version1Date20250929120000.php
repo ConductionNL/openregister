@@ -107,7 +107,7 @@ class Version1Date20250929120000 extends SimpleMigrationStep
         $output->info(message: '🔧 Ensuring existing schemas are marked as searchable...');
 
         // Since we added the column with default value true and notnull constraint,.
-        // all existing records should already have searchable = 1.
+        // All existing records should already have searchable = 1.
         // We'll just verify this with a simple count query.
         $connection = \OC::$server->getDatabaseConnection();
 

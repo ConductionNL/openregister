@@ -107,14 +107,14 @@ class CrudHandler
             // TODO: Implement proper search logic.
             $result = ['results' => [], 'total' => 0];
             // $this->objectEntityMapper->searchObjectsPaginated(
-            // query: $query,
+            // Query: $query,
             // _rbac: $rbac,
             // _multitenancy: $multi,
-            // published: $published,
-            // deleted: $deleted,
-            // ids: $ids,
-            // uses: $uses,
-            // views: $views
+            // Published: $published,
+            // Deleted: $deleted,
+            // Ids: $ids,
+            // Uses: $uses,
+            // Views: $views
             // );
             $this->logger->debug(
                 message: '[CrudHandler] Objects listed',
@@ -164,7 +164,7 @@ class CrudHandler
             // TODO: Implement proper find logic.
             $object = null;
             // $this->objectEntityMapper->find(
-            // id: $objectId,
+            // Id: $objectId,
             // _rbac: $rbac,
             // _multitenancy: $multi
             // );
@@ -226,8 +226,8 @@ class CrudHandler
             // TODO: Implement proper save logic.
             $object = null;
             // $this->objectEntityMapper->saveObject(
-            // objectId: null,
-            // object: $data,
+            // ObjectId: null,
+            // Object: $data,
             // _rbac: $rbac,
             // _multitenancy: $multi
             // );
@@ -285,8 +285,8 @@ class CrudHandler
             // TODO: Implement proper save logic.
             $object = null;
             // $this->objectEntityMapper->saveObject(
-            // objectId: $objectId,
-            // object: $data,
+            // ObjectId: $objectId,
+            // Object: $data,
             // _rbac: $rbac,
             // _multitenancy: $multi
             // );
@@ -408,7 +408,7 @@ class CrudHandler
         try {
             // TODO: Implement proper delete logic
             // $this->objectEntityMapper->deleteObject(
-            // uuid: $objectId,
+            // Uuid: $objectId,
             // _rbac: $rbac,
             // _multitenancy: $multi.
             // );.

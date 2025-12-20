@@ -143,7 +143,6 @@ class ImportService
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ObjectService      $objectService      The object service
      * @param LoggerInterface    $logger             The logger interface
-     * @param IUserManager       $userManager        The user manager
      * @param IGroupManager      $groupManager       The group manager
      * @param IJobList           $jobList            The background job list
      */
@@ -219,12 +218,15 @@ class ImportService
     /**
      * Import data from Excel file.
      *
-     * @param string        $filePath   The path to the Excel file.
-     * @param Register|null $register   Optional register to associate with imported objects.
-     * @param Schema|null   $schema     Optional schema to associate with imported objects.
-     * @param int           $chunkSize  Number of rows to process in each chunk (default: 100).
-     * @param bool          $validation Whether to validate objects against schema definitions (default: false).
-     * @param bool          $events     Whether to dispatch object lifecycle events (default: false).
+     * @param string        $filePath       The path to the Excel file.
+     * @param Register|null $register       Optional register to associate with imported objects.
+     * @param Schema|null   $schema         Optional schema to associate with imported objects.
+     * @param bool          $validation     Whether to validate objects against schema definitions (default: false).
+     * @param bool          $events         Whether to dispatch object lifecycle events (default: false).
+     * @param bool          $_rbac          Whether to apply RBAC checks (default: true, unused).
+     * @param bool          $_multitenancy  Whether to apply multitenancy checks (default: true, unused).
+     * @param bool          $publish        Whether to publish objects after import (default: false).
+     * @param IUser|null    $currentUser    The current user performing the import (optional).
      *
      * @return (array|int|null|string)[][]
      *
@@ -319,11 +321,10 @@ class ImportService
      * @param string        $filePath      The path to the CSV file.
      * @param Register|null $register      Optional register to associate with imported objects.
      * @param Schema|null   $schema        Optional schema to associate with imported objects.
-     * @param int           $chunkSize     Number of rows to process in each chunk (default: 100).
      * @param bool          $validation    Whether to validate objects against schema definitions (default: false).
      * @param bool          $events        Whether to dispatch object lifecycle events (default: false).
-     * @param bool          $_rbac         Whether to enforce RBAC checks (default: true).
-     * @param bool          $_multitenancy Whether to enable multi-tenancy (default: true).
+     * @param bool          $_rbac         Whether to enforce RBAC checks (default: true, unused).
+     * @param bool          $_multitenancy Whether to enable multi-tenancy (default: true, unused).
      * @param bool          $publish       Whether to publish objects immediately (default: false).
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      *
@@ -649,7 +650,7 @@ class ImportService
             );
 
             // Use the structured return from saveObjects with smart deduplication.
-            // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
+            // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
             $summary['created'] = array_map(
                 fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
                 $saveResult['saved'] ?? []
@@ -841,7 +842,7 @@ class ImportService
             );
 
             // Use the structured return from saveObjects with smart deduplication.
-            // saveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
+            // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
             $summary['created'] = array_map(
                 fn(array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
                 $saveResult['saved'] ?? []

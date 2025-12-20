@@ -72,7 +72,7 @@ class Version1Date20241020231700 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        // create the openregister_logs table.
+        // Create the openregister_logs table.
         if ($schema->hasTable('openregister_audit_trails') === false) {
             $table = $schema->createTable('openregister_audit_trails');
             $table->addColumn('id', Types::INTEGER, ['autoincrement' => true, 'notnull' => true]);

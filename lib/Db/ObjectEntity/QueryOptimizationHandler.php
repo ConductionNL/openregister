@@ -337,7 +337,7 @@ class QueryOptimizationHandler
     public function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {
         // INDEX OPTIMIZATION: If we have schema + register + published filters,
-        // ensure they're applied in the optimal order for the composite index.
+        // Ensure they're applied in the optimal order for the composite index.
         $hasSchema    = isset($filters['schema']) || isset($filters['schema_id']);
         $hasRegister  = isset($filters['registers']) || isset($filters['register']);
         $hasPublished = ($filters['published'] ?? null) !== null;

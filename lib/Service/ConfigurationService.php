@@ -240,6 +240,9 @@ class ConfigurationService
      * @param GitLabHandler       $gitlabHandler       GitLab handler for GitLab operations
      * @param CacheHandler        $cacheHandler        Cache handler for configuration caching
      * @param PreviewHandler      $previewHandler      Preview handler for preview operations
+     * @param ExportHandler       $exportHandler       Export handler for export operations
+     * @param ImportHandler       $importHandler       Import handler for import operations
+     * @param UploadHandler       $uploadHandler       Upload handler for file upload operations
      * @param string              $appDataPath         Application data path
      *
      * @return void
@@ -390,7 +393,8 @@ class ConfigurationService
     /**
      * Recursively converts stdClass objects to arrays to ensure consistent data structure (DELEGATED).
      *
-     * @param  mixed $data The data to convert.
+     * @param mixed $data The data to convert.
+     *
      * @return array The converted array data.
      */
     private function ensureArrayStructure(mixed $data): array
@@ -400,19 +404,14 @@ class ConfigurationService
     }//end ensureArrayStructure()
 
     /**
-     * Gets uploaded file content from a file in the api request as PHP array and use it for creating/updating an object.
-     *
-     * @param array       $uploadedFile The uploaded file.
-     * @param string|null $type         If the uploaded file should be a specific type of object.
-     *
-     * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     */
-
-    /**
      * Get JSON data from uploaded file (DELEGATED).
      *
+     * @param array       $uploadedFile The uploaded file.
+     * @param string|null $_type        If the uploaded file should be a specific type of object (unused).
+     *
      * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
-     * @return       JSONResponse|array
+     *
+     * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
@@ -439,20 +438,13 @@ class ConfigurationService
     }//end getJSONfromURL()
 
     /**
-     * Uses the given string or array as PHP array for creating/updating an object.
-     *
-     * @param array|string $phpArray An array or string containing a json blob of data.
-     * @param string|null  $type     If the object should be a specific type of object.
-     *
-     * @return array A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     */
-
-    /**
      * Get JSON data from request body (DELEGATED).
      *
-     * @return JSONResponse|array
+     * @param array|string $phpArray The PHP array or string to process.
      *
      * @psalm-return JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>|array
+     *
+     * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error.
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -534,8 +526,11 @@ class ConfigurationService
     /**
      * Import a register from configuration data
      *
-     * @param array       $data  The register data.
-     * @param string|null $owner The owner of the register.
+     * @param array       $data    The register data.
+     * @param string|null $owner   The owner of the register.
+     * @param string|null $appId   The application ID.
+     * @param string|null $version The version string.
+     * @param bool        $force   Whether to force the import.
      *
      * @return Register The imported register or null if skipped.
      */
@@ -545,6 +540,18 @@ class ConfigurationService
 
     }//end importRegister()
 
+    /**
+     * Import a schema from configuration data
+     *
+     * @param array       $data           The schema data.
+     * @param array       $slugsAndIdsMap Map of slugs to IDs.
+     * @param string|null $owner          The owner of the schema.
+     * @param string|null $appId          The application ID.
+     * @param string|null $version        The version string.
+     * @param bool        $force          Whether to force the import.
+     *
+     * @return Schema The imported schema.
+     */
     private function importSchema(
         array $data,
         array $slugsAndIdsMap,
@@ -923,6 +930,7 @@ class ConfigurationService
          *     changes: array
          * }
          */
+
         // Note: $schemaData is received as parameter but currently unused - keeping for API consistency.
         return $this->previewHandler->previewSchemaChange($slug, $schemaData);
 
