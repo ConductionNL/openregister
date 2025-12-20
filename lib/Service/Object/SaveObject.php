@@ -569,12 +569,12 @@ class SaveObject
                         $fileNode = null;
                         // TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
                         // When implemented, uncomment:
-                        // if ($fileNode !== null) {
+                        // If ($fileNode !== null) {
                         // $fileData = null;
                         // TODO: fileService->formatFile($fileNode);
                         // IMPORTANT: Object image requires public access.
                         // If file is not published, auto-publish it.
-                        // if (empty($fileData['downloadUrl']) === true) {
+                        // If (empty($fileData['downloadUrl']) === true) {
                         // $this->logger->warning(
                         // 'File configured as objectImageField is not published. Auto-publishing file.',
                         // [
@@ -585,14 +585,14 @@ class SaveObject
                         // ]
                         // );
                         // Publish the file.
-                        // null;
+                        // Null;
                         // TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
                         // Re-fetch file data after publishing.
                         // $fileData = null;
                         // TODO: fileService->formatFile($fileNode).
                         // }
                         // .
-                        // if (($fileData['downloadUrl'] ?? null) !== null) {
+                        // If (($fileData['downloadUrl'] ?? null) !== null) {
                         // $entity->setImage($fileData['downloadUrl']).
                         // }
                         // }//end if.
@@ -1520,7 +1520,7 @@ class SaveObject
                 try {
                     // Find the target object.
                     $targetObject = $this->objectEntityMapper->find($targetUuid);
-                    // find() throws DoesNotExistException, never returns null.
+                    // Find() throws DoesNotExistException, never returns null.
                     // Get current data from target object.
                     $targetData = $targetObject->getObject();
 
@@ -1876,7 +1876,7 @@ class SaveObject
 
                 // Re-hydrate image metadata if objectImageField points to a file property.
                 // At this point, file properties are file IDs, but we need to check if we should.
-                // clear the image metadata so it can be properly extracted during rendering.
+                // Clear the image metadata so it can be properly extracted during rendering.
                 $config = $schema->getConfiguration();
                 if (($config['objectImageField'] ?? null) !== null) {
                     $imageField       = $config['objectImageField'];
@@ -1919,7 +1919,7 @@ class SaveObject
         // $savedEntity->setObject($data);
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately.
         // Determine operation type (currently unused but kept for potential future use).
-        // if ($uuid === true) {
+        // If ($uuid === true) {
         // $operation = 'update';
         // } else {
         // $operation = 'create';
@@ -1934,10 +1934,10 @@ class SaveObject
         // This should use the CacheHandler to invalidate relevant caches after object operations.
         // For now, skipping to allow CRUD operations to complete.
         // $this->objectCacheService->invalidateForObjectChange(
-        // object: $savedEntity,
-        // operation: $operation,
-        // registerId: $registerId,
-        // schemaId: $schemaId.
+        // Object: $savedEntity,
+        // Operation: $operation,
+        // RegisterId: $registerId,
+        // SchemaId: $schemaId.
         // );.
         return $savedEntity;
 
@@ -2003,7 +2003,7 @@ class SaveObject
         }
 
         // Auto-publish logic: Set published date to now if autoPublish is enabled in schema configuration.
-        // and no published date has been set yet (either from field mapping or explicit data).
+        // And no published date has been set yet (either from field mapping or explicit data).
         $config = $schema->getConfiguration();
         if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true) {
             if ($objectEntity->getPublished() === null) {

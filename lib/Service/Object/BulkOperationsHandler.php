@@ -110,7 +110,7 @@ class BulkOperationsHandler
 
         // **BULK CACHE INVALIDATION**: Clear collection caches after successful bulk operations.
         // Bulk imports can create/update hundreds of objects, requiring cache invalidation
-        // to ensure collection queries immediately reflect the new/updated data.
+        // To ensure collection queries immediately reflect the new/updated data.
         try {
             $createdCount  = $bulkResult['statistics']['objectsCreated'] ?? 0;
             $updatedCount  = $bulkResult['statistics']['objectsUpdated'] ?? 0;

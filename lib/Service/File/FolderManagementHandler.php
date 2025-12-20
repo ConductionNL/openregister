@@ -738,7 +738,7 @@ class FolderManagementHandler
         }
 
         // TODO: Call $this->fileService->shareFolderWithUser(folder: $folderNode, userId: $currentUser->getUID())
-        // once FileSharingHandler is extracted. The $folderNode parameter will be used when the
+        // Once FileSharingHandler is extracted. The $folderNode parameter will be used when the
         // FileSharingHandler integration is complete.
     }//end shareFolderWithCurrentUser()
 

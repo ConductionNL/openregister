@@ -546,7 +546,7 @@ class SearchTrailController extends Controller
             // Check if service result is a structured array with nested data.
             if (($serviceResult['user_agents'] ?? null) !== null) {
                 // Extract the user agents array and metadata from structured response.
-                // getUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period.
+                // GetUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period.
                 $userAgentsArray = $serviceResult['user_agents'];
                 // Ensure we have a proper indexed array for pagination.
                 if (is_array($userAgentsArray) === true) {

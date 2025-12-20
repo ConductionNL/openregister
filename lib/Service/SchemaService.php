@@ -1287,7 +1287,7 @@ class SchemaService
         $uniqueCount   = count($uniqueValues);
 
         // If we have relatively few unique values compared to total examples.
-        // and all examples are strings, likely enum-like.
+        // And all examples are strings, likely enum-like.
         return $uniqueCount <= ($totalExamples / 2) &&
                (empty($analysis['types']) === false) &&
                $analysis['types'][0] === 'string';

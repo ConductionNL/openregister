@@ -255,11 +255,24 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         // Only log for large operations or when debugging is needed.
-        $logThreshold = ($isMixedSchemaOperation === true) ? 1000 : 10000;
+        if ($isMixedSchemaOperation === true) {
+            $logThreshold = 1000;
+        } else {
+            $logThreshold = 10000;
+        }
 
         if (count($objects) > $logThreshold) {
-            $logMessage    = ($isMixedSchemaOperation === true) ? 'Starting mixed-schema bulk save operation' : 'Starting single-schema bulk save operation';
-            $operationType = ($isMixedSchemaOperation === true) ? 'mixed-schema' : 'single-schema';
+            if ($isMixedSchemaOperation === true) {
+                $logMessage = 'Starting mixed-schema bulk save operation';
+            } else {
+                $logMessage = 'Starting single-schema bulk save operation';
+            }
+            
+            if ($isMixedSchemaOperation === true) {
+                $operationType = 'mixed-schema';
+            } else {
+                $operationType = 'single-schema';
+            }
 
             $this->logger->info(
                     $logMessage,
@@ -276,7 +289,7 @@ class SaveObjects
         // Bulk save operation starting.
         // Initialize result arrays for different outcomes.
         // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
-        // and tells WHY an object was skipped (because content was unchanged).
+        // And tells WHY an object was skipped (because content was unchanged).
         $result = [
             'saved'      => [],
             'updated'    => [],
@@ -378,8 +391,8 @@ class SaveObjects
                 'updated'    => $chunkResult['statistics']['updated'] ?? 0,
             // TODO: Renamed from 'skipped'.
                 'invalid'    => $chunkResult['statistics']['invalid'] ?? 0,
-            // ms.
-            // objects/sec.
+            // Ms.
+            // Objects/sec.
             ];
         }//end foreach
 
@@ -387,9 +400,14 @@ class SaveObjects
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
         // Calculate efficiency.
-        $efficiency = (count($processedObjects) > 0) ? round((count($processedObjects) / $totalObjects) * 100, 1) : 0;
+        if (count($processedObjects) > 0) {
+            $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
+        } else {
+            $efficiency = 0;
+        }
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
+
         $result['performance'] = [
             'totalTime'        => round($totalTime, 3),
             'totalTimeMs'      => round($totalTime * 1000, 2),
@@ -1736,8 +1754,8 @@ class SaveObjects
 
             // DATABASE-MANAGED: created and updated are handled by database DEFAULT and ON UPDATE clauses.
             // METADATA EXTRACTION: Skip redundant extraction as prepareSingleSchemaObjectsOptimized already handles this.
-            // with enhanced twig-like concatenation support. This redundant extraction was overwriting the.
-            // properly extracted metadata with simpler getValueFromPath results.
+            // With enhanced twig-like concatenation support. This redundant extraction was overwriting the.
+            // Properly extracted metadata with simpler getValueFromPath results.
             // DEBUG: Log mixed schema object structure.
             $this->logger->info(
                     "[SaveObjects] DEBUG - Mixed schema object structure",
@@ -2097,7 +2115,7 @@ class SaveObjects
 
         // Save all modified objects in bulk.
         // TEMPORARILY DISABLED: Skip secondary bulk save to isolate double prefix issue.
-        // if (!empty($objectsToUpdate)) {
+        // If (!empty($objectsToUpdate)) {
         // NO ERROR SUPPRESSION: Let bulk writeBack update errors bubble up immediately!
         // $this->objectEntityMapper->saveObjects([], $objectsToUpdate);
         // }.

@@ -87,6 +87,7 @@ class ConfigurationsController extends Controller
         $filters          = $filters;
 
         // Return all configurations that match the search conditions.
+        // Disable multitenancy filtering so admins can see all configurations.
         return new JSONResponse(
                 data: [
                     'results' => $this->configurationMapper->findAll(
@@ -94,7 +95,8 @@ class ConfigurationsController extends Controller
                 offset: null,
                 filters: $filters,
                 searchConditions: $searchConditions,
-                searchParams: $searchParams
+                searchParams: $searchParams,
+                _multitenancy: false
                             ),
                 ]
                 );
@@ -117,7 +119,9 @@ class ConfigurationsController extends Controller
     public function show(int $id): JSONResponse
     {
         try {
-            return new JSONResponse(data: $this->configurationMapper->find($id));
+            // Disable multitenancy filtering for show operations.
+            // When retrieving by ID, admins should be able to access configurations regardless of organisation.
+            return new JSONResponse(data: $this->configurationMapper->find($id, _multitenancy: false));
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
         }
@@ -169,7 +173,8 @@ class ConfigurationsController extends Controller
 
         try {
             return new JSONResponse(
-                    data: $this->configurationMapper->createFromArray($data)
+                    data: $this->configurationMapper->createFromArray($data),
+                    statusCode: 201
             );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => 'Failed to create configuration: '.$e->getMessage()], statusCode: 400);
@@ -257,7 +262,9 @@ class ConfigurationsController extends Controller
     public function destroy(int $id): JSONResponse
     {
         try {
-            $configuration = $this->configurationMapper->find($id);
+            // Disable multitenancy filtering for delete operations.
+            // When deleting by ID, admins should be able to delete configurations regardless of organisation.
+            $configuration = $this->configurationMapper->find($id, _multitenancy: false);
             $this->configurationMapper->delete($configuration);
             return new JSONResponse(data: null, statusCode: 204);
         } catch (Exception $e) {

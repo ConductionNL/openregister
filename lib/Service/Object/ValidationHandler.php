@@ -155,11 +155,11 @@ class ValidationHandler
                     $schemaId,
                     $object->getUuid(),
                     false,
-                    // rbac.
+                    // Rbac.
                     false,
-                    // multi.
+                    // Multi.
                     true
-                    // silent.
+                    // Silent.
                 );
 
                 // If saveCallback succeeded, the object is valid.

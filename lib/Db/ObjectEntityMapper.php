@@ -36,7 +36,7 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-// use OCA\OpenRegister\Service\MySQLJsonService; // REMOVED: Dead code (never used).
+// Use OCA\OpenRegister\Service\MySQLJsonService; // REMOVED: Dead code (never used).
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -75,39 +75,98 @@ class ObjectEntityMapper extends QBMapper
     // Handler instances (delegated responsibilities).
     // REMOVED: LockingHandler and CrudHandler
     // These were dead code that created circular dependencies. The real handlers
-    // exist in Service/Object/ layer where they belong (Service/Object/LockHandler and Service/Object/CrudHandler).
+    // Exist in Service/Object/ layer where they belong (Service/Object/LockHandler and Service/Object/CrudHandler).
     // Handlers WITHOUT circular dependencies (only need DB, logger, simple deps).
+
+    /**
+     * Query builder handler
+     *
+     * @var QueryBuilderHandler
+     */
     private QueryBuilderHandler $queryBuilderHandler;
 
-    // No circular dependency.
+    /**
+     * Statistics handler
+     *
+     * @var StatisticsHandler
+     */
     private StatisticsHandler $statisticsHandler;
 
-    // No circular dependency - only needs DB, logger, tableName.
+    /**
+     * Facets handler - only needs DB, logger, tableName
+     *
+     * @var FacetsHandler
+     */
     private FacetsHandler $facetsHandler;
 
-    // No circular dependency - only needs logger, schemaMapper.
+    /**
+     * Bulk operations handler - only needs logger, schemaMapper
+     *
+     * @var BulkOperationsHandler
+     */
     private BulkOperationsHandler $bulkOperationsHandler;
 
-    // No circular dependency (needs QueryBuilderHandler).
+    /**
+     * Query optimization handler - needs QueryBuilderHandler
+     *
+     * @var QueryOptimizationHandler
+     */
     private QueryOptimizationHandler $queryOptimizationHandler;
 
-    // No circular dependency.
-    // Existing dependencies (kept from original).
+    /**
+     * Organisation mapper
+     *
+     * @var OrganisationMapper
+     */
     private OrganisationMapper $organisationMapper;
 
-    // REMOVED: MySQLJsonService $databaseJsonService - Never used (dead code).
+    /**
+     * Event dispatcher
+     *
+     * @var IEventDispatcher
+     */
     private IEventDispatcher $eventDispatcher;
 
+    /**
+     * User session
+     *
+     * @var IUserSession
+     */
     private IUserSession $userSession;
 
+    /**
+     * Schema mapper
+     *
+     * @var SchemaMapper
+     */
     private SchemaMapper $schemaMapper;
 
+    /**
+     * Group manager
+     *
+     * @var IGroupManager
+     */
     private IGroupManager $groupManager;
 
+    /**
+     * User manager
+     *
+     * @var IUserManager
+     */
     private IUserManager $userManager;
 
+    /**
+     * Logger interface
+     *
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * App configuration
+     *
+     * @var IAppConfig
+     */
     private IAppConfig $appConfig;
 
     /**
@@ -203,8 +262,13 @@ class ObjectEntityMapper extends QBMapper
     {
         try {
             // Get current user from session.
-            $user   = $this->userSession->getUser();
-            $userId = $user !== null ? $user->getUID() : 'system';
+            $user = $this->userSession->getUser();
+            
+            if ($user !== null) {
+                $userId = $user->getUID();
+            } else {
+                $userId = 'system';
+            }
 
             // Get the active organization from session at time of lock for audit trail.
             $activeOrganisation = null;
@@ -312,7 +376,8 @@ class ObjectEntityMapper extends QBMapper
     public function update(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch updating event.
-        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity, $this->find($entity->getId())));
+        // Pass includeDeleted=true to allow fetching the old state even if the object is being restored from deleted.
+        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity, $this->find($entity->getId(), null, null, true)));
 
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
         $result = parent::update($entity);

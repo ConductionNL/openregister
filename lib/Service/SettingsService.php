@@ -225,7 +225,7 @@ class SettingsService
      *
      * @var ObjectEntityMapper|null
      */
-    // private ?ObjectEntityMapper $objectEntityMapper;
+    // Private ?ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Organisation mapper
@@ -298,7 +298,6 @@ class SettingsService
      * @param ICacheFactory                $cacheFactory                 Cache factory
      * @param IGroupManager                $groupManager                 Group manager
      * @param LoggerInterface              $logger                       Logger
-     * @param ObjectEntityMapper           $objectEntityMapper           Object entity mapper
      * @param OrganisationMapper           $organisationMapper           Organisation mapper
      * @param SchemaCacheHandler           $schemaCacheService           Schema cache handler
      * @param FacetCacheHandler            $schemaFacetCacheService      Schema facet cache service
@@ -312,7 +311,7 @@ class SettingsService
      * @param SearchBackendHandler         $searchBackendHandler         Search backend handler
      * @param LlmSettingsHandler           $llmSettingsHandler           LLM settings handler
      * @param FileSettingsHandler          $fileSettingsHandler          File settings handler
-     * @param ObjectRetentionHandler       $objectRetentionHandler       Object and retention handler
+     * @param ObjectRetentionHandler       $objectRetentionHandler       Object retention handler
      * @param CacheSettingsHandler         $cacheSettingsHandler         Cache settings handler
      * @param SolrSettingsHandler          $solrSettingsHandler          SOLR settings handler
      * @param ConfigurationSettingsHandler $configurationSettingsHandler Configuration settings handler
@@ -325,7 +324,7 @@ class SettingsService
         ICacheFactory $cacheFactory,
         IGroupManager $groupManager,
         LoggerInterface $logger,
-        // REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency)
+        // REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency).
         OrganisationMapper $organisationMapper,
         SchemaCacheHandler $schemaCacheService,
         FacetCacheHandler $schemaFacetCacheService,
@@ -410,7 +409,8 @@ class SettingsService
     /**
      * Update search backend configuration
      *
-     * @param  array $data Search backend configuration data
+     * @param array $data Search backend configuration data
+     *
      * @return array Updated configuration
      */
     public function updateSearchBackendConfig(array $data): array
@@ -437,7 +437,8 @@ class SettingsService
     /**
      * Update LLM settings only
      *
-     * @param  array $data LLM settings data
+     * @param array $data LLM settings data
+     *
      * @return array Updated LLM settings
      */
     public function updateLLMSettingsOnly(array $data): array
@@ -462,7 +463,8 @@ class SettingsService
     /**
      * Update file settings only
      *
-     * @param  array $data File settings data
+     * @param array $data File settings data
+     *
      * @return array Updated file settings
      */
     public function updateFileSettingsOnly(array $data): array
@@ -636,7 +638,8 @@ class SettingsService
     /**
      * Update SOLR facet configuration
      *
-     * @param  array $data Facet configuration data
+     * @param array $data Facet configuration data
+     *
      * @return array Updated facet configuration
      */
     public function updateSolrFacetConfiguration(array $data): array
@@ -667,9 +670,11 @@ class SettingsService
     ) {
         // NOTE: This method calls a deprecated method that always throws.
         // TODO: Refactor to use IndexService->warmupIndex() directly.
+
         /*
          * @psalm-suppress NoValue - Method always throws, return is unreachable
          */
+
         return $this->solrSettingsHandler->warmupSolrIndex(
             $schemas,
             $maxObjects,
@@ -1448,10 +1453,10 @@ class SettingsService
         switch ($last) {
             case 'g':
                 $value *= 1024;
-                // no break.
+                // No break.
             case 'm':
                 $value *= 1024;
-                // no break.
+                // No break.
             case 'k':
                 $value *= 1024;
         }

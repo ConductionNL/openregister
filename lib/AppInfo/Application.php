@@ -257,7 +257,7 @@ class Application extends App implements IBootstrap
         // These must be registered in the correct order to resolve dependencies.
         // ====================================================================
         // NOTE: SearchTrailMapper, ChunkMapper, GdprEntityMapper, EntityRelationMapper
-        // can be autowired (only type-hinted parameters).
+        // Can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire them automatically.
         // ✅ AUTOWIRED: AuditTrailMapper (IDBConnection, ObjectEntityMapper).
         // NOTE: WebhookLogMapper can be autowired (only type-hinted parameters).
@@ -338,8 +338,10 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
         // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
+
         /*
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
          * Issue: Even with lazy loading, DI registration causes performance problems.
@@ -538,7 +540,7 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\ICacheFactory'),
                     $container->get('OCP\IGroupManager'),
                     $container->get('Psr\Log\LoggerInterface'),
-                    // REMOVED: ObjectEntityMapper (unused, caused circular dependency)
+                    // REMOVED: ObjectEntityMapper (unused, caused circular dependency).
                     $container->get(OrganisationMapper::class),
                     $container->get(SchemaCacheHandler::class),
                     $container->get(FacetCacheHandler::class),
@@ -564,7 +566,7 @@ class Application extends App implements IBootstrap
 
         // NOTE: SolrHttpClient, SolrCollectionManager, SolrDocumentIndexer,
         // SolrQueryExecutor, SolrFacetProcessor, SolrSchemaManager, and SolrBackend
-        // can all be autowired (only type-hinted parameters).
+        // Can all be autowired (only type-hinted parameters).
         // Nextcloud will automatically resolve them via dependency injection.
         // Register SearchBackendInterface - dynamically select backend from configuration.
         $context->registerService(

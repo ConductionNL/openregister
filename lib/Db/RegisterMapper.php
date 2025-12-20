@@ -242,7 +242,7 @@ class RegisterMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config.
         $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         if ($published !== null) {
@@ -444,7 +444,7 @@ class RegisterMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
         // Use $published parameter if provided, otherwise check config.
         if ($published !== null) {
             $enablePublished = $published;
@@ -604,9 +604,10 @@ class RegisterMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Register
     {
-        // Note: find() applies multitenancy filter, which is correct for data isolation.
+        // Disable multitenancy filtering for update operations.
+        // When updating by ID, we want to find the register regardless of organisation.
         // Access verification happens in update() method via verifyOrganisationAccess().
-        $register = $this->find(id: $id);
+        $register = $this->find(id: $id, _multitenancy: false);
 
         // Set or update the version.
         if (isset($object['version']) === false) {

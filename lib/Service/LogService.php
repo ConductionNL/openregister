@@ -162,7 +162,7 @@ class LogService
             }
         } catch (\Exception $e) {
             // If register/schema not found (likely deleted), we can't validate
-            // but we still allow audit trail access for the object
+            // But we still allow audit trail access for the object
         }
 
         // Step 3: Add object ID to filters to restrict logs to this object.
@@ -219,7 +219,7 @@ class LogService
             }
         } catch (\Exception $e) {
             // If register/schema not found (likely deleted), we can't validate
-            // but we still allow audit trail access for the object
+            // But we still allow audit trail access for the object
         }
 
         // Step 3: Get all logs for this object using filter.

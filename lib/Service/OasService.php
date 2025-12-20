@@ -400,17 +400,17 @@ class OasService
         }
 
         // Remove invalid/empty values that violate OpenAPI spec.
-        // oneOf must have at least 1 item, remove if empty.
+        // OneOf must have at least 1 item, remove if empty.
         if (($cleanDef['oneOf'] ?? null) !== null && (empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false) === true) {
             unset($cleanDef['oneOf']);
         }//end if
 
-        // anyOf must have at least 1 item, remove if empty.
+        // AnyOf must have at least 1 item, remove if empty.
         if (($cleanDef['anyOf'] ?? null) !== null && (empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false) === true) {
             unset($cleanDef['anyOf']);
         }//end if
 
-        // allOf must have at least 1 item, remove if empty or invalid.
+        // AllOf must have at least 1 item, remove if empty or invalid.
         if (($cleanDef['allOf'] ?? null) !== null) {
             if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
@@ -442,7 +442,7 @@ class OasService
             unset($cleanDef['$ref']);
         }//end if
 
-        // enum must have at least 1 item, remove if empty.
+        // Enum must have at least 1 item, remove if empty.
         if (($cleanDef['enum'] ?? null) !== null && (empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false) === true) {
             unset($cleanDef['enum']);
         }//end if
@@ -806,7 +806,7 @@ class OasService
     {
         // Determine schema name (currently unused but kept for potential future use).
         // $schemaName = 'UnknownSchema';
-        // if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
+        // If (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
         // $schemaName = $schema->getTitle();
         // }
         return [

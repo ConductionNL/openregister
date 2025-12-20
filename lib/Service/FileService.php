@@ -145,7 +145,7 @@ class FileService
      *
      * @var RegisterMapper|null
      */
-    // private ?RegisterMapper $registerMapper;
+    // Private ?RegisterMapper $registerMapper;
 
     /**
      * Root folder
@@ -1837,8 +1837,8 @@ class FileService
             if ($share instanceof IShare) {
                 $stime = $share->getShareTime();
                 if ($stime !== null) {
-                    // getShareTime() returns DateTime|null, convert to timestamp.
-                    // getShareTime() always returns DateTime|null, so use getTimestamp().
+                    // GetShareTime() returns DateTime|null, convert to timestamp.
+                    // GetShareTime() always returns DateTime|null, so use getTimestamp().
                     if ($stime instanceof \DateTime) {
                         $timestamp = $stime->getTimestamp();
                         return (new DateTime())->setTimestamp($timestamp)->format('c');

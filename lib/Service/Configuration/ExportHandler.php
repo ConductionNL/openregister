@@ -165,11 +165,11 @@ class ExportHandler
             ];
 
             // Add OpenRegister-specific metadata as an extension following OpenAPI spec.
-            // https://swagger.io/docs/specification/v3_0/openapi-extensions/.
+            // Https://swagger.io/docs/specification/v3_0/openapi-extensions/.
             // Standard OAS properties (title, description, version) are in the info section above.
             // Note: Internal properties (autoUpdate, notificationGroups, owner, organisation, registers,.
-            // schemas, objects, views, agents, sources, applications) are excluded as they are.
-            // instance-specific or automatically managed during import.
+            // Schemas, objects, views, agents, sources, applications) are excluded as they are.
+            // Instance-specific or automatically managed during import.
             $openApiSpec['x-openregister'] = [
                 'type'         => $input->getType(),
                 'app'          => $input->getApp(),

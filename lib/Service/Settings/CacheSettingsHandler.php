@@ -321,13 +321,13 @@ public function __construct(
          // For now, return basic metrics.
          return [
              'averageHitTime'  => 2.5,
-         // ms.
+         // Ms.
              'averageMissTime' => 850.0,
-         // ms.
+         // Ms.
              'performanceGain' => 340.0,
-         // factor improvement with cache.
+         // Factor improvement with cache.
              'optimalHitRate'  => 85.0,
-         // target hit rate percentage.
+         // Target hit rate percentage.
              'currentTrend'    => 'improving',
          ];
 

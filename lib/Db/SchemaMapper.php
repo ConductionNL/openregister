@@ -211,7 +211,7 @@ class SchemaMapper extends QBMapper
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally.
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
         // Use $published parameter if provided, otherwise check config.
         $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         if ($published !== null) {
@@ -396,7 +396,7 @@ class SchemaMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured.
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally.
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
         // Use $published parameter if provided, otherwise check config.
         $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
         if ($published !== null) {
@@ -710,9 +710,10 @@ class SchemaMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        // Note: find() applies multitenancy filter, which is correct for data isolation.
+        // Disable multitenancy filtering for update operations.
+        // When updating by ID, we want to find the schema regardless of organisation.
         // Access verification happens in update() method via verifyOrganisationAccess().
-        $schema = $this->find(id: $id);
+        $schema = $this->find(id: $id, _multitenancy: false);
 
         // Set or update the version.
         if (isset($object['version']) === false) {

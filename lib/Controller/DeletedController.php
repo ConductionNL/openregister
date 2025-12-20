@@ -67,6 +67,23 @@ class DeletedController extends Controller
     }//end __construct()
 
     /**
+     * Check if the current user is an admin
+     *
+     * @return bool True if the user is in the admin group, false otherwise.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        $groupManager = \OC::$server->getGroupManager();
+        return $groupManager->isAdmin($user->getUID());
+
+    }//end isCurrentUserAdmin()
+
+    /**
      * Helper method to extract request parameters for deleted objects
      *
      * @return ((mixed|string)[]|int|mixed|null)[]
@@ -183,11 +200,16 @@ class DeletedController extends Controller
                 }
             }
 
+            // Determine if current user is admin and disable multitenancy if so.
+            $isAdmin = $this->isCurrentUserAdmin();
+
             // Use ObjectService to search for deleted objects with deleted=true to include them.
             $result = $this->objectService->searchObjectsPaginated(
                 query: $query,
-                deleted: true
-            // This tells the service to include deleted objects in the search
+                deleted: true,
+            // This tells the service to include deleted objects in the search.
+                _multitenancy: !$isAdmin
+            // Disable multitenancy for admins so they can see all deleted objects.
             );
 
             $deletedObjects = $result['results'] ?? [];
@@ -323,7 +345,7 @@ class DeletedController extends Controller
     public function restore(string $id): JSONResponse
     {
         try {
-            $object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
+            $object = $this->objectEntityMapper->find($id, null, null, true);
 
             if ($object->getDeleted() === null) {
                 return new JSONResponse(

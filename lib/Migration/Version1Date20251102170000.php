@@ -56,11 +56,11 @@ class Version1Date20251102170000 extends SimpleMigrationStep
         $output->info(message: '   Schema inheritance now uses allOf, oneOf, and anyOf fields instead');
 
         // DEPRECATED: The extend column functionality has been replaced by JSON Schema.
-        // composition using allOf, oneOf, and anyOf fields. This migration is kept.
-        // for backwards compatibility but no longer adds the extend column.
+        // Composition using allOf, oneOf, and anyOf fields. This migration is kept.
+        // For backwards compatibility but no longer adds the extend column.
         //
         // If the extend column exists from a previous installation, it will remain.
-        // but is no longer used by the application.
+        // But is no longer used by the application.
         return null;
 
     }//end changeSchema()

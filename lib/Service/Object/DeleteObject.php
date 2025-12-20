@@ -294,7 +294,7 @@ class DeleteObject
         try {
             // TODO: Implement folder deletion when fileService is available.
             // $folder = $this->fileService->getObjectFolder($objectEntity);
-            // if ($folder !== null) {
+            // If ($folder !== null) {
             // $folder->delete();
             // $this->logger->info('Deleted object folder for hard deleted object: '.$objectEntity->getId());
             // }

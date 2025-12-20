@@ -295,7 +295,7 @@ abstract class AbstractTool implements ToolInterface
         // Iterate through each required parameter name.
         foreach ($required as $param) {
             // Check if parameter exists in parameters array.
-            // isset() checks both existence and non-null value.
+            // Isset() checks both existence and non-null value.
             if (isset($parameters[$param]) === false) {
                 // Throw exception with descriptive error message.
                 throw new InvalidArgumentException("Missing required parameter: {$param}");
@@ -331,9 +331,9 @@ abstract class AbstractTool implements ToolInterface
     {
         // Step 1: Convert snake_case method name to camelCase.
         // Example: 'list_registers' -> 'listRegisters'.
-        // ucwords() capitalizes first letter of each word separated by underscore.
-        // str_replace() removes underscores.
-        // lcfirst() makes first letter lowercase.
+        // Ucwords() capitalizes first letter of each word separated by underscore.
+        // Str_replace() removes underscores.
+        // Lcfirst() makes first letter lowercase.
         $camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
 
         // Step 2: Check if camelCase method exists.

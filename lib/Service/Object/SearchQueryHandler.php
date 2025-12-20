@@ -84,7 +84,7 @@ class SearchQueryHandler
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
         // PHP converts dots to underscores in parameter names, e.g.:.
         // @self.register → @self_register.
-        // person.address.street → person_address_street.
+        // Person.address.street → person_address_street.
         // We need to reconstruct nested arrays from underscore-separated paths.
         $fixedParams = [];
         foreach ($requestParams as $key => $value) {
@@ -527,11 +527,11 @@ class SearchQueryHandler
                 // Create the search trail entry using the service with actual execution time.
                 // TODO
                 // $this->searchTrailService->createSearchTrail(
-                // query: $query,
-                // resultCount: $resultCount,
-                // totalResults: $totalResults,
-                // responseTime: $executionTime,
-                // executionType: $executionType.
+                // Query: $query,
+                // ResultCount: $resultCount,
+                // TotalResults: $totalResults,
+                // ResponseTime: $executionTime,
+                // ExecutionType: $executionType.
                 // );.
             }
         } catch (Exception $e) {

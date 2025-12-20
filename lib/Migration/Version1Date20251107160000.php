@@ -115,7 +115,7 @@ class Version1Date20251107160000 extends SimpleMigrationStep
 
         // Note: UUID generation for existing records will be handled by the.
         // FileTextMapper when records are accessed/updated, to avoid.
-        // potential timeout issues with large datasets.
+        // Potential timeout issues with large datasets.
         $output->info(message: '✅ Migration complete - UUIDs will be generated on-demand');
 
     }//end postSchemaChange()

@@ -399,7 +399,7 @@ class SearchTrailMapper extends QBMapper
             ->orderBy('date_period', 'ASC');
 
         // Add date formatting based on database type.
-        // getDatabasePlatform() returns a platform instance.
+        // GetDatabasePlatform() returns a platform instance.
         $platform = $this->db->getDatabasePlatform();
         if ($platform->getName() !== 'mysql') {
             // For SQLite and PostgreSQL - convert MySQL format to SQLite format.

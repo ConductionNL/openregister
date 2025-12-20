@@ -713,7 +713,7 @@ class CacheHandler
         if ($this->queryCache !== null && $schemaId !== null) {
             try {
                 // Since we can't easily pattern-match keys in distributed cache,.
-                // we clear all search cache entries for now (nuclear approach).
+                // We clear all search cache entries for now (nuclear approach).
                 // TODO: Implement more targeted cache clearing with schema-specific prefixes.
                 $this->queryCache->clear();
 
@@ -824,7 +824,7 @@ class CacheHandler
 
         // **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
         // This ensures colleagues see each other's changes immediately.
-        // schemaId and registerId are already typed as ?int, so no conversion needed.
+        // SchemaId and registerId are already typed as ?int, so no conversion needed.
         $schemaIdInt   = $schemaId;
         $registerIdInt = $registerId;
 
