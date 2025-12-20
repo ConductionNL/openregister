@@ -1509,9 +1509,8 @@ class SetupHandler
             // Note: $retryDetails is checked but $solrResponseValue calculation was incorrect.
             // Simplified to just use $solrResponse directly.
             // if ($retryDetails === true) {
-            //     $solrResponseValue = $retryDetails;
+            // $solrResponseValue = $retryDetails;
             // }
-
             $this->lastErrorDetails = [
                 'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
                 'error_type'         => 'collection_creation_failure',

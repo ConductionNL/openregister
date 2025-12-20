@@ -88,7 +88,7 @@ class LockHandler
         try {
             // Get the object before locking for audit trail.
             $objectBefore = $this->objectEntityMapper->find($identifier);
-            
+
             // NOTE: lockObject is deprecated - this will throw BadMethodCallException.
             // Should use LockingHandler through ObjectService instead.
             $lockResult = $this->objectEntityMapper->lockObject($identifier, $duration);
@@ -151,7 +151,7 @@ class LockHandler
         try {
             // Get the object before unlocking for audit trail.
             $objectBefore = $this->objectEntityMapper->find($identifier);
-            
+
             // Call the mapper's unlock method.
             $this->objectEntityMapper->unlockObject(uuid: $identifier);
 

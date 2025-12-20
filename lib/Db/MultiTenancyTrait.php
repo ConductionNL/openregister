@@ -708,9 +708,8 @@ trait MultiTenancyTrait
         // Note: $organisationUsers was intended for group-based access but is currently unused.
         // Access is determined by $orgUsers check above.
         // if (in_array($userId, $organisationUsers, true) === false) {
-        //     return false;
+        // return false;
         // }
-
         // Get user's groups.
         if (isset($this->groupManager) === false) {
             // No group manager, allow access (backward compatibility).

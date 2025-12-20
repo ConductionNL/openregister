@@ -366,7 +366,6 @@ class SaveObjects
             // TODO: Renamed from 'skipped'.
             // Calculate chunk processing time and speed (currently unused but kept for future logging).
             // $chunkTime = microtime(true) - $chunkStart;
-
             // Store per-chunk statistics for transparency and debugging.
             if (isset($result['chunkStatistics']) === false) {
                 $result['chunkStatistics'] = [];

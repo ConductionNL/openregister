@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -145,6 +146,7 @@ class SaveObject
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IURLGenerator $urlGenerator,
+        private readonly OrganisationService $organisationService,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
@@ -1918,11 +1920,10 @@ class SaveObject
         // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately.
         // Determine operation type (currently unused but kept for potential future use).
         // if ($uuid === true) {
-        //     $operation = 'update';
+        // $operation = 'update';
         // } else {
-        //     $operation = 'create';
+        // $operation = 'create';
         // }
-
         // Determine register ID.
         $registerId = ($savedEntity->getRegister() !== null) ? (int) $savedEntity->getRegister() : null;
 
@@ -2038,8 +2039,7 @@ class SaveObject
         if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
             && isset($selfData['organisation']) === false
         ) {
-            $organisationUuid = null;
-            // TODO: organisationService->getOrganisationForNewEntity().
+            $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }
 

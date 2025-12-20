@@ -2312,4 +2312,401 @@ class MagicMapper
         $globalEnabled = $this->config->getAppValue('openregister', 'magic_mapping_enabled', 'false');
         return $globalEnabled === 'true';
     }//end isMagicMappingEnabledForSchema()
+
+    // ==================================================================================
+    // OBJECTENTITY-COMPATIBLE METHODS (UnifiedObjectMapper Integration)
+    // ==================================================================================
+
+    /**
+     * Find object in register+schema table by identifier (ID, UUID, slug, or URI).
+     *
+     * This method provides ObjectEntity compatibility for the UnifiedObjectMapper.
+     *
+     * @param string|int $identifier Object identifier (ID, UUID, slug, or URI).
+     * @param Register   $register   The register context.
+     * @param Schema     $schema     The schema context.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     *
+     * @return ObjectEntity The found object.
+     */
+    public function findInRegisterSchemaTable(
+        string|int $identifier,
+        Register $register,
+        Schema $schema
+    ): ObjectEntity {
+        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+
+        $this->logger->debug(
+            'Finding object in register+schema table',
+            [
+                'identifier' => $identifier,
+                'tableName'  => $tableName,
+            ]
+        );
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')->from($tableName);
+
+        // Build identifier conditions (ID, UUID, slug, or URI).
+        $idParam = -1;
+        if (is_numeric($identifier) === true) {
+            $idParam = (int) $identifier;
+        }
+
+        $qb->where(
+            $qb->expr()->orX(
+                $qb->expr()->eq(self::METADATA_PREFIX.'id', $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
+                $qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq(self::METADATA_PREFIX.'slug', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+                $qb->expr()->eq(self::METADATA_PREFIX.'uri', $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
+            )
+        );
+
+        // Exclude deleted objects by default.
+        $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+
+        try {
+            $result = $qb->executeQuery();
+            $row    = $result->fetch();
+
+            if ($row === false) {
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+            }
+
+            // Check for multiple results.
+            if ($result->fetch() !== false) {
+                throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('Multiple objects found with same identifier');
+            }
+
+            $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema);
+
+            if ($objectEntity === null) {
+                throw new \OCP\AppFramework\Db\DoesNotExistException('Failed to convert row to ObjectEntity');
+            }
+
+            return $objectEntity;
+        } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+            throw $e;
+        } catch (Exception $e) {
+            $this->logger->error(
+                'Failed to find object in register+schema table',
+                [
+                    'identifier' => $identifier,
+                    'tableName'  => $tableName,
+                    'error'      => $e->getMessage(),
+                ]
+            );
+
+            throw new \OCP\AppFramework\Db\DoesNotExistException($e->getMessage(), 0, $e);
+        }//end try
+    }//end findInRegisterSchemaTable()
+
+    /**
+     * Find all objects in register+schema table with filtering and pagination.
+     *
+     * @param Register   $register  The register context.
+     * @param Schema     $schema    The schema context.
+     * @param int|null   $limit     Maximum number of results.
+     * @param int|null   $offset    Offset for pagination.
+     * @param array|null $filters   Filters to apply.
+     * @param array      $sort      Sort order.
+     * @param bool|null  $published Whether to filter by published status.
+     *
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findAllInRegisterSchemaTable(
+        Register $register,
+        Schema $schema,
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=null,
+        array $sort=[],
+        ?bool $published=null
+    ): array {
+        $query = [];
+
+        if ($limit !== null) {
+            $query['_limit'] = $limit;
+        }
+
+        if ($offset !== null) {
+            $query['_offset'] = $offset;
+        }
+
+        if (empty($sort) === false) {
+            $query['_order'] = $sort;
+        }
+
+        if ($filters !== null) {
+            $query = array_merge($query, $filters);
+        }
+
+        // Add published filter if specified.
+        if ($published !== null) {
+            if ($published === true) {
+                // Only published objects.
+                $query['@self']['published'] = 'IS NOT NULL';
+            } else {
+                // Only unpublished objects.
+                $query['@self']['published'] = 'IS NULL';
+            }
+        }
+
+        return $this->searchObjectsInRegisterSchemaTable($query, $register, $schema);
+
+    }//end findAllInRegisterSchemaTable()
+
+    /**
+     * Insert ObjectEntity into register+schema table.
+     *
+     * @param ObjectEntity $entity   The object entity to insert.
+     * @param Register     $register The register context.
+     * @param Schema       $schema   The schema context.
+     *
+     * @throws Exception If insertion fails.
+     *
+     * @return ObjectEntity The inserted object entity.
+     */
+    public function insertObjectEntity(
+        ObjectEntity $entity,
+        Register $register,
+        Schema $schema
+    ): ObjectEntity {
+        // Ensure table exists.
+        $this->ensureTableForRegisterSchema($register, $schema);
+
+        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+
+        $this->logger->debug(
+            'Inserting object entity into register+schema table',
+            [
+                'uuid'      => $entity->getUuid(),
+                'tableName' => $tableName,
+            ]
+        );
+
+        // Set register and schema on entity if not already set.
+        if ($entity->getRegister() === null) {
+            $entity->setRegister((string) $register->getId());
+        }
+
+        if ($entity->getSchema() === null) {
+            $entity->setSchema((string) $schema->getId());
+        }
+
+        // Convert entity to array for table storage.
+        $objectArray = $entity->jsonSerialize();
+
+        // Save to table.
+        $uuid = $this->saveObjectToRegisterSchemaTable(
+            objectData: $objectArray,
+            register: $register,
+            schema: $schema,
+            tableName: $tableName
+        );
+
+        // Update entity UUID if it was generated.
+        if ($entity->getUuid() === null) {
+            $entity->setUuid($uuid);
+        }
+
+        // Set entity ID from database.
+        $row = $this->findObjectInRegisterSchemaTable($uuid, $tableName);
+        if ($row !== null) {
+            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
+        }
+
+        return $entity;
+
+    }//end insertObjectEntity()
+
+    /**
+     * Update ObjectEntity in register+schema table.
+     *
+     * @param ObjectEntity $entity   The object entity to update.
+     * @param Register     $register The register context.
+     * @param Schema       $schema   The schema context.
+     *
+     * @throws Exception If update fails.
+     *
+     * @return ObjectEntity The updated object entity.
+     */
+    public function updateObjectEntity(
+        ObjectEntity $entity,
+        Register $register,
+        Schema $schema
+    ): ObjectEntity {
+        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $uuid      = $entity->getUuid();
+
+        if ($uuid === null) {
+            throw new Exception('Cannot update object entity without UUID');
+        }
+
+        $this->logger->debug(
+            'Updating object entity in register+schema table',
+            [
+                'uuid'      => $uuid,
+                'tableName' => $tableName,
+            ]
+        );
+
+        // Convert entity to array for table storage.
+        $objectArray = $entity->jsonSerialize();
+
+        // Update in table.
+        $this->saveObjectToRegisterSchemaTable(
+            objectData: $objectArray,
+            register: $register,
+            schema: $schema,
+            tableName: $tableName
+        );
+
+        return $entity;
+
+    }//end updateObjectEntity()
+
+    /**
+     * Delete ObjectEntity from register+schema table.
+     *
+     * Supports both soft delete (sets _deleted field) and hard delete (removes from table).
+     *
+     * @param ObjectEntity $entity     The object entity to delete.
+     * @param Register     $register   The register context.
+     * @param Schema       $schema     The schema context.
+     * @param bool         $hardDelete Whether to perform hard delete (default: false for soft delete).
+     *
+     * @throws Exception If deletion fails.
+     *
+     * @return ObjectEntity The deleted object entity.
+     */
+    public function deleteObjectEntity(
+        ObjectEntity $entity,
+        Register $register,
+        Schema $schema,
+        bool $hardDelete=false
+    ): ObjectEntity {
+        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $uuid      = $entity->getUuid();
+
+        if ($uuid === null) {
+            throw new Exception('Cannot delete object entity without UUID');
+        }
+
+        $this->logger->debug(
+            'Deleting object entity from register+schema table',
+            [
+                'uuid'       => $uuid,
+                'tableName'  => $tableName,
+                'hardDelete' => $hardDelete,
+            ]
+        );
+
+        if ($hardDelete === true) {
+            // Hard delete - actually remove from table.
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete($tableName)
+                ->where($qb->expr()->eq(self::METADATA_PREFIX.'uuid', $qb->createNamedParameter($uuid)));
+            $qb->executeStatement();
+
+            $this->logger->info(
+                'Hard deleted object from register+schema table',
+                [
+                    'uuid'      => $uuid,
+                    'tableName' => $tableName,
+                ]
+            );
+        } else {
+            // Soft delete - set _deleted field.
+            if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
+                // Mark as deleted using entity method.
+                $entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
+            }
+
+            // Update entity in table with deleted field set.
+            $this->updateObjectEntity($entity, $register, $schema);
+
+            $this->logger->info(
+                'Soft deleted object in register+schema table',
+                [
+                    'uuid'      => $uuid,
+                    'tableName' => $tableName,
+                ]
+            );
+        }//end if
+
+        return $entity;
+
+    }//end deleteObjectEntity()
+
+    /**
+     * Lock object in register+schema table.
+     *
+     * @param ObjectEntity $entity       The object entity to lock.
+     * @param Register     $register     The register context.
+     * @param Schema       $schema       The schema context.
+     * @param int|null     $lockDuration Lock duration in seconds (null for default).
+     *
+     * @throws Exception If locking fails.
+     *
+     * @return ObjectEntity The locked object entity.
+     */
+    public function lockObjectEntity(
+        ObjectEntity $entity,
+        Register $register,
+        Schema $schema,
+        ?int $lockDuration=null
+    ): ObjectEntity {
+        // Lock using entity method.
+        $entity->lock($this->userSession, 'MagicMapper lock', $lockDuration);
+
+        // Update entity in table with locked field set.
+        $this->updateObjectEntity($entity, $register, $schema);
+
+        $this->logger->info(
+            'Locked object in register+schema table',
+            [
+                'uuid'     => $entity->getUuid(),
+                'duration' => $lockDuration,
+            ]
+        );
+
+        return $entity;
+
+    }//end lockObjectEntity()
+
+    /**
+     * Unlock object in register+schema table.
+     *
+     * @param ObjectEntity $entity   The object entity to unlock.
+     * @param Register     $register The register context.
+     * @param Schema       $schema   The schema context.
+     *
+     * @throws Exception If unlocking fails.
+     *
+     * @return ObjectEntity The unlocked object entity.
+     */
+    public function unlockObjectEntity(
+        ObjectEntity $entity,
+        Register $register,
+        Schema $schema
+    ): ObjectEntity {
+        // Unlock using entity method.
+        $entity->unlock($this->userSession);
+
+        // Update entity in table with locked field cleared.
+        $this->updateObjectEntity($entity, $register, $schema);
+
+        $this->logger->info(
+            'Unlocked object in register+schema table',
+            ['uuid' => $entity->getUuid()]
+        );
+
+        return $entity;
+
+    }//end unlockObjectEntity()
 }//end class
