@@ -45,7 +45,6 @@ class TransformationHandler
      * Constructor for TransformationHandler.
      *
      * @param RelationCascadeHandler $relationCascadeHandler Handler for relation operations.
-     * @param OrganisationService    $organisationService    Service for organisation operations.
      * @param IUserSession           $userSession            User session for owner assignment.
      * @param LoggerInterface        $logger                 Logger for logging operations.
      */
@@ -69,7 +68,7 @@ class TransformationHandler
      * - Relations scanning
      * - Business data extraction
      *
-     * @param array &$objects    Array of objects to transform (passed by reference).
+     * @param array $objects     Array of objects to transform (passed by reference).
      * @param array $schemaCache Cache of schema objects for validation.
      *
      * @psalm-param   array<int, array<string, mixed>> &$objects
@@ -187,12 +186,12 @@ class TransformationHandler
             // Properly extracted metadata with simpler getValueFromPath results.
             // DEBUG: Log mixed schema object structure.
             $this->logger->info(
-                "[SaveObjects] DEBUG - Mixed schema object structure",
-                [
-                    'available_keys'      => array_keys($object),
-                    'has_object_property' => isset($object['object']) === true,
-                    'sample_data'         => array_slice($object, 0, 3, true),
-                ]
+             "[SaveObjects] DEBUG - Mixed schema object structure",
+             [
+                 'available_keys'      => array_keys($object),
+                 'has_object_property' => isset($object['object']) === true,
+                 'sample_data'         => array_slice($object, 0, 3, true),
+             ]
             );
 
             // TEMPORARY FIX: Extract business data properly based on actual structure.
@@ -228,12 +227,12 @@ class TransformationHandler
 
                 // CRITICAL DEBUG: Log what we're removing and what remains.
                 $this->logger->info(
-                    "[SaveObjects] Metadata removal applied (mixed)",
-                    [
-                        'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
-                        'remaining_keys'       => array_keys($businessData),
-                        'business_data_sample' => array_slice($businessData, 0, 3, true),
-                    ]
+                 "[SaveObjects] Metadata removal applied (mixed)",
+                 [
+                     'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
+                     'remaining_keys'       => array_keys($businessData),
+                     'business_data_sample' => array_slice($businessData, 0, 3, true),
+                 ]
                 );
             }//end if
 
@@ -246,21 +245,21 @@ class TransformationHandler
                     $selfData['relations'] = $relations;
 
                     $this->logger->info(
-                        "[SaveObjects] Relations scanned in transformation",
-                        [
-                            'uuid'          => $selfData['uuid'] ?? 'unknown',
-                            'relationCount' => count($relations),
-                            'relations'     => array_slice($relations, 0, 3, true),
-                        ]
+                     "[SaveObjects] Relations scanned in transformation",
+                     [
+                         'uuid'          => $selfData['uuid'] ?? 'unknown',
+                         'relationCount' => count($relations),
+                         'relations'     => array_slice($relations, 0, 3, true),
+                     ]
                     );
                 }
             } else {
                 $this->logger->info(
-                    "[SaveObjects] Relations already set from preparation",
-                    [
-                        'uuid'          => $selfData['uuid'] ?? 'unknown',
-                        'relationCount' => count($selfData['relations']),
-                    ]
+                 "[SaveObjects] Relations already set from preparation",
+                 [
+                     'uuid'          => $selfData['uuid'] ?? 'unknown',
+                     'relationCount' => count($selfData['relations']),
+                 ]
                 );
             }//end if
 

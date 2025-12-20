@@ -47,10 +47,9 @@ class FileHandler
     /**
      * Constructor
      *
-     * @param SettingsService        $settingsService Settings service for config
-     * @param LoggerInterface        $logger          Logger
-     * @param ChunkMapper            $chunkMapper     Chunk mapper for retrieving chunks from database
-     * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic/etc)
+     * @param LoggerInterface        $logger        Logger
+     * @param ChunkMapper            $chunkMapper   Chunk mapper for retrieving chunks from database
+     * @param SearchBackendInterface $searchBackend Search backend (Solr/Elastic/etc)
      */
     public function __construct(
         private readonly LoggerInterface $logger,

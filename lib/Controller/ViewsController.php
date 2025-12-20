@@ -93,6 +93,8 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse A JSON response with views list or error
+     *
      * @psalm-return JSONResponse<200|401|500, array{error?: 'Failed to fetch views'|'User not authenticated', message?: string, results?: array<array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}>, total?: int<0, max>}, array<never, never>>
      */
     public function index(): JSONResponse
@@ -181,6 +183,10 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @param string $id View ID or UUID
+     *
+     * @return JSONResponse A JSON response with view data or error
+     *
      * @psalm-return JSONResponse<int, array{error?: 'Failed to fetch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
     public function show(string $id): JSONResponse
@@ -194,42 +200,42 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'User not authenticated',
-                        ],
-                        statusCode: 401
-                        );
+                     data: [
+                         'error' => 'User not authenticated',
+                     ],
+                     statusCode: 401
+                     );
             }
 
             $view = $this->viewService->find(id: $id, owner: $userId);
 
             return new JSONResponse(
-                    data: [
-                        'view' => $view->jsonSerialize(),
-                    ]
-                    );
+                 data: [
+                     'view' => $view->jsonSerialize(),
+                 ]
+                 );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                    data: [
-                        'error' => 'View not found',
-                    ],
-                    statusCode: 404
-                    );
+                 data: [
+                     'error' => 'View not found',
+                 ],
+                 statusCode: 404
+                 );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: 'Error fetching view',
-                    context: [
-                        'id'        => $id,
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                 message: 'Error fetching view',
+                 context: [
+                     'id'        => $id,
+                     'exception' => $e->getMessage(),
+                 ]
+                 );
             return new JSONResponse(
-                    data: [
-                        'error'   => 'Failed to fetch view',
-                        'message' => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                 data: [
+                     'error'   => 'Failed to fetch view',
+                     'message' => $e->getMessage(),
+                 ],
+                 statusCode: 500
+                 );
         }//end try
 
     }//end show()
@@ -240,6 +246,8 @@ class ViewsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse A JSON response with created view or error
      *
      * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
@@ -254,11 +262,11 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'User not authenticated',
-                        ],
-                        statusCode: 401
-                        );
+                     data: [
+                         'error' => 'User not authenticated',
+                     ],
+                     statusCode: 401
+                     );
             }
 
             $data = $this->request->getParams();
@@ -266,11 +274,11 @@ class ViewsController extends Controller
             // Validate required fields.
             if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'View name is required',
-                        ],
-                        statusCode: 400
-                        );
+                     data: [
+                         'error' => 'View name is required',
+                     ],
+                     statusCode: 400
+                     );
             }
 
             // Extract query parameters from configuration or query.
@@ -290,42 +298,42 @@ class ViewsController extends Controller
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'View query or configuration is required',
-                        ],
-                        statusCode: 400
-                        );
+                     data: [
+                         'error' => 'View query or configuration is required',
+                     ],
+                     statusCode: 400
+                     );
             }//end if
 
             $view = $this->viewService->create(
-                name: $data['name'],
-                description: $data['description'] ?? '',
-                owner: $userId,
-                isPublic: $data['isPublic'] ?? false,
-                isDefault: $data['isDefault'] ?? false,
-                query: $query
+             name: $data['name'],
+             description: $data['description'] ?? '',
+             owner: $userId,
+             isPublic: $data['isPublic'] ?? false,
+             isDefault: $data['isDefault'] ?? false,
+             query: $query
             );
 
             return new JSONResponse(
-                    data: [
-                        'view' => $view->jsonSerialize(),
-                    ],
-                    statusCode: 201
-                    );
+                 data: [
+                     'view' => $view->jsonSerialize(),
+                 ],
+                 statusCode: 201
+                 );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: 'Error creating view',
-                    context: [
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                 message: 'Error creating view',
+                 context: [
+                     'exception' => $e->getMessage(),
+                 ]
+                 );
             return new JSONResponse(
-                    data: [
-                        'error'   => 'Failed to create view',
-                        'message' => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                 data: [
+                     'error'   => 'Failed to create view',
+                     'message' => $e->getMessage(),
+                 ],
+                 statusCode: 500
+                 );
         }//end try
 
     }//end create()
@@ -338,6 +346,10 @@ class ViewsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @param string $id View ID or UUID
+     *
+     * @return JSONResponse A JSON response with updated view or error
      *
      * @psalm-return JSONResponse<int, array{error?: string, message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
@@ -352,11 +364,11 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'User not authenticated',
-                        ],
-                        statusCode: 401
-                        );
+                     data: [
+                         'error' => 'User not authenticated',
+                     ],
+                     statusCode: 401
+                     );
             }
 
             $data = $this->request->getParams();
@@ -364,11 +376,11 @@ class ViewsController extends Controller
             // Validate required fields.
             if (isset($data['name']) === false || empty($data['name']) === true) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'View name is required',
-                        ],
-                        statusCode: 400
-                        );
+                     data: [
+                         'error' => 'View name is required',
+                     ],
+                     statusCode: 400
+                     );
             }
 
             // Extract query parameters from configuration or query.
@@ -388,50 +400,50 @@ class ViewsController extends Controller
                 $query = $data['query'];
             } else {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'View query or configuration is required',
-                        ],
-                        statusCode: 400
-                        );
+                     data: [
+                         'error' => 'View query or configuration is required',
+                     ],
+                     statusCode: 400
+                     );
             }//end if
 
             $view = $this->viewService->update(
-                id: $id,
-                name: $data['name'],
-                description: $data['description'] ?? '',
-                owner: $userId,
-                isPublic: $data['isPublic'] ?? false,
-                isDefault: $data['isDefault'] ?? false,
-                query: $query
+             id: $id,
+             name: $data['name'],
+             description: $data['description'] ?? '',
+             owner: $userId,
+             isPublic: $data['isPublic'] ?? false,
+             isDefault: $data['isDefault'] ?? false,
+             query: $query
             );
 
             return new JSONResponse(
-                    data: [
-                        'view' => $view->jsonSerialize(),
-                    ]
-                    );
+                 data: [
+                     'view' => $view->jsonSerialize(),
+                 ]
+                 );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                    data: [
-                        'error' => 'View not found',
-                    ],
-                    statusCode: 404
-                    );
+                 data: [
+                     'error' => 'View not found',
+                 ],
+                 statusCode: 404
+                 );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: 'Error updating view',
-                    context: [
-                        'id'        => $id,
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                 message: 'Error updating view',
+                 context: [
+                     'id'        => $id,
+                     'exception' => $e->getMessage(),
+                 ]
+                 );
             return new JSONResponse(
-                    data: [
-                        'error'   => 'Failed to update view',
-                        'message' => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                 data: [
+                     'error'   => 'Failed to update view',
+                     'message' => $e->getMessage(),
+                 ],
+                 statusCode: 500
+                 );
         }//end try
 
     }//end update()
@@ -461,11 +473,11 @@ class ViewsController extends Controller
 
             if (empty($userId) === true) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'User not authenticated',
-                        ],
-                        statusCode: 401
-                        );
+                     data: [
+                         'error' => 'User not authenticated',
+                     ],
+                     statusCode: 401
+                     );
             }
 
             // Get existing view.
@@ -506,43 +518,43 @@ class ViewsController extends Controller
 
             // Update view.
             $updatedView = $this->viewService->update(
-                id: $id,
-                name: $name,
-                description: $description,
-                owner: $userId,
-                isPublic: $isPublic,
-                isDefault: $isDefault,
-                query: $query,
-                favoredBy: $favoredBy
+             id: $id,
+             name: $name,
+             description: $description,
+             owner: $userId,
+             isPublic: $isPublic,
+             isDefault: $isDefault,
+             query: $query,
+             favoredBy: $favoredBy
             );
 
             return new JSONResponse(
-                    data: [
-                        'view' => $updatedView->jsonSerialize(),
-                    ]
-                    );
+                 data: [
+                     'view' => $updatedView->jsonSerialize(),
+                 ]
+                 );
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                    data: [
-                        'error' => 'View not found',
-                    ],
-                    statusCode: 404
-                    );
+                 data: [
+                     'error' => 'View not found',
+                 ],
+                 statusCode: 404
+                 );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: 'Error patching view',
-                    context: [
-                        'id'        => $id,
-                        'exception' => $e->getMessage(),
-                    ]
-                    );
+                 message: 'Error patching view',
+                 context: [
+                     'id'        => $id,
+                     'exception' => $e->getMessage(),
+                 ]
+                 );
             return new JSONResponse(
-                    data: [
-                        'error'   => 'Failed to patch view',
-                        'message' => $e->getMessage(),
-                    ],
-                    statusCode: 500
-                    );
+                 data: [
+                     'error'   => 'Failed to patch view',
+                     'message' => $e->getMessage(),
+                 ],
+                 statusCode: 500
+                 );
         }//end try
 
     }//end patch()
@@ -555,6 +567,10 @@ class ViewsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @param string $id View ID or UUID
+     *
+     * @return JSONResponse A JSON response confirming deletion or error
      *
      * @psalm-return JSONResponse<int, array{error?: 'Failed to delete view'|'User not authenticated'|'View not found', message?: string, success?: false}, array<never, never>>
      */

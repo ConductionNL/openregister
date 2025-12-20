@@ -574,10 +574,10 @@ class SaveObjects
      *
      * @param string $uuid The UUID of the object to resolve
      *
-     * @return string|null The object's name or null if not found
-     *
      * @psalm-return   string|null
      * @phpstan-return string|null
+     *
+     * @return string|null The object's name or null if not found
      */
     private function getObjectName(string $uuid): ?string
     {
@@ -1200,14 +1200,15 @@ class SaveObjects
      *
      * @param array $objects       Array of pre-processed objects ready for database operations
      * @param array $schemaCache   Pre-built schema cache for performance optimization
-     * @param bool  $_rbac         Apply RBAC filtering
-     * @param bool  $_multitenancy Apply multi-tenancy filtering
-     * @param bool  $validation    Apply schema validation
-     * @param bool  $events        Dispatch events
+     * @param bool  $_rbac         Apply RBAC filtering (unused).
+     * @param bool  $_multitenancy Apply multi-tenancy filtering (unused).
+     * @param bool  $_validation   Apply schema validation (unused).
+     * @param bool  $_events       Dispatch events (unused).
+     *
+     * @psalm-return array{saved: list<array{'@self': array{name: mixed|null|string, ...}, ...}|mixed>, updated: list<mixed>, invalid: list<array<string, mixed>>, errors: array<never, never>, statistics: array{saved: int, updated: int, invalid: int<0, max>, errors?: mixed, unchanged?: int, processingTimeMs?: float}, unchanged?: array<int<0, max>, mixed>}
      *
      * @return array[]
      *
-     * @psalm-return     array{saved: list<array{'@self': array{name: mixed|null|string, ...}, ...}|mixed>, updated: list<mixed>, invalid: list<array<string, mixed>>, errors: array<never, never>, statistics: array{saved: int, updated: int, invalid: int<0, max>, errors?: mixed, unchanged?: int, processingTimeMs?: float}, unchanged?: array<int<0, max>, mixed>}
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multitenancy, bool $_validation, bool $_events): array

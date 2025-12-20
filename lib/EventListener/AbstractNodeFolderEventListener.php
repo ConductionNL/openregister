@@ -120,7 +120,7 @@ class AbstractNodeFolderEventListener implements IEventListener
     /**
      * Handle node touched event
      *
-     * @param NodeTouchedEvent $event The node touched event
+     * @param NodeTouchedEvent $_event The node touched event
      *
      * @return void
      *

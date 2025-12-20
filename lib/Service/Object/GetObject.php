@@ -54,7 +54,6 @@ class GetObject
      * Constructor for GetObject handler.
      *
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param FileService        $fileService        File service for managing files.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
      * @param SettingsService    $settingsService    Settings service for accessing trail settings.
      */

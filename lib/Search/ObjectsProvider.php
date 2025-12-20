@@ -121,8 +121,8 @@ class ObjectsProvider implements IFilteringProvider
      *
      * Lower values appear first in search results
      *
-     * @param string $route           The route/context for which to get the order
-     * @param array  $routeParameters Parameters for the route
+     * @param string $_route           The route/context for which to get the order
+     * @param array  $_routeParameters Parameters for the route
      *
      * @return int
      *
@@ -196,7 +196,7 @@ class ObjectsProvider implements IFilteringProvider
      * search query filters to OpenRegister's advanced search parameters and
      * using the optimized searchObjectsPaginated method for best performance.
      *
-     * @param IUser        $user  The user performing the search
+     * @param IUser        $_user The user performing the search
      * @param ISearchQuery $query The search query from Nextcloud
      *
      * @return SearchResult The search results formatted for Nextcloud's search interface

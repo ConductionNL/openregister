@@ -66,6 +66,8 @@ class ElasticsearchIndexManager
     /**
      * Check if index exists.
      *
+     * @param string $indexName The index name to check.
+     *
      * @return bool True if index exists
      */
     public function indexExists(string $indexName): bool
@@ -83,6 +85,9 @@ class ElasticsearchIndexManager
 
     /**
      * Create index with mapping.
+     *
+     * @param string $indexName The index name to create.
+     * @param array  $mapping   Index mapping configuration (default: empty array).
      *
      * @return bool True on success
      */
@@ -108,22 +113,22 @@ class ElasticsearchIndexManager
 
             if ($success === true) {
                 $this->logger->info(
-                        '[ElasticsearchIndexManager] Index created',
-                        [
-                            'index' => $indexName,
-                        ]
-                        );
+                     '[ElasticsearchIndexManager] Index created',
+                     [
+                         'index' => $indexName,
+                     ]
+                     );
             }
 
             return $success;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ElasticsearchIndexManager] Failed to create index',
-                    [
-                        'index' => $indexName,
-                        'error' => $e->getMessage(),
-                    ]
-                    );
+                 '[ElasticsearchIndexManager] Failed to create index',
+                 [
+                     'index' => $indexName,
+                     'error' => $e->getMessage(),
+                 ]
+                 );
             return false;
         }//end try
 
@@ -131,6 +136,8 @@ class ElasticsearchIndexManager
 
     /**
      * Delete index.
+     *
+     * @param string $indexName The index name to delete.
      *
      * @return bool True on success
      */
@@ -144,22 +151,22 @@ class ElasticsearchIndexManager
 
             if ($success === true) {
                 $this->logger->info(
-                        '[ElasticsearchIndexManager] Index deleted',
-                        [
-                            'index' => $indexName,
-                        ]
-                        );
+                     '[ElasticsearchIndexManager] Index deleted',
+                     [
+                         'index' => $indexName,
+                     ]
+                     );
             }
 
             return $success;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ElasticsearchIndexManager] Failed to delete index',
-                    [
-                        'index' => $indexName,
-                        'error' => $e->getMessage(),
-                    ]
-                    );
+                 '[ElasticsearchIndexManager] Failed to delete index',
+                 [
+                     'index' => $indexName,
+                     'error' => $e->getMessage(),
+                 ]
+                 );
             return false;
         }//end try
 
@@ -168,17 +175,19 @@ class ElasticsearchIndexManager
     /**
      * Ensure index exists, create if not.
      *
+     * @param string $indexName The index name to ensure exists.
+     *
      * @return bool True on success
      */
     public function ensureIndex(string $indexName): bool
     {
         if ($this->indexExists($indexName) === true) {
             $this->logger->debug(
-                    '[ElasticsearchIndexManager] Index already exists',
-                    [
-                        'index' => $indexName,
-                    ]
-                    );
+                 '[ElasticsearchIndexManager] Index already exists',
+                 [
+                     'index' => $indexName,
+                 ]
+                 );
             return true;
         }
 

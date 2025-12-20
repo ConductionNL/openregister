@@ -5,8 +5,13 @@
  * Handles basic Create, Read, Update, Delete operations.
  * Extracted from ObjectEntityMapper as part of SOLID refactoring.
  *
- * @category Database
- * @package  OCA\OpenRegister\Db\ObjectEntity
+ * @category  Database
+ * @package   OCA\OpenRegister\Db\ObjectEntity
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Db\ObjectEntity;
@@ -32,14 +37,42 @@ use Psr\Log\LoggerInterface;
 class CrudHandler
 {
 
+    /**
+     * Object entity mapper.
+     *
+     * @var ObjectEntityMapper
+     */
     private ObjectEntityMapper $mapper;
 
+    /**
+     * Database connection.
+     *
+     * @var IDBConnection
+     */
     private IDBConnection $db;
 
+    /**
+     * Event dispatcher.
+     *
+     * @var IEventDispatcher
+     */
     private IEventDispatcher $eventDispatcher;
 
+    /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
     private LoggerInterface $logger;
 
+    /**
+     * Constructor for CrudHandler.
+     *
+     * @param ObjectEntityMapper $mapper          Object entity mapper.
+     * @param IDBConnection      $db              Database connection.
+     * @param IEventDispatcher   $eventDispatcher Event dispatcher.
+     * @param LoggerInterface    $logger          Logger.
+     */
     public function __construct(
         ObjectEntityMapper $mapper,
         IDBConnection $db,
@@ -55,6 +88,8 @@ class CrudHandler
 
     /**
      * Insert a new object entity
+     *
+     * @param Entity $entity The entity to insert.
      *
      * @return ObjectEntity The inserted entity
      */
@@ -80,6 +115,9 @@ class CrudHandler
 
     /**
      * Update an existing object entity
+     *
+     * @param Entity $entity         The entity to update.
+     * @param bool   $includeDeleted Whether to include deleted entities in search (default: false).
      *
      * @return ObjectEntity The updated entity
      */
@@ -116,6 +154,8 @@ class CrudHandler
 
     /**
      * Delete an object entity
+     *
+     * @param Entity $entity The entity to delete.
      *
      * @return ObjectEntity The deleted entity
      */

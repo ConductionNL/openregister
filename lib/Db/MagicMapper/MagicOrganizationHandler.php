@@ -60,10 +60,8 @@ class MagicOrganizationHandler
     /**
      * Constructor for MagicOrganizationHandler.
      *
-     * @param IDBConnection   $db           Database connection (unused but kept for future use)
      * @param IUserSession    $userSession  User session manager
      * @param IGroupManager   $groupManager Group manager
-     * @param IUserManager    $userManager  User manager (unused but kept for future use)
      * @param IAppConfig      $appConfig    Application configuration
      * @param LoggerInterface $logger       Logger for logging operations
      *

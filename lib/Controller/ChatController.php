@@ -219,6 +219,7 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse A JSON response with the chat response or error
      * @psalm-return JSONResponse<int, array{error?: string, message: string, sources?: list<array>, timings?: array, conversation?: null|string}, array<never, never>>
      */
     public function sendMessage(): JSONResponse
@@ -391,6 +392,7 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse A JSON response with conversation history or error
      * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Failed to fetch conversation history'|'Missing conversationId', message?: string, messages?: list<array{content: null|string, conversationId: int|null, created: null|string, id: int, role: null|string, sources: array|null, uuid: null|string}>, total?: int, conversationId?: int}, array<never, never>>
      */
     public function getHistory(): JSONResponse
@@ -475,6 +477,7 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse A JSON response confirming conversation clearing or error
      * @psalm-return JSONResponse<int, array{error?: 'Access denied'|'Failed to clear conversation'|'Missing conversationId', message: string, conversationId?: int}, array<never, never>>
      */
     public function clearHistory(): JSONResponse
@@ -557,6 +560,7 @@ class ChatController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse A JSON response with the conversation list or error
      * @psalm-return JSONResponse<int, array{error?: string, message?: string, id?: int, uuid?: string, messageId?: int, conversationId?: int, agentId?: int, userId?: string, organisation?: null|string, type?: string, comment?: null|string, created?: null|string, updated?: null|string}, array<never, never>>
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse

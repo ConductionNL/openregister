@@ -57,11 +57,10 @@ class MagicRbacHandler
     /**
      * Constructor for MagicRbacHandler
      *
-     * @param IUserSession    $userSession  User session for current user context
-     * @param IGroupManager   $groupManager Group manager for user group operations
-     * @param IUserManager    $userManager  User manager for user operations
-     * @param IAppConfig      $appConfig    App configuration for RBAC settings
-     * @param LoggerInterface $logger       Logger for debugging and error reporting
+     * @param IUserSession  $userSession  User session for current user context
+     * @param IGroupManager $groupManager Group manager for user group operations
+     * @param IUserManager  $userManager  User manager for user operations
+     * @param IAppConfig    $appConfig    App configuration for RBAC settings
      */
     public function __construct(
         /**
@@ -90,9 +89,9 @@ class MagicRbacHandler
     /**
      * Apply access rules for unauthenticated users
      *
-     * @param IQueryBuilder $qb         Query builder to modify
-     * @param Schema        $schema     Schema with authorization config
-     * @param string        $tableAlias Table alias for the dynamic table
+     * @param IQueryBuilder $_qb         Query builder to modify
+     * @param Schema        $schema      Schema with authorization config
+     * @param string        $_tableAlias Table alias for the dynamic table
      *
      * @return void
      *

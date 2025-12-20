@@ -260,6 +260,7 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse The created application or an error
      * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
@@ -308,6 +309,7 @@ class ApplicationsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse The updated application or an error
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function update(int $id): JSONResponse
@@ -327,23 +329,23 @@ class ApplicationsController extends Controller
 
             // Return successful response with updated application.
             return new JSONResponse(
-                data: $application,
-                statusCode: Http::STATUS_OK
+             data: $application,
+             statusCode: Http::STATUS_OK
             );
         } catch (Exception $e) {
             // Log error with application ID.
             $this->logger->error(
-                message: 'Failed to update application',
-                context: [
-                    'id'    => $id,
-                    'error' => $e->getMessage(),
-                ]
+             message: 'Failed to update application',
+             context: [
+                 'id'    => $id,
+                 'error' => $e->getMessage(),
+             ]
             );
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to update application: '.$e->getMessage()],
-                statusCode: Http::STATUS_BAD_REQUEST
+             data: ['error' => 'Failed to update application: '.$e->getMessage()],
+             statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
 

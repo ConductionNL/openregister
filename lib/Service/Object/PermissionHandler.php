@@ -49,13 +49,12 @@ class PermissionHandler
     /**
      * PermissionHandler constructor.
      *
-     * @param IUserSession        $userSession         User session for getting current user.
-     * @param IUserManager        $userManager         User manager for getting user objects.
-     * @param IGroupManager       $groupManager        Group manager for checking user groups.
-     * @param SchemaMapper        $schemaMapper        Mapper for schema operations.
-     * @param ObjectEntityMapper  $objectEntityMapper  Mapper for object entity operations.
-     * @param OrganisationService $organisationService Service for organisation operations.
-     * @param LoggerInterface     $logger              Logger for permission auditing.
+     * @param IUserSession       $userSession        User session for getting current user.
+     * @param IUserManager       $userManager        User manager for getting user objects.
+     * @param IGroupManager      $groupManager       Group manager for checking user groups.
+     * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
+     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
+     * @param LoggerInterface    $logger             Logger for permission auditing.
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -371,7 +370,7 @@ class PermissionHandler
             // Return $activeOrganisation['uuid'];
             // }
             // If (is_string($activeOrganisation) === true) {
-            // Return $activeOrganisation;
+            // Return $activeOrganisation;.
             // }
             return null;
         } catch (Exception $e) {

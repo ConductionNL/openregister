@@ -3637,6 +3637,71 @@
       "name": "File Operations Tests",
       "item": [
         {
+          "name": "Setup: Create Register for File Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('register_id', jsonData.id);",
+                  "    pm.collectionVariables.set('register_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for file tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+              "host": ["{{base_url}}"],
+              "path": ["index.php", "apps", "openregister", "api", "registers"]
+            }
+          }
+        },
+        {
+          "name": "Setup: Create Schema for File Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('schema_id', jsonData.id);",
+                  "    pm.collectionVariables.set('schema_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for file tests\", \"properties\": {\"name\": {\"type\": \"string\"}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas"],
+              "query": [{"key": "register", "value": "{{register_id}}"}]
+            }
+          }
+        },
+        {
           "name": "File 1: Upload PDF (multipart)",
           "event": [
             {
@@ -3782,6 +3847,71 @@
       "name": "Import/Export Tests",
       "item": [
         {
+          "name": "Setup: Create Register for Import Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('register_id', jsonData.id);",
+                  "    pm.collectionVariables.set('register_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for import tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+              "host": ["{{base_url}}"],
+              "path": ["index.php", "apps", "openregister", "api", "registers"]
+            }
+          }
+        },
+        {
+          "name": "Setup: Create Schema for Import Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('schema_id', jsonData.id);",
+                  "    pm.collectionVariables.set('schema_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for import tests\", \"properties\": {\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"integer\"}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["index.php", "apps", "openregister", "api", "schemas"],
+              "query": [{"key": "register", "value": "{{register_id}}"}]
+            }
+          }
+        },
+        {
           "name": "Import 1: Upload CSV File",
           "event": [
             {
@@ -3905,6 +4035,37 @@
       "name": "Agent & Conversation Tests",
       "item": [
         {
+          "name": "Setup: Create Agent for Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('agent_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Test Agent {{$timestamp}}\", \"description\": \"Agent for conversation tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/agents",
+              "host": ["{{base_url}}"],
+              "path": ["index.php", "apps", "openregister", "api", "agents"]
+            }
+          }
+        },
+        {
           "name": "Conversation 1: Create Conversation",
           "event": [
             {
@@ -3979,7 +4140,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"conversationUuid\": \"{{conversation_uuid}}\",\n  \"content\": \"Hello, test message\",\n  \"role\": \"user\"\n}"
+              "raw": "{\n  \"conversation\": \"{{conversation_uuid}}\",\n  \"message\": \"Hello, test message\",\n  \"role\": \"user\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/chat/send",

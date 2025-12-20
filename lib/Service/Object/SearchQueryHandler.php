@@ -47,11 +47,10 @@ class SearchQueryHandler
     /**
      * SearchQueryHandler constructor.
      *
-     * @param ViewMapper         $viewMapper         Mapper for view operations.
-     * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
-     * @param SettingsService    $settingsService    Service for settings operations.
-     * @param SearchTrailService $searchTrailService Service for search trail operations.
-     * @param LoggerInterface    $logger             Logger for performance monitoring.
+     * @param ViewMapper      $viewMapper      Mapper for view operations.
+     * @param SchemaMapper    $schemaMapper    Mapper for schema operations.
+     * @param SettingsService $settingsService Service for settings operations.
+     * @param LoggerInterface $logger          Logger for performance monitoring.
      */
     public function __construct(
         private readonly ViewMapper $viewMapper,
@@ -120,6 +119,7 @@ class SearchQueryHandler
                         /*
                          * @psalm-suppress TypeDoesNotContainType - $current[$part] may have been set to non-array earlier
                          */
+
                         if (is_array($current[$part]) === false) {
                             $current[$part] = [];
                         }

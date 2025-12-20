@@ -117,12 +117,10 @@ class ViewMapper extends QBMapper
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection      $db                        Database connection
-     * @param OrganisationMapper $organisationMapper        Organisation service for multi-tenancy
-     * @param IUserSession       $userSession               User session for RBAC
-     * @param IGroupManager      $groupManager              Group manager for RBAC
-     * @param CacheHandler       $configurationCacheService Configuration cache service for cache invalidation
-     * @param IEventDispatcher   $eventDispatcher           Event dispatcher for view lifecycle events
+     * @param IDBConnection    $db              Database connection
+     * @param IUserSession     $userSession     User session for RBAC
+     * @param IGroupManager    $groupManager    Group manager for RBAC
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for view lifecycle events
      *
      * @return void
      */

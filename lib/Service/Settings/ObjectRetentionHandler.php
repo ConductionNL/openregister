@@ -51,6 +51,12 @@ class ObjectRetentionHandler
      */
     private string $appName;
 
+    /**
+     * Constructor for ObjectRetentionHandler.
+     *
+     * @param IConfig $config  Configuration service.
+     * @param string  $appName Application name (default: 'openregister').
+     */
     public function __construct(IConfig $config, string $appName="openregister")
     {
         $this->config  = $config;

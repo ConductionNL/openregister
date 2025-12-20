@@ -197,6 +197,7 @@ class FileSearchController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return       JSONResponse A JSON response with semantic search results
      * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array<int, array<string, mixed>>, search_type?: 'semantic'}, array<never, never>>
      */
     public function semanticSearch(): JSONResponse
@@ -271,50 +272,50 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                        data: [
-                            'success' => false,
-                            'message' => 'Query parameter is required',
-                        ],
-                        statusCode: 400
-                        );
+                     data: [
+                         'success' => false,
+                         'message' => 'Query parameter is required',
+                     ],
+                     statusCode: 400
+                     );
             }
 
             // Use existing hybridSearch method from VectorizationService.
             $results = $this->vectorService->hybridSearch(
-                query: $query,
-                solrFilters: ['entityType' => 'file'],
-                limit: $limit,
-                weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
+             query: $query,
+             solrFilters: ['entityType' => 'file'],
+             limit: $limit,
+             weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
             );
 
             return new JSONResponse(
-                    data: [
-                        'success'     => true,
-                        'query'       => $query,
-                        'total'       => count($results),
-                        'results'     => $results,
-                        'search_type' => 'hybrid',
-                        'weights'     => [
-                            'keyword'  => $keywordWeight,
-                            'semantic' => $semanticWeight,
-                        ],
-                    ]
-                    );
+                 data: [
+                     'success'     => true,
+                     'query'       => $query,
+                     'total'       => count($results),
+                     'results'     => $results,
+                     'search_type' => 'hybrid',
+                     'weights'     => [
+                         'keyword'  => $keywordWeight,
+                         'semantic' => $semanticWeight,
+                     ],
+                 ]
+                 );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileSearchController] Hybrid search failed',
-                    context: [
-                        'error' => $e->getMessage(),
-                    ]
-                    );
+                 message: '[FileSearchController] Hybrid search failed',
+                 context: [
+                     'error' => $e->getMessage(),
+                 ]
+                 );
 
             return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'Hybrid search failed: '.$e->getMessage(),
-                    ],
-                    statusCode: 500
-                );
+                 data: [
+                     'success' => false,
+                     'message' => 'Hybrid search failed: '.$e->getMessage(),
+                 ],
+                 statusCode: 500
+             );
         }//end try
 
     }//end hybridSearch()

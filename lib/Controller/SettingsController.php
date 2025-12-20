@@ -799,11 +799,13 @@ class SettingsController extends Controller
             $results['all_organizations'] = [
                 'count'         => count($result1['results']),
                 'organizations' => array_map(
+
                         /*
                          * @return (array|int|mixed|null|string)[]
                          *
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}
                          */
+
                         function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [
@@ -828,11 +830,13 @@ class SettingsController extends Controller
             $results['type_samenwerking'] = [
                 'count'         => count($result2['results']),
                 'organizations' => array_map(
+
                         /*
                          * @return (int|mixed|null|string)[]
                          *
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
                          */
+
                         function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
                             $objectData = $org->getObject();
                             return [

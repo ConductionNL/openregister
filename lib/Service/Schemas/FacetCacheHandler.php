@@ -316,6 +316,8 @@ class FacetCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
+     * @return int Number of entries deleted
+     *
      * @psalm-return int<min, max>
      */
     public function cleanExpiredEntries(): int
@@ -706,7 +708,6 @@ class FacetCacheHandler
      * @param int    $schemaId    Schema ID
      * @param string $cacheKey    Cache key
      * @param string $facetType   Facet type
-     * @param string $fieldName   Field name
      * @param array  $facetConfig Facet configuration
      * @param mixed  $data        Data to cache
      * @param int    $ttl         Cache TTL in seconds
@@ -751,17 +752,17 @@ class FacetCacheHandler
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::FACET_CACHE_TABLE)
                 ->values(
-                        values: [
-                            'schema_id'    => $qb->createNamedParameter($schemaId),
-                            'facet_type'   => $qb->createNamedParameter($facetType),
-                            'field_name'   => $qb->createNamedParameter($cacheKey),
-                            'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
-                            'cache_data'   => $qb->createNamedParameter(json_encode($data)),
-                            'created'      => $qb->createNamedParameter($now, 'datetime'),
-                            'updated'      => $qb->createNamedParameter($now, 'datetime'),
-                            'expires'      => $qb->createNamedParameter($expires, 'datetime'),
-                        ]
-                       );
+                     values: [
+                         'schema_id'    => $qb->createNamedParameter($schemaId),
+                         'facet_type'   => $qb->createNamedParameter($facetType),
+                         'field_name'   => $qb->createNamedParameter($cacheKey),
+                         'facet_config' => $qb->createNamedParameter(json_encode($facetConfig)),
+                         'cache_data'   => $qb->createNamedParameter(json_encode($data)),
+                         'created'      => $qb->createNamedParameter($now, 'datetime'),
+                         'updated'      => $qb->createNamedParameter($now, 'datetime'),
+                         'expires'      => $qb->createNamedParameter($expires, 'datetime'),
+                     ]
+                    );
             $qb->executeStatement();
         }
 

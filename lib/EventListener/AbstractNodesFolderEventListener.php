@@ -83,7 +83,7 @@ class AbstractNodesFolderEventListener implements IEventListener
     /**
      * Handle when a node is copied.
      *
-     * @param NodeCopiedEvent $event The node copied event
+     * @param NodeCopiedEvent $_event The node copied event
      *
      * @return void
      *
@@ -97,7 +97,7 @@ class AbstractNodesFolderEventListener implements IEventListener
     /**
      * Handle when a node is renamed.
      *
-     * @param NodeRenamedEvent $event The node renamed event
+     * @param NodeRenamedEvent $_event The node renamed event
      *
      * @return void
      *
