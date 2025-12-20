@@ -59,7 +59,7 @@ class CronFileTextExtractionJob extends TimedJob
     /**
      * Execute the cron file text extraction job
      *
-     * @param array $_argument Job arguments (unused for recurring jobs)
+     * @param mixed $argument Job arguments (unused for recurring jobs)
      *
      * @return void
      *

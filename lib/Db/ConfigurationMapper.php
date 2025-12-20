@@ -63,6 +63,12 @@ class ConfigurationMapper extends QBMapper
      * @var OrganisationService
      */
     // REMOVED: Services should not be in mappers.
+
+    /**
+     * Organisation mapper for multi-tenancy
+     *
+     * @var OrganisationMapper
+     */
     protected OrganisationMapper $organisationMapper;
 
     /**
@@ -96,12 +102,12 @@ class ConfigurationMapper extends QBMapper
     /**
      * Constructor
      *
-     * @param IDBConnection       $db                  Database connection
-     * @param OrganisationService $organisationService Organisation service
-     * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager
-     * @param ISession            $session             Session
-     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
+     * @param IDBConnection      $db                 Database connection
+     * @param OrganisationMapper $organisationMapper Organisation mapper
+     * @param IUserSession       $userSession        User session
+     * @param IGroupManager      $groupManager       Group manager
+     * @param ISession           $session            Session
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
@@ -132,7 +138,8 @@ class ConfigurationMapper extends QBMapper
     /**
      * Find a configuration by its ID
      *
-     * @param int $id Configuration ID
+     * @param int  $id            Configuration ID
+     * @param bool $_multitenancy Whether to apply multi-tenancy rules (default: true)
      *
      * @return Configuration The configuration entity
      *
@@ -140,7 +147,7 @@ class ConfigurationMapper extends QBMapper
      * @throws MultipleObjectsReturnedException
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(int $id, bool $_multitenancy = true): Configuration
+    public function find(int $id, bool $_multitenancy=true): Configuration
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -543,7 +550,7 @@ class ConfigurationMapper extends QBMapper
         // Organisation service was removed from mapper (services should not be in mappers).
         // Cache invalidation is handled at service layer instead.
         return;
-        // Legacy code - no longer used.
+        // Legacy code - no longer used..
         // $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
         // $this->session->remove($sessionKey);
     }//end invalidateConfigurationCache()

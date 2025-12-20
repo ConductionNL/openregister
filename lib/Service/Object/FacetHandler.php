@@ -263,6 +263,7 @@ class FacetHandler
      * @phpstan-param bool $hasFacets
      * @phpstan-param array<string, mixed> $query
      *
+     * @return         int The facet count.
      * @psalm-return   int<0, max>
      * @phpstan-return int
      */
@@ -310,12 +311,12 @@ class FacetHandler
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
         if ($totalFacetResults === 0 && $hasRestrictiveFilters === true) {
             $this->logger->debug(
-                    message: 'Facets empty with restrictive filters, trying collection-wide fallback',
-                    context: [
-                        'originalQuery' => array_keys($facetQuery),
-                        'totalResults'  => $totalFacetResults,
-                    ]
-                    );
+                 message: 'Facets empty with restrictive filters, trying collection-wide fallback',
+                 context: [
+                     'originalQuery' => array_keys($facetQuery),
+                     'totalResults'  => $totalFacetResults,
+                 ]
+                 );
 
             // Create collection-wide query: keep register/schema context but remove restrictive filters.
             $collectionQuery = [
@@ -335,13 +336,13 @@ class FacetHandler
                 $fallbackUsed = true;
 
                 $this->logger->info(
-                        message: 'Smart faceting fallback successful',
-                        context: [
-                            'fallbackResults' => $fallbackResults,
-                            'originalResults' => $totalFacetResults,
-                            'collectionQuery' => array_keys($collectionQuery),
-                        ]
-                        );
+                     message: 'Smart faceting fallback successful',
+                     context: [
+                         'fallbackResults' => $fallbackResults,
+                         'originalResults' => $totalFacetResults,
+                         'collectionQuery' => array_keys($collectionQuery),
+                     ]
+                     );
             }
         }//end if
 

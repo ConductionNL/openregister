@@ -347,7 +347,7 @@ class DeletedController extends Controller
         try {
             $object = $this->objectEntityMapper->find($id, null, null, true);
 
-            if ($object->getDeleted() === null) {
+            if ($object->getDeleted() === null || $object->getDeleted() === []) {
                 return new JSONResponse(
                         data: [
                             'error' => 'Object is not deleted',
@@ -356,9 +356,16 @@ class DeletedController extends Controller
                         );
             }
 
-            // Clear the deleted status.
-            $object->setDeleted(null);
-            $this->objectEntityMapper->update(entity: $object);
+            // Clear the deleted status using direct SQL update.
+            // Nextcloud Entity system has issues detecting array->null changes for JSON fields.
+            $qb = $this->objectEntityMapper->getQueryBuilder();
+            $qb->update('openregister_objects')
+                ->set('deleted', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
+                ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($id)))
+                ->executeStatement();
+
+            // Reload the object to get the updated state.
+            $restoredObject = $this->objectEntityMapper->find($id, null, null, false);
 
             return new JSONResponse(
                     data: [

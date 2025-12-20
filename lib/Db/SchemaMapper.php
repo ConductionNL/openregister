@@ -141,7 +141,7 @@ class SchemaMapper extends QBMapper
      * @param IDBConnection            $db                  Database connection for queries
      * @param IEventDispatcher         $eventDispatcher     Event dispatcher for schema events
      * @param PropertyValidatorHandler $validator           Schema property validator for validation
-     * @param OrganisationService      $organisationService Organisation service for multi-tenancy
+     * @param OrganisationMapper       $organisationMapper  Organisation mapper for multi-tenancy
      * @param IUserSession             $userSession         User session for current user context
      * @param IGroupManager            $groupManager        Group manager for RBAC checks
      * @param IAppConfig               $appConfig           App configuration for multitenancy settings
@@ -1314,9 +1314,21 @@ class SchemaMapper extends QBMapper
             unset($propDef);
             $isNative = isset($nativeProperties[$propName]);
 
+            if ($isNative === true) {
+                $source = 'native';
+            } else {
+                $source = 'inherited';
+            }
+            
+            if ($isNative === true) {
+                $inheritedFrom = null;
+            } else {
+                $inheritedFrom = $this->findPropertySource($propName, $allOf);
+            }
+
             $metadata[$propName] = [
-                'source'        => $isNative ? 'native' : 'inherited',
-                'inheritedFrom' => $isNative ? null : $this->findPropertySource($propName, $allOf),
+                'source'        => $source,
+                'inheritedFrom' => $inheritedFrom,
             ];
         }
 

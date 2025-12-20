@@ -195,6 +195,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<int, array{error?: string, title?: mixed|string, description?: ''|mixed, version?: 'v.unknown'|mixed, app?: mixed|null, type?: 'unknown'|mixed, openregister?: mixed|null}, array<never, never>>
+     *
+     * @return JSONResponse JSON response with enriched configuration details
      */
     public function enrichDetails(): JSONResponse
     {

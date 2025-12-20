@@ -94,9 +94,7 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param IURLGenerator          $urlGenerator       URL generator service.
      * @param FileMapper             $fileMapper         File mapper for database operations.
-     * @param FileService            $fileService        File service for managing files.
      * @param ObjectEntityMapper     $objectEntityMapper Object entity mapper for database operations.
      * @param RegisterMapper         $registerMapper     Register mapper for database operations.
      * @param SchemaMapper           $schemaMapper       Schema mapper for database operations.

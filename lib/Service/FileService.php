@@ -145,7 +145,7 @@ class FileService
      *
      * @var RegisterMapper|null
      */
-    // Private ?RegisterMapper $registerMapper;
+    // Private ?RegisterMapper $registerMapper;.
 
     /**
      * Root folder
@@ -561,6 +561,8 @@ class FileService
      * @param ObjectEntity $objectEntity The Object Entity to get the folder name for
      *
      * @phpstan-return string
+     *
+     * @return string The object folder name
      */
     private function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
@@ -653,6 +655,8 @@ class FileService
      * @throws NotPermittedException If folder creation is not permitted
      *
      * @phpstan-return Node|null
+     *
+     * @return Node|null The created folder node
      */
     private function createObjectFolderById(
         ObjectEntity|string $objectEntity,
@@ -785,6 +789,8 @@ class FileService
      *
      * @psalm-return   Node|null
      * @phpstan-return Node|null
+     *
+     * @return Node|null The created folder node
      */
     private function createFolderPath(string $folderPath): Node
     {
@@ -1712,7 +1718,7 @@ class FileService
                         );
 
                 throw new Exception(
-                    "File '$fileName' contains executable code ($description). "."Executable files are blocked for security reasons."
+                    "File '$fileName' contains executable code ($description). Executable files are blocked for security reasons."
                 );
             }
         }

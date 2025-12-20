@@ -135,6 +135,8 @@ class ElasticsearchHttpClient
     /**
      * Build endpoint URL for a specific index.
      *
+     * @param string $index The index name.
+     *
      * @return string Endpoint URL
      */
     public function getEndpointUrl(string $index): string
@@ -146,6 +148,8 @@ class ElasticsearchHttpClient
     /**
      * Execute GET request.
      *
+     * @param string $url The URL to request.
+     *
      * @return array Response data
      */
     public function get(string $url): array
@@ -153,7 +157,12 @@ class ElasticsearchHttpClient
         try {
             $response = $this->httpClient->get($url);
             $body     = (string) $response->getBody();
-            return json_decode($body, true) ?: [];
+            $decoded  = json_decode($body, true);
+            if ($decoded === null || $decoded === false) {
+                return [];
+            }
+
+            return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
                     '[ElasticsearchHttpClient] GET failed',
@@ -170,6 +179,9 @@ class ElasticsearchHttpClient
     /**
      * Execute POST request.
      *
+     * @param string $url  The URL to request.
+     * @param array  $data The data to send as JSON.
+     *
      * @return array Response data
      */
     public function post(string $url, array $data): array
@@ -182,7 +194,12 @@ class ElasticsearchHttpClient
                     ]
                     );
             $body     = (string) $response->getBody();
-            return json_decode($body, true) ?: [];
+            $decoded  = json_decode($body, true);
+            if ($decoded === null || $decoded === false) {
+                return [];
+            }
+
+            return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
                     '[ElasticsearchHttpClient] POST failed',
@@ -192,12 +209,15 @@ class ElasticsearchHttpClient
                     ]
                     );
             throw $e;
-        }
+        }//end try
 
     }//end post()
 
     /**
      * Execute POST request with raw body (for bulk API).
+     *
+     * @param string $url  The URL to request.
+     * @param string $data The raw data to send.
      *
      * @return array Response data
      */
@@ -214,7 +234,12 @@ class ElasticsearchHttpClient
                     ]
                     );
             $body     = (string) $response->getBody();
-            return json_decode($body, true) ?: [];
+            $decoded  = json_decode($body, true);
+            if ($decoded === null || $decoded === false) {
+                return [];
+            }
+
+            return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
                     '[ElasticsearchHttpClient] POST (raw) failed',
@@ -231,6 +256,9 @@ class ElasticsearchHttpClient
     /**
      * Execute PUT request.
      *
+     * @param string $url  The URL to request.
+     * @param array  $data The data to send as JSON.
+     *
      * @return array Response data
      */
     public function put(string $url, array $data): array
@@ -243,7 +271,12 @@ class ElasticsearchHttpClient
                     ]
                     );
             $body     = (string) $response->getBody();
-            return json_decode($body, true) ?: [];
+            $decoded  = json_decode($body, true);
+            if ($decoded === null || $decoded === false) {
+                return [];
+            }
+
+            return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
                     '[ElasticsearchHttpClient] PUT failed',
@@ -253,12 +286,14 @@ class ElasticsearchHttpClient
                     ]
                     );
             throw $e;
-        }
+        }//end try
 
     }//end put()
 
     /**
      * Execute DELETE request.
+     *
+     * @param string $url The URL to request.
      *
      * @return array Response data
      */
@@ -267,7 +302,12 @@ class ElasticsearchHttpClient
         try {
             $response = $this->httpClient->delete($url);
             $body     = (string) $response->getBody();
-            return json_decode($body, true) ?: [];
+            $decoded  = json_decode($body, true);
+            if ($decoded === null || $decoded === false) {
+                return [];
+            }
+
+            return $decoded;
         } catch (Exception $e) {
             $this->logger->error(
                     '[ElasticsearchHttpClient] DELETE failed',

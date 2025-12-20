@@ -118,6 +118,8 @@ class UiController extends Controller
      *
      * @phpstan-return TemplateResponse
      *
+     * @return TemplateResponse The SPA template response
+     *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function registers(): TemplateResponse
@@ -141,6 +143,8 @@ class UiController extends Controller
      *
      * @phpstan-return TemplateResponse
      *
+     * @return TemplateResponse The SPA template response
+     *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
      */
     public function registersDetails(): TemplateResponse
@@ -163,6 +167,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function schemas(): TemplateResponse
     {
@@ -184,6 +190,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function schemasDetails(): TemplateResponse
     {
@@ -201,6 +209,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function sources(): TemplateResponse
     {
@@ -218,6 +228,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function organisation(): TemplateResponse
     {
@@ -235,6 +247,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function objects(): TemplateResponse
     {
@@ -252,6 +266,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function tables(): TemplateResponse
     {
@@ -269,6 +285,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function chat(): TemplateResponse
     {
@@ -286,6 +304,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function configurations(): TemplateResponse
     {
@@ -303,6 +323,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function deleted(): TemplateResponse
     {
@@ -320,6 +342,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function auditTrail(): TemplateResponse
     {
@@ -337,6 +361,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function searchTrail(): TemplateResponse
     {
@@ -354,6 +380,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function webhooks(): TemplateResponse
     {
@@ -371,6 +399,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function webhooksLogs(): TemplateResponse
     {
@@ -388,6 +418,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function entities(): TemplateResponse
     {
@@ -408,6 +440,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function endpoints(): TemplateResponse
     {
@@ -428,6 +462,8 @@ class UiController extends Controller
      * @phpstan-return TemplateResponse
      *
      * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
      */
     public function endpointLogs(): TemplateResponse
     {

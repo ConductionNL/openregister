@@ -141,9 +141,13 @@ class AuditHandler
             $objectSchemaId   = $this->extractSchemaId($objectSchema);
             $objectSchemaSlug = $this->extractSchemaSlug($objectSchema);
 
-            $requestedSchemaNorm  = strtolower($requestedSchema);
-            $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
-            $objectSchemaSlugNorm = $objectSchemaSlug !== null ? strtolower($objectSchemaSlug) : null;
+            $requestedSchemaNorm = strtolower($requestedSchema);
+            $objectSchemaIdNorm  = strtolower((string) $objectSchemaId);
+            if ($objectSchemaSlug !== null) {
+                $objectSchemaSlugNorm = strtolower($objectSchemaSlug);
+            } else {
+                $objectSchemaSlugNorm = null;
+            }
 
             // Check schema match (by ID or slug).
             $schemaMatch = (

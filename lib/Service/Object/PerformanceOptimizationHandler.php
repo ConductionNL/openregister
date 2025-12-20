@@ -35,8 +35,6 @@ class PerformanceOptimizationHandler
 {
     /**
      * Constructor for PerformanceOptimizationHandler.
-     *
-     * @param OrganisationService $organisationService Service for organization operations.
      */
     public function __construct()
     {
@@ -60,7 +58,7 @@ class PerformanceOptimizationHandler
             // TODO: Implement organisation retrieval when service is available.
             // $activeOrganisation = $this->organisationService->getActiveOrganisation();
             // If ($activeOrganisation !== null) {
-            // Return $activeOrganisation->getUuid();
+            // Return $activeOrganisation->getUuid();.
             // }
             return null;
         } catch (Exception $e) {
@@ -149,7 +147,11 @@ class PerformanceOptimizationHandler
         $extendCount = 0;
         if (empty($query['_extend']) === false) {
             // Calculate extend count - count array elements or string length.
-            $extendCount = is_array($query['_extend']) === true ? count($query['_extend']) : 1;
+            if (is_array($query['_extend']) === true) {
+                $extendCount = count($query['_extend']);
+            } else {
+                $extendCount = 1;
+            }
         }
 
         if ($extendCount > 3) {
