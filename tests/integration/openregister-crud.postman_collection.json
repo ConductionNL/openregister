@@ -3818,7 +3818,7 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/import/csv",
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}/import",
               "host": [
                 "{{base_url}}"
               ],
@@ -3827,8 +3827,9 @@
                 "apps",
                 "openregister",
                 "api",
-                "import",
-                "csv"
+                "registers",
+                "{{register_id}}",
+                "import"
               ]
             }
           }
@@ -3875,7 +3876,7 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/index.php/apps/openregister/api/import/csv",
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}/import",
               "host": [
                 "{{base_url}}"
               ],
@@ -3884,8 +3885,9 @@
                 "apps",
                 "openregister",
                 "api",
-                "import",
-                "csv"
+                "registers",
+                "{{register_id}}",
+                "import"
               ]
             }
           }
@@ -4174,7 +4176,9 @@
                   "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
                   "pm.test('Parent resolves grandparent properties', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.properties).to.have.property('alive', 'Inherited from grandparent');",
+                  "    // Check that inherited properties from grandparent are present",
+                  "    pm.expect(json.properties).to.have.property('alive');",
+                  "    pm.expect(json.properties.alive).to.have.property('type', 'boolean');",
                   "    pm.expect(json.properties).to.have.property('name');",
                   "    pm.expect(json.required).to.include.members(['alive', 'name']);",
                   "});",
@@ -4265,9 +4269,13 @@
                   "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
                   "pm.test('All properties inherited through chain', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.properties).to.have.property('alive', 'From grandparent');",
-                  "    pm.expect(json.properties).to.have.property('name', 'From parent');",
-                  "    pm.expect(json.properties).to.have.property('employeeId', 'Native');",
+                  "    // Check that all properties from 3-level chain are present",
+                  "    pm.expect(json.properties).to.have.property('alive'); // from grandparent",
+                  "    pm.expect(json.properties.alive).to.have.property('type', 'boolean');",
+                  "    pm.expect(json.properties).to.have.property('name'); // from parent",
+                  "    pm.expect(json.properties.name).to.have.property('type', 'string');",
+                  "    pm.expect(json.properties).to.have.property('employeeId'); // native",
+                  "    pm.expect(json.properties.employeeId).to.have.property('type', 'string');",
                   "});",
                   "pm.test('All required fields merged', function() {",
                   "    const json = pm.response.json();",
@@ -4406,9 +4414,13 @@
                   "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
                   "pm.test('Properties from both parents merged', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.properties).to.have.property('name', 'From parent 1');",
-                  "    pm.expect(json.properties).to.have.property('address', 'From parent 2');",
-                  "    pm.expect(json.properties).to.have.property('customerId', 'Native');",
+                  "    // Check that properties from both parents are present",
+                  "    pm.expect(json.properties).to.have.property('name'); // from parent 1",
+                  "    pm.expect(json.properties.name).to.have.property('type', 'string');",
+                  "    pm.expect(json.properties).to.have.property('address'); // from parent 2",
+                  "    pm.expect(json.properties.address).to.have.property('type', 'string');",
+                  "    pm.expect(json.properties).to.have.property('customerId'); // native",
+                  "    pm.expect(json.properties.customerId).to.have.property('type', 'string');",
                   "});",
                   "pm.test('Required fields from all parents', function() {",
                   "    const json = pm.response.json();",
