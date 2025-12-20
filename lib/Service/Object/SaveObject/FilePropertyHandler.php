@@ -552,22 +552,19 @@ class FilePropertyHandler
 
         // Generate filename (currently unused - will be used when fileService is implemented).
         // $filename = $this->generateFileName(propertyName: $propertyName, extension: $fileData['extension'], index: $index);
-
         // Prepare auto tags (currently unused - will be used when fileService is implemented).
         // $autoTags = $this->prepareAutoTags(fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
-
         // Check if auto-publish is enabled in the property configuration (currently unused).
         // $autoPublish = $fileConfig['autoPublish'] ?? false;
-
         // Create the file with validation and tagging.
         $file = null;
         // TODO: Implement file creation when fileService is available.
         // $file = $this->fileService->addFile(
-        //     objectEntity: $objectEntity,
-        //     fileName: $filename,
-        //     content: $fileData['content'],
-        //     share: $autoPublish,
-        //     tags: $autoTags
+        // objectEntity: $objectEntity,
+        // fileName: $filename,
+        // content: $fileData['content'],
+        // share: $autoPublish,
+        // tags: $autoTags
         // );
         return $file->getId();
     }//end processStringFileInput()
@@ -616,11 +613,11 @@ class FilePropertyHandler
                 // TODO: Implement file retrieval when fileService is available.
                 // $existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileId);
                 // if ($existingFile !== null) {
-                //     // Validate the existing file against current config.
-                //     $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
-                //     // Apply auto tags if needed (non-destructive - adds to existing tags).
-                //     $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
-                //     return $fileId;
+                // Validate the existing file against current config.
+                // $this->validateExistingFileAgainstConfig(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+                // Apply auto tags if needed (non-destructive - adds to existing tags).
+                // $this->applyAutoTagsToExistingFile(file: $existingFile, fileConfig: $fileConfig, propertyName: $propertyName, index: $index);
+                // return $fileId;
                 // }
                 // }.
             } catch (Exception $e) {
@@ -817,9 +814,9 @@ class FilePropertyHandler
                 // $existingTags = $formattedFile['labels'] ?? [];
                 // $allTags = array_unique(array_merge($existingTags, $autoTags));
                 // $this->fileService->updateFile(
-                //     filePath: $file->getId(),
-                //     content: null,  // Don't change content
-                //     tags: $allTags
+                // filePath: $file->getId(),
+                // content: null,  // Don't change content
+                // tags: $allTags
                 // );
             } catch (Exception $e) {
                 // Log but don't fail - auto tagging is not critical.

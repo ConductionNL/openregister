@@ -807,9 +807,8 @@ class OasService
         // Determine schema name (currently unused but kept for potential future use).
         // $schemaName = 'UnknownSchema';
         // if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
-        //     $schemaName = $schema->getTitle();
+        // $schemaName = $schema->getTitle();
         // }
-
         return [
             'summary'     => 'Update a '.$schema->getTitle().' object',
             'operationId' => 'update'.$this->pascalCase($schema->getTitle()),

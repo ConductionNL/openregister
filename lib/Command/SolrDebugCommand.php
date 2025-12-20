@@ -227,7 +227,6 @@ class SolrDebugCommand extends Command
             // Test setup.
             // $setup  = new SetupHandler($solrService, $this->logger);
             // $result = $setup->setupSolr();
-
             if ($result === true) {
                 $output->writeln('<info>✅ SOLR setup completed successfully</info>');
             } else {
@@ -384,7 +383,8 @@ class SolrDebugCommand extends Command
                 foreach ($collectionsData['cluster']['collections'] as $collectionName => $collectionData) {
                     // $collectionName is guaranteed to be a string when iterating over array.
                     // $collectionData contains collection metadata but we only display the name.
-                    unset($collectionData); // Suppress unused variable warning.
+                    unset($collectionData);
+                    // Suppress unused variable warning.
                     $output->writeln("    - <comment>".$collectionName."</comment>");
                 }
             }

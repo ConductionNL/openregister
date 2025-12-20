@@ -64,6 +64,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setGroups(?array $groups)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
+ * @method array|null getConfiguration()
+ * @method void setConfiguration(?array $configuration)
  */
 class Register extends Entity implements JsonSerializable
 {
@@ -224,6 +226,26 @@ class Register extends Entity implements JsonSerializable
     protected ?DateTime $depublished = null;
 
     /**
+     * Configuration settings for this register.
+     *
+     * Stores register-specific configuration including schema-level settings like magic mapping.
+     *
+     * Structure:
+     * {
+     *   "schemas": {
+     *     "<schema_id>": {
+     *       "magicMapping": bool,
+     *       "autoCreateTable": bool,
+     *       "comment": string
+     *     }
+     *   }
+     * }
+     *
+     * @var array|null Configuration settings
+     */
+    protected ?array $configuration = [];
+
+    /**
      * Constructor for the Register class
      *
      * Sets up field types for all properties
@@ -249,6 +271,7 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
+        $this->addType(fieldName: 'configuration', type: 'json');
 
     }//end __construct()
 
@@ -620,4 +643,144 @@ class Register extends Entity implements JsonSerializable
         $this->markFieldUpdated('depublished');
 
     }//end setDepublished()
+
+    // ==================================================================================
+    // MAGIC MAPPING CONFIGURATION HELPERS
+    // ==================================================================================
+
+    /**
+     * Get configuration settings.
+     *
+     * @return array Configuration settings or empty array if null.
+     */
+    public function getConfiguration(): array
+    {
+        return ($this->configuration ?? []);
+
+    }//end getConfiguration()
+
+    /**
+     * Set configuration settings.
+     *
+     * @param array|null $configuration Configuration settings.
+     *
+     * @return static Returns self for method chaining.
+     */
+    public function setConfiguration(?array $configuration): static
+    {
+        $this->configuration = $configuration;
+        $this->markFieldUpdated('configuration');
+
+        return $this;
+
+    }//end setConfiguration()
+
+    /**
+     * Check if magic mapping is enabled for a specific schema in this register.
+     *
+     * @param int $schemaId The schema ID to check.
+     *
+     * @return bool True if magic mapping is enabled for this schema.
+     */
+    public function isMagicMappingEnabledForSchema(int $schemaId): bool
+    {
+        $config        = $this->getConfiguration();
+        $schemaConfigs = $config['schemas'] ?? [];
+        $schemaConfig  = $schemaConfigs[$schemaId] ?? [];
+
+        return ($schemaConfig['magicMapping'] ?? false) === true;
+
+    }//end isMagicMappingEnabledForSchema()
+
+    /**
+     * Check if auto-create table is enabled for a specific schema in this register.
+     *
+     * @param int $schemaId The schema ID to check.
+     *
+     * @return bool True if auto-create table is enabled for this schema.
+     */
+    public function isAutoCreateTableEnabledForSchema(int $schemaId): bool
+    {
+        $config        = $this->getConfiguration();
+        $schemaConfigs = $config['schemas'] ?? [];
+        $schemaConfig  = $schemaConfigs[$schemaId] ?? [];
+
+        return ($schemaConfig['autoCreateTable'] ?? false) === true;
+
+    }//end isAutoCreateTableEnabledForSchema()
+
+    /**
+     * Enable magic mapping for a specific schema in this register.
+     *
+     * @param int         $schemaId        The schema ID.
+     * @param bool        $autoCreateTable Whether to auto-create the table (default: true).
+     * @param string|null $comment         Optional comment describing why magic mapping is enabled.
+     *
+     * @return static Returns self for method chaining.
+     */
+    public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable=true, ?string $comment=null): static
+    {
+        $config = $this->getConfiguration();
+
+        if (isset($config['schemas']) === false) {
+            $config['schemas'] = [];
+        }
+
+        $config['schemas'][$schemaId] = [
+            'magicMapping'    => true,
+            'autoCreateTable' => $autoCreateTable,
+        ];
+
+        if ($comment !== null) {
+            $config['schemas'][$schemaId]['comment'] = $comment;
+        }
+
+        $this->setConfiguration($config);
+
+        return $this;
+
+    }//end enableMagicMappingForSchema()
+
+    /**
+     * Disable magic mapping for a specific schema in this register.
+     *
+     * @param int $schemaId The schema ID.
+     *
+     * @return static Returns self for method chaining.
+     */
+    public function disableMagicMappingForSchema(int $schemaId): static
+    {
+        $config = $this->getConfiguration();
+
+        if (isset($config['schemas'][$schemaId]) === true) {
+            $config['schemas'][$schemaId]['magicMapping'] = false;
+            $this->setConfiguration($config);
+        }
+
+        return $this;
+
+    }//end disableMagicMappingForSchema()
+
+    /**
+     * Get all schema IDs that have magic mapping enabled in this register.
+     *
+     * @return int[] Array of schema IDs with magic mapping enabled.
+     *
+     * @psalm-return list<int>
+     */
+    public function getSchemasWithMagicMapping(): array
+    {
+        $config        = $this->getConfiguration();
+        $schemaConfigs = $config['schemas'] ?? [];
+        $schemaIds     = [];
+
+        foreach ($schemaConfigs as $schemaId => $schemaConfig) {
+            if (($schemaConfig['magicMapping'] ?? false) === true) {
+                $schemaIds[] = (int) $schemaId;
+            }
+        }
+
+        return $schemaIds;
+
+    }//end getSchemasWithMagicMapping()
 }//end class

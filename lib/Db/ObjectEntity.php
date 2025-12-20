@@ -626,6 +626,12 @@ class ObjectEntity extends Entity implements JsonSerializable
             $object['@self']['name'] = $this->uuid;
         }
 
+        // Ensure organisation is always accessible at top level (not just in @self).
+        // Organisation should NEVER be null - it should always have at least the default organisation.
+        if (($this->organisation ?? null) !== null) {
+            $object['organisation'] = $this->organisation;
+        }
+
         // Let's merge and return.
         return $object;
 
@@ -693,7 +699,7 @@ class ObjectEntity extends Entity implements JsonSerializable
                 $objectArray['owner'] = $self['owner'];
             }
 
-            if (($self['organisation'] ?? null) !== null && is_array($self['organisation']) === true) {
+            if (($self['organisation'] ?? null) !== null) {
                 $objectArray['organisation'] = $self['organisation'];
             }
 
@@ -836,7 +842,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function isLocked(): bool
     {
-        if ($this->locked === null) {
+        if ($this->locked === null || empty($this->locked)) {
             return false;
         }
 
@@ -844,13 +850,23 @@ class ObjectEntity extends Entity implements JsonSerializable
         $now = new DateTime();
 
         // Check if expiration key exists.
-        if (isset($this->locked['expiration']) === false) {
-            return false;
+        if (isset($this->locked['expiration']) === true) {
+            // New format with expiration.
+            $expiration = new DateTime($this->locked['expiration']);
+            return $now < $expiration;
         }
 
-        $expiration = new DateTime($this->locked['expiration']);
+        // Legacy format: calculate expiration from lockedAt + duration.
+        if (isset($this->locked['lockedAt']) === true && isset($this->locked['duration']) === true) {
+            $lockedAt   = new DateTime($this->locked['lockedAt']);
+            $duration   = (int) $this->locked['duration'];
+            $expiration = clone $lockedAt;
+            $expiration->add(new \DateInterval('PT'.$duration.'S'));
+            return $now < $expiration;
+        }
 
-        return $now < $expiration;
+        // If no expiration info, treat as permanently locked (until explicitly unlocked).
+        return true;
 
     }//end isLocked()
 
@@ -868,6 +884,25 @@ class ObjectEntity extends Entity implements JsonSerializable
         return $this->locked;
 
     }//end getLockInfo()
+
+    /**
+     * Get the user ID who locked the object
+     *
+     * Returns the user ID (UID) of the user who has locked this object.
+     * Returns null if the object is not locked or lock information is missing.
+     *
+     * @return string|null User ID who locked the object, or null if not locked
+     */
+    public function getLockedBy(): ?string
+    {
+        if ($this->isLocked() === false) {
+            return null;
+        }
+
+        // Return the user from the lock array.
+        return $this->locked['user'] ?? null;
+
+    }//end getLockedBy()
 
     /**
      * Delete the object

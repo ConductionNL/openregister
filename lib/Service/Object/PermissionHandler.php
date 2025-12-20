@@ -368,10 +368,10 @@ class PermissionHandler
             // TODO: Get active organisation without service dependency.
             // $activeOrganisation = ... implementation needed ...
             // if (is_array($activeOrganisation) === true && isset($activeOrganisation['uuid']) === true) {
-            //     return $activeOrganisation['uuid'];
+            // return $activeOrganisation['uuid'];
             // }
             // if (is_string($activeOrganisation) === true) {
-            //     return $activeOrganisation;
+            // return $activeOrganisation;
             // }
             return null;
         } catch (Exception $e) {

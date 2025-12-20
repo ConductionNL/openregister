@@ -202,14 +202,9 @@ class ObjectEntityMapper extends QBMapper
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
         try {
-            $this->logger->debug('[ObjectEntityMapper] lockObject called', ['uuid' => $uuid, 'lockDuration' => $lockDuration]);
-
             // Get current user from session.
-            $user = $this->userSession->getUser();
-            $this->logger->debug('[ObjectEntityMapper] Got user from session', ['user' => $user ? $user->getUID() : 'null']);
-
+            $user   = $this->userSession->getUser();
             $userId = $user !== null ? $user->getUID() : 'system';
-            $this->logger->debug('[ObjectEntityMapper] User ID determined', ['userId' => $userId]);
 
             // Get the active organization from session at time of lock for audit trail.
             $activeOrganisation = null;
@@ -217,35 +212,34 @@ class ObjectEntityMapper extends QBMapper
                 $activeOrganisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
             }
 
-            // Create lock information as JSON object (locked is a JSON field, not a string).
-            $lockData = json_encode(
-                    [
-                        'userId'       => $userId,
-                        'lockedAt'     => (new DateTime())->format(DateTime::ATOM),
-                        'duration'     => $lockDuration,
-                        'organisation' => $activeOrganisation,
-                    ]
-                    );
-            $this->logger->debug('[ObjectEntityMapper] Lock data created', ['lockData' => $lockData]);
+            // Create lock information as array (will be serialized to JSON by Entity).
+            // Calculate expiration time for the lock.
+            $now        = new DateTime();
+            $expiration = clone $now;
+            if ($lockDuration !== null && $lockDuration > 0) {
+                $expiration->add(new \DateInterval('PT'.$lockDuration.'S'));
+            } else {
+                // Default 1 hour if no duration specified.
+                $expiration->add(new \DateInterval('PT3600S'));
+            }
 
-            // Update the object to set the locked field.
-            $this->logger->debug('[ObjectEntityMapper] Creating query builder');
-            $qb = $this->db->getQueryBuilder();
+            $lockData = [
+                'userId'       => $userId,
+                'lockedAt'     => $now->format(DateTime::ATOM),
+                'duration'     => $lockDuration,
+                'expiration'   => $expiration->format(DateTime::ATOM),
+                'organisation' => $activeOrganisation,
+            ];
 
-            $this->logger->debug('[ObjectEntityMapper] Building update query');
-            $qb->update($this->getTableName())
-                ->set('locked', $qb->createNamedParameter($lockData))
-                ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-            $this->logger->debug('[ObjectEntityMapper] Executing query');
-            $qb->executeStatement();
-            $this->logger->debug('[ObjectEntityMapper] Query executed successfully');
+            // Load the entity, set the lock, and update it properly through Entity.
+            // This ensures Entity's change tracking and JSON serialization work correctly.
+            $entity = $this->find($uuid);
+            $entity->setLocked($lockData);
+            $updatedEntity = $this->update($entity);
 
             // Return lock information.
-            $this->logger->debug('[ObjectEntityMapper] Creating return array');
-
             return [
-                'locked' => json_decode($lockData, true),
+                'locked' => $lockData,
                 'uuid'   => $uuid,
             ];
         } catch (\Exception $e) {

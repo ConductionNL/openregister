@@ -115,9 +115,9 @@ class PublishHandler
             try {
                 error_log('[PublishHandler] About to create audit trail for publish action');
                 $auditTrail = $this->auditTrailMapper->createAuditTrail(old: $objectBeforeClone, new: $object, action: 'publish');
-                error_log('[PublishHandler] Audit trail created: ' . $auditTrail->getId());
+                error_log('[PublishHandler] Audit trail created: '.$auditTrail->getId());
             } catch (\Exception $auditError) {
-                error_log('[PublishHandler] Failed to create audit trail: ' . $auditError->getMessage());
+                error_log('[PublishHandler] Failed to create audit trail: '.$auditError->getMessage());
             }
 
             $this->logger->info(

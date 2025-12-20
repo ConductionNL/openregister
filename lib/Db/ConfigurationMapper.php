@@ -538,6 +538,5 @@ class ConfigurationMapper extends QBMapper
         // Legacy code - no longer used.
         // $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
         // $this->session->remove($sessionKey);
-
     }//end invalidateConfigurationCache()
 }//end class

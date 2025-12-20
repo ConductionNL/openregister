@@ -988,7 +988,6 @@ class ConfigurationService
 
         // Legacy code below - no longer executed (unreachable after return).
         // $configuration->setRegisters($existingRegisterIds);
-
         // Update schema IDs.
         $existingSchemaIds = $configuration->getSchemas();
         foreach ($result['schemas'] as $schema) {

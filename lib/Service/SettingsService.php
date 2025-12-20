@@ -1697,7 +1697,6 @@ class SettingsService
 
             // Get current settings (currently unused but kept for potential future use).
             // $currentSettings = $this->getSettings();
-
             // Determine what to rebase.
             $components = $options['components'] ?? ['all'];
             $rebased    = [];

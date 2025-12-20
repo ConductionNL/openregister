@@ -60,7 +60,7 @@ class PerformanceOptimizationHandler
             // TODO: Implement organisation retrieval when service is available.
             // $activeOrganisation = $this->organisationService->getActiveOrganisation();
             // if ($activeOrganisation !== null) {
-            //     return $activeOrganisation->getUuid();
+            // return $activeOrganisation->getUuid();
             // }
             return null;
         } catch (Exception $e) {
