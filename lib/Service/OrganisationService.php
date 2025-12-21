@@ -705,7 +705,7 @@ class OrganisationService
         $userId = null;
 
         // Validate UUID if provided.
-        if ($uuid !== '' && Organisation::isValidUuid($uuid) === false) {
+        if ($uuid !== '' && Uuid::isValid($uuid) === false) {
             throw new Exception('Invalid UUID format. UUID must be a 32-character hexadecimal string.');
         }
 

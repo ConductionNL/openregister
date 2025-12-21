@@ -371,7 +371,10 @@ class ConfigurationService
     public function getUploadedJson(array $data, ?array $uploadedFiles): array | JSONResponse
     {
         // Delegate to UploadHandler for processing uploaded JSON data.
-        return $this->uploadHandler->getUploadedJson($data, $uploadedFiles);
+        return $this->uploadHandler->getUploadedJson(
+            data: $data,
+            uploadedFiles: $uploadedFiles
+        );
 
     }//end getUploadedJson()
 
@@ -386,7 +389,10 @@ class ConfigurationService
      */
     private function decode(string $data, ?string $type): ?array
     {
-        return $this->importHandler->decode($data, $type);
+        return $this->importHandler->decode(
+            data: $data,
+            type: $type
+        );
 
     }//end decode()
 
@@ -417,7 +423,10 @@ class ConfigurationService
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
-        return $this->importHandler->getJSONfromFile($uploadedFile, $_type);
+        return $this->importHandler->getJSONfromFile(
+            uploadedFile: $uploadedFile,
+            _type: $_type
+        );
 
     }//end getJSONfromFile()
 
@@ -495,7 +504,14 @@ class ConfigurationService
         ?string $version=null,
         bool $force=false
     ): array {
-        return $this->importHandler->importFromJson($data, $configuration, $owner, $appId, $version, $force);
+        return $this->importHandler->importFromJson(
+            data: $data,
+            configuration: $configuration,
+            owner: $owner,
+            appId: $appId,
+            version: $version,
+            force: $force
+        );
 
     }//end importFromJson()
 
@@ -519,7 +535,13 @@ class ConfigurationService
      */
     private function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
     {
-        return $this->importHandler->createOrUpdateConfiguration($data, $appId, $version, $result, $owner);
+        return $this->importHandler->createOrUpdateConfiguration(
+            data: $data,
+            appId: $appId,
+            version: $version,
+            result: $result,
+            owner: $owner
+        );
 
     }//end createOrUpdateConfiguration()
 
@@ -536,7 +558,13 @@ class ConfigurationService
      */
     private function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
     {
-        return $this->importHandler->importRegister($data, $owner, $appId, $version, $force);
+        return $this->importHandler->importRegister(
+            data: $data,
+            owner: $owner,
+            appId: $appId,
+            version: $version,
+            force: $force
+        );
 
     }//end importRegister()
 
@@ -560,7 +588,14 @@ class ConfigurationService
         ?string $version=null,
         bool $force=false
     ): Schema {
-        return $this->importHandler->importSchema($data, $slugsAndIdsMap, $owner, $appId, $version, $force);
+        return $this->importHandler->importSchema(
+            data: $data,
+            slugsAndIdsMap: $slugsAndIdsMap,
+            owner: $owner,
+            appId: $appId,
+            version: $version,
+            force: $force
+        );
 
     }//end importSchema()
 
@@ -601,7 +636,12 @@ class ConfigurationService
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
-        return $this->importHandler->importFromFilePath($appId, $filePath, $version, $force);
+        return $this->importHandler->importFromFilePath(
+            appId: $appId,
+            filePath: $filePath,
+            version: $version,
+            force: $force
+        );
 
     }//end importFromFilePath()
 
@@ -636,7 +676,12 @@ class ConfigurationService
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
-        return $this->importHandler->importFromApp($appId, $data, $version, $force);
+        return $this->importHandler->importFromApp(
+            appId: $appId,
+            data: $data,
+            version: $version,
+            force: $force
+        );
 
     }//end importFromApp()
 
@@ -911,7 +956,10 @@ class ConfigurationService
     private function previewRegisterChange(string $slug, array $registerData): array
     {
         $slug = strtolower($slug);
-        return $this->previewHandler->previewRegisterChange($slug, $registerData);
+        return $this->previewHandler->previewRegisterChange(
+            slug: $slug,
+            registerData: $registerData
+        );
         /*
          * Preview changes for a single schema
          *
@@ -932,7 +980,10 @@ class ConfigurationService
          */
 
         // Note: $schemaData is received as parameter but currently unused - keeping for API consistency.
-        return $this->previewHandler->previewSchemaChange($slug, $schemaData);
+        return $this->previewHandler->previewSchemaChange(
+            slug: $slug,
+            schemaData: $schemaData
+        );
 
     }//end previewRegisterChange()
 
@@ -973,7 +1024,11 @@ class ConfigurationService
      */
     private function compareArrays(array $current, array $proposed, string $prefix=''): array
     {
-        return $this->previewHandler->compareArrays($current, $proposed, $prefix);
+        return $this->previewHandler->compareArrays(
+            current: $current,
+            proposed: $proposed,
+            prefix: $prefix
+        );
 
     }//end compareArrays()
 
@@ -1140,7 +1195,11 @@ class ConfigurationService
      */
     public function searchGitHub(string $search='', int $page=1, int $perPage=30): array
     {
-        return $this->githubHandler->searchConfigurations($search, $page, $perPage);
+        return $this->githubHandler->searchConfigurations(
+            search: $search,
+            page: $page,
+            perPage: $perPage
+        );
 
     }//end searchGitHub()
 
@@ -1161,7 +1220,11 @@ class ConfigurationService
      */
     public function searchGitLab(string $search='', int $page=1, int $perPage=30): array
     {
-        return $this->gitlabHandler->searchConfigurations($search, $page, $perPage);
+        return $this->gitlabHandler->searchConfigurations(
+            search: $search,
+            page: $page,
+            perPage: $perPage
+        );
 
     }//end searchGitLab()
 

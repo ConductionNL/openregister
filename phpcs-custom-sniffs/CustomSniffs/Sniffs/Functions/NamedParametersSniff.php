@@ -188,6 +188,10 @@ class NamedParametersSniff implements Sniff
                 'solrsetup',
                 // Third-party library constructors (Opis JsonSchema).
                 'validationresult', 'errorformatter', 'validator',
+                // PHP built-in exception constructors.
+                'exception', 'runtimeexception', 'invalidargumentexception', 'logicexception',
+                // Nextcloud exception constructors.
+                'ocpdbexception',
                 // QBMapper parent class constructor.
                 'qbmapper',
                 // Event classes (extend OCP\EventDispatcher\Event).
@@ -461,7 +465,7 @@ class NamedParametersSniff implements Sniff
                 
                 // Math functions.
                 'abs', 'ceil', 'floor', 'round', 'sqrt', 'pow', 'log', 'sin', 'cos', 'tan',
-                'rand', 'mt_rand', 'srand', 'mt_srand', 'range',
+                'rand', 'mt_rand', 'srand', 'mt_srand', 'range', 'number_format',
                 // Encoding/decoding functions.
                 'base64_encode', 'base64_decode',
                 

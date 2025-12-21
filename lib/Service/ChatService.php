@@ -214,14 +214,23 @@ class ChatService
             }
 
             // Store user message.
-            $this->historyHandler->storeMessage($conversationId, Message::ROLE_USER, $userMessage);
+            $this->historyHandler->storeMessage(
+                conversationId: $conversationId,
+                role: Message::ROLE_USER,
+                content: $userMessage
+            );
 
             // Check if conversation needs summarization.
             $this->conversationHandler->checkAndSummarize($conversation);
 
             // Retrieve RAG context.
             $contextStartTime = microtime(true);
-            $context          = $this->contextHandler->retrieveContext($userMessage, $agent, $selectedViews, $ragSettings);
+            $context          = $this->contextHandler->retrieveContext(
+                query: $userMessage,
+                agent: $agent,
+                selectedViews: $selectedViews,
+                ragSettings: $ragSettings
+            );
             $contextTime      = microtime(true) - $contextStartTime;
 
             // Build message history.
@@ -231,11 +240,22 @@ class ChatService
 
             // Generate LLM response.
             $llmStartTime = microtime(true);
-            $aiResponse   = $this->responseHandler->generateResponse($userMessage, $context, $messageHistory, $agent, $selectedTools);
+            $aiResponse   = $this->responseHandler->generateResponse(
+                userMessage: $userMessage,
+                context: $context,
+                messageHistory: $messageHistory,
+                agent: $agent,
+                selectedTools: $selectedTools
+            );
             $llmTime      = microtime(true) - $llmStartTime;
 
             // Store AI response with sources.
-            $this->historyHandler->storeMessage($conversationId, Message::ROLE_ASSISTANT, $aiResponse, $context['sources']);
+            $this->historyHandler->storeMessage(
+                conversationId: $conversationId,
+                role: Message::ROLE_ASSISTANT,
+                content: $aiResponse,
+                sources: $context['sources']
+            );
 
             // Generate title if this is first exchange.
             $messageCount        = $this->messageMapper->countByConversation($conversationId);
@@ -246,7 +266,11 @@ class ChatService
                 $title   = $this->conversationHandler->generateConversationTitle($userMessage);
                 $agentId = $conversation->getAgentId();
                 if ($agentId !== null) {
-                    $title = $this->conversationHandler->ensureUniqueTitle($title, $conversation->getUserId(), $agentId);
+                    $title = $this->conversationHandler->ensureUniqueTitle(
+                        baseTitle: $title,
+                        userId: $conversation->getUserId(),
+                        agentId: $agentId
+                    );
                 }
 
                 $conversation->setTitle($title);
@@ -306,7 +330,11 @@ class ChatService
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
-        return $this->conversationHandler->ensureUniqueTitle($baseTitle, $userId, $agentId);
+        return $this->conversationHandler->ensureUniqueTitle(
+            baseTitle: $baseTitle,
+            userId: $userId,
+            agentId: $agentId
+        );
 
     }//end ensureUniqueTitle()
 

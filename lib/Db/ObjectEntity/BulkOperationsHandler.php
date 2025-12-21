@@ -122,11 +122,14 @@ class BulkOperationsHandler
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
         $optimizedHandler = new OptimizedBulkOperations(
-            $this->db,
-            $this->logger
+            db: $this->db,
+            logger: $this->logger
         );
 
-        return $optimizedHandler->ultraFastUnifiedBulkSave($insertObjects, $updateObjects);
+        return $optimizedHandler->ultraFastUnifiedBulkSave(
+            insertObjects: $insertObjects,
+            updateObjects: $updateObjects
+        );
     }//end ultraFastBulkSave()
 
     /**
@@ -156,7 +159,10 @@ class BulkOperationsHandler
             }
 
             // Bulk delete objects with hard delete flag.
-            $deletedIds       = $this->bulkDelete($uuids, $hardDelete);
+            $deletedIds       = $this->bulkDelete(
+                uuids: $uuids,
+                hardDelete: $hardDelete
+            );
             $deletedObjectIds = array_merge($deletedObjectIds, $deletedIds);
 
             // Commit transaction only if we started it.
@@ -198,7 +204,10 @@ class BulkOperationsHandler
                 $transactionStarted = true;
             }
 
-            $publishedIds       = $this->bulkPublish($uuids, $datetime);
+            $publishedIds       = $this->bulkPublish(
+                uuids: $uuids,
+                datetime: $datetime
+            );
             $publishedObjectIds = array_merge($publishedObjectIds, $publishedIds);
 
             if ($transactionStarted === true) {
@@ -238,7 +247,10 @@ class BulkOperationsHandler
                 $transactionStarted = true;
             }
 
-            $depublishedIds       = $this->bulkDepublish($uuids, $datetime);
+            $depublishedIds       = $this->bulkDepublish(
+                uuids: $uuids,
+                datetime: $datetime
+            );
             $depublishedObjectIds = array_merge($depublishedObjectIds, $depublishedIds);
 
             if ($transactionStarted === true) {
@@ -345,7 +357,10 @@ class BulkOperationsHandler
         }
 
         // Use the existing bulk delete method with hard delete flag.
-        $deletedUuids = $this->deleteObjects($uuids, $hardDelete);
+        $deletedUuids = $this->deleteObjects(
+            uuids: $uuids,
+            hardDelete: $hardDelete
+        );
 
         return [
             'deleted_count' => count($deletedUuids),
@@ -687,7 +702,10 @@ class BulkOperationsHandler
         $columns     = array_keys($firstObject);
 
         // Calculate optimal batch size based on actual data size.
-        $batchSize   = $this->calculateOptimalBatchSize($insertObjects, $columns);
+        $batchSize   = $this->calculateOptimalBatchSize(
+            insertObjects: $insertObjects,
+            _columns: $columns
+        );
         $insertedIds = [];
         $objectCount = count($insertObjects);
 
@@ -815,7 +833,10 @@ class BulkOperationsHandler
                     continue;
                 }
 
-                $value = $this->getEntityValue($object, $column);
+                $value = $this->getEntityValue(
+                    entity: $object,
+                    column: $column
+                );
                 $qb->set($column, $qb->createNamedParameter($value));
             }
 

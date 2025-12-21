@@ -178,7 +178,10 @@ class SolrBackend implements SearchBackendInterface
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
-        return $this->indexer->indexObject($object, $commit);
+        return $this->indexer->indexObject(
+            object: $object,
+            commit: $commit
+        );
 
     }//end indexObject()
 
@@ -192,7 +195,10 @@ class SolrBackend implements SearchBackendInterface
      */
     public function bulkIndexObjects(array $objects, bool $commit=true): array
     {
-        return $this->indexer->bulkIndexObjects($objects, $commit);
+        return $this->indexer->bulkIndexObjects(
+            objects: $objects,
+            commit: $commit
+        );
 
     }//end bulkIndexObjects()
 
@@ -206,7 +212,10 @@ class SolrBackend implements SearchBackendInterface
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
-        return $this->indexer->deleteObject($objectId, $commit);
+        return $this->indexer->deleteObject(
+            objectId: $objectId,
+            commit: $commit
+        );
 
     }//end deleteObject()
 
@@ -221,7 +230,11 @@ class SolrBackend implements SearchBackendInterface
      */
     public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
     {
-        return $this->indexer->deleteByQuery($query, $commit, $returnDetails);
+        return $this->indexer->deleteByQuery(
+            query: $query,
+            commit: $commit,
+            returnDetails: $returnDetails
+        );
 
     }//end deleteByQuery()
 
@@ -243,7 +256,13 @@ class SolrBackend implements SearchBackendInterface
         bool $published=false,
         bool $deleted=false
     ): array {
-        return $this->queryExecutor->searchPaginated($query, $rbac, $multitenancy, $published, $deleted);
+        return $this->queryExecutor->searchPaginated(
+            query: $query,
+            rbac: $rbac,
+            multitenancy: $multitenancy,
+            published: $published,
+            deleted: $deleted
+        );
 
     }//end searchObjectsPaginated()
 
@@ -368,7 +387,10 @@ class SolrBackend implements SearchBackendInterface
      */
     public function createCollection(string $name, array $config=[]): array
     {
-        return $this->collectionManager->createCollection($name, $config);
+        return $this->collectionManager->createCollection(
+            name: $name,
+            config: $config
+        );
 
     }//end createCollection()
 
@@ -458,7 +480,10 @@ class SolrBackend implements SearchBackendInterface
      */
     public function addFieldType(string $collection, array $fieldType): bool
     {
-        return $this->schemaManager->addFieldType($collection, $fieldType);
+        return $this->schemaManager->addFieldType(
+            collection: $collection,
+            fieldType: $fieldType
+        );
 
     }//end addFieldType()
 
@@ -485,7 +510,10 @@ class SolrBackend implements SearchBackendInterface
      */
     public function addOrUpdateField(array $fieldConfig, bool $force): string
     {
-        return $this->schemaManager->addOrUpdateField($fieldConfig, $force);
+        return $this->schemaManager->addOrUpdateField(
+            fieldConfig: $fieldConfig,
+            force: $force
+        );
 
     }//end addOrUpdateField()
 

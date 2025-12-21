@@ -84,7 +84,10 @@ class OptimizedFacetHandler
         $results = [];
 
         // Generate cache key for this facet combination.
-        $cacheKey = $this->generateCacheKey($facetConfig, $baseQuery);
+        $cacheKey = $this->generateCacheKey(
+            facetConfig: $facetConfig,
+            baseQuery: $baseQuery
+        );
 
         if (($this->facetCache[$cacheKey] ?? null) !== null) {
             return $this->facetCache[$cacheKey];
@@ -104,7 +107,10 @@ class OptimizedFacetHandler
 
         // Process metadata facets (fast - use table indexes).
         if (empty($metadataFacets) === false) {
-            $results['@self'] = $this->getBatchedMetadataFacets($metadataFacets, $baseQuery);
+            $results['@self'] = $this->getBatchedMetadataFacets(
+                metadataConfig: $metadataFacets,
+                baseQuery: $baseQuery
+            );
         }
 
         // Process JSON field facets (slower - but optimized where possible).
@@ -112,7 +118,10 @@ class OptimizedFacetHandler
             $type = $config['type'] ?? 'terms';
 
             if ($type === 'terms') {
-                $results[$fieldName] = $this->getOptimizedJsonTermsFacet($fieldName, $baseQuery);
+                $results[$fieldName] = $this->getOptimizedJsonTermsFacet(
+                    field: $fieldName,
+                    baseQuery: $baseQuery
+                );
             }
 
             // Add other facet types as needed.
@@ -154,7 +163,10 @@ class OptimizedFacetHandler
             $type = $config['type'] ?? 'terms';
 
             if ($type === 'terms') {
-                $results[$field] = $this->getOptimizedMetadataTermsFacet($field, $baseQuery);
+                $results[$field] = $this->getOptimizedMetadataTermsFacet(
+                    field: $field,
+                    baseQuery: $baseQuery
+                );
             }
 
             // Add other facet types as needed (date_histogram, range).
@@ -199,14 +211,20 @@ class OptimizedFacetHandler
             ->setMaxResults(100);
         // Limit results for performance.
         // Apply optimized base filters.
-        $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
+        $this->applyOptimizedBaseFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery
+        );
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
             $key   = $row[$field];
-            $label = $this->getFieldLabel($field, $key);
+            $label = $this->getFieldLabel(
+                field: $field,
+                value: $key
+            );
 
             $buckets[] = [
                 'key'     => $key,
@@ -275,7 +293,10 @@ class OptimizedFacetHandler
             ->orderBy('doc_count', 'DESC');
         // Limit results for performance.
         // Apply optimized base filters.
-        $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
+        $this->applyOptimizedBaseFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery
+        );
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];

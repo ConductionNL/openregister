@@ -250,24 +250,6 @@ class Organisation extends Entity implements JsonSerializable
     }//end __construct()
 
     /**
-     * Validate UUID format
-     *
-     * @param string $uuid The UUID to validate
-     *
-     * @return bool True if UUID format is valid
-     */
-    public static function isValidUuid(string $uuid): bool
-    {
-        try {
-            Uuid::fromString($uuid);
-            return true;
-        } catch (\InvalidArgumentException $e) {
-            return false;
-        }
-
-    }//end isValidUuid()
-
-    /**
      * Add a user to this organisation
      *
      * @param string $userId The Nextcloud user ID to add
