@@ -548,6 +548,10 @@ class Application extends App implements IBootstrap
                     $container->get('OCP\IUserManager'),
                     $container->get('OCP\IDBConnection'),
                     null,
+                    // SetupHandler: Cannot be injected here due to circular dependency.
+                    // SetupHandler → IndexService → SearchBackendInterface → SettingsService (LOOP!).
+                    // It will be lazy-loaded if needed via container.
+                    null,
                     // CacheHandler - lazy-loaded via container.
                     $container,
                     'openregister',

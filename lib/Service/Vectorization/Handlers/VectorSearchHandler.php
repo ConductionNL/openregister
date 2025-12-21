@@ -115,7 +115,10 @@ class VectorSearchHandler
                             continue;
                         }
 
-                        $similarity = $this->cosineSimilarity($queryEmbedding, $storedEmbedding);
+                        $similarity = $this->cosineSimilarity(
+                            vector1: $queryEmbedding,
+                            vector2: $storedEmbedding
+                        );
 
                         // Parse metadata.
                         $metadata = [];
@@ -270,7 +273,10 @@ class VectorSearchHandler
                         $allResults[] = [
                             'vector_id'    => $doc['id'],
                             'entity_type'  => $entityType,
-                            'entity_id'    => $this->extractEntityId($doc, $entityType),
+                            'entity_id'    => $this->extractEntityId(
+                                doc: $doc,
+                                entityType: $entityType
+                            ),
                             'similarity'   => $doc['score'] ?? 0.0,
                             'chunk_index'  => $doc['chunk_index'] ?? $doc['chunk_index_i'] ?? 0,
                             'total_chunks' => $doc['chunk_total'] ?? $doc['total_chunks_i'] ?? 1,
@@ -348,10 +354,10 @@ class VectorSearchHandler
             if ($vectorWeight > 0) {
                 try {
                     $vectorResults = $this->semanticSearch(
-                        $queryEmbedding,
-                        $limit * 2,
-                        [],
-                        $backend
+                        queryEmbedding: $queryEmbedding,
+                        limit: $limit * 2,
+                        filters: [],
+                        backend: $backend
                     );
                 } catch (Exception $e) {
                     $this->logger->warning(
@@ -363,10 +369,10 @@ class VectorSearchHandler
 
             // Combine results using Reciprocal Rank Fusion (RRF).
             $combined = $this->reciprocalRankFusion(
-                $vectorResults,
-                $solrResults,
-                $vectorWeight,
-                $solrWeight
+                vectorResults: $vectorResults,
+                solrResults: $solrResults,
+                vectorWeight: $vectorWeight,
+                solrWeight: $solrWeight
             );
 
             // Return top N results.
@@ -639,7 +645,10 @@ class VectorSearchHandler
             $entityTypes = is_array($filters['entity_type']) === true ? $filters['entity_type'] : [$filters['entity_type']];
 
             foreach ($entityTypes as $entityType) {
-                $collection = $this->getSolrCollectionForEntityType($entityType, $settings);
+                $collection = $this->getSolrCollectionForEntityType(
+                    entityType: $entityType,
+                    settings: $settings
+                );
                 if ($collection !== null && $collection !== '') {
                     $collectionsToSearch[] = [
                         'type'       => $entityType,

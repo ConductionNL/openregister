@@ -129,7 +129,10 @@ class FacetsHandler
                 $type = $config['type'] ?? 'terms';
 
                 if ($type === 'terms') {
-                    $facets['@self'][$field] = $this->metaDataFacetHandler->getTermsFacet($field, $baseQuery);
+                    $facets['@self'][$field] = $this->metaDataFacetHandler->getTermsFacet(
+                        field: $field,
+                        baseQuery: $baseQuery
+                    );
                 } else if ($type === 'date_histogram') {
                     $interval = $config['interval'] ?? 'month';
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet(field: $field, interval: $interval, baseQuery: $baseQuery);
@@ -153,13 +156,24 @@ class FacetsHandler
             $type = $config['type'] ?? 'terms';
 
             if ($type === 'terms') {
-                $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet($field, $baseQuery);
+                $facets[$field] = $this->mariaDbFacetHandler->getTermsFacet(
+                    field: $field,
+                    baseQuery: $baseQuery
+                );
             } else if ($type === 'date_histogram') {
                 $interval       = $config['interval'] ?? 'month';
-                $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet($field, $interval, $baseQuery);
+                $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet(
+                    field: $field,
+                    interval: $interval,
+                    baseQuery: $baseQuery
+                );
             } else if ($type === 'range') {
                 $ranges         = $config['ranges'] ?? [];
-                $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet($field, $ranges, $baseQuery);
+                $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet(
+                    field: $field,
+                    ranges: $ranges,
+                    baseQuery: $baseQuery
+                );
             }
         }
 
@@ -205,14 +219,17 @@ class FacetsHandler
             // Analyze each property for facetable configuration.
             foreach ($properties as $propertyKey => $property) {
                 if ($this->isPropertyFacetable($property) === true) {
-                    $fieldConfig = $this->generateFieldConfigFromProperty($propertyKey, $property);
+                    $fieldConfig = $this->generateFieldConfigFromProperty(
+                        propertyKey: $propertyKey,
+                        property: $property
+                    );
 
                     if ($fieldConfig !== null) {
                         // If field already exists from another schema, merge configurations.
                         if (($facetableFields[$propertyKey] ?? null) !== null) {
                             $facetableFields[$propertyKey] = $this->mergeFieldConfigs(
-                                $facetableFields[$propertyKey],
-                                $fieldConfig
+                                existing: $facetableFields[$propertyKey],
+                                new: $fieldConfig
                             );
                         } else {
                             $facetableFields[$propertyKey] = $fieldConfig;
@@ -298,7 +315,10 @@ class FacetsHandler
         $example     = $property['example'] ?? null;
 
         // Determine appropriate facet types based on property type and format.
-        $facetTypes = $this->determineFacetTypesFromProperty($type, $format);
+        $facetTypes = $this->determineFacetTypesFromProperty(
+            type: $type,
+            format: $format
+        );
 
         if (empty($facetTypes) === true) {
             return null;

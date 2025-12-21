@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\Message as LLPhantMessage;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * MessageHistoryHandler
@@ -188,6 +189,7 @@ class MessageHistoryHandler
         ?array $sources=null
     ): Message {
         $message = new Message();
+        $message->setUuid(Uuid::v4()->toRfc4122());
         $message->setConversationId($conversationId);
         $message->setRole($role);
         $message->setContent($content);

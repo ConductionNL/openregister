@@ -687,11 +687,11 @@ class SetupHandler
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
-                    5,
-                    'Schema Configuration',
-                    'failed',
-                    $e->getMessage(),
-                    [
+                    stepNumber: 5,
+                    stepName: 'Schema Configuration',
+                    status: 'failed',
+                    description: $e->getMessage(),
+                    details: [
                         'exception_type' => get_class($e),
                     ]
                 );
@@ -736,11 +736,11 @@ class SetupHandler
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
                 $this->trackStep(
-                    6,
-                    'Setup Validation',
-                    'failed',
-                    $e->getMessage(),
-                    [
+                    stepNumber: 6,
+                    stepName: 'Setup Validation',
+                    status: 'failed',
+                    description: $e->getMessage(),
+                    details: [
                         'exception_type' => get_class($e),
                     ]
                 );
@@ -1420,7 +1420,10 @@ class SetupHandler
 
         try {
             // Attempt collection creation with retry logic for configSet propagation delays.
-            $success = $this->createCollectionWithRetry($tenantCollectionName, $tenantConfigSetName);
+            $success = $this->createCollectionWithRetry(
+                collectionName: $tenantCollectionName,
+                configSetName: $tenantConfigSetName
+            );
 
             // Track newly created collection.
             if ($success === true && in_array($tenantCollectionName, $this->infrastructureCreated['collections_created']) === false) {
@@ -1583,7 +1586,10 @@ class SetupHandler
                 );
 
                 // Direct attempt to create collection.
-                $result  = $this->solrService->createCollection($collectionName, $configSetName);
+                $result  = $this->solrService->createCollection(
+                    name: $collectionName,
+                    config: $configSetName
+                );
                 $success = isset($result['success']) && $result['success'] === true;
 
                 if ($success === true) {
@@ -2336,7 +2342,10 @@ class SetupHandler
 
         $success = true;
         foreach ($fieldDefinitions as $fieldName => $fieldConfig) {
-            $result = $this->addOrUpdateSchemaFieldWithTracking($fieldName, $fieldConfig);
+            $result = $this->addOrUpdateSchemaFieldWithTracking(
+                fieldName: $fieldName,
+                fieldConfig: $fieldConfig
+            );
 
             if ($result['success'] !== true) {
                 $fieldResults['fields_failed']++;
@@ -2370,11 +2379,11 @@ class SetupHandler
         }
 
         $this->trackStep(
-            4,
-            'Schema Configuration',
-            $status,
-            $message,
-            $fieldResults
+            stepNumber: 4,
+            stepName: 'Schema Configuration',
+            status: $status,
+            description: $message,
+            details: $fieldResults
         );
 
         if ($success === true) {
@@ -2397,7 +2406,10 @@ class SetupHandler
     private function addOrUpdateSchemaFieldWithTracking(string $fieldName, array $fieldConfig): array
     {
         // First, try to add the field.
-        $addResult = $this->addSchemaFieldWithResult($fieldName, $fieldConfig);
+        $addResult = $this->addSchemaFieldWithResult(
+            fieldName: $fieldName,
+            fieldConfig: $fieldConfig
+        );
 
         if ($addResult['success'] === true) {
             return [
@@ -2411,7 +2423,10 @@ class SetupHandler
         if (strpos($addResult['error'] ?? '', 'already exists') !== false
             || strpos($addResult['error'] ?? '', 'Field') !== false
         ) {
-            $updateResult = $this->replaceSchemaFieldWithResult($fieldName, $fieldConfig);
+            $updateResult = $this->replaceSchemaFieldWithResult(
+                fieldName: $fieldName,
+                fieldConfig: $fieldConfig
+            );
 
             if ($updateResult['success'] === true) {
                 return [
@@ -2599,7 +2614,7 @@ class SetupHandler
      *     self_parent_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false}
      * }
      */
-    public static function getObjectEntityFieldDefinitions(): array
+    public function getObjectEntityFieldDefinitions(): array
     {
         return [
             // **CRITICAL**: Core tenant field with self_ prefix (consistent naming).

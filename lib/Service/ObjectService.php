@@ -2333,7 +2333,7 @@ class ObjectService
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
-        throw new \Exception('Vectorization temporarily disabled due to circular dependency issues');
+        throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
 
     }//end vectorizeBatchObjects()
 
@@ -2349,7 +2349,7 @@ class ObjectService
     public function getVectorizationStatistics(?array $views=null)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
-        throw new \Exception('Vectorization temporarily disabled due to circular dependency issues');
+        throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
 
     }//end getVectorizationStatistics()
 
@@ -2365,7 +2365,7 @@ class ObjectService
     public function getVectorizationCount(?array $schemas=null)
     {
         // TODO: TEMPORARILY DISABLED due to circular dependency with VectorizationService.
-        throw new \Exception('Vectorization temporarily disabled due to circular dependency issues');
+        throw new Exception('Vectorization temporarily disabled due to circular dependency issues');
 
     }//end getVectorizationCount()
 
@@ -2523,7 +2523,7 @@ class ObjectService
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ExportService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
-        throw new \Exception('Export temporarily disabled due to circular dependency issues');
+        throw new Exception('Export temporarily disabled due to circular dependency issues');
 
     }//end exportObjects()
 
@@ -2557,7 +2557,7 @@ class ObjectService
     ) {
         // TODO: TEMPORARILY DISABLED due to circular dependency with ImportService.
         // Requires architectural refactoring to fix. See DEBUGGING_REGISTER_CREATION_TIMEOUT.md
-        throw new \Exception('Import temporarily disabled due to circular dependency issues');
+        throw new Exception('Import temporarily disabled due to circular dependency issues');
 
     }//end importObjects()
 
@@ -2574,7 +2574,7 @@ class ObjectService
     {
         // TODO: TEMPORARILY DISABLED - This is actually a file operation, not export.
         // Should be refactored to use FileService directly without going through ObjectService.
-        throw new \Exception('File download temporarily disabled - needs refactoring');
+        throw new Exception('File download temporarily disabled - needs refactoring');
 
     }//end downloadObjectFiles()
 

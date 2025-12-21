@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
@@ -214,6 +215,13 @@ class SettingsService
     private ConfigurationSettingsHandler $configurationSettingsHandler;
 
     /**
+     * Setup handler for SOLR field definitions (optional, lazy-loaded to break circular dependency).
+     *
+     * @var SetupHandler|null
+     */
+    private ?SetupHandler $setupHandler = null;
+
+    /**
      * Logger
      *
      * @var LoggerInterface
@@ -331,6 +339,7 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
+        ?SetupHandler $setupHandler=null,
         ?CacheHandler $objectCacheService=null,
         ?IAppContainer $container=null,
         string $appName='openregister',
@@ -355,6 +364,7 @@ class SettingsService
         $this->searchTrailMapper       = $searchTrailMapper;
         $this->userManager = $userManager;
         $this->db          = $db;
+        $this->setupHandler       = $setupHandler;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
         $this->appName            = $appName;
@@ -1504,8 +1514,11 @@ class SettingsService
         \OCA\OpenRegister\Service\IndexService $solrSchemaService
     ): array {
         try {
-            // Start with the core ObjectEntity metadata fields from SetupHandler.
-            $expectedFields = \OCA\OpenRegister\Service\Index\SetupHandler::getObjectEntityFieldDefinitions();
+            // Start with the core ObjectEntity metadata fields from SetupHandler (if available).
+            $expectedFields = [];
+            if ($this->setupHandler !== null) {
+                $expectedFields = $this->setupHandler->getObjectEntityFieldDefinitions();
+            }
 
             // Get all schemas.
             $schemas = $schemaMapper->findAll();
@@ -1529,7 +1542,10 @@ class SettingsService
                 ]
             );
             // Return at least the core metadata fields even if schema analysis fails.
-            return \OCA\OpenRegister\Service\Index\SetupHandler::getObjectEntityFieldDefinitions();
+            if ($this->setupHandler !== null) {
+                return $this->setupHandler->getObjectEntityFieldDefinitions();
+            }
+            return [];
         }//end try
 
     }//end getExpectedSchemaFields()

@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use Ramsey\Uuid\Uuid;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Entity Recognition Handler.

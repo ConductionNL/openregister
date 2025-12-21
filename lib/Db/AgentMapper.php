@@ -125,7 +125,10 @@ class AgentMapper extends QBMapper
     public function find(int $id): Agent
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -134,7 +137,11 @@ class AgentMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         // Apply organisation filter, allowing NULL organisation for legacy/global agents.
-        $this->applyOrganisationFilter($qb, 'organisation', true);
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNull: true
+        );
 
         return $this->findEntity($qb);
 
@@ -154,7 +161,10 @@ class AgentMapper extends QBMapper
     public function findByUuid(string $uuid): Agent
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -163,7 +173,11 @@ class AgentMapper extends QBMapper
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
         // Apply organisation filter, allowing NULL organisation for legacy/global agents.
-        $this->applyOrganisationFilter($qb, 'organisation', true);
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNull: true
+        );
 
         return $this->findEntity($qb);
 
@@ -192,7 +206,10 @@ class AgentMapper extends QBMapper
     public function findByOrganisation(string $organisationUuid, ?string $userId=null, int $limit=50, int $offset=0): array
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -210,7 +227,10 @@ class AgentMapper extends QBMapper
 
         // Filter results by user access rights.
         $allAgents = $this->findEntities($qb);
-        return $this->filterByUserAccess($allAgents, $userId);
+        return $this->filterByUserAccess(
+            agents: $allAgents,
+            userId: $userId
+        );
 
     }//end findByOrganisation()
 
@@ -305,7 +325,10 @@ class AgentMapper extends QBMapper
     public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -346,7 +369,11 @@ class AgentMapper extends QBMapper
         }
 
         // Apply organisation filter, allowing NULL organisation for legacy/global agents.
-        $this->applyOrganisationFilter($qb, 'organisation', true);
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNull: true
+        );
 
         return $this->findEntities($qb);
 
@@ -363,7 +390,10 @@ class AgentMapper extends QBMapper
     public function insert(Entity $entity): Agent
     {
         // Verify RBAC permission to create.
-        $this->verifyRbacPermission('create', 'agent');
+        $this->verifyRbacPermission(
+            action: 'create',
+            entityType: 'agent'
+        );
 
         /*
          * @var Agent $entity
@@ -410,7 +440,10 @@ class AgentMapper extends QBMapper
     public function update(Entity $entity): Agent
     {
         // Verify RBAC permission to update.
-        $this->verifyRbacPermission('update', 'agent');
+        $this->verifyRbacPermission(
+            action: 'update',
+            entityType: 'agent'
+        );
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -442,7 +475,10 @@ class AgentMapper extends QBMapper
     public function delete(Entity $entity): Entity
     {
         // Verify RBAC permission to delete.
-        $this->verifyRbacPermission('delete', 'agent');
+        $this->verifyRbacPermission(
+            action: 'delete',
+            entityType: 'agent'
+        );
 
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
@@ -483,7 +519,10 @@ class AgentMapper extends QBMapper
     public function count(?array $filters=[]): int
     {
         // Verify RBAC permission to read.
-        $this->verifyRbacPermission('read', 'agent');
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 

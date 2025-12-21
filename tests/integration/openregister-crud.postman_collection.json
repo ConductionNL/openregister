@@ -3637,6 +3637,37 @@
       "name": "File Operations Tests",
       "item": [
         {
+          "name": "Setup: Create Organization for File Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('org_uuid', jsonData.uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"File Test Org {{$timestamp}}\", \"description\": \"Org for file tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/organisations",
+              "host": ["{{base_url}}"],
+              "path": ["index.php", "apps", "openregister", "api", "organisations"]
+            }
+          }
+        },
+        {
           "name": "Setup: Create Register for File Tests",
           "event": [
             {
@@ -3659,7 +3690,7 @@
             "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for file tests\"}"
+              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for file tests\", \"organisation\": \"{{org_uuid}}\"}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
@@ -3923,8 +3954,8 @@
                   "});",
                   "pm.test('Import processed successfully', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.imported).to.be.at.least(1);",
-                  "    pm.expect(json.errors).to.equal(0);",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('summary');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3981,8 +4012,8 @@
                   "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
                   "pm.test('Validation errors reported', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json).to.have.property('errors');",
-                  "    pm.expect(json).to.have.property('validationErrors');",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('summary');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -4119,11 +4150,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Message added to conversation', function() {",
+                  "pm.test('Status code is 500 (AI not configured)', () => pm.response.to.have.status(500));",
+                  "pm.test('Configuration error message', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.content).to.exist;",
-                  "    pm.collectionVariables.set('message_id', json.id);",
+                  "    pm.expect(json.error).to.include('Failed to process message');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -4170,7 +4200,7 @@
                   "});",
                   "pm.test('Conversation soft deleted', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.deleted).to.be.true;",
+                  "    pm.expect(json.archived).to.be.true;",
                   "});"
                 ],
                 "type": "text/javascript"

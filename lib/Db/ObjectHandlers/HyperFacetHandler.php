@@ -226,7 +226,10 @@ class HyperFacetHandler
         $startTime = microtime(true);
 
         // **STEP 1**: Lightning-fast cache check.
-        $cacheKey     = $this->generateIntelligentCacheKey($facetConfig, $baseQuery);
+        $cacheKey     = $this->generateIntelligentCacheKey(
+            facetConfig: $facetConfig,
+            baseQuery: $baseQuery
+        );
         $cachedResult = $this->getCachedFacetResult($cacheKey);
 
         if ($cachedResult !== null) {
@@ -289,7 +292,10 @@ class HyperFacetHandler
         ];
 
         // **STEP 5**: Cache results for future identical requests.
-        $this->setCachedFacetResult($cacheKey, $enhancedResults);
+        $this->setCachedFacetResult(
+            cacheKey: $cacheKey,
+            result: $enhancedResults
+        );
 
         $this->logger->debug(
                 'Hyper-optimized facets completed',
@@ -344,7 +350,10 @@ class HyperFacetHandler
             ->from('openregister_objects');
 
         // Apply base filters efficiently.
-        $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
+        $this->applyOptimizedBaseFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery
+        );
 
         $result     = $queryBuilder->executeQuery();
         $totalCount = (int) $result->fetchOne();
@@ -447,12 +456,18 @@ class HyperFacetHandler
 
         // **PARALLEL EXECUTION**: Process metadata facets concurrently.
         if (empty($metadataFacets) === false) {
-            $promises['metadata'] = $this->processMetadataFacetsParallel($metadataFacets, $baseQuery);
+            $promises['metadata'] = $this->processMetadataFacetsParallel(
+            metadataFacets: $metadataFacets,
+            baseQuery: $baseQuery
+        );
         }
 
         // **PARALLEL EXECUTION**: Process JSON facets concurrently.
         if (empty($jsonFacets) === false) {
-            $promises['json'] = $this->processJsonFacetsParallel($jsonFacets, $baseQuery);
+            $promises['json'] = $this->processJsonFacetsParallel(
+            _jsonFacets: $jsonFacets,
+            _baseQuery: $baseQuery
+        );
         }
 
         // Execute all facet calculations in parallel.
@@ -516,13 +531,16 @@ class HyperFacetHandler
                 );
 
         // **SAMPLING OPTIMIZATION**: Get random sample efficiently.
-        $sampleQuery = $this->buildSampleQuery($baseQuery, $sampleSize);
+        $sampleQuery = $this->buildSampleQuery(
+            baseQuery: $baseQuery,
+            sampleSize: $sampleSize
+        );
 
         // Calculate facets on sample data.
         $sampleFacets = $this->calculateExactFacetsParallel(
-                $facetConfig,
-                $sampleQuery,
-                [
+                facetConfig: $facetConfig,
+                baseQuery: $sampleQuery,
+                options: [
                     'estimated_size' => $sampleSize,
                     'size_category'  => 'small',
         // Treat sample as small dataset.
@@ -579,7 +597,10 @@ class HyperFacetHandler
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self') {
                 // Metadata facets can be calculated quickly using indexes.
-                $approximateFacets[$facetName] = $this->calculateMetadataFacetsHyperFast($config, $baseQuery);
+                $approximateFacets[$facetName] = $this->calculateMetadataFacetsHyperFast(
+                _config: $config,
+                _baseQuery: $baseQuery
+            );
             } else {
                 // JSON field facets use statistical estimation.
                 $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(_field: $facetName, config: $config, _baseQuery: $baseQuery, stats: $datasetStats);
@@ -702,7 +723,10 @@ class HyperFacetHandler
             ->orderBy('doc_count', 'DESC');
         // Reasonable limit for facet values.
         // Apply optimized base filters (will use our composite indexes).
-        $this->applyOptimizedBaseFilters($queryBuilder, $baseQuery);
+        $this->applyOptimizedBaseFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery
+        );
 
         $result = $queryBuilder->executeQuery();
 
@@ -724,7 +748,10 @@ class HyperFacetHandler
                     $results[$field]['buckets'][] = [
                         'key'     => $value,
                         'results' => $count,
-                        'label'   => $this->getFieldLabel($field, $value),
+                        'label'   => $this->getFieldLabel(
+                    _field: $field,
+                    _value: $value
+                ),
                     ];
                 }
             }
@@ -791,7 +818,10 @@ class HyperFacetHandler
         // 4. LAST: Apply expensive JSON filters and search (after indexed filters reduce dataset).
         $search = $baseQuery['_search'] ?? null;
         if ($search !== null && trim($search) !== '') {
-            $this->applyOptimizedSearch($queryBuilder, trim($search));
+            $this->applyOptimizedSearch(
+            queryBuilder: $queryBuilder,
+            searchTerm: trim($search)
+        );
         }
 
         // Apply JSON object field filters (expensive - applied last).
@@ -804,7 +834,10 @@ class HyperFacetHandler
         );
 
         if (empty($objectFilters) === false) {
-            $this->applyJsonFieldFilters($queryBuilder, $objectFilters);
+            $this->applyJsonFieldFilters(
+            _queryBuilder: $queryBuilder,
+            _filters: $objectFilters
+        );
         }
 
         // These can be applied in the main query but not in facet calculations.
@@ -1144,7 +1177,10 @@ class HyperFacetHandler
                 foreach ($facetData['buckets'] as &$bucket) {
                     $bucket['results']     = (int) round($bucket['results'] * $factor);
                     $bucket['approximate'] = true;
-                    $bucket['confidence']  = $this->calculateConfidence($sampleSize, $totalSize);
+                    $bucket['confidence']  = $this->calculateConfidence(
+                sampleSize: $sampleSize,
+                totalSize: $totalSize
+            );
                 }
             }
         }
