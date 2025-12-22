@@ -94,9 +94,9 @@ class EmbeddingGeneratorHandler
 
             // Create appropriate generator based on provider and model.
             $generator = match ($config['provider']) {
-                'openai' => $this->createOpenAIGenerator($config['model'], $config),
-                'fireworks' => $this->createFireworksGenerator($config['model'], $config),
-                'ollama' => $this->createOllamaGenerator($config['model'], $config),
+                'openai' => $this->createOpenAIGenerator(model: $config['model'], config: $config),
+                'fireworks' => $this->createFireworksGenerator(model: $config['model'], config: $config),
+                'ollama' => $this->createOllamaGenerator(model: $config['model'], config: $config),
                 default => throw new Exception("Unsupported embedding provider: {$config['provider']}")
             };
 

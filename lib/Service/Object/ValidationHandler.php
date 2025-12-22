@@ -151,13 +151,18 @@ class ValidationHandler
                 // This will trigger validation and return any errors.
                 $saveCallback(
                     $objectData,
+                    [],
+                    // Extend.
                     $object->getRegister(),
+                    // Register.
                     $schemaId,
+                    // Schema.
                     $object->getUuid(),
+                    // UUID.
                     false,
                     // Rbac.
                     false,
-                    // Multi.
+                    // Multitenancy.
                     true
                     // Silent.
                 );

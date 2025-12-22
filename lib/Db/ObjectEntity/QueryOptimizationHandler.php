@@ -257,7 +257,7 @@ class QueryOptimizationHandler
                 }
 
                 // Process batch of objects.
-                $batchResults = $this->processBulkOwnerDeclarationBatch($objects, $defaultOwner, $defaultOrganisation);
+                $batchResults = $this->processBulkOwnerDeclarationBatch(objects: $objects, defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation);
 
                 // Update statistics.
                 $results['totalProcessed']        += count($objects);
@@ -468,7 +468,7 @@ class QueryOptimizationHandler
 
                 // Update the object if needed.
                 if ($needsUpdate === true) {
-                    $this->updateObjectOwnership((int) $objectData['id'], $updateData);
+                    $this->updateObjectOwnership(objectId: (int) $objectData['id'], updateData: $updateData);
                 }
             } catch (Exception $e) {
                 $error = 'Error updating object '.$objectData['uuid'].': '.$e->getMessage();

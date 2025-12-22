@@ -955,24 +955,24 @@ class SchemaService
             currentConfig: $currentConfig,
             recommendedType: $recommendedType
         );
-        $issues      = array_merge($issues, $typeComparison['issues']);
-        $suggestions = array_merge($suggestions, $typeComparison['suggestions']);
+        $issues         = array_merge($issues, $typeComparison['issues']);
+        $suggestions    = array_merge($suggestions, $typeComparison['suggestions']);
 
         $stringComparison = $this->compareStringConstraints(
             currentConfig: $currentConfig,
             analysis: $analysis,
             recommendedType: $recommendedType
         );
-        $issues      = array_merge($issues, $stringComparison['issues']);
-        $suggestions = array_merge($suggestions, $stringComparison['suggestions']);
+        $issues           = array_merge($issues, $stringComparison['issues']);
+        $suggestions      = array_merge($suggestions, $stringComparison['suggestions']);
 
         $numericComparison = $this->compareNumericConstraints(
             currentConfig: $currentConfig,
             analysis: $analysis,
             recommendedType: $recommendedType
         );
-        $issues      = array_merge($issues, $numericComparison['issues']);
-        $suggestions = array_merge($suggestions, $numericComparison['suggestions']);
+        $issues            = array_merge($issues, $numericComparison['issues']);
+        $suggestions       = array_merge($suggestions, $numericComparison['suggestions']);
 
         $nullableComparison = $this->compareNullableConstraint(
             currentConfig: $currentConfig,
@@ -985,8 +985,8 @@ class SchemaService
             currentConfig: $currentConfig,
             analysis: $analysis
         );
-        $issues      = array_merge($issues, $enumComparison['issues']);
-        $suggestions = array_merge($suggestions, $enumComparison['suggestions']);
+        $issues         = array_merge($issues, $enumComparison['issues']);
+        $suggestions    = array_merge($suggestions, $enumComparison['suggestions']);
 
         return [
             'issues'           => $issues,
@@ -998,7 +998,7 @@ class SchemaService
     /**
      * Compare the type between current config and recommended type.
      *
-     * @param array  $currentConfig  Current property configuration
+     * @param array  $currentConfig   Current property configuration
      * @param string $recommendedType Recommended type from analysis
      *
      * @return array{issues: string[], suggestions: array[]} Comparison results
@@ -1030,8 +1030,8 @@ class SchemaService
     /**
      * Compare string constraints (maxLength, format, pattern).
      *
-     * @param array  $currentConfig  Current property configuration
-     * @param array  $analysis       Property analysis data
+     * @param array  $currentConfig   Current property configuration
+     * @param array  $analysis        Property analysis data
      * @param string $recommendedType Recommended type
      *
      * @return array{issues: string[], suggestions: array[]} Comparison results
@@ -1050,11 +1050,11 @@ class SchemaService
         // Check for missing or insufficient maxLength.
         if (($analysis['max_length'] ?? null) !== null && $analysis['max_length'] > 0) {
             $currentMaxLength = $currentConfig['maxLength'] ?? null;
-            
+
             if ($currentMaxLength === null || $currentMaxLength === 0) {
-                $issues[] = "missing_max_length";
+                $issues[]           = "missing_max_length";
                 $suggestedMaxLength = min($analysis['max_length'] * 2, 1000);
-                $suggestions[] = [
+                $suggestions[]      = [
                     'type'        => 'constraint',
                     'field'       => 'maxLength',
                     'current'     => 'unlimited',
@@ -1062,7 +1062,7 @@ class SchemaService
                     'description' => "Objects have max length of {$analysis['max_length']} characters",
                 ];
             } else if ($currentMaxLength < $analysis['max_length']) {
-                $issues[] = "max_length_too_small";
+                $issues[]      = "max_length_too_small";
                 $suggestions[] = [
                     'type'        => 'constraint',
                     'field'       => 'maxLength',
@@ -1071,7 +1071,7 @@ class SchemaService
                     'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$analysis['max_length']})",
                 ];
             }
-        }
+        }//end if
 
         // Check for missing format.
         if (($analysis['detected_format'] ?? null) !== null
@@ -1116,8 +1116,8 @@ class SchemaService
     /**
      * Compare numeric constraints (minimum, maximum).
      *
-     * @param array  $currentConfig  Current property configuration
-     * @param array  $analysis       Property analysis data
+     * @param array  $currentConfig   Current property configuration
+     * @param array  $analysis        Property analysis data
      * @param string $recommendedType Recommended type
      *
      * @return array{issues: string[], suggestions: array[]} Comparison results
@@ -1129,9 +1129,9 @@ class SchemaService
         $currentType = $currentConfig['type'] ?? null;
 
         // Only check numeric constraints if type is or should be numeric.
-        $isNumericType = in_array($recommendedType, ['number', 'integer'], true) 
+        $isNumericType = in_array($recommendedType, ['number', 'integer'], true)
             || in_array($currentType, ['number', 'integer'], true);
-        
+
         if ($isNumericType === false || ($analysis['numeric_range'] ?? null) === null) {
             return ['issues' => $issues, 'suggestions' => $suggestions];
         }
@@ -1240,8 +1240,8 @@ class SchemaService
         if ($this->detectEnumLike($analysis) === true) {
             $currentEnum = $currentConfig['enum'] ?? null;
             if ($currentEnum === null || empty($currentEnum) === true) {
-                $issues[]   = "missing_enum";
-                $enumValues = $this->extractEnumValues($analysis['examples']);
+                $issues[]      = "missing_enum";
+                $enumValues    = $this->extractEnumValues($analysis['examples']);
                 $suggestions[] = [
                     'type'        => 'enum',
                     'field'       => 'enum',
@@ -1312,11 +1312,11 @@ class SchemaService
 
         // If single type, handle it directly.
         if (count($types) === 1) {
-            return $this->normalizeSingleType($types[0], $analysis['string_patterns'] ?? []);
+            return $this->normalizeSingleType(phpType: $types[0], patterns: $analysis['string_patterns'] ?? []);
         }
 
         // Multiple types - analyze dominance.
-        return $this->getDominantType($types, $analysis['string_patterns'] ?? []);
+            return $this->getDominantType(types: $types, patterns: $analysis['string_patterns'] ?? []);
     }//end recommendPropertyType()
 
     /**
@@ -1334,10 +1334,17 @@ class SchemaService
 
         // Most formats are string-based in JSON Schema.
         $stringFormats = [
-            'date', 'date-time', 'time', 
-            'email', 'url', 'hostname', 
-            'ipv4', 'ipv6', 'uuid', 
-            'color', 'duration'
+            'date',
+            'date-time',
+            'time',
+            'email',
+            'url',
+            'hostname',
+            'ipv4',
+            'ipv6',
+            'uuid',
+            'color',
+            'duration',
         ];
 
         if (in_array($format, $stringFormats, true) === true) {
@@ -1377,7 +1384,7 @@ class SchemaService
     /**
      * Normalize a single PHP type to JSON Schema type.
      *
-     * @param string $phpType PHP type from analysis
+     * @param string $phpType  PHP type from analysis
      * @param array  $patterns String patterns if type is string
      *
      * @return string JSON Schema type
@@ -1390,6 +1397,7 @@ class SchemaService
                 if (in_array('integer_string', $patterns, true) === true) {
                     return 'integer';
                 }
+
                 if (in_array('float_string', $patterns, true) === true) {
                     return 'number';
                 }
@@ -1412,8 +1420,9 @@ class SchemaService
                 return 'object';
 
             default:
-                return 'string'; // Safe fallback.
-        }
+                return 'string';
+            // Safe fallback.
+        }//end switch
     }//end normalizeSingleType()
 
     /**
@@ -1441,11 +1450,12 @@ class SchemaService
             } else if (in_array('float_string', $patterns, true) === true) {
                 return 'number';
             }
+
             return 'string';
         }
 
         // For other dominant types, normalize them.
-        return $this->normalizeSingleType($dominantType, $patterns);
+        return $this->normalizeSingleType(phpType: $dominantType, patterns: $patterns);
     }//end getDominantType()
 
     /**

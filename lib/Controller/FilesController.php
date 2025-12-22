@@ -366,196 +366,266 @@ class FilesController extends Controller
         string $schema,
         string $id
     ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-        $this->objectService->setObject($id);
-        $object = $this->objectService->getObject();
-
-        if ($object === null) {
-            return new JSONResponse(
-                data: ['error' => 'Object not found'],
-                statusCode: 404
-            );
-        }
-
-        $data = $this->request->getParams();
         try {
-            // Get the uploaded file.
-            $uploadedFiles = [];
+            // Validate object exists.
+            $object = $this->validateAndGetObject(
+                register: $register,
+                schema: $schema,
+                id: $id
+            );
 
-            // Check if multiple files have been uploaded.
-            /*
-             * @var array<string, array<int, string>|string|int> $files
-             */
-
-            $files = $_FILES['files'] ?? [];
-
-            // Lets see if we have files in the request.
-            if (empty($files) === true) {
-                throw new Exception('No files uploaded');
+            if ($object === null) {
+                return new JSONResponse(
+                    data: ['error' => 'Object not found'],
+                    statusCode: 404
+                );
             }
 
-            // Normalize single file upload to array structure.
-            // $_FILES can have 'name' as string (single file) or array (multiple files).
-            /*
-             * @var string|array<int, string>|null $fileName
-             */
-
-            $fileName = $files['name'] ?? null;
-
-            /*
-             * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-             */
-            if ($fileName !== null && is_array($fileName) === false) {
-                // Single file upload - $fileName is a string.
-                $tags = $data['tags'] ?? '';
-                if (is_array($tags) === false) {
-                    $tags = explode(',', $tags);
-                }
-
-                $typeValue    = $files['type'] ?? '';
-                $tmpNameValue = $files['tmp_name'] ?? '';
-                $errorValue   = $files['error'] ?? UPLOAD_ERR_NO_FILE;
-                $sizeValue    = $files['size'] ?? 0;
-
-                $uploadedFiles[] = [
-                    'name'     => $fileName,
-                    'type'     => $typeValue,
-                    'tmp_name' => $tmpNameValue,
-                    'error'    => $errorValue,
-                    'size'     => $sizeValue,
-                    'share'    => $data['share'] === 'true',
-                    'tags'     => $tags,
-                ];
-            } else if ($fileName !== null && is_array($fileName) === true) {
-                // Multiple file upload - $fileName is an array.
-                // Loop through each file using the count of 'name'.
-                /*
-                 * @psalm-suppress NoValue - $fileName is guaranteed to be array at this point
-                 */
-                $fileCount = count($fileName);
-                for ($i = 0; $i < $fileCount; $i++) {
-                    $tags = $data['tags'][$i] ?? '';
-                    if (is_array($tags) === false) {
-                        $tags = explode(',', $tags);
-                    }
-
-                    /*
-                     * @var array<int, string>|null $typeArray
-                     * @var array<int, string>|null $tmpNameArray
-                     * @var array<int, int>|null $errorArray
-                     * @var array<int, int>|null $sizeArray
-                     */
-
-                    // Get file arrays, handling both single values and arrays.
-                    $filesType = $files['type'] ?? null;
-                    /*
-                     * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                     */
-                    $typeArray = is_array($filesType) === true ? $filesType : [];
-
-                    $filesTmpName = $files['tmp_name'] ?? null;
-                    /*
-                     * @psalm-suppress TypeDoesNotContainType - $_FILES can have mixed types
-                     */
-                    $tmpNameArray = is_array($filesTmpName) === true ? $filesTmpName : [];
-
-                    $errorValue       = $files['error'] ?? null;
-                    $errorArray       = is_array($errorValue) === true ? $errorValue : [];
-                    $errorValueScalar = is_int($errorValue) === true ? $errorValue : null;
-
-                    $sizeValue       = $files['size'] ?? null;
-                    $sizeArray       = is_array($sizeValue) === true ? $sizeValue : [];
-                    $sizeValueScalar = is_int($sizeValue) === true ? $sizeValue : null;
-
-                    // Determine type value.
-                    $typeValue = $typeArray[$i] ?? '';
-
-                    // Determine tmp_name value.
-                    $tmpNameValue = $tmpNameArray[$i] ?? '';
-
-                    // Determine error value.
-                    $errorValueFinal = $errorArray[$i] ?? $errorValueScalar ?? UPLOAD_ERR_NO_FILE;
-
-                    // Determine size value.
-                    $sizeValueFinal = $sizeArray[$i] ?? $sizeValueScalar ?? 0;
-
-                    $uploadedFiles[] = [
-                        'name'     => $fileName[$i] ?? '',
-                        'type'     => $typeValue,
-                        'tmp_name' => $tmpNameValue,
-                        'error'    => $errorValueFinal,
-                        'size'     => $sizeValueFinal,
-                        'share'    => $data['share'] === 'true',
-                        'tags'     => $tags,
-                    ];
-                }//end for
-            }//end if
-
-            // Get the uploaded file from the request if a single file hase been uploaded.
-            $uploadedFile = $this->request->getUploadedFile('file');
-
-            if (empty($uploadedFile) === false) {
-                $uploadedFiles[] = $uploadedFile;
-            }
+            // Extract and validate uploaded files.
+            $uploadedFiles = $this->extractUploadedFiles();
 
             if (empty($uploadedFiles) === true) {
                 throw new Exception('No file(s) uploaded');
             }
 
-            // Create file using the uploaded file's content and name.
-            $results = [];
+            // Process all uploaded files.
+            $results = $this->processUploadedFiles(
+                object: $object,
+                uploadedFiles: $uploadedFiles
+            );
 
-            foreach ($uploadedFiles as $file) {
-                // Check for upload errors first.
-                $fileError = $file['error'] ?? null;
-
-                if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
-                    throw new Exception(
-                        'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($fileError)
-                    );
-                }
-
-                // Verify the temporary file exists and is readable.
-                $tmpName = $file['tmp_name'];
-
-                if (file_exists($tmpName) === false || is_readable($tmpName) === false) {
-                    throw new Exception(
-                        'Temporary file not found or not readable for: '.$file['name']
-                    );
-                }
-
-                // Read the file content with error handling.
-                $content = file_get_contents($tmpName);
-
-                if ($content === false) {
-                    throw new Exception(
-                        'Failed to read uploaded file content for: '.$file['name']
-                    );
-                }
-
-                // Create file.
-                $results[] = $this->fileService->addFile(
-                    $object,
-                    $file['name'],
-                    $content,
-                    $file['share'],
-                    $file['tags']
-                );
-            }//end foreach
-
+            // Format and return results.
             $formattedFiles = $this->fileService->formatFiles(
-                $results,
-                $this->request->getParams()
+                files: $results,
+                params: $this->request->getParams()
             );
 
             return new JSONResponse($formattedFiles['results']);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
-
     }//end createMultipart()
+
+    /**
+     * Validate and retrieve object entity.
+     *
+     * @param string $register Register identifier
+     * @param string $schema   Schema identifier
+     * @param string $id       Object ID
+     *
+     * @return ObjectEntity|null Object entity or null if not found
+     */
+    private function validateAndGetObject(string $register, string $schema, string $id): ?ObjectEntity
+    {
+        // Set the schema and register to the object service (forces a check if they are valid).
+        $this->objectService->setSchema($schema);
+        $this->objectService->setRegister($register);
+        $this->objectService->setObject($id);
+
+        return $this->objectService->getObject();
+    }//end validateAndGetObject()
+
+    /**
+     * Extract uploaded files from request.
+     *
+     * @return array<int, array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>}> Normalized uploaded files array
+     *
+     * @throws Exception If no files are uploaded
+     */
+    private function extractUploadedFiles(): array
+    {
+        $uploadedFiles = [];
+        $data          = $this->request->getParams();
+
+        // Check for multipart file uploads.
+        $files = $_FILES['files'] ?? [];
+
+        if (empty($files) === false) {
+            $uploadedFiles = $this->normalizeMultipartFiles(files: $files, data: $data);
+        }
+
+        // Check for single file upload.
+        $uploadedFile = $this->request->getUploadedFile('file');
+
+        if (empty($uploadedFile) === false) {
+            $uploadedFiles[] = $uploadedFile;
+        }
+
+        if (empty($uploadedFiles) === true) {
+            throw new Exception('No files uploaded');
+        }
+
+        return $uploadedFiles;
+    }//end extractUploadedFiles()
+
+    /**
+     * Normalize $_FILES array to consistent format for single or multiple files.
+     *
+     * @param array<string, array<int, string>|string|int> $files Files from $_FILES
+     * @param array                                        $data  Request parameters
+     *
+     * @return array<int, array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>}> Normalized files array
+     */
+    private function normalizeMultipartFiles(array $files, array $data): array
+    {
+        $uploadedFiles = [];
+        $fileName      = $files['name'] ?? null;
+
+        // Single file upload.
+        if ($fileName !== null && is_array($fileName) === false) {
+            $uploadedFiles[] = $this->normalizeSingleFile(files: $files, data: $data);
+            return $uploadedFiles;
+        }
+
+        // Multiple file upload.
+        if ($fileName !== null && is_array($fileName) === true) {
+            $uploadedFiles = $this->normalizeMultipleFiles(files: $files, data: $data, fileNames: $fileName);
+        }
+
+        return $uploadedFiles;
+    }//end normalizeMultipartFiles()
+
+    /**
+     * Normalize single file upload.
+     *
+     * @param array<string, array<int, string>|string|int> $files Files from $_FILES
+     * @param array                                        $data  Request parameters
+     *
+     * @return array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>} Normalized file data
+     */
+    private function normalizeSingleFile(array $files, array $data): array
+    {
+        $tags = $data['tags'] ?? '';
+        if (is_array($tags) === false) {
+            $tags = explode(',', $tags);
+        }
+
+        return [
+            'name'     => $files['name'] ?? '',
+            'type'     => $files['type'] ?? '',
+            'tmp_name' => $files['tmp_name'] ?? '',
+            'error'    => $files['error'] ?? UPLOAD_ERR_NO_FILE,
+            'size'     => $files['size'] ?? 0,
+            'share'    => $data['share'] === 'true',
+            'tags'     => $tags,
+        ];
+    }//end normalizeSingleFile()
+
+    /**
+     * Normalize multiple file uploads.
+     *
+     * @param array<string, array<int, string>|string|int> $files     Files from $_FILES
+     * @param array                                        $data      Request parameters
+     * @param array<int, string>                           $fileNames Array of file names
+     *
+     * @return array<int, array{name: string, type: string, tmp_name: string, error: int, size: int, share: bool, tags: array<int, string>}> Normalized files array
+     */
+    private function normalizeMultipleFiles(array $files, array $data, array $fileNames): array
+    {
+        $uploadedFiles = [];
+        $fileCount     = count($fileNames);
+
+        for ($i = 0; $i < $fileCount; $i++) {
+            $tags = $data['tags'][$i] ?? '';
+            if (is_array($tags) === false) {
+                $tags = explode(',', $tags);
+            }
+
+            // Extract file arrays safely.
+            $typeArray    = is_array($files['type'] ?? null) === true ? $files['type'] : [];
+            $tmpNameArray = is_array($files['tmp_name'] ?? null) === true ? $files['tmp_name'] : [];
+
+            $errorValue  = $files['error'] ?? null;
+            $errorArray  = is_array($errorValue) === true ? $errorValue : [];
+            $errorScalar = is_int($errorValue) === true ? $errorValue : null;
+
+            $sizeValue  = $files['size'] ?? null;
+            $sizeArray  = is_array($sizeValue) === true ? $sizeValue : [];
+            $sizeScalar = is_int($sizeValue) === true ? $sizeValue : null;
+
+            $uploadedFiles[] = [
+                'name'     => $fileNames[$i] ?? '',
+                'type'     => $typeArray[$i] ?? '',
+                'tmp_name' => $tmpNameArray[$i] ?? '',
+                'error'    => $errorArray[$i] ?? $errorScalar ?? UPLOAD_ERR_NO_FILE,
+                'size'     => $sizeArray[$i] ?? $sizeScalar ?? 0,
+                'share'    => $data['share'] === 'true',
+                'tags'     => $tags,
+            ];
+        }//end for
+
+        return $uploadedFiles;
+    }//end normalizeMultipleFiles()
+
+    /**
+     * Process all uploaded files and create file entities.
+     *
+     * @param ObjectEntity $object        Object entity to attach files to
+     * @param array        $uploadedFiles Normalized uploaded files array
+     *
+     * @return array<int, mixed> Array of created file entities
+     *
+     * @throws Exception If file validation or processing fails
+     */
+    private function processUploadedFiles(ObjectEntity $object, array $uploadedFiles): array
+    {
+        $results = [];
+
+        foreach ($uploadedFiles as $file) {
+            // Validate file upload.
+            $this->validateUploadedFile(file: $file);
+
+            // Read file content.
+            $content = file_get_contents($file['tmp_name']);
+
+            if ($content === false) {
+                throw new Exception(
+                    'Failed to read uploaded file content for: '.$file['name']
+                );
+            }
+
+            // Create file entity.
+            $results[] = $this->fileService->addFile(
+                object: $object,
+                name: $file['name'],
+                content: $content,
+                share: $file['share'],
+                tags: $file['tags']
+            );
+        }//end foreach
+
+        return $results;
+    }//end processUploadedFiles()
+
+    /**
+     * Validate uploaded file for errors and readability.
+     *
+     * @param array{name: string, tmp_name: string, error: int} $file File data
+     *
+     * @return void
+     *
+     * @throws Exception If file validation fails
+     */
+    private function validateUploadedFile(array $file): void
+    {
+        // Check for upload errors.
+        $fileError = $file['error'] ?? null;
+
+        if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
+            throw new Exception(
+                'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($fileError)
+            );
+        }
+
+        // Verify temporary file exists and is readable.
+        $tmpName = $file['tmp_name'];
+
+        if (file_exists($tmpName) === false || is_readable($tmpName) === false) {
+            throw new Exception(
+                'Temporary file not found or not readable for: '.$file['name']
+            );
+        }
+    }//end validateUploadedFile()
 
     /**
      * Update file metadata for an object

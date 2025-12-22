@@ -362,9 +362,9 @@ class SettingsService
         $this->schemaCacheService      = $schemaCacheService;
         $this->schemaFacetCacheService = $schemaFacetCacheService;
         $this->searchTrailMapper       = $searchTrailMapper;
-        $this->userManager = $userManager;
-        $this->db          = $db;
-        $this->setupHandler       = $setupHandler;
+        $this->userManager  = $userManager;
+        $this->db           = $db;
+        $this->setupHandler = $setupHandler;
         $this->objectCacheService = $objectCacheService;
         $this->container          = $container;
         $this->appName            = $appName;
@@ -680,7 +680,6 @@ class SettingsService
     ) {
         // NOTE: This method calls a deprecated method that always throws.
         // TODO: Refactor to use IndexService->warmupIndex() directly.
-
         /*
          * @psalm-suppress NoValue - Method always throws, return is unreachable
          */
@@ -1545,6 +1544,7 @@ class SettingsService
             if ($this->setupHandler !== null) {
                 return $this->setupHandler->getObjectEntityFieldDefinitions();
             }
+
             return [];
         }//end try
 

@@ -230,8 +230,8 @@ class VectorEmbeddings
 
         try {
             $embedding = $this->generateEmbeddingWithCustomConfig(
-                $testText,
-                [
+                text: $testText,
+                config: [
                     'provider' => $provider,
                     'model'    => $config['model'] ?? null,
                     'apiKey'   => $config['apiKey'] ?? null,
@@ -427,7 +427,7 @@ class VectorEmbeddings
         ?string $provider=null
     ): array {
         // Generate query embedding.
-        $queryEmbeddingData = $this->generateEmbedding($query, $provider);
+        $queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
         $queryEmbedding     = $queryEmbeddingData['embedding'];
 
         // Delegate to search handler.
@@ -465,7 +465,7 @@ class VectorEmbeddings
         ?string $provider=null
     ): array {
         // Generate query embedding.
-        $queryEmbeddingData = $this->generateEmbedding($query, $provider);
+        $queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
         $queryEmbedding     = $queryEmbeddingData['embedding'];
 
         // Get SOLR results (placeholder - implement when integrating with SOLR).

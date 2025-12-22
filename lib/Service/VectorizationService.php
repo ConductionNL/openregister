@@ -411,7 +411,7 @@ class VectorizationService
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
-        return $this->vectorService->generateEmbedding($text, $provider);
+        return $this->vectorService->generateEmbedding(text: $text, provider: $provider);
 
     }//end generateEmbedding()
 
@@ -435,7 +435,7 @@ class VectorizationService
         array $filters=[],
         ?string $provider=null
     ): array {
-        return $this->vectorService->semanticSearch($query, $limit, $filters, $provider);
+        return $this->vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
 
     }//end semanticSearch()
 
@@ -461,7 +461,7 @@ class VectorizationService
         array $weights=['solr' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): array {
-        return $this->vectorService->hybridSearch($query, $solrFilters, $limit, $weights, $provider);
+        return $this->vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
 
     }//end hybridSearch()
 
@@ -493,7 +493,7 @@ class VectorizationService
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
-        return $this->vectorService->testEmbedding($provider, $config, $testText);
+        return $this->vectorService->testEmbedding(provider: $provider, config: $config, testText: $testText);
 
     }//end testEmbedding()
 

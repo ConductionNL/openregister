@@ -704,6 +704,7 @@ class Schema extends Entity implements JsonSerializable
                 if ($value === null || $value === []) {
                     $value = [];
                 }
+
                 $this->setRequired($value);
                 continue;
             }

@@ -208,11 +208,11 @@ class ObjectEntityMapper extends QBMapper
         $this->organisationMapper = $organisationMapper;
 
         // Initialize handlers (no circular dependencies).
-        $this->queryBuilderHandler      = new QueryBuilderHandler($db, $logger);
-        $this->statisticsHandler        = new StatisticsHandler($db, $logger, 'openregister_objects');
-        $this->facetsHandler            = new FacetsHandler($logger, $schemaMapper);
-        $this->queryOptimizationHandler = new QueryOptimizationHandler($db, $logger, 'openregister_objects');
-        $this->bulkOperationsHandler    = new BulkOperationsHandler($db, $logger, $this->queryBuilderHandler, 'openregister_objects');
+        $this->queryBuilderHandler      = new QueryBuilderHandler(db: $db, logger: $logger);
+        $this->statisticsHandler        = new StatisticsHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
+        $this->facetsHandler            = new FacetsHandler(logger: $logger, schemaMapper: $schemaMapper);
+        $this->queryOptimizationHandler = new QueryOptimizationHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
+        $this->bulkOperationsHandler    = new BulkOperationsHandler(db: $db, logger: $logger, queryBuilderHandler: $this->queryBuilderHandler, tableName: 'openregister_objects');
 
     }//end __construct()
 
@@ -263,7 +263,7 @@ class ObjectEntityMapper extends QBMapper
         try {
             // Get current user from session.
             $user = $this->userSession->getUser();
-            
+
             if ($user !== null) {
                 $userId = $user->getUID();
             } else {
@@ -377,7 +377,7 @@ class ObjectEntityMapper extends QBMapper
     {
         // Dispatch updating event.
         // Pass includeDeleted=true to allow fetching the old state even if the object is being restored from deleted.
-        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity, $this->find($entity->getId(), null, null, true)));
+        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent(newObject: $entity, oldObject: $this->find($entity->getId(), null, null, true)));
 
         // Call parent QBMapper update directly (CrudHandler has circular dependency).
         $result = parent::update($entity);
@@ -485,7 +485,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
     {
-        return $this->statisticsHandler->getStatistics($registerId, $schemaId, $exclude);
+        return $this->statisticsHandler->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
 
     }//end getStatistics()
 
@@ -499,7 +499,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
-        return $this->statisticsHandler->getRegisterChartData($registerId, $schemaId);
+        return $this->statisticsHandler->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
 
     }//end getRegisterChartData()
 
@@ -513,7 +513,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
-        return $this->statisticsHandler->getSchemaChartData($registerId, $schemaId);
+        return $this->statisticsHandler->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
 
     }//end getSchemaChartData()
 
@@ -527,7 +527,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
     {
-        return $this->statisticsHandler->getSizeDistributionChartData($registerId, $schemaId);
+        return $this->statisticsHandler->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
 
     }//end getSizeDistributionChartData()
 
@@ -579,7 +579,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
-        return $this->bulkOperationsHandler->ultraFastBulkSave($insertObjects, $updateObjects);
+        return $this->bulkOperationsHandler->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
 
     }//end ultraFastBulkSave()
 
@@ -593,7 +593,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
-        return $this->bulkOperationsHandler->deleteObjects($uuids, $hardDelete);
+        return $this->bulkOperationsHandler->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
 
     }//end deleteObjects()
 
@@ -607,7 +607,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
-        return $this->bulkOperationsHandler->publishObjects($uuids, $datetime);
+        return $this->bulkOperationsHandler->publishObjects(uuids: $uuids, datetime: $datetime);
 
     }//end publishObjects()
 
@@ -621,7 +621,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
     {
-        return $this->bulkOperationsHandler->depublishObjects($uuids, $datetime);
+        return $this->bulkOperationsHandler->depublishObjects(uuids: $uuids, datetime: $datetime);
 
     }//end depublishObjects()
 
@@ -637,7 +637,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
     {
-        return $this->bulkOperationsHandler->publishObjectsBySchema($schemaId, $publishAll);
+        return $this->bulkOperationsHandler->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
 
     }//end publishObjectsBySchema()
 
@@ -653,7 +653,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
     {
-        return $this->bulkOperationsHandler->deleteObjectsBySchema($schemaId, $hardDelete);
+        return $this->bulkOperationsHandler->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
 
     }//end deleteObjectsBySchema()
 
@@ -712,7 +712,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
-        return $this->bulkOperationsHandler->calculateOptimalChunkSize($insertObjects, $updateObjects);
+        return $this->bulkOperationsHandler->calculateOptimalChunkSize(insertObjects: $insertObjects, updateObjects: $updateObjects);
 
     }//end calculateOptimalChunkSize()
 
@@ -730,7 +730,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
     {
-        return $this->queryOptimizationHandler->separateLargeObjects($objects, $maxSafeSize);
+        return $this->queryOptimizationHandler->separateLargeObjects(objects: $objects, maxSafeSize: $maxSafeSize);
 
     }//end separateLargeObjects()
 
@@ -760,7 +760,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
     {
-        return $this->queryOptimizationHandler->bulkOwnerDeclaration($defaultOwner, $defaultOrganisation, $batchSize);
+        return $this->queryOptimizationHandler->bulkOwnerDeclaration(defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation, batchSize: $batchSize);
 
     }//end bulkOwnerDeclaration()
 
@@ -789,7 +789,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {
-        $this->queryOptimizationHandler->applyCompositeIndexOptimizations($_qb, $filters);
+        $this->queryOptimizationHandler->applyCompositeIndexOptimizations(_qb: $_qb, filters: $filters);
 
     }//end applyCompositeIndexOptimizations()
 
@@ -817,7 +817,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function addQueryHints(IQueryBuilder $qb, array $filters, bool $skipRbac): void
     {
-        $this->queryOptimizationHandler->addQueryHints($qb, $filters, $skipRbac);
+        $this->queryOptimizationHandler->addQueryHints(qb: $qb, filters: $filters, skipRbac: $skipRbac);
 
     }//end addQueryHints()
 

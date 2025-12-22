@@ -231,7 +231,7 @@ class MetaDataFacetHandler
             }
 
             // Apply base filters.
-            $this->applyBaseFilters($queryBuilder, $baseQuery);
+            $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
 
             $result = $queryBuilder->executeQuery();
             $count  = (int) $result->fetchOne();
@@ -308,7 +308,7 @@ class MetaDataFacetHandler
 
         // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
-            $this->applyFullTextSearch($queryBuilder, trim($search));
+            $this->applyFullTextSearch(queryBuilder: $queryBuilder, searchTerm: trim($search));
         }
 
         // Apply IDs filter if provided.
@@ -1130,7 +1130,7 @@ class MetaDataFacetHandler
 
         while (($row = $result->fetch()) !== false) {
             $value = $row[$field];
-            $label = $this->getFieldLabel($field, $value);
+                $label = $this->getFieldLabel(field: $field, value: $value);
 
             $samples[] = [
                 'value' => $value,

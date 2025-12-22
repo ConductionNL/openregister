@@ -144,7 +144,7 @@ class ConfigurationCheckJob extends TimedJob
             $stats = ['checked' => 0, 'updated' => 0, 'failed' => 0];
 
             foreach ($configurations as $configuration) {
-                $this->checkSingleConfiguration($configuration, $stats);
+                $this->checkSingleConfiguration(configuration: $configuration, stats: $stats);
             }
 
             $this->logger->info(
@@ -210,7 +210,7 @@ class ConfigurationCheckJob extends TimedJob
 
             // Handle the update based on auto-update setting.
             if ($configuration->getAutoUpdate() === true) {
-                $this->handleAutoUpdate($configuration, $stats);
+                $this->handleAutoUpdate(configuration: $configuration, stats: $stats);
             } else {
                 $this->sendUpdateNotification($configuration);
             }

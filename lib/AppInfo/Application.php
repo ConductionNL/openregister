@@ -272,15 +272,15 @@ class Application extends App implements IBootstrap
             OrganisationService::class,
             function ($container) {
                 return new OrganisationService(
-                    $container->get(OrganisationMapper::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCP\ISession'),
-                    $container->get('OCP\IConfig'),
-                    $container->get('OCP\IAppConfig'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    null
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    session: $container->get('OCP\ISession'),
+                    config: $container->get('OCP\IConfig'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    settingsService: null
                 // SettingsService - null to break circular dependency.
                 );
             }
@@ -295,13 +295,13 @@ class Application extends App implements IBootstrap
             SchemaMapper::class,
             function ($container) {
                 return new SchemaMapper(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get(PropertyValidatorHandler::class),
-                    $container->get(OrganisationMapper::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IAppConfig')
+                    db: $container->get('OCP\IDBConnection'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    validator: $container->get(PropertyValidatorHandler::class),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
             }
         );
@@ -310,15 +310,15 @@ class Application extends App implements IBootstrap
             ObjectEntityMapper::class,
             function ($container) {
                 return new ObjectEntityMapper(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get('OCP\IUserSession'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IAppConfig'),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(OrganisationMapper::class)
+                    db: $container->get('OCP\IDBConnection'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationMapper: $container->get(OrganisationMapper::class)
                 );
             }
         );
@@ -327,21 +327,20 @@ class Application extends App implements IBootstrap
             RegisterMapper::class,
             function ($container) {
                 return new RegisterMapper(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(OrganisationMapper::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IAppConfig')
+                    db: $container->get('OCP\IDBConnection'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
             }
         );
 
         // NOTE: SearchTrailService can be autowired (only type-hinted parameters).
         // Removed manual registration - Nextcloud will autowire it automatically.
-
         /*
          * Register SolrService for advanced search capabilities (disabled due to performance issues).
          * Issue: Even with lazy loading, DI registration causes performance problems.
@@ -409,13 +408,13 @@ class Application extends App implements IBootstrap
             FolderManagementHandler::class,
             function ($container) {
                 return new FolderManagementHandler(
-                    $container->get('OCP\Files\IRootFolder'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    null
+                    rootFolder: $container->get('OCP\Files\IRootFolder'),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    fileService: null
                 // FileService - null to break circular dependency.
                 );
             }
@@ -535,35 +534,35 @@ class Application extends App implements IBootstrap
             function ($container) {
                 // CacheHandler is not available yet (will be lazy-loaded via container if needed).
                 return new SettingsService(
-                    $container->get('OCP\IConfig'),
-                    $container->get(AuditTrailMapper::class),
-                    $container->get('OCP\ICacheFactory'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('Psr\Log\LoggerInterface'),
+                    config: $container->get('OCP\IConfig'),
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
                     // REMOVED: ObjectEntityMapper (unused, caused circular dependency).
-                    $container->get(OrganisationMapper::class),
-                    $container->get(SchemaCacheHandler::class),
-                    $container->get(FacetCacheHandler::class),
-                    $container->get(SearchTrailMapper::class),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IDBConnection'),
-                    null,
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    schemaCacheService: $container->get(SchemaCacheHandler::class),
+                    schemaFacetCacheService: $container->get(FacetCacheHandler::class),
+                    searchTrailMapper: $container->get(SearchTrailMapper::class),
+                    userManager: $container->get('OCP\IUserManager'),
+                    db: $container->get('OCP\IDBConnection'),
+                    setupHandler: null,
                     // SetupHandler: Cannot be injected here due to circular dependency.
                     // SetupHandler → IndexService → SearchBackendInterface → SettingsService (LOOP!).
                     // It will be lazy-loaded if needed via container.
-                    null,
+                    objectCacheService: null,
                     // CacheHandler - lazy-loaded via container.
-                    $container,
-                    'openregister',
+                    container: $container,
+                    appName: 'openregister',
                     // Settings handlers - delegated business logic.
-                    $container->get(ValidationOperationsHandler::class),
-                    $container->get(SearchBackendHandler::class),
-                    $container->get(LlmSettingsHandler::class),
-                    $container->get(FileSettingsHandler::class),
-                    $container->get(ObjectRetentionHandler::class),
-                    $container->get(CacheSettingsHandler::class),
-                    $container->get(SolrSettingsHandler::class),
-                    $container->get(ConfigurationSettingsHandler::class)
+                    validationOperationsHandler: $container->get(ValidationOperationsHandler::class),
+                    searchBackendHandler: $container->get(SearchBackendHandler::class),
+                    llmSettingsHandler: $container->get(LlmSettingsHandler::class),
+                    fileSettingsHandler: $container->get(FileSettingsHandler::class),
+                    objectRetentionHandler: $container->get(ObjectRetentionHandler::class),
+                    cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
+                    solrSettingsHandler: $container->get(SolrSettingsHandler::class),
+                    configurationSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
                 );
             }
         );

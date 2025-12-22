@@ -211,7 +211,7 @@ class BulkIndexer
 
                 // Fetch batch of searchable objects from DB.
                 $fetchStart   = microtime(true);
-                $objects      = $this->fetchSearchableObjects($currentBatchSize, $offset, $schemaIds);
+                $objects      = $this->fetchSearchableObjects(limit: $currentBatchSize, offset: $offset, schemaIds: $schemaIds);
                 $objectsCount = count($objects);
 
                 $fetchDuration = round((microtime(true) - $fetchStart) * 1000, 2);
@@ -232,7 +232,7 @@ class BulkIndexer
                 $documents = [];
                 foreach ($objects as $object) {
                     try {
-                        $document    = $this->documentBuilder->createDocument($object, $solrFieldTypes);
+                        $document    = $this->documentBuilder->createDocument(object: $object, solrFieldTypes: $solrFieldTypes);
                         $documents[] = $document;
                     } catch (\RuntimeException $e) {
                         if (str_contains($e->getMessage(), 'Schema is not searchable') === true) {
@@ -350,7 +350,7 @@ class BulkIndexer
         }
 
         // Fetch objects with searchable schemas.
-        return $this->objectMapper->findBySchemas($searchableSchemaIds, $limit, $offset);
+        return $this->objectMapper->findBySchemas(schemaIds: $searchableSchemaIds, limit: $limit, offset: $offset);
 
     }//end fetchSearchableObjects()
 

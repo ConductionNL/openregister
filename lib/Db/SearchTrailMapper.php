@@ -121,7 +121,7 @@ class SearchTrailMapper extends QBMapper
             ->from($this->getTableName());
 
         // Apply filters.
-        $this->applyFilters($qb, $filters);
+        $this->applyFilters(qb: $qb, filters: $filters);
 
         // Apply search term.
         if ($search !== null) {
@@ -188,7 +188,7 @@ class SearchTrailMapper extends QBMapper
             ->from($this->getTableName());
 
         // Apply filters.
-        $this->applyFilters($qb, $filters);
+        $this->applyFilters(qb: $qb, filters: $filters);
 
         // Apply search term.
         if ($search !== null) {
@@ -244,7 +244,7 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setResponseTime((int) round($responseTime));
 
         // Extract and set search parameters.
-        $this->extractSearchParameters($searchTrail, $searchQuery);
+        $this->extractSearchParameters(searchTrail: $searchTrail, query: $searchQuery);
 
         // Set request information.
         $this->setRequestInformation($searchTrail);

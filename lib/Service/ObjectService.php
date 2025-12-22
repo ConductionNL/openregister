@@ -502,7 +502,6 @@ class ObjectService
         );
 
         // If the object is not found, return null.
-
         /*
          * Suppress type check - GetObject::find() may return null
          *
@@ -1052,6 +1051,7 @@ class ObjectService
             if ($uuid === null) {
                 $uuid = $object->getUuid();
             }
+
             $object = $object->getObject();
         }
 
@@ -1168,7 +1168,7 @@ class ObjectService
                 object: $object,
                 schema: $this->currentSchema
             );
-            
+
             if ($result->isValid() === false) {
                 $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
@@ -1187,14 +1187,14 @@ class ObjectService
     {
         // Handle folder creation for existing objects or new objects with UUIDs.
         $folderId = null;
-        
+
         if ($uuid !== null) {
             // For existing objects or objects with specific UUIDs, check if folder needs to be created.
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 $folder         = $existingObject->getFolder();
                 $isString       = is_string($folder) === true;
-                
+
                 if ($folder === null || $folder === '' || $isString === true) {
                     try {
                         $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
@@ -1208,7 +1208,7 @@ class ObjectService
             } catch (Exception $e) {
                 // Other errors - let SaveObject handle the creation.
             }
-        }
+        }//end if
 
         return $folderId;
     }//end ensureObjectFolder()

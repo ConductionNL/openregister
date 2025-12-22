@@ -322,89 +322,80 @@ class ConfigurationController extends Controller
             $configuration = $this->configurationMapper->find($id);
             $data          = $this->request->getParams();
 
-            // Update fields if provided.
-            if (($data['title'] ?? null) !== null) {
-                $configuration->setTitle($data['title']);
-            }
-
-            if (($data['description'] ?? null) !== null) {
-                $configuration->setDescription($data['description']);
-            }
-
-            if (($data['type'] ?? null) !== null) {
-                $configuration->setType($data['type']);
-            }
-
-            if (($data['sourceType'] ?? null) !== null) {
-                $configuration->setSourceType($data['sourceType']);
-            }
-
-            if (($data['sourceUrl'] ?? null) !== null) {
-                $configuration->setSourceUrl($data['sourceUrl']);
-            }
-
-            if (($data['app'] ?? null) !== null) {
-                $configuration->setApp($data['app']);
-            }
-
-            if (($data['version'] ?? null) !== null) {
-                $configuration->setVersion($data['version']);
-                // For local configurations, sync version to localVersion.
-                if ($configuration->getIsLocal() === true) {
-                    $configuration->setLocalVersion($data['version']);
-                }
-            }
-
-            if (($data['localVersion'] ?? null) !== null) {
-                $configuration->setLocalVersion($data['localVersion']);
-            }
-
-            if (($data['registers'] ?? null) !== null) {
-                $configuration->setRegisters($data['registers']);
-            }
-
-            if (($data['schemas'] ?? null) !== null) {
-                $configuration->setSchemas($data['schemas']);
-            }
-
-            if (($data['objects'] ?? null) !== null) {
-                $configuration->setObjects($data['objects']);
-            }
-
-            if (($data['autoUpdate'] ?? null) !== null) {
-                $configuration->setAutoUpdate($data['autoUpdate']);
-            }
-
-            if (($data['notificationGroups'] ?? null) !== null) {
-                $configuration->setNotificationGroups($data['notificationGroups']);
-            }
-
-            if (($data['githubRepo'] ?? null) !== null) {
-                $configuration->setGithubRepo($data['githubRepo']);
-            }
-
-            if (($data['githubBranch'] ?? null) !== null) {
-                $configuration->setGithubBranch($data['githubBranch']);
-            }
-
-            if (($data['githubPath'] ?? null) !== null) {
-                $configuration->setGithubPath($data['githubPath']);
-            }
+            // Apply updates using data-driven approach.
+            $this->applyConfigurationUpdates(
+                configuration: $configuration,
+                data: $data
+            );
 
             $updated = $this->configurationMapper->update($configuration);
 
-            $this->logger->info(message: "Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})");
+            $this->logger->info(
+                message: "Updated configuration: {$updated->getTitle()} (ID: {$updated->getId()})"
+            );
 
             return new JSONResponse(data: $updated, statusCode: 200);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
+            return new JSONResponse(
+                data: ['error' => 'Configuration not found'],
+                statusCode: 404
+            );
         } catch (Exception $e) {
             $this->logger->error("Failed to update configuration {$id}: ".$e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to update configuration: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(
+                data: ['error' => 'Failed to update configuration: '.$e->getMessage()],
+                statusCode: 500
+            );
         }//end try
-
     }//end update()
+
+    /**
+     * Apply configuration updates from request data.
+     *
+     * @param Configuration $configuration Configuration entity to update
+     * @param array         $data          Request data with field updates
+     *
+     * @return void
+     */
+    private function applyConfigurationUpdates(Configuration $configuration, array $data): void
+    {
+        // Define field mappings: field name => setter method.
+        $fieldMappings = [
+            'title'              => 'setTitle',
+            'description'        => 'setDescription',
+            'type'               => 'setType',
+            'sourceType'         => 'setSourceType',
+            'sourceUrl'          => 'setSourceUrl',
+            'app'                => 'setApp',
+            'localVersion'       => 'setLocalVersion',
+            'registers'          => 'setRegisters',
+            'schemas'            => 'setSchemas',
+            'objects'            => 'setObjects',
+            'autoUpdate'         => 'setAutoUpdate',
+            'notificationGroups' => 'setNotificationGroups',
+            'githubRepo'         => 'setGithubRepo',
+            'githubBranch'       => 'setGithubBranch',
+            'githubPath'         => 'setGithubPath',
+        ];
+
+        // Apply standard field updates.
+        foreach ($fieldMappings as $field => $setter) {
+            if (($data[$field] ?? null) !== null) {
+                $configuration->$setter($data[$field]);
+            }
+        }
+
+        // Handle version field with special logic for local configurations.
+        if (($data['version'] ?? null) !== null) {
+            $configuration->setVersion($data['version']);
+
+            // For local configurations, sync version to localVersion.
+            if ($configuration->getIsLocal() === true) {
+                $configuration->setLocalVersion($data['version']);
+            }
+        }
+    }//end applyConfigurationUpdates()
 
     /**
      * Delete a configuration.

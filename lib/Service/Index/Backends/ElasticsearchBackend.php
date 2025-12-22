@@ -99,7 +99,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function indexObject(ObjectEntity $object, bool $commit=false): bool
     {
-        return $this->indexer->indexObject($object, $commit);
+        return $this->indexer->indexObject(object: $object, refresh: $commit);
 
     }//end indexObject()
 
@@ -110,7 +110,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function bulkIndexObjects(array $objects, bool $commit=false): array
     {
-        return $this->indexer->bulkIndexObjects($objects, $commit);
+        return $this->indexer->bulkIndexObjects(objects: $objects, refresh: $commit);
 
     }//end bulkIndexObjects()
 
@@ -121,7 +121,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function deleteObject(string|int $objectId, bool $commit=false): bool
     {
-        return $this->indexer->deleteObject($objectId, $commit);
+        return $this->indexer->deleteObject(objectId: $objectId, refresh: $commit);
 
     }//end deleteObject()
 
@@ -348,7 +348,7 @@ class ElasticsearchBackend implements SearchBackendInterface
      */
     public function createCollection(string $name, array $config=[]): array
     {
-        $success = $this->indexManager->createIndex($name, $config);
+            $success = $this->indexManager->createIndex(indexName: $name, mapping: $config);
         return ['success' => $success];
 
     }//end createCollection()

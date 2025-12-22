@@ -219,7 +219,7 @@ class BulkOperationsHandler
             }
 
             throw $e;
-        }
+        }//end try
 
         return $publishedObjectIds;
     }//end publishObjects()
@@ -262,7 +262,7 @@ class BulkOperationsHandler
             }
 
             throw $e;
-        }
+        }//end try
 
         return $depublishedObjectIds;
     }//end depublishObjects()

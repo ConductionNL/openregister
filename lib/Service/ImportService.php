@@ -218,15 +218,15 @@ class ImportService
     /**
      * Import data from Excel file.
      *
-     * @param string        $filePath       The path to the Excel file.
-     * @param Register|null $register       Optional register to associate with imported objects.
-     * @param Schema|null   $schema         Optional schema to associate with imported objects.
-     * @param bool          $validation     Whether to validate objects against schema definitions (default: false).
-     * @param bool          $events         Whether to dispatch object lifecycle events (default: false).
-     * @param bool          $_rbac          Whether to apply RBAC checks (default: true, unused).
-     * @param bool          $_multitenancy  Whether to apply multitenancy checks (default: true, unused).
-     * @param bool          $publish        Whether to publish objects after import (default: false).
-     * @param IUser|null    $currentUser    The current user performing the import (optional).
+     * @param string        $filePath      The path to the Excel file.
+     * @param Register|null $register      Optional register to associate with imported objects.
+     * @param Schema|null   $schema        Optional schema to associate with imported objects.
+     * @param bool          $validation    Whether to validate objects against schema definitions (default: false).
+     * @param bool          $events        Whether to dispatch object lifecycle events (default: false).
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true, unused).
+     * @param bool          $_multitenancy Whether to apply multitenancy checks (default: true, unused).
+     * @param bool          $publish       Whether to publish objects after import (default: false).
+     * @param IUser|null    $currentUser   The current user performing the import (optional).
      *
      * @return (array|int|null|string)[][]
      *

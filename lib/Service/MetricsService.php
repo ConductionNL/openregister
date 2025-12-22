@@ -273,7 +273,7 @@ class MetricsService
         $failed = $total - $successful;
 
         // Calculate success rate percentage.
-        $successRate = $this->calculateSuccessRate($total, $successful);
+        $successRate = $this->calculateSuccessRate(total: $total, successful: $successful);
 
         // Calculate estimated costs based on OpenAI pricing.
         // Pricing: text-embedding-3-large = $0.00013 per 1K tokens.

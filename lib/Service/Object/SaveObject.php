@@ -1716,7 +1716,7 @@ class SaveObject
         // Try to update existing object if UUID provided.
         if ($uuid !== null) {
             $existingObject = $this->findAndValidateExistingObject(uuid: $uuid);
-            
+
             if ($existingObject !== null) {
                 return $this->handleObjectUpdate(
                     existingObject: $existingObject,
@@ -1795,7 +1795,7 @@ class SaveObject
     /**
      * Resolve schema and register to entity objects with their IDs.
      *
-     * @param Schema|int|string         $schema   Schema parameter
+     * @param Schema|int|string        $schema   Schema parameter
      * @param Register|int|string|null $register Register parameter
      *
      * @return array{0: Schema, 1: int, 2: Register, 3: int} [schema, schemaId, register, registerId]
@@ -1816,6 +1816,7 @@ class SaveObject
                 if ($schemaId === null) {
                     throw new Exception("Could not resolve schema reference: $schema");
                 }
+
                 $schema = $this->schemaMapper->find(id: $schemaId);
             } else {
                 // It's an integer ID.
@@ -1834,6 +1835,7 @@ class SaveObject
                 if ($registerId === null) {
                     throw new Exception("Could not resolve register reference: $register");
                 }
+
                 $register = $this->registerMapper->find(id: $registerId);
             } else {
                 // It's an integer ID or null.
@@ -1869,8 +1871,7 @@ class SaveObject
                 // If object is locked by someone other than the current user, prevent update.
                 if ($lockOwner !== null && $lockOwner !== $currentUserId) {
                     throw new Exception(
-                        "Cannot update object: Object is locked by user '{$lockOwner}'. "
-                        ."Please unlock the object before attempting to update it."
+                        "Cannot update object: Object is locked by user '{$lockOwner}'. "."Please unlock the object before attempting to update it."
                     );
                 }
             }
@@ -1879,7 +1880,7 @@ class SaveObject
         } catch (DoesNotExistException $e) {
             // Object not found, will create new one.
             return null;
-        }
+        }//end try
     }//end findAndValidateExistingObject()
 
     /**
@@ -1934,17 +1935,17 @@ class SaveObject
     /**
      * Handle creation of new object.
      *
-     * @param int         $registerId     Register ID
-     * @param int         $schemaId       Schema ID
-     * @param Register    $register       Register entity
-     * @param Schema      $schema         Schema entity
-     * @param array       $data           Object data
-     * @param array       $selfData       @self metadata
-     * @param string|null $uuid           UUID for new object
-     * @param int|null    $folderId       Folder ID
-     * @param bool        $persist        Whether to persist changes
-     * @param bool        $silent         Whether to skip audit trail
-     * @param bool        $_multitenancy  Whether to apply multitenancy
+     * @param int         $registerId    Register ID
+     * @param int         $schemaId      Schema ID
+     * @param Register    $register      Register entity
+     * @param Schema      $schema        Schema entity
+     * @param array       $data          Object data
+     * @param array       $selfData      @self metadata
+     * @param string|null $uuid          UUID for new object
+     * @param int|null    $folderId      Folder ID
+     * @param bool        $persist       Whether to persist changes
+     * @param bool        $silent        Whether to skip audit trail
+     * @param bool        $_multitenancy Whether to apply multitenancy
      *
      * @return ObjectEntity Created object
      *
@@ -2037,7 +2038,8 @@ class SaveObject
                     value: $value,
                     schema: $schema,
                     propertyName: $propertyName
-                ) === true) {
+                ) === true
+                ) {
                     $this->filePropertyHandler->handleFileProperty(
                         objectEntity: $savedEntity,
                         object: $data,
@@ -2075,7 +2077,7 @@ class SaveObject
 
             // Re-throw the exception so the controller can handle it.
             throw $e;
-        }
+        }//end try
     }//end processFilePropertiesWithRollback()
 
     /**

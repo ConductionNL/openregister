@@ -206,6 +206,55 @@ When running locally, or in development mode the folders nodus_modules and vendo
 
 Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
 
+## Testing
+
+OpenRegister includes comprehensive integration tests using Newman/Postman.
+
+### Quick Start
+
+```bash
+# Run tests locally:
+cd tests/integration
+./run-tests.sh
+
+# Run with clean start (recommended):
+./run-tests.sh --clean
+
+# Or use Make:
+make -f Makefile.newman test-clean
+```
+
+### Test Coverage
+
+The test suite includes:
+- ✅ Core CRUD operations (Create, Read, Update, Delete)
+- ✅ Multitenancy & organization isolation
+- ✅ Role-based access control (RBAC)
+- ✅ Schema validation & composition
+- ✅ File operations & uploads
+- ✅ Import/Export functionality
+- ✅ Bulk operations
+- ✅ Conversation management
+
+**Current Status**: 176/196 tests passing (89.8%)
+
+### Documentation
+
+See [tests/integration/README.md](tests/integration/README.md) for:
+- Detailed test documentation
+- Configuration options
+- Troubleshooting guide
+- CI/CD integration
+
+### GitHub Actions
+
+Tests run automatically on:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop`
+- Manual workflow dispatch
+
+See `.github/workflows/newman-tests.yml` for workflow configuration.
+
 ## License
 
 This project is licensed under the EUPL License - see the [LICENSE](LICENSE) file for details.
