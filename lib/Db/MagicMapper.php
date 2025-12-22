@@ -260,32 +260,32 @@ class MagicMapper
     private function initializeHandlers(): void
     {
         $this->searchHandler = new MagicSearchHandler(
-            $this->db,
-            $this->logger
+            db: $this->db,
+            logger: $this->logger
         );
 
         $this->rbacHandler = new MagicRbacHandler(
-            $this->userSession,
-            $this->groupManager,
-            $this->userManager,
-            $this->appConfig
+            userSession: $this->userSession,
+            groupManager: $this->groupManager,
+            userManager: $this->userManager,
+            appConfig: $this->appConfig
         );
 
         $this->bulkHandler = new MagicBulkHandler(
-            $this->db,
-            $this->logger
+            db: $this->db,
+            logger: $this->logger
         );
 
         $this->organizationHandler = new MagicOrganizationHandler(
-            $this->userSession,
-            $this->groupManager,
-            $this->appConfig,
-            $this->logger
+            userSession: $this->userSession,
+            groupManager: $this->groupManager,
+            appConfig: $this->appConfig,
+            logger: $this->logger
         );
 
         $this->facetHandler = new MagicFacetHandler(
-            $this->db,
-            $this->logger
+            db: $this->db,
+            logger: $this->logger
         );
     }//end initializeHandlers()
 
@@ -305,10 +305,10 @@ class MagicMapper
      */
     public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force=false): bool
     {
-        $tableName  = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
             'Creating/updating table for register+schema',
@@ -324,11 +324,11 @@ class MagicMapper
 
         try {
             // Check if table exists using cached method.
-            $tableExists = $this->tableExistsForRegisterSchema($register, $schema);
+            $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
 
             if (($tableExists === true) && ($force === false)) {
                 // Table exists and not forcing update - check if schema changed.
-                if ($this->hasRegisterSchemaChanged($register, $schema) === false) {
+                if ($this->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
                     $this->logger->debug(
                         'Table exists and schema unchanged, skipping',
                         [
@@ -340,7 +340,7 @@ class MagicMapper
                 }
 
                 // Schema changed, update table.
-                return $this->updateTableForRegisterSchema($register, $schema);
+                return $this->updateTableForRegisterSchema(register: $register, schema: $schema);
             }
 
             // Create new table or recreate if forced.
@@ -349,7 +349,7 @@ class MagicMapper
                 $this->invalidateTableCache($cacheKey);
             }
 
-            return $this->createTableForRegisterSchema($register, $schema);
+            return $this->createTableForRegisterSchema(register: $register, schema: $schema);
         } catch (Exception $e) {
             $this->logger->error(
                 'Failed to ensure table for register+schema',
@@ -393,7 +393,7 @@ class MagicMapper
         }
 
         // Cache the table name for this register+schema combination.
-        $cacheKey = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
         self::$registerSchemaTableCache[$cacheKey] = $tableName;
 
         return $tableName;
@@ -415,7 +415,7 @@ class MagicMapper
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         // Check cache first (with timeout).
         if ((self::$tableExistsCache[$cacheKey] ?? null) !== null) {
@@ -438,7 +438,7 @@ class MagicMapper
         }
 
         // Check database for table existence.
-        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $exists    = $this->checkTableExistsInDatabase($tableName);
 
         if ($exists === true) {
@@ -487,9 +487,9 @@ class MagicMapper
     public function saveObjectsToRegisterSchemaTable(array $objects, Register $register, Schema $schema): array
     {
         // Ensure table exists for this register+schema combination.
-        $this->ensureTableForRegisterSchema($register, $schema);
+        $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
-        $tableName  = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $savedUuids = [];
 
         $this->logger->info(
@@ -548,7 +548,7 @@ class MagicMapper
     public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array
     {
         // Use fast cached existence check.
-        if ($this->existsTableForRegisterSchema($register, $schema) === false) {
+        if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
             $this->logger->info(
                 'Register+schema table does not exist, should use generic storage',
                 [
@@ -559,7 +559,7 @@ class MagicMapper
             return [];
         }
 
-        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         try {
             return $this->executeRegisterSchemaTableSearch(query: $query, register: $register, schema: $schema, tableName: $tableName);
@@ -646,10 +646,10 @@ class MagicMapper
      */
     private function createTableForRegisterSchema(Register $register, Schema $schema): bool
     {
-        $tableName  = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
             'Creating new register+schema table',
@@ -664,13 +664,13 @@ class MagicMapper
         $columns = $this->buildTableColumnsFromSchema($schema);
 
         // Create table with columns.
-        $this->createTable($tableName, $columns);
+        $this->createTable(tableName: $tableName, columns: $columns);
 
         // Create indexes for performance.
         $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
 
         // Store schema version for change detection.
-        $this->storeRegisterSchemaVersion($register, $schema);
+        $this->storeRegisterSchemaVersion(register: $register, schema: $schema);
 
         // Update cache with current timestamp.
         self::$tableExistsCache[$cacheKey]         = time();
@@ -700,10 +700,10 @@ class MagicMapper
      */
     private function updateTableForRegisterSchema(Register $register, Schema $schema): bool
     {
-        $tableName  = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
         $this->logger->info(
             'Updating existing register+schema table',
@@ -728,7 +728,7 @@ class MagicMapper
             $this->updateTableIndexes(tableName: $tableName, register: $register, schema: $schema);
 
             // Store updated schema version and refresh cache.
-            $this->storeRegisterSchemaVersion($register, $schema);
+            $this->storeRegisterSchemaVersion(register: $register, schema: $schema);
             self::$tableExistsCache[$cacheKey] = time();
             // Refresh cache timestamp.
             $this->logger->info(
@@ -792,7 +792,7 @@ class MagicMapper
                     continue;
                 }
 
-                $column = $this->mapSchemaPropertyToColumn($propertyName, $propertyConfig);
+                $column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
                 if ($column !== null && $column !== '') {
                     $columns[$propertyName] = $column;
                 }
@@ -1029,10 +1029,10 @@ class MagicMapper
                 return $this->mapStringProperty(columnName: $columnName, propertyConfig: $propertyConfig, format: $format);
 
             case 'integer':
-                return $this->mapIntegerProperty($columnName, $propertyConfig);
+                return $this->mapIntegerProperty(columnName: $columnName, propertyConfig: $propertyConfig);
 
             case 'number':
-                return $this->mapNumberProperty($columnName, $propertyConfig);
+                return $this->mapNumberProperty(columnName: $columnName, propertyConfig: $propertyConfig);
 
             case 'boolean':
                 // Determine default value.
@@ -1249,7 +1249,7 @@ class MagicMapper
         $table  = $schema->createTable($tableName);
 
         foreach ($columns as $column) {
-            $this->addColumnToTable($table, $column);
+            $this->addColumnToTable(table: $table, column: $column);
         }
 
         // Execute table creation.
@@ -1399,11 +1399,11 @@ class MagicMapper
 
         try {
             // Check if object exists (for update vs insert).
-            $existingObject = $this->findObjectInRegisterSchemaTable($uuid, $tableName);
+            $existingObject = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
 
             if ($existingObject === null) {
                 // Insert new object.
-                $this->insertObjectInRegisterSchemaTable($preparedData, $tableName);
+                $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
                 $this->logger->debug(
                     'Inserted object in register+schema table',
                     [
@@ -1720,7 +1720,7 @@ class MagicMapper
      */
     public function tableExistsForRegisterSchema(Register $register, Schema $schema): bool
     {
-        return $this->existsTableForRegisterSchema($register, $schema);
+        return $this->existsTableForRegisterSchema(register: $register, schema: $schema);
     }//end tableExistsForRegisterSchema()
 
     /**
@@ -1789,10 +1789,10 @@ class MagicMapper
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $this->getCacheKey($registerId, $schemaId);
+        $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
-        $currentVersion = $this->getStoredRegisterSchemaVersion($registerId, $schemaId);
-        $newVersion     = $this->calculateRegisterSchemaVersion($register, $schema);
+        $currentVersion = $this->getStoredRegisterSchemaVersion(registerId: $registerId, schemaId: $schemaId);
+        $newVersion     = $this->calculateRegisterSchemaVersion(register: $register, schema: $schema);
 
         return $currentVersion !== $newVersion;
     }//end hasRegisterSchemaChanged()
@@ -1809,9 +1809,9 @@ class MagicMapper
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 
-        $version   = $this->calculateRegisterSchemaVersion($register, $schema);
+        $version   = $this->calculateRegisterSchemaVersion(register: $register, schema: $schema);
         $configKey = 'table_version_'.$cacheKey;
 
         $this->config->setAppValue('openregister', $configKey, $version);
@@ -1830,7 +1830,7 @@ class MagicMapper
      */
     private function getStoredRegisterSchemaVersion(int $registerId, int $schemaId): string|null
     {
-        $cacheKey  = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey  = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
         $configKey = 'table_version_'.$cacheKey;
 
         $version = $this->config->getAppValue('openregister', $configKey, '');
@@ -2093,7 +2093,7 @@ class MagicMapper
                     ]
                 );
 
-                $this->addColumnToTable($table, $columnDef);
+                $this->addColumnToTable(table: $table, column: $columnDef);
             }
         }
 
@@ -2207,7 +2207,7 @@ class MagicMapper
         }
 
         // Clear cache for specific register+schema combination.
-        $cacheKey = $this->getCacheKey($registerId, $schemaId);
+        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
         $this->invalidateTableCache($cacheKey);
 
         $this->logger->debug(
@@ -2260,7 +2260,7 @@ class MagicMapper
                         ];
 
                         // Pre-populate cache while we're at it.
-                        $cacheKey = $this->getCacheKey($registerId, $schemaId);
+                        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
                         self::$tableExistsCache[$cacheKey]         = time();
                         self::$registerSchemaTableCache[$cacheKey] = $tableName;
                     }
@@ -2357,7 +2357,7 @@ class MagicMapper
         Register $register,
         Schema $schema
     ): ObjectEntity {
-        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         $this->logger->debug(
             'Finding object in register+schema table',
@@ -2401,7 +2401,7 @@ class MagicMapper
                 throw new \OCP\AppFramework\Db\MultipleObjectsReturnedException('Multiple objects found with same identifier');
             }
 
-            $objectEntity = $this->convertRowToObjectEntity($row, $register, $schema);
+            $objectEntity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 
             if ($objectEntity === null) {
                 throw new \OCP\AppFramework\Db\DoesNotExistException('Failed to convert row to ObjectEntity');
@@ -2477,7 +2477,7 @@ class MagicMapper
             }
         }
 
-        return $this->searchObjectsInRegisterSchemaTable($query, $register, $schema);
+        return $this->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
 
     }//end findAllInRegisterSchemaTable()
 
@@ -2498,12 +2498,12 @@ class MagicMapper
         Schema $schema
     ): ObjectEntity {
         // Dispatch creating event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent($entity));
+        $this->eventDispatcher->dispatch(ObjectCreatingEvent::class, new ObjectCreatingEvent(object: $entity));
 
         // Ensure table exists.
-        $this->ensureTableForRegisterSchema($register, $schema);
+        $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
-        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         $this->logger->debug(
             'Inserting object entity into register+schema table',
@@ -2539,13 +2539,13 @@ class MagicMapper
         }
 
         // Set entity ID from database.
-        $row = $this->findObjectInRegisterSchemaTable($uuid, $tableName);
+        $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
         if ($row !== null) {
             $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
         }
 
         // Dispatch created event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($entity));
+            $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent(object: $entity));
 
         return $entity;
 
@@ -2568,12 +2568,12 @@ class MagicMapper
         Schema $schema
     ): ObjectEntity {
         // Fetch old object for event dispatching.
-        $oldObject = $this->findInRegisterSchemaTable($entity->getUuid(), $register, $schema);
+        $oldObject = $this->findInRegisterSchemaTable(identifier: $entity->getUuid(), register: $register, schema: $schema);
 
         // Dispatch updating event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent($entity, $oldObject));
+        $this->eventDispatcher->dispatch(ObjectUpdatingEvent::class, new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject));
 
-        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();
 
         if ($uuid === null) {
@@ -2600,7 +2600,7 @@ class MagicMapper
         );
 
         // Dispatch updated event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($entity, $oldObject));
+        $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent(newObject: $entity, oldObject: $oldObject));
 
         return $entity;
 
@@ -2627,9 +2627,9 @@ class MagicMapper
         bool $hardDelete=false
     ): ObjectEntity {
         // Dispatch deleting event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent($entity));
+        $this->eventDispatcher->dispatch(ObjectDeletingEvent::class, new ObjectDeletingEvent(object: $entity));
 
-        $tableName = $this->getTableNameForRegisterSchema($register, $schema);
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();
 
         if ($uuid === null) {
@@ -2667,7 +2667,7 @@ class MagicMapper
             }
 
             // Update entity in table with deleted field set.
-            $this->updateObjectEntity($entity, $register, $schema);
+            $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
             $this->logger->info(
                 'Soft deleted object in register+schema table',
@@ -2679,7 +2679,7 @@ class MagicMapper
         }//end if
 
         // Dispatch deleted event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent($entity));
+        $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent(object: $entity));
 
         return $entity;
 
@@ -2704,10 +2704,10 @@ class MagicMapper
         ?int $lockDuration=null
     ): ObjectEntity {
         // Lock using entity method.
-        $entity->lock($this->userSession, 'MagicMapper lock', $lockDuration);
+        $entity->lock(userSession: $this->userSession, process: 'MagicMapper lock', duration: $lockDuration);
 
         // Update entity in table with locked field set.
-        $this->updateObjectEntity($entity, $register, $schema);
+        $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
         $this->logger->info(
             'Locked object in register+schema table',
@@ -2718,7 +2718,7 @@ class MagicMapper
         );
 
         // Dispatch locked event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectLockedEvent::class, new ObjectLockedEvent($entity));
+        $this->eventDispatcher->dispatch(ObjectLockedEvent::class, new ObjectLockedEvent(object: $entity));
 
         return $entity;
 
@@ -2744,7 +2744,7 @@ class MagicMapper
         $entity->unlock($this->userSession);
 
         // Update entity in table with locked field cleared.
-        $this->updateObjectEntity($entity, $register, $schema);
+        $this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
 
         $this->logger->info(
             'Unlocked object in register+schema table',
@@ -2752,7 +2752,7 @@ class MagicMapper
         );
 
         // Dispatch unlocked event for audit trails.
-        $this->eventDispatcher->dispatch(ObjectUnlockedEvent::class, new ObjectUnlockedEvent($entity));
+        $this->eventDispatcher->dispatch(ObjectUnlockedEvent::class, new ObjectUnlockedEvent(object: $entity));
 
         return $entity;
 

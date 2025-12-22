@@ -254,7 +254,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $rbac=true,
         bool $multitenancy=true
     ): ObjectEntity {
-        if ($this->shouldUseMagicMapper($register, $schema) === true) {
+        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper');
             return $this->magicMapper->findInRegisterSchemaTable($identifier, $register, $schema);
         }
@@ -302,7 +302,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Schema $schema=null,
         ?bool $published=null
     ): array {
-        if ($this->shouldUseMagicMapper($register, $schema) === true) {
+        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to MagicMapper');
             return $this->magicMapper->findAllInRegisterSchemaTable(
                 $register,
@@ -390,7 +390,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         [$register, $schema] = $this->resolveRegisterAndSchema($entity);
 
-        if ($this->shouldUseMagicMapper($register, $schema) === true) {
+        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing insert() to MagicMapper');
             return $this->magicMapper->insertObjectEntity($entity, $register, $schema);
         }
@@ -419,7 +419,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         [$register, $schema] = $this->resolveRegisterAndSchema($entity);
 
-        if ($this->shouldUseMagicMapper($register, $schema) === true) {
+        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
             return $this->magicMapper->updateObjectEntity($entity, $register, $schema);
         }
@@ -448,7 +448,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         [$register, $schema] = $this->resolveRegisterAndSchema($entity);
 
-        if ($this->shouldUseMagicMapper($register, $schema) === true) {
+        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing delete() to MagicMapper');
             return $this->magicMapper->deleteObjectEntity($entity, $register, $schema, false);
         }
@@ -1132,4 +1132,5 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
     }//end getObjectField()
 }//end class
+
 

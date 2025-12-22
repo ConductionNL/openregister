@@ -950,8 +950,66 @@ class SchemaService
         $suggestions     = [];
         $recommendedType = $this->recommendPropertyType($analysis);
 
-        // Type mismatch check.
+        // Delegate to focused comparison methods for each aspect.
+        $typeComparison = $this->compareType(
+            currentConfig: $currentConfig,
+            recommendedType: $recommendedType
+        );
+        $issues      = array_merge($issues, $typeComparison['issues']);
+        $suggestions = array_merge($suggestions, $typeComparison['suggestions']);
+
+        $stringComparison = $this->compareStringConstraints(
+            currentConfig: $currentConfig,
+            analysis: $analysis,
+            recommendedType: $recommendedType
+        );
+        $issues      = array_merge($issues, $stringComparison['issues']);
+        $suggestions = array_merge($suggestions, $stringComparison['suggestions']);
+
+        $numericComparison = $this->compareNumericConstraints(
+            currentConfig: $currentConfig,
+            analysis: $analysis,
+            recommendedType: $recommendedType
+        );
+        $issues      = array_merge($issues, $numericComparison['issues']);
+        $suggestions = array_merge($suggestions, $numericComparison['suggestions']);
+
+        $nullableComparison = $this->compareNullableConstraint(
+            currentConfig: $currentConfig,
+            analysis: $analysis
+        );
+        $issues      = array_merge($issues, $nullableComparison['issues']);
+        $suggestions = array_merge($suggestions, $nullableComparison['suggestions']);
+
+        $enumComparison = $this->compareEnumConstraint(
+            currentConfig: $currentConfig,
+            analysis: $analysis
+        );
+        $issues      = array_merge($issues, $enumComparison['issues']);
+        $suggestions = array_merge($suggestions, $enumComparison['suggestions']);
+
+        return [
+            'issues'           => $issues,
+            'suggestions'      => $suggestions,
+            'recommended_type' => $recommendedType,
+        ];
+    }//end comparePropertyWithAnalysis()
+
+    /**
+     * Compare the type between current config and recommended type.
+     *
+     * @param array  $currentConfig  Current property configuration
+     * @param string $recommendedType Recommended type from analysis
+     *
+     * @return array{issues: string[], suggestions: array[]} Comparison results
+     */
+    private function compareType(array $currentConfig, string $recommendedType): array
+    {
+        $issues      = [];
+        $suggestions = [];
         $currentType = $currentConfig['type'] ?? null;
+
+        // Check if types match.
         if (($currentType !== null) === true && $currentType !== $recommendedType) {
             $issues[]      = "type_mismatch";
             $suggestions[] = [
@@ -963,123 +1021,187 @@ class SchemaService
             ];
         }
 
-        // Missing constraints for strings.
-        if ($recommendedType === 'string' || $currentType === 'string') {
-            $suggestConfig = [];
+        return [
+            'issues'      => $issues,
+            'suggestions' => $suggestions,
+        ];
+    }//end compareType()
 
-            // Check for missing maxLength.
-            if (($analysis['max_length'] ?? null) !== null && $analysis['max_length'] > 0) {
-                $currentMaxLength = $currentConfig['maxLength'] ?? null;
-                if ($currentMaxLength === null || $currentMaxLength === 0) {
-                    $issues[] = "missing_max_length";
-                    $suggestConfig['maxLength'] = min($analysis['max_length'] * 2, 1000);
-                    $suggestions[] = [
-                        'type'        => 'constraint',
-                        'field'       => 'maxLength',
-                        'current'     => 'unlimited',
-                        'recommended' => $suggestConfig['maxLength'],
-                        'description' => "Objects have max length of {$analysis['max_length']} characters",
-                    ];
-                } else if ($currentMaxLength < $analysis['max_length']) {
-                    $issues[] = "max_length_too_small";
-                    $suggestConfig['maxLength'] = $analysis['max_length'];
-                    $suggestions[] = [
-                        'type'        => 'constraint',
-                        'field'       => 'maxLength',
-                        'current'     => $currentMaxLength,
-                        'recommended' => $analysis['max_length'],
-                        'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$analysis['max_length']})",
-                    ];
-                }//end if
-            }//end if
+    /**
+     * Compare string constraints (maxLength, format, pattern).
+     *
+     * @param array  $currentConfig  Current property configuration
+     * @param array  $analysis       Property analysis data
+     * @param string $recommendedType Recommended type
+     *
+     * @return array{issues: string[], suggestions: array[]} Comparison results
+     */
+    private function compareStringConstraints(array $currentConfig, array $analysis, string $recommendedType): array
+    {
+        $issues      = [];
+        $suggestions = [];
+        $currentType = $currentConfig['type'] ?? null;
 
-            // Check for missing format.
-            if (($analysis['detected_format'] ?? null) !== null
-                && ($analysis['detected_format'] !== null) === true
-                && ($analysis['detected_format'] !== '') === true
-            ) {
-                $currentFormat = $currentConfig['format'] ?? null;
-                if ($currentFormat === null || $currentFormat === '') {
-                    $issues[]      = "missing_format";
-                    $suggestions[] = [
-                        'type'        => 'format',
-                        'field'       => 'format',
-                        'current'     => 'none',
-                        'recommended' => $analysis['detected_format'],
-                        'description' => "Objects appear to have '{$analysis['detected_format']}' format pattern",
-                    ];
-                }
+        // Only check string constraints if type is or should be string.
+        if ($recommendedType !== 'string' && $currentType !== 'string') {
+            return ['issues' => $issues, 'suggestions' => $suggestions];
+        }
+
+        // Check for missing or insufficient maxLength.
+        if (($analysis['max_length'] ?? null) !== null && $analysis['max_length'] > 0) {
+            $currentMaxLength = $currentConfig['maxLength'] ?? null;
+            
+            if ($currentMaxLength === null || $currentMaxLength === 0) {
+                $issues[] = "missing_max_length";
+                $suggestedMaxLength = min($analysis['max_length'] * 2, 1000);
+                $suggestions[] = [
+                    'type'        => 'constraint',
+                    'field'       => 'maxLength',
+                    'current'     => 'unlimited',
+                    'recommended' => $suggestedMaxLength,
+                    'description' => "Objects have max length of {$analysis['max_length']} characters",
+                ];
+            } else if ($currentMaxLength < $analysis['max_length']) {
+                $issues[] = "max_length_too_small";
+                $suggestions[] = [
+                    'type'        => 'constraint',
+                    'field'       => 'maxLength',
+                    'current'     => $currentMaxLength,
+                    'recommended' => $analysis['max_length'],
+                    'description' => "Schema maxLength ({$currentMaxLength}) is smaller than observed max ({$analysis['max_length']})",
+                ];
             }
+        }
 
-            // Check for missing pattern.
-            if (empty($analysis['string_patterns']) === false) {
-                $currentPattern = $currentConfig['pattern'] ?? null;
-                $mainPattern    = $analysis['string_patterns'][0];
-                if ($currentPattern === null || $currentPattern === '') {
-                    $issues[]      = "missing_pattern";
-                    $suggestions[] = [
-                        'type'        => 'pattern',
-                        'field'       => 'pattern',
-                        'current'     => 'none',
-                        'recommended' => $mainPattern,
-                        'description' => "Strings follow '{$mainPattern}' pattern",
-                    ];
-                }
+        // Check for missing format.
+        if (($analysis['detected_format'] ?? null) !== null
+            && ($analysis['detected_format'] !== null) === true
+            && ($analysis['detected_format'] !== '') === true
+        ) {
+            $currentFormat = $currentConfig['format'] ?? null;
+            if ($currentFormat === null || $currentFormat === '') {
+                $issues[]      = "missing_format";
+                $suggestions[] = [
+                    'type'        => 'format',
+                    'field'       => 'format',
+                    'current'     => 'none',
+                    'recommended' => $analysis['detected_format'],
+                    'description' => "Objects appear to have '{$analysis['detected_format']}' format pattern",
+                ];
             }
-        }//end if
+        }
 
-        // Missing constraints for numbers.
-        if ($recommendedType === 'number' || $recommendedType === 'integer' || $currentType === 'number' || $currentType === 'integer') {
-            if (($analysis['numeric_range'] ?? null) !== null) {
-                $range = $analysis['numeric_range'];
+        // Check for missing pattern.
+        if (empty($analysis['string_patterns']) === false) {
+            $currentPattern = $currentConfig['pattern'] ?? null;
+            $mainPattern    = $analysis['string_patterns'][0];
+            if ($currentPattern === null || $currentPattern === '') {
+                $issues[]      = "missing_pattern";
+                $suggestions[] = [
+                    'type'        => 'pattern',
+                    'field'       => 'pattern',
+                    'current'     => 'none',
+                    'recommended' => $mainPattern,
+                    'description' => "Strings follow '{$mainPattern}' pattern",
+                ];
+            }
+        }
 
-                // Check for missing minimum.
-                $currentMin = $currentConfig['minimum'] ?? null;
-                if (($currentMin === false) && $range['min'] !== $range['max']) {
-                    $issues[]      = "missing_minimum";
-                    $suggestions[] = [
-                        'type'        => 'constraint',
-                        'field'       => 'minimum',
-                        'current'     => 'unlimited',
-                        'recommended' => $range['min'],
-                        'description' => "Observed range starts at {$range['min']}",
-                    ];
-                } else if ($currentMin > $range['min']) {
-                    $issues[]      = "minimum_too_high";
-                    $suggestions[] = [
-                        'type'        => 'constraint',
-                        'field'       => 'minimum',
-                        'current'     => $currentMin,
-                        'recommended' => $range['min'],
-                        'description' => "Schema minimum ({$currentMin}) is higher than observed min ({$range['min']})",
-                    ];
-                }
+        return [
+            'issues'      => $issues,
+            'suggestions' => $suggestions,
+        ];
+    }//end compareStringConstraints()
 
-                // Check for missing maximum.
-                $currentMax = $currentConfig['maximum'] ?? null;
-                if (($currentMax === false) && $range['min'] !== $range['max']) {
-                    $issues[]      = "missing_maximum";
-                    $suggestions[] = [
-                        'type'        => 'constraint',
-                        'field'       => 'maximum',
-                        'current'     => 'unlimited',
-                        'recommended' => $range['max'],
-                        'description' => "Observed range ends at {$range['max']}",
-                    ];
-                } else if ($currentMax < $range['max']) {
-                    $issues[]      = "maximum_too_low";
-                    $suggestions[] = [
-                        'type'        => 'constraint',
-                        'field'       => 'maximum',
-                        'current'     => $currentMax,
-                        'recommended' => $range['max'],
-                        'description' => "Schema maximum ({$currentMax}) is lower than observed max ({$range['max']})",
-                    ];
-                }
-            }//end if
-        }//end if
+    /**
+     * Compare numeric constraints (minimum, maximum).
+     *
+     * @param array  $currentConfig  Current property configuration
+     * @param array  $analysis       Property analysis data
+     * @param string $recommendedType Recommended type
+     *
+     * @return array{issues: string[], suggestions: array[]} Comparison results
+     */
+    private function compareNumericConstraints(array $currentConfig, array $analysis, string $recommendedType): array
+    {
+        $issues      = [];
+        $suggestions = [];
+        $currentType = $currentConfig['type'] ?? null;
 
-        // Check for type variations (nullable vs required).
+        // Only check numeric constraints if type is or should be numeric.
+        $isNumericType = in_array($recommendedType, ['number', 'integer'], true) 
+            || in_array($currentType, ['number', 'integer'], true);
+        
+        if ($isNumericType === false || ($analysis['numeric_range'] ?? null) === null) {
+            return ['issues' => $issues, 'suggestions' => $suggestions];
+        }
+
+        $range = $analysis['numeric_range'];
+
+        // Check for missing or incorrect minimum.
+        $currentMin = $currentConfig['minimum'] ?? null;
+        if (($currentMin === false) && $range['min'] !== $range['max']) {
+            $issues[]      = "missing_minimum";
+            $suggestions[] = [
+                'type'        => 'constraint',
+                'field'       => 'minimum',
+                'current'     => 'unlimited',
+                'recommended' => $range['min'],
+                'description' => "Observed range starts at {$range['min']}",
+            ];
+        } else if ($currentMin > $range['min']) {
+            $issues[]      = "minimum_too_high";
+            $suggestions[] = [
+                'type'        => 'constraint',
+                'field'       => 'minimum',
+                'current'     => $currentMin,
+                'recommended' => $range['min'],
+                'description' => "Schema minimum ({$currentMin}) is higher than observed min ({$range['min']})",
+            ];
+        }
+
+        // Check for missing or incorrect maximum.
+        $currentMax = $currentConfig['maximum'] ?? null;
+        if (($currentMax === false) && $range['min'] !== $range['max']) {
+            $issues[]      = "missing_maximum";
+            $suggestions[] = [
+                'type'        => 'constraint',
+                'field'       => 'maximum',
+                'current'     => 'unlimited',
+                'recommended' => $range['max'],
+                'description' => "Observed range ends at {$range['max']}",
+            ];
+        } else if ($currentMax < $range['max']) {
+            $issues[]      = "maximum_too_low";
+            $suggestions[] = [
+                'type'        => 'constraint',
+                'field'       => 'maximum',
+                'current'     => $currentMax,
+                'recommended' => $range['max'],
+                'description' => "Schema maximum ({$currentMax}) is lower than observed max ({$range['max']})",
+            ];
+        }
+
+        return [
+            'issues'      => $issues,
+            'suggestions' => $suggestions,
+        ];
+    }//end compareNumericConstraints()
+
+    /**
+     * Compare nullable/required constraint.
+     *
+     * @param array $currentConfig Current property configuration
+     * @param array $analysis      Property analysis data
+     *
+     * @return array{issues: string[], suggestions: array[]} Comparison results
+     */
+    private function compareNullableConstraint(array $currentConfig, array $analysis): array
+    {
+        $issues      = [];
+        $suggestions = [];
+
+        // Check if property has nullable variation in the data.
         $nullableVariation = isset($analysis['nullable_variation']) && $analysis['nullable_variation'] === true;
         if ($nullableVariation === true) {
             $currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
@@ -1095,12 +1217,31 @@ class SchemaService
             }
         }
 
-        // Check for enum-like patterns.
+        return [
+            'issues'      => $issues,
+            'suggestions' => $suggestions,
+        ];
+    }//end compareNullableConstraint()
+
+    /**
+     * Compare enum constraint.
+     *
+     * @param array $currentConfig Current property configuration
+     * @param array $analysis      Property analysis data
+     *
+     * @return array{issues: string[], suggestions: array[]} Comparison results
+     */
+    private function compareEnumConstraint(array $currentConfig, array $analysis): array
+    {
+        $issues      = [];
+        $suggestions = [];
+
+        // Check if property looks like an enum.
         if ($this->detectEnumLike($analysis) === true) {
             $currentEnum = $currentConfig['enum'] ?? null;
             if ($currentEnum === null || empty($currentEnum) === true) {
-                $issues[]      = "missing_enum";
-                $enumValues    = $this->extractEnumValues($analysis['examples']);
+                $issues[]   = "missing_enum";
+                $enumValues = $this->extractEnumValues($analysis['examples']);
                 $suggestions[] = [
                     'type'        => 'enum',
                     'field'       => 'enum',
@@ -1112,11 +1253,10 @@ class SchemaService
         }
 
         return [
-            'issues'           => $issues,
-            'suggestions'      => $suggestions,
-            'recommended_type' => $recommendedType,
+            'issues'      => $issues,
+            'suggestions' => $suggestions,
         ];
-    }//end comparePropertyWithAnalysis()
+    }//end compareEnumConstraint()
 
     /**
      * Check if a property name should be treated as internal
@@ -1158,112 +1298,155 @@ class SchemaService
     {
         $types = $analysis['types'];
 
-        // If we detected a specific format, recommend type based on format.
-        $detectedFormat = $analysis['detected_format'] ?? null;
-        if ($detectedFormat !== null && $detectedFormat !== '') {
-            switch ($detectedFormat) {
-                case 'date':
-                case 'date-time':
-                case 'time':
-                    return 'string';
-                // Dates are typically strings in JSON Schema.
-                case 'email':
-                case 'url':
-                case 'hostname':
-                case 'ipv4':
-                case 'ipv6':
-                case 'uuid':
-                case 'color':
-                case 'duration':
-                    return 'string';
-                default:
-                    break;
-            }
+        // Try format-based recommendation first (most specific).
+        $formatType = $this->getTypeFromFormat($analysis['detected_format'] ?? null);
+        if ($formatType !== null) {
+            return $formatType;
         }
 
-        // Check for boolean-like string patterns.
-        $stringPatterns = $analysis['string_patterns'] ?? [];
-        if (in_array('boolean_string', $stringPatterns, true) === true) {
+        // Try pattern-based recommendation (e.g., numeric strings).
+        $patternType = $this->getTypeFromPatterns($analysis['string_patterns'] ?? []);
+        if ($patternType !== null) {
+            return $patternType;
+        }
+
+        // If single type, handle it directly.
+        if (count($types) === 1) {
+            return $this->normalizeSingleType($types[0], $analysis['string_patterns'] ?? []);
+        }
+
+        // Multiple types - analyze dominance.
+        return $this->getDominantType($types, $analysis['string_patterns'] ?? []);
+    }//end recommendPropertyType()
+
+    /**
+     * Get JSON Schema type from detected format.
+     *
+     * @param string|null $format Detected format
+     *
+     * @return string|null JSON Schema type or null if format doesn't determine type
+     */
+    private function getTypeFromFormat(?string $format): ?string
+    {
+        if ($format === null || $format === '') {
+            return null;
+        }
+
+        // Most formats are string-based in JSON Schema.
+        $stringFormats = [
+            'date', 'date-time', 'time', 
+            'email', 'url', 'hostname', 
+            'ipv4', 'ipv6', 'uuid', 
+            'color', 'duration'
+        ];
+
+        if (in_array($format, $stringFormats, true) === true) {
+            return 'string';
+        }
+
+        return null;
+    }//end getTypeFromFormat()
+
+    /**
+     * Get JSON Schema type from string patterns (e.g., numeric strings).
+     *
+     * @param array $patterns String patterns detected in analysis
+     *
+     * @return string|null JSON Schema type or null if patterns don't determine type
+     */
+    private function getTypeFromPatterns(array $patterns): ?string
+    {
+        // Boolean-like strings: "true", "false", "yes", "no".
+        if (in_array('boolean_string', $patterns, true) === true) {
             return 'boolean';
         }
 
-        // Check for numeric string patterns.
-        if (in_array('integer_string', $stringPatterns, true) === true) {
+        // Integer strings: "123", "456".
+        if (in_array('integer_string', $patterns, true) === true) {
             return 'integer';
         }
 
-        if (in_array('float_string', $stringPatterns, true) === true) {
+        // Float strings: "12.34", "56.78".
+        if (in_array('float_string', $patterns, true) === true) {
             return 'number';
         }
 
-        // If we have strong evidence for one type, use it.
-        if (count($types) === 1) {
-            $primaryType = $types[0];
+        return null;
+    }//end getTypeFromPatterns()
 
-            switch ($primaryType) {
-                case 'string':
-                    // Check if it's a numeric string.
-                    if (in_array('integer_string', $stringPatterns, true) === true) {
-                        return 'integer';
-                    }
-
-                    if (in_array('float_string', $stringPatterns, true) === true) {
-                        return 'number';
-                    }
-                    return 'string';
-                case 'integer':
+    /**
+     * Normalize a single PHP type to JSON Schema type.
+     *
+     * @param string $phpType PHP type from analysis
+     * @param array  $patterns String patterns if type is string
+     *
+     * @return string JSON Schema type
+     */
+    private function normalizeSingleType(string $phpType, array $patterns): string
+    {
+        switch ($phpType) {
+            case 'string':
+                // Check if it's a numeric string that should be a number.
+                if (in_array('integer_string', $patterns, true) === true) {
                     return 'integer';
-                case 'double':
-                case 'float':
+                }
+                if (in_array('float_string', $patterns, true) === true) {
                     return 'number';
-                case 'boolean':
-                    return 'boolean';
-                case 'array':
-                    return 'array';
-                case 'object':
-                    return 'object';
-                default:
-                    return 'string';
-                // Default fallback.
-            }//end switch
-        }//end if
+                }
+                return 'string';
 
-        // If multiple types detected, analyze the dominance.
+            case 'integer':
+                return 'integer';
+
+            case 'double':
+            case 'float':
+                return 'number';
+
+            case 'boolean':
+                return 'boolean';
+
+            case 'array':
+                return 'array';
+
+            case 'object':
+                return 'object';
+
+            default:
+                return 'string'; // Safe fallback.
+        }
+    }//end normalizeSingleType()
+
+    /**
+     * Determine dominant type when multiple types are present.
+     *
+     * @param array $types    Array of PHP types found
+     * @param array $patterns String patterns if dominant type is string
+     *
+     * @return string JSON Schema type
+     */
+    private function getDominantType(array $types, array $patterns): string
+    {
+        // Count type occurrences and sort by frequency.
         $typeCounts = array_count_values($types);
         arsort($typeCounts);
         $dominantType = array_key_first($typeCounts);
 
-        // Check pattern consistency for string-dominated fields.
+        // Special handling for string-dominated fields.
         if ($dominantType === 'string') {
-            // If most values are consistently numeric strings, recommend number/integer.
-            if (in_array('integer_string', $stringPatterns, true) === true
-                && in_array('float_string', $stringPatterns, true) === false
+            // If most values are consistently numeric strings, recommend the numeric type.
+            if (in_array('integer_string', $patterns, true) === true
+                && in_array('float_string', $patterns, true) === false
             ) {
                 return 'integer';
-            } else if (in_array('float_string', $stringPatterns, true) === true) {
+            } else if (in_array('float_string', $patterns, true) === true) {
                 return 'number';
             }
-
             return 'string';
         }
 
-        // For non-string dominant types, use the dominant type.
-        switch ($dominantType) {
-            case 'integer':
-                return 'integer';
-            case 'double':
-            case 'float':
-                return 'number';
-            case 'boolean':
-                return 'boolean';
-            case 'array':
-                return 'array';
-            case 'object':
-                return 'object';
-            default:
-                return 'string';
-        }
-    }//end recommendPropertyType()
+        // For other dominant types, normalize them.
+        return $this->normalizeSingleType($dominantType, $patterns);
+    }//end getDominantType()
 
     /**
      * Detect if a property appears to be enum-like

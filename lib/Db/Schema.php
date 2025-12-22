@@ -411,6 +411,25 @@ class Schema extends Entity implements JsonSerializable
     }//end getRequired()
 
     /**
+     * Set the required data
+     *
+     * Always ensures required is an array, never NULL.
+     * This prevents database errors during schema validation.
+     *
+     * @param array|null $required The required field names
+     *
+     * @return void
+     */
+    public function setRequired(?array $required): void
+    {
+        // Always ensure required is an array, never NULL.
+        // This is critical for schema validation to work correctly.
+        $this->required = ($required ?? []);
+        $this->markFieldUpdated('required');
+
+    }//end setRequired()
+
+    /**
      * Get the properties data
      *
      * @return array The properties data or empty array if null
@@ -667,6 +686,12 @@ class Schema extends Entity implements JsonSerializable
             $object['metadata'] = [];
         }
 
+        // Default required to empty array if not provided.
+        // This ensures validation works correctly.
+        if (isset($object['required']) === false) {
+            $object['required'] = [];
+        }
+
         // Default hardValidation to true if not explicitly provided.
         // This ensures schemas validate by default unless explicitly disabled.
         if (isset($object['hardValidation']) === false) {
@@ -674,6 +699,15 @@ class Schema extends Entity implements JsonSerializable
         }
 
         foreach ($object as $key => $value) {
+            // Special handling for 'required' field - must always be an array, never NULL.
+            if ($key === 'required') {
+                if ($value === null || $value === []) {
+                    $value = [];
+                }
+                $this->setRequired($value);
+                continue;
+            }
+
             if (in_array($key, $jsonFields) === true && $value === []) {
                 $value = null;
             }

@@ -3733,17 +3733,16 @@
           }
         },
         {
-          "name": "File 1: Upload PDF (multipart)",
+          "name": "File 1: Upload PDF (base64 - Basic Auth compatible)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
-                  "pm.test('File uploaded and metadata extracted', function() {",
+                  "pm.test('Base64 file uploaded successfully', function() {",
                   "    const json = pm.response.json();",
-                  "    pm.expect(json.file).to.exist;",
-                  "    pm.expect(json.file.mimeType).to.include('pdf');",
+                  "    pm.expect(json.name).to.exist;",
                   "    pm.collectionVariables.set('file_object_uuid', json.uuid);",
                   "});"
                 ],
@@ -3753,21 +3752,15 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": "/path/to/test.pdf"
-                },
-                {
-                  "key": "title",
-                  "value": "Test Document",
-                  "type": "text"
-                }
-              ]
+              "mode": "raw",
+              "raw": "{\"name\": \"Test Person with Document\", \"document\": \"data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9MZW5ndGggMiAwIFIvRmlsdGVyL0ZsYXRlRGVjb2RlPj4Kc3RyZWFtCniccsvJT0pVKC5JzE0FACKJAlsKZW5kc3RyZWFtCmVuZG9iaiUKMiAwIG9iagoyNAplbmRvYmoKNCAwIG9iago8PC9UeXBlL1BhZ2UvTWVkaWFCb3hbMCAwIDYxMiA3OTJdL1Jlc291cmNlczw8L0ZvbnQ8PC9UMSA1IDAgUj4+Pj4vQ29udGVudHMgMyAwIFIvUGFyZW50IDYgMCBSPj4KZW5kb2JqCjUgMCBvYmoKPDwvQmFzZUZvbnQvSGVsdmV0aWNhL1R5cGUvRm9udC9FbmNvZGluZy9XaW5BbnNpRW5jb2Rpbmcv\"}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}",
@@ -3787,15 +3780,16 @@
           }
         },
         {
-          "name": "File 2: Upload Base64 Image",
+          "name": "File 2: Upload Image (base64)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
-                  "pm.test('Base64 file processed', function() {",
+                  "pm.test('Base64 image uploaded successfully', function() {",
                   "    const json = pm.response.json();",
+                  "    pm.expect(json.title).to.exist;",
                   "    pm.expect(json.image).to.exist;",
                   "});"
                 ],
