@@ -640,7 +640,10 @@ class FileService
      */
     private function createRegisterFolderById(Register $register, ?IUser $currentUser=null): ?Node
     {
-        return $this->folderManagementHandler->createRegisterFolderById($register, $currentUser);
+        return $this->folderManagementHandler->createRegisterFolderById(
+            register: $register,
+            currentUser: $currentUser
+        );
 
     }//end createRegisterFolderById()
 
@@ -663,7 +666,11 @@ class FileService
         ?IUser $currentUser=null,
         int|string|null $registerId=null
     ): Node {
-        return $this->folderManagementHandler->createObjectFolderById($objectEntity, $currentUser, $registerId);
+        return $this->folderManagementHandler->createObjectFolderById(
+            objectEntity: $objectEntity,
+            currentUser: $currentUser,
+            registerId: $registerId
+        );
 
     }//end createObjectFolderById()
 
@@ -778,7 +785,10 @@ class FileService
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
-        return $this->folderManagementHandler->getObjectFolder($objectEntity, $registerId);
+        return $this->folderManagementHandler->getObjectFolder(
+            objectEntity: $objectEntity,
+            registerId: $registerId
+        );
 
     }//end getObjectFolder()
 
@@ -922,7 +932,10 @@ class FileService
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {
-        return $this->fileFormattingHandler->formatFiles($files, $requestParams);
+        return $this->fileFormattingHandler->formatFiles(
+            files: $files,
+            requestParams: $requestParams
+        );
 
     }//end formatFiles()
 
@@ -971,7 +984,10 @@ class FileService
         // Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
         $this->checkOwnership($file);
 
-        return $this->fileSharingHandler->findShares($file, $shareType);
+        return $this->fileSharingHandler->findShares(
+            file: $file,
+            shareType: $shareType
+        );
 
     }//end findShares()
 
@@ -1044,7 +1060,11 @@ class FileService
      */
     private function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
     {
-        return $this->fileSharingHandler->shareFolderWithUser($folder, $userId, $permissions);
+        return $this->fileSharingHandler->shareFolderWithUser(
+            folder: $folder,
+            userId: $userId,
+            permissions: $permissions
+        );
 
     }//end shareFolderWithUser()
 
@@ -1079,7 +1099,10 @@ class FileService
      */
     private function transferFileOwnershipIfNeeded(File $file): void
     {
-        $this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file, $this->fileSharingHandler);
+        $this->fileOwnershipHandler->transferFileOwnershipIfNeeded(
+            file: $file,
+            fileSharingHandler: $this->fileSharingHandler
+        );
 
     }//end transferFileOwnershipIfNeeded()
 
@@ -1098,7 +1121,11 @@ class FileService
      */
     private function shareFileWithUser(File $file, string $userId, int $permissions=31): void
     {
-        $this->fileSharingHandler->shareFileWithUser($file, $userId, $permissions);
+        $this->fileSharingHandler->shareFileWithUser(
+            file: $file,
+            userId: $userId,
+            permissions: $permissions
+        );
 
     }//end shareFileWithUser()
 
@@ -1117,7 +1144,10 @@ class FileService
      */
     private function transferFolderOwnershipIfNeeded(Node $folder): void
     {
-        $this->fileOwnershipHandler->transferFolderOwnershipIfNeeded($folder, $this->fileSharingHandler);
+        $this->fileOwnershipHandler->transferFolderOwnershipIfNeeded(
+            folder: $folder,
+            fileSharingHandler: $this->fileSharingHandler
+        );
 
     }//end transferFolderOwnershipIfNeeded()
 
@@ -1215,7 +1245,12 @@ class FileService
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
-        return $this->updateFileHandler->updateFile($filePath, $content, $tags, $object);
+        return $this->updateFileHandler->updateFile(
+            filePath: $filePath,
+            content: $content,
+            tags: $tags,
+            object: $object
+        );
 
     }//end updateFile()
 
@@ -1256,7 +1291,10 @@ class FileService
      */
     public function deleteFile(Node | string | int $file, ?ObjectEntity $object=null): bool
     {
-        return $this->deleteFileHandler->deleteFile($file, $object);
+        return $this->deleteFileHandler->deleteFile(
+            file: $file,
+            object: $object
+        );
 
     }//end deleteFile()
 
@@ -1275,7 +1313,10 @@ class FileService
      */
     private function attachTagsToFile(string $fileId, array $tags=[]): void
     {
-        $this->taggingHandler->attachTagsToFile($fileId, $tags);
+        $this->taggingHandler->attachTagsToFile(
+            fileId: $fileId,
+            tags: $tags
+        );
 
     }//end attachTagsToFile()
 
@@ -1321,7 +1362,16 @@ class FileService
      */
     public function addFile(ObjectEntity | string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[], int | string | Schema | null $_schema=null, int | string | Register | null $_register=null, int|string|null $registerId=null): File
     {
-        return $this->createFileHandler->addFile($objectEntity, $fileName, $content, $share, $tags, $_schema, $_register, $registerId);
+        return $this->createFileHandler->addFile(
+            objectEntity: $objectEntity,
+            fileName: $fileName,
+            content: $content,
+            share: $share,
+            tags: $tags,
+            _schema: $_schema,
+            _register: $_register,
+            registerId: $registerId
+        );
 
     }//end addFile()
 
@@ -1346,7 +1396,13 @@ class FileService
      */
     public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[]): File
     {
-        return $this->createFileHandler->saveFile($objectEntity, $fileName, $content, $share, $tags);
+        return $this->createFileHandler->saveFile(
+            objectEntity: $objectEntity,
+            fileName: $fileName,
+            content: $content,
+            share: $share,
+            tags: $tags
+        );
 
     }//end saveFile()
 
@@ -1399,7 +1455,10 @@ class FileService
      */
     public function getFiles(ObjectEntity | string $object, ?bool $sharedFilesOnly=false): array
     {
-        return $this->readFileHandler->getFiles($object, $sharedFilesOnly);
+        return $this->readFileHandler->getFiles(
+            object: $object,
+            sharedFilesOnly: $sharedFilesOnly
+        );
 
     }//end getFiles()
 
@@ -1521,7 +1580,10 @@ class FileService
      */
     public function publishFile(ObjectEntity | string $object, string | int $file): File
     {
-        return $this->filePublishingHandler->publishFile($object, $file);
+        return $this->filePublishingHandler->publishFile(
+            object: $object,
+            file: $file
+        );
 
     }//end publishFile()
 
@@ -1542,7 +1604,10 @@ class FileService
      */
     public function unpublishFile(ObjectEntity | string $object, string|int $filePath): File
     {
-        return $this->filePublishingHandler->unpublishFile($object, $filePath);
+        return $this->filePublishingHandler->unpublishFile(
+            object: $object,
+            filePath: $filePath
+        );
 
     }//end unpublishFile()
 
@@ -1567,7 +1632,10 @@ class FileService
      */
     public function createObjectFilesZip(ObjectEntity | string $object, ?string $zipName=null): array
     {
-        return $this->filePublishingHandler->createObjectFilesZip($object, $zipName);
+        return $this->filePublishingHandler->createObjectFilesZip(
+            object: $object,
+            zipName: $zipName
+        );
 
     }//end createObjectFilesZip()
 
@@ -1759,7 +1827,10 @@ class FileService
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
-        return $this->folderManagementHandler->createObjectFolderWithoutUpdate($objectEntity, $currentUser);
+        return $this->folderManagementHandler->createObjectFolderWithoutUpdate(
+            objectEntity: $objectEntity,
+            currentUser: $currentUser
+        );
 
     }//end createObjectFolderWithoutUpdate()
 
@@ -1916,7 +1987,11 @@ class FileService
      */
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null): Node
     {
-        return $this->documentProcessingHandler->replaceWords($node, $replacements, $outputName);
+        return $this->documentProcessingHandler->replaceWords(
+            node: $node,
+            replacements: $replacements,
+            outputName: $outputName
+        );
 
     }//end replaceWords()
 
@@ -1940,7 +2015,10 @@ class FileService
      */
     public function anonymizeDocument(Node $node, array $entities): Node
     {
-        return $this->documentProcessingHandler->anonymizeDocument($node, $entities);
+        return $this->documentProcessingHandler->anonymizeDocument(
+            node: $node,
+            entities: $entities
+        );
 
     }//end anonymizeDocument()
 }//end class

@@ -628,6 +628,13 @@ class SchemaMapper extends QBMapper
     public function createFromArray(array $object): Schema
     {
         $schema = new Schema();
+
+        // Ensure required field is always set to avoid NULL in database.
+        // This must be done BEFORE hydrate() so it gets marked as updated.
+        if (isset($object['required']) === false || $object['required'] === null) {
+            $object['required'] = [];
+        }
+
         $schema->hydrate(object: $object, validator: $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
@@ -1019,7 +1026,10 @@ class SchemaMapper extends QBMapper
                 continue;
             }
 
-            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
+                $facetType = $this->determineFacetTypeForProperty(
+                    property: $property,
+                    fieldName: $fieldName
+                );
             if ($facetType !== null) {
                 $facetConfig[$fieldName] = ['type' => $facetType];
 
@@ -1235,12 +1245,15 @@ class SchemaMapper extends QBMapper
 
             // Load and resolve the parent schema.
             $parentSchema = $this->loadSchema($parentRef);
-            $parentSchema = $this->resolveSchemaExtension($parentSchema, $visited);
+            $parentSchema = $this->resolveSchemaExtension(
+                schema: $parentSchema,
+                visited: $visited
+            );
 
             // Merge properties from this parent.
             $mergedProperties = $this->mergeSchemaProperties(
-                $mergedProperties,
-                $parentSchema->getProperties()
+                parentProperties: $mergedProperties,
+                childProperties: $parentSchema->getProperties()
             );
 
             // Merge required fields (union - must satisfy all).
@@ -1252,9 +1265,9 @@ class SchemaMapper extends QBMapper
         // Now merge child schema properties on top (child can add constraints).
         $childProperties  = $schema->getProperties();
         $mergedProperties = $this->mergeSchemaPropertiesWithValidation(
-            $mergedProperties,
-            $childProperties,
-            (string) $currentId
+            parentProperties: $mergedProperties,
+            childProperties: $childProperties,
+            schemaId: (string) $currentId
         );
 
         // Merge child required fields (can only add, not remove).
@@ -1323,7 +1336,10 @@ class SchemaMapper extends QBMapper
             if ($isNative === true) {
                 $inheritedFrom = null;
             } else {
-                $inheritedFrom = $this->findPropertySource($propName, $allOf);
+                $inheritedFrom = $this->findPropertySource(
+                    propertyName: $propName,
+                    parentRefs: $allOf
+                );
             }
 
             $metadata[$propName] = [
@@ -1397,7 +1413,10 @@ class SchemaMapper extends QBMapper
 
             // Load and resolve referenced schema (validates it exists).
             $referencedSchema = $this->loadSchema($ref);
-            $this->resolveSchemaExtension($referencedSchema, $visited);
+                $this->resolveSchemaExtension(
+                    schema: $referencedSchema,
+                    visited: $visited
+                );
         }
 
         // Return schema as-is (oneOf schemas are not merged).
@@ -1434,7 +1453,10 @@ class SchemaMapper extends QBMapper
 
             // Load and resolve referenced schema (validates it exists).
             $referencedSchema = $this->loadSchema($ref);
-            $this->resolveSchemaExtension($referencedSchema, $visited);
+                $this->resolveSchemaExtension(
+                    schema: $referencedSchema,
+                    visited: $visited
+                );
         }
 
         // Return schema as-is (anyOf schemas are not merged).
@@ -1498,7 +1520,10 @@ class SchemaMapper extends QBMapper
         foreach ($childProperties as $propertyName => $propertyDefinition) {
             if (($merged[$propertyName] ?? null) !== null && is_array($propertyDefinition) === true && is_array($merged[$propertyName]) === true) {
                 // If property exists in both and both are arrays, perform deep merge.
-                $merged[$propertyName] = $this->deepMergeProperty($merged[$propertyName], $propertyDefinition);
+                $merged[$propertyName] = $this->deepMergeProperty(
+                    parentProperty: $merged[$propertyName],
+                    childProperty: $propertyDefinition
+                );
                 continue;
             }
 
@@ -1564,10 +1589,10 @@ class SchemaMapper extends QBMapper
             }
 
             $merged[$propertyName] = $this->deepMergePropertyWithValidation(
-                $parentProperty,
-                $childProperty,
-                $propertyName,
-                $schemaId
+                parentProperty: $parentProperty,
+                childProperty: $childProperty,
+                propertyName: $propertyName,
+                schemaId: $schemaId
             );
         }//end foreach
 
@@ -1612,7 +1637,10 @@ class SchemaMapper extends QBMapper
                 continue;
             }
 
-            $merged[$key] = $this->deepMergeProperty($merged[$key], $value);
+                $merged[$key] = $this->deepMergeProperty(
+                    parentProperty: $merged[$key],
+                    childProperty: $value
+                );
         }
 
         return $merged;
@@ -1721,10 +1749,10 @@ class SchemaMapper extends QBMapper
                     }
 
                     $mergedNested[$nestedKey] = $this->deepMergePropertyWithValidation(
-                        $parentValue[$nestedKey],
-                        $nestedChild,
-                        "{$propertyName}.{$key}.{$nestedKey}",
-                        $schemaId
+                        parentProperty: $parentValue[$nestedKey],
+                        childProperty: $nestedChild,
+                        propertyName: "{$propertyName}.{$key}.{$nestedKey}",
+                        schemaId: $schemaId
                     );
                 }
 
@@ -1753,10 +1781,10 @@ class SchemaMapper extends QBMapper
             }
 
             $merged[$key] = $this->deepMergePropertyWithValidation(
-                $parentValue,
-                $childValue,
-                "{$propertyName}.{$key}",
-                $schemaId
+                parentProperty: $parentValue,
+                childProperty: $childValue,
+                propertyName: "{$propertyName}.{$key}",
+                schemaId: $schemaId
             );
         }//end foreach
 
@@ -1922,7 +1950,10 @@ class SchemaMapper extends QBMapper
 
         // For allOf, extract delta against all parents.
         if ($allOf !== null && count($allOf) > 0) {
-            return $this->extractAllOfDelta($schema, $allOf);
+            return $this->extractAllOfDelta(
+            schema: $schema,
+            allOf: $allOf
+        );
         }
 
         // No composition - return as-is.
@@ -1965,8 +1996,8 @@ class SchemaMapper extends QBMapper
 
                 // Merge this parent's properties into the accumulated parent properties.
                 $mergedParentProperties = $this->mergeSchemaProperties(
-                    $mergedParentProperties,
-                    $parentSchema->getProperties()
+                    parentProperties: $mergedParentProperties,
+                    childProperties: $parentSchema->getProperties()
                     );
 
                     // Merge required fields.
@@ -1977,8 +2008,8 @@ class SchemaMapper extends QBMapper
 
             // Extract only the properties that differ from merged parents.
             $deltaProperties = $this->extractPropertyDelta(
-                $mergedParentProperties,
-                $schema->getProperties()
+                parentProperties: $mergedParentProperties,
+                childProperties: $schema->getProperties()
             );
 
             // Extract only the required fields that differ from merged parents.
@@ -2023,14 +2054,20 @@ class SchemaMapper extends QBMapper
             $parentProperty = $parentProperties[$propertyName];
 
             // Deep comparison: if properties are different, include in delta.
-            if ($this->arePropertiesDifferent($parentProperty, $childProperty) === true) {
+            if ($this->arePropertiesDifferent(
+                parentProperty: $parentProperty,
+                childProperty: $childProperty
+            ) === true) {
                 // For objects with nested properties, extract nested delta.
                 if (is_array($childProperty) === false || is_array($parentProperty) === false) {
                     $delta[$propertyName] = $childProperty;
                     continue;
                 }
 
-                $delta[$propertyName] = $this->extractNestedPropertyDelta($parentProperty, $childProperty);
+                $delta[$propertyName] = $this->extractNestedPropertyDelta(
+                    parentProperty: $parentProperty,
+                    childProperty: $childProperty
+                );
             }
 
             // If properties are identical, don't include in delta.
@@ -2075,7 +2112,10 @@ class SchemaMapper extends QBMapper
             if (isset($parentProperty[$key]) === false) {
                 // New field in child.
                 $delta[$key] = $value;
-            } else if ($this->arePropertiesDifferent($parentProperty[$key], $value) === true) {
+            } else if ($this->arePropertiesDifferent(
+                parentProperty: $parentProperty[$key],
+                childProperty: $value
+            ) === true) {
                 // Changed field.
                 if ($key !== 'properties' || is_array($value) === false || is_array($parentProperty[$key]) === false) {
                     $delta[$key] = $value;
@@ -2083,7 +2123,10 @@ class SchemaMapper extends QBMapper
                 }
 
                 // Recursively extract delta for nested properties.
-                $delta[$key] = $this->extractPropertyDelta($parentProperty[$key], $value);
+                $delta[$key] = $this->extractPropertyDelta(
+                    parentProperties: $parentProperty[$key],
+                    childProperties: $value
+                );
             }
 
             // If field is identical, don't include in delta.

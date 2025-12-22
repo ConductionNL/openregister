@@ -508,7 +508,12 @@ class NamedParametersSniff implements Sniff
                 
                 // cURL functions (already partially added, ensuring completeness).
                 'curl_setopt', 'curl_setopt_array', 'curl_exec', 'curl_init', 'curl_close',
-                'curl_getinfo', 'curl_error'
+                'curl_getinfo', 'curl_error',
+                
+                // Exception classes - most don't benefit from named parameters for simple message/code/previous.
+                'exception', 'ocpdbexception', 'doesnotexistexception', 'multipleobjectsreturnedexception',
+                'runtimeexception', 'invalidargumentexception', 'logicexception', 'badmethodcallexception',
+                'domainexception', 'rangeexception', 'outofboundsexception', 'overflowexception', 'underflowexception'
             ];
             
             if (!in_array(strtolower($functionName), $skipFunctions)) {

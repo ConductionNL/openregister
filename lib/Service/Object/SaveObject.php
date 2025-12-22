@@ -1700,7 +1700,68 @@ class SaveObject
         bool $_validation=true,
         ?array $uploadedFiles=null
     ): ObjectEntity {
+        // Extract UUID and @self metadata from data.
+        [$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
+            data: $data,
+            uuid: $uuid,
+            uploadedFiles: $uploadedFiles
+        );
 
+        // Resolve schema and register to entity objects.
+        [$schema, $schemaId, $register, $registerId] = $this->resolveSchemaAndRegister(
+            schema: $schema,
+            register: $register
+        );
+
+        // Try to update existing object if UUID provided.
+        if ($uuid !== null) {
+            $existingObject = $this->findAndValidateExistingObject(uuid: $uuid);
+            
+            if ($existingObject !== null) {
+                return $this->handleObjectUpdate(
+                    existingObject: $existingObject,
+                    register: $register,
+                    schema: $schema,
+                    data: $data,
+                    selfData: $selfData,
+                    folderId: $folderId,
+                    persist: $persist,
+                    silent: $silent
+                );
+            }
+        }
+
+        // Create new object if no existing object found.
+        return $this->handleObjectCreation(
+            registerId: $registerId,
+            schemaId: $schemaId,
+            register: $register,
+            schema: $schema,
+            data: $data,
+            selfData: $selfData,
+            uuid: $uuid,
+            folderId: $folderId,
+            persist: $persist,
+            silent: $silent,
+            _multitenancy: $_multitenancy
+        );
+    }//end saveObject()
+
+    /**
+     * Extract UUID and @self metadata from data.
+     *
+     * @param array       $data          Object data
+     * @param string|null $uuid          Provided UUID
+     * @param array|null  $uploadedFiles Uploaded files
+     *
+     * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
+     */
+    private function extractUuidAndSelfData(
+        array $data,
+        ?string $uuid,
+        ?array $uploadedFiles
+    ): array {
+        // Extract @self metadata.
         $selfData = [];
         if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
             $selfData = $data['@self'];
@@ -1711,6 +1772,7 @@ class SaveObject
             $uuid = $selfData['id'] ?? $data['id'];
         }
 
+        // Normalize empty string to null.
         if ($uuid === '') {
             $uuid = null;
         }
@@ -1721,105 +1783,186 @@ class SaveObject
 
         // Process uploaded files and inject them into data.
         if ($uploadedFiles !== null && empty($uploadedFiles) === false) {
-            $data = $this->filePropertyHandler->processUploadedFiles(uploadedFiles: $uploadedFiles, data: $data);
+            $data = $this->filePropertyHandler->processUploadedFiles(
+                uploadedFiles: $uploadedFiles,
+                data: $data
+            );
         }
 
-        // Debug logging can be added here if needed.
-        // Set schema ID based on input type.
+        return [$uuid, $selfData, $data];
+    }//end extractUuidAndSelfData()
+
+    /**
+     * Resolve schema and register to entity objects with their IDs.
+     *
+     * @param Schema|int|string         $schema   Schema parameter
+     * @param Register|int|string|null $register Register parameter
+     *
+     * @return array{0: Schema, 1: int, 2: Register, 3: int} [schema, schemaId, register, registerId]
+     *
+     * @throws Exception If schema or register cannot be resolved
+     */
+    private function resolveSchemaAndRegister(
+        Schema | int | string $schema,
+        Register | int | string | null $register
+    ): array {
+        // Resolve schema.
         if ($schema instanceof Schema === true) {
             $schemaId = $schema->getId();
-        }
-
-        if (($schema instanceof Schema) === false) {
-            // Resolve schema reference if it's a string.
+        } else {
             if (is_string($schema) === true) {
+                // Resolve schema reference if it's a string.
                 $schemaId = $this->resolveSchemaReference($schema);
                 if ($schemaId === null) {
                     throw new Exception("Could not resolve schema reference: $schema");
                 }
-
                 $schema = $this->schemaMapper->find(id: $schemaId);
-            }
-
-            if (is_string($schema) === false) {
+            } else {
+                // It's an integer ID.
                 $schemaId = $schema;
                 $schema   = $this->schemaMapper->find(id: $schema);
             }
         }
 
+        // Resolve register.
         if ($register instanceof Register === true) {
             $registerId = $register->getId();
-        }
-
-        if (($register instanceof Register) === false) {
-            // Resolve register reference if it's a string.
+        } else {
             if (is_string($register) === true) {
+                // Resolve register reference if it's a string.
                 $registerId = $this->resolveRegisterReference($register);
                 if ($registerId === null) {
                     throw new Exception("Could not resolve register reference: $register");
                 }
-
                 $register = $this->registerMapper->find(id: $registerId);
-            }
-
-            if (is_string($register) === false) {
+            } else {
+                // It's an integer ID or null.
                 $registerId = $register;
                 $register   = $this->registerMapper->find(id: $register);
             }
         }
 
-        // NOTE: Do NOT sanitize here - let validation happen first in ObjectService.
-        // Sanitization will happen after validation but before cascading operations.
-        // If UUID is provided, try to find and update existing object.
-        if ($uuid !== null) {
-            try {
-                $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
+        return [$schema, $schemaId, $register, $registerId];
+    }//end resolveSchemaAndRegister()
 
-                // Check if object is locked - prevent updates on locked objects.
-                $lockData = $existingObject->getLocked();
-                if ($lockData !== null && is_array($lockData)) {
-                    $currentUser   = $this->userSession->getUser();
-                    $currentUserId = $currentUser !== null ? $currentUser->getUID() : null;
-                    $lockOwner     = $lockData['userId'] ?? null;
+    /**
+     * Find and validate existing object for update.
+     *
+     * @param string $uuid Object UUID
+     *
+     * @return ObjectEntity|null Existing object or null if not found
+     *
+     * @throws Exception If object is locked by another user
+     */
+    private function findAndValidateExistingObject(string $uuid): ?ObjectEntity
+    {
+        try {
+            $existingObject = $this->objectEntityMapper->find(identifier: $uuid);
 
-                    // If object is locked by someone other than the current user, prevent update.
-                    if ($lockOwner !== null && $lockOwner !== $currentUserId) {
-                        throw new Exception(
-                            "Cannot update object: Object is locked by user '{$lockOwner}'. "."Please unlock the object before attempting to update it."
-                        );
-                    }
+            // Check if object is locked - prevent updates on locked objects.
+            $lockData = $existingObject->getLocked();
+            if ($lockData !== null && is_array($lockData)) {
+                $currentUser   = $this->userSession->getUser();
+                $currentUserId = $currentUser !== null ? $currentUser->getUID() : null;
+                $lockOwner     = $lockData['userId'] ?? null;
+
+                // If object is locked by someone other than the current user, prevent update.
+                if ($lockOwner !== null && $lockOwner !== $currentUserId) {
+                    throw new Exception(
+                        "Cannot update object: Object is locked by user '{$lockOwner}'. "
+                        ."Please unlock the object before attempting to update it."
+                    );
                 }
+            }
 
-                // Prepare the object for update.
-                $preparedObject = $this->prepareObjectForUpdate(
-                    existingObject: $existingObject,
-                    schema: $schema,
-                    data: $data,
-                    selfData: $selfData,
-                    folderId: $folderId
-                );
-                // If not persisting, return the prepared object.
-                if ($persist === false) {
-                    return $preparedObject;
-                }
+            return $existingObject;
+        } catch (DoesNotExistException $e) {
+            // Object not found, will create new one.
+            return null;
+        }
+    }//end findAndValidateExistingObject()
 
-                // Update the object.
-                return $this->updateObject(
-                    register: $register,
-                    schema: $schema,
-                    data: $data,
-                    existingObject: $preparedObject,
-                    folderId: $folderId,
-                    silent: $silent
-                );
-            } catch (DoesNotExistException $e) {
-                // Object not found, proceed with creating new object.
-            } catch (Exception $e) {
-                // Other errors during object lookup.
-                throw $e;
-            }//end try
-        }//end if
+    /**
+     * Handle update of existing object.
+     *
+     * @param ObjectEntity $existingObject Existing object to update
+     * @param Register     $register       Register entity
+     * @param Schema       $schema         Schema entity
+     * @param array        $data           Object data
+     * @param array        $selfData       @self metadata
+     * @param int|null     $folderId       Folder ID
+     * @param bool         $persist        Whether to persist changes
+     * @param bool         $silent         Whether to skip audit trail
+     *
+     * @return ObjectEntity Updated object
+     */
+    private function handleObjectUpdate(
+        ObjectEntity $existingObject,
+        Register $register,
+        Schema $schema,
+        array $data,
+        array $selfData,
+        ?int $folderId,
+        bool $persist,
+        bool $silent
+    ): ObjectEntity {
+        // Prepare the object for update.
+        $preparedObject = $this->prepareObjectForUpdate(
+            existingObject: $existingObject,
+            schema: $schema,
+            data: $data,
+            selfData: $selfData,
+            folderId: $folderId
+        );
 
+        // If not persisting, return the prepared object.
+        if ($persist === false) {
+            return $preparedObject;
+        }
+
+        // Update the object.
+        return $this->updateObject(
+            register: $register,
+            schema: $schema,
+            data: $data,
+            existingObject: $preparedObject,
+            folderId: $folderId,
+            silent: $silent
+        );
+    }//end handleObjectUpdate()
+
+    /**
+     * Handle creation of new object.
+     *
+     * @param int         $registerId     Register ID
+     * @param int         $schemaId       Schema ID
+     * @param Register    $register       Register entity
+     * @param Schema      $schema         Schema entity
+     * @param array       $data           Object data
+     * @param array       $selfData       @self metadata
+     * @param string|null $uuid           UUID for new object
+     * @param int|null    $folderId       Folder ID
+     * @param bool        $persist        Whether to persist changes
+     * @param bool        $silent         Whether to skip audit trail
+     * @param bool        $_multitenancy  Whether to apply multitenancy
+     *
+     * @return ObjectEntity Created object
+     *
+     * @throws Exception If file processing fails
+     */
+    private function handleObjectCreation(
+        int $registerId,
+        int $schemaId,
+        Register $register,
+        Schema $schema,
+        array $data,
+        array $selfData,
+        ?string $uuid,
+        ?int $folderId,
+        bool $persist,
+        bool $silent,
+        bool $_multitenancy
+    ): ObjectEntity {
         // Create a new object entity.
         $objectEntity = new ObjectEntity();
         $objectEntity->setRegister($registerId);
@@ -1841,8 +1984,8 @@ class SaveObject
             objectEntity: $objectEntity,
             schema: $schema,
             data: $data,
-                    selfData: $selfData,
-                    _multitenancy: $_multitenancy
+            selfData: $selfData,
+            _multitenancy: $_multitenancy
         );
 
         // If not persisting, return the prepared object.
@@ -1853,13 +1996,48 @@ class SaveObject
         // Save the object to database FIRST (so it gets an ID).
         $savedEntity = $this->objectEntityMapper->insert($preparedObject);
 
-        // NOW handle file properties - process them and replace content with file IDs.
-        // This must happen AFTER insert so the object has a database ID for FileService.
-        // IMPORTANT: If file processing fails, we must rollback the object insertion.
+        // Process file properties with rollback on failure.
+        $savedEntity = $this->processFilePropertiesWithRollback(
+            savedEntity: $savedEntity,
+            data: $data,
+            schema: $schema
+        );
+
+        // Create audit trail if not in silent mode.
+        if ($silent === false && $this->isAuditTrailsEnabled() === true) {
+            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            $savedEntity->setLastLog($log->jsonSerialize());
+        }
+
+        return $savedEntity;
+    }//end handleObjectCreation()
+
+    /**
+     * Process file properties with automatic rollback on failure.
+     *
+     * @param ObjectEntity $savedEntity Saved object entity
+     * @param array        $data        Object data (modified by reference)
+     * @param Schema       $schema      Schema entity
+     *
+     * @return ObjectEntity Updated object with file IDs
+     *
+     * @throws Exception If file processing fails
+     */
+    private function processFilePropertiesWithRollback(
+        ObjectEntity $savedEntity,
+        array &$data,
+        Schema $schema
+    ): ObjectEntity {
         $filePropertiesProcessed = false;
+
         try {
+            // Process all file properties.
             foreach ($data as $propertyName => $value) {
-                if ($this->filePropertyHandler->isFileProperty(value: $value, schema: $schema, propertyName: $propertyName) === true) {
+                if ($this->filePropertyHandler->isFileProperty(
+                    value: $value,
+                    schema: $schema,
+                    propertyName: $propertyName
+                ) === true) {
                     $this->filePropertyHandler->handleFileProperty(
                         objectEntity: $savedEntity,
                         object: $data,
@@ -1874,74 +2052,61 @@ class SaveObject
             if ($filePropertiesProcessed === true) {
                 $savedEntity->setObject($data);
 
-                // Re-hydrate image metadata if objectImageField points to a file property.
-                // At this point, file properties are file IDs, but we need to check if we should.
-                // Clear the image metadata so it can be properly extracted during rendering.
-                $config = $schema->getConfiguration();
-                if (($config['objectImageField'] ?? null) !== null) {
-                    $imageField       = $config['objectImageField'];
-                    $schemaProperties = $schema->getProperties() ?? [];
-
-                    // Check if the image field is a file property.
-                    if (($schemaProperties[$imageField] ?? null) !== null) {
-                        $propertyConfig = $schemaProperties[$imageField];
-                        if (($propertyConfig['type'] ?? '') === 'file') {
-                            // Clear the image metadata so it will be extracted from the file object during rendering.
-                            $savedEntity->setImage(null);
-                        }
-                    }
-                }
+                // Clear image metadata if objectImageField is a file property.
+                $this->clearImageMetadataIfFileProperty(
+                    savedEntity: $savedEntity,
+                    schema: $schema
+                );
 
                 $savedEntity = $this->objectEntityMapper->update($savedEntity);
-            }//end if
+            }
+
+            return $savedEntity;
         } catch (Exception $e) {
             // ROLLBACK: Delete the object if file processing failed.
             $this->logger->warning(
-                    'File processing failed, rolling back object creation',
-                    [
-                        'uuid'  => $savedEntity->getUuid(),
-                        'error' => $e->getMessage(),
-                    ]
-                    );
+                'File processing failed, rolling back object creation',
+                [
+                    'uuid'  => $savedEntity->getUuid(),
+                    'error' => $e->getMessage(),
+                ]
+            );
             $this->objectEntityMapper->delete($savedEntity);
 
             // Re-throw the exception so the controller can handle it.
             throw $e;
-        }//end try
+        }
+    }//end processFilePropertiesWithRollback()
 
-        // Create audit trail for creation if audit trails are enabled and not in silent mode.
-        if (($silent === false) === true && $this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
-            $savedEntity->setLastLog($log->jsonSerialize());
+    /**
+     * Clear image metadata if objectImageField points to a file property.
+     *
+     * @param ObjectEntity $savedEntity Saved object entity
+     * @param Schema       $schema      Schema entity
+     *
+     * @return void
+     */
+    private function clearImageMetadataIfFileProperty(
+        ObjectEntity $savedEntity,
+        Schema $schema
+    ): void {
+        $config = $schema->getConfiguration();
+        if (($config['objectImageField'] ?? null) === null) {
+            return;
         }
 
-        // Update the object with the modified data (file IDs instead of content).
-        // $savedEntity->setObject($data);
-        // **CACHE INVALIDATION**: Clear collection and facet caches so new/updated objects appear immediately.
-        // Determine operation type (currently unused but kept for potential future use).
-        // If ($uuid === true) {
-        // $operation = 'update';
-        // } else {
-        // $operation = 'create';
-        // }
-        // Determine register ID.
-        $registerId = ($savedEntity->getRegister() !== null) ? (int) $savedEntity->getRegister() : null;
+        $imageField       = $config['objectImageField'];
+        $schemaProperties = $schema->getProperties() ?? [];
 
-        // Determine schema ID.
-        $schemaId = ($savedEntity->getSchema() !== null) ? (int) $savedEntity->getSchema() : null;
-
-        // TODO: Implement cache invalidation for object changes.
-        // This should use the CacheHandler to invalidate relevant caches after object operations.
-        // For now, skipping to allow CRUD operations to complete.
-        // $this->objectCacheService->invalidateForObjectChange(
-        // Object: $savedEntity,
-        // Operation: $operation,
-        // RegisterId: $registerId,
-        // SchemaId: $schemaId.
-        // );.
-        return $savedEntity;
-
-    }//end saveObject()
+        // Check if the image field is a file property.
+        if (($schemaProperties[$imageField] ?? null) !== null) {
+            $propertyConfig = $schemaProperties[$imageField];
+            if (($propertyConfig['type'] ?? '') === 'file') {
+                // Clear the image metadata so it will be extracted from the file object during rendering.
+                $savedEntity->setImage(null);
+            }
+        }
+    }//end clearImageMetadataIfFileProperty()
 
     /**
      * Prepares an object for creation by applying all necessary transformations.

@@ -140,7 +140,7 @@ class AgentMapper extends QBMapper
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
-            allowNull: true
+            allowNullOrg: true
         );
 
         return $this->findEntity($qb);
@@ -176,7 +176,7 @@ class AgentMapper extends QBMapper
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
-            allowNull: true
+            allowNullOrg: true
         );
 
         return $this->findEntity($qb);
@@ -372,7 +372,7 @@ class AgentMapper extends QBMapper
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
-            allowNull: true
+            allowNullOrg: true
         );
 
         return $this->findEntities($qb);

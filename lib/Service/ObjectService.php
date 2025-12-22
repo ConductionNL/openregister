@@ -525,7 +525,13 @@ class ObjectService
             || ($object->getDepublished() !== null && $object->getDepublished() <= $now)
         ) {
             // Check user has permission to read this specific object (includes object owner check).
-            $this->checkPermission($this->currentSchema, 'read', null, $object->getOwner(), $_rbac);
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'read',
+                userId: null,
+                objectOwner: $object->getOwner(),
+                _rbac: $_rbac
+            );
         }
 
         // Render the object before returning.
@@ -634,7 +640,50 @@ class ObjectService
      */
     public function findAll(array $config=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
+        // Prepare configuration and set context.
+        $config = $this->prepareFindAllConfig($config);
 
+        // Delegate the findAll operation to the handler.
+        $objects = $this->getHandler->findAll(
+            limit: $config['limit'] ?? null,
+            offset: $config['offset'] ?? null,
+            filters: $config['filters'] ?? [],
+            sort: $config['sort'] ?? [],
+            search: $config['search'] ?? null,
+            files: $config['files'] ?? false,
+            uses: $config['uses'] ?? null,
+            ids: $config['ids'] ?? null,
+            published: $config['published'] ?? false,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+
+        // Resolve register and schema entities for rendering.
+        [$registers, $schemas] = $this->resolveRegisterAndSchema(
+            config: $config,
+            objects: $objects
+        );
+
+        // Render all objects asynchronously.
+        return $this->renderObjectsAsync(
+            objects: $objects,
+            config: $config,
+            registers: $registers,
+            schemas: $schemas,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+    }//end findAll()
+
+    /**
+     * Prepare findAll configuration and set context.
+     *
+     * @param array $config Configuration array
+     *
+     * @return array Prepared configuration
+     */
+    private function prepareFindAllConfig(array $config): array
+    {
         // Convert extend to an array if it's a string.
         if (($config['extend'] ?? null) !== null && is_string($config['extend']) === true) {
             $config['extend'] = explode(',', $config['extend']);
@@ -656,22 +705,20 @@ class ObjectService
             $this->setSchema($config['filters']['schema']);
         }
 
-        // Delegate the findAll operation to the handler.
-        $objects = $this->getHandler->findAll(
-            limit: $config['limit'] ?? null,
-            offset: $config['offset'] ?? null,
-            filters: $config['filters'] ?? [],
-            sort: $config['sort'] ?? [],
-            search: $config['search'] ?? null,
-            files: $config['files'] ?? false,
-            uses: $config['uses'] ?? null,
-            ids: $config['ids'] ?? null,
-            published: $config['published'] ?? false,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
+        return $config;
+    }//end prepareFindAllConfig()
 
-        // Determine if register and schema should be passed to renderEntity only if currentSchema and currentRegister aren't null.
+    /**
+     * Resolve register and schema entities for rendering.
+     *
+     * @param array $config  Configuration array
+     * @param array $objects Retrieved objects
+     *
+     * @return array{0: array|null, 1: array|null} [registers, schemas]
+     */
+    private function resolveRegisterAndSchema(array $config, array $objects): array
+    {
+        // Determine if register and schema should be passed to renderEntity.
         $registers = null;
         if ($this->currentRegister !== null && ($config['filters']['register'] ?? null) !== null) {
             $registers = [$this->currentRegister->getId() => $this->currentRegister];
@@ -683,6 +730,7 @@ class ObjectService
         }
 
         // Check if '@self.schema' or '@self.register' is in extend but not in filters.
+        // This handles cases where we need to load schemas/registers for rendering.
         if (isset($config['extend']) === true && in_array('@self.schema', (array) $config['extend'], true) === true && $schemas === null) {
             $schemaIds = array_unique(array_filter(array_map(fn($object) => $object->getSchema() ?? null, $objects)));
             $schemas   = $this->performanceHandler->getCachedEntities(ids: $schemaIds, fallbackFunc: [$this->schemaMapper, 'findMultiple']);
@@ -695,7 +743,30 @@ class ObjectService
             $registers   = array_combine(array_map(fn($register) => $register->getId(), $registers), $registers);
         }
 
-        // Render each object through the object service.
+        return [$registers, $schemas];
+    }//end resolveRegisterAndSchema()
+
+    /**
+     * Render objects asynchronously using promises.
+     *
+     * @param array      $objects       Objects to render
+     * @param array      $config        Configuration array
+     * @param array|null $registers     Register entities
+     * @param array|null $schemas       Schema entities
+     * @param bool       $_rbac         Apply RBAC
+     * @param bool       $_multitenancy Apply multitenancy
+     *
+     * @return array Rendered objects
+     */
+    private function renderObjectsAsync(
+        array $objects,
+        array $config,
+        ?array $registers,
+        ?array $schemas,
+        bool $_rbac,
+        bool $_multitenancy
+    ): array {
+        // Render each object through the render handler.
         $promises = [];
         foreach ($objects as $key => $object) {
             $promises[$key] = new Promise(
@@ -730,11 +801,8 @@ class ObjectService
          * @psalm-suppress UndefinedFunction - React\Async\await is from external library
          */
 
-        $objects = Async\await(all($promises));
-
-        return $objects;
-
-    }//end findAll()
+        return Async\await(all($promises));
+    }//end renderObjectsAsync()
 
     /**
      * Counts the number of objects matching the given criteria.
@@ -889,68 +957,179 @@ class ObjectService
         bool $silent=false,
         ?array $uploadedFiles=null
     ): ObjectEntity {
-        // Check if a register is provided and set the current register context.
+        // Set register/schema context.
+        $this->setContextFromParameters(
+            register: $register,
+            schema: $schema
+        );
+
+        // Extract UUID and convert ObjectEntity to array if needed.
+        [$object, $uuid] = $this->extractUuidAndNormalizeObject(
+            object: $object,
+            uuid: $uuid
+        );
+
+        // Check permissions for CREATE or UPDATE operation.
+        $this->checkSavePermissions(
+            uuid: $uuid,
+            _rbac: $_rbac
+        );
+
+        // Handle cascading relations while preserving context.
+        [$object, $uuid] = $this->handleCascadingWithContextPreservation(
+            object: $object,
+            uuid: $uuid
+        );
+
+        // Validate if hard validation is enabled.
+        $this->validateObjectIfRequired($object);
+
+        // Ensure folder exists for the object.
+        $folderId = $this->ensureObjectFolder($uuid);
+
+        // Delegate to SaveObject handler for actual save operation.
+        $savedObject = $this->saveHandler->saveObject(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            data: $object,
+            uuid: $uuid,
+            folderId: $folderId,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            persist: true,
+            silent: $silent,
+            _validation: true,
+            uploadedFiles: $uploadedFiles
+        );
+
+        // Render and return the saved object.
+        return $this->renderHandler->renderEntity(
+            entity: $savedObject,
+            _extend: $extend ?? [],
+            registers: null,
+            schemas: null,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+    }//end saveObject()
+
+    /**
+     * Set register and schema context from parameters.
+     *
+     * @param Register|string|int|null $register Register parameter
+     * @param Schema|string|int|null   $schema   Schema parameter
+     *
+     * @return void
+     */
+    private function setContextFromParameters(
+        Register | string | int | null $register,
+        Schema | string | int | null $schema
+    ): void {
+        // Set the current register context if provided.
         if ($register !== null) {
             $this->setRegister($register);
         }
 
-        // Check if a schema is provided and set the current schema context.
+        // Set the current schema context if provided.
         if ($schema !== null) {
             $this->setSchema($schema);
         }
+    }//end setContextFromParameters()
 
-        // Debug logging can be added here if needed.
+    /**
+     * Extract UUID and normalize object to array format.
+     *
+     * @param array|ObjectEntity $object Input object
+     * @param string|null        $uuid   Provided UUID
+     *
+     * @return array{0: array, 1: string|null} [normalized object array, extracted UUID]
+     */
+    private function extractUuidAndNormalizeObject(array | ObjectEntity $object, ?string $uuid): array
+    {
         // Handle ObjectEntity input - extract UUID and convert to array.
         if ($object instanceof ObjectEntity === true) {
             // If no UUID was passed, use the UUID from the existing object.
             if ($uuid === null) {
                 $uuid = $object->getUuid();
             }
-
             $object = $object->getObject();
-            // Get the object data array.
         }
 
-        // Check if an ID is provided in the object data and use it as UUID if no UUID was explicitly passed.
+        // Check if an ID is provided in the object data.
         if ($uuid === null && is_array($object) === true) {
-            $providedId        = $object['@self']['id'] ?? $object['id'] ?? null;
-            $providedIdTrimmed = null;
+            $providedId = $object['@self']['id'] ?? $object['id'] ?? null;
             if ($providedId !== null) {
                 $providedIdTrimmed = trim($providedId);
-            }
-
-            if ($providedId !== null && empty($providedIdTrimmed) === false) {
-                $uuid = $providedId;
+                if (empty($providedIdTrimmed) === false) {
+                    $uuid = $providedId;
+                }
             }
         }
 
-        // Determine if this is a CREATE or UPDATE operation and check permissions.
-        if ($uuid !== null) {
-            try {
-                $existingObject = $this->objectEntityMapper->find($uuid);
-                // This is an UPDATE operation.
-                if ($this->currentSchema !== null) {
-                    $this->checkPermission(
-                        schema: $this->currentSchema,
-                        action: 'update',
-                        userId: null,
-                        objectOwner: $existingObject->getOwner(),
-                        _rbac: $_rbac
-                    );
-                }
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Object not found, this is a CREATE operation with specific UUID.
-                if ($this->currentSchema !== null) {
-                    $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, _rbac: $_rbac);
-                }
-            }
-        } else {
-            // No UUID provided, this is a CREATE operation.
-            if ($this->currentSchema !== null) {
-                $this->checkPermission(schema: $this->currentSchema, action: 'create', userId: null, objectOwner: null, _rbac: $_rbac);
-            }
-        }//end if
+        return [$object, $uuid];
+    }//end extractUuidAndNormalizeObject()
 
+    /**
+     * Check permissions for save operation (CREATE or UPDATE).
+     *
+     * @param string|null $uuid  Object UUID (null for CREATE, set for UPDATE)
+     * @param bool        $_rbac Whether to apply RBAC checks
+     *
+     * @return void
+     *
+     * @throws Exception If permission check fails
+     */
+    private function checkSavePermissions(?string $uuid, bool $_rbac): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        // No UUID provided, this is a CREATE operation.
+        if ($uuid === null) {
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'create',
+                userId: null,
+                objectOwner: null,
+                _rbac: $_rbac
+            );
+            return;
+        }
+
+        // UUID provided - check if object exists to determine CREATE vs UPDATE.
+        try {
+            $existingObject = $this->objectEntityMapper->find($uuid);
+            // This is an UPDATE operation.
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'update',
+                userId: null,
+                objectOwner: $existingObject->getOwner(),
+                _rbac: $_rbac
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Object not found, this is a CREATE operation with specific UUID.
+            $this->checkPermission(
+                schema: $this->currentSchema,
+                action: 'create',
+                userId: null,
+                objectOwner: null,
+                _rbac: $_rbac
+            );
+        }
+    }//end checkSavePermissions()
+
+    /**
+     * Handle cascading relations while preserving context.
+     *
+     * @param array       $object Object data
+     * @param string|null $uuid   Object UUID
+     *
+     * @return array{0: array, 1: string|null} [processed object, updated UUID]
+     */
+    private function handleCascadingWithContextPreservation(array $object, ?string $uuid): array
+    {
         // Store the parent object's register and schema context before cascading.
         // This prevents nested object creation from corrupting the main object's context.
         $parentRegister = $this->currentRegister;
@@ -958,8 +1137,6 @@ class ObjectService
 
         // Pre-validation cascading: Handle inversedBy properties BEFORE validation.
         // This creates related objects and replaces them with UUIDs so validation sees UUIDs, not objects.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
-        // ARCHITECTURAL DELEGATION: Delegate to CascadingHandler for all cascading logic.
         [$object, $uuid] = $this->cascadingHandler->handlePreValidationCascading(
             object: $object,
             schema: $parentSchema,
@@ -971,24 +1148,53 @@ class ObjectService
         $this->currentRegister = $parentRegister;
         $this->currentSchema   = $parentSchema;
 
+        return [$object, $uuid];
+    }//end handleCascadingWithContextPreservation()
+
+    /**
+     * Validate object if hard validation is enabled.
+     *
+     * @param array $object Object data to validate
+     *
+     * @return void
+     *
+     * @throws ValidationException If validation fails
+     */
+    private function validateObjectIfRequired(array $object): void
+    {
         // Validate the object against the current schema only if hard validation is enabled.
         if ($this->currentSchema->getHardValidation() === true) {
-            $result = $this->validateHandler->validateObject(object: $object, schema: $this->currentSchema);
+            $result = $this->validateHandler->validateObject(
+                object: $object,
+                schema: $this->currentSchema
+            );
+            
             if ($result->isValid() === false) {
                 $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
                 throw new ValidationException($meaningfulMessage, errors: $result->error());
             }
-        } else {
         }
+    }//end validateObjectIfRequired()
 
+    /**
+     * Ensure object folder exists, create if needed.
+     *
+     * @param string|null $uuid Object UUID
+     *
+     * @return int|null Folder ID if created/exists, null otherwise
+     */
+    private function ensureObjectFolder(?string $uuid): ?int
+    {
         // Handle folder creation for existing objects or new objects with UUIDs.
         $folderId = null;
+        
         if ($uuid !== null) {
             // For existing objects or objects with specific UUIDs, check if folder needs to be created.
             try {
                 $existingObject = $this->objectEntityMapper->find($uuid);
                 $folder         = $existingObject->getFolder();
                 $isString       = is_string($folder) === true;
+                
                 if ($folder === null || $folder === '' || $isString === true) {
                     try {
                         $folderId = $this->fileService->createObjectFolderWithoutUpdate($existingObject);
@@ -1004,40 +1210,8 @@ class ObjectService
             }
         }
 
-        // For new objects without UUID, let SaveObject generate the UUID and handle folder creation.
-        // Save the object using the current register and schema.
-        // Let SaveObject handle the UUID logic completely.
-        $savedObject = $this->saveHandler->saveObject(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            data: $object,
-            uuid: $uuid,
-            folderId: $folderId,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            persist: true,
-            silent: $silent,
-            _validation: true,
-            uploadedFiles: $uploadedFiles
-        );
-
-        // Determine if register and schema should be passed to renderEntity.
-        // Note: Register and schema filtering is handled by currentRegister/currentSchema properties.
-        $registers = null;
-        $schemas   = null;
-        $_extend   = $extend ?? [];
-
-        // Render and return the saved object.
-        return $this->renderHandler->renderEntity(
-            entity: $savedObject,
-            _extend: $_extend,
-            registers: $registers,
-            schemas: $schemas,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
-
-    }//end saveObject()
+        return $folderId;
+    }//end ensureObjectFolder()
 
     /**
      * Delete an object.
