@@ -459,7 +459,7 @@ class HyperFacetHandler
             $promises['metadata'] = $this->processMetadataFacetsParallel(
             metadataFacets: $metadataFacets,
             baseQuery: $baseQuery
-        );
+            );
         }
 
         // **PARALLEL EXECUTION**: Process JSON facets concurrently.
@@ -467,7 +467,7 @@ class HyperFacetHandler
             $promises['json'] = $this->processJsonFacetsParallel(
             _jsonFacets: $jsonFacets,
             _baseQuery: $baseQuery
-        );
+            );
         }
 
         // Execute all facet calculations in parallel.
@@ -600,7 +600,7 @@ class HyperFacetHandler
                 $approximateFacets[$facetName] = $this->calculateMetadataFacetsHyperFast(
                 _config: $config,
                 _baseQuery: $baseQuery
-            );
+                );
             } else {
                 // JSON field facets use statistical estimation.
                 $approximateFacets[$facetName] = $this->estimateJsonFieldFacet(_field: $facetName, config: $config, _baseQuery: $baseQuery, stats: $datasetStats);
@@ -751,7 +751,7 @@ class HyperFacetHandler
                         'label'   => $this->getFieldLabel(
                     _field: $field,
                     _value: $value
-                ),
+                    ),
                     ];
                 }
             }
@@ -821,7 +821,7 @@ class HyperFacetHandler
             $this->applyOptimizedSearch(
             queryBuilder: $queryBuilder,
             searchTerm: trim($search)
-        );
+            );
         }
 
         // Apply JSON object field filters (expensive - applied last).
@@ -837,7 +837,7 @@ class HyperFacetHandler
             $this->applyJsonFieldFilters(
             _queryBuilder: $queryBuilder,
             _filters: $objectFilters
-        );
+            );
         }
 
         // These can be applied in the main query but not in facet calculations.
@@ -1178,9 +1178,9 @@ class HyperFacetHandler
                     $bucket['results']     = (int) round($bucket['results'] * $factor);
                     $bucket['approximate'] = true;
                     $bucket['confidence']  = $this->calculateConfidence(
-                sampleSize: $sampleSize,
-                totalSize: $totalSize
-            );
+                    sampleSize: $sampleSize,
+                    totalSize: $totalSize
+                    );
                 }
             }
         }

@@ -2442,7 +2442,7 @@ class SetupHandler
                 'action'  => 'skipped',
                 'details' => ['reason' => 'Field exists with compatible configuration'],
             ];
-        }
+        }//end if
 
         // Both add and update failed.
         return [

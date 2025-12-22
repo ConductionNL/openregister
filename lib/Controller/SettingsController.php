@@ -799,7 +799,6 @@ class SettingsController extends Controller
             $results['all_organizations'] = [
                 'count'         => count($result1['results']),
                 'organizations' => array_map(
-
                         /*
                          * @return (array|int|mixed|null|string)[]
                          *
@@ -830,7 +829,6 @@ class SettingsController extends Controller
             $results['type_samenwerking'] = [
                 'count'         => count($result2['results']),
                 'organizations' => array_map(
-
                         /*
                          * @return (int|mixed|null|string)[]
                          *

@@ -455,7 +455,7 @@ class NamedParametersSniff implements Sniff
                 'sprintf', 'printf', 'fprintf', 'vprintf', 'vfprintf', 'vsprintf',
                 'unset', 'isset', 'empty',
                 'call_user_func', 'call_user_func_array',
-                'array_merge', 'array_merge_recursive',
+                'array_merge', 'array_merge_recursive', 'in_array',
                 
                 // Serialization.
                 'json_encode', 'json_decode', 'serialize', 'unserialize',
@@ -498,7 +498,7 @@ class NamedParametersSniff implements Sniff
                 'createfromformat',
                 
                 // PHP string functions (additional).
-                'addcslashes', 'strcmp', 'fnmatch', 'mb_strcut', 'iconv',
+                'addcslashes', 'strcmp', 'fnmatch', 'mb_strcut', 'iconv', 'str_starts_with', 'str_ends_with', 'str_contains',
                 
                 // PHP system functions.
                 'exec', 'ini_set', 'random_int', 'apcu_store',
@@ -513,7 +513,27 @@ class NamedParametersSniff implements Sniff
                 // Exception classes - most don't benefit from named parameters for simple message/code/previous.
                 'exception', 'ocpdbexception', 'doesnotexistexception', 'multipleobjectsreturnedexception',
                 'runtimeexception', 'invalidargumentexception', 'logicexception', 'badmethodcallexception',
-                'domainexception', 'rangeexception', 'outofboundsexception', 'overflowexception', 'underflowexception'
+                'domainexception', 'rangeexception', 'outofboundsexception', 'overflowexception', 'underflowexception',
+                
+                // PHP reflection classes - named parameters don't add value.
+                'reflectionmethod', 'reflectionclass', 'reflectionproperty', 'reflectionfunction', 'reflectionparameter',
+                
+                // Nextcloud framework registration methods - simple 2-parameter methods.
+                'registereventlistener', 'registerservice', 'registerstrategy', 'dispatch', 'dispatchtyped',
+                'addforeignkeyconstraint', 'addindex', 'addcolumn',
+                
+                // Nextcloud framework classes - simple constructors.
+                'searchresultentry',
+                
+                // Simple query/check methods - typically obvious from context.
+                'has', 'exists', 'contains', 'includes', 'find', 'findby', 'findbystatus', 'findbyendpoint',
+                'scheduleafter', 'setdeleted', 'callollamawithtools', 'testschemawaremapping', 'getpendingfiles', 'hasrbacpermission',
+                
+                // Query builder expression methods - obvious from context.
+                'lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'like', 'ilike', 'notlike', 'in', 'notin', 'isnotnull', 'isnull',
+                
+                // Translation and formatting functions - simple and obvious from context.
+                't', 'date', 'strtotime'
             ];
             
             if (!in_array(strtolower($functionName), $skipFunctions)) {

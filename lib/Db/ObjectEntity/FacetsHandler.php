@@ -175,7 +175,7 @@ class FacetsHandler
                     baseQuery: $baseQuery
                 );
             }
-        }
+        }//end foreach
 
         return $facets;
 

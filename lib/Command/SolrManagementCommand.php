@@ -216,7 +216,7 @@ class SolrManagementCommand extends Command
 
             // Use the injected solrService instead of creating a new one.
             // Initialize SolrSetup with proper configuration.
-            $solrSetup = new SetupHandler($this->solrService, $this->logger);
+            $solrSetup = new SetupHandler(solrService: $this->solrService, logger: $this->logger);
 
             // Run complete setup including schema field configuration.
             $setupResult = $solrSetup->setupSolr();

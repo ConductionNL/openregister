@@ -202,8 +202,8 @@ class OasService
             foreach ($schemaIds ?? [] as $schemaId) {
                 if (($schemas[$schemaId] ?? null) !== null) {
                     $schema = $schemas[$schemaId];
-                    $this->addCrudPaths($register, $schema);
-                    $this->addExtendedPaths($register, $schema);
+                    $this->addCrudPaths(register: $register, schema: $schema);
+                    $this->addExtendedPaths(register: $register, schema: $schema);
                 }
             }
         }
@@ -700,7 +700,7 @@ class OasService
             'operationId' => 'getAll'.$this->pascalCase($schemaTitle),
             'tags'        => [$schemaTitle],
             'description' => 'Retrieve a list of all '.$schemaTitle.' objects',
-            'parameters'  => $this->createCommonQueryParameters(true, $schema),
+            'parameters'  => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
             'responses'   => [
                 '200' => [
                     'description' => 'List of '.$schemaTitle.' objects with pagination metadata',
@@ -1324,7 +1324,7 @@ class OasService
         if (($this->oas['components']['schemas'] ?? null) !== null) {
             foreach ($this->oas['components']['schemas'] ?? [] as $schemaName => &$schema) {
                 if (is_array($schema) === true) {
-                    $this->validateSchemaReferences($schema, $schemaName);
+                    $this->validateSchemaReferences(schema: $schema, context: $schemaName);
                 }
             }
         }
@@ -1337,8 +1337,8 @@ class OasService
                         foreach ($operation['responses'] ?? [] as $statusCode => &$response) {
                             if (($response['content']['application/json']['schema'] ?? null) !== null) {
                                 $this->validateSchemaReferences(
-                                    $response['content']['application/json']['schema'],
-                                    "path:{$pathName}:{$method}:response:{$statusCode}"
+                                    schema: $response['content']['application/json']['schema'],
+                                    context: "path:{$pathName}:{$method}:response:{$statusCode}"
                                 );
                             }
                         }
@@ -1415,13 +1415,13 @@ class OasService
         if (($schema['properties'] ?? null) !== null) {
             foreach ($schema['properties'] ?? [] as $propName => $property) {
                 if (is_array($property) === true) {
-                    $this->validateSchemaReferences($property, "{$context}.properties.{$propName}");
+                    $this->validateSchemaReferences(schema: $property, context: "{$context}.properties.{$propName}");
                 }
             }
         }
 
         if (($schema['items'] ?? null) !== null && is_array($schema['items']) === true) {
-            $this->validateSchemaReferences($schema['items'], "{$context}.items");
+            $this->validateSchemaReferences(schema: $schema['items'], context: "{$context}.items");
         }
     }//end validateSchemaReferences()
 }//end class

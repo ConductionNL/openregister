@@ -43,7 +43,7 @@ class Version1Date20251117000000 extends SimpleMigrationStep
     {
         $schema = $schemaClosure();
 
-        $this->addChecksumToChunks($output, $schema);
+        $this->addChecksumToChunks(output: $output, schema: $schema);
 
         return $schema;
 

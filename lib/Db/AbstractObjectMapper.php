@@ -386,4 +386,3 @@ abstract class AbstractObjectMapper
      */
     abstract public function getMaxAllowedPacketSize(): int;
 }//end class
-

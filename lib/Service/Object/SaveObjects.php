@@ -247,97 +247,36 @@ class SaveObjects
         bool $validation=false,
         bool $events=false
     ): array {
-
-        // FLEXIBLE VALIDATION: Support both single-schema and mixed-schema bulk operations.
-        // For mixed-schema operations, individual objects must specify schema in @self data.
-        // For single-schema operations, schema parameter can be provided for all objects.
-        $isMixedSchemaOperation = ($schema === null);
-
-        // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
-        // Only log for large operations or when debugging is needed.
-        if ($isMixedSchemaOperation === true) {
-            $logThreshold = 1000;
-        } else {
-            $logThreshold = 10000;
-        }
-
-        if (count($objects) > $logThreshold) {
-            if ($isMixedSchemaOperation === true) {
-                $logMessage = 'Starting mixed-schema bulk save operation';
-            } else {
-                $logMessage = 'Starting single-schema bulk save operation';
-            }
-            
-            if ($isMixedSchemaOperation === true) {
-                $operationType = 'mixed-schema';
-            } else {
-                $operationType = 'single-schema';
-            }
-
-            $this->logger->info(
-                    $logMessage,
-                    [
-                        'totalObjects' => count($objects),
-                        'operation'    => $operationType,
-                    ]
-                    );
-        }
-
-        $startTime    = microtime(true);
-        $totalObjects = count($objects);
-
-        // Bulk save operation starting.
-        // Initialize result arrays for different outcomes.
-        // TODO: Replace 'skipped' with 'unchanged' throughout codebase - "unchanged" is more descriptive.
-        // And tells WHY an object was skipped (because content was unchanged).
-        $result = [
-            'saved'      => [],
-            'updated'    => [],
-            'unchanged'  => [],
-        // TODO: Rename from 'skipped' - more descriptive.
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'totalProcessed'   => $totalObjects,
-                'saved'            => 0,
-                'updated'          => 0,
-                'unchanged'        => 0,
-        // TODO: Rename from 'skipped' - more descriptive.
-                'invalid'          => 0,
-                'errors'           => 0,
-                'processingTimeMs' => 0,
-            ],
-        ];
-
+        // Return early if no objects provided.
         if (empty($objects) === true) {
-            return $result;
+            return $this->createEmptyResult(totalObjects: 0);
         }
 
-        // PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
-        if ($isMixedSchemaOperation === false && $schema !== null) {
-            // FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
-            // NO ERROR SUPPRESSION: Let real preparation errors surface immediately.
-        [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->prepareSingleSchemaObjectsOptimized(
-                objects: $objects,
-                register: $register,
-                schema: $schema
-            );
-        }//end if
+        $startTime     = microtime(true);
+        $totalObjects  = count($objects);
+        $isMixedSchema = ($schema === null);
 
-        if ($schema === null) {
-            // STANDARD PATH: Mixed-schema operation - use full preparation logic.
-            // NO ERROR SUPPRESSION: Let real preparation errors surface immediately.
-            [$processedObjects, $globalSchemaCache, $preparationInvalidObjects] = $this->preparationHandler->prepareObjectsForBulkSave($objects);
-        }//end if
+        // Log large operations.
+        $this->logBulkOperationStart(
+            totalObjects: $totalObjects,
+            isMixedSchema: $isMixedSchema
+        );
 
-        // CRITICAL FIX: Include objects that failed during preparation in result.
-        foreach ($preparationInvalidObjects ?? [] as $invalidObj) {
-            $result['invalid'][] = $invalidObj;
-            $result['statistics']['invalid']++;
-            $result['statistics']['errors']++;
-        }
+        // Prepare objects for bulk save.
+        [$processedObjects, $schemaCache, $invalidObjects] = $this->prepareObjectsForSave(
+            objects: $objects,
+            register: $register,
+            schema: $schema,
+            isMixedSchema: $isMixedSchema
+        );
 
-        // Check if we have any processed objects.
+        // Initialize result with invalid objects from preparation.
+        $result = $this->initializeResult(
+            totalObjects: $totalObjects,
+            invalidObjects: $invalidObjects
+        );
+
+        // Return if no valid objects to process.
         if (empty($processedObjects) === true) {
             $result['errors'][] = [
                 'error' => 'No objects were successfully prepared for bulk save',
@@ -346,92 +285,270 @@ class SaveObjects
             return $result;
         }
 
-        // Log how many objects were successfully prepared.
-        // Update statistics to reflect actual processed objects.
+        // Update statistics for actually processed count.
         $result['statistics']['totalProcessed'] = count($processedObjects);
 
-        // Process objects in chunks for optimal performance.
-        $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
+        // Process objects in optimized chunks.
+        $result = $this->processObjectsInChunks(
+            processedObjects: $processedObjects,
+            schemaCache: $schemaCache,
+            result: $result,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            validation: $validation,
+            events: $events
+        );
 
-        // PERFORMANCE FIX: Always use bulk processing - no size-based routing.
-        // Removed concurrent processing attempt that caused performance degradation for large files.
-        // CONCURRENT PROCESSING: Process chunks in parallel for large imports.
-        $chunks = array_chunk($processedObjects, $chunkSize);
+        // Add performance metrics.
+        $result['performance'] = $this->calculatePerformanceMetrics(
+            startTime: $startTime,
+            processedCount: count($processedObjects),
+            totalRequested: $totalObjects,
+            unchangedCount: count($result['unchanged'])
+        );
 
-        // SINGLE PATH PROCESSING - Process all chunks the same way regardless of size.
-        foreach ($chunks as $chunkIndex => $objectsChunk) {
-            $chunkStart = microtime(true);
+        return $result;
+    }//end saveObjects()
 
-            // Process the current chunk and get the result.
-            $chunkResult = $this->chunkProcessingHandler->processObjectsChunk(objects: $objectsChunk, schemaCache: $globalSchemaCache, _rbac: $_rbac, _multitenancy: $_multitenancy, _validation: $validation, _events: $events);
+    /**
+     * Create empty result structure.
+     *
+     * @param int $totalObjects Total number of objects
+     *
+     * @return array Empty result array
+     */
+    private function createEmptyResult(int $totalObjects): array
+    {
+        return [
+            'saved'      => [],
+            'updated'    => [],
+            'unchanged'  => [],
+            'invalid'    => [],
+            'errors'     => [],
+            'statistics' => [
+                'totalProcessed'   => $totalObjects,
+                'saved'            => 0,
+                'updated'          => 0,
+                'unchanged'        => 0,
+                'invalid'          => 0,
+                'errors'           => 0,
+                'processingTimeMs' => 0,
+            ],
+        ];
+    }//end createEmptyResult()
 
-            // Merge chunk results for saved, updated, invalid, errors, and unchanged.
-            $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
-            $result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
-            $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
-            $result['errors']  = array_merge($result['errors'], $chunkResult['errors']);
-            // TODO: Renamed from 'skipped'.
-            // Update total statistics.
-            $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
-            $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
-            $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
-            $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
-            // TODO: Renamed from 'skipped'.
-            // Calculate chunk processing time and speed (currently unused but kept for future logging).
-            // $chunkTime = microtime(true) - $chunkStart;
-            // Store per-chunk statistics for transparency and debugging.
-            if (isset($result['chunkStatistics']) === false) {
-                $result['chunkStatistics'] = [];
-            }
+    /**
+     * Log bulk operation start for large operations.
+     *
+     * @param int  $totalObjects  Total number of objects
+     * @param bool $isMixedSchema Whether this is a mixed-schema operation
+     *
+     * @return void
+     */
+    private function logBulkOperationStart(int $totalObjects, bool $isMixedSchema): void
+    {
+        // Determine log threshold based on operation type.
+        $logThreshold = $isMixedSchema === true ? 1000 : 10000;
 
-            $result['chunkStatistics'][] = [
-                'chunkIndex' => $chunkIndex,
-                'count'      => count($objectsChunk),
-                'saved'      => $chunkResult['statistics']['saved'] ?? 0,
-                'updated'    => $chunkResult['statistics']['updated'] ?? 0,
-            // TODO: Renamed from 'skipped'.
-                'invalid'    => $chunkResult['statistics']['invalid'] ?? 0,
-            // Ms.
-            // Objects/sec.
-            ];
-        }//end foreach
-
-        $totalTime    = microtime(true) - $startTime;
-        $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
-
-        // Calculate efficiency.
-        if (count($processedObjects) > 0) {
-            $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
-        } else {
-            $efficiency = 0;
+        if ($totalObjects <= $logThreshold) {
+            return;
         }
 
-        // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
+        $operationType = $isMixedSchema === true ? 'mixed-schema' : 'single-schema';
+        $logMessage    = "Starting {$operationType} bulk save operation";
 
-        $result['performance'] = [
-            'totalTime'        => round($totalTime, 3),
-            'totalTimeMs'      => round($totalTime * 1000, 2),
-            'objectsPerSecond' => round($overallSpeed, 2),
-            'totalProcessed'   => count($processedObjects),
-            'totalRequested'   => $totalObjects,
-            'efficiency'       => $efficiency,
-        ];
+        $this->logger->info(
+            $logMessage,
+            [
+                'totalObjects' => $totalObjects,
+                'operation'    => $operationType,
+            ]
+        );
+    }//end logBulkOperationStart()
 
-        // Add deduplication efficiency if we have unchanged objects.
-        $unchangedCount = count($result['unchanged']);
-        /*
-         * Suppress type check for unchanged count comparison
-         *
-         * @psalm-suppress TypeDoesNotContainType
-         */
-        if ($unchangedCount > 0) {
-            $totalProcessed = count($result['saved']) + count($result['updated']) + $unchangedCount;
-            $result['performance']['deduplicationEfficiency'] = round(($unchangedCount / $totalProcessed) * 100, 1).'% operations avoided';
+    /**
+     * Prepare objects for bulk save operation.
+     *
+     * @param array                    $objects       Objects to save
+     * @param Register|string|int|null $register      Register parameter
+     * @param Schema|string|int|null   $schema        Schema parameter
+     * @param bool                     $isMixedSchema Whether mixed-schema operation
+     *
+     * @return array{0: array, 1: array, 2: array} [processedObjects, schemaCache, invalidObjects]
+     */
+    private function prepareObjectsForSave(
+        array $objects,
+        Register|string|int|null $register,
+        Schema|string|int|null $schema,
+        bool $isMixedSchema
+    ): array {
+        // Use fast path for single-schema operations.
+        if ($isMixedSchema === false && $schema !== null) {
+            return $this->prepareSingleSchemaObjectsOptimized(
+                objects: $objects,
+                register: $register,
+                schema: $schema
+            );
+        }
+
+        // Use standard path for mixed-schema operations.
+        return $this->preparationHandler->prepareObjectsForBulkSave($objects);
+    }//end prepareObjectsForSave()
+
+    /**
+     * Initialize result structure with invalid objects from preparation.
+     *
+     * @param int   $totalObjects   Total objects requested
+     * @param array $invalidObjects Objects that failed preparation
+     *
+     * @return array Initialized result array
+     */
+    private function initializeResult(int $totalObjects, array $invalidObjects): array
+    {
+        $result = $this->createEmptyResult(totalObjects: $totalObjects);
+
+        // Add preparation failures to result.
+        foreach ($invalidObjects ?? [] as $invalidObj) {
+            $result['invalid'][] = $invalidObj;
+            $result['statistics']['invalid']++;
+            $result['statistics']['errors']++;
         }
 
         return $result;
+    }//end initializeResult()
 
-    }//end saveObjects()
+    /**
+     * Process objects in optimized chunks.
+     *
+     * @param array $processedObjects Prepared objects to process
+     * @param array $schemaCache      Schema cache
+     * @param array $result           Result array to update
+     * @param bool  $_rbac            Apply RBAC
+     * @param bool  $_multitenancy    Apply multitenancy
+     * @param bool  $validation       Enable validation
+     * @param bool  $events           Enable events
+     *
+     * @return array Updated result array
+     */
+    private function processObjectsInChunks(
+        array $processedObjects,
+        array $schemaCache,
+        array $result,
+        bool $_rbac,
+        bool $_multitenancy,
+        bool $validation,
+        bool $events
+    ): array {
+        $chunkSize = $this->calculateOptimalChunkSize(count($processedObjects));
+        $chunks    = array_chunk($processedObjects, $chunkSize);
+
+        foreach ($chunks as $chunkIndex => $objectsChunk) {
+            // Process chunk.
+            $chunkResult = $this->chunkProcessingHandler->processObjectsChunk(
+                objects: $objectsChunk,
+                schemaCache: $schemaCache,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                _validation: $validation,
+                _events: $events
+            );
+
+            // Merge chunk results.
+            $result = $this->mergeChunkResult(
+                result: $result,
+                chunkResult: $chunkResult,
+                chunkIndex: $chunkIndex,
+                chunkCount: count($objectsChunk)
+            );
+        }
+
+        return $result;
+    }//end processObjectsInChunks()
+
+    /**
+     * Merge chunk result into main result.
+     *
+     * @param array $result      Main result array
+     * @param array $chunkResult Chunk processing result
+     * @param int   $chunkIndex  Chunk index
+     * @param int   $chunkCount  Number of objects in chunk
+     *
+     * @return array Updated result array
+     */
+    private function mergeChunkResult(
+        array $result,
+        array $chunkResult,
+        int $chunkIndex,
+        int $chunkCount
+    ): array {
+        // Merge arrays.
+        $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
+        $result['updated'] = array_merge($result['updated'], $chunkResult['updated']);
+        $result['invalid'] = array_merge($result['invalid'], $chunkResult['invalid']);
+        $result['errors']  = array_merge($result['errors'], $chunkResult['errors']);
+
+        // Update statistics.
+        $result['statistics']['saved']   += $chunkResult['statistics']['saved'] ?? 0;
+        $result['statistics']['updated'] += $chunkResult['statistics']['updated'] ?? 0;
+        $result['statistics']['invalid'] += $chunkResult['statistics']['invalid'] ?? 0;
+        $result['statistics']['errors']  += $chunkResult['statistics']['errors'] ?? 0;
+
+        // Store per-chunk statistics.
+        if (isset($result['chunkStatistics']) === false) {
+            $result['chunkStatistics'] = [];
+        }
+
+        $result['chunkStatistics'][] = [
+            'chunkIndex' => $chunkIndex,
+            'count'      => $chunkCount,
+            'saved'      => $chunkResult['statistics']['saved'] ?? 0,
+            'updated'    => $chunkResult['statistics']['updated'] ?? 0,
+            'invalid'    => $chunkResult['statistics']['invalid'] ?? 0,
+        ];
+
+        return $result;
+    }//end mergeChunkResult()
+
+    /**
+     * Calculate performance metrics for bulk operation.
+     *
+     * @param float $startTime      Operation start time
+     * @param int   $processedCount Number of processed objects
+     * @param int   $totalRequested Total objects requested
+     * @param int   $unchangedCount Number of unchanged objects
+     *
+     * @return array Performance metrics
+     */
+    private function calculatePerformanceMetrics(
+        float $startTime,
+        int $processedCount,
+        int $totalRequested,
+        int $unchangedCount
+    ): array {
+        $totalTime    = microtime(true) - $startTime;
+        $overallSpeed = $processedCount / max($totalTime, 0.001);
+
+        // Calculate efficiency percentage.
+        $efficiency = $processedCount > 0 ? round(($processedCount / $totalRequested) * 100, 1) : 0;
+
+        $performance = [
+            'totalTime'        => round($totalTime, 3),
+            'totalTimeMs'      => round($totalTime * 1000, 2),
+            'objectsPerSecond' => round($overallSpeed, 2),
+            'totalProcessed'   => $processedCount,
+            'totalRequested'   => $totalRequested,
+            'efficiency'       => $efficiency,
+        ];
+
+        // Add deduplication efficiency if applicable.
+        if ($unchangedCount > 0) {
+            $totalWithUnchanged = $processedCount + $unchangedCount;
+            $deduplicationPct   = round(($unchangedCount / $totalWithUnchanged) * 100, 1);
+            $performance['deduplicationEfficiency'] = "{$deduplicationPct}% operations avoided";
+        }
+
+        return $performance;
+    }//end calculatePerformanceMetrics()
 
     /**
      * Gets a value from an object using dot notation path.

@@ -138,13 +138,13 @@ class SchemaMapper extends QBMapper
      * Initializes mapper with database connection and required dependencies
      * for multi-tenancy, RBAC, validation, and event dispatching.
      *
-     * @param IDBConnection            $db                  Database connection for queries
-     * @param IEventDispatcher         $eventDispatcher     Event dispatcher for schema events
-     * @param PropertyValidatorHandler $validator           Schema property validator for validation
-     * @param OrganisationMapper       $organisationMapper  Organisation mapper for multi-tenancy
-     * @param IUserSession             $userSession         User session for current user context
-     * @param IGroupManager            $groupManager        Group manager for RBAC checks
-     * @param IAppConfig               $appConfig           App configuration for multitenancy settings
+     * @param IDBConnection            $db                 Database connection for queries
+     * @param IEventDispatcher         $eventDispatcher    Event dispatcher for schema events
+     * @param PropertyValidatorHandler $validator          Schema property validator for validation
+     * @param OrganisationMapper       $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession             $userSession        User session for current user context
+     * @param IGroupManager            $groupManager       Group manager for RBAC checks
+     * @param IAppConfig               $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
@@ -1332,7 +1332,7 @@ class SchemaMapper extends QBMapper
             } else {
                 $source = 'inherited';
             }
-            
+
             if ($isNative === true) {
                 $inheritedFrom = null;
             } else {
@@ -1346,7 +1346,7 @@ class SchemaMapper extends QBMapper
                 'source'        => $source,
                 'inheritedFrom' => $inheritedFrom,
             ];
-        }
+        }//end foreach
 
         return $metadata;
     }//end getPropertySourceMetadata()
@@ -1953,7 +1953,7 @@ class SchemaMapper extends QBMapper
             return $this->extractAllOfDelta(
             schema: $schema,
             allOf: $allOf
-        );
+            );
         }
 
         // No composition - return as-is.
@@ -2057,7 +2057,8 @@ class SchemaMapper extends QBMapper
             if ($this->arePropertiesDifferent(
                 parentProperty: $parentProperty,
                 childProperty: $childProperty
-            ) === true) {
+            ) === true
+            ) {
                 // For objects with nested properties, extract nested delta.
                 if (is_array($childProperty) === false || is_array($parentProperty) === false) {
                     $delta[$propertyName] = $childProperty;
@@ -2115,7 +2116,8 @@ class SchemaMapper extends QBMapper
             } else if ($this->arePropertiesDifferent(
                 parentProperty: $parentProperty[$key],
                 childProperty: $value
-            ) === true) {
+            ) === true
+            ) {
                 // Changed field.
                 if ($key !== 'properties' || is_array($value) === false || is_array($parentProperty[$key]) === false) {
                     $delta[$key] = $value;
@@ -2130,7 +2132,7 @@ class SchemaMapper extends QBMapper
             }
 
             // If field is identical, don't include in delta.
-        }
+        }//end foreach
 
         return $delta;
     }//end extractNestedPropertyDelta()

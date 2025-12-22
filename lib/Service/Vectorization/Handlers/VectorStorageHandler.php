@@ -103,30 +103,30 @@ class VectorStorageHandler
             if ($backend === 'solr') {
                 // Store in Solr and return a pseudo-ID.
                 $documentId = $this->storeVectorInSolr(
-                    $entityType,
-                    $entityId,
-                    $embedding,
-                    $model,
-                    $dimensions,
-                    $chunkIndex,
-                    $totalChunks,
-                    $chunkText,
-                    $metadata
+                    entityType: $entityType,
+                    entityId: $entityId,
+                    embedding: $embedding,
+                    model: $model,
+                    dimensions: $dimensions,
+                    chunkIndex: $chunkIndex,
+                    totalChunks: $totalChunks,
+                    chunkText: $chunkText,
+                    metadata: $metadata
                 );
                 return crc32($documentId);
             }
 
             // Default: Store in database.
             return $this->storeVectorInDatabase(
-                $entityType,
-                $entityId,
-                $embedding,
-                $model,
-                $dimensions,
-                $chunkIndex,
-                $totalChunks,
-                $chunkText,
-                $metadata
+                entityType: $entityType,
+                entityId: $entityId,
+                embedding: $embedding,
+                model: $model,
+                dimensions: $dimensions,
+                chunkIndex: $chunkIndex,
+                totalChunks: $totalChunks,
+                chunkText: $chunkText,
+                metadata: $metadata
             );
         } catch (Exception $e) {
             $this->logger->error(

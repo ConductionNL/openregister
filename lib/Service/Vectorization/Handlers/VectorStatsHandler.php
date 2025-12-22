@@ -188,9 +188,9 @@ class VectorStatsHandler
             if ($objectCollection !== null && $objectCollection !== '') {
                 try {
                     $objectStats = $this->countVectorsInCollection(
-                        $objectCollection,
-                        $vectorField,
-                        $solrBackend
+                        collection: $objectCollection,
+                        vectorField: $vectorField,
+                        solrBackend: $solrBackend
                     );
                     $objectCount = $objectStats['count'];
                     $byModel     = array_merge($byModel, $objectStats['by_model']);

@@ -97,7 +97,7 @@ class ObjectChangeListener implements IEventListener
             $objectSettings = $this->settingsService->getObjectSettingsOnly();
             $extractionMode = $objectSettings['objectExtractionMode'] ?? 'background';
 
-            $this->processExtractionMode($extractionMode, $objectId, $object->getUuid());
+            $this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
         } catch (\Exception $e) {
             $this->logger->error(
                     '[ObjectChangeListener] Error determining extraction mode',
@@ -124,11 +124,11 @@ class ObjectChangeListener implements IEventListener
     {
         switch ($mode) {
             case 'immediate':
-                $this->processImmediateExtraction($objectId, $objectUuid);
+                $this->processImmediateExtraction(objectId: $objectId, objectUuid: $objectUuid);
                 break;
 
             case 'background':
-                $this->processBackgroundExtraction($objectId, $objectUuid);
+                $this->processBackgroundExtraction(objectId: $objectId, objectUuid: $objectUuid);
                 break;
 
             case 'cron':
@@ -140,7 +140,7 @@ class ObjectChangeListener implements IEventListener
                 break;
 
             default:
-                $this->processUnknownMode($mode, $objectId);
+                $this->processUnknownMode(mode: $mode, objectId: $objectId);
                 break;
         }//end switch
 

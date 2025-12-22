@@ -128,12 +128,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Magic mapping is enabled - check if table exists.
-        $tableExists = $this->magicMapper->existsTableForRegisterSchema($register, $schema);
+        $tableExists = $this->magicMapper->existsTableForRegisterSchema(register: $register, schema: $schema);
 
         if ($tableExists === true) {
             $this->logger->debug(
                 '[UnifiedObjectMapper] Magic table exists, using MagicMapper',
-                ['tableName' => $this->magicMapper->getTableNameForRegisterSchema($register, $schema)]
+                ['tableName' => $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema)]
             );
             return true;
         }
@@ -152,7 +152,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             try {
                 // Create the table.
-                $this->magicMapper->ensureTableForRegisterSchema($register, $schema);
+                $this->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
                 $this->logger->info(
                     '[UnifiedObjectMapper] Magic table created successfully, using MagicMapper'
                 );
@@ -256,7 +256,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper');
-            return $this->magicMapper->findInRegisterSchemaTable($identifier, $register, $schema);
+            return $this->magicMapper->findInRegisterSchemaTable(identifier: $identifier, register: $register, schema: $schema);
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing find() to ObjectEntityMapper');
@@ -305,31 +305,31 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to MagicMapper');
             return $this->magicMapper->findAllInRegisterSchemaTable(
-                $register,
-                $schema,
-                $limit,
-                $offset,
-                $filters,
-                $sort,
-                $published
+                register: $register,
+                schema: $schema,
+                limit: $limit,
+                offset: $offset,
+                filters: $filters,
+                sort: $sort,
+                published: $published
             );
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to ObjectEntityMapper');
         return $this->objectEntityMapper->findAll(
-            $limit,
-            $offset,
-            $filters,
-            $searchConditions,
-            $searchParams,
-            $sort,
-            $search,
-            $ids,
-            $uses,
-            $includeDeleted,
-            $register,
-            $schema,
-            $published
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            searchConditions: $searchConditions,
+            searchParams: $searchParams,
+            sort: $sort,
+            search: $search,
+            ids: $ids,
+            uses: $uses,
+            includeDeleted: $includeDeleted,
+            register: $register,
+            schema: $schema,
+            published: $published
         );
 
     }//end findAll()
@@ -392,7 +392,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing insert() to MagicMapper');
-            return $this->magicMapper->insertObjectEntity($entity, $register, $schema);
+            return $this->magicMapper->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing insert() to ObjectEntityMapper');
@@ -421,11 +421,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing update() to MagicMapper');
-            return $this->magicMapper->updateObjectEntity($entity, $register, $schema);
+            return $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing update() to ObjectEntityMapper');
-        return $this->objectEntityMapper->update($entity);
+        return $this->objectEntityMapper->update(entity: $entity);
 
     }//end update()
 
@@ -450,11 +450,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing delete() to MagicMapper');
-            return $this->magicMapper->deleteObjectEntity($entity, $register, $schema, false);
+            return $this->magicMapper->deleteObjectEntity(entity: $entity, register: $register, schema: $schema, soft: false);
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
-        return $this->objectEntityMapper->delete($entity);
+        return $this->objectEntityMapper->delete(entity: $entity);
 
     }//end delete()
 
@@ -480,7 +480,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing lockObject() to ObjectEntityMapper');
-        return $this->objectEntityMapper->lockObject($uuid, $lockDuration);
+        return $this->objectEntityMapper->lockObject(uuid: $uuid, duration: $lockDuration);
 
     }//end lockObject()
 
@@ -518,7 +518,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing ultraFastBulkSave() to ObjectEntityMapper');
-        return $this->objectEntityMapper->ultraFastBulkSave($insertObjects, $updateObjects);
+        return $this->objectEntityMapper->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
 
     }//end ultraFastBulkSave()
 
@@ -533,7 +533,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing deleteObjects() to ObjectEntityMapper');
-        return $this->objectEntityMapper->deleteObjects($uuids, $hardDelete);
+        return $this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
 
     }//end deleteObjects()
 
@@ -548,7 +548,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing publishObjects() to ObjectEntityMapper');
-        return $this->objectEntityMapper->publishObjects($uuids, $datetime);
+        return $this->objectEntityMapper->publishObjects(uuids: $uuids, datetime: $datetime);
 
     }//end publishObjects()
 
@@ -563,7 +563,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing depublishObjects() to ObjectEntityMapper');
-        return $this->objectEntityMapper->depublishObjects($uuids, $datetime);
+        return $this->objectEntityMapper->depublishObjects(uuids: $uuids, datetime: $datetime);
 
     }//end depublishObjects()
 
@@ -589,7 +589,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         array $exclude=[]
     ): array {
         $this->logger->debug('[UnifiedObjectMapper] Routing getStatistics() to ObjectEntityMapper');
-        return $this->objectEntityMapper->getStatistics($registerId, $schemaId, $exclude);
+        return $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
 
     }//end getStatistics()
 
@@ -604,7 +604,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing getRegisterChartData() to ObjectEntityMapper');
-        return $this->objectEntityMapper->getRegisterChartData($registerId, $schemaId);
+        return $this->objectEntityMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
 
     }//end getRegisterChartData()
 
@@ -619,7 +619,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing getSchemaChartData() to ObjectEntityMapper');
-        return $this->objectEntityMapper->getSchemaChartData($registerId, $schemaId);
+        return $this->objectEntityMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
 
     }//end getSchemaChartData()
 
@@ -707,25 +707,25 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         // Determine which schemas and registers to search.
-        $magicSchemas = $this->identifyMagicMappedSchemas($registerFilter, $schemaFilter);
+        $magicSchemas = $this->identifyMagicMappedSchemas(registerFilter: $registerFilter, schemaFilter: $schemaFilter);
 
         if (empty($magicSchemas) === true) {
             // No magic mapping enabled - use blob storage only.
             $this->logger->debug('[UnifiedObjectMapper] No magic mapping found, using blob storage only');
-            return $this->objectEntityMapper->searchObjects($query, $activeOrganisationUuid, $rbac, $multitenancy, $ids, $uses);
+            return $this->objectEntityMapper->searchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
         }
 
         // Collect results from multiple sources.
         $allResults = [];
 
         // Search blob storage for non-magic schemas (if applicable).
-        $blobResults = $this->searchBlobStorage($query, $magicSchemas, $activeOrganisationUuid, $rbac, $multitenancy, $ids, $uses);
+        $blobResults = $this->searchBlobStorage(query: $query, magicSchemas: $magicSchemas, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multitenancy: $multitenancy, ids: $ids, uses: $uses);
         if (empty($blobResults) === false) {
             $allResults = array_merge($allResults, $blobResults);
         }
 
         // Search magic tables for magic-enabled schemas.
-        $magicResults = $this->searchMagicTables($query, $magicSchemas, $activeOrganisationUuid, $rbac, $multitenancy, $ids, $uses);
+        $magicResults = $this->searchMagicTables(query: $query, magicSchemas: $magicSchemas, activeOrganisationUuid: $activeOrganisationUuid, rbac: $rbac, multitenancy: $multitenancy, ids: $ids, uses: $uses);
         if (empty($magicResults) === false) {
             $allResults = array_merge($allResults, $magicResults);
         }
@@ -734,10 +734,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $allResults = $this->deduplicateResults($allResults);
 
         // Apply sorting if specified in query.
-        $allResults = $this->applySorting($allResults, $query);
+        $allResults = $this->applySorting(results: $allResults, query: $query);
 
         // Apply pagination if limit is specified.
-        $allResults = $this->applyPagination($allResults, $query);
+        $allResults = $this->applyPagination(results: $allResults, query: $query);
 
         $this->logger->debug(
             '[UnifiedObjectMapper] Cross-table search complete',
@@ -774,7 +774,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?string $uses=null
     ): int {
         $this->logger->debug('[UnifiedObjectMapper] Routing countSearchObjects() to ObjectEntityMapper');
-        return $this->objectEntityMapper->countSearchObjects($query, $activeOrganisationUuid, $rbac, $multitenancy, $ids, $uses);
+        return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
 
     }//end countSearchObjects()
 
@@ -793,7 +793,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Register $register=null
     ): int {
         $this->logger->debug('[UnifiedObjectMapper] Routing countAll() to ObjectEntityMapper');
-        return $this->objectEntityMapper->countAll($filters, $schema, $register);
+        return $this->objectEntityMapper->countAll(filters: $filters, schema: $schema, register: $register);
 
     }//end countAll()
 
@@ -893,7 +893,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?string $uses
     ): array {
         // If all schemas use magic mapping, skip blob storage.
-        if ($this->allSchemasUseMagicMapping($query, $magicSchemas) === true) {
+        if ($this->allSchemasUseMagicMapping(query: $query, magicSchemas: $magicSchemas) === true) {
             $this->logger->debug('[UnifiedObjectMapper] All schemas use magic mapping, skipping blob storage');
             return [];
         }
@@ -914,7 +914,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         $this->logger->debug('[UnifiedObjectMapper] Searching blob storage with exclusions');
-        return $this->objectEntityMapper->searchObjects($modifiedQuery, $activeOrganisationUuid, $rbac, $multitenancy, $ids, $uses);
+        return $this->objectEntityMapper->searchObjects(query: $modifiedQuery, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
 
     }//end searchBlobStorage()
 
@@ -952,7 +952,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     $schema = $this->schemaMapper->find($schemaId);
 
                     // Check if table exists for this register+schema combination.
-                    if ($this->magicMapper->existsTableForRegisterSchema($register, $schema) === false) {
+                    if ($this->magicMapper->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
                         $this->logger->debug(
                             '[UnifiedObjectMapper] Magic table does not exist yet',
                             ['register' => $registerId, 'schema' => $schemaId]
@@ -966,7 +966,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         ['register' => $registerId, 'schema' => $schemaId]
                     );
 
-                    $tableResults = $this->magicMapper->searchObjectsInRegisterSchemaTable($query, $register, $schema);
+                    $tableResults = $this->magicMapper->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
                     if (empty($tableResults) === false) {
                         $results = array_merge($results, $tableResults);
                     }
@@ -1070,8 +1070,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         usort(
             $results,
             function ($a, $b) use ($orderBy, $direction) {
-                $aValue = $this->getObjectField($a, $orderBy);
-                $bValue = $this->getObjectField($b, $orderBy);
+                $aValue = $this->getObjectField(object: $a, fieldName: $orderBy);
+                $bValue = $this->getObjectField(object: $b, fieldName: $orderBy);
 
                 if ($aValue === $bValue) {
                     return 0;
@@ -1132,5 +1132,3 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
     }//end getObjectField()
 }//end class
-
-

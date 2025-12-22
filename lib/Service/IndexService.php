@@ -724,7 +724,7 @@ class IndexService
      */
     public function createCollection(string $name, array $config=[]): array
     {
-        return $this->searchBackend->createCollection($name, $config);
+        return $this->searchBackend->createCollection(name: $name, config: $config);
 
     }//end createCollection()
 

@@ -122,7 +122,7 @@ class DocumentBuilder
                 }
 
                 // Convert value to Solr-compatible format.
-                $doc[$key] = $this->convertValueForSolr($value, 'auto');
+                $doc[$key] = $this->convertValueForSolr(value: $value, fieldType: 'auto');
             }
         }
 
@@ -616,7 +616,7 @@ class DocumentBuilder
         $solrFieldType = $solrFieldTypes[$fieldName];
 
         // **CRITICAL VALIDATION**: Check for type compatibility.
-        $isCompatible = $this->isValueCompatibleWithSolrType($fieldValue, $solrFieldType);
+            $isCompatible = $this->isValueCompatibleWithSolrType(value: $fieldValue, solrFieldType: $solrFieldType);
 
         if ($isCompatible === false) {
             $this->logger->warning(
@@ -671,7 +671,7 @@ class DocumentBuilder
 
             // Check each element in the array against the base field type.
             foreach ($value as $element) {
-                if ($this->isValueCompatibleWithSolrType($element, $solrFieldType) === false) {
+                if ($this->isValueCompatibleWithSolrType(value: $element, solrFieldType: $solrFieldType) === false) {
                     return false;
                 }
             }
