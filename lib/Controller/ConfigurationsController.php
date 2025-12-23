@@ -135,6 +135,8 @@ class ConfigurationsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with created configuration
+     *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
@@ -190,6 +192,8 @@ class ConfigurationsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated configuration
      *
      * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
@@ -256,6 +260,8 @@ class ConfigurationsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response confirming deletion
      *
      * @psalm-return JSONResponse<204, null, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */

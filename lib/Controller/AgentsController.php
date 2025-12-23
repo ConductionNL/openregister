@@ -295,6 +295,8 @@ class AgentsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with created agent
+     *
      * @psalm-return JSONResponse<201, Agent, array<never, never>>|JSONResponse<400, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
@@ -377,6 +379,8 @@ class AgentsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated agent
      *
      * @psalm-return JSONResponse<200, Agent, array<never, never>>|JSONResponse<400|403, array{error: string}, array<never, never>>
      */

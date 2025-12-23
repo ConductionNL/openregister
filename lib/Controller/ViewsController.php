@@ -460,6 +460,8 @@ class ViewsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with patched view
+     *
      * @psalm-return JSONResponse<int, array{error?: 'Failed to patch view'|'User not authenticated'|'View not found', message?: string, view?: array{id: int, uuid: null|string, name: null|string, description: null|string, owner: null|string, organisation: null|string, isPublic: bool, isDefault: bool, query: array|null, favoredBy: array, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: 0}, created: null|string, updated: null|string, managedByConfiguration: array<string, mixed>|null}}, array<never, never>>
      */
     public function patch(string $id): JSONResponse

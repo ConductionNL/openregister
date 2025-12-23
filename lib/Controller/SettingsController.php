@@ -587,6 +587,8 @@ class SettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with database information
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, database?: array{type: string, version: string, platform: string, vectorSupport: bool, recommendedPlugin: null|string, performanceNote: null|string}}, array<never, never>>
      */
     public function getDatabaseInfo(): JSONResponse
@@ -773,6 +775,8 @@ class SettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with type filtering debug information
+     *
      * @psalm-return JSONResponse<200|500, array{error?: string, trace?: string, all_organizations?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}>}, type_samenwerking?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, type_community?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, type_both?: array{count: int<0, max>, organizations: array<array{id: int, name: null|string, type: 'NO TYPE'|mixed}>}, direct_database_query?: array{count: int<0, max>, organizations: array<array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}>}}, array<never, never>>
      */
     public function debugTypeFiltering(): JSONResponse
@@ -958,6 +962,8 @@ class SettingsController extends Controller
      * @param int         $limit    Maximum number of results (default: 10)
      * @param array       $filters  Optional filters (entity_type, entity_id, etc.)
      * @param string|null $provider Embedding provider override
+     *
+     * @return JSONResponse JSON response with semantic search results
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: array<int, array<string, mixed>>, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
      */

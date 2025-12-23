@@ -274,6 +274,8 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with exported audit trail data
+     *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, data?: array{content: bool|string, filename: string, contentType: string, size: int<0, max>}}, array<never, never>>
      */
     public function export(): JSONResponse
@@ -339,6 +341,8 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response confirming audit trail deletion
+     *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Audit trail deleted successfully'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
@@ -386,6 +390,8 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with multiple deletion results
      *
      * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, results?: array{deleted: int<0, max>, failed: int<0, max>, total: int<0, max>}, message?: string}, array<never, never>>
      */
@@ -441,6 +447,8 @@ class AuditTrailController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response confirming clear all operation
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, message?: 'All audit trails cleared successfully'|'No expired audit trails found to clear', deleted?: 'All expired audit trails have been deleted'|0}, array<never, never>>
      */

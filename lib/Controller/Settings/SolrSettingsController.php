@@ -115,6 +115,8 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with Solr information
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, solr?: array{available: false|mixed, version: '9.x (detection pending)'|'Unknown', vectorSupport: false, collections: array<array{id: mixed, name: mixed, documentCount: 0|mixed, shards: 0|mixed, health: 'unknown'|mixed}>, error: null|string}}, array<never, never>>
      */
     public function getSolrInfo(): JSONResponse
@@ -282,6 +284,8 @@ class SolrSettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with discovered Solr facets
      *
      * @psalm-return JSONResponse<200|422, array{success: bool, message: string, facets: array<never, never>|mixed}, array<never, never>>
      */
