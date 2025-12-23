@@ -388,6 +388,8 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with created register
+     *
      * @psalm-return JSONResponse<201, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
@@ -431,6 +433,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated register
      *
      * @psalm-return JSONResponse<200, Register, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
@@ -538,6 +542,8 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with register schemas
+     *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, results?: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, total?: int<0, max>}, array<never, never>>
      */
     public function schemas(int|string $id): JSONResponse
@@ -580,6 +586,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with register objects
      *
      * @psalm-return JSONResponse<200, list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>, array<never, never>>
      */
@@ -686,6 +694,8 @@ class RegistersController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with GitHub publish results
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: string, registerId?: int, commit_sha?: mixed|null, commit_url?: mixed|null, file_url?: mixed|null, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */

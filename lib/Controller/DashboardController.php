@@ -149,6 +149,8 @@ class DashboardController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with dashboard data
+     *
      * @psalm-return JSONResponse<200|500, array{error?: string, registers?: list{0: array{id: 'orphaned'|'totals'|int, title: null|string, description: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs?: array{total: int, size: int}}, schemas: list<mixed>, uuid?: null|string, slug?: null|string, version?: null|string, source?: null|string, tablePrefix?: null|string, folder?: null|string, updated?: null|string, created?: null|string, owner?: null|string, application?: null|string, organisation?: null|string, authorization?: array|null, groups?: array<string, list<string>>, quota?: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage?: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted?: null|string, published?: null|string, depublished?: null|string}, 1?: array{id: 'orphaned'|'totals'|int, uuid: null|string, slug: null|string, title: null|string, version: null|string, description: null|string, schemas: list<mixed>, source: null|string, tablePrefix: null|string, folder: null|string, updated: null|string, created: null|string, owner: null|string, application: null|string, organisation: null|string, authorization: array|null, groups: array<string, list<string>>, quota: array{storage: null, bandwidth: null, requests: null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}, deleted: null|string, published: null|string, depublished: null|string, stats: array{objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}, logs: array{total: int|mixed, size: int|mixed}, files: array{total: int, size: int}, webhookLogs: array{total: int, size: int}}},...}}, array<never, never>>
      */
     public function index(): JSONResponse
@@ -190,6 +192,8 @@ class DashboardController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with calculation results
      *
      * @psalm-return JSONResponse<200|500, array{status: 'error'|'success', message?: string, timestamp: string, scope?: array{register: array{id: int, title: null|string}|null, schema: array{id: int, title: null|string}|null}, results?: array{objects: array, logs: array, total: array{processed: mixed, failed: mixed}}, summary?: array{total_processed: mixed, total_failed: mixed, success_rate: float}}, array<never, never>>
      */

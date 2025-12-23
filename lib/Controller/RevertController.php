@@ -70,6 +70,8 @@ class RevertController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with reverted object
+     *
      * @psalm-return JSONResponse<int, array{error?: mixed|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
      */
     public function revert(string $register, string $schema, string $id): JSONResponse

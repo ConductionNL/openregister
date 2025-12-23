@@ -95,6 +95,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with list of organisations
+     *
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve organisations', total?: int<0, max>, active?: array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, users: array, groups: array|null, owner: null|string, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}|null, results?: array}, array<never, never>>
      */
     public function index(): JSONResponse
@@ -542,6 +544,8 @@ class OrganisationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with organisation search results
+     *
      * @psalm-return JSONResponse<200|500, array{error?: 'Search failed', organisations?: array<array{id: int, uuid: null|string, slug: null|string, name: null|string, description: null|string, groups: array|null, active: bool|null, parent: null|string, children: array, quota: array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}, usage: array{storage: 0, bandwidth: 0, requests: 0, users: int<0, max>, groups: int<0, max>}, authorization: array, created: null|string, updated: null|string}>, limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>}, array<never, never>>
      */
     public function search(string $query=''): JSONResponse
@@ -651,6 +655,8 @@ class OrganisationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with organisation statistics
      *
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve statistics', statistics?: array{total: int}}, array<never, never>>
      */

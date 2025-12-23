@@ -188,6 +188,160 @@ class ChatController extends Controller
     }//end __construct()
 
     /**
+     * Extract and normalize request parameters for sending a message.
+     *
+     * Extracts conversation UUID, agent UUID, message content, selected views,
+     * selected tools, and RAG settings from the request.
+     *
+     * @return array Normalized request parameters
+     *
+     * @psalm-return   array{conversationUuid: string, agentUuid: string, message: string, selectedViews: array, selectedTools: array, ragSettings: array{includeObjects: bool|mixed, includeFiles: bool|mixed, numSourcesFiles: int|mixed, numSourcesObjects: int|mixed}}
+     * @phpstan-return array{conversationUuid: string, agentUuid: string, message: string, selectedViews: array, selectedTools: array, ragSettings: array{includeObjects: bool|mixed, includeFiles: bool|mixed, numSourcesFiles: int|mixed, numSourcesObjects: int|mixed}}
+     */
+    private function extractMessageRequestParams(): array
+    {
+        // Extract basic parameters.
+        $conversationUuid = (string) $this->request->getParam('conversation');
+        $agentUuid        = (string) $this->request->getParam('agentUuid');
+        $message          = (string) $this->request->getParam('message');
+
+        // Extract selectedViews array.
+        $viewsParam    = $this->request->getParam('views');
+        $selectedViews = ($viewsParam !== null && is_array($viewsParam) === true) ? $viewsParam : [];
+
+        // Extract selectedTools array.
+        $toolsParam    = $this->request->getParam('tools');
+        $selectedTools = ($toolsParam !== null && is_array($toolsParam) === true) ? $toolsParam : [];
+
+        // Extract RAG configuration settings.
+        $ragSettings = [
+            'includeObjects'    => $this->request->getParam('includeObjects') ?? true,
+            'includeFiles'      => $this->request->getParam('includeFiles') ?? true,
+            'numSourcesFiles'   => $this->request->getParam('numSourcesFiles') ?? 5,
+            'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
+        ];
+
+        return [
+            'conversationUuid' => $conversationUuid,
+            'agentUuid'        => $agentUuid,
+            'message'          => $message,
+            'selectedViews'    => $selectedViews,
+            'selectedTools'    => $selectedTools,
+            'ragSettings'      => $ragSettings,
+        ];
+    }//end extractMessageRequestParams()
+
+    /**
+     * Load an existing conversation by UUID.
+     *
+     * @param string $uuid Conversation UUID
+     *
+     * @return Conversation The conversation entity
+     *
+     * @throws \Exception If conversation not found
+     */
+    private function loadExistingConversation(string $uuid): Conversation
+    {
+        try {
+            return $this->conversationMapper->findByUuid($uuid);
+        } catch (\Exception $e) {
+            throw new \Exception('The conversation with UUID '.$uuid.' does not exist', 404);
+        }
+    }//end loadExistingConversation()
+
+    /**
+     * Create a new conversation with the specified agent.
+     *
+     * @param string $agentUuid Agent UUID
+     *
+     * @return Conversation The newly created conversation
+     *
+     * @throws \Exception If agent not found
+     */
+    private function createNewConversation(string $agentUuid): Conversation
+    {
+        // Get active organisation.
+        $organisation = $this->organisationService->getActiveOrganisation();
+
+        // Look up agent by UUID.
+        try {
+            $agent = $this->agentMapper->findByUuid($agentUuid);
+        } catch (\Exception $e) {
+            throw new \Exception('The agent with UUID '.$agentUuid.' does not exist', 404);
+        }
+
+        // Generate unique default title.
+        $defaultTitle = $this->chatService->ensureUniqueTitle(
+            baseTitle: 'New Conversation',
+            userId: $this->userId,
+            agentId: $agent->getId()
+        );
+
+        // Create and insert new conversation.
+        $conversation = new Conversation();
+        $conversation->setUserId($this->userId);
+        $conversation->setOrganisation($organisation?->getUuid());
+        $conversation->setAgentId($agent->getId());
+        $conversation->setTitle($defaultTitle);
+        $conversation = $this->conversationMapper->insert($conversation);
+
+        // Log conversation creation.
+        $this->logger->info(
+            message: '[ChatController] New conversation created',
+            context: [
+                'uuid'    => $conversation->getUuid(),
+                'userId'  => $this->userId,
+                'agentId' => $agent->getId(),
+                'title'   => $defaultTitle,
+            ]
+        );
+
+        return $conversation;
+    }//end createNewConversation()
+
+    /**
+     * Resolve conversation from UUID or create new one with agent.
+     *
+     * @param string $conversationUuid Conversation UUID (empty if creating new)
+     * @param string $agentUuid        Agent UUID (empty if using existing conversation)
+     *
+     * @return Conversation The resolved or created conversation
+     *
+     * @throws \Exception If both parameters are empty or if entities not found
+     */
+    private function resolveConversation(string $conversationUuid, string $agentUuid): Conversation
+    {
+        // Load existing conversation by UUID.
+        if (empty($conversationUuid) === false) {
+            return $this->loadExistingConversation($conversationUuid);
+        }
+
+        // Create new conversation with specified agent.
+        if (empty($agentUuid) === false) {
+            return $this->createNewConversation($agentUuid);
+        }
+
+        // Neither parameter provided.
+        throw new \Exception('Either conversation or agentUuid is required', 400);
+    }//end resolveConversation()
+
+    /**
+     * Verify that the current user has access to the conversation.
+     *
+     * @param Conversation $conversation The conversation to check
+     *
+     * @return void
+     *
+     * @throws \Exception If user does not have access (403)
+     */
+    private function verifyConversationAccess(Conversation $conversation): void
+    {
+        if ($conversation->getUserId() !== $this->userId) {
+            throw new \Exception('You do not have access to this conversation', 403);
+        }
+    }//end verifyConversationAccess()
+
+    /**
      * Returns the template of the main chat page
      *
      * Renders the Single Page Application template for the chat interface.
@@ -225,37 +379,11 @@ class ChatController extends Controller
     public function sendMessage(): JSONResponse
     {
         try {
-            // Get request parameters.
-            $conversationUuid = (string) $this->request->getParam('conversation');
-            $agentUuid        = (string) $this->request->getParam('agentUuid');
-            $message          = (string) $this->request->getParam('message');
-            $viewsParam       = $this->request->getParam('views');
+            // Extract and normalize request parameters.
+            $params = $this->extractMessageRequestParams();
 
-            if ($viewsParam !== null && is_array($viewsParam) === true) {
-                $selectedViews = $viewsParam;
-            } else {
-                $selectedViews = [];
-            }
-
-            // Array of view UUIDs.
-            $toolsParam = $this->request->getParam('tools');
-
-            if ($toolsParam !== null && is_array($toolsParam) === true) {
-                $selectedTools = $toolsParam;
-            } else {
-                $selectedTools = [];
-            }
-
-            // Array of tool UUIDs.
-            // Get RAG configuration settings.
-            $ragSettings = [
-                'includeObjects'    => $this->request->getParam('includeObjects') ?? true,
-                'includeFiles'      => $this->request->getParam('includeFiles') ?? true,
-                'numSourcesFiles'   => $this->request->getParam('numSourcesFiles') ?? 5,
-                'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
-            ];
-
-            if (empty($message) === true) {
+            // Validate message is not empty.
+            if (empty($params['message']) === true) {
                 return new JSONResponse(
                     data: [
                         'error'   => 'Missing message',
@@ -265,100 +393,33 @@ class ChatController extends Controller
                 );
             }
 
+            // Log request with settings.
             $this->logger->info(
                 message: '[ChatController] Received message with settings',
                 context: [
-                    'views'       => count($selectedViews),
-                    'tools'       => count($selectedTools),
-                    'ragSettings' => $ragSettings,
+                    'views'       => count($params['selectedViews']),
+                    'tools'       => count($params['selectedTools']),
+                    'ragSettings' => $params['ragSettings'],
                 ]
             );
 
-            // Load or create conversation.
-            $conversation = null;
+            // Resolve conversation (load existing or create new).
+            $conversation = $this->resolveConversation(
+                conversationUuid: $params['conversationUuid'],
+                agentUuid: $params['agentUuid']
+            );
 
-            if (empty($conversationUuid) === false) {
-                // Load existing conversation by UUID.
-                try {
-                    $conversation = $this->conversationMapper->findByUuid($conversationUuid);
-                } catch (\Exception $e) {
-                    return new JSONResponse(
-                        data: [
-                            'error'   => 'Conversation not found',
-                            'message' => 'The conversation with UUID '.$conversationUuid.' does not exist',
-                        ],
-                        statusCode: 404
-                    );
-                }
-            } else if (empty($agentUuid) === false) {
-                // Create new conversation with specified agent.
-                $organisation = $this->organisationService->getActiveOrganisation();
-
-                // Look up agent by UUID.
-                try {
-                    $agent = $this->agentMapper->findByUuid($agentUuid);
-                } catch (\Exception $e) {
-                    return new JSONResponse(
-                        data: [
-                            'error'   => 'Agent not found',
-                            'message' => 'The agent with UUID '.$agentUuid.' does not exist',
-                        ],
-                        statusCode: 404
-                    );
-                }
-
-                // Generate unique default title.
-                $defaultTitle = $this->chatService->ensureUniqueTitle(
-                    baseTitle: 'New Conversation',
-                    userId: $this->userId,
-                    agentId: $agent->getId()
-                );
-
-                $conversation = new Conversation();
-                $conversation->setUserId($this->userId);
-                $conversation->setOrganisation($organisation?->getUuid());
-                $conversation->setAgentId($agent->getId());
-                $conversation->setTitle($defaultTitle);
-                $conversation = $this->conversationMapper->insert($conversation);
-
-                $this->logger->info(
-                    message: '[ChatController] New conversation created',
-                    context: [
-                        'uuid'    => $conversation->getUuid(),
-                        'userId'  => $this->userId,
-                        'agentId' => $agent->getId(),
-                        'title'   => $defaultTitle,
-                    ]
-                );
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error'   => 'Missing conversation or agentUuid',
-                        'message' => 'Either conversation or agentUuid is required',
-                    ],
-                    statusCode: 400
-                );
-            }//end if
-
-            // Verify user has access.
-            if ($conversation->getUserId() !== $this->userId) {
-                return new JSONResponse(
-                    data: [
-                        'error'   => 'Access denied',
-                        'message' => 'You do not have access to this conversation',
-                    ],
-                    statusCode: 403
-                );
-            }
+            // Verify user has access to conversation.
+            $this->verifyConversationAccess($conversation);
 
             // Process message through ChatService.
             $result = $this->chatService->processMessage(
                 conversationId: $conversation->getId(),
                 userId: $this->userId,
-                userMessage: $message,
-                selectedViews: $selectedViews,
-                selectedTools: $selectedTools,
-                ragSettings: $ragSettings
+                userMessage: $params['message'],
+                selectedViews: $params['selectedViews'],
+                selectedTools: $params['selectedTools'],
+                ragSettings: $params['ragSettings']
             );
 
             // Add conversation UUID to result for frontend.
@@ -366,6 +427,13 @@ class ChatController extends Controller
 
             return new JSONResponse(data: $result, statusCode: 200);
         } catch (\Exception $e) {
+            // Determine status code from exception or default to 500.
+            $statusCode = (int) $e->getCode();
+            if ($statusCode < 400 || $statusCode >= 600) {
+                $statusCode = 500;
+            }
+
+            // Log error with trace.
             $this->logger->error(
                 message: '[ChatController] Failed to send message',
                 context: [
@@ -374,12 +442,20 @@ class ChatController extends Controller
                 ]
             );
 
+            // Determine appropriate error message based on status code.
+            $errorType = match ($statusCode) {
+                400     => 'Missing conversation or agentUuid',
+                403     => 'Access denied',
+                404     => 'Conversation not found',
+                default => 'Failed to process message',
+            };
+
             return new JSONResponse(
                 data: [
-                    'error'   => 'Failed to process message',
+                    'error'   => $errorType,
                     'message' => $e->getMessage(),
                 ],
-                statusCode: 500
+                statusCode: $statusCode
             );
         }//end try
 

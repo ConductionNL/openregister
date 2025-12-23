@@ -85,6 +85,8 @@ class TagsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with all tags
+     *
      * @psalm-return JSONResponse<200, list<string>, array<never, never>>
      */
     public function getAllTags(): JSONResponse
