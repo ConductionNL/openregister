@@ -481,119 +481,35 @@ class OrganisationController extends Controller
             // Check if user has access to this organisation.
             if ($this->organisationService->hasAccessToOrganisation($uuid) === false) {
                 return new JSONResponse(
-                        data: [
-                            'error' => 'Access denied to this organisation',
-                        ],
+                        data: ['error' => 'Access denied to this organisation'],
                         statusCode: Http::STATUS_FORBIDDEN
                         );
             }
 
             $organisation = $this->organisationMapper->findByUuid($uuid);
+            $data         = $this->extractRequestData();
 
-            // Get all parameters from request body.
-            $data = $this->request->getParams();
-            unset($data['_route']);
+            // Apply field updates using extracted helper methods.
+            $this->handleNameAndSlugUpdate(organisation: $organisation, data: $data);
+            $this->handleDescriptionUpdate(organisation: $organisation, data: $data);
+            $this->handleSlugUpdate(organisation: $organisation, data: $data);
+            $this->handleActiveFieldUpdate(organisation: $organisation, data: $data);
+            $this->applySimpleFieldUpdates(organisation: $organisation, data: $data);
+            $this->applyArrayFieldUpdates(organisation: $organisation, data: $data);
 
-            // Update fields if provided.
-            if (($data['name'] ?? null) !== null && empty(trim($data['name'])) === false) {
-                $organisation->setName(trim($data['name']));
-
-                // Auto-generate slug from name if slug is not provided or is empty.
-                if (isset($data['slug']) === false || empty(trim($data['slug'])) === true) {
-                    $slug = $this->generateSlug(trim($data['name']));
-                    $organisation->setSlug($slug);
-                }
+            // Handle parent update with validation (may return early on error).
+            $parentUpdateResponse = $this->handleParentUpdate(
+                organisation: $organisation,
+                data: $data,
+                uuid: $uuid
+            );
+            if ($parentUpdateResponse !== null) {
+                return $parentUpdateResponse;
             }
 
-            if (($data['description'] ?? null) !== null) {
-                $organisation->setDescription(trim($data['description']));
-            }
-
-            // Only set slug if it's provided and not empty.
-            // Empty strings should not override existing slug.
-            if (($data['slug'] ?? null) !== null && (trim($data['slug']) !== '') === true) {
-                $organisation->setSlug(trim($data['slug']));
-            }
-
-            if (($data['active'] ?? null) !== null) {
-                // Handle empty string as false.
-                $active = false;
-                if ($data['active'] !== '') {
-                    $active = (bool) $data['active'];
-                }
-
-                $organisation->setActive($active);
-            }
-
-            if (($data['storageQuota'] ?? null) !== null) {
-                $organisation->setStorageQuota($data['storageQuota']);
-            }
-
-            if (($data['bandwidthQuota'] ?? null) !== null) {
-                $organisation->setBandwidthQuota($data['bandwidthQuota']);
-            }
-
-            if (($data['requestQuota'] ?? null) !== null) {
-                $organisation->setRequestQuota($data['requestQuota']);
-            }
-
-            if (($data['groups'] ?? null) !== null && is_array($data['groups']) === true) {
-                $organisation->setGroups($data['groups']);
-            }
-
-            if (($data['authorization'] ?? null) !== null && is_array($data['authorization']) === true) {
-                $organisation->setAuthorization($data['authorization']);
-            }
-
-            // Handle parent organisation update with validation.
-            if (array_key_exists('parent', $data) === true) {
-                $newParent = null;
-                if ($data['parent'] !== '' && $data['parent'] !== null) {
-                    $newParent = $data['parent'];
-                }
-
-                // Validate parent assignment to prevent circular references.
-                try {
-                    $this->organisationMapper->validateParentAssignment(organisationUuid: $uuid, newParentUuid: $newParent);
-                    $organisation->setParent($newParent);
-                } catch (Exception $e) {
-                    $this->logger->warning(
-                    message: 'Parent assignment validation failed',
-                    context: [
-                        'organisationUuid' => $uuid,
-                        'newParent'        => $newParent,
-                        'error'            => $e->getMessage(),
-                    ]
-                    );
-
-                    return new JSONResponse(
-                    data: [
-                        'error' => $e->getMessage(),
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                    );
-                }
-            }//end if
-
-            $updated = $this->organisationMapper->save($organisation);
-
-            return new JSONResponse(data: $updated->jsonSerialize(), statusCode: Http::STATUS_OK);
+            return $this->saveAndReturnOrganisation(organisation: $organisation);
         } catch (Exception $e) {
-            $this->logger->error(
-                    message: 'Failed to update organisation',
-                    context: [
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString(),
-                    ]
-                    );
-
-            return new JSONResponse(
-                    data: [
-                        'error' => 'Failed to update organisation: '.$e->getMessage(),
-                    ],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                    );
+            return $this->handleUpdateError(uuid: $uuid, exception: $e);
         }//end try
 
     }//end update()
@@ -766,6 +682,256 @@ class OrganisationController extends Controller
         }//end try
 
     }//end stats()
+
+    /**
+     * Extract and clean request data
+     *
+     * Removes internal routing parameters and returns cleaned data array.
+     *
+     * @return array<string, mixed> Cleaned request data.
+     */
+    private function extractRequestData(): array
+    {
+        $data = $this->request->getParams();
+        unset($data['_route']);
+        return $data;
+
+    }//end extractRequestData()
+
+    /**
+     * Handle name and slug update
+     *
+     * Updates organisation name and auto-generates slug if name is provided
+     * but slug is not.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     *
+     * @return void
+     */
+    private function handleNameAndSlugUpdate(object $organisation, array $data): void
+    {
+        if (($data['name'] ?? null) !== null && empty(trim($data['name'])) === false) {
+            $organisation->setName(trim($data['name']));
+
+            // Auto-generate slug from name if slug is not provided or is empty.
+            if (isset($data['slug']) === false || empty(trim($data['slug'])) === true) {
+                $slug = $this->generateSlug(trim($data['name']));
+                $organisation->setSlug($slug);
+            }
+        }
+
+    }//end handleNameAndSlugUpdate()
+
+    /**
+     * Handle description update
+     *
+     * Updates organisation description if provided.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     *
+     * @return void
+     */
+    private function handleDescriptionUpdate(object $organisation, array $data): void
+    {
+        if (($data['description'] ?? null) !== null) {
+            $organisation->setDescription(trim($data['description']));
+        }
+
+    }//end handleDescriptionUpdate()
+
+    /**
+     * Handle slug update
+     *
+     * Updates organisation slug if explicitly provided and not empty.
+     * Empty strings will not override existing slug.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     *
+     * @return void
+     */
+    private function handleSlugUpdate(object $organisation, array $data): void
+    {
+        // Only set slug if it's provided and not empty.
+        // Empty strings should not override existing slug.
+        if (($data['slug'] ?? null) !== null && (trim($data['slug']) !== '') === true) {
+            $organisation->setSlug(trim($data['slug']));
+        }
+
+    }//end handleSlugUpdate()
+
+    /**
+     * Handle active field update
+     *
+     * Updates organisation active status with special handling for empty strings.
+     * Empty strings are treated as false.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     *
+     * @return void
+     */
+    private function handleActiveFieldUpdate(object $organisation, array $data): void
+    {
+        if (($data['active'] ?? null) !== null) {
+            // Handle empty string as false.
+            $active = false;
+            if ($data['active'] !== '') {
+                $active = (bool) $data['active'];
+            }
+
+            $organisation->setActive($active);
+        }
+
+    }//end handleActiveFieldUpdate()
+
+    /**
+     * Apply simple field updates
+     *
+     * Updates quota fields (storage, bandwidth, request) if provided.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     *
+     * @return void
+     */
+    private function applySimpleFieldUpdates(object $organisation, array $data): void
+    {
+        $simpleFields = [
+            'storageQuota'   => 'setStorageQuota',
+            'bandwidthQuota' => 'setBandwidthQuota',
+            'requestQuota'   => 'setRequestQuota',
+        ];
+
+        foreach ($simpleFields as $field => $setter) {
+            if (($data[$field] ?? null) !== null) {
+                $organisation->$setter($data[$field]);
+            }
+        }
+
+    }//end applySimpleFieldUpdates()
+
+    /**
+     * Apply array field updates
+     *
+     * Updates array fields (groups, authorization) if provided and valid.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     *
+     * @return void
+     */
+    private function applyArrayFieldUpdates(object $organisation, array $data): void
+    {
+        $arrayFields = [
+            'groups'        => 'setGroups',
+            'authorization' => 'setAuthorization',
+        ];
+
+        foreach ($arrayFields as $field => $setter) {
+            if (($data[$field] ?? null) !== null && is_array($data[$field]) === true) {
+                $organisation->$setter($data[$field]);
+            }
+        }
+
+    }//end applyArrayFieldUpdates()
+
+    /**
+     * Handle parent organisation update with validation
+     *
+     * Updates parent organisation with circular reference validation.
+     * Returns JSONResponse on validation error, null on success.
+     *
+     * @param object               $organisation Organisation entity.
+     * @param array<string, mixed> $data         Request data.
+     * @param string               $uuid         Current organisation UUID.
+     *
+     * @return JSONResponse|null Error response if validation fails, null if successful.
+     */
+    private function handleParentUpdate(object $organisation, array $data, string $uuid): ?JSONResponse
+    {
+        // Only process if parent key exists in request data.
+        if (array_key_exists('parent', $data) === false) {
+            return null;
+        }
+
+        // Normalize parent value (empty string or null becomes null).
+        $newParent = null;
+        if ($data['parent'] !== '' && $data['parent'] !== null) {
+            $newParent = $data['parent'];
+        }
+
+        // Validate parent assignment to prevent circular references.
+        try {
+            $this->organisationMapper->validateParentAssignment(
+                organisationUuid: $uuid,
+                newParentUuid: $newParent
+            );
+            $organisation->setParent($newParent);
+            return null;
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: 'Parent assignment validation failed',
+                context: [
+                    'organisationUuid' => $uuid,
+                    'newParent'        => $newParent,
+                    'error'            => $e->getMessage(),
+                ]
+            );
+
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }//end try
+
+    }//end handleParentUpdate()
+
+    /**
+     * Save organisation and return JSON response
+     *
+     * Persists the organisation and returns success response.
+     *
+     * @param object $organisation Organisation entity to save.
+     *
+     * @return JSONResponse Success response with organisation data.
+     */
+    private function saveAndReturnOrganisation(object $organisation): JSONResponse
+    {
+        $updated = $this->organisationMapper->save($organisation);
+        return new JSONResponse(data: $updated->jsonSerialize(), statusCode: Http::STATUS_OK);
+
+    }//end saveAndReturnOrganisation()
+
+    /**
+     * Handle update error and return error response
+     *
+     * Logs the error and returns appropriate JSON error response.
+     *
+     * @param string    $uuid      Organisation UUID.
+     * @param Exception $exception The exception that occurred.
+     *
+     * @return JSONResponse Error response.
+     */
+    private function handleUpdateError(string $uuid, Exception $exception): JSONResponse
+    {
+        $this->logger->error(
+            message: 'Failed to update organisation',
+            context: [
+                'uuid'  => $uuid,
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]
+        );
+
+        return new JSONResponse(
+            data: ['error' => 'Failed to update organisation: '.$exception->getMessage()],
+            statusCode: Http::STATUS_BAD_REQUEST
+        );
+
+    }//end handleUpdateError()
 
     /**
      * Generate a URL-friendly slug from a name

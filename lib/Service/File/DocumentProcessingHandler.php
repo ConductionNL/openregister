@@ -125,10 +125,10 @@ class DocumentProcessingHandler
 
         // Process based on file type.
         if (in_array($fileExtension, ['doc', 'docx'], true) === true) {
-            return $this->replaceWordsInWordDocument($node, $replacements, $outputName);
+            return $this->replaceWordsInWordDocument(node: $node, replacements: $replacements, outputName: $outputName);
         }
 
-        return $this->replaceWordsInTextDocument($node, $replacements, $outputName);
+        return $this->replaceWordsInTextDocument(node: $node, replacements: $replacements, outputName: $outputName);
 
     }//end replaceWords()
 
@@ -175,7 +175,7 @@ class DocumentProcessingHandler
             $anonymizedFileName .= '.'.$fileExtension;
         }
 
-        return $this->replaceWords($node, $replacements, $anonymizedFileName);
+        return $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName);
 
     }//end anonymizeDocument()
 
@@ -294,7 +294,7 @@ class DocumentProcessingHandler
             }
 
             $outputStream = fopen($outputTempFile, 'r');
-            $newFile      = $parentFolder->newFile($outputName, $outputStream);
+            $newFile      = $parentFolder->newFile(path: $outputName, content: $outputStream);
             // Do NOT call fclose($outputStream) here; Nextcloud handles the stream lifecycle internally.
             // Clean up temp files.
             unlink($tempFile);
@@ -373,7 +373,7 @@ class DocumentProcessingHandler
             $parentFolder->get($outputName)->delete();
         }
 
-        $newFile = $parentFolder->newFile($outputName, $modifiedContent);
+        $newFile = $parentFolder->newFile(path: $outputName, content: $modifiedContent);
 
         $this->logger->debug(
             'Words replaced in text document',

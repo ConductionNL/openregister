@@ -936,7 +936,7 @@ class OrganisationMapper extends QBMapper
 
         // Set the default organisation as active in preferences for future requests.
         try {
-            $this->setActiveOrganisationForUser($userId, $defaultOrgUuid);
+            $this->setActiveOrganisationForUser(userId: $userId, organisationUuid: $defaultOrgUuid);
             $this->logger->info(
                 'Set default organisation as active for user',
                 [

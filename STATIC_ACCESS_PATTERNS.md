@@ -258,3 +258,4 @@ Not all static access is bad - context matters. We follow the principle of using
 - [PHP The Right Way - Design Patterns](https://phptherightway.com/pages/Design-Patterns.html)
 - [PHPMD Rules - StaticAccess](https://phpmd.org/rules/controversial.html#staticaccess)
 
+

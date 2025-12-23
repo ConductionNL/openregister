@@ -155,21 +155,21 @@ class FacetHandler
         unset($facetQuery['_limit'], $facetQuery['_offset'], $facetQuery['_page'], $facetQuery['_facetable']);
 
         // **RESPONSE CACHING**: Check cache first for identical requests.
-        $cacheKey = $this->generateFacetCacheKey($facetQuery, $facetConfig);
+        $cacheKey = $this->generateFacetCacheKey(facetQuery: $facetQuery, facetConfig: $facetConfig);
         $cached   = $this->getCachedFacetResponse($cacheKey);
         if ($cached !== null) {
             return $cached;
         }
 
         // **INTELLIGENT FACETING**: Try current filters first, then smart fallback.
-        $result = $this->calculateFacetsWithFallback($facetQuery, $facetConfig);
+            $result = $this->calculateFacetsWithFallback(facetQuery: $facetQuery, facetConfig: $facetConfig);
 
         // **PERFORMANCE TRACKING**: Add timing metadata.
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
         $result['performance_metadata']['total_execution_time_ms'] = $executionTime;
 
         // **CACHE RESULTS**: Store for future requests.
-        $this->cacheFacetResponse($cacheKey, $result);
+            $this->cacheFacetResponse(cacheKey: $cacheKey, result: $result);
 
         $this->logger->debug(
                 message: 'FacetHandler completed facet calculation',

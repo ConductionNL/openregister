@@ -559,7 +559,7 @@ class DashboardService
         try {
             // Fetch and validate register and schema.
             $register = $this->fetchRegister($registerId);
-            $schema   = $this->fetchSchema($schemaId, $register);
+            $schema   = $this->fetchSchema(schemaId: $schemaId, register: $register);
 
             // Perform the calculations.
             $results = $this->recalculateAllSizes(registerId: $registerId, schemaId: $schemaId);
@@ -568,7 +568,7 @@ class DashboardService
             $response = [
                 'status'    => 'success',
                 'timestamp' => (new DateTime('now'))->format(format: 'c'),
-                'scope'     => $this->buildResponseScope($register, $schema),
+                'scope'     => $this->buildResponseScope(register: $register, schema: $schema),
                 'results'   => $results,
                 'summary'   => [
                     'total_processed' => $results['total']['processed'],

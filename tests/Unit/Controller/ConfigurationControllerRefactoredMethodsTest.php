@@ -473,3 +473,4 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	}
 }
 
+

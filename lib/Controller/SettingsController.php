@@ -751,7 +751,7 @@ class SettingsController extends Controller
             $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
             // Run the test.
-            $results = $solrService->testSchemaAwareMapping($objectMapper, $schemaMapper);
+            $results = $solrService->testSchemaAwareMapping(objectMapper: $objectMapper, schemaMapper: $schemaMapper);
 
             return new JSONResponse(data: $results);
         } catch (Exception $e) {

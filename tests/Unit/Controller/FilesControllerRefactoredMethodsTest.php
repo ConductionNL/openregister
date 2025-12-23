@@ -629,3 +629,4 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 	}
 }
 
+

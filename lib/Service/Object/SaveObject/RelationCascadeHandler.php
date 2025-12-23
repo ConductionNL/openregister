@@ -223,7 +223,7 @@ class RelationCascadeHandler
             if ($schema !== null) {
                 $properties   = $schema->getProperties();
                 $propertyPath = explode('.', $currentPath);
-                $propertyDef  = $this->getPropertyDefinition($properties, $propertyPath);
+                $propertyDef  = $this->getPropertyDefinition(properties: $properties, propertyPath: $propertyPath);
 
                 if (isset($propertyDef['$ref']) === true) {
                     $hasRef = true;
@@ -236,7 +236,7 @@ class RelationCascadeHandler
                     $relations[] = $currentPath;
                 } else {
                     // Recursively scan nested objects.
-                    $nestedRelations = $this->scanForRelations($value, $currentPath, $schema);
+                    $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
                     $relations       = array_merge($relations, $nestedRelations);
                 }
             } else if (is_string($value) === true && $this->isReference($value) === true) {
@@ -366,7 +366,7 @@ class RelationCascadeHandler
     public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
         // Scan for relations.
-        $relations = $this->scanForRelations($data, '', $schema);
+        $relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
 
         if (empty($relations) === true) {
             return $objectEntity;
@@ -376,7 +376,7 @@ class RelationCascadeHandler
 
         // Resolve each relation.
         foreach ($relations as $relationPath) {
-            $this->resolveRelationPath($objectData, $relationPath);
+            $this->resolveRelationPath(objectData: $objectData, relationPath: $relationPath);
         }
 
         $objectEntity->setObject($objectData);
@@ -508,11 +508,11 @@ class RelationCascadeHandler
 
             // Handle array of objects.
             if (isset($property['type']) === true && $property['type'] === 'array') {
-                $data[$propertyName] = $this->cascadeMultipleObjects($objectEntity, $property, $propData);
+                $data[$propertyName] = $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $property, propData: $propData);
             } else {
                 // Handle single object.
                 if (is_array($propData) === true && $this->isArrayOfScalars($propData) === false) {
-                    $uuid = $this->cascadeSingleObject($objectEntity, $property, $propData);
+                    $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property, object: $propData);
                     if ($uuid !== null) {
                         $data[$propertyName] = $uuid;
                     }
@@ -560,7 +560,7 @@ class RelationCascadeHandler
 
         foreach ($propData as $object) {
             if (is_array($object) === true && $this->isArrayOfScalars($object) === false) {
-                $uuid = $this->cascadeSingleObject($objectEntity, $property, $object);
+                $uuid = $this->cascadeSingleObject(objectEntity: $objectEntity, definition: $property, object: $object);
                 if ($uuid !== null) {
                     $createdUuids[] = $uuid;
                 }

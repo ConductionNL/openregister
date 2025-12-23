@@ -261,13 +261,13 @@ class PreparationHandler
             $object['@self'] = $selfData;
 
             // Handle pre-validation cascading (placeholder - needs actual implementation).
-            $processedObject = $this->handlePreValidationCascading($object, $selfData['id']);
+            $processedObject = $this->handlePreValidationCascading(object: $object, uuid: $selfData['id']);
 
             $preparedObjects[$index] = $processedObject;
         }//end foreach
 
         // PERFORMANCE OPTIMIZATION: Handle bulk inverse relations (placeholder).
-        $this->handleBulkInverseRelationsWithAnalysis($preparedObjects, $schemaAnalysis);
+        $this->handleBulkInverseRelationsWithAnalysis(preparedObjects: $preparedObjects, schemaAnalysis: $schemaAnalysis);
 
         // Return prepared objects, schema cache, and any invalid objects.
         return [array_values($preparedObjects), $schemaCache, $invalidObjects];
@@ -318,7 +318,7 @@ class PreparationHandler
     private function handlePreValidationCascading(array $object, string $uuid): array
     {
         // Delegate to BulkValidationHandler for pre-validation cascading.
-        [$processedObject, $processedUuid] = $this->bulkValidationHandler->handlePreValidationCascading($object, $uuid);
+        [$processedObject, $processedUuid] = $this->bulkValidationHandler->handlePreValidationCascading(object: $object, uuid: $uuid);
         // Suppress unused variable warning for $processedUuid - it's part of the tuple return.
         unset($processedUuid);
         return $processedObject;

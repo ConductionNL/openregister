@@ -401,11 +401,14 @@ class ImportService
     /**
      * Process spreadsheet with multiple schemas using batch saving for better performance
      *
-     * @param Spreadsheet $spreadsheet The spreadsheet to process
-     * @param Register    $register    The register to associate with imported objects
-     * @param int         $chunkSize   Number of rows to process in each chunk
-     * @param bool        $validation  Whether to validate objects against schema definitions
-     * @param bool        $events      Whether to dispatch object lifecycle events
+     * @param Spreadsheet $spreadsheet   The spreadsheet to process
+     * @param Register    $register      The register to associate with imported objects
+     * @param bool        $validation    Whether to validate objects against schema definitions
+     * @param bool        $events        Whether to dispatch object lifecycle events
+     * @param bool        $_rbac         Whether to apply RBAC permissions
+     * @param bool        $_multitenancy Whether to apply multi-tenancy filtering
+     * @param bool        $publish       Whether to publish objects after import
+     * @param IUser|null  $currentUser   The current user performing the import
      *
      * @return         array<string, array> Summary of import with sheet-based results
      * @phpstan-return array<string, array{
@@ -534,12 +537,15 @@ class ImportService
     /**
      * Process a single spreadsheet sheet using batch saving for better performance
      *
-     * @param Spreadsheet   $spreadsheet The spreadsheet to process
-     * @param Register|null $register    Optional register to associate with imported objects
-     * @param Schema|null   $schema      Optional schema to associate with imported objects
-     * @param int           $chunkSize   Number of rows to process in each chunk
-     * @param bool          $validation  Whether to validate objects against schema definitions
-     * @param bool          $events      Whether to dispatch object lifecycle events
+     * @param Spreadsheet   $spreadsheet   The spreadsheet to process
+     * @param Register|null $register      Optional register to associate with imported objects
+     * @param Schema|null   $schema        Optional schema to associate with imported objects
+     * @param bool          $validation    Whether to validate objects against schema definitions
+     * @param bool          $events        Whether to dispatch object lifecycle events
+     * @param bool          $_rbac         Whether to apply RBAC permissions
+     * @param bool          $_multitenancy Whether to apply multi-tenancy filtering
+     * @param bool          $publish       Whether to publish objects after import
+     * @param IUser|null    $currentUser   The current user performing the import
      *
      * @return (((array|int|mixed|string)[]|mixed|null)[]|int|string)[]
      *
@@ -694,12 +700,15 @@ class ImportService
     /**
      * Process CSV sheet and import all objects in batches
      *
-     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet      The worksheet to process
-     * @param Register                                      $register   The register to associate with imported objects
-     * @param Schema                                        $schema     The schema to associate with imported objects
-     * @param int                                           $chunkSize  Number of rows to process in each chunk
-     * @param bool                                          $validation Whether to validate objects against schema definitions
-     * @param bool                                          $events     Whether to dispatch object lifecycle events
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet to process
+     * @param Register                                      $register      The register to associate with imported objects
+     * @param Schema                                        $schema        The schema to associate with imported objects
+     * @param bool                                          $validation    Whether to validate objects against schema definitions
+     * @param bool                                          $events        Whether to dispatch object lifecycle events
+     * @param bool                                          $_rbac         Whether to apply RBAC permissions
+     * @param bool                                          $_multitenancy Whether to apply multi-tenancy filtering
+     * @param bool                                          $publish       Whether to publish objects after import
+     * @param IUser|null                                    $currentUser   The current user performing the import
      *
      * @return (((array|int|mixed|string)[]|float|int|mixed|null)[]|int|string)[]
      *
@@ -902,10 +911,10 @@ class ImportService
     /**
      * Transform CSV row data to object format for batch saving
      *
-     * @param array    $rowData  Row data from CSV
-     * @param Register $register The register
-     * @param Schema   $schema   The schema
-     * @param int      $rowIndex Row index for error reporting
+     * @param array      $rowData     Row data from CSV
+     * @param Register   $register    The register
+     * @param Schema     $schema      The schema
+     * @param IUser|null $currentUser The current user performing the import
      *
      * @return ((int|mixed|string)[]|mixed)[]
      *
@@ -1117,10 +1126,10 @@ class ImportService
     /**
      * Transform Excel row data to object format for batch saving
      *
-     * @param array         $rowData  Row data from Excel
-     * @param Register|null $register Optional register
-     * @param Schema|null   $schema   Optional schema
-     * @param int           $rowIndex Row index for error reporting
+     * @param array         $rowData     Row data from Excel
+     * @param Register|null $register    Optional register
+     * @param Schema|null   $schema      Optional schema
+     * @param IUser|null    $currentUser The current user performing the import
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
@@ -1366,10 +1375,10 @@ class ImportService
     /**
      * Process a single row
      *
-     * @param array    $rowData  Row data
-     * @param Register $register Register
-     * @param Schema   $schema   Schema
-     * @param int      $rowIndex Row index for error reporting
+     * @param array    $rowData   Row data
+     * @param Register $register  Register
+     * @param Schema   $schema    Schema
+     * @param int      $_rowIndex Row index for error reporting (unused, for future use)
      *
      * @return (bool|null|string)[] Processing result
      *
@@ -1660,7 +1669,7 @@ class ImportService
      * Validate that object data only contains valid ObjectEntity properties
      *
      * @param array  $objectData The object data to validate
-     * @param string $schemaId   Schema ID for debugging
+     * @param string $_schemaId  Schema ID for debugging (unused, for future use)
      *
      * @return void
      */

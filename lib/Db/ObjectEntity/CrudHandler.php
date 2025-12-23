@@ -140,7 +140,7 @@ class CrudHandler
         unset($object['@self'], $object['id']);
         $entity->setObject($object);
 
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatingEvent($entity, $oldObject));
+        $this->eventDispatcher->dispatchTyped(event: new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject));
 
         $entity = $this->mapper->updateEntity($entity);
 

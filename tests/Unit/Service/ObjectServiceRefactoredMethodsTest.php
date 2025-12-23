@@ -685,3 +685,4 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	}
 }
 
+

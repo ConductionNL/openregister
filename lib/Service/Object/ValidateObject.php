@@ -502,7 +502,7 @@ class ValidateObject
                 // For self-references, create a generic object structure to prevent circular validation.
                 // Create a temporary object for isSelfReference check.
                 $tempSchema = (object) ['$ref' => $schemaSlug];
-                if ($this->isSelfReference($tempSchema, $schemaSlug) === true) {
+                if ($this->isSelfReference(propertySchema: $tempSchema, schemaSlug: $schemaSlug) === true) {
                     $objectSchema->type        = 'object';
                     $objectSchema->description = 'Nested object (self-reference prevented)';
                     unset($objectSchema->{'$ref'});

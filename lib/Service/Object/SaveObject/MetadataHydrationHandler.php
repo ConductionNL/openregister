@@ -272,19 +272,19 @@ class MetadataHydrationHandler
 
         // 1. Check for explicit slugFrom configuration.
         if (isset($properties['_slugFrom']) === true && is_string($properties['_slugFrom']) === true) {
-            $slugSource = $this->getValueFromPath($data, $properties['_slugFrom']);
+            $slugSource = $this->getValueFromPath(data: $data, path: $properties['_slugFrom']);
         }
 
         // 2. Check for titleField configuration.
         if ($slugSource === null && isset($properties['_titleField']) === true) {
-            $slugSource = $this->getValueFromPath($data, $properties['_titleField']);
+            $slugSource = $this->getValueFromPath(data: $data, path: $properties['_titleField']);
         }
 
         // 3. Try common name fields.
         if ($slugSource === null) {
             $commonFields = ['name', 'title', 'label', 'slug'];
             foreach ($commonFields as $field) {
-                $value = $this->getValueFromPath($data, $field);
+                $value = $this->getValueFromPath(data: $data, path: $field);
                 if ($value !== null && is_string($value) === true) {
                     $slugSource = $value;
                     break;

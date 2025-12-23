@@ -291,8 +291,8 @@ class SchemaCacheHandler
         self::$memoryCache[$cacheKey] = $schema;
 
         // Also cache computed properties.
-        $this->cacheSchemaConfiguration($schema, $ttl);
-        $this->cacheSchemaProperties($schema, $ttl);
+        $this->cacheSchemaConfiguration(schema: $schema, ttl: $ttl);
+        $this->cacheSchemaProperties(schema: $schema, ttl: $ttl);
 
     }//end cacheSchema()
 
@@ -540,7 +540,7 @@ class SchemaCacheHandler
             $expires = new DateTime($result['expires']);
             if ($expires <= new DateTime()) {
                 // Cache expired, remove it.
-                $this->removeCachedData($schemaId, $cacheKey);
+                $this->removeCachedData(schemaId: $schemaId, cacheKey: $cacheKey);
                 return null;
             }
         }

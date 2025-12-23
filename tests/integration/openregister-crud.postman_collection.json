@@ -43,7 +43,7 @@
           "        'object1_uuid', 'object2_uuid', 'source_id', 'application_id',",
           "        'agent_id', 'config_id', 'conversation_uuid', 'message_uuid',",
           "        'file_object_uuid', 'file_id_1', 'file_ops_object_uuid',",
-          "        'file_test_register_id', 'file_test_register_slug',",
+          "        'file_test_org_uuid', 'file_test_register_id', 'file_test_register_slug',",
           "        'file_test_schema_id', 'file_test_schema_slug',",
           "        'import_test_register_id', 'import_test_register_slug',",
           "        'import_test_schema_id', 'import_test_schema_slug',",
@@ -192,6 +192,21 @@
     },
     {
       "key": "multi_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_timestamp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "main_register_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "main_schema_slug",
       "value": "",
       "type": "string"
     }
@@ -3697,7 +3712,7 @@
                   "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
                   "if (pm.response.code === 201) {",
                   "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('org_uuid', jsonData.uuid);",
+                  "    pm.collectionVariables.set('file_test_org_uuid', jsonData.uuid);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3759,7 +3774,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for file tests\", \"organisation\": \"{{org_uuid}}\"}"
+              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for file tests\", \"organisation\": \"{{file_test_org_uuid}}\"}"
             },
             "url": {
               "raw": "{{base_url}}/index.php/apps/openregister/api/registers",

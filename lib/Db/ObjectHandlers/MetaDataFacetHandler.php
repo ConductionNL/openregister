@@ -1129,7 +1129,7 @@ class MetaDataFacetHandler
         $samples = [];
 
         while (($row = $result->fetch()) !== false) {
-            $value = $row[$field];
+            $value     = $row[$field];
                 $label = $this->getFieldLabel(field: $field, value: $value);
 
             $samples[] = [

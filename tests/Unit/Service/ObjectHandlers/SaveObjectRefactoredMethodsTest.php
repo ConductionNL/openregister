@@ -36,7 +36,7 @@ use OCP\IUserSession;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use Opis\JsonSchema\Loaders\ArrayLoader;
+use Twig\Loader\ArrayLoader;
 use Symfony\Component\Uid\Uuid;
 use ReflectionClass;
 use ReflectionMethod;
@@ -108,7 +108,8 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->arrayLoader = $this->createMock(ArrayLoader::class);
+		// ArrayLoader is final, so we create a real instance instead of mocking.
+		$this->arrayLoader = new ArrayLoader([]);
 
 		// Create mock entities.
 		$this->mockRegister = $this->createMock(Register::class);
@@ -625,4 +626,5 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$this->assertEquals($data, $result->getObject(), 'Data should be preserved.');
 	}
 }
+
 
