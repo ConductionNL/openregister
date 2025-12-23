@@ -206,9 +206,9 @@ class VectorStatsHandler
             if ($fileCollection !== null && $fileCollection !== '') {
                 try {
                     $fileStats = $this->countVectorsInCollection(
-                        $fileCollection,
-                        $vectorField,
-                        $solrBackend
+                        collection: $fileCollection,
+                        vectorField: $vectorField,
+                        solrBackend: $solrBackend
                     );
                     $fileCount = $fileStats['count'];
                     foreach ($fileStats['by_model'] as $model => $count) {

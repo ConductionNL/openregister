@@ -131,7 +131,7 @@ class MagicSearchHandler
 
         // Apply metadata filters.
         if (empty($metadataFilters) === false) {
-            $this->applyMetadataFilters($queryBuilder, $metadataFilters);
+            $this->applyMetadataFilters(qb: $queryBuilder, filters: $metadataFilters);
         }
 
         // Apply object field filters (schema-specific columns).
@@ -141,12 +141,12 @@ class MagicSearchHandler
 
         // Apply ID filtering if provided.
         if ($ids !== null && empty($ids) === false) {
-            $this->applyIdFilters($queryBuilder, $ids);
+            $this->applyIdFilters(qb: $queryBuilder, ids: $ids);
         }
 
         // Apply full-text search if provided.
         if ($search !== null && trim($search) !== '') {
-            $this->applyFullTextSearch($queryBuilder, trim($search), $schema);
+            $this->applyFullTextSearch(qb: $queryBuilder, search: trim($search), schema: $schema);
         }
 
         // Apply sorting (skip for count queries).

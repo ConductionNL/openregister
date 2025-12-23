@@ -126,12 +126,33 @@ clear_variables() {
     # Create a temporary collection with cleared variables.
     local temp_collection="${COLLECTION_FILE}.tmp"
     
-    # Use jq to clear the _test_run_initialized flag if jq is available.
+    # Use jq to clear the _test_run_initialized flag AND clear all test variable values.
     if command -v jq &> /dev/null; then
-        jq '.variable = [.variable[] | if .key == "_test_run_initialized" then .value = "" else . end]' \
-            "$COLLECTION_FILE" > "$temp_collection"
-        mv "$temp_collection" "$COLLECTION_FILE"
-        print_message "$GREEN" "✅ Variables cleared using jq"
+        jq '
+        .variable = [
+            .variable[] | 
+            if .key == "_test_run_initialized" or 
+               .key == "main_register_slug" or 
+               .key == "main_schema_slug" or
+               .key == "org_uuid" or
+               .key == "register_id" or
+               .key == "register_slug" or
+               .key == "schema_id" or
+               .key == "schema_slug"
+            then 
+                .value = "" 
+            else . 
+            end
+        ]
+        ' "$COLLECTION_FILE" > "$temp_collection"
+        
+        if [ -s "$temp_collection" ]; then
+            mv "$temp_collection" "$COLLECTION_FILE"
+            print_message "$GREEN" "✅ Variables cleared using jq"
+        else
+            print_message "$RED" "❌ Failed to clear variables with jq"
+            rm -f "$temp_collection"
+        fi
     else
         print_message "$YELLOW" "⚠️  jq not found, relying on collection's built-in cleanup"
     fi
@@ -146,6 +167,11 @@ copy_to_container() {
     if [ "$RUN_MODE" = "local" ]; then
         if command -v docker &> /dev/null; then
             print_message "$BLUE" "📦 Copying collection to container: $CONTAINER_NAME"
+            
+            # Remove old collection file from container to prevent variable persistence.
+            docker exec "$CONTAINER_NAME" rm -f /tmp/openregister-crud.postman_collection.json 2>/dev/null || true
+            
+            # Copy fresh collection.
             docker cp "$COLLECTION_FILE" "$CONTAINER_NAME:/tmp/openregister-crud.postman_collection.json" 2>/dev/null || {
                 print_message "$YELLOW" "⚠️  Could not copy to container, running from host"
                 return 1
@@ -285,3 +311,4 @@ main() {
 
 # Run main function.
 main "$@"
+

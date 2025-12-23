@@ -50,3 +50,4 @@ install-newman:
 	@echo "Installing Newman..."
 	@npm install -g newman
 	@newman --version
+

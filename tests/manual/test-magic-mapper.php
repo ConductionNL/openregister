@@ -129,3 +129,4 @@ function testMagicMapper(): void
 // Run the test.
 testMagicMapper();
 
+

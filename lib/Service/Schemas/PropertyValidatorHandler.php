@@ -112,7 +112,7 @@ class PropertyValidatorHandler
     {
         // If property has oneOf, treat the contents as separate properties and return the result of those checks.
         if (($property['oneOf'] ?? null) !== null) {
-            return $this->validateProperties($property['oneOf'], $path.'/oneOf');
+            return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
         }
 
         // Type is required.
@@ -138,12 +138,12 @@ class PropertyValidatorHandler
 
         // Validate array items if type is array.
         if ($property['type'] === 'array' && (($property['items'] ?? null) !== null) && isset($property['items']['$ref']) === false) {
-            $this->validateProperty($property['items'], $path.'/items');
+            $this->validateProperty(property: $property['items'], path: $path.'/items');
         }
 
         // Validate nested properties if type is object.
         if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
-            $this->validateProperties($property['properties'], $path.'/properties');
+            $this->validateProperties(properties: $property['properties'], path: $path.'/properties');
         }
 
         // Validate minimum/maximum for numeric types.
@@ -163,7 +163,7 @@ class PropertyValidatorHandler
 
         // Validate file properties if type is file.
         if ($property['type'] === 'file') {
-            $this->validateFileProperty($property, $path);
+            $this->validateFileProperty(property: $property, path: $path);
         }
 
         // Validate enum values if present.
@@ -209,7 +209,7 @@ class PropertyValidatorHandler
                 throw new Exception("Property '$propertyName' at '$path' must be an object");
             }
 
-            $this->validateProperty($property, $path.'/'.$propertyName);
+            $this->validateProperty(property: $property, path: $path.'/'.$propertyName);
         }
 
         return true;

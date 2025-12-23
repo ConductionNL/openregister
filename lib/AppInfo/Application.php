@@ -516,10 +516,21 @@ class Application extends App implements IBootstrap
         // SETTINGS HANDLERS
         // Handler-based architecture for SettingsService to break down God Object.
         // ====================================================================
-        // NOTE: All Settings handlers can be autowired except those requiring the container.
-        // ValidationOperationsHandler, SearchBackendHandler, LlmSettingsHandler,
-        // FileSettingsHandler, ObjectRetentionHandler can be autowired.
-        // CacheSettingsHandler, SolrSettingsHandler require container for lazy loading.
+        // NOTE: ValidationOperationsHandler requires manual registration because ValidateObject can't be autowired.
+        // Other handlers can be autowired except those requiring the container.
+        // Register ValidationOperationsHandler manually to provide ValidateObject dependency.
+        $context->registerService(
+            ValidationOperationsHandler::class,
+            function ($container) {
+                return new ValidationOperationsHandler(
+                    validateHandler: $container->get(ValidateObject::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    container: $container
+                );
+            }
+        );
+
         // Register SettingsService BEFORE IndexService to break circular dependency.
         // ✅ AUTOWIRED: All 8 Settings handlers can be autowired:
         // - ValidationOperationsHandler, SearchBackendHandler, LlmSettingsHandler, FileSettingsHandler,

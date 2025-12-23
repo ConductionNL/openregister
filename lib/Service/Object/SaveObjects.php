@@ -1768,7 +1768,7 @@ class SaveObjects
     private function handlePreValidationCascading(array $object, ?string $uuid): array
     {
         // Delegate to BulkValidationHandler for pre-validation cascading.
-        return $this->bulkValidationHandler->handlePreValidationCascading($object, $uuid);
+        return $this->bulkValidationHandler->handlePreValidationCascading(object: $object, uuid: $uuid);
 
     }//end handlePreValidationCascading()
 

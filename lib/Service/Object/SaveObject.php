@@ -2268,7 +2268,7 @@ class SaveObject
         // Update object relations (result currently unused but operation has side effects).
         try {
             // $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
-            $this->updateObjectRelations($existingObject, $preparedData, $schema);
+            $this->updateObjectRelations(objectEntity: $existingObject, data: $preparedData, schema: $schema);
         } catch (Exception $e) {
             // CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
             throw new Exception(

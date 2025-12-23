@@ -119,7 +119,7 @@ class NamedParametersSniff implements Sniff
             'setparameter', 'setparameters', 'createnamedparameter', 'createparameter',
             'createpositionalparameter', 'createfunction', 'executequery', 'executestatement',
             'getsql', 'getparameters', 'getparameter', 'getparametertypes',
-            'set', 'update', 'insert', 'delete',
+            'set', 'update', 'insert', 'delete', 'values',
             // QueryBuilder join methods.
             'leftjoin', 'rightjoin', 'innerjoin', 'join',
             // QueryBuilder expression methods.
@@ -473,7 +473,7 @@ class NamedParametersSniff implements Sniff
                 'file_exists', 'is_file', 'is_dir', 'is_readable', 'is_writable',
                 'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
                 'fopen', 'fclose', 'fread', 'fwrite', 'fgets', 'fgetcsv', 'fputcsv', 'feof',
-            'chown', 'open',
+            'chown', 'open', 'stream_copy_to_stream',
                 'stream_context_create',
                 
                 // DateTime (simple constructors).
@@ -525,9 +525,16 @@ class NamedParametersSniff implements Sniff
                 // Nextcloud framework classes - simple constructors.
                 'searchresultentry',
                 
-                // Simple query/check methods - typically obvious from context.
-                'has', 'exists', 'contains', 'includes', 'find', 'findby', 'findbystatus', 'findbyendpoint',
-                'scheduleafter', 'setdeleted', 'callollamawithtools', 'testschemawaremapping', 'getpendingfiles', 'hasrbacpermission',
+                // Simple query/check methods - typically obvious from context (very generic names only).
+                'has', 'exists', 'includes', 'warmupsolrindex', 'testschemawaremapping', 'callollamawithtools', 'scheduleafter',
+                'preparefilters', 'lockobject', 'search', 'indexfiles', 'reindexall', 'warmupindex', 'fixmismatchedfields',
+                'createwriter', 'save', 'getexpectedschemafields', 'createconfigset', 'createcollection',
+                'findnotindexedinsolr', 'findbystatus', 'postraw', 'deletefile', 'deletefield', 'callfireworkschatapiwithhistory',
+                'findrecentbyconversation', 'applyfilefilters', 'applybasefilters', 'converttopaginatedformat',
+                'parameter', 'functioninfo', 'findbysource', 'setdeleted',
+                
+                // HTTP client constructors - obvious parameters.
+                'guzzleclient',
                 
                 // Query builder expression methods - obvious from context.
                 'lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'like', 'ilike', 'notlike', 'in', 'notin', 'isnotnull', 'isnull',

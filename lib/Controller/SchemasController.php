@@ -272,6 +272,16 @@ class SchemasController extends Controller
         // Get request parameters.
         $data = $this->request->getParams();
 
+        // DEBUG: Log incoming request to track duplicate creation.
+        $this->logger->info(
+                '[SchemasController::create] Starting schema creation',
+                [
+                    'title'            => $data['title'] ?? 'no title',
+                    'has_organisation' => isset($data['organisation']),
+                    'organisation'     => $data['organisation'] ?? 'not set',
+                ]
+                );
+
         // Remove internal parameters (starting with '_').
         foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
@@ -288,12 +298,17 @@ class SchemasController extends Controller
             // Create a new schema from the data.
             $schema = $this->schemaMapper->createFromArray(object: $data);
 
-            // Set organisation from active organisation for multi-tenancy (if not already set).
-            if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
+            // NOTE: Organization should already be set from the request data.
+            // The update() call below was causing duplicate schema creation with different timestamps.
+            // Since createFromArray() already handles organization assignment, this is commented out.
+            /*
+                // Set organisation from active organisation for multi-tenancy (if not already set).
+                if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
                 $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
                 $schema->setOrganisation($organisationUuid);
                 $schema = $this->schemaMapper->update($schema);
-            }
+                }
+            */
 
             return new JSONResponse(data: $schema, statusCode: 201);
         } catch (DBException $e) {

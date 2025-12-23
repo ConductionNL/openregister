@@ -777,7 +777,7 @@ trait MultiTenancyTrait
      */
     protected function verifyRbacPermission(string $action, string $entityType): void
     {
-        if ($this->hasRbacPermission($action, $entityType) === false) {
+        if ($this->hasRbacPermission(action: $action, entityType: $entityType) === false) {
             throw new Exception(
                 "Access denied: You do not have permission to {$action} {$entityType} entities.",
                 Response::HTTP_FORBIDDEN

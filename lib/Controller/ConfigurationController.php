@@ -142,6 +142,8 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse List of configurations
      *
+     * @return JSONResponse JSON response with configurations list
+     *
      * @psalm-return JSONResponse<200|500, array<'Failed to fetch configurations'|Configuration>, array<never, never>>
      */
     public function index(): JSONResponse
@@ -168,6 +170,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The configuration details
+     *
+     * @return JSONResponse JSON response with single configuration
      *
      * @psalm-return JSONResponse<200, Configuration, array<never, never>>|JSONResponse<404|500, array{error: 'Configuration not found'|'Failed to fetch configuration'}, array<never, never>>
      */
@@ -260,6 +264,8 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with created configuration
+     *
      * @psalm-return JSONResponse<201, Configuration, array<never, never>>|JSONResponse<500, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
@@ -313,6 +319,8 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated configuration
      *
      * @psalm-return JSONResponse<200, Configuration, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
@@ -438,6 +446,8 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with update check result
+     *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, hasUpdate?: bool, localVersion?: null|string, remoteVersion?: null|string, lastChecked?: null|string, message?: string}, array<never, never>>
      */
     public function checkVersion(int $id): JSONResponse
@@ -481,6 +491,8 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse Preview of changes
      *
+     * @return JSONResponse JSON response with preview of configuration changes
+     *
      * @psalm-return JSONResponse<200|404|500, array{error?: 'Configuration not found'|'Failed to preview configuration changes', registers?: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, schemas?: list<array{action: string, changes: array, current: array|null, proposed: array, slug: string, title: string, type: string}>, objects?: list<array{action: string, changes: array, current: array|null, proposed: array, register: string, schema: string, slug: string, title: string, type: string}>, endpoints?: array<never, never>, sources?: array<never, never>, mappings?: array<never, never>, jobs?: array<never, never>, synchronizations?: array<never, never>, rules?: array<never, never>, metadata?: array{configurationId: int, configurationTitle: null|string, sourceUrl: null|string, remoteVersion: mixed|null, localVersion: null|string, previewedAt: string, totalChanges: int<0, max>}}, array<never, never>>|JSONResponse<int, \JsonSerializable|array|null|scalar|stdClass, array<string, mixed>>
      */
     public function preview(int $id): JSONResponse
@@ -513,6 +525,8 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with sync result
      *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, registersCount?: int<0, max>, schemasCount?: int<0, max>, objectsCount?: int<0, max>}, array<never, never>>
      */
@@ -571,6 +585,8 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse Export result with download URL or success message
      *
+     * @return JSONResponse JSON response with configuration data
+     *
      * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
      */
     public function export(int $id): JSONResponse
@@ -606,6 +622,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @since 0.2.10
+     *
+     * @return JSONResponse JSON response with search results from GitHub
      *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, total_count?: int<0, max>|mixed, results?: list{0?: array{repository?: mixed, owner?: string, repo?: string, path: mixed|string, url: ''|mixed, stars?: 0|mixed, description?: ''|mixed, name: string, branch?: string, raw_url?: string, sha?: null|string, organization?: array{name: string, avatar_url: ''|mixed, type: 'User'|mixed, url: ''|mixed}, config: array, project_id?: mixed, ref?: 'main'|mixed}|mixed,...}, page?: int, per_page?: int}, array<never, never>>
      */
@@ -669,6 +687,8 @@ class ConfigurationController extends Controller
      *
      * @since 0.2.10
      *
+     * @return JSONResponse JSON response with branches list
+     *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array<array{name: mixed, commit: mixed|null, protected: false|mixed}>}, array<never, never>>
      */
     public function getGitHubBranches(): JSONResponse
@@ -707,6 +727,8 @@ class ConfigurationController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with GitHub repositories list
      *
      * @psalm-return JSONResponse<200|500, array{error?: string, repositories?: array<array{id: mixed, name: mixed, full_name: mixed, owner: mixed, owner_type: mixed, private: mixed, description: ''|mixed, default_branch: 'main'|mixed, url: mixed, api_url: mixed}>}, array<never, never>>
      */
@@ -752,6 +774,8 @@ class ConfigurationController extends Controller
      *
      * @since 0.2.10
      *
+     * @return JSONResponse JSON response with configuration files list
+     *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: list{0?: array{path: mixed, sha: mixed|null, url: mixed|null, config: array{title: mixed|string, description: ''|mixed, version: '1.0.0'|mixed, app: mixed|null, type: 'manual'|mixed}},...}}, array<never, never>>
      */
     public function getGitHubConfigurations(): JSONResponse
@@ -794,6 +818,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @since 0.2.10
+     *
+     * @return JSONResponse JSON response with GitLab branches list
      *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, branches?: array<array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}>}, array<never, never>>
      */
@@ -840,6 +866,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @since 0.2.10
+     *
+     * @return JSONResponse JSON response with GitLab configuration files list
      *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, files?: list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>}, array<never, never>>
      */
@@ -890,6 +918,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @since 0.2.10
+     *
+     * @return JSONResponse JSON response with import result
      *
      * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitHub', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
      */
@@ -1022,6 +1052,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @since 0.2.10
+     *
+     * @return JSONResponse JSON response with import result
      *
      * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from GitLab', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
      */
@@ -1162,6 +1194,8 @@ class ConfigurationController extends Controller
      *
      * @since 0.2.10
      *
+     * @return JSONResponse JSON response with import result
+     *
      * @psalm-return JSONResponse<int, array{error?: string, existingConfigurationId?: int, success?: true, message?: 'Configuration imported successfully from URL', configurationId?: int, result?: array{registersCount: int<0, max>, schemasCount: int<0, max>, objectsCount: int<0, max>}}, array<never, never>>
      */
     public function importFromUrl(): JSONResponse
@@ -1295,6 +1329,8 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with publish result
+     *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, message?: string, configurationId?: int, commit_sha?: mixed|null, commit_url?: mixed|null, file_url?: mixed|null, branch?: string, default_branch?: 'main'|mixed|null, indexing_note?: string}, array<never, never>>
      */
     public function publishToGitHub(int $id): JSONResponse
@@ -1302,157 +1338,49 @@ class ConfigurationController extends Controller
         try {
             $configuration = $this->configurationMapper->find($id);
 
-            // Only allow publishing local configurations.
-            if ($configuration->getIsLocal() !== true) {
-                return new JSONResponse(data: ['error' => 'Only local configurations can be published'], statusCode: 400);
+            // Validate configuration is publishable.
+            $validationResponse = $this->validateConfigurationForPublishing(configuration: $configuration);
+            if ($validationResponse !== null) {
+                return $validationResponse;
             }
 
-            $data          = $this->request->getParams();
-            $owner         = $data['owner'] ?? '';
-            $repo          = $data['repo'] ?? '';
-            $path          = $data['path'] ?? '';
-            $branch        = $data['branch'] ?? 'main';
-            $commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
-
-            if (empty($owner) === true || empty($repo) === true) {
-                return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
+            // Extract and validate request parameters.
+            $params = $this->extractGitHubPublishParams(configuration: $configuration);
+            if (isset($params['error'])) {
+                return new JSONResponse(data: ['error' => $params['error']], statusCode: 400);
             }
 
-            // Strip leading slash from path (GitHub API doesn't allow paths starting with /).
-            // Allow / for root, which becomes empty string.
-            $path = ltrim($path, '/');
+            $this->logPublishingAttempt(id: $id, params: $params);
 
-            // If path is empty after stripping (user entered just "/"), use a default filename.
-            // Generate filename from configuration title in snake_case format.
-            if (empty($path) === true) {
-                $title          = $configuration->getTitle();
-                $snakeCaseTitle = $this->toSnakeCase($title ?? 'configuration');
-                $path           = $snakeCaseTitle.'_openregister.json';
-            }
+            // Prepare configuration data for GitHub.
+            $jsonContent = $this->prepareConfigurationForGitHub(
+                configuration: $configuration,
+                params: $params
+            );
 
-            $this->logger->info(
-                    'Publishing configuration to GitHub',
-                    [
-                        'configuration_id' => $id,
-                        'owner'            => $owner,
-                        'repo'             => $repo,
-                        'path'             => $path,
-                        'branch'           => $branch,
-                    ]
-                    );
-
-            // Export configuration to JSON.
-            $configData = $this->configurationService->exportConfig(input: $configuration, includeObjects: false);
-
-            // Update x-openregister section with GitHub publishing information.
-            // When publishing online, we don't set sourceType or sourceUrl.
-            // Instead, we set the openregister version and GitHub info.
-            $githubRepo = "{$owner}/{$repo}";
-
-            if (isset($configData['x-openregister']) === false) {
-                $configData['x-openregister'] = [];
-            }
-
-            // Get current OpenRegister app version.
-            $openregisterVersion = $this->appManager->getAppVersion('openregister');
-
-            // Remove sourceType and sourceUrl (not set when publishing online).
-            unset($configData['x-openregister']['sourceType']);
-            unset($configData['x-openregister']['sourceUrl']);
-
-            // Set openregister version and GitHub info.
-            $configData['x-openregister']['openregister'] = $openregisterVersion;
-            $configData['x-openregister']['github']       = [
-                'repo'   => $githubRepo,
-                'branch' => $branch,
-                'path'   => $path,
-            ];
-
-            $jsonContent = json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-            // Check if file already exists (for updates).
-            $fileSha = null;
-            try {
-                $fileSha = $this->githubHandler->getFileSha(owner: $owner, repo: $repo, path: $path, branch: $branch);
-            } catch (Exception $e) {
-                // File doesn't exist, which is fine for new files.
-                $this->logger->debug('File does not exist, will create new file', ['path' => $path]);
-            }
+            // Get existing file SHA for updates.
+            $fileSha = $this->getExistingFileSha(params: $params);
 
             // Publish to GitHub.
-            $result = $this->githubHandler->publishConfiguration(
-                owner: $owner,
-                repo: $repo,
-                path: $path,
-                branch: $branch,
+            $result = $this->publishConfigurationToGitHub(
+                params: $params,
                 content: $jsonContent,
-                commitMessage: $commitMessage,
                 fileSha: $fileSha
             );
 
-            // Update configuration with GitHub source information.
-            // Keep it as local but add GitHub publishing info.
-            $configuration->setGithubRepo("{$owner}/{$repo}");
-            $configuration->setGithubBranch($branch);
-            $configuration->setGithubPath($path);
-            $configuration->setSourceUrl("https://github.com/{$owner}/{$repo}/blob/{$branch}/{$path}");
-            // Don't change isLocal - it stays local, but now has a published source.
-            $this->configurationMapper->update($configuration);
+            // Update local configuration with GitHub info.
+            $this->updateConfigurationWithGitHubInfo(configuration: $configuration, params: $params);
 
-            $this->logger->info(
-                    "Successfully published configuration {$configuration->getTitle()} to GitHub",
-                    [
-                        'owner'    => $owner,
-                        'repo'     => $repo,
-                        'branch'   => $branch,
-                        'path'     => $path,
-                        'file_url' => $result['file_url'] ?? null,
-                    ]
-                    );
+            $this->logPublishingSuccess(configuration: $configuration, params: $params, result: $result);
 
-            // Check if published to default branch (required for Code Search indexing).
-            $defaultBranch = null;
-            try {
-                $repoInfo      = $this->githubHandler->getRepositoryInfo(owner: $owner, repo: $repo);
-                $defaultBranch = $repoInfo['default_branch'] ?? 'main';
-            } catch (Exception $e) {
-                $this->logger->warning(
-                        'Could not fetch repository default branch',
-                        [
-                            'owner' => $owner,
-                            'repo'  => $repo,
-                            'error' => $e->getMessage(),
-                        ]
-                        );
-            }
-
-            $message = 'Configuration published successfully to GitHub';
-            if ($defaultBranch !== null && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). ";
-                $message .= 'GitHub Code Search primarily indexes the default branch, ';
-                $message .= 'so this configuration may not appear in search results immediately.';
-            } else {
-                $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'         => true,
-                    'message'         => $message,
-                    'configurationId' => $configuration->getId(),
-                    'commit_sha'      => $result['commit_sha'],
-                    'commit_url'      => $result['commit_url'],
-                    'file_url'        => $result['file_url'],
-                    'branch'          => $branch,
-                    'default_branch'  => $defaultBranch,
-                    'indexing_note'   => $this->getIndexingNote(defaultBranch: $defaultBranch, branch: $branch),
-                ],
-                statusCode: 200
+            // Build success response with indexing information.
+            return $this->buildPublishSuccessResponse(
+                configuration: $configuration,
+                params: $params,
+                result: $result
             );
         } catch (Exception $e) {
-            $this->logger->error('Failed to publish to GitHub: '.$e->getMessage());
-
-            return new JSONResponse(data: ['error' => 'Failed to publish configuration: '.$e->getMessage()], statusCode: 500);
+            return $this->handlePublishingError(exception: $e);
         }//end try
 
     }//end publishToGitHub()
@@ -1472,6 +1400,336 @@ class ConfigurationController extends Controller
         return $message;
 
     }//end getExistingConfigErrorMessage()
+
+    /**
+     * Validate configuration can be published
+     *
+     * Checks if configuration is local and can be published to GitHub.
+     *
+     * @param object $configuration Configuration entity.
+     *
+     * @return JSONResponse|null Error response if validation fails, null if valid.
+     */
+    private function validateConfigurationForPublishing(object $configuration): ?JSONResponse
+    {
+        // Only allow publishing local configurations.
+        if ($configuration->getIsLocal() !== true) {
+            return new JSONResponse(
+                data: ['error' => 'Only local configurations can be published'],
+                statusCode: 400
+            );
+        }
+
+        return null;
+
+    }//end validateConfigurationForPublishing()
+
+    /**
+     * Extract and validate GitHub publishing parameters
+     *
+     * Extracts owner, repo, path, branch, and commit message from request.
+     * Validates required parameters and normalizes path.
+     *
+     * @param object $configuration Configuration entity.
+     *
+     * @return array<string, string> Parameters array or error array.
+     */
+    private function extractGitHubPublishParams(object $configuration): array
+    {
+        $data          = $this->request->getParams();
+        $owner         = $data['owner'] ?? '';
+        $repo          = $data['repo'] ?? '';
+        $path          = $data['path'] ?? '';
+        $branch        = $data['branch'] ?? 'main';
+        $commitMessage = $data['commitMessage'] ?? "Update configuration: {$configuration->getTitle()}";
+
+        // Validate required parameters.
+        if (empty($owner) === true || empty($repo) === true) {
+            return ['error' => 'Owner and repo parameters are required'];
+        }
+
+        // Normalize path: strip leading slash, generate default if empty.
+        $path = ltrim($path, '/');
+        if (empty($path) === true) {
+            $title          = $configuration->getTitle();
+            $snakeCaseTitle = $this->toSnakeCase($title ?? 'configuration');
+            $path           = $snakeCaseTitle.'_openregister.json';
+        }
+
+        return [
+            'owner'         => $owner,
+            'repo'          => $repo,
+            'path'          => $path,
+            'branch'        => $branch,
+            'commitMessage' => $commitMessage,
+        ];
+
+    }//end extractGitHubPublishParams()
+
+    /**
+     * Log publishing attempt
+     *
+     * Logs configuration publishing details for debugging.
+     *
+     * @param int                   $id     Configuration ID.
+     * @param array<string, string> $params Publishing parameters.
+     *
+     * @return void
+     */
+    private function logPublishingAttempt(int $id, array $params): void
+    {
+        $this->logger->info(
+            'Publishing configuration to GitHub',
+            [
+                'configuration_id' => $id,
+                'owner'            => $params['owner'],
+                'repo'             => $params['repo'],
+                'path'             => $params['path'],
+                'branch'           => $params['branch'],
+            ]
+        );
+
+    }//end logPublishingAttempt()
+
+    /**
+     * Prepare configuration for GitHub publishing
+     *
+     * Exports configuration and adds GitHub metadata.
+     *
+     * @param object                $configuration Configuration entity.
+     * @param array<string, string> $params        Publishing parameters.
+     *
+     * @return string JSON content ready for GitHub.
+     */
+    private function prepareConfigurationForGitHub(object $configuration, array $params): string
+    {
+        // Export configuration to array.
+        $configData = $this->configurationService->exportConfig(
+            input: $configuration,
+            includeObjects: false
+        );
+
+        // Initialize x-openregister metadata if not present.
+        if (isset($configData['x-openregister']) === false) {
+            $configData['x-openregister'] = [];
+        }
+
+        // Remove local source information.
+        unset($configData['x-openregister']['sourceType']);
+        unset($configData['x-openregister']['sourceUrl']);
+
+        // Add OpenRegister version and GitHub info.
+        $openregisterVersion = $this->appManager->getAppVersion('openregister');
+        $githubRepo          = "{$params['owner']}/{$params['repo']}";
+
+        $configData['x-openregister']['openregister'] = $openregisterVersion;
+        $configData['x-openregister']['github']       = [
+            'repo'   => $githubRepo,
+            'branch' => $params['branch'],
+            'path'   => $params['path'],
+        ];
+
+        return json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+    }//end prepareConfigurationForGitHub()
+
+    /**
+     * Get existing file SHA for updates
+     *
+     * Retrieves the SHA of existing file on GitHub for update operations.
+     *
+     * @param array<string, string> $params Publishing parameters.
+     *
+     * @return string|null File SHA if exists, null for new files.
+     */
+    private function getExistingFileSha(array $params): ?string
+    {
+        try {
+            return $this->githubHandler->getFileSha(
+                owner: $params['owner'],
+                repo: $params['repo'],
+                path: $params['path'],
+                branch: $params['branch']
+            );
+        } catch (Exception $e) {
+            // File doesn't exist, which is fine for new files.
+            $this->logger->debug('File does not exist, will create new file', ['path' => $params['path']]);
+            return null;
+        }
+
+    }//end getExistingFileSha()
+
+    /**
+     * Publish configuration to GitHub
+     *
+     * Calls GitHub handler to publish/update the configuration file.
+     *
+     * @param array<string, string> $params  Publishing parameters.
+     * @param string                $content JSON content to publish.
+     * @param string|null           $fileSha Existing file SHA for updates.
+     *
+     * @return array<string, mixed> Result from GitHub API.
+     */
+    private function publishConfigurationToGitHub(array $params, string $content, ?string $fileSha): array
+    {
+        return $this->githubHandler->publishConfiguration(
+            owner: $params['owner'],
+            repo: $params['repo'],
+            path: $params['path'],
+            branch: $params['branch'],
+            content: $content,
+            commitMessage: $params['commitMessage'],
+            fileSha: $fileSha
+        );
+
+    }//end publishConfigurationToGitHub()
+
+    /**
+     * Update configuration with GitHub information
+     *
+     * Updates local configuration entity with GitHub publishing details.
+     *
+     * @param object                $configuration Configuration entity.
+     * @param array<string, string> $params        Publishing parameters.
+     *
+     * @return void
+     */
+    private function updateConfigurationWithGitHubInfo(object $configuration, array $params): void
+    {
+        $githubRepo = "{$params['owner']}/{$params['repo']}";
+        $sourceUrl  = "https://github.com/{$githubRepo}/blob/{$params['branch']}/{$params['path']}";
+
+        $configuration->setGithubRepo($githubRepo);
+        $configuration->setGithubBranch($params['branch']);
+        $configuration->setGithubPath($params['path']);
+        $configuration->setSourceUrl($sourceUrl);
+        // Don't change isLocal - it stays local, but now has a published source.
+        $this->configurationMapper->update($configuration);
+
+    }//end updateConfigurationWithGitHubInfo()
+
+    /**
+     * Log publishing success
+     *
+     * Logs successful GitHub publishing operation.
+     *
+     * @param object                $configuration Configuration entity.
+     * @param array<string, string> $params        Publishing parameters.
+     * @param array<string, mixed>  $result        GitHub API result.
+     *
+     * @return void
+     */
+    private function logPublishingSuccess(object $configuration, array $params, array $result): void
+    {
+        $this->logger->info(
+            "Successfully published configuration {$configuration->getTitle()} to GitHub",
+            [
+                'owner'    => $params['owner'],
+                'repo'     => $params['repo'],
+                'branch'   => $params['branch'],
+                'path'     => $params['path'],
+                'file_url' => $result['file_url'] ?? null,
+            ]
+        );
+
+    }//end logPublishingSuccess()
+
+    /**
+     * Build success response with indexing information
+     *
+     * Creates success response including GitHub URLs and indexing notes.
+     *
+     * @param object                $configuration Configuration entity.
+     * @param array<string, string> $params        Publishing parameters.
+     * @param array<string, mixed>  $result        GitHub API result.
+     *
+     * @return JSONResponse Success response.
+     */
+    private function buildPublishSuccessResponse(object $configuration, array $params, array $result): JSONResponse
+    {
+        // Get default branch for indexing note.
+        $defaultBranch = $this->getRepositoryDefaultBranch(params: $params);
+
+        // Build success message with indexing information.
+        $message = 'Configuration published successfully to GitHub';
+        if ($defaultBranch !== null && $params['branch'] !== $defaultBranch) {
+            $message .= ". Note: Published to branch '{$params['branch']}' (default is '{$defaultBranch}'). ";
+            $message .= 'GitHub Code Search primarily indexes the default branch, ';
+            $message .= 'so this configuration may not appear in search results immediately.';
+        } else {
+            $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
+        }
+
+        return new JSONResponse(
+            data: [
+                'success'         => true,
+                'message'         => $message,
+                'configurationId' => $configuration->getId(),
+                'commit_sha'      => $result['commit_sha'],
+                'commit_url'      => $result['commit_url'],
+                'file_url'        => $result['file_url'],
+                'branch'          => $params['branch'],
+                'default_branch'  => $defaultBranch,
+                'indexing_note'   => $this->getIndexingNote(
+                    defaultBranch: $defaultBranch,
+                    branch: $params['branch']
+                ),
+            ],
+            statusCode: 200
+        );
+
+    }//end buildPublishSuccessResponse()
+
+    /**
+     * Get repository default branch
+     *
+     * Fetches the default branch name from GitHub repository.
+     *
+     * @param array<string, string> $params Publishing parameters.
+     *
+     * @return string|null Default branch name or null if unable to fetch.
+     */
+    private function getRepositoryDefaultBranch(array $params): ?string
+    {
+        try {
+            $repoInfo = $this->githubHandler->getRepositoryInfo(
+                owner: $params['owner'],
+                repo: $params['repo']
+            );
+            return $repoInfo['default_branch'] ?? 'main';
+        } catch (Exception $e) {
+            $this->logger->warning(
+                'Could not fetch repository default branch',
+                [
+                    'owner' => $params['owner'],
+                    'repo'  => $params['repo'],
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return null;
+        }
+
+    }//end getRepositoryDefaultBranch()
+
+    /**
+     * Handle publishing error
+     *
+     * Logs error and returns error response.
+     *
+     * @param Exception $exception The exception that occurred.
+     *
+     * @return JSONResponse Error response.
+     */
+    private function handlePublishingError(Exception $exception): JSONResponse
+    {
+        $this->logger->error('Failed to publish to GitHub: '.$exception->getMessage());
+
+        return new JSONResponse(
+            data: ['error' => 'Failed to publish configuration: '.$exception->getMessage()],
+            statusCode: 500
+        );
+
+    }//end handlePublishingError()
 
     /**
      * Get indexing note based on branch information.

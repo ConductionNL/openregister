@@ -994,7 +994,7 @@ class SettingsService
         ];
 
         // Create batch jobs.
-        $batchJobs = $this->createBatchJobs($totalObjects, $batchSize);
+        $batchJobs = $this->createBatchJobs(totalObjects: $totalObjects, batchSize: $batchSize);
         $results['stats']['batches_processed'] = count($batchJobs);
 
         $this->logger->info(

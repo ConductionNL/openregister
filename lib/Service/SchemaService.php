@@ -65,6 +65,23 @@ class SchemaService
     private LoggerInterface $logger;
 
     /**
+     * SchemaService constructor
+     *
+     * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations.
+     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for object queries.
+     * @param LoggerInterface    $logger             Logger for debugging and monitoring.
+     */
+    public function __construct(
+        SchemaMapper $schemaMapper,
+        ObjectEntityMapper $objectEntityMapper,
+        LoggerInterface $logger
+    ) {
+        $this->schemaMapper       = $schemaMapper;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->logger = $logger;
+    }//end __construct()
+
+    /**
      * Explore objects and discover new properties for a schema
      *
      * This method analyzes all objects belonging to a specific schema and identifies
@@ -936,9 +953,8 @@ class SchemaService
     /**
      * Compare a property configuration with analysis data to identify improvements
      *
-     * @param string $propertyName  The property name
-     * @param array  $currentConfig Current property configuration
-     * @param array  $analysis      Analysis data from objects
+     * @param array $currentConfig Current property configuration
+     * @param array $analysis      Analysis data from objects
      *
      * @return (((int|mixed|null|string)[]|string)[]|string)[]
      *
@@ -1009,9 +1025,18 @@ class SchemaService
         $suggestions = [];
         $currentType = $currentConfig['type'] ?? null;
 
-        // Check if types match.
-        if (($currentType !== null) === true && $currentType !== $recommendedType) {
-            $issues[]      = "type_mismatch";
+        // Check if type is missing.
+        if ($currentType === null) {
+            $suggestions[] = [
+                'type'        => 'type',
+                'field'       => 'type',
+                'current'     => null,
+                'recommended' => $recommendedType,
+                'description' => "Consider adding type '{$recommendedType}' based on analysis",
+            ];
+        } else if ($currentType !== $recommendedType) {
+            // Types don't match.
+            $issues[]      = "Type mismatch: current type is '{$currentType}', recommended type is '{$recommendedType}'";
             $suggestions[] = [
                 'type'        => 'type',
                 'field'       => 'type',
@@ -1201,12 +1226,14 @@ class SchemaService
         $issues      = [];
         $suggestions = [];
 
-        // Check if property has nullable variation in the data.
-        $nullableVariation = isset($analysis['nullable_variation']) && $analysis['nullable_variation'] === true;
-        if ($nullableVariation === true) {
+        // Check if property should be nullable based on analysis.
+        $isNullable = ($analysis['nullable'] ?? false) === true ||
+                     (isset($analysis['nullable_variation']) && $analysis['nullable_variation'] === true);
+
+        if ($isNullable === true) {
             $currentRequired = isset($currentConfig['required']) && $currentConfig['required'] === true;
             if ($currentRequired === true) {
-                $issues[]      = "inconsistent_required";
+                $issues[]      = "Property contains null values but is marked as required";
                 $suggestions[] = [
                     'type'        => 'behavior',
                     'field'       => 'required',
@@ -1215,7 +1242,19 @@ class SchemaService
                     'description' => "Some objects have null values for this property",
                 ];
             }
-        }
+
+            // Check if schema doesn't allow null type.
+            $currentType = $currentConfig['type'] ?? null;
+            if ($currentType !== null && $currentType !== 'null') {
+                $suggestions[] = [
+                    'type'        => 'type',
+                    'field'       => 'type',
+                    'current'     => $currentType,
+                    'recommended' => [$currentType, 'null'],
+                    'description' => "Consider making this property nullable since data contains null values",
+                ];
+            }
+        }//end if
 
         return [
             'issues'      => $issues,
@@ -1236,21 +1275,44 @@ class SchemaService
         $issues      = [];
         $suggestions = [];
 
-        // Check if property looks like an enum.
-        if ($this->detectEnumLike($analysis) === true) {
+        // Check if analysis suggests enum values.
+        $enumValues = $analysis['enum_values'] ?? null;
+        $usageCount = $analysis['usage_count'] ?? 0;
+
+        if ($enumValues !== null && is_array($enumValues) === true) {
             $currentEnum = $currentConfig['enum'] ?? null;
-            if ($currentEnum === null || empty($currentEnum) === true) {
-                $issues[]      = "missing_enum";
-                $enumValues    = $this->extractEnumValues($analysis['examples']);
-                $suggestions[] = [
-                    'type'        => 'enum',
-                    'field'       => 'enum',
-                    'current'     => 'unlimited',
-                    'recommended' => implode(', ', $enumValues),
-                    'description' => "Property appears to have predefined values: ".implode(', ', $enumValues),
-                ];
-            }
-        }
+
+            // Limit enum suggestions to reasonable number (e.g., 20).
+            if (count($enumValues) <= 20) {
+                if ($currentEnum === null || empty($currentEnum) === true) {
+                    // Suggest adding enum.
+                    $suggestions[] = [
+                        'type'        => 'enum',
+                        'field'       => 'enum',
+                        'current'     => 'unlimited',
+                        'recommended' => implode(', ', $enumValues),
+                        'description' => "Property appears to have predefined values: ".implode(', ', $enumValues),
+                    ];
+                } else {
+                    // Check if current enum differs from analysis.
+                    $currentEnumSorted  = $currentEnum;
+                    $analysisEnumSorted = $enumValues;
+                    sort($currentEnumSorted);
+                    sort($analysisEnumSorted);
+
+                    if ($currentEnumSorted !== $analysisEnumSorted) {
+                        $issues[]      = "Enum values in schema differ from values found in data";
+                        $suggestions[] = [
+                            'type'        => 'enum',
+                            'field'       => 'enum',
+                            'current'     => implode(', ', $currentEnum),
+                            'recommended' => implode(', ', $enumValues),
+                            'description' => "Data contains enum values not defined in schema",
+                        ];
+                    }
+                }//end if
+            }//end if
+        }//end if
 
         return [
             'issues'      => $issues,
@@ -1391,6 +1453,9 @@ class SchemaService
      */
     private function normalizeSingleType(string $phpType, array $patterns): string
     {
+        // Normalize type string to lowercase.
+        $phpType = strtolower($phpType);
+
         switch ($phpType) {
             case 'string':
                 // Check if it's a numeric string that should be a number.
@@ -1400,6 +1465,11 @@ class SchemaService
 
                 if (in_array('float_string', $patterns, true) === true) {
                     return 'number';
+                }
+
+                // Check if it's a boolean string.
+                if (in_array('boolean_string', $patterns, true) === true) {
+                    return 'boolean';
                 }
                 return 'string';
 
@@ -1418,6 +1488,13 @@ class SchemaService
 
             case 'object':
                 return 'object';
+
+            case 'null':
+                return 'null';
+
+            // JSON Schema standard types - preserve as-is.
+            case 'number':
+                return 'number';
 
             default:
                 return 'string';
@@ -1449,6 +1526,8 @@ class SchemaService
                 return 'integer';
             } else if (in_array('float_string', $patterns, true) === true) {
                 return 'number';
+            } else if (in_array('boolean_string', $patterns, true) === true) {
+                return 'boolean';
             }
 
             return 'string';
@@ -1467,7 +1546,7 @@ class SchemaService
      */
     private function detectEnumLike(array $analysis): bool
     {
-        $examples = $analysis['examples'];
+        $examples = $analysis['examples'] ?? [];
 
         // Need at least 3 examples to detect enum pattern.
         if (count($examples) < 3) {
@@ -1556,9 +1635,12 @@ class SchemaService
                     return ['type' => 'string'];
                 case 'integer':
                     return ['type' => 'integer'];
+
                 /*
-                 * @psalm-suppress TypeDoesNotContainType - array_key_first returns string|int|null, but item_types keys are type names (strings)
+                 * @psalm-suppress TypeDoesNotContainType
+                 * array_key_first returns string|int|null, but item_types keys are type names (strings).
                  */
+
                 case 'double':
                 case 'float':
                     return ['type' => 'number'];

@@ -672,7 +672,7 @@ class EndpointsController extends Controller
                 $endpointIdInt = (int) $endpointId;
                 $logs          = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: $limit, offset: $offset);
                 // Get total count for this endpoint.
-                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint($endpointIdInt, null, null);
+                $allLogsForEndpoint = $this->endpointLogMapper->findByEndpoint(endpointId: $endpointIdInt, limit: null, offset: null);
                 $total = count($allLogsForEndpoint);
             } else {
                 // No endpoint filter - get all logs from all endpoints.

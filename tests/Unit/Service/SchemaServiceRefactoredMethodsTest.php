@@ -804,3 +804,4 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	}
 }
 
+
