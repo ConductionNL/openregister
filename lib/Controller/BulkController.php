@@ -84,6 +84,8 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with bulk delete operation results
+     *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk delete operation completed successfully', deleted_count?: int<0, max>, deleted_uuids?: array<int, int>, requested_count?: int<0, max>, skipped_count?: int<min, max>}, array<never, never>>
      */
     public function delete(string $register, string $schema): JSONResponse
@@ -136,6 +138,8 @@ class BulkController extends Controller
      * @param string $schema   The schema identifier
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with bulk publish operation results
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk publish operation completed successfully', published_count?: int<0, max>, published_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|null|string}, array<never, never>>
      */
@@ -211,6 +215,8 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with bulk depublish operation results
+     *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk depublish operation completed successfully', depublished_count?: int<0, max>, depublished_uuids?: array<int, string>, requested_count?: int<0, max>, skipped_count?: int<min, max>, datetime_used?: bool|null|string}, array<never, never>>
      */
     public function depublish(string $register, string $schema): JSONResponse
@@ -284,6 +290,8 @@ class BulkController extends Controller
      * @param string $schema   The schema identifier
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with bulk save operation results
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Bulk save operation completed successfully', saved_count?: mixed, saved_objects?: array<string, mixed>, requested_count?: int<0, max>}, array<never, never>>
      */
@@ -364,6 +372,8 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with schema objects publishing results
+     *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects publishing completed successfully', published_count?: int, published_uuids?: array<int, string>, schema_id?: int, publish_all?: bool}, array<never, never>>
      */
     public function publishSchema(string $register, string $schema): JSONResponse
@@ -417,6 +427,8 @@ class BulkController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with schema objects deletion results
+     *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Schema objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, schema_id?: int, hard_delete?: bool}, array<never, never>>
      */
     public function deleteSchema(string $register, string $schema): JSONResponse
@@ -468,6 +480,8 @@ class BulkController extends Controller
      * @param string $register The register identifier
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with register objects deletion results
      *
      * @psalm-return JSONResponse<int, array{error?: string, success?: true, message?: 'Register objects deletion completed successfully', deleted_count?: int, deleted_uuids?: array<int, string>, register_id?: int}, array<never, never>>
      */

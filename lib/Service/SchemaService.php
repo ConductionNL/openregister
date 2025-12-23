@@ -1650,7 +1650,7 @@ class SchemaService
                     return ['type' => 'array'];
                 default:
                     return ['type' => 'string'];
-            }
+            }//end switch
         }//end if
 
         return ['type' => 'string'];

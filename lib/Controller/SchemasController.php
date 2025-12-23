@@ -118,6 +118,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with array of schemas
+     *
      * @psalm-return JSONResponse<200, array{results: array<array{id: int, uuid: null|string, uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, organisation: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}>}, array<never, never>>
      */
     public function index(): JSONResponse
@@ -265,6 +267,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with created schema
+     *
      * @psalm-return JSONResponse<201, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
     public function create(): JSONResponse
@@ -365,6 +369,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated schema
      *
      * @psalm-return JSONResponse<200, Schema, array<never, never>>|JSONResponse<int, array{error: string}, array<never, never>>
      */
@@ -678,6 +684,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with related schemas
+     *
      * @psalm-return JSONResponse<200|404|500, array{error?: string, incoming?: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, outgoing?: list<array{allOf: array|null, anyOf: array|null, application: null|string, archive: array|null, authorization: array|null, configuration: array|null|string, created: null|string, deleted: null|string, depublished: null|string, description: null|string, groups: array<string, list<string>>|null, hardValidation: bool, icon: null|string, id: int, immutable: bool, maxDepth: int, oneOf: array|null, organisation: null|string, owner: null|string, properties: array, published: null|string, required: array, searchable: bool, slug: null|string, source: null|string, summary: null|string, title: null|string, updated: null|string, uri: null|string, uuid: null|string, version: null|string}>, total?: int<0, max>}, array<never, never>>
      */
     public function related(int|string $id): JSONResponse
@@ -794,6 +802,8 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with schema exploration results
+     *
      * @psalm-return JSONResponse<200|500, array{error?: string, schema_id?: int, schema_title?: null|string, total_objects?: int<0, max>, discovered_properties?: array<never, never>|mixed, existing_properties?: array|null, property_usage_stats?: mixed, suggestions?: array, analysis_date?: string, data_types?: mixed, analysis_summary?: array{new_properties_count: int<0, max>, existing_properties_improvements: int<0, max>, total_recommendations: int<0, max>}, message?: 'No objects found for analysis'}, array<never, never>>
      */
     public function explore(int $id): JSONResponse
@@ -824,6 +834,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated schema
      *
      * @psalm-return JSONResponse<200|400|500, array{error?: string, success?: true, schema?: array{id: int, uuid: null|string, uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, organisation: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}, message?: string}, array<never, never>>
      */
@@ -870,6 +882,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with published schema
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, uri?: null|string, slug?: null|string, title?: null|string, description?: null|string, version?: null|string, summary?: null|string, icon?: null|string, required?: array, properties?: array, archive?: array|null, source?: null|string, hardValidation?: bool, immutable?: bool, searchable?: bool, updated?: null|string, created?: null|string, maxDepth?: int, owner?: null|string, application?: null|string, organisation?: null|string, groups?: array<string, list<string>>|null, authorization?: array|null, deleted?: null|string, published?: null|string, depublished?: null|string, configuration?: array|null|string, allOf?: array|null, oneOf?: array|null, anyOf?: array|null}, array<never, never>>
      */
@@ -932,6 +946,8 @@ class SchemasController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with depublished schema
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: string, id?: int, uuid?: null|string, uri?: null|string, slug?: null|string, title?: null|string, description?: null|string, version?: null|string, summary?: null|string, icon?: null|string, required?: array, properties?: array, archive?: array|null, source?: null|string, hardValidation?: bool, immutable?: bool, searchable?: bool, updated?: null|string, created?: null|string, maxDepth?: int, owner?: null|string, application?: null|string, organisation?: null|string, groups?: array<string, list<string>>|null, authorization?: array|null, deleted?: null|string, published?: null|string, depublished?: null|string, configuration?: array|null|string, allOf?: array|null, oneOf?: array|null, anyOf?: array|null}, array<never, never>>
      */

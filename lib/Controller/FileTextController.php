@@ -74,6 +74,8 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with file text content
+     *
      * @psalm-return JSONResponse<404|500, array{success: false, message: string, file_id?: int}, array<never, never>>
      */
     public function getFileText(int $fileId): JSONResponse
@@ -118,6 +120,8 @@ class FileTextController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with extraction result
      *
      * @psalm-return JSONResponse<200|500|501, array{success: bool, message: string}, array<never, never>>
      */
@@ -167,6 +171,8 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with bulk extraction results
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, processed?: int<0, max>, failed?: int<0, max>, total?: int<0, max>}, array<never, never>>
      */
     public function bulkExtract(): JSONResponse
@@ -211,6 +217,8 @@ class FileTextController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with file text statistics
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{totalFiles: int, untrackedFiles: int, totalChunks: int, totalObjects: int, totalEntities: int}}, array<never, never>>
      */
     public function getStats(): JSONResponse
@@ -251,6 +259,8 @@ class FileTextController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response confirming deletion
      *
      * @psalm-return JSONResponse<500|501, array{success: false, message: string}, array<never, never>>
      */
@@ -390,6 +400,8 @@ class FileTextController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with chunking statistics
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{total_chunks: int, indexed_chunks: int, unindexed_chunks: int, vectorized_chunks: int}}, array<never, never>>
      */
