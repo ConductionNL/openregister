@@ -620,6 +620,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with created object
+     *
      * @psalm-return JSONResponse<201|403|404, array{'@self'?: array{name: mixed|null|string,...}|mixed, message?: mixed|string, error?: mixed|string,...}, array<never, never>>|JSONResponse<400, string, array<never, never>>
      */
     public function create(
@@ -1045,22 +1047,11 @@ class ObjectsController extends Controller
         $objectService->setSchema(schema: $schema);
         $objectService->setRegister(register: $register);
 
-        // Get patch data from request parameters.
-        $patchData = $this->request->getParams();
-
-        // Filter out special parameters and reserved fields.
-        // @todo shouldn't this be part of the object service?
-        // Allow @self metadata to pass through for organization activation.
-        $patchData = array_filter(
-            $patchData,
-            fn ($key) => str_starts_with($key, '_') === false
-                && !($key !== '@self' && str_starts_with($key, '@'))
-                && in_array($key, ['uuid', 'register', 'schema']) === false,
-            ARRAY_FILTER_USE_KEY
-        );
+        // Get patch data from request and filter parameters.
+        $patchData     = $this->filterRequestParameters($this->request->getParams());
+        $accessControl = $this->determineAccessControl();
 
         // Check if the object exists and can be updated.
-        // @todo shouldn't this be part of the object service?
         try {
             $existingObject = $this->objectService->find(id: $id);
             if ($existingObject === null) {
@@ -1070,9 +1061,8 @@ class ObjectsController extends Controller
             // Get the resolved register and schema IDs from the ObjectService.
             // This ensures proper handling of both numeric IDs and slug identifiers.
             $resolvedRegisterId = $objectService->getRegister();
-            // Returns the current register ID.
-            $resolvedSchemaId = $objectService->getSchema();
-            // Returns the current schema ID.
+            $resolvedSchemaId   = $objectService->getSchema();
+
             // Verify that the object belongs to the specified register and schema.
             if ((int) $existingObject->getRegister() !== $resolvedRegisterId
                 || (int) $existingObject->getSchema() !== $resolvedSchemaId
@@ -1187,6 +1177,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with object contracts
      *
      * @todo Implement contract functionality to handle object contracts and their relationships
      *
@@ -1345,6 +1337,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with object audit logs
      *
      * @psalm-return JSONResponse<200|404, array{results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: string, prev?: string, message?: 'Object does not belong to specified register/schema'|'Object not found'}, array<never, never>>
      */
@@ -1650,6 +1644,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with published object
+     *
      * @psalm-return JSONResponse<200|400, array{error?: mixed|string, name?: mixed|null|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
      */
     public function publish(
@@ -1699,6 +1695,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with depublished object
      *
      * @psalm-return JSONResponse<200|400, array{error?: mixed|string, name?: mixed|null|string, '@self'?: array{name: mixed|null|string,...}|mixed,...}, array<never, never>>
      */
@@ -2006,6 +2004,8 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with batch vectorization results
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: array}, array<never, never>>
      */
