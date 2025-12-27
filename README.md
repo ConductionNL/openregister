@@ -19,6 +19,8 @@ Registers can also apply additional logic to objects, such as validation that is
 - 🛡️ **Validation**: Validate objects against their types.
 - 🏢 **Multi-Tenancy**: Complete organisation-based data isolation with user management and role-based access control.
 - 🔍 **SOLR Integration**: Enhanced search capabilities with improved metadata handling and configuration management.
+- 🔍 **PostgreSQL Search**: Built-in vector search (pgvector) and full-text search (pg_trgm) - no external search engine required!
+- 🧮 **Vector Embeddings**: Native vector storage and similarity search in PostgreSQL for semantic search capabilities.
 - 🔧 **Self-Metadata Handling**: Advanced metadata processing for better data organization and retrieval.
 - 💾 **Flexible Storage**: Store objects in Nextcloud, external databases, or object stores.
 - 🔄 **APIs**: Provide APIs for consumption.
@@ -40,6 +42,7 @@ Detailed technical and user documentation for all features is available in the f
 
 **Search & Discovery:**
 - [Search](website/docs/Features/search.md) - Full-text search, case-insensitive search, metadata filtering, ordering
+- [PostgreSQL Search](website/docs/development/postgresql-search.md) - Vector search and full-text search using PostgreSQL extensions
 - [Faceting](website/docs/Features/faceting.md) - Automatic facets, UUID resolution, dynamic filtering
 - [Search Trails](website/docs/Features/search-trails.md) - Search history and analytics
 
@@ -98,11 +101,11 @@ Open Register makes these principles accessible to any organization by providing
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
-| 🔍 [Content Search](website/docs/content-search.md) | Full-text search across objects and files with SOLR | Quick discovery, unified search, advanced filtering |
+| 🔍 [Content Search](website/docs/content-search.md) | Full-text and vector search with PostgreSQL (pgvector + pg_trgm) | Quick discovery, unified search, no external dependencies |
 | 🏷️ [Automatic Facets](website/docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
 | 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
-| 🤖 **Semantic Search** | AI-powered semantic search across objects and files | Find by meaning, not just keywords, better discovery |
-| 🧮 **Vector Embeddings** | Automatic vectorization of objects and files | Enable semantic search, similarity matching, content understanding |
+| 🤖 **Semantic Search** | AI-powered semantic search using PostgreSQL vector search | Find by meaning, not just keywords, better discovery |
+| 🧮 **Vector Embeddings** | Automatic vectorization stored in PostgreSQL with pgvector | Enable semantic search, similarity matching, native storage |
 | ✍️ **Text Generation** | AI-powered content generation and completion | Automated documentation, content creation, efficiency |
 | 📋 **Document Summarization** | Automatic summarization of documents and objects | Quick insights, time savings, overview generation |
 | 🌍 **Translation** | Multi-language content translation | Accessibility, international reach, localization |
@@ -130,13 +133,15 @@ Open Register includes powerful AI capabilities powered by Large Language Models
 - Search across objects and files simultaneously
 - Understand context and intent
 - More accurate results than traditional keyword search
+- Powered by PostgreSQL pgvector extension
 
 **🧮 Vector Embeddings**
 - Automatic vectorization of objects on creation/update
 - Automatic vectorization of files on upload (text extraction → chunks → embeddings)
 - Multiple embedding models supported
-- Efficient vector storage and retrieval
-- **Process Flow**: File → Text Extraction → Chunks (smaller text portions) → Embeddings (vector representations)
+- Efficient vector storage in PostgreSQL with pgvector
+- Native database integration - no external vector store needed
+- **Process Flow**: File → Text Extraction → Chunks (smaller text portions) → Embeddings (vector representations) → PostgreSQL storage
 
 **📄 Intelligent File Processing**
 - Support for PDF, DOCX, XLSX, TXT, MD, HTML, JSON, XML
@@ -174,7 +179,7 @@ Documentation is available at [https://openregisters.app/](https://openregisters
 
 - Nextcloud 25 or higher
 - PHP 8.1 or higher
-- Database: MySQL/MariaDB
+- Database: PostgreSQL 12+ (with pgvector and pg_trgm extensions)
 
 <!-- ## Installation
 
@@ -289,11 +294,24 @@ docker-compose -f docker-compose.dev.yml up -d
 
 **Both modes include:**
 - Nextcloud with OpenRegister **automatically configured**
-- MariaDB database
-- Solr search engine (standalone mode)
+- PostgreSQL 16 database with pgvector and pg_trgm extensions
+- Vector search and full-text search capabilities built-in
 - Ollama for local LLM inference (AI features)
 
-See the [Docker Development Setup Guide](website/docs/Development/docker-setup.md) for detailed instructions.
+**Optional services (use Docker profiles):**
+- n8n workflow automation: `docker-compose --profile n8n up -d`
+- Hugging Face LLMs: `docker-compose --profile huggingface up -d`
+- OpenLLM management: `docker-compose --profile llm up -d`
+
+**What changed:**
+- ✅ Replaced MariaDB with PostgreSQL 16
+- ✅ Removed Solr/Elasticsearch (no longer needed!)
+- ✅ Added pgvector extension for vector similarity search
+- ✅ Added pg_trgm extension for full-text and partial text matching
+- ✅ All search capabilities now native in PostgreSQL
+- ✅ Added optional profiles for n8n and Hugging Face services
+
+See the [Docker Development Setup Guide](website/docs/Development/docker-setup.md), [PostgreSQL Search Guide](website/docs/development/postgresql-search.md), and [Docker Profiles Guide](website/docs/development/docker-profiles.md) for detailed instructions.
 
 ### Development Environment
 

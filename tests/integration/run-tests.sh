@@ -27,10 +27,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COLLECTION_FILE="${SCRIPT_DIR}/openregister-crud.postman_collection.json"
 
 # Default configuration.
-BASE_URL="${NEXTCLOUD_URL:-http://localhost}"
+# IMPORTANT: Never use http://localhost when running from host! 
+# Newman must either run inside container OR use container-accessible hostname.
+BASE_URL="${NEXTCLOUD_URL:-}"  # Will be auto-detected if not set
 ADMIN_USER="${NEXTCLOUD_ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${NEXTCLOUD_ADMIN_PASSWORD:-admin}"
-CONTAINER_NAME="${NEXTCLOUD_CONTAINER:-master-nextcloud-1}"
+CONTAINER_NAME="${NEXTCLOUD_CONTAINER:-nextcloud}"
 RUN_MODE="${RUN_MODE:-local}" # local or ci.
 
 ##
@@ -58,10 +60,10 @@ Run Newman integration tests for OpenRegister.
 
 OPTIONS:
     -h, --help              Show this help message
-    -u, --url URL           Base URL for Nextcloud (default: http://localhost)
+    -u, --url URL           Base URL for Nextcloud (default: auto-detect)
     -U, --user USER         Admin username (default: admin)
     -P, --password PASS     Admin password (default: admin)
-    -c, --container NAME    Container name (default: master-nextcloud-1)
+    -c, --container NAME    Container name (default: nextcloud)
     -m, --mode MODE         Run mode: local or ci (default: local)
     -C, --clean             Force clean start (clear all variables)
     -v, --verbose           Verbose output
@@ -166,6 +168,12 @@ clear_variables() {
 copy_to_container() {
     if [ "$RUN_MODE" = "local" ]; then
         if command -v docker &> /dev/null; then
+            # Check if Newman is installed in the container.
+            if ! docker exec "$CONTAINER_NAME" which newman >/dev/null 2>&1; then
+                print_message "$YELLOW" "⚠️  Newman not installed in container, will run from host"
+                return 1
+            fi
+            
             print_message "$BLUE" "📦 Copying collection to container: $CONTAINER_NAME"
             
             # Remove old collection file from container to prevent variable persistence.
@@ -180,6 +188,108 @@ copy_to_container() {
         fi
     fi
     return 1
+}
+
+##
+# Detect the correct BASE_URL based on execution context.
+#
+# Determines whether we're running inside a container or from host,
+# and sets the appropriate BASE_URL to reach Nextcloud.
+#
+# @return void
+##
+detect_base_url() {
+    # If BASE_URL is already set, use it.
+    if [ -n "$BASE_URL" ]; then
+        return 0
+    fi
+    
+    # Check if we're inside a Docker container.
+    if [ -f /.dockerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
+        # Inside container: use localhost.
+        BASE_URL="http://localhost"
+        print_message "$BLUE" "📍 Detected: Running inside container, using $BASE_URL"
+    else
+        # Outside container: try to use container name.
+        if docker inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+            # Check if container is running.
+            CONTAINER_STATUS=$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)
+            
+            if [ "$CONTAINER_STATUS" != "true" ]; then
+                print_message "$RED" "❌ ERROR: Container $CONTAINER_NAME is not running"
+                print_message "$YELLOW" "💡 Start it with: docker start $CONTAINER_NAME"
+                print_message "$YELLOW" "   Or use: docker compose up -d"
+                exit 1
+            fi
+            
+            # Check for port 80 mapping to host.
+            HOST_PORT=$(docker port "$CONTAINER_NAME" 80 2>/dev/null | head -1 | cut -d: -f2)
+            
+            if [ -n "$HOST_PORT" ]; then
+                # Container has port mapping - use localhost with port.
+                BASE_URL="http://localhost:${HOST_PORT}"
+                print_message "$BLUE" "📍 Detected: Port mapping 80→${HOST_PORT}, using $BASE_URL"
+            else
+                # No port mapping - use container IP (container-to-container communication).
+                CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_NAME" 2>/dev/null | head -1)
+                
+                if [ -n "$CONTAINER_IP" ]; then
+                    BASE_URL="http://${CONTAINER_IP}"
+                    print_message "$BLUE" "📍 Detected: No port mapping, using container IP: $BASE_URL"
+                    print_message "$YELLOW" "⚠️  Note: Container IP only works from within Docker network"
+                else
+                    print_message "$RED" "❌ ERROR: Could not detect container IP for $CONTAINER_NAME"
+                    print_message "$YELLOW" "💡 Please set BASE_URL manually: export NEXTCLOUD_URL='http://your-nextcloud-host'"
+                    exit 1
+                fi
+            fi
+        else
+            print_message "$RED" "❌ ERROR: Container $CONTAINER_NAME not found and BASE_URL not set"
+            print_message "$YELLOW" "💡 Solutions:"
+            print_message "$YELLOW" "   1. Set BASE_URL: export NEXTCLOUD_URL='http://your-nextcloud-host'"
+            print_message "$YELLOW" "   2. Or specify container: ./run-tests.sh --container your-container-name"
+            print_message "$YELLOW" "   3. Or start Nextcloud: docker compose up -d"
+            exit 1
+        fi
+    fi
+}
+
+##
+# Clean test data from database
+#
+# Removes old test schemas, registers, organizations, and objects to prevent
+# unique constraint violations during test runs.
+#
+# @return void
+##
+clean_database() {
+    print_message "$BLUE" "🧹 Cleaning old test data from database..."
+    
+    # Determine database container name (try common patterns)
+    local db_container="${DATABASE_CONTAINER:-master-database-mysql-1}"
+    
+    # Clean test data directly from database
+    docker exec "$db_container" mysql -u nextcloud -pnextcloud nextcloud -e "
+        DELETE FROM oc_openregister_objects
+        WHERE \`register\` IN (
+            SELECT id FROM oc_openregister_registers 
+            WHERE title LIKE '%Newman%' OR title LIKE '%Test%'
+        );
+        
+        DELETE FROM oc_openregister_schemas 
+        WHERE title LIKE '%Newman%' 
+        OR title LIKE '%Test%' 
+        OR slug LIKE 'person-schema-%' 
+        OR slug LIKE 'validation-test-schema-%'
+        OR slug LIKE 'org2-schema-%'
+        OR slug LIKE 'public-read-schema-%';
+        
+        DELETE FROM oc_openregister_registers 
+        WHERE title LIKE '%Newman%' OR title LIKE '%Test%';
+        
+        DELETE FROM oc_openregister_organisations 
+        WHERE name LIKE '%Newman%' OR name LIKE '%Test%';
+    " 2>/dev/null && print_message "$GREEN" "✅ Database cleaned" || print_message "$YELLOW" "⚠️  Could not clean database (continuing anyway)"
 }
 
 ##
@@ -270,6 +380,9 @@ main() {
     print_message "$GREEN" "╚════════════════════════════════════════════════════════════╝"
     echo ""
     
+    # Detect BASE_URL if not set.
+    detect_base_url
+    
     # Display configuration.
     print_message "$BLUE" "Configuration:"
     echo "  Base URL:       $BASE_URL"
@@ -278,6 +391,12 @@ main() {
     echo "  Run Mode:       $RUN_MODE"
     echo "  Clean Start:    $clean_start"
     echo ""
+    
+    # Clean database if requested
+    if [ "$clean_start" = true ]; then
+        clean_database
+        echo ""
+    fi
     
     # Pre-flight checks.
     check_newman
