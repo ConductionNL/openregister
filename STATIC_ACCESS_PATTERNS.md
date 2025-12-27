@@ -259,3 +259,5 @@ Not all static access is bad - context matters. We follow the principle of using
 - [PHPMD Rules - StaticAccess](https://phpmd.org/rules/controversial.html#staticaccess)
 
 
+
+

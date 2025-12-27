@@ -514,6 +514,8 @@ class LlmSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with vector statistics
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, trace?: string, stats?: array, timestamp?: string}, array<never, never>>
      */
     public function getVectorStats(): JSONResponse

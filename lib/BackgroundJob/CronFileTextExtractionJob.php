@@ -214,4 +214,64 @@ class CronFileTextExtractionJob extends TimedJob
         }//end try
 
     }//end run()
+
+    /**
+     * Get pending files for text extraction based on scope and batch size.
+     *
+     * Retrieves files that need text extraction based on the configured extraction scope.
+     * Files are returned in batches to prevent overwhelming the system.
+     *
+     * @param FileMapper      $fileMapper      File mapper for database queries
+     * @param string          $extractionScope Extraction scope (objects, all, etc.)
+     * @param int             $batchSize       Maximum number of files to retrieve
+     * @param LoggerInterface $logger          Logger for debug messages
+     *
+     * @return array<int, array<string, mixed>> Array of pending file records
+     *
+     * @psalm-return array<int, array{fileid?: int, name?: string, ...}>
+     */
+    private function getPendingFiles(FileMapper $fileMapper, string $extractionScope, int $batchSize, LoggerInterface $logger): array
+    {
+        // Log query parameters for debugging.
+        $logger->debug(
+            'Fetching pending files for cron extraction',
+            [
+                'extraction_scope' => $extractionScope,
+                'batch_size'       => $batchSize,
+            ]
+        );
+
+        try {
+            // Get pending files based on extraction scope.
+            // Files are considered "pending" if they have no extracted text or if extraction failed previously.
+            $pendingFiles = $fileMapper->findPendingExtraction(
+                limit: $batchSize,
+                scope: $extractionScope
+            );
+
+            $logger->debug(
+                'Retrieved pending files',
+                [
+                    'count'       => count($pendingFiles),
+                    'batch_size'  => $batchSize,
+                    'scope'       => $extractionScope,
+                ]
+            );
+
+            return $pendingFiles;
+        } catch (\Exception $e) {
+            // Log error but don't throw - return empty array to continue gracefully.
+            $logger->error(
+                'Failed to retrieve pending files',
+                [
+                    'error'            => $e->getMessage(),
+                    'extraction_scope' => $extractionScope,
+                    'batch_size'       => $batchSize,
+                ]
+            );
+
+            return [];
+        }//end try
+
+    }//end getPendingFiles()
 }//end class

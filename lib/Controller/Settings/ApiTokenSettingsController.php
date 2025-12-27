@@ -111,6 +111,8 @@ class ApiTokenSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response confirming API tokens save
+     *
      * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, message?: 'API tokens saved successfully'}, array<never, never>>
      */
     public function saveApiTokens(): JSONResponse
