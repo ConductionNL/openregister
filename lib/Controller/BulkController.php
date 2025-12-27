@@ -20,6 +20,8 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
+use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -77,6 +79,53 @@ class BulkController extends Controller
     }//end isCurrentUserAdmin()
 
     /**
+     * Resolve register and schema slugs/IDs to numeric IDs.
+     *
+     * This method handles both slugs and numeric IDs by attempting to set them
+     * in the ObjectService, which will resolve slugs to IDs.
+     *
+     * @param string        $register      The register slug or ID
+     * @param string        $schema        The schema slug or ID  
+     * @param ObjectService $objectService The object service
+     *
+     * @return array{register: int, schema: int} Resolved numeric IDs
+     *
+     * @throws RegisterNotFoundException If register not found
+     * @throws SchemaNotFoundException If schema not found
+     *
+     * @psalm-return   array{register: int, schema: int}
+     * @phpstan-return array{register: int, schema: int}
+     */
+    private function resolveRegisterSchemaIds(string $register, string $schema, ObjectService $objectService): array
+    {
+        try {
+            // Resolve register slug/ID to numeric ID.
+            $objectService->setRegister(register: $register);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
+        }
+
+        try {
+            // Resolve schema slug/ID to numeric ID.
+            $objectService->setSchema(schema: $schema);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
+        }
+
+        // Get resolved numeric IDs.
+        $resolvedRegisterId = $objectService->getRegister();
+        $resolvedSchemaId   = $objectService->getSchema();
+        
+        // Reset ObjectService with resolved numeric IDs for consistency.
+        $objectService->setRegister(register: (string) $resolvedRegisterId)->setSchema(schema: (string) $resolvedSchemaId);
+        
+        return [
+            'register' => $resolvedRegisterId,
+            'schema'   => $resolvedSchemaId,
+        ];
+    }//end resolveRegisterSchemaIds()
+
+    /**
      * Perform bulk delete operations on objects
      *
      * @param string $register The register identifier
@@ -96,6 +145,13 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
+            // Resolve slugs to numeric IDs.
+            try {
+                $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $this->objectService);
+            } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+            }
+
             // Get request data.
             $data  = $this->request->getParams();
             $uuids = $data['uuids'] ?? [];
@@ -105,9 +161,9 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => 'Invalid input. "uuids" array is required.'], statusCode: Http::STATUS_BAD_REQUEST);
             }
 
-            // Set register and schema context.
-            $this->objectService->setRegister($register);
-            $this->objectService->setSchema($schema);
+            // Set register and schema context using resolved IDs.
+            $this->objectService->setRegister((string) $resolved['register']);
+            $this->objectService->setSchema((string) $resolved['schema']);
 
             // Perform bulk delete operation.
             $deletedUuids = $this->objectService->deleteObjects($uuids);
@@ -249,11 +305,7 @@ class BulkController extends Controller
                 }
             }
 
-            // Set register and schema context.
-            $this->objectService->setRegister($register);
-            $this->objectService->setSchema($schema);
-
-            // Perform bulk depublish operation.
+            // Perform bulk depublish operation (resolveRegisterSchemaIds already set context).
             $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime ?? true);
 
             // Format datetime for response.
