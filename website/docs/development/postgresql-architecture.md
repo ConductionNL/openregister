@@ -409,3 +409,4 @@ OpenRegister now uses a unified PostgreSQL-based architecture that:
 
 All search functionality is now native to PostgreSQL, making the system simpler, faster, and more maintainable.
 
+
