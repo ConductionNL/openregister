@@ -32,7 +32,7 @@ COLLECTION_FILE="${SCRIPT_DIR}/openregister-crud.postman_collection.json"
 BASE_URL="${NEXTCLOUD_URL:-}"  # Will be auto-detected if not set
 ADMIN_USER="${NEXTCLOUD_ADMIN_USER:-admin}"
 ADMIN_PASSWORD="${NEXTCLOUD_ADMIN_PASSWORD:-admin}"
-CONTAINER_NAME="${NEXTCLOUD_CONTAINER:-nextcloud}"
+CONTAINER_NAME="${NEXTCLOUD_CONTAINER:-master-nextcloud-1}"
 RUN_MODE="${RUN_MODE:-local}" # local or ci.
 
 ##
@@ -63,7 +63,7 @@ OPTIONS:
     -u, --url URL           Base URL for Nextcloud (default: auto-detect)
     -U, --user USER         Admin username (default: admin)
     -P, --password PASS     Admin password (default: admin)
-    -c, --container NAME    Container name (default: nextcloud)
+    -c, --container NAME    Container name (default: master-nextcloud-1)
     -m, --mode MODE         Run mode: local or ci (default: local)
     -C, --clean             Force clean start (clear all variables)
     -v, --verbose           Verbose output
