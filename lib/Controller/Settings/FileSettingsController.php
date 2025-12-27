@@ -218,6 +218,8 @@ class FileSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with file collection fields
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, collection?: 'files', status?: mixed}, array<never, never>>
      */
     public function getFileCollectionFields(): JSONResponse
@@ -251,6 +253,8 @@ class FileSettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with field creation results
      *
      * @psalm-return JSONResponse<200|400|500, array{success: false|mixed, message: string, collection?: 'files'}, array<never, never>>
      */
@@ -316,6 +320,8 @@ class FileSettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with file warmup results
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message: string, files_processed?: int<0, max>, indexed?: 0|mixed, failed?: 0|mixed, errors?: array, mode?: mixed}, array<never, never>>
      */
@@ -482,6 +488,8 @@ class FileSettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with file reindexing results
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message: string, indexed?: 0|mixed, files_processed?: int<0, max>, failed?: mixed, errors?: array}, array<never, never>>
      */

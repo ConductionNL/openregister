@@ -515,6 +515,8 @@ class SolrOperationsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with Solr memory prediction
+     *
      * @psalm-return JSONResponse<200|422, array{success: bool, message: string, prediction: array{error: string, prediction_safe: false}|mixed}, array<never, never>>
      */
     public function getSolrMemoryPrediction(): JSONResponse

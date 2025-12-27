@@ -187,6 +187,8 @@ class ValidationSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with mass validation memory prediction
+     *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, prediction_safe: bool, formatted: array{total_predicted: string, available: string, current_usage?: string, memory_limit?: string, memory_per_object?: string}, objects_to_process?: 10000|mixed, total_objects_available?: 'Unknown (fast mode)', memory_per_object_bytes?: 51200, total_predicted_bytes?: mixed, current_memory_bytes?: int, memory_limit_bytes?: int, available_memory_bytes?: int, safety_margin_percentage?: 80, recommendation?: 'Safe to process'|'Warning: Memory usage may exceed available memory', note?: 'Fast prediction mode - actual object count will be determined during processing'}, array<never, never>>
      */
     public function predictMassValidationMemory(): JSONResponse

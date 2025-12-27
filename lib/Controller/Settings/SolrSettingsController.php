@@ -337,6 +337,8 @@ class SolrSettingsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @return JSONResponse JSON response with Solr facet configuration and discovery
+     *
      * @psalm-return JSONResponse<200|422|500, array{success: bool, message: string, error?: string, facets?: array{'@self'?: array<array>, object_fields?: array<array>}, global_settings?: array{show_count: true, show_empty: false, max_items: 10}|mixed}, array<never, never>>
      */
     public function getSolrFacetConfigWithDiscovery(): JSONResponse
@@ -453,6 +455,8 @@ class SolrSettingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with updated Solr facet configuration
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message: string, error?: string, config?: array}, array<never, never>>
      */
