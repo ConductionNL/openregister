@@ -220,10 +220,12 @@ services:
     image: n8nio/n8n:latest
     container_name: openregister-n8n
     restart: always
+    user: root
     ports:
       - "5678:5678"
     volumes:
       - n8n:/home/node/.n8n
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       # Basic authentication
       - N8N_BASIC_AUTH_ACTIVE=true

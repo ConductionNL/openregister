@@ -297,3 +297,4 @@ You now have:
 - Check: n8n docs at https://docs.n8n.io
 - Test: http://localhost:5678
 
+

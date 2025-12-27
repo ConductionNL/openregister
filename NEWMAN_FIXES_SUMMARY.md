@@ -137,3 +137,4 @@ DELETE FROM oc_openregister_schemas WHERE slug LIKE 'person-schema-%';
 3. **Automatic cleanup**: Run cleanup before every test suite execution
 4. **Monitoring**: Add logging for constraint violations
 5. **Documentation**: Update test guidelines to emphasize cleanup importance
+
