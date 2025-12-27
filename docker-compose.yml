@@ -3,28 +3,56 @@ volumes:
   apps:
   db:
   config:
-  solr:
-  zookeeper:
-  elasticsearch:
   ollama:
   presidio-models:
   n8n:
+  tgi-models:
+  openllm-models:
+  openllm-cache:
+  solr:
+  zookeeper:
+  elasticsearch:
 
 services:
   db:
-    image: mariadb:10.6
+    image: pgvector/pgvector:pg16
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    container_name: openregister-postgres
     volumes:
-      - db:/var/lib/mysql
+      - db:/var/lib/postgresql/data
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
     environment:
-      - MYSQL_ROOT_PASSWORD='!ChangeMe!'
-      - MYSQL_PASSWORD='!ChangeMe!'
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=!ChangeMe!
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_trgm,vector
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
 
-  # ZooKeeper for SolrCloud coordination
+  # ZooKeeper for SolrCloud coordination (Optional - use --profile solr)
   zookeeper:
+    profiles:
+      - solr
+      - search
     image: zookeeper:3.8
     container_name: openregister-zookeeper
     restart: always
@@ -35,9 +63,20 @@ services:
       - zookeeper:/data
     ports:
       - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo stat | nc localhost 2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # SOLR in SolrCloud mode
+  # Solr in SolrCloud mode (Optional - use --profile solr)
+  # Traditional search engine with advanced features
+  # Access at: http://localhost:8983
+  # Note: PostgreSQL with pgvector+pg_trgm is now the recommended approach
   solr:
+    profiles:
+      - solr
+      - search
     image: solr:9-slim
     container_name: openregister-solr
     restart: always
@@ -54,12 +93,12 @@ services:
       - bash
       - -c
       - |
-        # Wait for ZooKeeper to be ready
+        # Wait for ZooKeeper to be ready.
         echo "Waiting for ZooKeeper..."
         while ! nc -z zookeeper 2181; do sleep 1; done
         echo "ZooKeeper is ready!"
         
-        # Start SOLR in SolrCloud mode
+        # Start Solr in SolrCloud mode.
         solr-foreground -c -z zookeeper:2181
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
@@ -67,8 +106,14 @@ services:
       timeout: 10s
       retries: 3
 
-  # Elasticsearch for alternative search backend
+  # Elasticsearch for alternative search backend (Optional - use --profile elasticsearch)
+  # Modern search and analytics engine
+  # Access at: http://localhost:9200
+  # Note: PostgreSQL with pgvector+pg_trgm is now the recommended approach
   elasticsearch:
+    profiles:
+      - elasticsearch
+      - search
     image: elasticsearch:8.11.3
     container_name: openregister-elasticsearch
     restart: always
@@ -163,12 +208,15 @@ services:
       retries: 3
       start_period: 30s
 
-  # n8n Workflow Automation
+  # n8n Workflow Automation (Optional - use --profile n8n)
   # Integrates with OpenRegister via Nextcloud webhooks
   # Access at: http://localhost:5678
   # Default credentials: admin / admin (change in production!)
   # Documentation: https://docs.n8n.io
   n8n:
+    profiles:
+      - n8n
+      - automation
     image: n8nio/n8n:latest
     container_name: openregister-n8n
     restart: always
@@ -200,6 +248,116 @@ services:
       retries: 3
       start_period: 30s
 
+  # Hugging Face Text Generation Inference (TGI) with OpenAI-compatible API (Optional - use --profile huggingface)
+  # Provides high-performance inference for language models
+  # Access at: http://localhost:8081
+  # OpenAI-compatible API endpoint: http://localhost:8081/v1
+  # Documentation: https://huggingface.co/docs/text-generation-inference
+  tgi-llm:
+    profiles:
+      - huggingface
+      - llm
+    image: ghcr.io/huggingface/text-generation-inference:latest
+    container_name: openregister-tgi-llm
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - tgi-models:/data
+    environment:
+      # Model configuration - Change to your preferred model
+      - MODEL_ID=mistralai/Mistral-7B-Instruct-v0.2
+      # Alternative models:
+      # - MODEL_ID=meta-llama/Llama-2-7b-chat-hf
+      # - MODEL_ID=codellama/CodeLlama-7b-Instruct-hf
+      # - MODEL_ID=teknium/OpenHermes-2.5-Mistral-7B
+      
+      # Performance settings
+      - MAX_INPUT_LENGTH=4096
+      - MAX_TOTAL_TOKENS=8192
+      - MAX_BATCH_PREFILL_TOKENS=4096
+      - MAX_CONCURRENT_REQUESTS=128
+      - MAX_WAITING_TOKENS=20
+      
+      # Quantization (reduce memory usage)
+      # - QUANTIZE=bitsandbytes-nf4
+      
+      # Hugging Face token (required for gated models like Llama)
+      # Get token from: https://huggingface.co/settings/tokens
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+      
+      # Sharding for multi-GPU (if available)
+      # - NUM_SHARD=2
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # OpenLLM Management Interface (Optional - use --profile huggingface)
+  # Web UI for managing and downloading language models
+  # Access at: http://localhost:3000
+  # Documentation: https://github.com/bentoml/OpenLLM
+  openllm:
+    profiles:
+      - huggingface
+      - llm
+    image: ghcr.io/bentoml/openllm:latest
+    container_name: openregister-openllm
+    restart: always
+    ports:
+      - "3000:3000"
+      - "8082:8082"
+    volumes:
+      - openllm-models:/models
+      - openllm-cache:/root/.cache
+    environment:
+      # Model configuration
+      - OPENLLM_MODEL=mistralai/Mistral-7B-Instruct-v0.2
+      - OPENLLM_BACKEND=vllm
+      - OPENLLM_PORT=3000
+      - OPENLLM_API_PORT=8082
+      
+      # GPU configuration
+      - CUDA_VISIBLE_DEVICES=0
+      
+      # Performance settings
+      - OPENLLM_MAX_MODEL_LEN=4096
+      - OPENLLM_GPU_MEMORY_UTILIZATION=0.9
+      
+      # Hugging Face token
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    command: start mistralai/Mistral-7B-Instruct-v0.2 --backend vllm
+
   # init-ubuntu:
   #   image: ubuntu
   #   command: sh /home/ubuntu/docker/init-ubuntu.sh
@@ -217,21 +375,18 @@ services:
       - 8080:80
     links:
       - db
-      - solr
-      - elasticsearch
       - ollama
       - presidio-analyzer
-      - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
     environment:
-      - MYSQL_PASSWORD='!ChangeMe!'
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_HOST=db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=!ChangeMe!
+      - POSTGRES_HOST=db
       - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
@@ -240,7 +395,5 @@ services:
       - PHP_UPLOAD_LIMIT=2G
       - PHP_POST_MAX_SIZE=2G
     depends_on:
-      - db
-      - n8n
-    #   init-ubuntu:
-    #     condition: service_completed_successfully
+      db:
+        condition: service_healthy
