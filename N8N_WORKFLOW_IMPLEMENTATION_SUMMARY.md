@@ -339,3 +339,5 @@ Ensure OpenRegister can reach n8n:
 
 The n8n workflow integration is complete and ready for testing. The implementation provides a solid foundation for workflow automation in OpenRegister, with room for future enhancements. All code follows Nextcloud and PSR standards, and comprehensive documentation ensures users can easily configure and use the feature.
 
+
+

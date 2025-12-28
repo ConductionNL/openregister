@@ -80,3 +80,5 @@ echo "2. Check if n8n MCP appears in Cursor's MCP resources"
 echo "3. Ask AI: 'List my n8n workflows'"
 echo ""
 
+
+

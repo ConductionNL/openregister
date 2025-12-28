@@ -110,3 +110,5 @@ Once configured, AI agents can interact with n8n workflows using natural languag
 - [n8n API Documentation](https://docs.n8n.io/api/)
 - [OpenRegister n8n Setup Guide](../website/docs/technical/n8n-mcp/setup.md)
 
+
+

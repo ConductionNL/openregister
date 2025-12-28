@@ -362,21 +362,26 @@ class ObjectService
     public function setRegister(Register | string | int $register): static
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
+            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs only.
             // When deriving register from object context, bypass RBAC and multi-tenancy checks.
             // If user has access to the object, they should be able to access its register.
-            $registers          = $this->performanceHandler->getCachedEntities(
-                [$register],
-                function ($ids) {
-                    return [$this->registerMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
+            if (is_numeric($register) === true) {
+                $registers          = $this->performanceHandler->getCachedEntities(
+                    [$register],
+                    function ($ids) {
+                        return [$this->registerMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
+                    }
+                );
+                $registerExists     = isset($registers[0]) === true;
+                $isRegisterInstance = $registerExists === true && $registers[0] instanceof Register;
+                if ($isRegisterInstance === true) {
+                    $register = $registers[0];
+                } else {
+                    // Fallback to direct database lookup if cache fails.
+                    $register = $this->registerMapper->find(id: $register, published: null, _rbac: false, _multitenancy: false);
                 }
-            );
-            $registerExists     = isset($registers[0]) === true;
-            $isRegisterInstance = $registerExists === true && $registers[0] instanceof Register;
-            if ($isRegisterInstance === true) {
-                $register = $registers[0];
             } else {
-                // Fallback to direct database lookup if cache fails.
+                // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
                 $register = $this->registerMapper->find(id: $register, published: null, _rbac: false, _multitenancy: false);
             }
         }
@@ -395,22 +400,30 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup.
-            // When deriving schema from object context, bypass RBAC and multi-tenancy checks.
-            // If user has access to the object, they should be able to access its schema.
-            $schemas          = $this->performanceHandler->getCachedEntities(
-                [$schema],
-                function ($ids) {
-                    return [$this->schemaMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
+            // Try to find schema by ID first (if numeric) or by slug.
+            try {
+                if (is_numeric($schema) === true) {
+                    // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs.
+                    $schemas          = $this->performanceHandler->getCachedEntities(
+                        [$schema],
+                        function ($ids) {
+                            return [$this->schemaMapper->find(id: $ids[0], published: null, _rbac: false, _multitenancy: false)];
+                        }
+                    );
+                    $schemaExists     = isset($schemas[0]) === true;
+                    $isSchemaInstance = $schemaExists === true && $schemas[0] instanceof Schema;
+                    if ($isSchemaInstance === true) {
+                        $schema = $schemas[0];
+                    } else {
+                        // Fallback to direct database lookup if cache fails.
+                        $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
+                    }
+                } else {
+                    // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
+                    $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
                 }
-            );
-            $schemaExists     = isset($schemas[0]) === true;
-            $isSchemaInstance = $schemaExists === true && $schemas[0] instanceof Schema;
-            if ($isSchemaInstance === true) {
-                $schema = $schemas[0];
-            } else {
-                // Fallback to direct database lookup if cache fails.
-                $schema = $this->schemaMapper->find(id: $schema, published: null, _rbac: false, _multitenancy: false);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                throw new ValidationException('Schema not found');
             }
         }
 

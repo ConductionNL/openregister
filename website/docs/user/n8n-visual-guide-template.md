@@ -349,3 +349,5 @@ After capturing all screenshots:
 **For**: OpenRegister n8n Integration  
 **Purpose**: Visual configuration guide with screenshot placeholders
 
+
+

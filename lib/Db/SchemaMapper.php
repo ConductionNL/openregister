@@ -244,24 +244,6 @@ class SchemaMapper extends QBMapper
     }//end find()
 
     /**
-     * Find schema by slug
-     *
-     * @param string $slug The slug of the schema
-     *
-     * @return Schema|null The schema if found, null otherwise
-     */
-    public function findBySlug(string $slug): ?Schema
-    {
-        try {
-            return $this->find($slug);
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return null;
-        } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-            return null;
-        }
-    }//end findBySlug()
-
-    /**
      * Finds multiple schemas by id
      *
      * @param array     $ids           The ids of the schemas

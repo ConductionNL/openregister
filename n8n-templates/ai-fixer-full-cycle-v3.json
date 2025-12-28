@@ -15,13 +15,13 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 */6 * * *"
+              "expression": "*/10 * * * *"
             }
           ]
         }
       },
       "id": "schedule-trigger",
-      "name": "Schedule Trigger",
+      "name": "Schedule Trigger (Every 10 Minutes)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [20, 600]

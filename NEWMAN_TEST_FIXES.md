@@ -194,3 +194,7 @@ export NEXTCLOUD_URL='http://your-host:port'
 - Routes Definition: `appinfo/routes.php`
 - Controllers: `lib/Controller/`
 
+
+
+
+

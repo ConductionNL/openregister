@@ -376,9 +376,7 @@ class ObjectsController extends Controller
         // STEP 2: Get resolved numeric IDs.
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
-        // STEP 3: Reset ObjectService with resolved numeric IDs.
-        // This ensures the entire pipeline works with IDs consistently.
-        $objectService->setRegister(register: (string) $resolvedRegisterId)->setSchema(schema: (string) $resolvedSchemaId);
+
         return [
             'register' => $resolvedRegisterId,
             'schema'   => $resolvedSchemaId,
@@ -629,8 +627,8 @@ class ObjectsController extends Controller
         ObjectService $objectService
     ): JSONResponse {
         try {
-            // Resolve slugs to numeric IDs consistently (validation only).
-            $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
             // Return 404 with clear error message if register or schema not found.
             return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
@@ -771,11 +769,12 @@ class ObjectsController extends Controller
         // Save the object.
         try {
             // Use the object service to validate and save the object.
+            // Use resolved numeric IDs instead of slugs.
             $objectToSave = $object;
             $objectEntity = $objectService->saveObject(
                 object: $objectToSave,
-                register: $register,
-                schema: $schema,
+                register: $resolved['register'],
+                schema: $resolved['schema'],
                 _rbac: $rbac,
                 _multitenancy: true,
                 uuid: null,
@@ -993,8 +992,8 @@ class ObjectsController extends Controller
         try {
             // Use the object service to validate and update the object.
             $objectEntity = $objectService->saveObject(
-                register: $register,
-                schema: $schema,
+                register: $resolved['register'],
+                schema: $resolved['schema'],
                 object: $object,
                 _rbac: $rbac,
                 _multitenancy: $multi,
@@ -1044,9 +1043,12 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema(schema: $schema);
-        $objectService->setRegister(register: $register);
+        try {
+            // Resolve slugs to numeric IDs consistently.
+            $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+        } catch (\OCA\OpenRegister\Exception\RegisterNotFoundException | \OCA\OpenRegister\Exception\SchemaNotFoundException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
+        }
 
         // Get patch data from request and filter parameters.
         $patchData     = $this->filterRequestParameters($this->request->getParams());

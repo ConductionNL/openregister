@@ -210,7 +210,8 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
-            $schema = $this->schemaMapper->findBySlug($slug);
+            // SchemaMapper->find() supports id, uuid, and slug via orX().
+            $schema = $this->schemaMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
             if ($schema !== null) {
                 return (string) $schema->getId();
             }
@@ -290,13 +291,10 @@ class SaveObject
 
         // Try direct slug match as last resort.
         try {
-            // RegisterMapper doesn't have findBySlug, use searchObjects or find instead.
-            // Try to find register by slug using searchObjects.
-            $registers = $this->registerMapper->findAll();
-            foreach ($registers as $register) {
-                if ($register->getSlug() === $slug) {
-                    return (string) $register->getId();
-                }
+            // RegisterMapper->find() supports id, uuid, and slug via orX().
+            $register = $this->registerMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            if ($register !== null) {
+                return (string) $register->getId();
             }
         } catch (Exception $e) {
             // Register not found.
