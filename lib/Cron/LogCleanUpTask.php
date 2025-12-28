@@ -1,20 +1,18 @@
 <?php
+
 /**
  * OpenRegister Log Cleanup Task
  *
  * This file contains the background job for cleaning up expired audit trail logs
  * in the OpenRegister application.
  *
- * @category Background Jobs
- * @package  OCA\OpenRegister\Cron
- *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @category  Cron
+ * @package   OCA\OpenRegister\Cron
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Cron;
@@ -33,10 +31,11 @@ use Psr\Log\LoggerInterface;
  * to prevent the database from growing indefinitely and maintain performance.
  *
  * @package OCA\OpenRegister\Cron
+ *
+ * @psalm-suppress UnusedClass
  */
 class LogCleanUpTask extends TimedJob
 {
-
     /**
      * The audit trail mapper for database operations
      *
@@ -50,7 +49,6 @@ class LogCleanUpTask extends TimedJob
      * @var LoggerInterface
      */
     private readonly LoggerInterface $logger;
-
 
     /**
      * Constructor for the LogCleanUpTask
@@ -68,19 +66,17 @@ class LogCleanUpTask extends TimedJob
     ) {
         parent::__construct($time);
         $this->auditTrailMapper = $auditTrailMapper;
-        $this->logger = $logger;
+        $this->logger           = $logger;
 
-        // Run every hour (3600 seconds)
+        // Run every hour (3600 seconds).
         $this->setInterval(3600);
 
-        // Delay until low-load time
+        // Delay until low-load time.
         $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
 
-        // Only run one instance of this job at a time
+        // Only run one instance of this job at a time.
         $this->setAllowParallelRuns(false);
-
     }//end __construct()
-
 
     /**
      * Execute the log cleanup task
@@ -88,44 +84,43 @@ class LogCleanUpTask extends TimedJob
      * This method is called by the Nextcloud background job system to clean up
      * expired audit trail logs from the database.
      *
-     * @param mixed $argument The job argument (not used in this implementation)
+     * @param mixed $_argument The job argument (not used in this implementation).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function run(mixed $argument): void
+    public function run(mixed $_argument): void
     {
         try {
-            // Attempt to clear expired logs
+            // Attempt to clear expired logs.
             $logsCleared = $this->auditTrailMapper->clearLogs();
 
-            // Log the result for monitoring purposes
+            // Log the result for monitoring purposes.
             if ($logsCleared === true) {
                 $this->logger->info(
-                'Successfully cleared expired audit trail logs',
-                [
+                    'Successfully cleared expired audit trail logs',
+                    [
                     'app' => 'openregister',
-                ]
+                    ]
                 );
             } else {
                 $this->logger->debug(
-                'No expired audit trail logs found to clear',
-                [
+                    'No expired audit trail logs found to clear',
+                    [
                     'app' => 'openregister',
-                ]
+                    ]
                 );
             }
         } catch (\Exception $e) {
-            // Log any errors that occur during cleanup
+            // Log any errors that occur during cleanup.
             $this->logger->error(
-            'Failed to clear expired audit trail logs: '.$e->getMessage(),
-            [
+                'Failed to clear expired audit trail logs: ' . $e->getMessage(),
+                [
                 'app'       => 'openregister',
                 'exception' => $e,
-            ]
+                ]
             );
         }//end try
-
     }//end run()
-
-
 }//end class

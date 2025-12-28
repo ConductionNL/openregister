@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Notification Provider
  *
@@ -33,14 +34,12 @@ use OCP\Notification\INotifier;
  */
 class Notifier implements INotifier
 {
-
     /**
      * L10N factory for translation.
      *
      * @var IFactory The L10N factory instance.
      */
     private IFactory $factory;
-
 
     /**
      * Constructor
@@ -50,9 +49,7 @@ class Notifier implements INotifier
     public function __construct(IFactory $factory)
     {
         $this->factory = $factory;
-
     }//end __construct()
-
 
     /**
      * Identifier of the notifier.
@@ -60,13 +57,13 @@ class Notifier implements INotifier
      * Only use [a-z0-9_].
      *
      * @return string The notifier ID
+     *
+     * @psalm-return 'openregister'
      */
     public function getID(): string
     {
         return 'openregister';
-
     }//end getID()
-
 
     /**
      * Human readable name describing the notifier.
@@ -76,9 +73,7 @@ class Notifier implements INotifier
     public function getName(): string
     {
         return $this->factory->get('openregister')->t('OpenRegister');
-
     }//end getName()
-
 
     /**
      * Prepare notification for display.
@@ -92,7 +87,7 @@ class Notifier implements INotifier
     public function prepare(INotification $notification, string $languageCode): INotification
     {
         if ($notification->getApp() !== 'openregister') {
-            // Not our notification
+            // Not our notification.
             throw new InvalidArgumentException('Unknown app');
         }
 
@@ -100,15 +95,13 @@ class Notifier implements INotifier
 
         switch ($notification->getSubject()) {
             case 'configuration_update_available':
-                return $this->prepareConfigurationUpdate($notification, $l);
+                return $this->prepareConfigurationUpdate(notification: $notification, l: $l);
 
             default:
-                // Unknown subject
+                // Unknown subject.
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
-
     }//end prepare()
-
 
     /**
      * Prepare configuration update notification.
@@ -121,46 +114,41 @@ class Notifier implements INotifier
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification
     {
         $parameters = $notification->getSubjectParameters();
-        
+
         $configurationTitle = $parameters['configurationTitle'] ?? 'Configuration';
         $currentVersion     = $parameters['currentVersion'] ?? 'unknown';
         $newVersion         = $parameters['newVersion'] ?? 'unknown';
 
         $notification->setParsedSubject(
-            $l->t('Configuration update available: %s', [$configurationTitle])
+            $l->t(text: 'Configuration update available: %s', args: [$configurationTitle])
         );
 
         $notification->setParsedMessage(
             $l->t(
-                'A new version (%s) of configuration "%s" is available. Current version: %s',
-                [$newVersion, $configurationTitle, $currentVersion]
+                text: 'A new version (%s) of configuration "%s" is available. Current version: %s',
+                args: [$newVersion, $configurationTitle, $currentVersion]
             )
         );
 
         $notification->setIcon(
-            \OC::$server->getURLGenerator()->imagePath('openregister', 'app.svg')
+            \OC::$server->getURLGenerator()->imagePath(appName: 'openregister', file: 'app.svg')
         );
 
-        // Add action to view the configuration
-        if (isset($parameters['configurationId']) === true) {
+        // Add action to view the configuration.
+        if (($parameters['configurationId'] ?? null) !== null) {
             $action = $notification->createAction();
-            $action->setLabel($l->t('View'))
+            $action->setLabel($l->t(text: 'View'))
                 ->setPrimary(true)
                 ->setLink(
-                    \OC::$server->getURLGenerator()->linkToRouteAbsolute(
-                        'openregister.dashboard.page'
-                    ).'#/configurations/'.$parameters['configurationId'],
-                    'GET'
+                    link: \OC::$server->getURLGenerator()->linkToRouteAbsolute(
+                        route: 'openregister.dashboard.page'
+                    ) . '#/configurations/' . $parameters['configurationId'],
+                    requestType: 'GET'
                 );
-            
+
             $notification->addAction($action);
         }
 
         return $notification;
-
     }//end prepareConfigurationUpdate()
-
-
 }//end class
-
-

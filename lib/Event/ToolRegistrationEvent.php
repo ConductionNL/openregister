@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Tool Registration Event
  *
@@ -40,7 +41,7 @@ use OCP\EventDispatcher\Event;
  *             function(ToolRegistrationEvent $event) {
  *                 // Get your tool from DI container
  *                 $tool = \OC::$server->get(MyCMSTool::class);
- *                 
+ *
  *                 // Register it with metadata
  *                 $event->registerTool('myapp.cms', $tool, [
  *                     'name' => 'CMS Tool',
@@ -75,7 +76,7 @@ class ToolRegistrationEvent extends Event
     {
         parent::__construct();
         $this->registry = $registry;
-    }
+    }//end __construct()
 
     /**
      * Register a tool
@@ -96,17 +97,6 @@ class ToolRegistrationEvent extends Event
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        $this->registry->registerTool($id, $tool, $metadata);
-    }
-
-    /**
-     * Get the registry
-     *
-     * @return ToolRegistry Tool registry instance
-     */
-    public function getRegistry(): ToolRegistry
-    {
-        return $this->registry;
-    }
-}
-
+        $this->registry->registerTool(id: $id, tool: $tool, metadata: $metadata);
+    }//end registerTool()
+}//end class

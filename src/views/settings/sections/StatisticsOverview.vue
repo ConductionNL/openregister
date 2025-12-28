@@ -210,6 +210,17 @@
 									</tr>
 									<tr class="stats-table-row">
 										<td class="stats-table-label">
+											Webhook Logs
+										</td>
+										<td class="stats-table-value">
+											{{ stats.totals.totalWebhookLogs }}
+										</td>
+										<td class="stats-table-value">
+											-
+										</td>
+									</tr>
+									<tr class="stats-table-row">
+										<td class="stats-table-label">
 											Deleted Objects
 										</td>
 										<td class="stats-table-value">

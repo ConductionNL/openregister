@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 
 /**
  * OpenRegister AbstractNodesFolderEventListener
@@ -33,11 +32,11 @@ use OCP\Files\FileInfo;
 
 /**
  * Event listener for node folder events.
+ *
+ * @template-implements IEventListener<Event>
  */
 class AbstractNodesFolderEventListener implements IEventListener
 {
-
-
     /**
      * Constructor for AbstractNodesFolderEventListener
      *
@@ -50,9 +49,7 @@ class AbstractNodesFolderEventListener implements IEventListener
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
     ) {
-
     }//end __construct()
-
 
     /**
      * Handle incoming events.
@@ -73,42 +70,39 @@ class AbstractNodesFolderEventListener implements IEventListener
         }
 
         match (true) {
-            $event instanceof NodeCopiedEvent => $this->handleNodeCopied(event: $event),
-            $event instanceof NodeRenamedEvent => $this->handleNodeRenamed(event: $event),
-        default => throw new InvalidArgumentException(
-                message: 'Unsupported event type: '.get_class($event)
+            $event instanceof NodeCopiedEvent => $this->handleNodeCopied($event),
+            $event instanceof NodeRenamedEvent => $this->handleNodeRenamed($event),
+            default => throw new InvalidArgumentException(
+                'Unsupported event type: ' . get_class($event)
             ),
         };
-
     }//end handle()
-
 
     /**
      * Handle when a node is copied.
      *
-     * @param NodeCopiedEvent $event The node copied event
+     * @param NodeCopiedEvent $_event The node copied event
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function handleNodeCopied(NodeCopiedEvent $event): void
+    private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
-        // phpcs:ignore
         // $this->objectService->nodeCopiedEventFunction();
     }//end handleNodeCopied()
-
 
     /**
      * Handle when a node is renamed.
      *
-     * @param NodeRenamedEvent $event The node renamed event
+     * @param NodeRenamedEvent $_event The node renamed event
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function handleNodeRenamed(NodeRenamedEvent $event): void
+    private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {
-        // phpcs:ignore
         // $this->objectService->nodeRenamedEventFunction();
     }//end handleNodeRenamed()
-
-
 }//end class

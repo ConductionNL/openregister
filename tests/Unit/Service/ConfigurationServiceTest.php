@@ -109,7 +109,7 @@ class ConfigurationServiceTest extends TestCase
         $configuration->setLocalVersion('1.0.0');
         $configuration->setRemoteVersion('1.1.0');
 
-        // Manually test the version comparison logic
+        // Manually test the version comparison logic.
         $hasUpdate = version_compare($configuration->getRemoteVersion(), $configuration->getLocalVersion(), '>');
 
         $this->assertTrue($hasUpdate);
@@ -128,7 +128,7 @@ class ConfigurationServiceTest extends TestCase
         $configuration->setLocalVersion('1.0.0');
         $configuration->setRemoteVersion('1.0.0');
 
-        // Manually test the version comparison logic
+        // Manually test the version comparison logic.
         $hasUpdate = version_compare($configuration->getRemoteVersion(), $configuration->getLocalVersion(), '>');
 
         $this->assertFalse($hasUpdate);
@@ -147,7 +147,7 @@ class ConfigurationServiceTest extends TestCase
         $configuration->setLocalVersion('2.0.0');
         $configuration->setRemoteVersion('1.0.0');
 
-        // Manually test the version comparison logic
+        // Manually test the version comparison logic.
         $hasUpdate = version_compare($configuration->getRemoteVersion(), $configuration->getLocalVersion(), '>');
 
         $this->assertFalse($hasUpdate);
@@ -166,7 +166,7 @@ class ConfigurationServiceTest extends TestCase
         $configuration->setLocalVersion('1.0.0');
         $configuration->setRemoteVersion(null);
 
-        // Test that hasUpdateAvailable() returns false when remote version is null
+        // Test that hasUpdateAvailable() returns false when remote version is null.
         $this->assertFalse($configuration->hasUpdateAvailable());
 
     }//end testCompareVersionsWithNoRemoteVersion()
@@ -179,20 +179,20 @@ class ConfigurationServiceTest extends TestCase
      */
     public function testIsRemoteSource(): void
     {
-        // Test GitHub source
+        // Test GitHub source.
         $config = new Configuration();
         $config->setSourceType('github');
         $this->assertTrue($config->isRemoteSource());
 
-        // Test GitLab source
+        // Test GitLab source.
         $config->setSourceType('gitlab');
         $this->assertTrue($config->isRemoteSource());
 
-        // Test URL source
+        // Test URL source.
         $config->setSourceType('url');
         $this->assertTrue($config->isRemoteSource());
 
-        // Test local source
+        // Test local source.
         $config->setSourceType('local');
         $this->assertFalse($config->isRemoteSource());
 
@@ -208,11 +208,11 @@ class ConfigurationServiceTest extends TestCase
     {
         $config = new Configuration();
         
-        // Test local source
+        // Test local source.
         $config->setSourceType('local');
         $this->assertTrue($config->isLocalSource());
 
-        // Test remote sources
+        // Test remote sources.
         $config->setSourceType('github');
         $this->assertFalse($config->isLocalSource());
 
@@ -279,10 +279,10 @@ class ConfigurationServiceTest extends TestCase
 
         $configurations = [$config1, $config2];
 
-        // Test that schema is managed
+        // Test that schema is managed.
         $this->assertTrue($schema->isManagedByConfiguration($configurations));
 
-        // Test that we get the correct configuration
+        // Test that we get the correct configuration.
         $managedBy = $schema->getManagedByConfiguration($configurations);
         $this->assertNotNull($managedBy);
         $this->assertEquals(2, $managedBy->getId());
@@ -306,10 +306,10 @@ class ConfigurationServiceTest extends TestCase
 
         $configurations = [$config];
 
-        // Test that register is managed
+        // Test that register is managed.
         $this->assertTrue($register->isManagedByConfiguration($configurations));
 
-        // Test that we get the correct configuration
+        // Test that we get the correct configuration.
         $managedBy = $register->getManagedByConfiguration($configurations);
         $this->assertNotNull($managedBy);
         $this->assertEquals(1, $managedBy->getId());
@@ -333,10 +333,10 @@ class ConfigurationServiceTest extends TestCase
 
         $configurations = [$config];
 
-        // Test that schema is not managed
+        // Test that schema is not managed.
         $this->assertFalse($schema->isManagedByConfiguration($configurations));
 
-        // Test that getManagedByConfiguration returns null
+        // Test that getManagedByConfiguration returns null.
         $managedBy = $schema->getManagedByConfiguration($configurations);
         $this->assertNull($managedBy);
 
@@ -352,20 +352,20 @@ class ConfigurationServiceTest extends TestCase
     {
         $config = new Configuration();
 
-        // Test with no remote version
+        // Test with no remote version.
         $config->setLocalVersion('1.0.0');
         $config->setRemoteVersion(null);
         $this->assertFalse($config->hasUpdateAvailable());
 
-        // Test with same version
+        // Test with same version.
         $config->setRemoteVersion('1.0.0');
         $this->assertFalse($config->hasUpdateAvailable());
 
-        // Test with newer remote version
+        // Test with newer remote version.
         $config->setRemoteVersion('1.1.0');
         $this->assertTrue($config->hasUpdateAvailable());
 
-        // Test with older remote version
+        // Test with older remote version.
         $config->setRemoteVersion('0.9.0');
         $this->assertFalse($config->hasUpdateAvailable());
 
@@ -379,16 +379,16 @@ class ConfigurationServiceTest extends TestCase
      */
     public function testSemanticVersioningComparison(): void
     {
-        // Test major version difference
+        // Test major version difference.
         $this->assertTrue(version_compare('2.0.0', '1.9.9', '>'));
 
-        // Test minor version difference
+        // Test minor version difference.
         $this->assertTrue(version_compare('1.1.0', '1.0.9', '>'));
 
-        // Test patch version difference
+        // Test patch version difference.
         $this->assertTrue(version_compare('1.0.1', '1.0.0', '>'));
 
-        // Test pre-release versions
+        // Test pre-release versions.
         $this->assertTrue(version_compare('1.0.0', '1.0.0-alpha', '>'));
         $this->assertTrue(version_compare('1.0.0-beta', '1.0.0-alpha', '>'));
 

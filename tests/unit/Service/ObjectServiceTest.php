@@ -117,7 +117,7 @@ class ObjectServiceTest extends TestCase
     {
         parent::setUp();
 
-        // Create mocks for all dependencies
+        // Create mocks for all dependencies.
         $this->deleteHandler = $this->createMock(DeleteObject::class);
         $this->getHandler = $this->createMock(GetObject::class);
         $this->renderHandler = $this->createMock(RenderObject::class);
@@ -132,19 +132,19 @@ class ObjectServiceTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
 
-        // Create mock entities
+        // Create mock entities.
         $this->mockRegister = $this->createMock(Register::class);
         $this->mockSchema = $this->createMock(Schema::class);
         $this->mockUser = $this->createMock(IUser::class);
 
-        // Set up basic mock returns
+        // Set up basic mock returns.
         $this->mockRegister->method('getId')->willReturn(1);
         $this->mockSchema->method('getId')->willReturn(1);
         $this->mockSchema->method('getHardValidation')->willReturn(false);
         $this->mockUser->method('getUID')->willReturn('testuser');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
 
-        // Create ObjectService instance
+        // Create ObjectService instance.
         $this->objectService = new ObjectService(
             $this->deleteHandler,
             $this->getHandler,
@@ -161,7 +161,7 @@ class ObjectServiceTest extends TestCase
             $this->searchTrailService
         );
 
-        // Set register and schema context
+        // Set register and schema context.
         $this->objectService->setRegister($this->mockRegister);
         $this->objectService->setSchema($this->mockSchema);
     }
@@ -175,13 +175,13 @@ class ObjectServiceTest extends TestCase
     {
         $data = ['name' => 'Test Object'];
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid(Uuid::v4()->toRfc4122());
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is called with null UUID
+        // Verify that SaveObject is called with null UUID.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -194,15 +194,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
     }
 
@@ -216,13 +216,13 @@ class ObjectServiceTest extends TestCase
         $uuid = Uuid::v4()->toRfc4122();
         $data = ['name' => 'Test Object'];
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid($uuid);
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is called with the provided UUID
+        // Verify that SaveObject is called with the provided UUID.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -235,15 +235,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data, [], null, null, $uuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
     }
@@ -258,18 +258,18 @@ class ObjectServiceTest extends TestCase
         $uuid = Uuid::v4()->toRfc4122();
         $data = ['name' => 'Test Object'];
 
-        // Create ObjectEntity input
+        // Create ObjectEntity input.
         $inputObject = new ObjectEntity();
         $inputObject->setUuid($uuid);
         $inputObject->setObject($data);
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid($uuid);
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is called with extracted UUID and data
+        // Verify that SaveObject is called with extracted UUID and data.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -282,15 +282,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($inputObject);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
     }
@@ -306,7 +306,7 @@ class ObjectServiceTest extends TestCase
         $data = ['name' => 'Updated Object'];
         $folderId = 123;
 
-        // Mock existing object without folder
+        // Mock existing object without folder.
         $existingObject = new ObjectEntity();
         $existingObject->setId(1);
         $existingObject->setUuid($uuid);
@@ -317,19 +317,19 @@ class ObjectServiceTest extends TestCase
             ->with($uuid)
             ->willReturn($existingObject);
 
-        // Mock folder creation
+        // Mock folder creation.
         $this->fileService
             ->method('createObjectFolderWithoutUpdate')
             ->with($existingObject)
             ->willReturn($folderId);
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid($uuid);
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is called with folder ID
+        // Verify that SaveObject is called with folder ID.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -342,15 +342,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data, [], null, null, $uuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
     }
@@ -364,12 +364,12 @@ class ObjectServiceTest extends TestCase
     {
         $data = ['name' => 'Test Object'];
 
-        // Enable hard validation
+        // Enable hard validation.
         $this->mockSchema
             ->method('getHardValidation')
             ->willReturn(true);
 
-        // Mock successful validation
+        // Mock successful validation.
         $validationResult = $this->createMock(ValidationResult::class);
         $validationResult->method('isValid')->willReturn(true);
 
@@ -379,7 +379,7 @@ class ObjectServiceTest extends TestCase
             ->with($data, $this->mockSchema)
             ->willReturn($validationResult);
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid(Uuid::v4()->toRfc4122());
@@ -389,15 +389,15 @@ class ObjectServiceTest extends TestCase
             ->method('saveObject')
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
     }
 
@@ -410,12 +410,12 @@ class ObjectServiceTest extends TestCase
     {
         $data = ['name' => 'Invalid Object'];
 
-        // Enable hard validation
+        // Enable hard validation.
         $this->mockSchema
             ->method('getHardValidation')
             ->willReturn(true);
 
-        // Mock validation failure
+        // Mock validation failure.
         $validationResult = $this->createMock(ValidationResult::class);
         $validationResult->method('isValid')->willReturn(false);
         $validationResult->method('error')->willReturn(['error' => 'Invalid data']);
@@ -430,12 +430,12 @@ class ObjectServiceTest extends TestCase
             ->with($validationResult)
             ->willReturn('Validation failed');
 
-        // SaveObject should not be called
+        // SaveObject should not be called.
         $this->saveHandler
             ->expects($this->never())
             ->method('saveObject');
 
-        // Execute test and expect exception
+        // Execute test and expect exception.
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Validation failed');
 
@@ -451,17 +451,17 @@ class ObjectServiceTest extends TestCase
     {
         $data = ['name' => 'Test Object'];
 
-        // Disable hard validation
+        // Disable hard validation.
         $this->mockSchema
             ->method('getHardValidation')
             ->willReturn(false);
 
-        // Validation should not be called
+        // Validation should not be called.
         $this->validateHandler
             ->expects($this->never())
             ->method('validateObject');
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid(Uuid::v4()->toRfc4122());
@@ -471,15 +471,15 @@ class ObjectServiceTest extends TestCase
             ->method('saveObject')
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
     }
 
@@ -493,7 +493,7 @@ class ObjectServiceTest extends TestCase
         $uuid = Uuid::v4()->toRfc4122();
         $data = ['name' => 'Test Object'];
 
-        // Mock existing object without folder
+        // Mock existing object without folder.
         $existingObject = new ObjectEntity();
         $existingObject->setId(1);
         $existingObject->setUuid($uuid);
@@ -504,19 +504,19 @@ class ObjectServiceTest extends TestCase
             ->with($uuid)
             ->willReturn($existingObject);
 
-        // Mock folder creation failure
+        // Mock folder creation failure.
         $this->fileService
             ->method('createObjectFolderWithoutUpdate')
             ->with($existingObject)
             ->willThrowException(new \Exception('Folder creation failed'));
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid($uuid);
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is called with null folder ID
+        // Verify that SaveObject is called with null folder ID.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -529,15 +529,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data, [], null, null, $uuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
     }
@@ -552,20 +552,20 @@ class ObjectServiceTest extends TestCase
         $uuid = Uuid::v4()->toRfc4122();
         $data = ['name' => 'Test Object'];
 
-        // Mock that object doesn't exist
+        // Mock that object doesn't exist.
         $this->objectEntityMapper
             ->method('find')
             ->with($uuid)
             ->willThrowException(new DoesNotExistException('Object not found'));
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid($uuid);
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is still called with the UUID
-        // SaveObject will handle the create-or-update logic
+        // Verify that SaveObject is still called with the UUID.
+        // SaveObject will handle the create-or-update logic.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -578,15 +578,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data, [], null, null, $uuid);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $this->assertEquals($uuid, $result->getUuid());
     }
@@ -606,13 +606,13 @@ class ObjectServiceTest extends TestCase
         $customSchema->method('getId')->willReturn(2);
         $customSchema->method('getHardValidation')->willReturn(false);
 
-        // Mock successful save
+        // Mock successful save.
         $savedObject = new ObjectEntity();
         $savedObject->setId(1);
         $savedObject->setUuid(Uuid::v4()->toRfc4122());
         $savedObject->setObject($data);
 
-        // Verify that SaveObject is called with custom register and schema
+        // Verify that SaveObject is called with custom register and schema.
         $this->saveHandler
             ->expects($this->once())
             ->method('saveObject')
@@ -625,15 +625,15 @@ class ObjectServiceTest extends TestCase
             )
             ->willReturn($savedObject);
 
-        // Mock render handler
+        // Mock render handler.
         $this->renderHandler
             ->method('renderEntity')
             ->willReturn($savedObject);
 
-        // Execute test
+        // Execute test.
         $result = $this->objectService->saveObject($data, [], $customRegister, $customSchema);
 
-        // Assertions
+        // Assertions.
         $this->assertInstanceOf(ObjectEntity::class, $result);
     }
 
@@ -647,12 +647,12 @@ class ObjectServiceTest extends TestCase
      */
     public function testEnrichObjectsFormatsDateTimeCorrectly(): void
     {
-        // Create reflection to access private method
+        // Create reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $enrichObjectsMethod = $reflection->getMethod('enrichObjects');
         $enrichObjectsMethod->setAccessible(true);
 
-        // Test data with missing datetime fields
+        // Test data with missing datetime fields.
         $testObjects = [
             [
                 'name' => 'Test Object',
@@ -660,10 +660,10 @@ class ObjectServiceTest extends TestCase
             ]
         ];
 
-        // Execute the private method
+        // Execute the private method.
         $enrichedObjects = $enrichObjectsMethod->invoke($this->objectService, $testObjects);
 
-        // Verify the enriched object has datetime fields in correct format
+        // Verify the enriched object has datetime fields in correct format.
         $this->assertNotEmpty($enrichedObjects);
         $enrichedObject = $enrichedObjects[0];
         $this->assertArrayHasKey('@self', $enrichedObject);
@@ -672,7 +672,7 @@ class ObjectServiceTest extends TestCase
         $this->assertArrayHasKey('created', $self);
         $this->assertArrayHasKey('updated', $self);
 
-        // Verify datetime format is Y-m-d H:i:s (MySQL format)
+        // Verify datetime format is Y-m-d H:i:s (MySQL format).
         $this->assertMatchesRegularExpression(
             '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/',
             $self['created'],
@@ -685,14 +685,14 @@ class ObjectServiceTest extends TestCase
             'Updated datetime should be in Y-m-d H:i:s format'
         );
 
-        // Verify the datetime values are valid and can be parsed
+        // Verify the datetime values are valid and can be parsed.
         $createdDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $self['created']);
         $updatedDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $self['updated']);
         
         $this->assertNotFalse($createdDateTime, 'Created datetime should be parseable');
         $this->assertNotFalse($updatedDateTime, 'Updated datetime should be parseable');
         
-        // Verify that both timestamps are recent (within last minute)
+        // Verify that both timestamps are recent (within last minute).
         $now = new \DateTime();
         $this->assertLessThan(60, $now->getTimestamp() - $createdDateTime->getTimestamp());
         $this->assertLessThan(60, $now->getTimestamp() - $updatedDateTime->getTimestamp());
@@ -708,12 +708,12 @@ class ObjectServiceTest extends TestCase
      */
     public function testSaveObjectsUpdatesUpdatedDateTimeForExistingObjects(): void
     {
-        // Create reflection to access private method
+        // Create reflection to access private method.
         $reflection = new \ReflectionClass($this->objectService);
         $saveObjectsMethod = $reflection->getMethod('saveObjects');
         $saveObjectsMethod->setAccessible(true);
 
-        // Create test objects - one new, one existing
+        // Create test objects - one new, one existing.
         $testObjects = [
             [
                 'name' => 'New Object',
@@ -729,7 +729,7 @@ class ObjectServiceTest extends TestCase
             ]
         ];
 
-        // Mock existing object for the update case
+        // Mock existing object for the update case.
         $existingObject = new ObjectEntity();
         $existingObject->setId(1);
         $existingObject->setUuid('existing-uuid-123');
@@ -737,17 +737,17 @@ class ObjectServiceTest extends TestCase
         $existingObject->setUpdated(new \DateTime('2024-01-01 10:00:00'));
         $existingObject->setObject(['name' => 'Original Object']);
 
-        // Mock the objectEntityMapper to return existing objects
+        // Mock the objectEntityMapper to return existing objects.
         $this->objectEntityMapper
             ->method('findAll')
             ->willReturn(['existing-uuid-123' => $existingObject]);
 
-        // Mock successful save operation
+        // Mock successful save operation.
         $this->objectEntityMapper
             ->method('saveObjects')
             ->willReturn(['new-uuid-456', 'existing-uuid-123']);
 
-        // Mock successful find operations for returned objects
+        // Mock successful find operations for returned objects.
         $newObject = new ObjectEntity();
         $newObject->setId(2);
         $newObject->setUuid('new-uuid-456');
@@ -769,13 +769,13 @@ class ObjectServiceTest extends TestCase
                 ['existing-uuid-123', null, null, false, true, true, $updatedObject]
             ]);
 
-        // Execute the private method
+        // Execute the private method.
         $savedObjects = $saveObjectsMethod->invoke($this->objectService, $testObjects, $this->mockRegister, $this->mockSchema);
 
-        // Verify that we got the expected number of saved objects
+        // Verify that we got the expected number of saved objects.
         $this->assertCount(2, $savedObjects);
 
-        // Find the updated object
+        // Find the updated object.
         $updatedSavedObject = null;
         foreach ($savedObjects as $savedObject) {
             if ($savedObject->getUuid() === 'existing-uuid-123') {
@@ -786,13 +786,13 @@ class ObjectServiceTest extends TestCase
 
         $this->assertNotNull($updatedSavedObject, 'Updated object should be found in saved objects');
 
-        // Verify that the updated datetime is recent (within last minute)
+        // Verify that the updated datetime is recent (within last minute).
         $now = new \DateTime();
         $updatedDateTime = $updatedSavedObject->getUpdated();
         $this->assertNotNull($updatedDateTime, 'Updated datetime should not be null');
         $this->assertLessThan(60, $now->getTimestamp() - $updatedDateTime->getTimestamp(), 'Updated datetime should be recent');
 
-        // Verify that the updated datetime is different from the original
+        // Verify that the updated datetime is different from the original.
         $originalUpdated = new \DateTime('2024-01-01 10:00:00');
         $this->assertGreaterThan($originalUpdated->getTimestamp(), $updatedDateTime->getTimestamp(), 'Updated datetime should be newer than original');
     }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Agent Mapper
  *
@@ -19,13 +20,17 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Service\ConfigurationCacheService;
+use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AgentDeletedEvent;
+use OCA\OpenRegister\Event\AgentUpdatedEvent;
+use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -39,8 +44,14 @@ use Symfony\Component\Uid\Uuid;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Agent>
- *
- * @psalm-suppress MissingTemplateParam
+ * @method           Agent insert(Entity $entity)
+ * @method           Agent update(Entity $entity)
+ * @method           Agent insertOrUpdate(Entity $entity)
+ * @method           Agent delete(Entity $entity)
+ * @method           Agent find(int|string $id)
+ * @method           Agent findEntity(IQueryBuilder $query)
+ * @method           Agent[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method           list<Agent> findEntities(IQueryBuilder $query)
  */
 class AgentMapper extends QBMapper
 {
@@ -51,7 +62,8 @@ class AgentMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    private OrganisationService $organisationService;
+    // REMOVED: Services should not be in mappers.
+    protected OrganisationMapper $organisationMapper;
 
     /**
      * User session for current user
@@ -68,26 +80,36 @@ class AgentMapper extends QBMapper
     private IGroupManager $groupManager;
 
     /**
-     * AgentMapper constructor.
+     * Event dispatcher for dispatching agent events
      *
-     * @param IDBConnection       $db                  Database connection instance
-     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @var IEventDispatcher
+     */
+    private IEventDispatcher $eventDispatcher;
+
+    /**
+     * Constructor
+     *
+     * @param IDBConnection       $db                  Database connection
+     * @param OrganisationService $organisationService Organisation service
      * @param IUserSession        $userSession         User session
-     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param IGroupManager       $groupManager        Group manager
+     * @param IEventDispatcher    $eventDispatcher     Event dispatcher
      */
     public function __construct(
         IDBConnection $db,
-        OrganisationService $organisationService,
+        // REMOVED: Services should not be in mappers.
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        IEventDispatcher $eventDispatcher
     ) {
         parent::__construct($db, 'openregister_agents', Agent::class);
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-
+        // REMOVED: Services should not be in mappers.
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        $this->eventDispatcher    = $eventDispatcher;
     }//end __construct()
-
 
     /**
      * Find an agent by its ID
@@ -102,8 +124,11 @@ class AgentMapper extends QBMapper
      */
     public function find(int $id): Agent
     {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -111,13 +136,15 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
-        $this->applyOrganisationFilter($qb, 'organisation', true);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true
+        );
 
         return $this->findEntity($qb);
-
     }//end find()
-
 
     /**
      * Find an agent by its UUID
@@ -132,8 +159,11 @@ class AgentMapper extends QBMapper
      */
     public function findByUuid(string $uuid): Agent
     {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -141,13 +171,15 @@ class AgentMapper extends QBMapper
             ->from($this->tableName)
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
-        $this->applyOrganisationFilter($qb, 'organisation', true);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true
+        );
 
         return $this->findEntity($qb);
-
     }//end findByUuid()
-
 
     /**
      * Find agents accessible by a user in an organisation
@@ -163,13 +195,19 @@ class AgentMapper extends QBMapper
      * @param int         $limit            Maximum number of results
      * @param int         $offset           Offset for pagination
      *
-     * @return Agent[] Array of agent entities
+     * @return (Agent|OCA\OpenRegister\Db\Agent)[]
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Agent>
      */
-    public function findByOrganisation(string $organisationUuid, ?string $userId=null, int $limit=50, int $offset=0): array
+    public function findByOrganisation(string $organisationUuid, ?string $userId = null, int $limit = 50, int $offset = 0): array
     {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
@@ -180,17 +218,18 @@ class AgentMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // If no user provided, return all agents in the organisation
+        // If no user provided, return all agents in the organisation.
         if ($userId === null) {
             return $this->findEntities($qb);
         }
 
-        // Filter results by user access rights
+        // Filter results by user access rights.
         $allAgents = $this->findEntities($qb);
-        return $this->filterByUserAccess($allAgents, $userId);
-
+        return $this->filterByUserAccess(
+            agents: $allAgents,
+            userId: $userId
+        );
     }//end findByOrganisation()
-
 
     /**
      * Filter agents by user access rights
@@ -198,22 +237,22 @@ class AgentMapper extends QBMapper
      * @param Agent[] $agents Array of agents to filter
      * @param string  $userId User ID
      *
-     * @return Agent[] Filtered array of accessible agents
+     * @return Agent[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Agent>
      */
     private function filterByUserAccess(array $agents, string $userId): array
     {
         $accessible = [];
 
         foreach ($agents as $agent) {
-            if ($this->canUserAccessAgent($agent, $userId)) {
+            if ($this->canUserAccessAgent(agent: $agent, userId: $userId) === true) {
                 $accessible[] = $agent;
             }
         }
 
         return $accessible;
-
     }//end filterByUserAccess()
-
 
     /**
      * Check if user can access an agent
@@ -229,25 +268,23 @@ class AgentMapper extends QBMapper
      */
     public function canUserAccessAgent(Agent $agent, string $userId): bool
     {
-        // Non-private agents are accessible to all users in the organisation
+        // Non-private agents are accessible to all users in the organisation.
         if ($agent->getIsPrivate() === false || $agent->getIsPrivate() === null) {
             return true;
         }
 
-        // Owner always has access
+        // Owner always has access.
         if ($agent->getOwner() === $userId) {
             return true;
         }
 
-        // Check if user is invited
-        if ($agent->hasInvitedUser($userId)) {
+        // Check if user is invited.
+        if ($agent->hasInvitedUser($userId) === true) {
             return true;
         }
 
         return false;
-
     }//end canUserAccessAgent()
-
 
     /**
      * Check if user can modify an agent
@@ -263,102 +300,42 @@ class AgentMapper extends QBMapper
     public function canUserModifyAgent(Agent $agent, string $userId): bool
     {
         return $agent->getOwner() === $userId;
-
     }//end canUserModifyAgent()
-
-
-    /**
-     * Find agents by owner
-     *
-     * @param string $owner  Owner user ID
-     * @param int    $limit  Maximum number of results
-     * @param int    $offset Offset for pagination
-     *
-     * @return Agent[] Array of agent entities
-     * @throws \Exception If user doesn't have read permission
-     */
-    public function findByOwner(string $owner, int $limit=50, int $offset=0): array
-    {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner, IQueryBuilder::PARAM_STR)))
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->orderBy('created', 'DESC');
-
-        // Apply organisation filter
-        $this->applyOrganisationFilter($qb);
-
-        return $this->findEntities($qb);
-
-    }//end findByOwner()
-
-
-    /**
-     * Find agents by type
-     *
-     * @param string $type   Agent type
-     * @param int    $limit  Maximum number of results
-     * @param int    $offset Offset for pagination
-     *
-     * @return Agent[] Array of agent entities
-     * @throws \Exception If user doesn't have read permission
-     */
-    public function findByType(string $type, int $limit=50, int $offset=0): array
-    {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
-
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select('*')
-            ->from($this->tableName)
-            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)))
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->orderBy('created', 'DESC');
-
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
-        $this->applyOrganisationFilter($qb, 'organisation', true);
-
-        return $this->findEntities($qb);
-
-    }//end findByType()
-
 
     /**
      * Find all agents with optional filters
      *
-     * @param int|null    $limit   Maximum number of results
-     * @param int|null    $offset  Offset for pagination
-     * @param array|null  $filters Filter criteria
-     * @param array|null  $order   Order by criteria
+     * @param int|null   $limit   Maximum number of results
+     * @param int|null   $offset  Offset for pagination
+     * @param array|null $filters Filter criteria
+     * @param array|null $order   Order by criteria
      *
-     * @return Agent[] Array of agent entities
+     * @return Agent[]
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\Agent>
      */
-    public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[], ?array $order=[]): array
+    public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array
     {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName);
 
-        // Apply filters
-        if (!empty($filters)) {
+        // Apply filters.
+        if (empty($filters) === false) {
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } elseif (is_array($value)) {
+                    } elseif (is_array($value) === true) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
@@ -367,8 +344,8 @@ class AgentMapper extends QBMapper
             }
         }
 
-        // Apply ordering
-        if (!empty($order)) {
+        // Apply ordering.
+        if (empty($order) === false) {
             foreach ($order as $field => $direction) {
                 $qb->addOrderBy($field, $direction);
             }
@@ -376,21 +353,24 @@ class AgentMapper extends QBMapper
             $qb->orderBy('created', 'DESC');
         }
 
-        // Apply pagination
+        // Apply pagination.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
+
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
 
-        // Apply organisation filter, allowing NULL organisation for legacy/global agents
-        $this->applyOrganisationFilter($qb, 'organisation', true);
+        // Apply organisation filter, allowing NULL organisation for legacy/global agents.
+        $this->applyOrganisationFilter(
+            qb: $qb,
+            columnName: 'organisation',
+            allowNullOrg: true
+        );
 
         return $this->findEntities($qb);
-
     }//end findAll()
-
 
     /**
      * Insert a new agent
@@ -400,35 +380,46 @@ class AgentMapper extends QBMapper
      * @return Agent The inserted agent with updated ID
      * @throws \Exception If user doesn't have create permission
      */
-    public function insert(Entity $entity): Entity
+    public function insert(Entity $entity): Agent
     {
-        // Verify RBAC permission to create
-        $this->verifyRbacPermission('create', 'agent');
+        // Verify RBAC permission to create.
+        $this->verifyRbacPermission(
+            action: 'create',
+            entityType: 'agent'
+        );
+
+        /*
+         * @var Agent $entity
+         */
 
         if ($entity instanceof Agent) {
-            // Ensure UUID is set
+            // Ensure UUID is set.
             $uuid = $entity->getUuid();
-            if (!$uuid || trim($uuid) === '') {
+            if ($uuid === null || $uuid === '' || trim($uuid) === '') {
                 $newUuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
                 $entity->setUuid($newUuid);
             }
-            
-            // Set timestamps if not already set
+
+            // Set timestamps if not already set.
             if ($entity->getCreated() === null) {
                 $entity->setCreated(new DateTime());
             }
+
             if ($entity->getUpdated() === null) {
                 $entity->setUpdated(new DateTime());
             }
         }
 
-        // Auto-set organisation from active session
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
 
-        return parent::insert($entity);
+        $entity = parent::insert($entity);
 
+        // Dispatch creation event.
+        $this->eventDispatcher->dispatchTyped(new AgentCreatedEvent($entity));
+
+        return $entity;
     }//end insert()
-
 
     /**
      * Update an existing agent
@@ -438,22 +429,29 @@ class AgentMapper extends QBMapper
      * @return Agent The updated agent
      * @throws \Exception If user doesn't have update permission or access to this organisation
      */
-    public function update(Entity $entity): Entity
+    public function update(Entity $entity): Agent
     {
-        // Verify RBAC permission to update
-        $this->verifyRbacPermission('update', 'agent');
+        // Verify RBAC permission to update.
+        $this->verifyRbacPermission(
+            action: 'update',
+            entityType: 'agent'
+        );
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        if ($entity instanceof Agent) {
-            $entity->setUpdated(new DateTime());
-        }
+        // Get old state before update.
+        $oldEntity = $this->find(id: $entity->getId());
 
-        return parent::update($entity);
+        $entity->setUpdated(new DateTime());
 
+        $entity = parent::update($entity);
+
+        // Dispatch update event.
+        $this->eventDispatcher->dispatchTyped(new AgentUpdatedEvent($entity, $oldEntity));
+
+        return $entity;
     }//end update()
-
 
     /**
      * Delete an agent
@@ -462,19 +460,27 @@ class AgentMapper extends QBMapper
      *
      * @return Agent The deleted agent
      * @throws \Exception If user doesn't have delete permission or access to this organisation
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete
-        $this->verifyRbacPermission('delete', 'agent');
+        // Verify RBAC permission to delete.
+        $this->verifyRbacPermission(
+            action: 'delete',
+            entityType: 'agent'
+        );
 
-        // Verify user has access to this organisation
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        return parent::delete($entity);
+        $entity = parent::delete($entity);
 
+        // Dispatch deletion event.
+        $this->eventDispatcher->dispatchTyped(new AgentDeletedEvent($entity));
+
+        return $entity;
     }//end delete()
-
 
     /**
      * Create an agent from an array
@@ -489,9 +495,7 @@ class AgentMapper extends QBMapper
         $agent->hydrate($data);
 
         return $this->insert($agent);
-
     }//end createFromArray()
-
 
     /**
      * Count agents with optional filters
@@ -501,23 +505,26 @@ class AgentMapper extends QBMapper
      * @return int Total count of agents
      * @throws \Exception If user doesn't have read permission
      */
-    public function count(?array $filters=[]): int
+    public function count(?array $filters = []): int
     {
-        // Verify RBAC permission to read
-        $this->verifyRbacPermission('read', 'agent');
+        // Verify RBAC permission to read.
+        $this->verifyRbacPermission(
+            action: 'read',
+            entityType: 'agent'
+        );
 
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->tableName);
 
-        // Apply filters
-        if (!empty($filters)) {
+        // Apply filters.
+        if (empty($filters) === false) {
             foreach ($filters as $field => $value) {
                 if ($value !== null && $field !== '_route') {
                     if ($field === 'active') {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter((bool) $value, IQueryBuilder::PARAM_BOOL)));
-                    } elseif (is_array($value)) {
+                    } elseif (is_array($value) === true) {
                         $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
                     } else {
                         $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
@@ -526,14 +533,9 @@ class AgentMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter (all users including admins must have active org)
+        // Apply organisation filter (all users including admins must have active org).
         $this->applyOrganisationFilter($qb);
 
         return (int) $qb->executeQuery()->fetchOne();
-
     }//end count()
-
-
 }//end class
-
-

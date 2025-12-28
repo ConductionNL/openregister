@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class OasController
  *
@@ -26,79 +27,84 @@ use OCP\IRequest;
 use Exception;
 
 /**
- * Class OasController
+ * OasController class.
+ *
+ * Controller for generating OpenAPI Specifications (OAS) for registers.
+ *
+ * @psalm-suppress UnusedClass - This controller is registered via routes.php and used by Nextcloud's routing system
  */
 class OasController extends Controller
 {
-
     /**
+     * OAS service instance
+     *
      * @var OasService
      */
     private readonly OasService $oasService;
 
-
     /**
-     * OasController constructor.
+     * OasController constructor
      *
-     * @param string     $appName
-     * @param IRequest   $request
-     * @param OasService $oasService
+     * @param string     $appName    Application name
+     * @param IRequest   $request    Request object
+     * @param OasService $oasService OAS service instance
      */
     public function __construct(
         string $appName,
         IRequest $request,
         OasService $oasService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
         $this->oasService = $oasService;
-
     }//end __construct()
-
 
     /**
      * Generate OAS for all registers
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
      * @PublicPage
      *
      * @return JSONResponse
+     *
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
      */
     public function generateAll(): JSONResponse
     {
         try {
             // Generate OAS for all registers.
             $oasData = $this->oasService->createOas();
-            return new JSONResponse($oasData);
+            return new JSONResponse(data: $oasData);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end generateAll()
-
 
     /**
      * Generate OAS for a specific register
      *
+     * @param string $id The register slug or identifier.
+     *
+     * @return JSONResponse OAS specification JSON response.
+     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
      * @PublicPage
      *
-     * @param string $register The register slug or identifier
-     *
-     * @return JSONResponse
+     * @psalm-return JSONResponse<200|500, array<string, mixed>, array<never, never>>
      */
     public function generate(string $id): JSONResponse
     {
         try {
             // Generate OAS for the specified register.
             $oasData = $this->oasService->createOas($id);
-            return new JSONResponse($oasData);
+            return new JSONResponse(data: $oasData);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end generate()
-
-
 }//end class

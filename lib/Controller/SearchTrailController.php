@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class SearchTrailController
  *
@@ -29,11 +30,12 @@ use OCP\IRequest;
 /**
  * Class SearchTrailController
  * Handles all search trail related operations and analytics
+ *
+ * @psalm-suppress UnusedClass
  */
+
 class SearchTrailController extends Controller
 {
-
-
     /**
      * Constructor for SearchTrailController
      *
@@ -46,51 +48,47 @@ class SearchTrailController extends Controller
         IRequest $request,
         private readonly SearchTrailService $searchTrailService
     ) {
-        parent::__construct($appName, $request);
-
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
      * Extract pagination, filter, and search parameters from request
      *
-     * @return array Array containing processed parameters:
-     *               - limit: (int) Maximum number of items per page
-     *               - offset: (int|null) Number of items to skip
-     *               - page: (int|null) Current page number
-     *               - filters: (array) Filter parameters
-     *               - sort: (array) Sort parameters ['field' => 'ASC|DESC']
-     *               - search: (string|null) Search term
-     *               - from: (DateTime|null) Start date filter
-     *               - to: (DateTime|null) End date filter
+     * @return ((mixed|string)[]|DateTime|int|mixed|null)[]
+     *
+     * @psalm-return array{limit: int, offset: int|null, page: int|null, filters: array, sort: array<array-key|mixed, 'DESC'|mixed>, search: mixed|null, from: DateTime|null, to: DateTime|null}
      */
     private function extractRequestParameters(): array
     {
         // Get request parameters for filtering and pagination.
         $params = $this->request->getParams();
 
-        // Extract pagination parameters (prioritize underscore-prefixed versions)
-        if (isset($params['_limit']) === true) {
+        // Extract pagination parameters (prioritize underscore-prefixed versions).
+        $limit = 20;
+        if (($params['_limit'] ?? null) !== null) {
             $limit = (int) $params['_limit'];
-        } else if (isset($params['limit']) === true) {
+        }
+
+        if (($params['limit'] ?? null) !== null) {
             $limit = (int) $params['limit'];
-        } else {
-            $limit = 20;
         }
 
-        if (isset($params['_offset']) === true) {
+        $offset = null;
+        if (($params['_offset'] ?? null) !== null) {
             $offset = (int) $params['_offset'];
-        } else if (isset($params['offset']) === true) {
-            $offset = (int) $params['offset'];
-        } else {
-            $offset = null;
         }
 
-        if (isset($params['_page']) === true) {
+        if (($params['offset'] ?? null) !== null) {
+            $offset = (int) $params['offset'];
+        }
+
+        $page = null;
+        if (($params['_page'] ?? null) !== null) {
             $page = (int) $params['_page'];
-        } else if (isset($params['page']) === true) {
+        }
+
+        if (($params['page'] ?? null) !== null) {
             $page = (int) $params['page'];
-        } else {
-            $page = null;
         }
 
         // If we have a page but no offset, calculate the offset.
@@ -98,23 +96,22 @@ class SearchTrailController extends Controller
             $offset = ($page - 1) * $limit;
         }
 
-        // Extract search parameter (prioritize underscore-prefixed version)
+        // Extract search parameter (prioritize underscore-prefixed version).
         $search = $params['_search'] ?? $params['search'] ?? null;
 
-        // Extract sort parameters (prioritize underscore-prefixed versions)
-        $sort = [];
-        if (isset($params['_sort']) === true || isset($params['sort']) === true) {
+        // Extract sort parameters (prioritize underscore-prefixed versions).
+        $sort            = [];
+        $sort['created'] = 'DESC';
+        if (($params['_sort'] ?? null) !== null || (($params['sort'] ?? null) !== null) === true) {
             $sortField        = $params['_sort'] ?? $params['sort'] ?? 'created';
             $sortOrder        = $params['_order'] ?? $params['order'] ?? 'DESC';
             $sort[$sortField] = $sortOrder;
-        } else {
-            $sort['created'] = 'DESC';
         }
 
         // Extract date filters.
         $from = null;
         $to   = null;
-        if (isset($params['from']) === true) {
+        if (($params['from'] ?? null) !== null) {
             try {
                 $from = new DateTime($params['from']);
             } catch (\Exception $e) {
@@ -122,7 +119,7 @@ class SearchTrailController extends Controller
             }
         }
 
-        if (isset($params['to']) === true) {
+        if (($params['to'] ?? null) !== null) {
             try {
                 $to = new DateTime($params['to']);
             } catch (\Exception $e) {
@@ -135,8 +132,8 @@ class SearchTrailController extends Controller
             $params,
             function ($key) {
                 return !in_array(
-                        $key,
-                        [
+                    $key,
+                    [
                             'limit',
                             '_limit',
                             'offset',
@@ -154,7 +151,7 @@ class SearchTrailController extends Controller
                             '_route',
                             'id',
                         ]
-                        );
+                );
             },
             ARRAY_FILTER_USE_KEY
         );
@@ -169,9 +166,7 @@ class SearchTrailController extends Controller
             'from'    => $from,
             'to'      => $to,
         ];
-
     }//end extractRequestParameters()
-
 
     /**
      * Private helper method to handle pagination of results.
@@ -186,14 +181,26 @@ class SearchTrailController extends Controller
      * @param int|null $offset  The offset of items. Defaults to 0.
      * @param int|null $page    The current page number. Defaults to 1.
      *
-     * @return array The paginated results with metadata.
+     * @return (array|float|int|null|string)[]
      *
-     * @phpstan-param  array<int, mixed> $results
+     * @phpstan-param array<int, mixed> $results
+     *
      * @phpstan-return array<string, mixed>
-     * @psalm-param    array<int, mixed> $results
-     * @psalm-return   array<string, mixed>
+     *
+     * @psalm-param array<int, mixed> $results
+     *
+     * @psalm-return array{
+     *     results: array<int, mixed>,
+     *     total: int<0, max>,
+     *     page: float|int<1, max>,
+     *     pages: 1|float,
+     *     limit: int<1, max>,
+     *     offset: int<0, max>,
+     *     next?: null|string,
+     *     prev?: null|string
+     * }
      */
-    private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
+    private function paginate(array $results, ?int $total = 0, ?int $limit = 20, ?int $offset = 0, ?int $page = 1): array
     {
         // Ensure we have valid values (never null).
         $total = max(0, $total ?? 0);
@@ -201,7 +208,7 @@ class SearchTrailController extends Controller
         // Minimum limit of 1.
         $offset = max(0, $offset ?? 0);
         $page   = max(1, $page ?? 1);
-        // Minimum page of 1
+        // Minimum page of 1.
         // Calculate the number of pages (minimum 1 page).
         $pages = max(1, ceil($total / $limit));
 
@@ -237,12 +244,17 @@ class SearchTrailController extends Controller
         // Add next page link if there are more pages.
         if ($page < $pages) {
             $nextPage = $page + 1;
-            $nextUrl  = preg_replace('/([?&])_page=\d+/', '$1_page='.$nextPage, $currentUrl);
+            $nextUrl  = preg_replace('/([?&])_page=\d+/', '$1_page=' . $nextPage, $currentUrl);
             if (strpos($nextUrl, '_page=') === false) {
-                // Also handle legacy 'page' parameter
-                $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$nextPage, $nextUrl);
+                // Also handle legacy 'page' parameter.
+                $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page=' . $nextPage, $nextUrl);
                 if (strpos($nextUrl, '_page=') === false) {
-                    $nextUrl .= (strpos($nextUrl, '?') === false ? '?' : '&').'_page='.$nextPage;
+                    $separator = '&';
+                    if (strpos($nextUrl, '?') !== false) {
+                        $separator = '&';
+                    }
+
+                    $nextUrl .= $separator . '_page=' . $nextPage;
                 }
             }
 
@@ -252,12 +264,17 @@ class SearchTrailController extends Controller
         // Add previous page link if not on first page.
         if ($page > 1) {
             $prevPage = $page - 1;
-            $prevUrl  = preg_replace('/([?&])_page=\d+/', '$1_page='.$prevPage, $currentUrl);
+            $prevUrl  = preg_replace('/([?&])_page=\d+/', '$1_page=' . $prevPage, $currentUrl);
             if (strpos($prevUrl, '_page=') === false) {
-                // Also handle legacy 'page' parameter
-                $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$prevPage, $prevUrl);
+                // Also handle legacy 'page' parameter.
+                $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page=' . $prevPage, $prevUrl);
                 if (strpos($prevUrl, '_page=') === false) {
-                    $prevUrl .= (strpos($prevUrl, '?') === false ? '?' : '&').'_page='.$prevPage;
+                    $separator = '&';
+                    if (strpos($prevUrl, '?') !== false) {
+                        $separator = '&';
+                    }
+
+                    $prevUrl .= $separator . '_page=' . $prevPage;
                 }
             }
 
@@ -265,88 +282,106 @@ class SearchTrailController extends Controller
         }
 
         return $paginatedResults;
-
     }//end paginate()
-
 
     /**
      * Get all search trail logs
      *
-     * @return JSONResponse A JSON response containing the search logs
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with search trail logs
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string}, array<never, never>>
      */
     public function index(): JSONResponse
     {
         try {
-            // Get raw request parameters (this is what the service expects)
+            // Get raw request parameters (this is what the service expects).
             $rawParams = $this->request->getParams();
 
-            // Remove system parameters that shouldn't be passed to the service
+            // Remove system parameters that shouldn't be passed to the service.
             unset($rawParams['_route'], $rawParams['id']);
 
-            // Get paginated search trails from service using raw parameters
+            // Get paginated search trails from service using raw parameters.
             $serviceResult = $this->searchTrailService->getSearchTrails($rawParams);
 
-            // Extract the raw results and pagination info from service
+            // Extract the raw results and pagination info from service.
             $results = $serviceResult['results'] ?? [];
             $total   = $serviceResult['total'] ?? 0;
             $limit   = $serviceResult['limit'] ?? 20;
             $offset  = $serviceResult['offset'] ?? 0;
             $page    = $serviceResult['page'] ?? 1;
 
-            // Use the paginate method to ensure consistent format with ObjectsController
-            $paginatedResult = $this->paginate($results, $total, $limit, $offset, $page);
+            // Use the paginate method to ensure consistent format with ObjectsController.
+            $paginatedResult = $this->paginate(results: $results, total: $total, limit: $limit, offset: $offset, page: $page);
 
-            return new JSONResponse($paginatedResult);
+            return new JSONResponse(data: $paginatedResult);
         } catch (\Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Failed to retrieve search trails: '.$e->getMessage()],
+                data: ['error' => 'Failed to retrieve search trails: ' . $e->getMessage()],
                 statusCode: 500
             );
         }//end try
-
     }//end index()
-
 
     /**
      * Get a specific search trail log by ID
      *
      * @param int $id The search trail ID
      *
-     * @return JSONResponse A JSON response containing the search log
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with single search trail log
+     *
+     * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\SearchTrail, array<never, never>>|JSONResponse<404|500, array{error: string}, array<never, never>>
      */
     public function show(int $id): JSONResponse
     {
         try {
             $log = $this->searchTrailService->getSearchTrail($id);
-            return new JSONResponse($log);
+            return new JSONResponse(data: $log);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
                 data: ['error' => 'Search trail not found'],
                 statusCode: 404
             );
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to retrieve search trail: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to retrieve search trail: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end show()
-
 
     /**
      * Get search statistics for a given period
      *
-     * @return JSONResponse A JSON response containing search statistics
-     *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing search statistics
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<
+     *     200|500,
+     *     array{
+     *         error?: mixed|string,
+     *         searches_with_results?: mixed,
+     *         searches_without_results?: mixed,
+     *         success_rate?: 0|float,
+     *         unique_search_terms?: int,
+     *         unique_users?: int,
+     *         avg_searches_per_session?: float,
+     *         avg_object_views_per_session?: float,
+     *         unique_organizations?: 0,
+     *         query_complexity?: array{simple: 0|float, medium: 0|float, complex: 0|float},
+     *         period?: array{from: null|string, to: null|string, days: int|null},
+     *         daily_averages?: array{searches_per_day: float, results_per_day: float}|mixed,
+     *         ...
+     *     },
+     *     array<never, never>
+     * >
      */
     public function statistics(): JSONResponse
     {
@@ -359,30 +394,28 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            return new JSONResponse($statistics);
+            return new JSONResponse(data: $statistics);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get search statistics: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get search statistics: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end statistics()
-
 
     /**
      * Get popular search terms
      *
-     * @return JSONResponse A JSON response containing popular search terms
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with popular search terms
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: float|int, period?: array{from: null|string, to: null|string}|null}, array<never, never>>
      */
     public function popularTerms(): JSONResponse
     {
         // Extract parameters.
         $params = $this->extractRequestParameters();
-        // Prioritize underscore-prefixed limit parameter
+        // Prioritize underscore-prefixed limit parameter.
         $limit = $this->request->getParam('_limit', $this->request->getParam('limit', 10));
 
         try {
@@ -392,39 +425,37 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            // Extract the terms array and metadata
+            // Extract the terms array and metadata.
             $terms            = $serviceResult['terms'] ?? [];
             $totalUniqueTerms = $serviceResult['total_unique_terms'] ?? 0;
             $totalSearches    = $serviceResult['total_searches'] ?? 0;
             $period           = $serviceResult['period'] ?? null;
 
-            // Use pagination format for the terms array
+            // Use pagination format for the terms array.
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
-            $paginatedTerms = $this->paginate($terms, $totalUniqueTerms, $limit, $offset, $page);
+            $paginatedTerms = $this->paginate(results: $terms, total: $totalUniqueTerms, limit: $limit, offset: $offset, page: $page);
 
-            // Add the additional metadata from the service
+            // Add the additional metadata from the service.
             $paginatedTerms['total_searches'] = $totalSearches;
             $paginatedTerms['period']         = $period;
 
-            return new JSONResponse($paginatedTerms);
+            return new JSONResponse(data: $paginatedTerms);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get popular search terms: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get popular search terms: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end popularTerms()
-
 
     /**
      * Get search activity by time period
      *
-     * @return JSONResponse A JSON response containing search activity data
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with search activity by time period
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, activity?: array, insights?: array{peak_period: mixed|null, peak_count?: mixed, low_period: mixed|null, low_count?: mixed, trend: string, average_searches_per_period: 0|float, total_periods?: int<1, max>}, interval?: string, period?: array{from: null|string, to: null|string}}, array<never, never>>
      */
     public function activity(): JSONResponse
     {
@@ -439,24 +470,22 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            return new JSONResponse($result);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get search activity: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get search activity: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end activity()
-
 
     /**
      * Get search statistics by register and schema
      *
-     * @return JSONResponse A JSON response containing search statistics by register/schema
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with search statistics by register and schema
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: float|int, period?: array{from: null|string, to: null|string}|null}, array<never, never>>
      */
     public function registerSchemaStats(): JSONResponse
     {
@@ -469,47 +498,46 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            // Extract the statistics array and metadata
+            // Extract the statistics array and metadata.
             $statistics        = $serviceResult['statistics'] ?? [];
             $totalCombinations = $serviceResult['total_combinations'] ?? 0;
             $totalSearches     = $serviceResult['total_searches'] ?? 0;
             $period            = $serviceResult['period'] ?? null;
 
-            // Use pagination format for the statistics array
-            // Prioritize underscore-prefixed limit parameter
-            $limit          = $this->request->getParam('_limit', $this->request->getParam('limit', 20));
+            // Use pagination format for the statistics array.
+            // Prioritize underscore-prefixed limit parameter.
+            $defaultLimit   = $this->request->getParam('limit', 20);
+            $limit          = $this->request->getParam('_limit', $defaultLimit);
             $page           = $params['page'] ?? 1;
             $offset         = $params['offset'] ?? 0;
-            $paginatedStats = $this->paginate($statistics, $totalCombinations, $limit, $offset, $page);
+            $paginatedStats = $this->paginate(results: $statistics, total: $totalCombinations, limit: $limit, offset: $offset, page: $page);
 
-            // Add the additional metadata from the service
+            // Add the additional metadata from the service.
             $paginatedStats['total_searches'] = $totalSearches;
             $paginatedStats['period']         = $period;
 
-            return new JSONResponse($paginatedStats);
+            return new JSONResponse(data: $paginatedStats);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get register/schema statistics: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get register/schema statistics: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end registerSchemaStats()
-
 
     /**
      * Get user agent statistics
      *
-     * @return JSONResponse A JSON response containing user agent statistics
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with user agent statistics
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, results?: array<int, mixed>, total?: int<0, max>, page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>, offset?: int<0, max>, next?: null|string, prev?: null|string, total_searches?: 0, period?: array{from: null|string, to: null|string}|null, browser_breakdown?: non-empty-list<array{browser: array-key, count: 0|mixed, percentage: 0|float}>}, array<never, never>>
      */
     public function userAgentStats(): JSONResponse
     {
         // Extract parameters.
         $params = $this->extractRequestParameters();
-        // Prioritize underscore-prefixed limit parameter
+        // Prioritize underscore-prefixed limit parameter.
         $limit = $this->request->getParam('_limit', $this->request->getParam('limit', 10));
 
         try {
@@ -519,57 +547,78 @@ class SearchTrailController extends Controller
                 to: $params['to']
             );
 
-            // Check if service result is a structured array with nested data
-            if (isset($serviceResult['user_agents'])) {
-                // Extract the user agents array and metadata from structured response
-                $userAgents        = $serviceResult['user_agents'] ?? [];
-                $totalUniqueAgents = $serviceResult['total_unique_agents'] ?? 0;
-                $totalSearches     = $serviceResult['total_searches'] ?? 0;
-                $period            = $serviceResult['period'] ?? null;
-                $browserStats      = $serviceResult['browser_breakdown'] ?? null;
+            // Check if service result is a structured array with nested data.
+            if (($serviceResult['user_agents'] ?? null) !== null) {
+                // Extract the user agents array and metadata from structured response.
+                // GetUserAgentStatistics returns: user_agents, browser_distribution, total_user_agents, period.
+                $userAgentsArray = $serviceResult['user_agents'];
+                // Ensure we have a proper indexed array for pagination.
+                if (is_array($userAgentsArray) === true) {
+                    $userAgents = array_values($userAgentsArray);
+                } else {
+                    $userAgents = [];
+                }
 
-                // Use pagination format for the user agents array
+                $totalUniqueAgents = $serviceResult['total_user_agents'] ?? 0;
+                $totalSearches     = 0;
+                // Not returned by getUserAgentStatistics.
+                $period       = $serviceResult['period'] ?? null;
+                $browserStats = $serviceResult['browser_distribution'] ?? null;
+
+                // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
+                $paginatedUserAgents = $this->paginate(results: $userAgents, total: $totalUniqueAgents, limit: $limit, offset: $offset, page: $page);
 
-                // Add the additional metadata from the service
+                // Add the additional metadata from the service.
                 $paginatedUserAgents['total_searches'] = $totalSearches;
                 $paginatedUserAgents['period']         = $period;
-                if ($browserStats) {
+                if ($browserStats !== null && empty($browserStats) === false) {
                     $paginatedUserAgents['browser_breakdown'] = $browserStats;
                 }
 
-                return new JSONResponse($paginatedUserAgents);
+                return new JSONResponse(data: $paginatedUserAgents);
             } else {
-                // If service returns a simple array, treat it as the user agents list
-                $userAgents        = $serviceResult ?? [];
+                // If service returns a simple array, statusCode: treat it as the user agents list.
+                // $serviceResult is always an array at this point (non-null).
+                $userAgentsArray = $serviceResult;
+                // Ensure we have a proper indexed array for pagination.
+                // $userAgentsArray is always an array at this point, but may be associative.
+                $userAgents        = array_values($userAgentsArray);
                 $totalUniqueAgents = count($userAgents);
 
-                // Use pagination format for the user agents array
+                // Use pagination format for the user agents array.
                 $page   = $params['page'] ?? 1;
                 $offset = $params['offset'] ?? 0;
-                $paginatedUserAgents = $this->paginate($userAgents, $totalUniqueAgents, $limit, $offset, $page);
+                $paginatedUserAgents = $this->paginate(results: $userAgents, total: $totalUniqueAgents, limit: $limit, offset: $offset, page: $page);
 
-                return new JSONResponse($paginatedUserAgents);
+                return new JSONResponse(data: $paginatedUserAgents);
             }//end if
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Failed to get user agent statistics: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Failed to get user agent statistics: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end userAgentStats()
-
 
     /**
      * Clean up old search trail logs
      *
-     * @return JSONResponse A JSON response indicating cleanup results
-     *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing cleanup operation results
+     *
      * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<
+     *     200|400|500,
+     *     array{
+     *         error?: string,
+     *         success?: bool,
+     *         deleted?: 0|1,
+     *         message?: 'Cleanup operation failed'|'No expired entries to delete'|'Successfully deleted expired search trail entries',
+     *         cleanup_date?: string
+     *     },
+     *     array<never, never>
+     * >
      */
     public function cleanup(): JSONResponse
     {
@@ -581,34 +630,29 @@ class SearchTrailController extends Controller
             try {
                 $beforeDate = new DateTime($before);
             } catch (\Exception $e) {
-                return new JSONResponse(
-                    ['error' => 'Invalid date format for before parameter'],
-                    400
-                );
+                return new JSONResponse(data: ['error' => 'Invalid date format for before parameter'], statusCode: 400);
             }
         }
 
         try {
             $result = $this->searchTrailService->cleanupSearchTrails($beforeDate);
 
-            return new JSONResponse($result);
+            return new JSONResponse(data: $result);
         } catch (\Exception $e) {
-            return new JSONResponse(
-                ['error' => 'Cleanup failed: '.$e->getMessage()],
-                500
-            );
+            return new JSONResponse(data: ['error' => 'Cleanup failed: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end cleanup()
-
 
     /**
      * Export search trail logs in specified format
      *
-     * @return JSONResponse A JSON response containing the export data
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with exported search trail data
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, data?: array{content: false|string, filename: string, contentType: 'application/json'|'text/csv', size: int<0, max>}}, array<never, never>>
      */
     public function export(): JSONResponse
     {
@@ -631,7 +675,7 @@ class SearchTrailController extends Controller
 
             // Export search trails using service.
             $searchTrails = $this->searchTrailService->getSearchTrails(
-                    [
+                config: [
                         'filters' => $params['filters'],
                         'search'  => $params['search'],
                         'from'    => $params['from'],
@@ -639,7 +683,7 @@ class SearchTrailController extends Controller
                         'limit'   => null,
                         'offset'  => null,
                     ]
-                    );
+            );
 
             // Format export data.
             $exportData = [];
@@ -660,7 +704,7 @@ class SearchTrailController extends Controller
                     'updated'        => $trail->getUpdated(),
                 ];
 
-                if ($exportConfig['includeMetadata']) {
+                if ($exportConfig['includeMetadata'] === true) {
                     $row['search_parameters'] = $trail->getSearchParameters();
                     $row['result_metadata']   = $trail->getResultMetadata();
                 }
@@ -672,17 +716,17 @@ class SearchTrailController extends Controller
             if ($format === 'json') {
                 $content     = json_encode($exportData, JSON_PRETTY_PRINT);
                 $contentType = 'application/json';
-                $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.json';
+                $filename    = 'search-trails-' . date('Y-m-d-H-i-s') . '.json';
             } else {
                 // Default to CSV.
                 $content     = $this->arrayToCsv($exportData);
                 $contentType = 'text/csv';
-                $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.csv';
+                $filename    = 'search-trails-' . date('Y-m-d-H-i-s') . '.csv';
             }
 
             // Return export data.
             return new JSONResponse(
-                    [
+                data: [
                         'success' => true,
                         'data'    => [
                             'content'     => $content,
@@ -691,78 +735,77 @@ class SearchTrailController extends Controller
                             'size'        => strlen($content),
                         ],
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Export failed: '.$e->getMessage(),
+                data: [
+                        'error' => 'Export failed: ' . $e->getMessage(),
                     ],
-                    500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end export()
-
 
     /**
      * Delete a single search trail log
      *
      * @param int $id The search trail ID to delete
      *
-     * @return JSONResponse A JSON response indicating success or failure
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response confirming deletion
+     *
+     * @psalm-return JSONResponse<200|404|500, array{error?: string, success?: true, message?: 'Search trail deletion not implemented yet'}, array<never, never>>
      */
     public function destroy(int $id): JSONResponse
     {
         try {
-            $searchTrail = $this->searchTrailService->getSearchTrail($id);
+            // Validate that search trail exists (validation only).
+            $this->searchTrailService->getSearchTrail($id);
 
             // For now, we'll just return a success message since we don't have a delete method in the service.
             // In a real implementation, you'd add a deleteSearchTrail method to the service.
             return new JSONResponse(
-                    [
+                data: [
                         'success' => true,
                         'message' => 'Search trail deletion not implemented yet',
                     ]
-                    );
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
-                    [
+                data: [
                         'error' => 'Search trail not found',
                     ],
-                    404
-                    );
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Deletion failed: '.$e->getMessage(),
+                data: [
+                        'error' => 'Deletion failed: ' . $e->getMessage(),
                     ],
-                    500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end destroy()
-
 
     /**
      * Delete multiple search trail logs based on filters or specific IDs
      *
-     * @return JSONResponse A JSON response with deletion results
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with deletion results
+     *
+     * @psalm-return JSONResponse<200|500, array{error?: string, success?: true, results?: array{deleted: 0, failed: 0, message: 'Multiple search trail deletion not implemented yet'}, message?: 'Multiple search trail deletion not implemented yet'}, array<never, never>>
      */
     public function destroyMultiple(): JSONResponse
     {
-        // Extract request parameters.
-        $params = $this->extractRequestParameters();
-
-        // Get specific parameters for mass deletion.
-        $ids = $this->request->getParam(key: 'ids', default: null);
-
         try {
+            // TODO: Implement multiple search trail deletion.
+            // $ids = $this->request->getParam(key: 'ids', default: null);
             // For now, we'll just return a success message since we don't have a delete method in the service.
             // In a real implementation, you'd add a deleteMultipleSearchTrails method to the service.
             $result = [
@@ -772,23 +815,21 @@ class SearchTrailController extends Controller
             ];
 
             return new JSONResponse(
-                    [
+                data: [
                         'success' => true,
                         'results' => $result,
                         'message' => 'Multiple search trail deletion not implemented yet',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    [
-                        'error' => 'Mass deletion failed: '.$e->getMessage(),
+                data: [
+                        'error' => 'Mass deletion failed: ' . $e->getMessage(),
                     ],
-                    500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end destroyMultiple()
-
 
     /**
      * Convert array to CSV format
@@ -799,7 +840,7 @@ class SearchTrailController extends Controller
      */
     private function arrayToCsv(array $data): string
     {
-        if (empty($data)) {
+        if (empty($data) === true) {
             return '';
         }
 
@@ -818,9 +859,7 @@ class SearchTrailController extends Controller
         fclose($output);
 
         return $csv;
-
     }//end arrayToCsv()
-
 
     /**
      * Clear all search trail logs
@@ -833,32 +872,41 @@ class SearchTrailController extends Controller
     public function clearAll(): JSONResponse
     {
         try {
-            // Get the search trail mapper from the container
-            $searchTrailMapper = \OC::$server->get('OCA\OpenRegister\Db\SearchTrailMapper');
-            
-                    // Use the clearAllLogs method from the mapper
+            // Get the search trail mapper from the container.
+            /*
+             * @var \OCA\OpenRegister\Db\SearchTrailMapper $searchTrailMapper
+             */
+
+            $searchTrailMapper = \OC::$server->get(id: 'OCA\OpenRegister\Db\SearchTrailMapper');
+
+                    // Use the clearAllLogs method from the mapper.
                     $result = $searchTrailMapper->clearAllLogs();
-            
-            if ($result) {
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'All search trails cleared successfully',
-                    'deleted' => 'All expired search trails have been deleted'
-                ]);
+
+            if ($result === true) {
+                return new JSONResponse(
+                    data: [
+                            'success' => true,
+                            'message' => 'All search trails cleared successfully',
+                            'deleted' => 'All expired search trails have been deleted',
+                        ]
+                );
             } else {
-                return new JSONResponse([
-                    'success' => true,
-                    'message' => 'No expired search trails found to clear',
-                    'deleted' => 0
-                ]);
+                return new JSONResponse(
+                    data: [
+                            'success' => true,
+                            'message' => 'No expired search trails found to clear',
+                            'deleted' => 0,
+                        ]
+                );
             }
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'Failed to clear search trails: ' . $e->getMessage()
-            ], 500);
-        }
+            return new JSONResponse(
+                data: [
+                        'success' => false,
+                        'error'   => 'Failed to clear search trails: ' . $e->getMessage(),
+                    ],
+                statusCode: 500
+            );
+        }//end try
     }//end clearAll()
-
-
 }//end class

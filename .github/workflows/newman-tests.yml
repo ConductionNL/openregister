@@ -1,0 +1,140 @@
+name: Newman Integration Tests
+
+##
+# GitHub Actions workflow for running Newman integration tests.
+#
+# This workflow runs on push to main/develop branches and on pull requests.
+# It sets up a Nextcloud environment and runs the full Newman test suite.
+#
+# @category CI/CD
+# @package  OpenRegister
+# @author   Conduction
+# @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+# @link     https://github.com/ConductionNL/openregister
+##
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  newman-tests:
+    name: Run Newman Integration Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: nextcloud
+          MYSQL_USER: nextcloud
+          MYSQL_PASSWORD: nextcloud
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      
+      nextcloud:
+        image: nextcloud:latest
+        env:
+          MYSQL_HOST: mysql
+          MYSQL_DATABASE: nextcloud
+          MYSQL_USER: nextcloud
+          MYSQL_PASSWORD: nextcloud
+          NEXTCLOUD_ADMIN_USER: admin
+          NEXTCLOUD_ADMIN_PASSWORD: admin
+          NEXTCLOUD_TRUSTED_DOMAINS: localhost
+        ports:
+          - 80:80
+        options: >-
+          --health-cmd="curl -f http://localhost/status.php || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'tests/integration/package-lock.json'
+      
+      - name: Install Newman
+        run: |
+          npm install -g newman
+          newman --version
+      
+      - name: Wait for Nextcloud to be ready
+        run: |
+          echo "Waiting for Nextcloud to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost/status.php 2>/dev/null; then
+              echo "✅ Nextcloud is ready!"
+              break
+            fi
+            echo "⏳ Waiting... ($i/30)"
+            sleep 10
+          done
+      
+      - name: Install OpenRegister app
+        run: |
+          echo "Installing OpenRegister app..."
+          docker cp . nextcloud:/var/www/html/apps-extra/openregister
+          docker exec --user www-data nextcloud php occ app:enable openregister
+          docker exec --user www-data nextcloud php occ app:list | grep openregister
+      
+      - name: Run Newman tests
+        env:
+          NEXTCLOUD_URL: http://localhost
+          NEXTCLOUD_ADMIN_USER: admin
+          NEXTCLOUD_ADMIN_PASSWORD: admin
+          RUN_MODE: ci
+        run: |
+          cd tests/integration
+          chmod +x run-tests.sh
+          ./run-tests.sh --mode ci --clean
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-test-results
+          path: tests/integration/newman-results/
+          retention-days: 30
+      
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const testResults = '📊 Newman test results available in artifacts';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: testResults
+            });
+
+
+
+
+
+
+
+

@@ -1,0 +1,60 @@
+##
+# Makefile for OpenRegister Newman Tests
+#
+# Provides convenient shortcuts for running Newman integration tests.
+#
+# @category Testing
+# @package  OpenRegister
+# @author   Conduction
+# @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
+# @link     https://github.com/ConductionNL/openregister
+##
+
+.PHONY: help test test-clean test-ci test-verbose install-newman
+
+# Default target.
+help:
+	@echo "OpenRegister Newman Tests - Available targets:"
+	@echo ""
+	@echo "  make test          - Run Newman tests (default)"
+	@echo "  make test-clean    - Run tests with clean start (clears variables)"
+	@echo "  make test-ci       - Run tests in CI mode"
+	@echo "  make test-verbose  - Run tests with verbose output"
+	@echo "  make install-newman - Install Newman globally"
+	@echo ""
+	@echo "Environment variables:"
+	@echo "  NEXTCLOUD_URL            - Base URL (default: http://localhost)"
+	@echo "  NEXTCLOUD_ADMIN_USER     - Admin user (default: admin)"
+	@echo "  NEXTCLOUD_ADMIN_PASSWORD - Admin password (default: admin)"
+	@echo "  NEXTCLOUD_CONTAINER      - Container name (default: master-nextcloud-1)"
+	@echo ""
+
+# Run tests with defaults.
+test:
+	@cd tests/integration && ./run-tests.sh
+
+# Run tests with clean start.
+test-clean:
+	@cd tests/integration && ./run-tests.sh --clean
+
+# Run tests in CI mode.
+test-ci:
+	@cd tests/integration && ./run-tests.sh --mode ci --clean
+
+# Run tests with verbose output.
+test-verbose:
+	@cd tests/integration && ./run-tests.sh --verbose
+
+# Install Newman globally.
+install-newman:
+	@echo "Installing Newman..."
+	@npm install -g newman
+	@newman --version
+
+
+
+
+
+
+
+

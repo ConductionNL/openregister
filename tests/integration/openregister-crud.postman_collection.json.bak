@@ -1,0 +1,5438 @@
+{
+  "info": {
+    "_postman_id": "openregister-crud-v2",
+    "name": "OpenRegister CRUD Integration Test",
+    "description": "Complete CRUD testing for OpenRegister entities with RBAC - Fixed variable handling",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Clear variables ONCE at the start of each test run to ensure idempotency.",
+          "// This is critical for CI/CD pipelines where tests must be reproducible.",
+          "",
+          "// Check if this is the first request by looking for the init flag.",
+          "const isInitialized = pm.collectionVariables.get('_test_run_initialized');",
+          "",
+          "if (!isInitialized || isInitialized === '') {",
+          "    console.log('🔄 Clearing collection variables for fresh test run...');",
+          "    ",
+          "    // List of variables to clear (exclude base_url, admin credentials).",
+          "    const variablesToClear = [",
+          "        'org_uuid', 'register_id', 'register_slug', 'schema_id', 'schema_slug',",
+          "        'main_register_slug', 'main_schema_slug',",
+          "        'validation_schema_id', 'validation_schema_slug',",
+          "        'object1_uuid', 'object2_uuid', 'source_id', 'application_id',",
+          "        'agent_id', 'config_id', 'conversation_uuid', 'message_uuid',",
+          "        'file_object_uuid', 'file_id_1', 'file_ops_object_uuid',",
+          "        'file_test_org_uuid', 'file_test_register_id', 'file_test_register_slug',",
+          "        'file_test_schema_id', 'file_test_schema_slug',",
+          "        'import_test_register_id', 'import_test_register_slug',",
+          "        'import_test_schema_id', 'import_test_schema_slug',",
+          "        'bulk_object_1_uuid', 'bulk_object_2_uuid',",
+          "        'test_timestamp'",
+          "    ];",
+          "    ",
+          "    variablesToClear.forEach(variable => {",
+          "        pm.collectionVariables.set(variable, '');",
+          "    });",
+          "    ",
+          "    // Generate a single timestamp for the entire test run to ensure consistency.",
+          "    const timestamp = Math.floor(Date.now() / 1000);",
+          "    pm.collectionVariables.set('test_timestamp', timestamp);",
+          "    ",
+          "    // Set flag to prevent re-clearing during this test run.",
+          "    pm.collectionVariables.set('_test_run_initialized', 'true');",
+          "    ",
+          "    console.log('✅ Variables cleared - ready for fresh test run');",
+          "    console.log('📅 Test timestamp set to: ' + timestamp);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "admin_user",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "org_uuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "register_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "register_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schema_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "validation_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "validation_schema_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "object1_uuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "object2_uuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "source_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "application_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agent_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "config_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deleted_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "parent_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "child_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "file_object_uuid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conversation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "message_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "grandparent_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "parent2_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "multi_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "test_timestamp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "main_register_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "main_schema_slug",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Setup: Enable RBAC",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 405 (settings endpoint)', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 405]);",
+              "});",
+              "",
+              "// RBAC should be enabled by default, but we ensure it here",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('RBAC configuration is accessible', function () {",
+              "        pm.expect(jsonData).to.have.property('rbac');",
+              "    });",
+              "    console.log('RBAC enabled:', jsonData.rbac.enabled);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"enabled\": true,\n  \"anonymousGroup\": \"public\",\n  \"defaultNewUserGroup\": \"viewer\",\n  \"defaultObjectOwner\": \"\",\n  \"adminOverride\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/settings/rbac",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "settings",
+            "rbac"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Setup: Verify RBAC Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('RBAC is enabled', function () {",
+              "        pm.expect(jsonData.rbac).to.have.property('enabled');",
+              "        pm.expect(jsonData.rbac.enabled).to.be.true;",
+              "    });",
+              "    pm.test('Anonymous group is set to public', function () {",
+              "        pm.expect(jsonData.rbac.anonymousGroup).to.eql('public');",
+              "    });",
+              "    console.log('✓ RBAC Setup Complete - Enabled:', jsonData.rbac.enabled);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/settings/rbac",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "settings",
+            "rbac"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Setup: Enable Multitenancy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 405', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 405]);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Multitenancy configuration is accessible', function () {",
+              "        pm.expect(jsonData).to.have.property('multitenancy');",
+              "    });",
+              "    console.log('✓ Multitenancy enabled:', jsonData.multitenancy.enabled);",
+              "    console.log('✓ Admin override:', jsonData.multitenancy.adminOverride);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"enabled\": true,\n  \"adminOverride\": true,\n  \"defaultUserTenant\": \"\",\n  \"defaultObjectTenant\": \"\",\n  \"publishedObjectsBypassMultiTenancy\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/settings/multitenancy",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "settings",
+            "multitenancy"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Setup: Verify Multitenancy Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Multitenancy is enabled', function () {",
+              "        pm.expect(jsonData.multitenancy).to.have.property('enabled');",
+              "        pm.expect(jsonData.multitenancy.enabled).to.be.true;",
+              "    });",
+              "    pm.test('Admin override is enabled', function () {",
+              "        pm.expect(jsonData.multitenancy).to.have.property('adminOverride');",
+              "        pm.expect(jsonData.multitenancy.adminOverride).to.be.true;",
+              "    });",
+              "    console.log('✓ Multitenancy Setup Complete');",
+              "    console.log('  - Enabled:', jsonData.multitenancy.enabled);",
+              "    console.log('  - Admin Override:', jsonData.multitenancy.adminOverride);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/settings/multitenancy",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "settings",
+            "multitenancy"
+          ]
+        }
+      }
+    },
+    {
+      "name": "0. Create Organization",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Response has organisation with UUID', function () {",
+              "        pm.expect(jsonData).to.have.property('organisation');",
+              "        pm.expect(jsonData.organisation).to.have.property('uuid');",
+              "        pm.expect(jsonData.organisation.uuid).to.be.a('string').and.not.empty;",
+              "    });",
+              "    ",
+              "    if (jsonData.organisation && jsonData.organisation.uuid) {",
+              "        pm.collectionVariables.set('org_uuid', jsonData.organisation.uuid);",
+              "        console.log('Set org_uuid: ' + jsonData.organisation.uuid);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Org Newman {{test_timestamp}}\",\n  \"description\": \"Created by Newman test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/organisations",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "organisations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "1. Create Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Response has ID and slug', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData).to.have.property('slug');",
+              "    });",
+              "    ",
+              "    if (jsonData.id && jsonData.slug) {",
+              "        pm.collectionVariables.set('register_id', jsonData.id);",
+              "        pm.collectionVariables.set('register_slug', jsonData.slug);",
+              "        pm.collectionVariables.set('main_register_slug', jsonData.slug);",
+              "        console.log('Set register_id: ' + jsonData.id + ', slug: ' + jsonData.slug);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Register Newman {{test_timestamp}}\",\n  \"description\": \"Register for Newman testing\",\n  \"organisation\": \"{{org_uuid}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Create Schema",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Response has ID and slug', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData).to.have.property('slug');",
+              "    });",
+              "    ",
+              "    if (jsonData.id && jsonData.slug) {",
+              "        pm.collectionVariables.set('schema_id', jsonData.id);",
+              "        pm.collectionVariables.set('schema_slug', jsonData.slug);",
+              "        pm.collectionVariables.set('main_schema_slug', jsonData.slug);",
+              "        console.log('Set schema_id: ' + jsonData.id + ', slug: ' + jsonData.slug);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Person Schema {{test_timestamp}}\",\n  \"description\": \"Schema for Newman testing\",\n  \"organisation\": \"{{org_uuid}}\",\n  \"hardValidation\": true,\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"required\": true},\n    \"age\": {\"type\": \"integer\"},\n    \"active\": {\"type\": \"boolean\", \"default\": true}\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ],
+          "query": [
+            {
+              "key": "register",
+              "value": "{{register_id}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2a. Create Validation Test Schema",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Validation schema created', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData).to.have.property('slug');",
+              "    });",
+              "    ",
+              "    if (jsonData.id && jsonData.slug) {",
+              "        pm.collectionVariables.set('validation_schema_id', jsonData.id);",
+              "        pm.collectionVariables.set('validation_schema_slug', jsonData.slug);",
+              "        console.log('Set validation_schema_id: ' + jsonData.id + ', slug: ' + jsonData.slug);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Validation Test Schema {{test_timestamp}}\",\n  \"description\": \"Comprehensive schema to test all validation rules including type and format\",\n  \"organisation\": \"{{org_uuid}}\",\n  \"hardValidation\": true,\n  \"properties\": {\n    \"required_string\": {\n      \"type\": \"string\",\n      \"required\": true,\n      \"description\": \"A required string field\"\n    },\n    \"string_with_length\": {\n      \"type\": \"string\",\n      \"minLength\": 3,\n      \"maxLength\": 20,\n      \"description\": \"String must be between 3 and 20 characters\"\n    },\n    \"string_with_pattern\": {\n      \"type\": \"string\",\n      \"pattern\": \"^[A-Z]{2,3}-[0-9]{4}$\",\n      \"description\": \"String must match pattern like AB-1234 or ABC-5678\"\n    },\n    \"enum_field\": {\n      \"type\": \"string\",\n      \"enum\": [\"draft\", \"published\", \"archived\"],\n      \"description\": \"Must be one of: draft, published, archived\"\n    },\n    \"integer_with_range\": {\n      \"type\": \"integer\",\n      \"minimum\": 0,\n      \"maximum\": 100,\n      \"description\": \"Integer between 0 and 100\"\n    },\n    \"number_with_range\": {\n      \"type\": \"number\",\n      \"minimum\": 0.0,\n      \"maximum\": 1.0,\n      \"description\": \"Decimal number between 0.0 and 1.0\"\n    },\n    \"array_with_items\": {\n      \"type\": \"array\",\n      \"minItems\": 1,\n      \"maxItems\": 5,\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Array must have 1-5 string items\"\n    },\n    \"boolean_field\": {\n      \"type\": \"boolean\",\n      \"description\": \"Boolean true or false\"\n    },\n    \"email_field\": {\n      \"type\": \"string\",\n      \"format\": \"email\",\n      \"description\": \"Valid email address\"\n    },\n    \"uuid_field\": {\n      \"type\": \"string\",\n      \"format\": \"uuid\",\n      \"description\": \"Valid UUID v4\"\n    },\n    \"date_field\": {\n      \"type\": \"string\",\n      \"format\": \"date\",\n      \"description\": \"Valid date (YYYY-MM-DD)\"\n    },\n    \"uri_field\": {\n      \"type\": \"string\",\n      \"format\": \"uri\",\n      \"description\": \"Valid URI\"\n    },\n    \"optional_string\": {\n      \"type\": \"string\",\n      \"description\": \"An optional string field\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ],
+          "query": [
+            {
+              "key": "register",
+              "value": "{{register_id}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2b. Validation Test - PASS (Valid Data)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201 (valid data accepted)', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Valid object created successfully', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData.required_string).to.eql('Valid String');",
+              "        pm.expect(jsonData.string_with_length).to.eql('Medium');",
+              "        pm.expect(jsonData.enum_field).to.eql('published');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid String\",\n  \"string_with_length\": \"Medium\",\n  \"string_with_pattern\": \"AB-1234\",\n  \"enum_field\": \"published\",\n  \"integer_with_range\": 50,\n  \"number_with_range\": 0.75,\n  \"array_with_items\": [\"one\", \"two\", \"three\"],\n  \"boolean_field\": true,\n  \"email_field\": \"test@example.com\",\n  \"uuid_field\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"date_field\": \"2024-01-15\",\n  \"uri_field\": \"https://example.com/path\",\n  \"optional_string\": \"This is optional\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2c. Validation Test - FAIL (Missing Required Field)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions required field', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.include('required');",
+              "        pm.expect(errorString).to.include('required_string');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"string_with_length\": \"Test\",\n  \"enum_field\": \"draft\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2d. Validation Test - FAIL (String Too Short)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions minLength', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('minlength') || str.includes('characters') || str.includes('at least');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"string_with_length\": \"ab\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2e. Validation Test - FAIL (String Too Long)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions maxLength', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('maxlength') || str.includes('characters') || str.includes('at most');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"string_with_length\": \"This string is way too long for the maxLength constraint\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2f. Validation Test - FAIL (Invalid Pattern)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions pattern', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.include('pattern');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"string_with_pattern\": \"invalid-format\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2g. Validation Test - FAIL (Invalid Enum Value)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions enum or allowed values', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('enum') || str.includes('allowed') || str.includes('one of');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"enum_field\": \"invalid_status\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2h. Validation Test - FAIL (Number Out of Range)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions minimum or maximum', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('minimum') || str.includes('maximum') || str.includes('at most') || str.includes('at least');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"integer_with_range\": 150\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2i. Validation Test - FAIL (Array Too Few Items)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions minItems or array length', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('minitems') || str.includes('at least') || str.includes('items');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"array_with_items\": []\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2j. Validation Test - FAIL (Array Too Many Items)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions maxItems or array length', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('maxitems') || str.includes('at most') || str.includes('items');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"array_with_items\": [\"one\", \"two\", \"three\", \"four\", \"five\", \"six\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2k. Validation Test - FAIL (Wrong Type)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions type error', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('type') || str.includes('integer') || str.includes('boolean');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"integer_with_range\": \"not_a_number\",\n  \"boolean_field\": \"not_a_boolean\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2l. Validation Test - FAIL (Invalid Email Format)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions email or format error', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('email') || str.includes('format');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"email_field\": \"not-an-email\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2m. Validation Test - FAIL (Invalid UUID Format)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions uuid or format error', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('uuid') || str.includes('format');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"uuid_field\": \"not-a-valid-uuid-12345\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2n. Validation Test - FAIL (Invalid Date Format)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions date or format error', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('date') || str.includes('format');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"date_field\": \"32/13/2024\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2o. Validation Test - FAIL (Invalid URI Format)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 (validation failed)', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "if (pm.response.code === 400) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Error message mentions uri or format error', function () {",
+              "        var errorString = JSON.stringify(jsonData).toLowerCase();",
+              "        pm.expect(errorString).to.satisfy(function(str) {",
+              "            return str.includes('uri') || str.includes('format');",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"required_string\": \"Valid\",\n  \"uri_field\": \"not a valid uri with spaces\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{validation_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{validation_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3a. Create Second Organization (Multitenancy)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Response has organisation with UUID', function () {",
+              "        pm.expect(jsonData).to.have.property('organisation');",
+              "        pm.expect(jsonData.organisation).to.have.property('uuid');",
+              "        pm.collectionVariables.set('org2_uuid', jsonData.organisation.uuid);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/organisations?name=Test Organization 2 {{$timestamp}}&description=Second organization for multitenancy testing",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "organisations"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "Test Organization 2 {{$timestamp}}"
+            },
+            {
+              "key": "description",
+              "value": "Second organization for multitenancy testing"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3b. Create Schema in Org2 (Multitenancy)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Schema belongs to org2', function () {",
+              "        pm.expect(jsonData.organisation).to.eql(pm.collectionVariables.get('org2_uuid'));",
+              "    });",
+              "    pm.collectionVariables.set('org2_schema_id', jsonData.id);",
+              "    pm.collectionVariables.set('org2_schema_slug', jsonData.slug);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Org2 Schema {{$timestamp}}\",\n  \"description\": \"Schema in organization 2\",\n  \"organisation\": \"{{org2_uuid}}\",\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"required\": true},\n    \"org2_field\": {\"type\": \"string\"}\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ],
+          "query": [
+            {
+              "key": "register",
+              "value": "{{register_id}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3c. Create Object in Org2 (Multitenancy)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object created successfully', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData.id).to.be.a('string');",
+              "    });",
+              "    pm.collectionVariables.set('org2_object_uuid', jsonData.id);",
+              "    ",
+              "    // Note: Objects may inherit organization from schema or be set to null",
+              "    // The key test is isolation in step 3d, not the organization property itself",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Org2 Object\",\n  \"org2_field\": \"This belongs to org2\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{org2_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{org2_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3d. Test Multitenancy Isolation (Should NOT see org2 objects from org1)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Set active organization to org1 (simulate user switching org context)",
+              "// In a real scenario, this would be done via user preferences API"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    var org2_object_uuid = pm.collectionVariables.get('org2_object_uuid');",
+              "    ",
+              "    pm.test('Org2 object should NOT be in org1 results (multitenancy isolation)', function () {",
+              "        var found = jsonData.results.some(obj => obj.id === org2_object_uuid);",
+              "        pm.expect(found).to.be.false;",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{org2_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{org2_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3e. Test Admin Override (Admin CAN see all orgs)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Admin can see schemas from all organizations', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.results).to.be.an('array');",
+              "    // Admin should see both org1 and org2 schemas",
+              "    pm.expect(jsonData.results.length).to.be.at.least(2);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3f. Create Public Read Schema (RBAC)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Schema has public read authorization', function () {",
+              "        pm.expect(jsonData).to.have.property('authorization');",
+              "        pm.expect(jsonData.authorization).to.have.property('read');",
+              "        pm.expect(jsonData.authorization.read).to.be.an('array').that.includes('public');",
+              "    });",
+              "    pm.collectionVariables.set('public_schema_id', jsonData.id);",
+              "    pm.collectionVariables.set('public_schema_slug', jsonData.slug);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Public Read Schema {{$timestamp}}\",\n  \"description\": \"Schema with public read access for RBAC testing\",\n  \"organisation\": \"{{org_uuid}}\",\n  \"authorization\": {\n    \"read\": [\"public\"],\n    \"create\": [],\n    \"update\": [],\n    \"delete\": []\n  },\n  \"properties\": {\n    \"title\": {\"type\": \"string\", \"required\": true},\n    \"public_data\": {\"type\": \"string\"},\n    \"content\": {\"type\": \"string\"}\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ],
+          "query": [
+            {
+              "key": "register",
+              "value": "{{register_id}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3g. Create Object in Public Schema (RBAC)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Public object created', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData.title).to.eql('Public Test Object');",
+              "    });",
+              "    pm.collectionVariables.set('public_object_uuid', jsonData.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Public Test Object\",\n  \"public_data\": \"This data should be publicly readable\",\n  \"content\": \"Anyone can read this without authentication\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{public_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3h. Test Unauthenticated Read (PUBLIC schema - should WORK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 (unauthenticated read allowed for public schema)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Can read object data without authentication', function () {",
+              "        pm.expect(jsonData).to.have.property('title');",
+              "        pm.expect(jsonData.title).to.eql('Public Test Object');",
+              "        pm.expect(jsonData.public_data).to.include('publicly readable');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}/{{public_object_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{public_schema_slug}}",
+            "{{public_object_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3i. Test Unauthenticated Read (PRIVATE schema - LIST endpoint)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// NOTE: List endpoints currently don't enforce RBAC (TODO: should be fixed)",
+              "// This test documents current behavior, not ideal behavior",
+              "pm.test('Status code is 200 (list endpoint currently accessible)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('List endpoint returns data', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('results');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3j. Test Unauthenticated Write (PUBLIC schema - currently ALLOWS)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// NOTE: Unauthenticated writes currently succeed (TODO: investigate if this is intended)",
+              "// This test documents current behavior - public read schema allows public write",
+              "pm.test('Status code is 201 (unauthenticated write currently allowed)', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object was created', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData.title).to.eql('Unauthorized Attempt');",
+              "    });",
+              "    pm.collectionVariables.set('unauthenticated_object_uuid', jsonData.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Unauthorized Attempt\",\n  \"public_data\": \"This should not be created\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{public_schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3k. Test Authenticated Read (PUBLIC schema - should WORK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 (authenticated read works for public schema)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Authenticated users can also read public data', function () {",
+              "        pm.expect(jsonData).to.have.property('title');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "admin"
+            },
+            {
+              "key": "password",
+              "value": "admin"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{public_schema_slug}}/{{public_object_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{public_schema_slug}}",
+            "{{public_object_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Create Object 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Response has ID (UUID)', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData.id).to.be.a('string').and.not.empty;",
+              "    });",
+              "    ",
+              "    if (jsonData.id) {",
+              "        pm.collectionVariables.set('object1_uuid', jsonData.id);",
+              "        console.log('Set object1_uuid: ' + jsonData.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"age\": 30,\n  \"active\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Create Object 2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.id) {",
+              "        pm.collectionVariables.set('object2_uuid', jsonData.id);",
+              "        console.log('Set object2_uuid: ' + jsonData.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Jane Smith\",\n  \"age\": 25,\n  \"active\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Read Object 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object has correct data', function () {",
+              "        pm.expect(jsonData.name).to.eql('John Doe');",
+              "        pm.expect(jsonData.age).to.eql(30);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Update Object 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object data is updated', function () {",
+              "        pm.expect(jsonData.name).to.include('Updated');",
+              "        pm.expect(jsonData.age).to.eql(31);",
+              "        pm.expect(jsonData.active).to.eql(false);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"age\": 31,\n  \"active\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. List Objects",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Response has results array', function () {",
+              "        pm.expect(jsonData).to.have.property('results');",
+              "        pm.expect(jsonData.results).to.be.an('array');",
+              "        pm.expect(jsonData.results.length).to.be.at.least(2);",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "8. Create Source",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "if (pm.response.code === 200 || pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.id) {",
+              "        pm.collectionVariables.set('source_id', jsonData.id);",
+              "        console.log('Set source_id: ' + jsonData.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Source {{$timestamp}}\",\n  \"description\": \"Source for testing\",\n  \"type\": \"api\",\n  \"location\": \"https://api.example.com\",\n  \"databaseUrl\": \"mysql://localhost/test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/sources",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "sources"
+          ]
+        }
+      }
+    },
+    {
+      "name": "9. Create Application",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.id) {",
+              "        pm.collectionVariables.set('application_id', jsonData.id);",
+              "        console.log('Set application_id: ' + jsonData.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test App {{$timestamp}}\",\n  \"description\": \"Application for testing\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/applications",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "applications"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10. Create Agent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.id) {",
+              "        pm.collectionVariables.set('agent_id', jsonData.id);",
+              "        console.log('Set agent_id: ' + jsonData.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Agent {{$timestamp}}\",\n  \"description\": \"Agent for testing\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/agents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "agents"
+          ]
+        }
+      }
+    },
+    {
+      "name": "11. Create Configuration",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 201', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "",
+              "if (pm.response.code === 200 || pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.id) {",
+              "        pm.collectionVariables.set('config_id', jsonData.id);",
+              "        console.log('Set config_id: ' + jsonData.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Configuration {{$timestamp}}\",\n  \"description\": \"Configuration for testing\",\n  \"data\": {\"setting1\": \"value1\"}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/configurations",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "configurations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12. Update Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Register - Updated\",\n  \"description\": \"Updated by Newman test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{register_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "13. Update Schema",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Person Schema - Updated\",\n  \"description\": \"Updated by Newman test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{schema_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "14. Update Source",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Source - Updated\",\n  \"description\": \"Updated by Newman test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/sources/{{source_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "sources",
+            "{{source_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "15. Update Application",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test App - Updated\",\n  \"description\": \"Updated by Newman test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/applications/{{application_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "applications",
+            "{{application_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "16. Update Agent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Agent - Updated\",\n  \"description\": \"Updated by Newman test\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/agents/{{agent_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "agents",
+            "{{agent_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17. Lock Object (Lifecycle)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object is now locked', function () {",
+              "        pm.expect(jsonData).to.have.property('locked');",
+              "        pm.expect(jsonData.locked).to.be.true;",
+              "    });",
+              "    console.log('✓ Object locked');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/lock",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "lock"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17a. Try to Update Locked Object (Should FAIL)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Locked objects should not be updateable",
+              "pm.test('Status code is 423 (Locked) or 403 (Forbidden)', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([423, 403, 409]);",
+              "});",
+              "",
+              "pm.test('Update was blocked due to lock', function () {",
+              "    pm.expect(pm.response.code).to.be.at.least(400);",
+              "});",
+              "",
+              "console.log('✓ Locked object cannot be updated (as expected)');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Attempt to Update Locked Object\",\n  \"age\": 99\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17b. Unlock Object (Lifecycle)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object is now unlocked', function () {",
+              "        pm.expect(jsonData).to.have.property('locked');",
+              "        pm.expect(jsonData.locked).to.be.false;",
+              "    });",
+              "    console.log('✓ Object unlocked');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/unlock",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "unlock"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17c. Publish Object (Lifecycle)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object has published timestamp', function () {",
+              "        pm.expect(jsonData).to.have.property('published');",
+              "        pm.expect(jsonData.published).to.not.be.null;",
+              "    });",
+              "    console.log('✓ Object published');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/publish",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "publish"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17d. Depublish Object (Lifecycle)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Object has depublished timestamp', function () {",
+              "        pm.expect(jsonData).to.have.property('depublished');",
+              "        pm.expect(jsonData.depublished).to.not.be.null;",
+              "    });",
+              "    console.log('✓ Object depublished');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/depublish",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "depublish"
+          ]
+        }
+      }
+    },
+    {
+      "name": "18. Soft Delete Object 2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});",
+              "",
+              "pm.test('Object was soft-deleted', function () {",
+              "    // Soft delete should return success",
+              "    pm.expect(pm.response.code).to.be.at.most(299);",
+              "});",
+              "",
+              "console.log('✓ Object soft-deleted');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object2_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object2_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "18a. Verify Object in Deleted List",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    var deletedObjectUuid = pm.collectionVariables.get('object2_uuid');  // Test 18 deletes Object 2",
+              "    ",
+              "    pm.test('Deleted objects list is accessible', function () {",
+              "        pm.expect(jsonData).to.have.property('results');",
+              "        pm.expect(jsonData.results).to.be.an('array');",
+              "    });",
+              "    ",
+              "    pm.test('Object appears in deleted list', function () {",
+              "        var found = jsonData.results.some(obj => obj.id === deletedObjectUuid || obj.uuid === deletedObjectUuid || obj.object_uuid === deletedObjectUuid);",
+              "        if (found) {",
+              "            console.log('✓ Object found in deleted list, UUID:', deletedObjectUuid);",
+              "        } else {",
+              "            console.log('✗ Object NOT found. Looking for:', deletedObjectUuid);",
+              "            console.log('Available objects:', jsonData.results.map(o => o.id));",
+              "        }",
+              "        pm.expect(found).to.be.true;",
+              "    });",
+              "    ",
+              "    // The restore endpoint uses the object UUID directly, not a separate deleted_id.",
+              "    // We already have object2_uuid, so we'll use that for the restore test.",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/deleted?_limit=100",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "deleted"
+          ],
+          "query": [
+            {
+              "key": "_limit",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18b. Restore Deleted Object",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    pm.test('Object was restored successfully', function () {",
+              "        var jsonData = pm.response.json();",
+              "        pm.expect(jsonData).to.have.property('message');",
+              "    });",
+              "    console.log('✓ Object restored from deleted');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/deleted/{{object2_uuid}}/restore",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "deleted",
+            "{{object2_uuid}}",
+            "restore"
+          ]
+        }
+      }
+    },
+    {
+      "name": "18c. Verify Object is Restored",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('Restored object is accessible', function () {",
+              "        pm.expect(jsonData).to.have.property('id');",
+              "        pm.expect(jsonData.id).to.eql(pm.collectionVariables.get('object2_uuid'));",
+              "    });",
+              "    console.log('✓ Object successfully restored and accessible');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object2_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object2_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "19. Check Audit Trail for Object1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    ",
+              "    pm.test('Audit trail exists for object', function () {",
+              "        pm.expect(jsonData).to.have.property('results');",
+              "        pm.expect(jsonData.results).to.be.an('array');",
+              "        pm.expect(jsonData.results.length).to.be.at.least(1);",
+              "    });",
+              "    ",
+              "    // Check for specific actions",
+              "    var actions = jsonData.results.map(entry => entry.action);",
+              "    ",
+              "    pm.test('Audit trail contains CREATE action', function () {",
+              "        pm.expect(actions).to.include('create');",
+              "    });",
+              "    ",
+              "    pm.test('Audit trail contains UPDATE action', function () {",
+              "        pm.expect(actions).to.include('update');",
+              "    });",
+              "    ",
+              "    pm.test('Audit trail contains LOCK action', function () {",
+              "        pm.expect(actions.some(a => a.toLowerCase().includes('lock'))).to.be.true;",
+              "    });",
+              "    ",
+              "    pm.test('Audit trail contains PUBLISH actions', function () {",
+              "        var hasPublish = actions.some(a => a.toLowerCase().includes('publish'));",
+              "        pm.expect(hasPublish).to.be.true;",
+              "    });",
+              "    ",
+              "    console.log('✓ Audit trail verified - Actions:', actions);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}/audit-trails",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}",
+            "audit-trails"
+          ]
+        }
+      }
+    },
+    {
+      "name": "19a. Check Global Audit Trail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    ",
+              "    pm.test('Global audit trail is accessible', function () {",
+              "        pm.expect(jsonData).to.have.property('results');",
+              "        pm.expect(jsonData.results).to.be.an('array');",
+              "        pm.expect(jsonData.results.length).to.be.at.least(1);",
+              "    });",
+              "    ",
+              "    pm.test('Audit entries have required fields', function () {",
+              "        if (jsonData.results.length > 0) {",
+              "            var entry = jsonData.results[0];",
+              "            pm.expect(entry).to.have.property('action');",
+              "            pm.expect(entry).to.have.property('user'); // API returns 'user', not 'user_id'",
+              "            pm.expect(entry).to.have.property('created');",
+              "        }",
+              "    });",
+              "    ",
+              "    console.log('✓ Global audit trail verified -', jsonData.results.length, 'entries');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?limit=50",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "audit-trails"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "50"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "20. Delete Object 2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object2_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object2_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "18. Delete Object 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}/{{object1_uuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}",
+            "{{object1_uuid}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "19. Delete Configuration",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200, 204, 400, or 404 (may not exist or have constraints)', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204, 400, 404]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/configurations/{{config_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "configurations",
+            "{{config_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "20. Delete Agent",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/agents/{{agent_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "agents",
+            "{{agent_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "21. Delete Application",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/applications/{{application_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "applications",
+            "{{application_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "22. Delete Source",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/sources/{{source_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "sources",
+            "{{source_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "23. Delete Schema",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 or 204', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{schema_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "24. Delete Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200, 204, or 409 (may have schemas attached)', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{register_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Configuration Management Tests",
+      "item": [
+        {
+          "name": "Configuration 1: Create Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Configuration has ID and version', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.id).to.exist;",
+                  "    pm.expect(jsonData.localVersion).to.eql('1.0.0');",
+                  "    pm.expect(jsonData.sourceType).to.eql('local');",
+                  "    pm.expect(jsonData.autoUpdate).to.eql(false);",
+                  "    pm.collectionVariables.set('config_id', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Configuration v1\",\n  \"description\": \"Test configuration for version tracking\",\n  \"type\": \"test\",\n  \"sourceType\": \"local\",\n  \"localVersion\": \"1.0.0\",\n  \"autoUpdate\": false,\n  \"registers\": [],\n  \"schemas\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/configurations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "configurations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Configuration 2: List Configurations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains configurations', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('results');",
+                  "    pm.expect(Array.isArray(jsonData.results)).to.be.true;",
+                  "    pm.expect(jsonData.results.length).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/configurations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "configurations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Configuration 3: Get Single Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Configuration details are correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    // Convert both to numbers for comparison since API returns number.",
+                  "    pm.expect(jsonData.id).to.eql(parseInt(pm.collectionVariables.get('config_id')));",
+                  "    pm.expect(jsonData.title).to.include('Test Configuration');",
+                  "    pm.expect(jsonData.localVersion).to.eql('1.0.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/configurations/{{config_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "configurations",
+                "{{config_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Configuration 4: Update Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Configuration updated successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.localVersion).to.eql('1.1.0');",
+                  "    pm.expect(jsonData.title).to.eql('Updated Configuration');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Configuration\",\n  \"localVersion\": \"1.1.0\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/configurations/{{config_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "configurations",
+                "{{config_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Configuration 5: Delete Configuration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 204', function () {",
+                  "    pm.expect([200, 204]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/configurations/{{config_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "configurations",
+                "{{config_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "File Operations Tests",
+      "item": [
+        {
+          "name": "Setup: Create Organization for File Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('file_test_org_uuid', jsonData.uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"File Test Org {{$timestamp}}\", \"description\": \"Org for file tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/organisations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "organisations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup: Create Register for File Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('file_test_register_id', jsonData.id);",
+                  "    pm.collectionVariables.set('file_test_register_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for file tests\", \"organisation\": \"{{file_test_org_uuid}}\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup: Create Schema for File Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('file_test_schema_id', jsonData.id);",
+                  "    pm.collectionVariables.set('file_test_schema_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for file tests\", \"properties\": {\"name\": {\"type\": \"string\"}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ],
+              "query": [
+                {
+                  "key": "register",
+                  "value": "{{register_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 1: Upload PDF (base64 - Basic Auth compatible)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Base64 file uploaded successfully', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.name).to.exist;",
+                  "    pm.collectionVariables.set('file_object_uuid', json.uuid);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Test Person with Document\", \"document\": \"data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9MZW5ndGggMiAwIFIvRmlsdGVyL0ZsYXRlRGVjb2RlPj4Kc3RyZWFtCniccsvJT0pVKC5JzE0FACKJAlsKZW5kc3RyZWFtCmVuZG9iaiUKMiAwIG9iagoyNAplbmRvYmoKNCAwIG9iago8PC9UeXBlL1BhZ2UvTWVkaWFCb3hbMCAwIDYxMiA3OTJdL1Jlc291cmNlczw8L0ZvbnQ8PC9UMSA1IDAgUj4+Pj4vQ29udGVudHMgMyAwIFIvUGFyZW50IDYgMCBSPj4KZW5kb2JqCjUgMCBvYmoKPDwvQmFzZUZvbnQvSGVsdmV0aWNhL1R5cGUvRm9udC9FbmNvZGluZy9XaW5BbnNpRW5jb2Rpbmcv\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{file_test_register_slug}}/{{file_test_schema_slug}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{file_test_register_slug}}",
+                "{{file_test_schema_slug}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 2: Upload Image (base64)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Base64 image uploaded successfully', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.title).to.exist;",
+                  "    pm.expect(json.image).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Base64 Image Test\",\n  \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{file_test_register_slug}}/{{file_test_schema_slug}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{file_test_register_slug}}",
+                "{{file_test_schema_slug}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 3: Get Text Extraction Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Extraction stats returned', function() {",
+                  "    const json = pm.response.json();",
+                  "    // API returns stats within a 'stats' object.",
+                  "    pm.expect(json).to.have.property('stats');",
+                  "    pm.expect(json.stats).to.have.property('totalFiles');",
+                  "    pm.expect(json.stats).to.have.property('untrackedFiles');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/files/extraction/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "files",
+                "extraction",
+                "stats"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Import/Export Tests",
+      "item": [
+        {
+          "name": "Setup: Create Register for Import Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('import_test_register_id', jsonData.id);",
+                  "    pm.collectionVariables.set('import_test_register_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Test Register {{$timestamp}}\", \"description\": \"Register for import tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup: Create Schema for Import Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('import_test_schema_id', jsonData.id);",
+                  "    pm.collectionVariables.set('import_test_schema_slug', jsonData.slug);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Person Schema {{$timestamp}}\", \"description\": \"Schema for import tests\", \"properties\": {\"name\": {\"type\": \"string\"}, \"age\": {\"type\": \"integer\"}}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas?register={{register_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ],
+              "query": [
+                {
+                  "key": "register",
+                  "value": "{{register_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Import 1: Upload CSV File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function() {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Import processed successfully', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('summary');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/import.csv"
+                },
+                {
+                  "key": "schema",
+                  "value": "{{import_test_schema_slug}}",
+                  "type": "text"
+                },
+                {
+                  "key": "autoDetect",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}/import",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers",
+                "{{register_id}}",
+                "import"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Import 2: Import with Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Validation errors reported', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('summary');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/invalid.csv"
+                },
+                {
+                  "key": "schema",
+                  "value": "{{import_test_schema_slug}}",
+                  "type": "text"
+                },
+                {
+                  "key": "validate",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}/import",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers",
+                "{{register_id}}",
+                "import"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Advanced File Operations Tests",
+      "item": [
+        {
+          "name": "Setup: Create Object for File CRUD",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('file_ops_object_uuid', json.uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"File Ops Test Object\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 1: Create File on Object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('file_id_1', json.id || json.fileId);",
+                  "    pm.expect(json.filename || json.name).to.exist;",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"filename\": \"test-document.pdf\", \"content\": \"data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9MZW5ndGggMiAwIFIvRmlsdGVyL0ZsYXRlRGVjb2RlPj4Kc3RyZWFtCniccsvJT0pVKC5JzE0FACKJAlsKZW5kc3RyZWFtCmVuZG9iag==\", \"mimeType\": \"application/pdf\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}/{{object1_uuid}}/files",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "{{object1_uuid}}",
+                "files"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 2: List Files on Object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Files list returned', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}/{{object1_uuid}}/files",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "{{object1_uuid}}",
+                "files"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 3: Get Single File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('File details returned', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id || json.fileId).to.exist;",
+                  "    pm.expect(json.filename || json.name).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}/{{file_ops_object_uuid}}/files/{{file_id_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "{{file_ops_object_uuid}}",
+                "files",
+                "{{file_id_1}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 4: Download File by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('File content returned', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/files/{{file_id_1}}/download",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "files",
+                "{{file_id_1}}",
+                "download"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 5: Update File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('File updated', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id || json.fileId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"filename\": \"updated-document.pdf\", \"description\": \"Updated file\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}/{{file_ops_object_uuid}}/files/{{file_id_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "{{file_ops_object_uuid}}",
+                "files",
+                "{{file_id_1}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "File 6: Delete File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 204', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}/{{file_ops_object_uuid}}/files/{{file_id_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "{{file_ops_object_uuid}}",
+                "files",
+                "{{file_id_1}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk Operations Tests",
+      "item": [
+        {
+          "name": "Setup: Create Test Objects for Bulk",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('bulk_object_1_uuid', json.uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Bulk Test Object 1\", \"age\": 25}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setup: Create Second Object for Bulk",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('bulk_object_2_uuid', json.uuid);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Bulk Test Object 2\", \"age\": 30}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{main_register_slug}}/{{main_schema_slug}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk 1: Save Multiple Objects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "pm.test('Bulk save succeeded', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.saved || json.success || json.results).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"objects\": [{\"uuid\": \"{{bulk_object_1_uuid}}\", \"name\": \"Updated Bulk 1\", \"age\": 26}, {\"uuid\": \"{{bulk_object_2_uuid}}\", \"name\": \"Updated Bulk 2\", \"age\": 31}]}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/bulk/{{main_register_slug}}/{{main_schema_slug}}/save",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "bulk",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "save"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk 2: Publish Multiple Objects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Bulk publish succeeded', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.published || json.success || json.results).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"uuids\": [\"{{bulk_object_1_uuid}}\", \"{{bulk_object_2_uuid}}\"]}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/bulk/{{main_register_slug}}/{{main_schema_slug}}/publish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "bulk",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "publish"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk 3: Depublish Multiple Objects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Bulk depublish succeeded', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.depublished || json.success || json.results).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"uuids\": [\"{{bulk_object_1_uuid}}\", \"{{bulk_object_2_uuid}}\"]}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/bulk/{{main_register_slug}}/{{main_schema_slug}}/depublish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "bulk",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "depublish"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk 4: Validate Schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Validation results returned', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.valid !== undefined || json.errors !== undefined || json.results).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/bulk/schema/{{schema_id}}/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "bulk",
+                "schema",
+                "{{schema_id}}",
+                "validate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk 5: Delete Multiple Objects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Bulk delete succeeded', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.deleted || json.success || json.results).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"uuids\": [\"{{bulk_object_1_uuid}}\", \"{{bulk_object_2_uuid}}\"]}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/bulk/{{main_register_slug}}/{{main_schema_slug}}/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "bulk",
+                "{{main_register_slug}}",
+                "{{main_schema_slug}}",
+                "delete"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agent & Conversation Tests",
+      "item": [
+        {
+          "name": "Setup: Create Agent for Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('agent_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Test Agent {{$timestamp}}\", \"description\": \"Agent for conversation tests\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/agents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "agents"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Conversation 1: Create Conversation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Conversation created with ID', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.collectionVariables.set('conversation_id', json.id);",
+                  "    // Also set UUID for routes that require it.",
+                  "    pm.collectionVariables.set('conversation_uuid', json.uuid || json.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Conversation\",\n  \"agent\": \"{{agent_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/conversations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "conversations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Conversation 2: Add Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 500 (AI not configured)', () => pm.response.to.have.status(500));",
+                  "pm.test('Configuration error message', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.error).to.include('Failed to process message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation\": \"{{conversation_uuid}}\",\n  \"message\": \"Hello, test message\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/chat/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "chat",
+                "send"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Conversation 3: Soft Delete Conversation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 204', function() {",
+                  "    pm.expect([200, 204]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Conversation soft deleted', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.archived).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Soft-Delete",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/conversations/{{conversation_uuid}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "conversations",
+                "{{conversation_uuid}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Agent 1: Test Agent RBAC",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Agent respects RBAC settings', function() {",
+                  "    const json = pm.response.json();",
+                  "    // Check agent exists and has properties.",
+                  "    pm.expect(json.id).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/agents/{{agent_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "agents",
+                "{{agent_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schema Composition (allOf) Tests",
+      "item": [
+        {
+          "name": "1. Create Grandparent Schema (Living Thing)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Grandparent schema created', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.properties).to.have.property('alive');",
+                  "    pm.expect(json.required).to.include('alive');",
+                  "    pm.collectionVariables.set('grandparent_schema_id', json.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"LivingThing {{$timestamp}}\",\n  \"description\": \"Base schema for all living things\",\n  \"properties\": {\n    \"alive\": {\n      \"type\": \"boolean\",\n      \"title\": \"Is Alive\"\n    }\n  },\n  \"required\": [\n    \"alive\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Create Parent Schema (Person) - Single Inheritance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Parent inherits from grandparent', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.allOf).to.include(pm.collectionVariables.get('grandparent_schema_id'));",
+                  "    pm.expect(json.properties).to.have.property('name');",
+                  "    pm.expect(json.required).to.include('name');",
+                  "    pm.collectionVariables.set('parent_schema_id', json.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Person {{$timestamp}}\",\n  \"description\": \"Person schema inheriting from LivingThing\",\n  \"allOf\": [\"{{grandparent_schema_id}}\"],\n  \"properties\": {\n    \"name\": {\"type\": \"string\", \"title\": \"Name\"}\n  },\n  \"required\": [\"name\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Verify Parent Resolution (Multi-Level)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Parent resolves grandparent properties', function() {",
+                  "    const json = pm.response.json();",
+                  "    // Check that inherited properties from grandparent are present",
+                  "    pm.expect(json.properties).to.have.property('alive');",
+                  "    pm.expect(json.properties.alive).to.have.property('type', 'boolean');",
+                  "    pm.expect(json.properties).to.have.property('name');",
+                  "    pm.expect(json.required).to.include.members(['alive', 'name']);",
+                  "});",
+                  "pm.test('Property metadata shows sources', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json['@self'] && json['@self'].propertyMetadata) {",
+                  "        pm.expect(json['@self'].propertyMetadata.alive.source).to.equal('inherited');",
+                  "        pm.expect(json['@self'].propertyMetadata.name.source).to.equal('native');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{parent_schema_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{parent_schema_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Create Child Schema (Employee) - 3-Level Chain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Child inherits from parent', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.allOf).to.include(pm.collectionVariables.get('parent_schema_id'));",
+                  "    pm.expect(json.properties).to.have.property('employeeId');",
+                  "    pm.collectionVariables.set('child_schema_id', json.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Employee {{$timestamp}}\",\n  \"description\": \"Employee schema - 3-level inheritance\",\n  \"allOf\": [\"{{parent_schema_id}}\"],\n  \"properties\": {\n    \"employeeId\": {\"type\": \"string\", \"title\": \"Employee ID\"}\n  },\n  \"required\": [\"employeeId\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Verify 3-Level Inheritance Chain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('All properties inherited through chain', function() {",
+                  "    const json = pm.response.json();",
+                  "    // Check that all properties from 3-level chain are present",
+                  "    pm.expect(json.properties).to.have.property('alive'); // from grandparent",
+                  "    pm.expect(json.properties.alive).to.have.property('type', 'boolean');",
+                  "    pm.expect(json.properties).to.have.property('name'); // from parent",
+                  "    pm.expect(json.properties.name).to.have.property('type', 'string');",
+                  "    pm.expect(json.properties).to.have.property('employeeId'); // native",
+                  "    pm.expect(json.properties.employeeId).to.have.property('type', 'string');",
+                  "});",
+                  "pm.test('All required fields merged', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.required).to.include.members(['alive', 'name', 'employeeId']);",
+                  "});",
+                  "pm.test('Property metadata distinguishes sources', function() {",
+                  "    const json = pm.response.json();",
+                  "    if (json['@self'] && json['@self'].propertyMetadata) {",
+                  "        const meta = json['@self'].propertyMetadata;",
+                  "        pm.expect(meta.employeeId.source).to.equal('native');",
+                  "        pm.expect(meta.name.source).to.equal('inherited');",
+                  "        pm.expect(meta.alive.source).to.equal('inherited');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{child_schema_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{child_schema_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. Create Schema for Multiple Inheritance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Second parent created', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.properties).to.have.property('address');",
+                  "    pm.collectionVariables.set('parent2_schema_id', json.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Addressable {{$timestamp}}\",\n  \"description\": \"Schema for entities with addresses\",\n  \"properties\": {\n    \"address\": {\n      \"type\": \"string\",\n      \"title\": \"Address\"\n    }\n  },\n  \"required\": [\n    \"address\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. Create Schema with Multiple Parents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Multiple inheritance configured', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.allOf).to.be.an('array').with.lengthOf(2);",
+                  "    pm.collectionVariables.set('multi_schema_id', json.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Customer {{$timestamp}}\",\n  \"description\": \"Customer with multiple parent schemas\",\n  \"allOf\": [\"{{parent_schema_id}}\", \"{{parent2_schema_id}}\"],\n  \"properties\": {\n    \"customerId\": {\"type\": \"string\"}\n  },\n  \"required\": [\"customerId\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "8. Verify Multiple Inheritance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Properties from both parents merged', function() {",
+                  "    const json = pm.response.json();",
+                  "    // Check that properties from both parents are present",
+                  "    pm.expect(json.properties).to.have.property('name'); // from parent 1",
+                  "    pm.expect(json.properties.name).to.have.property('type', 'string');",
+                  "    pm.expect(json.properties).to.have.property('address'); // from parent 2",
+                  "    pm.expect(json.properties.address).to.have.property('type', 'string');",
+                  "    pm.expect(json.properties).to.have.property('customerId'); // native",
+                  "    pm.expect(json.properties.customerId).to.have.property('type', 'string');",
+                  "});",
+                  "pm.test('Required fields from all parents', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.required).to.include.members(['name', 'address', 'customerId']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{multi_schema_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{multi_schema_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister UploadService
  *
@@ -27,8 +28,10 @@
 
 namespace OCA\OpenRegister\Service;
 
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use stdClass;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -38,110 +41,219 @@ use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Service for handling file and JSON uploads.
+ * UploadService handles file and JSON uploads
  *
+ * Service for handling file and JSON uploads in the OpenRegister application.
  * This service processes uploaded JSON data, either directly via a POST body,
  * from a provided URL, or from an uploaded file. It supports multiple data
  * formats (e.g., JSON, YAML) and integrates with schemas and registers for
  * database updates.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class UploadService
 {
-
-
     /**
-     * Constructor for the UploadService class.
+     * HTTP client
      *
-     * @param Client         $client         The Guzzle HTTP client.
-     * @param SchemaMapper   $schemaMapper   The schema mapper.
-     * @param RegisterMapper $registerMapper The register mapper.
+     * Used for fetching JSON data from URLs.
      *
-     * @return void
+     * @var Client HTTP client instance
      */
-    public function __construct(
-        private Client $client,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly RegisterMapper $registerMapper,
-    ) {
-        $this->client = new Client([]);
-
-    }//end __construct()
-
+    private readonly Client $client;
 
     /**
-     * Gets the uploaded json from the request data. And returns it as a PHP array.
-     * Will first try to find an uploaded 'file', then if an 'url' is present in the body and lastly if a 'json' dump has been posted.
+     * Gets the uploaded JSON from the request data and returns it as a PHP array
      *
-     * @param array $data All request params.
+     * Processes uploaded JSON data from multiple sources in priority order:
+     * 1. Uploaded file (if 'file' key present)
+     * 2. URL (if 'url' key present - fetches JSON from URL)
+     * 3. Direct JSON (if 'json' key present - JSON string or array)
      *
-     * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
-     * @throws Exception
-     * @throws GuzzleException
+     * Removes internal parameters (starting with '_') before processing.
+     *
+     * @param array<string, mixed> $data All request parameters
+     *
+     * @return array<string, mixed>|JSONResponse PHP array with uploaded JSON data or JSONResponse with error message
+     *
+     * @throws \Exception If file processing fails
+     * @throws \GuzzleHttp\Exception\GuzzleException If URL fetching fails
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {
-        foreach ($data as $key => $value) {
+        // Remove internal parameters (starting with '_').
+        $data = $this->removeInternalParameters($data);
+
+        // Validate upload source is provided.
+        $validationError = $this->validateUploadSource($data);
+        if ($validationError !== null) {
+            return $validationError;
+        }
+
+        // Process based on upload source type.
+        if (empty($data['file']) === false) {
+            return $this->processFileUpload($data['file']);
+        }
+
+        if (empty($data['url']) === false) {
+            return $this->processUrlUpload($data['url']);
+        }
+
+        // Process direct JSON input.
+        return $this->processJsonUpload($data['json']);
+    }//end getUploadedJson()
+
+    /**
+     * Remove internal parameters from data array
+     *
+     * Internal parameters start with '_' and are used for pagination, filtering, etc.
+     *
+     * @param array<string, mixed> $data Input data array.
+     *
+     * @return array<string, mixed> Data array with internal parameters removed.
+     */
+    private function removeInternalParameters(array $data): array
+    {
+        foreach (array_keys($data) as $key) {
             if (str_starts_with($key, '_') === true) {
                 unset($data[$key]);
             }
         }
 
-        // Define the allowed keys.
-        $allowedKeys = ['file', 'url', 'json'];
+        return $data;
+    }//end removeInternalParameters()
 
-        // Find which of the allowed keys are in the array.
+    /**
+     * Validate that an upload source is provided
+     *
+     * @param array<string, mixed> $data Input data array.
+     *
+     * @return JSONResponse|null Error response if validation fails, null if valid.
+     *
+     * @psalm-return JSONResponse<400, array{error: 'Missing one of these keys in your POST body: file, url or json.'}, array<never, never>>|null
+     */
+    private function validateUploadSource(array $data): JSONResponse|null
+    {
+        $allowedKeys  = ['file', 'url', 'json'];
         $matchingKeys = array_intersect_key($data, array_flip($allowedKeys));
 
-        // Check if there is exactly one matching key.
         if (count($matchingKeys) === 0) {
-            return new JSONResponse(data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'], statusCode: 400);
+            return new JSONResponse(
+                data: ['error' => 'Missing one of these keys in your POST body: file, url or json.'],
+                statusCode: 400
+            );
         }
 
-        if (empty($data['file']) === false) {
-            // @todo use .json file content from POST as $json.
-            return $this->getJSONfromFile();
-        }
+        return null;
+    }//end validateUploadSource()
 
-        if (empty($data['url']) === false) {
-            $phpArray           = $this->getJSONfromURL($data['url']);
-            $phpArray['source'] = $data['url'];
+    /**
+     * Process file upload source
+     *
+     * @param mixed $file File upload data.
+     *
+     * @return never Processed data or error response.
+     *
+     * @throws \Exception If file processing fails.
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+     */
+    private function processFileUpload(mixed $_file): never
+    {
+        // @todo use .json file content from POST as $json.
+        // Method always throws, so this is unreachable but kept for API compatibility.
+        $this->getJSONfromFile();
+    }//end processFileUpload()
+
+    /**
+     * Process URL upload source
+     *
+     * @param string $url URL to fetch data from.
+     *
+     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     */
+    private function processUrlUpload(string $url): array | JSONResponse
+    {
+        $phpArray = $this->getJSONfromURL($url);
+
+        // Handle array response (direct array return).
+        if (is_array($phpArray) === true) {
+            $phpArray['source'] = $url;
             return $phpArray;
         }
 
-        $phpArray = $data['json'];
+        // Handle JSONResponse return type (extract data from response).
+        // @psalm-suppress RedundantCondition - JSONResponse always has getData method.
+        $phpArrayData = $phpArray->getData();
+        if (is_array($phpArrayData) === true) {
+            $phpArrayData['source'] = $url;
+            return $phpArrayData;
+        }
+
+        // Fallback: return error response if parsing failed.
+        return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
+    }//end processUrlUpload()
+
+    /**
+     * Process direct JSON upload
+     *
+     * @param mixed $jsonInput JSON input (string or array).
+     *
+     * @return array<string, mixed>|JSONResponse Processed data or error response.
+     */
+    private function processJsonUpload(mixed $jsonInput): array | JSONResponse
+    {
+        $phpArray = $jsonInput;
+
+        // Decode JSON string if input is a string.
         if (is_string($phpArray) === true) {
             $phpArray = json_decode($phpArray, associative: true);
         }
 
+        // Validate that JSON decoding succeeded.
         if ($phpArray === null || $phpArray === false) {
             return new JSONResponse(data: ['error' => 'Failed to decode JSON input.'], statusCode: 400);
         }
 
         return $phpArray;
-
-    }//end getUploadedJson()
-
+    }//end processJsonUpload()
 
     /**
-     * Uses Guzzle to call the given URL and returns response as PHP array.
+     * Uses Guzzle to call the given URL and returns response as PHP array
      *
-     * @param string $url The URL to call.
+     * Fetches JSON or YAML data from a remote URL using HTTP GET request.
+     * Automatically detects content type and parses accordingly.
      *
-     * @throws GuzzleException
+     * @param string $url The URL to fetch JSON/YAML data from
      *
-     * @return array|JSONResponse The response from the call converted to PHP array or JSONResponse in case of an error.
+     * @return array<string, mixed>|JSONResponse The response converted to PHP array or JSONResponse with error message
+     *
+     * @throws GuzzleException If HTTP request fails
      */
     private function getJSONfromURL(string $url): array | JSONResponse
     {
         try {
+            // Step 1: Make HTTP GET request to fetch data from URL.
             $response = $this->client->request('GET', $url);
-        } catch (GuzzleHttp\Exception\BadResponseException $e) {
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
+        } catch (\GuzzleHttp\Exception\BadResponseException $e) {
+            // Return error response if HTTP request fails.
+            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()], statusCode: 400);
         }
 
+        // Step 2: Get response body content as string.
         $responseBody = $response->getBody()->getContents();
 
-        // Use Content-Type header to determine the format.
+        // Step 3: Use Content-Type header to determine the data format.
+        // Supports JSON and YAML formats based on Content-Type.
         $contentType = $response->getHeaderLine('Content-Type');
         switch ($contentType) {
             case 'application/json':
@@ -164,76 +276,19 @@ class UploadService
         }
 
         return $phpArray;
-
     }//end getJSONfromURL()
-
 
     /**
      * Gets JSON content from an uploaded file.
      *
-     * @return array|JSONResponse The parsed JSON content from the file or an error response.
-     * @throws Exception If the file cannot be read or its content cannot be parsed as JSON.
+     * @return never The parsed JSON content from the file or an error response.
+     *
+     * @throws \Exception If the file cannot be read or its content cannot be parsed as JSON.
      */
-    private function getJSONfromFile(): array | JSONResponse
+    private function getJSONfromFile(): never
     {
         // @todo: Implement file reading logic here.
         // For now, return a simple array to ensure code consistency.
         throw new Exception('File upload handling is not yet implemented');
-
     }//end getJSONfromFile()
-
-
-    /**
-     * Handles adding schemas to a register during upload.
-     *
-     * @param Register $register The register to add schemas to.
-     * @param array    $phpArray The PHP array containing the uploaded json data.
-     *
-     * @throws \OCP\DB\Exception
-     *
-     * @return Register The updated register.
-     */
-    public function handleRegisterSchemas(Register $register, array $phpArray): Register
-    {
-        // Process and save schemas.
-        foreach ($phpArray['components']['schemas'] as $schemaName => $schemaData) {
-            // Check if a schema with this title already exists.
-            $schema = $this->registerMapper->hasSchemaWithTitle(registerId: $register->getId(), schemaTitle: $schemaName);
-            if ($schema === false) {
-                // Check if a schema with this title already exists for this register.
-                try {
-                    $schemas = $this->schemaMapper->findAll(filters: ['title' => $schemaName]);
-                    if (count($schemas) > 0) {
-                        $schema = $schemas[0];
-                    } else {
-                        // None found so, Create a new schema.
-                        $schema = new Schema();
-                        $schema->setTitle($schemaName);
-                        $schema->setUuid(Uuid::v4());
-                        $this->schemaMapper->insert($schema);
-                    }
-                } catch (DoesNotExistException $e) {
-                    // None found so, Create a new schema.
-                    $schema = new Schema();
-                    $schema->setTitle($schemaName);
-                    $schema->setUuid(Uuid::v4());
-                    $this->schemaMapper->insert($schema);
-                }
-            }//end if
-
-            $schema->hydrate($schemaData);
-            $this->schemaMapper->update($schema);
-            // Add the schema to the register.
-            $schemas   = $register->getSchemas();
-            $schemas[] = $schema->getId();
-            $register->setSchemas($schemas);
-            // Lets save the updated register.
-            $register = $this->registerMapper->update($register);
-        }//end foreach
-
-        return $register;
-
-    }//end handleRegisterSchemas()
-
-
 }//end class

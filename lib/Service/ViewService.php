@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ViewService
  *
@@ -22,87 +23,135 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use stdClass;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service class for managing views in the OpenRegister application.
+ * ViewService manages views in the OpenRegister application
  *
- * This service acts as a facade for view operations,
- * coordinating between ViewMapper and business logic.
+ * Service class for managing views in the OpenRegister application.
+ * This service acts as a facade for view operations, coordinating between
+ * ViewMapper and business logic. Handles view CRUD operations, access control,
+ * and default view management.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class ViewService
 {
-
+    /**
+     * View mapper
+     *
+     * Handles database operations for view entities.
+     *
+     * @var ViewMapper View mapper instance
+     */
+    private readonly ViewMapper $viewMapper;
 
     /**
-     * Constructor for ViewService.
+     * Logger
      *
-     * @param ViewMapper      $viewMapper Mapper for view operations.
-     * @param LoggerInterface $logger     Logger for error handling.
+     * Used for logging view operations and errors.
+     *
+     * @var LoggerInterface Logger instance
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
+     * Constructor
+     *
+     * Initializes service with view mapper and logger for view operations.
+     *
+     * @param ViewMapper      $viewMapper View mapper for database operations
+     * @param LoggerInterface $logger     Logger for error tracking
+     *
+     * @return void
      */
     public function __construct(
-        private readonly ViewMapper $viewMapper,
-        private readonly LoggerInterface $logger
+        ViewMapper $viewMapper,
+        LoggerInterface $logger
     ) {
-
+        // Store dependencies for use in service methods.
+        $this->viewMapper = $viewMapper;
+        $this->logger     = $logger;
     }//end __construct()
 
-
     /**
-     * Find a view by ID.
+     * Find a view by ID
+     *
+     * Retrieves view by ID and validates user access permissions.
+     * Users can access their own views or public views.
      *
      * @param int|string $id    The ID of the view to find
      * @param string     $owner The owner user ID for access control
      *
-     * @return View The found view
+     * @return View The found view entity
      *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple found
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found or access denied
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple views found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
      */
     public function find(int | string $id, string $owner): View
     {
+        // Step 1: Find view by ID in database.
         $view = $this->viewMapper->find($id);
 
-        // Check if user has access to this view
+        // Step 2: Check if user has access to this view.
+        // Users can access their own views or public views.
         if ($view->getOwner() !== $owner && $view->getIsPublic() === false) {
-            throw new \OCP\AppFramework\Db\DoesNotExistException('View not found or access denied');
+            // Throw exception to prevent unauthorized access.
+            throw new DoesNotExistException('View not found or access denied');
         }
 
+        // Step 3: Return view if access is granted.
         return $view;
-
     }//end find()
 
-
     /**
-     * Find all views accessible to a user.
+     * Find all views accessible to a user
      *
-     * @param string $owner The owner user ID
+     * Retrieves all views that the user owns or has access to (public views).
+     * Returns array of view entities sorted by default status and name.
      *
-     * @return array Array of found views
+     * @param string $owner The owner user ID to find views for
+     *
+     * @return View[] Array of found views accessible to the user
+     *
+     * @psalm-return array<View>
      */
     public function findAll(string $owner): array
     {
-        return $this->viewMapper->findAll($owner);
-
+        // Retrieve all views accessible to the user (owned or public).
+        return $this->viewMapper->findAll(owner: $owner);
     }//end findAll()
 
-
     /**
-     * Create a new view.
+     * Create a new view
      *
-     * @param string $name        The name of the view
-     * @param string $description The description of the view
-     * @param string $owner       The owner user ID
-     * @param bool   $isPublic    Whether the view is public
-     * @param bool   $isDefault   Whether the view is default
-     * @param array  $query       The query parameters (registers, schemas, filters)
+     * Creates a new view entity with specified properties. If view is set as default,
+     * clears any existing default view for the user. Validates and stores view in database.
      *
-     * @return View The created view
+     * @param string               $name        The name of the view
+     * @param string               $description The description of the view
+     * @param string               $owner       The owner user ID
+     * @param bool                 $isPublic    Whether the view is public (accessible to all users)
+     * @param bool                 $isDefault   Whether the view is the default view for the user
+     * @param array<string, mixed> $query       The query parameters (registers, schemas, filters)
      *
-     * @throws Exception If creation fails
+     * @return View The created view entity
+     *
+     * @throws Exception If view creation fails (database error, validation error, etc.)
      */
     public function create(
         string $name,
@@ -113,11 +162,13 @@ class ViewService
         array $query
     ): View {
         try {
-            // If this is set as default, unset any existing default for this user
+            // Step 1: If this view is set as default, clear any existing default for this user.
+            // Only one default view per user is allowed.
             if ($isDefault === true) {
                 $this->clearDefaultForUser($owner);
             }
 
+            // Step 2: Create new view entity and set all properties.
             $view = new View();
             $view->setName($name);
             $view->setDescription($description);
@@ -127,14 +178,14 @@ class ViewService
             $view->setQuery($query);
             $view->setFavoredBy([]);
 
+            // Step 3: Insert view into database and return created entity.
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
-            $this->logger->error('Error creating view: ' . $e->getMessage());
+            // Log error for debugging and monitoring.
+            $this->logger->error(message: 'Error creating view: ' . $e->getMessage());
             throw $e;
-        }
-
+        }//end try
     }//end create()
-
 
     /**
      * Update an existing view.
@@ -146,6 +197,7 @@ class ViewService
      * @param bool       $isPublic    Whether the view is public
      * @param bool       $isDefault   Whether the view is default
      * @param array      $query       The query parameters
+     * @param array|null $favoredBy   Array of user IDs who favor this view
      *
      * @return View The updated view
      *
@@ -162,9 +214,9 @@ class ViewService
         ?array $favoredBy = null
     ): View {
         try {
-            $view = $this->find($id, $owner);
+            $view = $this->find(id: $id, owner: $owner);
 
-            // If this is set as default, unset any existing default for this user
+            // If this is set as default, schema: unset any existing default for this user.
             if ($isDefault === true && $view->getIsDefault() === false) {
                 $this->clearDefaultForUser($owner);
             }
@@ -174,20 +226,18 @@ class ViewService
             $view->setIsPublic($isPublic);
             $view->setIsDefault($isDefault);
             $view->setQuery($query);
-            
-            // Update favoredBy if provided
+
+            // Update favoredBy if provided.
             if ($favoredBy !== null) {
                 $view->setFavoredBy($favoredBy);
             }
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error('Error updating view: ' . $e->getMessage());
+            $this->logger->error(message: 'Error updating view: ' . $e->getMessage());
             throw $e;
-        }
-
+        }//end try
     }//end update()
-
 
     /**
      * Delete a view by ID.
@@ -202,52 +252,13 @@ class ViewService
     public function delete(int | string $id, string $owner): void
     {
         try {
-            $view = $this->find($id, $owner);
+            $view = $this->find(id: $id, owner: $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error('Error deleting view: ' . $e->getMessage());
+            $this->logger->error(message: 'Error deleting view: ' . $e->getMessage());
             throw $e;
         }
-
     }//end delete()
-
-
-    /**
-     * Toggle favorite status for a view.
-     *
-     * @param int|string $id    The ID of the view
-     * @param string     $owner The user ID
-     * @param bool       $favor Whether to favor (true) or unfavor (false)
-     *
-     * @return View The updated view
-     *
-     * @throws Exception If operation fails
-     */
-    public function toggleFavorite(int | string $id, string $owner, bool $favor): View
-    {
-        try {
-            $view = $this->find($id, $owner);
-            $favoredBy = $view->getFavoredBy() ?? [];
-
-            if ($favor === true) {
-                // Add user to favoredBy if not already there
-                if (!in_array($owner, $favoredBy)) {
-                    $favoredBy[] = $owner;
-                }
-            } else {
-                // Remove user from favoredBy
-                $favoredBy = array_values(array_filter($favoredBy, fn($userId) => $userId !== $owner));
-            }
-
-            $view->setFavoredBy($favoredBy);
-            return $this->viewMapper->update($view);
-        } catch (Exception $e) {
-            $this->logger->error('Error toggling favorite: ' . $e->getMessage());
-            throw $e;
-        }
-
-    }//end toggleFavorite()
-
 
     /**
      * Clear default flag for all views of a user.
@@ -265,9 +276,5 @@ class ViewService
                 $this->viewMapper->update($view);
             }
         }
-
     }//end clearDefaultForUser()
-
-
 }//end class
-

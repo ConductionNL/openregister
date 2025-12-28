@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SearchTrailMapper
  *
@@ -16,6 +17,8 @@
  *
  * @link https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -38,11 +41,20 @@ use Symfony\Component\Uid\Uuid;
  * for search analytics and optimization.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method SearchTrail insert(Entity $entity)
+ * @method SearchTrail update(Entity $entity)
+ * @method SearchTrail insertOrUpdate(Entity $entity)
+ * @method SearchTrail delete(Entity $entity)
+ * @method SearchTrail find(int|string $id)
+ * @method SearchTrail findEntity(IQueryBuilder $query)
+ * @method SearchTrail[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method list<SearchTrail> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<SearchTrail>
  */
 class SearchTrailMapper extends QBMapper
 {
-
-
     /**
      * Constructor for SearchTrailMapper
      *
@@ -56,9 +68,7 @@ class SearchTrailMapper extends QBMapper
         private readonly IUserSession $userSession
     ) {
         parent::__construct($db, 'openregister_search_trails', SearchTrail::class);
-
     }//end __construct()
-
 
     /**
      * Find a search trail by ID
@@ -79,9 +89,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
-
     }//end find()
-
 
     /**
      * Find all search trails with optional filters
@@ -94,37 +102,39 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from    Start date filter
      * @param DateTime|null $to      End date filter
      *
-     * @return array Array of SearchTrail entities
+     * @return SearchTrail[]
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\SearchTrail>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        array $filters=[],
-        array $sort=[],
-        ?string $search=null,
-        ?DateTime $from=null,
-        ?DateTime $to=null
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        array $sort = [],
+        ?string $search = null,
+        ?DateTime $from = null,
+        ?DateTime $to = null
     ): array {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->getTableName());
 
-        // Apply filters
-        $this->applyFilters($qb, $filters);
+        // Apply filters.
+        $this->applyFilters(qb: $qb, filters: $filters);
 
-        // Apply search term
+        // Apply search term.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
-                    $qb->expr()->like('search_term', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%'.$search.'%'))
+                    $qb->expr()->like('search_term', $qb->createNamedParameter('%' . $search . '%')),
+                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%' . $search . '%')),
+                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%' . $search . '%'))
                 )
             );
         }
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -133,16 +143,18 @@ class SearchTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
         }
 
-        // Apply sorting
+        // Apply sorting.
+        if (empty($sort) === true) {
+            $qb->orderBy('created', 'DESC');
+        }
+
         if (empty($sort) === false) {
             foreach ($sort as $field => $direction) {
                 $qb->addOrderBy($field, $direction);
             }
-        } else {
-            $qb->orderBy('created', 'DESC');
         }
 
-        // Apply pagination
+        // Apply pagination.
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
@@ -152,9 +164,7 @@ class SearchTrailMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-
     }//end findAll()
-
 
     /**
      * Count search trails with optional filters
@@ -167,31 +177,31 @@ class SearchTrailMapper extends QBMapper
      * @return int Number of matching search trails
      */
     public function count(
-        array $filters=[],
-        ?string $search=null,
-        ?DateTime $from=null,
-        ?DateTime $to=null
+        array $filters = [],
+        ?string $search = null,
+        ?DateTime $from = null,
+        ?DateTime $to = null
     ): int {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->func()->count('*'))
             ->from($this->getTableName());
 
-        // Apply filters
-        $this->applyFilters($qb, $filters);
+        // Apply filters.
+        $this->applyFilters(qb: $qb, filters: $filters);
 
-        // Apply search term
+        // Apply search term.
         if ($search !== null) {
             $qb->andWhere(
                 $qb->expr()->orX(
-                    $qb->expr()->like('search_term', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%'.$search.'%'))
+                    $qb->expr()->like('search_term', $qb->createNamedParameter('%' . $search . '%')),
+                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%' . $search . '%')),
+                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%' . $search . '%'))
                 )
             );
         }
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -205,9 +215,7 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return (int) $count;
-
     }//end count()
-
 
     /**
      * Create a new search trail entry
@@ -225,7 +233,7 @@ class SearchTrailMapper extends QBMapper
         int $resultCount,
         int $totalResults,
         float $responseTime,
-        string $executionType='sync'
+        string $executionType = 'sync'
     ): SearchTrail {
         $searchTrail = new SearchTrail();
         $searchTrail->setUuid(Uuid::v4()->toRfc4122());
@@ -235,23 +243,21 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setTotalResults($totalResults);
         $searchTrail->setResponseTime((int) round($responseTime));
 
-        // Extract and set search parameters
-        $this->extractSearchParameters($searchTrail, $searchQuery);
+        // Extract and set search parameters.
+        $this->extractSearchParameters(searchTrail: $searchTrail, query: $searchQuery);
 
-        // Set request information
+        // Set request information.
         $this->setRequestInformation($searchTrail);
 
-        // Set user information
+        // Set user information.
         $this->setUserInformation($searchTrail);
 
-        // Calculate and set the size of the search trail entry, with a minimum default of 14 bytes
+        // Calculate and set the size of the search trail entry, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($searchTrail->jsonSerialize()));
         $searchTrail->setSize(max($serializedSize, 14));
 
         return $this->insert($searchTrail);
-
     }//end createSearchTrail()
-
 
     /**
      * Get search statistics for the given time period
@@ -259,25 +265,27 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from Start date filter
      * @param DateTime|null $to   End date filter
      *
-     * @return array Array of search statistics
+     * @return (float|int)[] Array of search statistics
+     *
+     * @psalm-return array{total_searches: int, total_results: int, avg_results_per_search: float, avg_response_time: float, non_empty_searches: int}
      */
-    public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
+    public function getSearchStatistics(?DateTime $from = null, ?DateTime $to = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Base query for time period
+        // Base query for time period.
         $qb->select(
-                [
-                    $qb->func()->count('*', 'total_searches'),
-                    $qb->createFunction('COALESCE(SUM(CASE WHEN total_results IS NOT NULL THEN total_results ELSE 0 END), 0) AS total_results'),
-                ]
-                )
+            [
+                $qb->func()->count('*', 'total_searches'),
+                $qb->createFunction('COALESCE(SUM(CASE WHEN total_results IS NOT NULL THEN total_results ELSE 0 END), 0) AS total_results'),
+            ]
+        )
             ->addSelect($qb->createFunction('AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search'))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
             ->from($this->getTableName());
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -297,9 +305,7 @@ class SearchTrailMapper extends QBMapper
             'avg_response_time'      => round((float) ($stats['avg_response_time'] ?? 0), 2),
             'non_empty_searches'     => (int) ($stats['non_empty_searches'] ?? 0),
         ];
-
     }//end getSearchStatistics()
-
 
     /**
      * Get most popular search terms
@@ -308,18 +314,20 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return array Array of popular search terms with counts
+     * @return (float|int|mixed)[][] Array of popular search terms with counts
+     *
+     * @psalm-return array<array{term: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
-    public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
+    public function getPopularSearchTerms(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                [
-                    'search_term',
-                    $qb->func()->count('*', 'search_count'),
-                ]
-                )
+            [
+                'search_term',
+                $qb->func()->count('*', 'search_count'),
+            ]
+        )
             ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
@@ -329,7 +337,7 @@ class SearchTrailMapper extends QBMapper
             ->orderBy('search_count', 'DESC')
             ->setMaxResults($limit);
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -343,19 +351,17 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return array_map(
-                function ($term) {
-                    return [
-                        'term'              => $term['search_term'],
-                        'count'             => (int) $term['search_count'],
-                        'avg_results'       => round((float) $term['avg_results'], 2),
-                        'avg_response_time' => round((float) $term['avg_response_time'], 2),
-                    ];
-                },
-                $terms
-                );
-
+            function ($term) {
+                return [
+                    'term'              => $term['search_term'],
+                    'count'             => (int) $term['search_count'],
+                    'avg_results'       => round((float) $term['avg_results'], 2),
+                    'avg_response_time' => round((float) $term['avg_response_time'], 2),
+                ];
+            },
+            $terms
+        );
     }//end getPopularSearchTerms()
-
 
     /**
      * Get search activity by time period
@@ -364,13 +370,15 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from     Start date filter
      * @param DateTime|null $to       End date filter
      *
-     * @return array Array of search activity by time period
+     * @return (float|int|mixed)[][] Array of search activity by time period
+     *
+     * @psalm-return array<array{period: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
-    public function getSearchActivityByTime(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
+    public function getSearchActivityByTime(string $interval = 'day', ?DateTime $from = null, ?DateTime $to = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
-        // Format date based on interval
+        // Format date based on interval.
         $dateFormat = match ($interval) {
             'hour' => '%Y-%m-%d %H:00:00',
             'day' => '%Y-%m-%d',
@@ -380,21 +388,21 @@ class SearchTrailMapper extends QBMapper
         };
 
         $qb->select(
-                [
-                    $qb->func()->count('*', 'search_count'),
-                ]
-                )
+            [
+                $qb->func()->count('*', 'search_count'),
+            ]
+        )
             ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
             ->groupBy('date_period')
             ->orderBy('date_period', 'ASC');
 
-        // Add date formatting based on database type
-        if ($this->db->getDatabasePlatform()->getName() === 'mysql') {
-            $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
-        } else {
-            // For SQLite and PostgreSQL - convert MySQL format to SQLite format
+        // Add date formatting based on database type.
+        // GetDatabasePlatform() returns a platform instance.
+        $platform = $this->db->getDatabasePlatform();
+        if ($platform->getName() !== 'mysql') {
+            // For SQLite and PostgreSQL - convert MySQL format to SQLite format.
             $sqliteFormat = match ($interval) {
                 'hour' => '%Y-%m-%d %H:00:00',
                 'day' => '%Y-%m-%d',
@@ -406,7 +414,11 @@ class SearchTrailMapper extends QBMapper
             $qb->addSelect($qb->createFunction("strftime('{$sqliteFormat}', created) AS date_period"));
         }
 
-        // Apply date filters
+        if ($platform->getName() === 'mysql') {
+            $qb->addSelect($qb->createFunction("DATE_FORMAT(created, '{$dateFormat}') AS date_period"));
+        }
+
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -420,19 +432,17 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return array_map(
-                function ($period) {
-                    return [
-                        'period'            => $period['date_period'],
-                        'count'             => (int) $period['search_count'],
-                        'avg_results'       => round((float) $period['avg_results'], 2),
-                        'avg_response_time' => round((float) $period['avg_response_time'], 2),
-                    ];
-                },
-                $activity
-                );
-
+            function ($period) {
+                return [
+                    'period'            => $period['date_period'],
+                    'count'             => (int) $period['search_count'],
+                    'avg_results'       => round((float) $period['avg_results'], 2),
+                    'avg_response_time' => round((float) $period['avg_response_time'], 2),
+                ];
+            },
+            $activity
+        );
     }//end getSearchActivityByTime()
-
 
     /**
      * Get search statistics by register and schema
@@ -440,28 +450,30 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from Start date filter
      * @param DateTime|null $to   End date filter
      *
-     * @return array Array of search statistics by register and schema
+     * @return (float|int|mixed)[][] Array of search statistics by register and schema
+     *
+     * @psalm-return array<array{register: mixed, schema: mixed, register_uuid: mixed, schema_uuid: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
-    public function getSearchStatisticsByRegisterSchema(?DateTime $from=null, ?DateTime $to=null): array
+    public function getSearchStatisticsByRegisterSchema(?DateTime $from = null, ?DateTime $to = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                [
-                    'register',
-                    'schema',
-                    'register_uuid',
-                    'schema_uuid',
-                    $qb->func()->count('*', 'search_count'),
-                ]
-                )
+            [
+                'register',
+                'schema',
+                'register_uuid',
+                'schema_uuid',
+                $qb->func()->count('*', 'search_count'),
+            ]
+        )
             ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
             ->groupBy('register', 'schema', 'register_uuid', 'schema_uuid')
             ->orderBy('search_count', 'DESC');
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -475,22 +487,20 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return array_map(
-                function ($stat) {
-                    return [
-                        'register'          => $stat['register'],
-                        'schema'            => $stat['schema'],
-                        'register_uuid'     => $stat['register_uuid'],
-                        'schema_uuid'       => $stat['schema_uuid'],
-                        'count'             => (int) $stat['search_count'],
-                        'avg_results'       => round((float) $stat['avg_results'], 2),
-                        'avg_response_time' => round((float) $stat['avg_response_time'], 2),
-                    ];
-                },
-                $stats
-                );
-
+            function ($stat) {
+                return [
+                    'register'          => $stat['register'],
+                    'schema'            => $stat['schema'],
+                    'register_uuid'     => $stat['register_uuid'],
+                    'schema_uuid'       => $stat['schema_uuid'],
+                    'count'             => (int) $stat['search_count'],
+                    'avg_results'       => round((float) $stat['avg_results'], 2),
+                    'avg_response_time' => round((float) $stat['avg_response_time'], 2),
+                ];
+            },
+            $stats
+        );
     }//end getSearchStatisticsByRegisterSchema()
-
 
     /**
      * Get user agent statistics
@@ -499,18 +509,20 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $from  Start date filter
      * @param DateTime|null $to    End date filter
      *
-     * @return array Array of user agent statistics
+     * @return (float|int|mixed)[][] Array of user agent statistics
+     *
+     * @psalm-return array<array{user_agent: mixed, count: int, avg_results: float, avg_response_time: float}>
      */
-    public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
+    public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select(
-                [
-                    'user_agent',
-                    $qb->func()->count('*', 'search_count'),
-                ]
-                )
+            [
+                'user_agent',
+                $qb->func()->count('*', 'search_count'),
+            ]
+        )
             ->addSelect($qb->createFunction('AVG(total_results) AS avg_results'))
             ->addSelect($qb->createFunction('AVG(response_time) AS avg_response_time'))
             ->from($this->getTableName())
@@ -519,7 +531,7 @@ class SearchTrailMapper extends QBMapper
             ->orderBy('search_count', 'DESC')
             ->setMaxResults($limit);
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -533,19 +545,17 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return array_map(
-                function ($stat) {
-                    return [
-                        'user_agent'        => $stat['user_agent'],
-                        'count'             => (int) $stat['search_count'],
-                        'avg_results'       => round((float) $stat['avg_results'], 2),
-                        'avg_response_time' => round((float) $stat['avg_response_time'], 2),
-                    ];
-                },
-                $stats
-                );
-
+            function ($stat) {
+                return [
+                    'user_agent'        => $stat['user_agent'],
+                    'count'             => (int) $stat['search_count'],
+                    'avg_results'       => round((float) $stat['avg_results'], 2),
+                    'avg_response_time' => round((float) $stat['avg_response_time'], 2),
+                ];
+            },
+            $stats
+        );
     }//end getUserAgentStatistics()
-
 
     /**
      * Get count of unique search terms for the given time period
@@ -554,8 +564,10 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $to   End date filter
      *
      * @return int Number of unique search terms
+     *
+     * @psalm-return int<0, max>
      */
-    public function getUniqueSearchTermsCount(?DateTime $from=null, ?DateTime $to=null): int
+    public function getUniqueSearchTermsCount(?DateTime $from = null, ?DateTime $to = null): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -564,7 +576,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->isNotNull('search_term'))
             ->andWhere($qb->expr()->neq('search_term', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -578,9 +590,7 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return count($terms);
-
     }//end getUniqueSearchTermsCount()
-
 
     /**
      * Get count of unique users for the given time period
@@ -589,8 +599,10 @@ class SearchTrailMapper extends QBMapper
      * @param DateTime|null $to   End date filter
      *
      * @return int Number of unique users
+     *
+     * @psalm-return int<0, max>
      */
-    public function getUniqueUsersCount(?DateTime $from=null, ?DateTime $to=null): int
+    public function getUniqueUsersCount(?DateTime $from = null, ?DateTime $to = null): int
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -599,7 +611,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->isNotNull('user'))
             ->andWhere($qb->expr()->neq('user', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -613,9 +625,7 @@ class SearchTrailMapper extends QBMapper
         $result->closeCursor();
 
         return count($users);
-
     }//end getUniqueUsersCount()
-
 
     /**
      * Get average searches per session for the given time period
@@ -625,7 +635,7 @@ class SearchTrailMapper extends QBMapper
      *
      * @return float Average searches per session
      */
-    public function getAverageSearchesPerSession(?DateTime $from=null, ?DateTime $to=null): float
+    public function getAverageSearchesPerSession(?DateTime $from = null, ?DateTime $to = null): float
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -637,7 +647,7 @@ class SearchTrailMapper extends QBMapper
             ->where($qb->expr()->isNotNull('session'))
             ->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -653,10 +663,12 @@ class SearchTrailMapper extends QBMapper
         $totalSearches  = (int) ($data['total_searches'] ?? 0);
         $uniqueSessions = (int) ($data['unique_sessions'] ?? 0);
 
-        return $uniqueSessions > 0 ? round($totalSearches / $uniqueSessions, 2) : 0.0;
+        if ($uniqueSessions <= 0) {
+            return 0.0;
+        }
 
+        return round($totalSearches / $uniqueSessions, 2);
     }//end getAverageSearchesPerSession()
-
 
     /**
      * Get average object views per session for the given time period
@@ -668,7 +680,7 @@ class SearchTrailMapper extends QBMapper
      *
      * @return float Average object views per session
      */
-    public function getAverageObjectViewsPerSession(?DateTime $from=null, ?DateTime $to=null): float
+    public function getAverageObjectViewsPerSession(?DateTime $from = null, ?DateTime $to = null): float
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -681,7 +693,7 @@ class SearchTrailMapper extends QBMapper
             ->andWhere($qb->expr()->isNotNull('session'))
             ->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-        // Apply date filters
+        // Apply date filters.
         if ($from !== null) {
             $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
         }
@@ -697,10 +709,12 @@ class SearchTrailMapper extends QBMapper
         $totalViews     = (int) ($data['total_views'] ?? 0);
         $uniqueSessions = (int) ($data['unique_sessions'] ?? 0);
 
-        return $uniqueSessions > 0 ? round($totalViews / $uniqueSessions, 2) : 0.0;
+        if ($uniqueSessions <= 0) {
+            return 0.0;
+        }
 
+        return round($totalViews / $uniqueSessions, 2);
     }//end getAverageObjectViewsPerSession()
-
 
     /**
      * Clear expired search trail logs from the database
@@ -715,75 +729,33 @@ class SearchTrailMapper extends QBMapper
     public function clearLogs(): bool
     {
         try {
-            // Get the query builder for database operations
+            // Get the query builder for database operations.
             $qb = $this->db->getQueryBuilder();
 
-            // Build the delete query to remove expired search trail logs that have the 'expires' column set
+            // Build the delete query to remove expired search trail logs that have the 'expires' column set.
             $qb->delete($this->getTableName())
                 ->where($qb->expr()->isNotNull('expires'))
                 ->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')));
 
-            // Execute the query and get the number of affected rows
+            // Execute the query and get the number of affected rows.
             $result = $qb->executeStatement();
 
-            // Return true if any rows were affected (i.e., any logs were deleted)
+            // Return true if any rows were affected (i.e., any logs were deleted).
             return $result > 0;
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
+            // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                    'Failed to clear expired search trail logs: '.$e->getMessage(),
-                    [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
-                    );
+                'Failed to clear expired search trail logs: ' . $e->getMessage(),
+                [
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
+            );
 
-            // Re-throw the exception so the caller knows something went wrong
+            // Re-throw the exception so the caller knows something went wrong.
             throw $e;
         }//end try
-
     }//end clearLogs()
-
-
-    /**
-     * Clear all search trail logs (not just expired ones)
-     *
-     * This method deletes all search trail logs from the database
-     *
-     * @return bool True if any logs were deleted, false otherwise
-     *
-     * @throws \Exception Database operation exceptions
-     */
-    public function clearAllLogs(): bool
-    {
-        try {
-            // Get the query builder for database operations
-            $qb = $this->db->getQueryBuilder();
-
-            // Build the delete query to remove ALL search trail logs
-            $qb->delete($this->getTableName());
-
-            // Execute the query and get the number of affected rows
-            $result = $qb->executeStatement();
-
-            // Return true if any rows were affected (i.e., any logs were deleted)
-            return $result > 0;
-        } catch (\Exception $e) {
-            // Log the error for debugging purposes
-            \OC::$server->getLogger()->error(
-                    'Failed to clear all search trail logs: '.$e->getMessage(),
-                    [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
-                    );
-
-            // Re-throw the exception so the caller knows something went wrong
-            throw $e;
-        }//end try
-
-    }//end clearAllLogs()
-
 
     /**
      * Apply filters to the query builder
@@ -795,7 +767,7 @@ class SearchTrailMapper extends QBMapper
      */
     private function applyFilters(IQueryBuilder $qb, array $filters): void
     {
-        // Valid column names for SearchTrail
+        // Valid column names for SearchTrail.
         $validColumns = [
             'id',
             'uuid',
@@ -830,44 +802,49 @@ class SearchTrailMapper extends QBMapper
         ];
 
         foreach ($filters as $field => $value) {
-            // Skip system variables and ensure valid column names
-            if (str_starts_with($field, '_') || !in_array($field, $validColumns)) {
+            // Skip system variables and ensure valid column names.
+            if (str_starts_with($field, '_') === true || in_array($field, $validColumns) === false) {
                 continue;
             }
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($field));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($field));
-            } else if (is_array($value)) {
-                // Handle array values like ['IS NULL', '']
+            } elseif (is_array($value) === true) {
+                // Handle array values like ['IS NULL', ''].
                 $conditions = [];
                 foreach ($value as $val) {
                     if ($val === 'IS NULL') {
                         $conditions[] = $qb->expr()->isNull($field);
-                    } else if ($val === 'IS NOT NULL') {
-                        $conditions[] = $qb->expr()->isNotNull($field);
-                    } else {
-                        $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
+                        continue;
                     }
+
+                    if ($val === 'IS NOT NULL') {
+                        $conditions[] = $qb->expr()->isNotNull($field);
+                        continue;
+                    }
+
+                    $conditions[] = $qb->expr()->eq($field, $qb->createNamedParameter($val));
                 }
 
-                if (!empty($conditions)) {
+                if (empty($conditions) === false) {
                     $qb->andWhere($qb->expr()->orX(...$conditions));
                 }
-            } else {
-                // Handle comma-separated values
-                if (is_string($value) && strpos($value, ',') !== false) {
-                    $values = array_map('trim', explode(',', $value));
-                    $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
-                } else {
-                    $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-                }
+
+                continue;
             }//end if
+
+            // Handle comma-separated values.
+            if (is_string($value) === true && strpos($value, ',') !== false) {
+                $values = array_map('trim', explode(',', $value));
+                $qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
         }//end foreach
-
     }//end applyFilters()
-
 
     /**
      * Extract search parameters from the query and set them on the search trail
@@ -879,43 +856,60 @@ class SearchTrailMapper extends QBMapper
      */
     private function extractSearchParameters(SearchTrail $searchTrail, array $query): void
     {
-        // Extract search term
+        // Extract search term.
         $searchTerm = $query['_search'] ?? null;
         $searchTrail->setSearchTerm($searchTerm);
 
-        // Extract pagination parameters
+        // Extract pagination parameters.
         $searchTrail->setPage($query['_page'] ?? null);
         $searchTrail->setLimit($query['_limit'] ?? null);
         $searchTrail->setOffset($query['_offset'] ?? null);
 
-        // Extract facet parameters
+        // Extract facet parameters.
         $searchTrail->setFacetsRequested(isset($query['_facets']));
         $searchTrail->setFacetableRequested(isset($query['_facetable']) && $query['_facetable'] === true);
 
-        // Extract metadata filters
+        // Extract metadata filters.
         $metadataFilters = $query['@self'] ?? [];
-        if (isset($metadataFilters['register'])) {
-            $searchTrail->setRegister(is_numeric($metadataFilters['register']) ? (int) $metadataFilters['register'] : null);
-            $searchTrail->setRegisterUuid(is_string($metadataFilters['register']) ? $metadataFilters['register'] : null);
+        if (($metadataFilters['register'] ?? null) !== null) {
+            $searchTrail->setRegister(null);
+            if (is_numeric($metadataFilters['register']) === true) {
+                $searchTrail->setRegister((int) $metadataFilters['register']);
+            }
+
+            $searchTrail->setRegisterUuid(null);
+            if (is_string($metadataFilters['register']) === true) {
+                $searchTrail->setRegisterUuid($metadataFilters['register']);
+            }
         }
 
-        if (isset($metadataFilters['schema'])) {
-            $searchTrail->setSchema(is_numeric($metadataFilters['schema']) ? (int) $metadataFilters['schema'] : null);
-            $searchTrail->setSchemaUuid(is_string($metadataFilters['schema']) ? $metadataFilters['schema'] : null);
+        if (($metadataFilters['schema'] ?? null) !== null) {
+            $searchTrail->setSchema(null);
+            if (is_numeric($metadataFilters['schema']) === true) {
+                $searchTrail->setSchema((int) $metadataFilters['schema']);
+            }
+
+            $searchTrail->setSchemaUuid(null);
+            if (is_string($metadataFilters['schema']) === true) {
+                $searchTrail->setSchemaUuid($metadataFilters['schema']);
+            }
         }
 
-        // Extract sort parameters
+        // Extract sort parameters.
         $sortParams = [];
-        if (isset($query['_order'])) {
-            $sortParams = is_array($query['_order']) ? $query['_order'] : [$query['_order']];
+        if (($query['_order'] ?? null) !== null) {
+            $sortParams = [$query['_order']];
+            if (is_array($query['_order']) === true) {
+                $sortParams = $query['_order'];
+            }
         }
 
         $searchTrail->setSortParameters($sortParams);
 
-        // Extract published filter
+        // Extract published filter.
         $searchTrail->setPublishedOnly($query['_published'] ?? false);
 
-        // Extract non-system parameters as filters
+        // Extract non-system parameters as filters.
         $filters = [];
         foreach ($query as $key => $value) {
             if (strpos($key, '_') !== 0 && $key !== '@self') {
@@ -925,7 +919,7 @@ class SearchTrailMapper extends QBMapper
 
         $searchTrail->setFilters($filters);
 
-        // Store original query parameters (excluding system parameters)
+        // Store original query parameters (excluding system parameters).
         $queryParams = [];
         foreach ($query as $key => $value) {
             if (strpos($key, '_') !== 0) {
@@ -934,9 +928,7 @@ class SearchTrailMapper extends QBMapper
         }
 
         $searchTrail->setQueryParameters($queryParams);
-
     }//end extractSearchParameters()
-
 
     /**
      * Set request information on the search trail
@@ -951,9 +943,7 @@ class SearchTrailMapper extends QBMapper
         $searchTrail->setUserAgent($this->request->getHeader('User-Agent'));
         $searchTrail->setRequestUri($this->request->getRequestUri());
         $searchTrail->setHttpMethod($this->request->getMethod());
-
     }//end setRequestInformation()
-
 
     /**
      * Set user information on the search trail
@@ -970,66 +960,13 @@ class SearchTrailMapper extends QBMapper
             $searchTrail->setUserName($user->getDisplayName());
         }
 
-        $sessionId = $this->request->getHeader('X-Session-ID') ?? session_id();
+        $sessionId = $this->request->getHeader('X-Session-ID');
+        if ($sessionId === '') {
+            $sessionId = session_id();
+        }
+
         $searchTrail->setSession($sessionId);
-
     }//end setUserInformation()
-
-
-    /**
-     * Calculate the total size of search trails with optional filters
-     *
-     * Sums the size column of search trails matching the given criteria
-     *
-     * @param array         $filters Filter criteria
-     * @param string|null   $search  Search term
-     * @param DateTime|null $from    Start date filter
-     * @param DateTime|null $to      End date filter
-     *
-     * @return int Total size in bytes
-     */
-    public function sizeSearchTrails(
-        array $filters=[],
-        ?string $search=null,
-        ?DateTime $from=null,
-        ?DateTime $to=null
-    ): int {
-        $qb = $this->db->getQueryBuilder();
-
-        $qb->select($qb->func()->sum('size'))
-            ->from($this->getTableName());
-
-        // Apply filters
-        $this->applyFilters($qb, $filters);
-
-        // Apply search term
-        if ($search !== null) {
-            $qb->andWhere(
-                $qb->expr()->orX(
-                    $qb->expr()->like('search_term', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('request_uri', $qb->createNamedParameter('%'.$search.'%')),
-                    $qb->expr()->like('user_agent', $qb->createNamedParameter('%'.$search.'%'))
-                )
-            );
-        }
-
-        // Apply date filters
-        if ($from !== null) {
-            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from->format('Y-m-d H:i:s'))));
-        }
-
-        if ($to !== null) {
-            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to->format('Y-m-d H:i:s'))));
-        }
-
-        $result = $qb->executeQuery();
-        $size   = $result->fetchOne();
-        $result->closeCursor();
-
-        return (int) ($size ?? 0);
-
-    }//end sizeSearchTrails()
-
 
     /**
      * Set expiry dates for search trails based on retention period in milliseconds
@@ -1046,39 +983,36 @@ class SearchTrailMapper extends QBMapper
     public function setExpiryDate(int $retentionMs): int
     {
         try {
-            // Convert milliseconds to seconds for DateTime calculation
+            // Convert milliseconds to seconds for DateTime calculation.
             $retentionSeconds = intval($retentionMs / 1000);
 
-            // Get the query builder
+            // Get the query builder.
             $qb = $this->db->getQueryBuilder();
 
-            // Update search trails that don't have an expiry date set
+            // Update search trails that don't have an expiry date set.
             $qb->update($this->getTableName())
                 ->set(
-                       'expires',
-                       $qb->createFunction(
-                   sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                    'expires',
+                    $qb->createFunction(
+                        sprintf('DATE_ADD(created, INTERVAL %d SECOND)', $retentionSeconds)
+                    )
                 )
-                       )
                 ->where($qb->expr()->isNull('expires'));
 
-            // Execute the update and return number of affected rows
+            // Execute the update and return number of affected rows.
             return $qb->executeStatement();
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
+            // Log the error for debugging purposes.
             \OC::$server->getLogger()->error(
-                    'Failed to set expiry dates for search trails: '.$e->getMessage(),
-                    [
-                        'app'       => 'openregister',
-                        'exception' => $e,
-                    ]
-                    );
+                'Failed to set expiry dates for search trails: ' . $e->getMessage(),
+                [
+                    'app'       => 'openregister',
+                    'exception' => $e,
+                ]
+            );
 
-            // Re-throw the exception so the caller knows something went wrong
+            // Re-throw the exception so the caller knows something went wrong.
             throw $e;
         }//end try
-
     }//end setExpiryDate()
-
-
 }//end class

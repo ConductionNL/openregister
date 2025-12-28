@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectUnlockedEvent
  *
@@ -27,14 +28,12 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUnlockedEvent extends Event
 {
-
     /**
      * The unlocked object entity
      *
      * @var ObjectEntity The object that has been unlocked
      */
     private ObjectEntity $object;
-
 
     /**
      * Constructor for ObjectUnlockedEvent
@@ -47,9 +46,7 @@ class ObjectUnlockedEvent extends Event
     {
         parent::__construct();
         $this->object = $object;
-
     }//end __construct()
-
 
     /**
      * Get the unlocked object entity
@@ -59,8 +56,5 @@ class ObjectUnlockedEvent extends Event
     public function getObject(): ObjectEntity
     {
         return $this->object;
-
     }//end getObject()
-
-
 }//end class

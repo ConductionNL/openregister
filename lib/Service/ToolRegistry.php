@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Tool Registry
  *
@@ -19,6 +20,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Tool\ToolInterface;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -85,7 +87,7 @@ class ToolRegistry
     /**
      * Whether tools have been loaded
      *
-     * @var bool
+     * @var boolean
      */
     private bool $loaded = false;
 
@@ -100,8 +102,8 @@ class ToolRegistry
         LoggerInterface $logger
     ) {
         $this->eventDispatcher = $eventDispatcher;
-        $this->logger = $logger;
-    }
+        $this->logger          = $logger;
+    }//end __construct()
 
     /**
      * Load all tools by dispatching registration event
@@ -112,7 +114,7 @@ class ToolRegistry
      */
     private function loadTools(): void
     {
-        if ($this->loaded) {
+        if ($this->loaded === true) {
             return;
         }
 
@@ -123,11 +125,14 @@ class ToolRegistry
 
         $this->loaded = true;
 
-        $this->logger->info('[ToolRegistry] Loaded tools', [
-            'count' => count($this->tools),
-            'tools' => array_keys($this->tools),
-        ]);
-    }
+        $this->logger->info(
+            '[ToolRegistry] Loaded tools',
+            [
+                    'count' => count($this->tools),
+                    'tools' => array_keys($this->tools),
+                ]
+        );
+    }//end loadTools()
 
     /**
      * Register a tool
@@ -144,38 +149,41 @@ class ToolRegistry
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        // Validate ID format (should be app_name.tool_name)
-        if (!preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id)) {
-            throw new \InvalidArgumentException(
+        // Validate ID format (should be app_name.tool_name).
+        if (preg_match('/^[a-z0-9_]+\.[a-z0-9_]+$/', $id) === 0) {
+            throw new InvalidArgumentException(
                 "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
             );
         }
 
-        // Check if already registered
-        if (isset($this->tools[$id])) {
-            throw new \InvalidArgumentException("Tool already registered: {$id}");
+        // Check if already registered.
+        if (($this->tools[$id] ?? null) !== null) {
+            throw new InvalidArgumentException("Tool already registered: {$id}");
         }
 
-        // Validate required metadata
+        // Validate required metadata.
         $required = ['name', 'description', 'icon', 'app'];
         foreach ($required as $field) {
-            if (!isset($metadata[$field])) {
-                throw new \InvalidArgumentException("Missing required metadata field: {$field}");
+            if (isset($metadata[$field]) === false) {
+                throw new InvalidArgumentException("Missing required metadata field: {$field}");
             }
         }
 
-        // Register the tool
+        // Register the tool.
         $this->tools[$id] = [
-            'tool' => $tool,
+            'tool'     => $tool,
             'metadata' => $metadata,
         ];
 
-        $this->logger->info('[ToolRegistry] Tool registered', [
-            'id' => $id,
-            'name' => $metadata['name'],
-            'app' => $metadata['app'],
-        ]);
-    }
+        $this->logger->info(
+            '[ToolRegistry] Tool registered',
+            [
+                    'id'   => $id,
+                    'name' => $metadata['name'],
+                    'app'  => $metadata['app'],
+                ]
+        );
+    }//end registerTool()
 
     /**
      * Get a tool by ID
@@ -188,12 +196,12 @@ class ToolRegistry
     {
         $this->loadTools();
 
-        if (!isset($this->tools[$id])) {
+        if (isset($this->tools[$id]) === false) {
             return null;
         }
 
         return $this->tools[$id]['tool'];
-    }
+    }//end getTool()
 
     /**
      * Get all registered tools
@@ -210,7 +218,7 @@ class ToolRegistry
         }
 
         return $result;
-    }
+    }//end getAllTools()
 
     /**
      * Get tools by their IDs
@@ -227,7 +235,7 @@ class ToolRegistry
 
         $result = [];
         foreach ($ids as $id) {
-            if (isset($this->tools[$id])) {
+            if (($this->tools[$id] ?? null) !== null) {
                 $result[$id] = $this->tools[$id]['tool'];
             } else {
                 $this->logger->warning('[ToolRegistry] Tool not found', ['id' => $id]);
@@ -235,42 +243,5 @@ class ToolRegistry
         }
 
         return $result;
-    }
-
-    /**
-     * Check if a tool exists
-     *
-     * @param string $id Tool identifier
-     *
-     * @return bool True if tool exists
-     */
-    public function hasTool(string $id): bool
-    {
-        $this->loadTools();
-        return isset($this->tools[$id]);
-    }
-
-    /**
-     * Get tools by app
-     *
-     * Returns all tools registered by a specific app.
-     *
-     * @param string $appName App name
-     *
-     * @return array Array of tool IDs and metadata
-     */
-    public function getToolsByApp(string $appName): array
-    {
-        $this->loadTools();
-
-        $result = [];
-        foreach ($this->tools as $id => $data) {
-            if ($data['metadata']['app'] === $appName) {
-                $result[$id] = $data['metadata'];
-            }
-        }
-
-        return $result;
-    }
-}
-
+    }//end getTools()
+}//end class

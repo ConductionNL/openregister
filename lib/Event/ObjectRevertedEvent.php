@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectRevertedEvent
  *
@@ -19,6 +20,7 @@
 
 namespace OCA\OpenRegister\Event;
 
+use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
 
@@ -27,7 +29,6 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectRevertedEvent extends Event
 {
-
     /**
      * The reverted object entity
      *
@@ -38,27 +39,24 @@ class ObjectRevertedEvent extends Event
     /**
      * The reversion point reference
      *
-     * @var \DateTime|string|null The point in time or audit ID reverted to
+     * @var DateTime|string|null The point in time or audit ID reverted to
      */
     private $until;
-
 
     /**
      * Constructor for ObjectRevertedEvent
      *
-     * @param ObjectEntity          $object The reverted object
-     * @param \DateTime|string|null $until  The point in time or audit ID reverted to
+     * @param ObjectEntity         $object The reverted object
+     * @param DateTime|string|null $until  The point in time or audit ID reverted to
      *
      * @return void
      */
-    public function __construct(ObjectEntity $object, $until=null)
+    public function __construct(ObjectEntity $object, $until = null)
     {
         parent::__construct();
         $this->object = $object;
         $this->until  = $until;
-
     }//end __construct()
-
 
     /**
      * Get the reverted object entity
@@ -68,20 +66,15 @@ class ObjectRevertedEvent extends Event
     public function getObject(): ObjectEntity
     {
         return $this->object;
-
     }//end getObject()
-
 
     /**
      * Get the reversion point
      *
-     * @return \DateTime|string|null The point in time or audit ID reverted to
+     * @return DateTime|string|null The point in time or audit ID reverted to
      */
     public function getRevertPoint()
     {
         return $this->until;
-
     }//end getRevertPoint()
-
-
 }//end class

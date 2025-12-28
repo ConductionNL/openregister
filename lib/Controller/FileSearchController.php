@@ -1,16 +1,25 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * FileSearchController
+ *
+ * Controller for file search operations.
+ *
+ * @category  Controller
+ * @package   OCA\OpenRegister\Controller
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -19,36 +28,38 @@ use Psr\Log\LoggerInterface;
 
 /**
  * FileSearchController
- * 
+ *
  * Controller for file search operations (keyword, semantic, hybrid).
- * 
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  * @author   OpenRegister Team
- * @license  AGPL-3.0-or-later
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @psalm-suppress UnusedClass
  */
 class FileSearchController extends Controller
 {
     /**
      * Constructor
      *
-     * @param string                   $appName             App name
-     * @param IRequest                 $request             Request object
-     * @param GuzzleSolrService        $guzzleSolrService   SOLR service
-     * @param VectorEmbeddingService   $vectorService       Vector service
-     * @param SettingsService          $settingsService     Settings service
-     * @param LoggerInterface          $logger              Logger
+     * @param string               $appName         App name
+     * @param IRequest             $request         Request object
+     * @param IndexService         $indexService    Index service
+     * @param VectorizationService $vectorService   Vectorization service
+     * @param SettingsService      $settingsService Settings service
+     * @param LoggerInterface      $logger          Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly GuzzleSolrService $guzzleSolrService,
-        private readonly VectorEmbeddingService $vectorService,
+        private readonly IndexService $indexService,
+        private readonly VectorizationService $vectorService,
         private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
-    }
+        parent::__construct(appName: $appName, request: $request);
+    }//end __construct()
 
     /**
      * Keyword search in file contents (SOLR full-text search)
@@ -61,112 +72,131 @@ class FileSearchController extends Controller
     public function keywordSearch(): JSONResponse
     {
         try {
-            $query = $this->request->getParam('query', '');
-            $limit = (int) $this->request->getParam('limit', 10);
-            $offset = (int) $this->request->getParam('offset', 0);
+            $query     = $this->request->getParam('query', '');
+            $limit     = (int) $this->request->getParam('limit', 10);
+            $offset    = (int) $this->request->getParam('offset', 0);
             $fileTypes = $this->request->getParam('file_types', []);
 
-            if (empty($query)) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Query parameter is required'
-                ], 400);
+            if (empty($query) === true) {
+                return new JSONResponse(
+                    data: [
+                            'success' => false,
+                            'message' => 'Query parameter is required',
+                        ],
+                    statusCode: 400
+                );
             }
 
-            // Get file collection
-            $settings = $this->settingsService->getSettings();
+            // Get file collection.
+            $settings       = $this->settingsService->getSettings();
             $fileCollection = $settings['solr']['fileCollection'] ?? null;
-            if (!$fileCollection) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'File collection not configured'
-                ], 422);
+            if ($fileCollection === null || $fileCollection === '') {
+                return new JSONResponse(
+                    data: [
+                            'success' => false,
+                            'message' => 'File collection not configured',
+                        ],
+                    statusCode: 422
+                );
             }
 
-            // Build SOLR query
+            // Build SOLR query.
             $solrQuery = [
-                'q' => "text_content:($query)",
-                'rows' => $limit,
+                'q'     => "text_content:($query)",
+                'rows'  => $limit,
                 'start' => $offset,
-                'fl' => 'file_id,file_name,file_path,mime_type,chunk_index,chunk_text,score',
-                'sort' => 'score desc'
+                'fl'    => 'file_id,file_name,file_path,mime_type,chunk_index,chunk_text,score',
+                'sort'  => 'score desc',
             ];
 
-            // Add file type filter if specified
-            if (!empty($fileTypes)) {
-                $typeFilter = implode(' OR ', array_map(fn($t) => "mime_type:\"$t\"", $fileTypes));
+            // Add file type filter if specified.
+            if (empty($fileTypes) === false) {
+                $typeFilter      = implode(' OR ', array_map(fn(string $t): string => "mime_type:\"$t\"", $fileTypes));
                 $solrQuery['fq'] = $typeFilter;
             }
 
-            // Execute SOLR search
-            $queryUrl = $this->guzzleSolrService->buildSolrBaseUrl() . "/{$fileCollection}/select";
+            // Execute search.
+            $queryUrl   = $this->indexService->getEndpointUrl($fileCollection);
             $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
-            
+
             $requestOptions = [
-                'query' => $solrQuery,
-                'timeout' => $solrConfig['timeout'] ?? 30
+                'query'   => $solrQuery,
+                'timeout' => $solrConfig['timeout'] ?? 30,
             ];
 
-            // Add authentication
-            if (!empty($solrConfig['username']) && !empty($solrConfig['password'])) {
+            // Add authentication.
+            if (empty($solrConfig['username']) === false && empty($solrConfig['password']) === false) {
                 $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
             }
 
-            $httpClient = \OC::$server->get(\OCP\Http\Client\IClientService::class)->newClient();
-            $response = $httpClient->get($queryUrl, $requestOptions);
-            $result = json_decode($response->getBody()->getContents(), true);
+            //
+            // @var \OCP\Http\Client\IClientService $clientService
+            $clientService = \OC::$server->get(\OCP\Http\Client\IClientService::class);
+            $httpClient    = $clientService->newClient();
+            $response      = $httpClient->get(uri: $queryUrl, options: $requestOptions);
+            $result        = json_decode($response->getBody()->getContents(), true);
 
-            $results = $result['response']['docs'] ?? [];
+            $results  = $result['response']['docs'] ?? [];
             $numFound = $result['response']['numFound'] ?? 0;
 
-            // Group results by file_id
+            // Group results by file_id.
             $groupedResults = [];
             foreach ($results as $doc) {
                 $fileId = $doc['file_id'];
-                if (!isset($groupedResults[$fileId])) {
+                if (isset($groupedResults[$fileId]) === false) {
                     $groupedResults[$fileId] = [
-                        'file_id' => $fileId,
+                        'file_id'   => $fileId,
                         'file_name' => $doc['file_name'] ?? '',
                         'file_path' => $doc['file_path'] ?? '',
                         'mime_type' => $doc['mime_type'] ?? '',
-                        'score' => $doc['score'] ?? 0,
-                        'chunks' => []
+                        'score'     => $doc['score'] ?? 0,
+                        'chunks'    => [],
                     ];
                 }
+
                 $groupedResults[$fileId]['chunks'][] = [
                     'chunk_index' => $doc['chunk_index'] ?? 0,
-                    'text' => $doc['chunk_text'] ?? '',
-                    'score' => $doc['score'] ?? 0
+                    'text'        => $doc['chunk_text'] ?? '',
+                    'score'       => $doc['score'] ?? 0,
                 ];
             }
 
-            return new JSONResponse([
-                'success' => true,
-                'query' => $query,
-                'total' => $numFound,
-                'results' => array_values($groupedResults),
-                'search_type' => 'keyword'
-            ]);
-
+            return new JSONResponse(
+                data: [
+                        'success'     => true,
+                        'query'       => $query,
+                        'total'       => $numFound,
+                        'results'     => array_values($groupedResults),
+                        'search_type' => 'keyword',
+                    ]
+            );
         } catch (\Exception $e) {
-            $this->logger->error('[FileSearchController] Keyword search failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                message: '[FileSearchController] Keyword search failed',
+                context: [
+                        'error' => $e->getMessage(),
+                    ]
+            );
 
-            return new JSONResponse([
-                'success' => false,
-                'message' => 'Search failed: ' . $e->getMessage()
-            ], 500);
-        }
-    }
+            return new JSONResponse(
+                data: [
+                        'success' => false,
+                        'message' => 'Search failed: ' . $e->getMessage(),
+                    ],
+                statusCode: 500
+            );
+        }//end try
+    }//end keywordSearch()
 
     /**
      * Semantic search in file contents (vector similarity search)
      *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Search results
+     * @return       JSONResponse A JSON response with semantic search results
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: int<0, max>, results?: array<int, array<string, mixed>>, search_type?: 'semantic'}, array<never, never>>
      */
     public function semanticSearch(): JSONResponse
     {
@@ -174,94 +204,115 @@ class FileSearchController extends Controller
             $query = $this->request->getParam('query', '');
             $limit = (int) $this->request->getParam('limit', 10);
 
-            if (empty($query)) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Query parameter is required'
-                ], 400);
+            if (empty($query) === true) {
+                return new JSONResponse(
+                    data: [
+                            'success' => false,
+                            'message' => 'Query parameter is required',
+                        ],
+                    statusCode: 400
+                );
             }
 
-            // Use existing semanticSearch method from VectorEmbeddingService
+            // Use existing semanticSearch method from VectorizationService.
             $results = $this->vectorService->semanticSearch(
                 query: $query,
                 limit: $limit,
-                entityType: 'file'
+                filters: ['entityType' => 'file']
             );
 
-            return new JSONResponse([
-                'success' => true,
-                'query' => $query,
-                'total' => count($results),
-                'results' => $results,
-                'search_type' => 'semantic'
-            ]);
-
+            return new JSONResponse(
+                data: [
+                        'success'     => true,
+                        'query'       => $query,
+                        'total'       => count($results),
+                        'results'     => $results,
+                        'search_type' => 'semantic',
+                    ]
+            );
         } catch (\Exception $e) {
-            $this->logger->error('[FileSearchController] Semantic search failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                message: '[FileSearchController] Semantic search failed',
+                context: [
+                        'error' => $e->getMessage(),
+                    ]
+            );
 
-            return new JSONResponse([
-                'success' => false,
-                'message' => 'Semantic search failed: ' . $e->getMessage()
-            ], 500);
-        }
-    }
+            return new JSONResponse(
+                data: [
+                        'success' => false,
+                        'message' => 'Semantic search failed: ' . $e->getMessage(),
+                    ],
+                statusCode: 500
+            );
+        }//end try
+    }//end semanticSearch()
 
     /**
      * Hybrid search - Combines keyword (SOLR) and semantic (vector) search
      *
      * @NoAdminRequired
+     *
+     * @return JSONResponse JSON response containing hybrid search results
+     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse Search results
+     * @psalm-return JSONResponse<200|400|500, array{success: bool, message?: string, query?: string, total?: 5, results?: array{results: array, total: int<0, max>, search_time_ms: float, source_breakdown: array{vector_only: int<0, max>, solr_only: int<0, max>, both: int<0, max>}, weights: array{solr: float, vector: float}}, search_type?: 'hybrid', weights?: array{keyword: float, semantic: float}}, array<never, never>>
      */
     public function hybridSearch(): JSONResponse
     {
         try {
-            $query = $this->request->getParam('query', '');
-            $limit = (int) $this->request->getParam('limit', 10);
-            $keywordWeight = (float) $this->request->getParam('keyword_weight', 0.5);
+            $query          = $this->request->getParam('query', '');
+            $limit          = (int) $this->request->getParam('limit', 10);
+            $keywordWeight  = (float) $this->request->getParam('keyword_weight', 0.5);
             $semanticWeight = (float) $this->request->getParam('semantic_weight', 0.5);
 
-            if (empty($query)) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Query parameter is required'
-                ], 400);
+            if (empty($query) === true) {
+                return new JSONResponse(
+                    data: [
+                         'success' => false,
+                         'message' => 'Query parameter is required',
+                     ],
+                    statusCode: 400
+                );
             }
 
-            // Use existing hybridSearch method from VectorEmbeddingService
+            // Use existing hybridSearch method from VectorizationService.
             $results = $this->vectorService->hybridSearch(
                 query: $query,
+                solrFilters: ['entityType' => 'file'],
                 limit: $limit,
-                entityType: 'file',
-                keywordWeight: $keywordWeight,
-                semanticWeight: $semanticWeight
+                weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
             );
 
-            return new JSONResponse([
-                'success' => true,
-                'query' => $query,
-                'total' => count($results),
-                'results' => $results,
-                'search_type' => 'hybrid',
-                'weights' => [
-                    'keyword' => $keywordWeight,
-                    'semantic' => $semanticWeight
-                ]
-            ]);
-
+            return new JSONResponse(
+                data: [
+                     'success'     => true,
+                     'query'       => $query,
+                     'total'       => count($results),
+                     'results'     => $results,
+                     'search_type' => 'hybrid',
+                     'weights'     => [
+                         'keyword'  => $keywordWeight,
+                         'semantic' => $semanticWeight,
+                     ],
+                 ]
+            );
         } catch (\Exception $e) {
-            $this->logger->error('[FileSearchController] Hybrid search failed', [
-                'error' => $e->getMessage()
-            ]);
+            $this->logger->error(
+                message: '[FileSearchController] Hybrid search failed',
+                context: [
+                     'error' => $e->getMessage(),
+                 ]
+            );
 
-            return new JSONResponse([
-                'success' => false,
-                'message' => 'Hybrid search failed: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-}
-
+            return new JSONResponse(
+                data: [
+                     'success' => false,
+                     'message' => 'Hybrid search failed: ' . $e->getMessage(),
+                 ],
+                statusCode: 500
+            );
+        }//end try
+    }//end hybridSearch()
+}//end class

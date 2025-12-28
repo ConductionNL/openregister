@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectsProvider
  *
@@ -40,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsProvider implements IFilteringProvider
 {
-
     /**
      * The localization service
      *
@@ -69,7 +69,6 @@ class ObjectsProvider implements IFilteringProvider
      */
     private readonly LoggerInterface $logger;
 
-
     /**
      * Constructor for the ObjectsProvider class
      *
@@ -90,21 +89,19 @@ class ObjectsProvider implements IFilteringProvider
         $this->urlGenerator  = $urlGenerator;
         $this->objectService = $objectService;
         $this->logger        = $logger;
-
     }//end __construct()
-
 
     /**
      * Returns the unique identifier for this search provider
      *
      * @return string Unique identifier for the search provider
+     *
+     * @psalm-return 'openregister_objects'
      */
     public function getId(): string
     {
         return 'openregister_objects';
-
     }//end getId()
-
 
     /**
      * Returns the human-readable name for this search provider
@@ -114,34 +111,32 @@ class ObjectsProvider implements IFilteringProvider
     public function getName(): string
     {
         return $this->l10n->t('Open Register Objects');
-
     }//end getName()
-
 
     /**
      * Returns the order/priority of this search provider
      *
      * Lower values appear first in search results
      *
-     * @param string $route The route/context for which to get the order
-     * @param array $routeParameters Parameters for the route
+     * @param string $_route           The route/context for which to get the order
+     * @param array  $_routeParameters Parameters for the route
      *
-     * @return int|null Order priority (0-100, lower = higher priority) or null for default
+     * @return int
+     *
+     * @psalm-return     10
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
-    public function getOrder(string $route, array $routeParameters): ?int
+    public function getOrder(string $_route, array $_routeParameters): ?int
     {
         return 10;
-
     }//end getOrder()
-
 
     /**
      * Returns the list of supported filters for the search provider
      *
-     * @return string[] List of supported filter names
+     * @return string[]
      *
-     * @psalm-return array<string>
-     *
+     * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
      * @phpstan-return array<string>
      */
     public function getSupportedFilters(): array
@@ -156,44 +151,36 @@ class ObjectsProvider implements IFilteringProvider
             'register',
             'schema',
         ];
-
     }//end getSupportedFilters()
-
 
     /**
      * Returns the list of alternate IDs for the search provider
      *
-     * @return string[] List of alternate IDs
+     * @return array
      *
-     * @psalm-return array<string>
-     *
+     * @psalm-return   array<never, never>
      * @phpstan-return array<string>
      */
     public function getAlternateIds(): array
     {
         return [];
-
     }//end getAlternateIds()
-
 
     /**
      * Returns the list of custom filters for the search provider
      *
-     * @return FilterDefinition[] List of custom filter definitions
+     * @return FilterDefinition[]
      *
-     * @psalm-return array<FilterDefinition>
-     *
-     * @phpstan-return array<FilterDefinition>
+     * @psalm-return   list{FilterDefinition, FilterDefinition}
+     * @phpstan-return list<\OCP\Search\FilterDefinition>
      */
     public function getCustomFilters(): array
     {
         return [
-            new FilterDefinition('register', FilterDefinition::TYPE_STRING),
-            new FilterDefinition('schema', FilterDefinition::TYPE_STRING),
+            new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
+            new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
         ];
-
     }//end getCustomFilters()
-
 
     /**
      * Performs a search based on the provided query using searchObjectsPaginated
@@ -202,16 +189,18 @@ class ObjectsProvider implements IFilteringProvider
      * search query filters to OpenRegister's advanced search parameters and
      * using the optimized searchObjectsPaginated method for best performance.
      *
-     * @param IUser        $user  The user performing the search
+     * @param IUser        $_user The user performing the search
      * @param ISearchQuery $query The search query from Nextcloud
      *
      * @return SearchResult The search results formatted for Nextcloud's search interface
      *
      * @throws \Exception If search operation fails
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function search(IUser $user, ISearchQuery $query): SearchResult
+    public function search(IUser $_user, ISearchQuery $query): SearchResult
     {
-        // Retrieve filters.
+        // Initialize filters array.
         $filters = [];
 
         /*
@@ -251,64 +240,64 @@ class ObjectsProvider implements IFilteringProvider
         $until = $query->getFilter('until')?->get();
 
         // @todo: implement pagination.
-        $limit  = null;
-        $offset = null;
-        $order  = null;
-
-        // Build search query for searchObjectsPaginated
+        // Note: order parameter not currently used in search
+        // Build search query for searchObjectsPaginated.
         $searchQuery = [];
 
-        // Add search term if provided
-        if (!empty($search)) {
+        // Add search term if provided.
+        if (empty($search) === false) {
             $searchQuery['_search'] = $search;
         }
 
-        // Add filters to @self metadata section
-        if (!empty($register)) {
+        // Add filters to @self metadata section.
+        if (empty($register) === false) {
             $searchQuery['@self']['register'] = (int) $register;
         }
 
-        if (!empty($schema)) {
+        if (empty($schema) === false) {
             $searchQuery['@self']['schema'] = (int) $schema;
         }
 
-        // Add date filters if provided
+        // Add date filters if provided.
         if ($since !== null) {
             $searchQuery['@self']['created'] = ['$gte' => $since];
         }
 
         if ($until !== null) {
-            if (isset($searchQuery['@self']['created'])) {
+            if (($searchQuery['@self']['created'] ?? null) !== null) {
                 $searchQuery['@self']['created']['$lte'] = $until;
             } else {
                 $searchQuery['@self']['created'] = ['$lte' => $until];
             }
         }
 
-        // Set pagination limits for Nextcloud search
-        $searchQuery['_limit'] = $limit ?? 25; // Default limit for search interface
-        $searchQuery['_offset'] = $offset ?? 0;
+        // Set pagination limits for Nextcloud search (defaults).
+        $searchQuery['_limit']  = 25;
+        $searchQuery['_offset'] = 0;
 
-        $this->logger->debug('OpenRegister search requested', [
-            'search_query' => $searchQuery,
-            'has_search' => !empty($search)
-        ]);
+        $this->logger->debug(
+            'OpenRegister search requested',
+            [
+                    'search_query' => $searchQuery,
+                    'has_search'   => empty($search) === false,
+                ]
+        );
 
-        // Use searchObjectsPaginated for optimal performance
-        $searchResults = $this->objectService->searchObjectsPaginated($searchQuery, rbac: true, multi: true);
+        // Use searchObjectsPaginated for optimal performance.
+        $searchResults = $this->objectService->searchObjectsPaginated(query: $searchQuery, _rbac: true, _multitenancy: true);
 
-        // Convert results to SearchResultEntry format
+        // Convert results to SearchResultEntry format.
         $searchResultEntries = [];
-        if (!empty($searchResults['results'])) {
+        if (empty($searchResults['results']) === false) {
             foreach ($searchResults['results'] as $result) {
-                // Generate URLs for the object
+                // Generate URLs for the object.
                 $objectUrl = $this->urlGenerator->linkToRoute(
                     'openregister.objects.show',
                     ['id' => $result['uuid']]
                 );
 
-                // Create descriptive title and description
-                $title = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
+                // Create descriptive title and description.
+                $title       = $result['title'] ?? $result['name'] ?? $result['uuid'] ?? 'Unknown Object';
                 $description = $this->buildDescription($result);
 
                 $searchResultEntries[] = new SearchResultEntry(
@@ -319,20 +308,21 @@ class ObjectsProvider implements IFilteringProvider
                     'icon-openregister'
                 );
             }
-        }
+        }//end if
 
-        $this->logger->debug('OpenRegister search completed', [
-            'results_count' => count($searchResultEntries),
-            'total_results' => $searchResults['total'] ?? 0
-        ]);
-
-        return SearchResult::complete(
-            $this->l10n->t('Open Register Objects'),
-            $searchResultEntries
+        $this->logger->debug(
+            'OpenRegister search completed',
+            [
+                    'results_count' => count($searchResultEntries),
+                    'total_results' => $searchResults['total'] ?? 0,
+                ]
         );
 
+        return SearchResult::complete(
+            name: $this->l10n->t(text: 'Open Register Objects'),
+            entries: $searchResultEntries
+        );
     }//end search()
-
 
     /**
      * Build a descriptive text for search results
@@ -345,30 +335,37 @@ class ObjectsProvider implements IFilteringProvider
     {
         $parts = [];
 
-        // Add schema/register information if available
-        if (!empty($object['schema'])) {
-            $parts[] = $this->l10n->t('Schema: %s', [$object['schema']]);
-        }
-        
-        if (!empty($object['register'])) {
-            $parts[] = $this->l10n->t('Register: %s', [$object['register']]);
+        // Add schema/register information if available.
+        if (empty($object['schema']) === false) {
+            $parts[] = $this->l10n->t('Schema: %s', $object['schema']);
         }
 
-        // Add summary/description if available
-        if (!empty($object['summary'])) {
+        if (empty($object['register']) === false) {
+            $parts[] = $this->l10n->t('Register: %s', $object['register']);
+        }
+
+        // Add summary/description if available.
+        if (empty($object['summary']) === false) {
             $parts[] = $object['summary'];
-        } elseif (!empty($object['description'])) {
-            $parts[] = substr($object['description'], 0, 100) . (strlen($object['description']) > 100 ? '...' : '');
+        } elseif (empty($object['description']) === false) {
+            $descriptionPart = substr($object['description'], 0, 100);
+            if (strlen($object['description']) > 100) {
+                $descriptionPart .= '...';
+            }
+
+            $parts[] = $descriptionPart;
         }
 
-        // Add last updated info if available
-        if (!empty($object['updated'])) {
-            $parts[] = $this->l10n->t('Updated: %s', [date('Y-m-d H:i', strtotime($object['updated']))]);
+        // Add last updated info if available.
+        if (empty($object['updated']) === false) {
+            $parts[] = $this->l10n->t('Updated: %s', date('Y-m-d H:i', strtotime($object['updated'])));
         }
 
-        return implode(' • ', $parts) ?: $this->l10n->t('Open Register Object');
-
+        $description = implode(' • ', $parts);
+        if ($description !== '') {
+            return $description;
+        } else {
+            return $this->l10n->t(text: 'Open Register Object');
+        }
     }//end buildDescription()
-
-
 }//end class

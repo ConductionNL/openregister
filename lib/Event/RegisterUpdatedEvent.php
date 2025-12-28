@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RegisterUpdatedEvent
  *
@@ -27,11 +28,12 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterUpdatedEvent extends Event
 {
-
     /**
      * The updated register state
      *
      * @var Register The register after update
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Register $newRegister;
 
@@ -39,9 +41,10 @@ class RegisterUpdatedEvent extends Event
      * The previous register state
      *
      * @var Register The register before update
+     *
+     * @psalm-suppress UnusedProperty
      */
     private Register $oldRegister;
-
 
     /**
      * Constructor for RegisterUpdatedEvent
@@ -56,9 +59,7 @@ class RegisterUpdatedEvent extends Event
         parent::__construct();
         $this->newRegister = $newRegister;
         $this->oldRegister = $oldRegister;
-
     }//end __construct()
-
 
     /**
      * Get the updated register
@@ -68,9 +69,7 @@ class RegisterUpdatedEvent extends Event
     public function getNewRegister(): Register
     {
         return $this->newRegister;
-
     }//end getNewRegister()
-
 
     /**
      * Get the original register
@@ -80,8 +79,5 @@ class RegisterUpdatedEvent extends Event
     public function getOldRegister(): Register
     {
         return $this->oldRegister;
-
     }//end getOldRegister()
-
-
 }//end class

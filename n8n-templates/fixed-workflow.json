@@ -1,0 +1,562 @@
+{
+  "name": "Enhanced PHPQA Auto-Fixer with Loop & Testing",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        20,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "maxIterations",
+              "value": 5
+            },
+            {
+              "name": "currentIteration",
+              "value": 0
+            }
+          ],
+          "string": [
+            {
+              "name": "container",
+              "value": "master-nextcloud-1"
+            },
+            {
+              "name": "appPath",
+              "value": "/var/www/html/apps-extra/openregister"
+            }
+          ]
+        }
+      },
+      "id": "set-config",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && composer phpqa 2>&1\""
+      },
+      "id": "run-phpqa",
+      "name": "Run composer phpqa",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse PHPQA output and quality metrics\nconst stdout = $input.item.json.stdout;\nconst config = $input.item.json;\n\n// Extract metrics from phpqa HTML report\nconst metrics = {\n  phpcsErrors: 0,\n  phpmdViolations: 0,\n  phpstanErrors: 0,\n  codeCoverage: 0,\n  complexity: 0,\n  iteration: config.currentIteration || 0\n};\n\n// Parse PHPCS errors\nconst phpcsMatch = stdout.match(/PHPCS.*?(\\d+)\\s+errors?/i);\nif (phpcsMatch) {\n  metrics.phpcsErrors = parseInt(phpcsMatch[1]);\n}\n\n// Parse PHPMD violations\nconst phpmdMatch = stdout.match(/PHPMD.*?(\\d+)\\s+violations?/i);\nif (phpmdMatch) {\n  metrics.phpmdViolations = parseInt(phpmdMatch[1]);\n}\n\n// Parse PHPStan errors\nconst phpstanMatch = stdout.match(/PHPStan.*?(\\d+)\\s+errors?/i);\nif (phpstanMatch) {\n  metrics.phpstanErrors = parseInt(phpstanMatch[1]);\n}\n\nconst totalIssues = metrics.phpcsErrors + metrics.phpmdViolations + metrics.phpstanErrors;\n\nconsole.log(`PHPQA Results - Iteration ${metrics.iteration}:`);\nconsole.log(`  PHPCS Errors: ${metrics.phpcsErrors}`);\nconsole.log(`  PHPMD Violations: ${metrics.phpmdViolations}`);\nconsole.log(`  PHPStan Errors: ${metrics.phpstanErrors}`);\nconsole.log(`  Total Issues: ${totalIssues}`);\n\nreturn [{\n  json: {\n    ...config,\n    metrics,\n    totalIssues,\n    hasIssues: totalIssues > 0,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-phpqa",
+      "name": "Parse PHPQA Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasIssues }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-issues",
+      "name": "Has Issues?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && vendor/bin/phpcs --report=json --standard=phpcs.xml lib/ 2>&1 || true\""
+      },
+      "id": "run-phpcs-detailed",
+      "name": "Get Detailed PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse PHPCS JSON output\nconst stdout = $input.item.json.stdout;\nconst errors = [];\n\ntry {\n  const jsonMatch = stdout.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    return [{ json: { error: 'No JSON found', totalErrors: 0 } }];\n  }\n  \n  const phpcsOutput = JSON.parse(jsonMatch[0]);\n  \n  for (const [filePath, fileData] of Object.entries(phpcsOutput.files || {})) {\n    if (fileData.messages && fileData.messages.length > 0) {\n      fileData.messages.forEach((msg, index) => {\n        if (msg.type === 'ERROR') {\n          errors.push({\n            id: `${filePath}-${msg.line}-${index}`,\n            file: filePath,\n            line: msg.line,\n            column: msg.column,\n            message: msg.message,\n            source: msg.source,\n            severity: msg.severity || 5,\n            fixable: msg.fixable || false\n          });\n        }\n      });\n    }\n  }\n  \n  errors.sort((a, b) => b.severity - a.severity);\n  console.log(`Found ${errors.length} PHPCS errors`);\n  \n  return errors.map(error => ({ json: { ...error, ...$input.item.json } }));\n  \n} catch (error) {\n  console.error('Error parsing PHPCS:', error);\n  return [{ json: { error: error.message, totalErrors: 0 } }];\n}"
+      },
+      "id": "parse-phpcs",
+      "name": "Parse PHPCS Errors",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Batch Errors",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare AI prompt for fixing\nconst error = $input.item.json;\n\nconst prompt = `You are a senior PHP developer expert in PSR-12 and PHP coding standards.\n\nFix this code quality issue:\n\nFile: ${error.file}\nLine: ${error.line}\nError: ${error.message}\nRule: ${error.source}\n\nInstructions:\n1. Analyze the error and understand the required fix\n2. Provide ONLY the corrected code line\n3. Maintain exact indentation and context\n4. Follow PSR-12 standards strictly\n5. Be concise - no explanations, just code\n\nProvide the fixed code:`;\n\nreturn [{ json: { ...error, prompt } }];"
+      },
+      "id": "prepare-ai-prompt",
+      "name": "Prepare AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://ollama:11434/api/generate",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"codellama:7b-instruct\",\n  \"prompt\": $json.prompt,\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.1,\n    \"top_p\": 0.9,\n    \"num_predict\": 300\n  }\n} }}"
+      },
+      "id": "call-ollama",
+      "name": "Generate Fix with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and apply the fix\nconst error = $input.item.json;\nconst ollamaResponse = JSON.parse($input.item.json.body || '{}');\nconst suggestedFix = ollamaResponse.response || '';\n\n// Extract code from response\nlet fixedCode = suggestedFix;\nconst codeBlockMatch = suggestedFix.match(/```(?:php)?\\n([\\s\\S]*?)```/);\nif (codeBlockMatch) {\n  fixedCode = codeBlockMatch[1].trim();\n}\n\nconsole.log(`Fix generated for ${error.file}:${error.line}`);\n\nreturn [{\n  json: {\n    ...error,\n    suggestedFix: fixedCode,\n    applied: false\n  }\n}];"
+      },
+      "id": "extract-fix",
+      "name": "Extract Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php -r 'echo file_get_contents(\\\"{{ $json.file }}\\\");' > /tmp/before.php && echo '{{ $json.suggestedFix }}' | sed 's/{{ $json.line }}/{{ $json.suggestedFix }}/' > /tmp/after.php && cat /tmp/after.php > {{ $json.file }}\""
+      },
+      "id": "apply-fix",
+      "name": "Apply Fix to File",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition"
+      },
+      "id": "merge-fixes",
+      "name": "Merge All Fixes",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        2660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && vendor/bin/phpcs --report=summary lib/ 2>&1 || true\""
+      },
+      "id": "verify-phpcs",
+      "name": "Verify PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec nextcloud bash -c \"cd /var/www/html/custom_apps/openregister/tests/integration && ./run-tests.sh 2>&1\""
+      },
+      "id": "run-newman",
+      "name": "Run Newman Tests",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if Newman tests passed\nconst stdout = $input.item.json.stdout || '';\n\nconst passMatch = stdout.match(/(\\d+)\\/(\\d+)\\s+tests?\\s+passing/i);\nconst failMatch = stdout.match(/(\\d+)\\s+failing/i);\n\nconst passed = passMatch ? parseInt(passMatch[1]) : 0;\nconst total = passMatch ? parseInt(passMatch[2]) : 0;\nconst failed = failMatch ? parseInt(failMatch[1]) : 0;\n\nconst testsPassed = failed === 0 && passed > 0;\n\nconsole.log(`Newman Tests: ${passed}/${total} passed, ${failed} failed`);\n\nreturn [{\n  json: {\n    ...$input.item.json,\n    tests: {\n      passed,\n      total,\n      failed,\n      success: testsPassed\n    },\n    testsPassed\n  }\n}];"
+      },
+      "id": "check-tests",
+      "name": "Check Test Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.testsPassed }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "tests-passed",
+      "name": "Tests Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3540,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && git add -A && git commit -m 'Auto-fix: PHPCS improvements (iteration {{ $json.currentIteration }})' 2>&1 || echo 'No changes to commit'\""
+      },
+      "id": "git-commit",
+      "name": "Git Commit Changes",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && git reset --hard HEAD 2>&1\""
+      },
+      "id": "git-rollback",
+      "name": "Git Rollback",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if we should continue iterating\nconst config = $input.item.json;\nconst iteration = (config.currentIteration || 0) + 1;\nconst maxIterations = config.maxIterations || 5;\n\n// Get quality metrics\nconst previousIssues = config.previousIssues || config.totalIssues;\nconst currentIssues = config.totalIssues || 0;\n\nconst improved = currentIssues < previousIssues;\nconst shouldContinue = improved && iteration < maxIterations && currentIssues > 0;\n\nconsole.log(`Iteration ${iteration}/${maxIterations}`);\nconsole.log(`Issues: ${previousIssues} → ${currentIssues}`);\nconsole.log(`Improved: ${improved}`);\nconsole.log(`Continue: ${shouldContinue}`);\n\nif (shouldContinue) {\n  // Continue loop\n  return [{\n    json: {\n      ...config,\n      currentIteration: iteration,\n      previousIssues: currentIssues,\n      continueLoop: true\n    }\n  }];\n} else {\n  // Stop loop\n  return [{\n    json: {\n      ...config,\n      currentIteration: iteration,\n      continueLoop: false,\n      reason: !improved ? 'No improvement' : \n              iteration >= maxIterations ? 'Max iterations reached' : \n              'All issues fixed'\n    }\n  }];\n}"
+      },
+      "id": "check-continue",
+      "name": "Should Continue?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3980,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.continueLoop }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "continue-loop",
+      "name": "Continue Loop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4200,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate final report\nconst config = $input.item.json;\n\nconst report = {\n  title: 'PHPQA Auto-Fix Report',\n  timestamp: new Date().toISOString(),\n  summary: {\n    iterations: config.currentIteration,\n    initialIssues: config.metrics?.totalIssues || 0,\n    finalIssues: config.totalIssues || 0,\n    issuesFixed: (config.metrics?.totalIssues || 0) - (config.totalIssues || 0),\n    testsStatus: config.tests?.success ? 'PASSED' : 'FAILED',\n    reason: config.reason || 'Completed'\n  },\n  metrics: config.metrics,\n  tests: config.tests\n};\n\nconsole.log('=== FINAL REPORT ===');\nconsole.log(JSON.stringify(report, null, 2));\n\nreturn [{ json: report }];"
+      },
+      "id": "final-report",
+      "name": "Generate Final Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4420,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Run composer phpqa"
+          }
+        ]
+      ]
+    },
+    "Run composer phpqa": {
+      "main": [
+        [
+          {
+            "node": "Parse PHPQA Results"
+          }
+        ]
+      ]
+    },
+    "Parse PHPQA Results": {
+      "main": [
+        [
+          {
+            "node": "Has Issues?"
+          }
+        ]
+      ]
+    },
+    "Has Issues?": {
+      "main": [
+        [
+          {
+            "node": "Get Detailed PHPCS"
+          }
+        ],
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
+      ]
+    },
+    "Get Detailed PHPCS": {
+      "main": [
+        [
+          {
+            "node": "Parse PHPCS Errors"
+          }
+        ]
+      ]
+    },
+    "Parse PHPCS Errors": {
+      "main": [
+        [
+          {
+            "node": "Batch Errors"
+          }
+        ]
+      ]
+    },
+    "Batch Errors": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Prompt"
+          }
+        ]
+      ]
+    },
+    "Prepare AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Fix with AI"
+          }
+        ]
+      ]
+    },
+    "Generate Fix with AI": {
+      "main": [
+        [
+          {
+            "node": "Extract Fix"
+          }
+        ]
+      ]
+    },
+    "Extract Fix": {
+      "main": [
+        [
+          {
+            "node": "Apply Fix to File"
+          }
+        ]
+      ]
+    },
+    "Apply Fix to File": {
+      "main": [
+        [
+          {
+            "node": "Merge All Fixes"
+          }
+        ]
+      ]
+    },
+    "Merge All Fixes": {
+      "main": [
+        [
+          {
+            "node": "Verify PHPCS"
+          }
+        ]
+      ]
+    },
+    "Verify PHPCS": {
+      "main": [
+        [
+          {
+            "node": "Run Newman Tests"
+          }
+        ]
+      ]
+    },
+    "Run Newman Tests": {
+      "main": [
+        [
+          {
+            "node": "Check Test Results"
+          }
+        ]
+      ]
+    },
+    "Check Test Results": {
+      "main": [
+        [
+          {
+            "node": "Tests Passed?"
+          }
+        ]
+      ]
+    },
+    "Tests Passed?": {
+      "main": [
+        [
+          {
+            "node": "Git Commit Changes"
+          }
+        ],
+        [
+          {
+            "node": "Git Rollback"
+          }
+        ]
+      ]
+    },
+    "Git Commit Changes": {
+      "main": [
+        [
+          {
+            "node": "Should Continue?"
+          }
+        ]
+      ]
+    },
+    "Git Rollback": {
+      "main": [
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
+      ]
+    },
+    "Should Continue?": {
+      "main": [
+        [
+          {
+            "node": "Continue Loop?"
+          }
+        ]
+      ]
+    },
+    "Continue Loop?": {
+      "main": [
+        [
+          {
+            "node": "Run composer phpqa"
+          }
+        ],
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
+      ]
+    },
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Configuration"
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T19:40:00.000Z",
+  "versionId": "2"
+}

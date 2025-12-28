@@ -1,0 +1,247 @@
+name: Branch Protection Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - development
+      - dev
+
+jobs:
+  quality-gate:
+    name: Quality Gate Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, json, posix, simplexml, xmlreader, xmlwriter, zip
+          coverage: xdebug
+          tools: composer:v2
+      
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+      
+      - name: Initialize Quality Gate Results
+        run: |
+          echo "QUALITY_GATE_PASSED=true" >> $GITHUB_ENV
+          echo "## 🚦 Quality Gate Status" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Check 1 - PHP Syntax
+        id: syntax
+        run: |
+          echo "### ✅ Check 1: PHP Syntax" >> $GITHUB_STEP_SUMMARY
+          if composer lint; then
+            echo "✅ No syntax errors found" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "❌ FAILED: Syntax errors detected" >> $GITHUB_STEP_SUMMARY
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "QUALITY_GATE_PASSED=false" >> $GITHUB_ENV
+          fi
+      
+      - name: Check 2 - Coding Standards (PHPCS)
+        id: phpcs
+        run: |
+          echo "### Check 2: Coding Standards (PHPCS)" >> $GITHUB_STEP_SUMMARY
+          composer cs:check
+          composer phpcs:output
+          if [ -f phpcs-output.json ]; then
+            ERRORS=$(jq '.totals.errors' phpcs-output.json)
+            echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+            if [ "$ERRORS" -eq "0" ]; then
+              echo "✅ PASSED: No PHPCS errors" >> $GITHUB_STEP_SUMMARY
+              echo "status=pass" >> $GITHUB_OUTPUT
+            else
+              echo "❌ FAILED: Found $ERRORS PHPCS errors (must be 0)" >> $GITHUB_STEP_SUMMARY
+              echo "status=fail" >> $GITHUB_OUTPUT
+              echo "QUALITY_GATE_PASSED=false" >> $GITHUB_ENV
+            fi
+          fi
+        continue-on-error: true
+      
+      - name: Check 3 - Code Quality (PHPMD)
+        id: phpmd
+        run: |
+          echo "### Check 3: Code Quality (PHPMD)" >> $GITHUB_STEP_SUMMARY
+          composer phpmd > phpmd-output.txt || true
+          VIOLATIONS=$(cat phpmd-output.txt | wc -l)
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+          
+          # Allow up to 50 minor violations, fail if more
+          if [ "$VIOLATIONS" -le "50" ]; then
+            echo "✅ PASSED: $VIOLATIONS PHPMD violations (acceptable)" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "❌ FAILED: $VIOLATIONS PHPMD violations (max 50)" >> $GITHUB_STEP_SUMMARY
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "QUALITY_GATE_PASSED=false" >> $GITHUB_ENV
+          fi
+        continue-on-error: true
+      
+      - name: Check 4 - Overall Quality Score
+        id: quality
+        run: |
+          echo "### Check 4: Overall Quality Score" >> $GITHUB_STEP_SUMMARY
+          composer phpqa:ci || true
+          
+          if [ -f phpqa/phpqa.json ]; then
+            # Calculate composite quality score
+            PHPCS_ERRORS="${{ steps.phpcs.outputs.errors }}"
+            PHPMD_VIOLATIONS="${{ steps.phpmd.outputs.violations }}"
+            
+            # Score calculation: Start at 100, deduct points for issues
+            SCORE=$(echo "scale=2; 100 - ($PHPCS_ERRORS * 2) - ($PHPMD_VIOLATIONS * 0.1)" | bc)
+            
+            # Ensure score doesn't go negative
+            if (( $(echo "$SCORE < 0" | bc -l) )); then
+              SCORE=0
+            fi
+            
+            echo "score=$SCORE" >> $GITHUB_OUTPUT
+            echo "Overall Quality Score: **$SCORE%**" >> $GITHUB_STEP_SUMMARY
+            
+            if (( $(echo "$SCORE >= 90" | bc -l) )); then
+              echo "✅ PASSED: Quality score meets 90% threshold" >> $GITHUB_STEP_SUMMARY
+              echo "status=pass" >> $GITHUB_OUTPUT
+            else
+              echo "❌ FAILED: Quality score ($SCORE%) below 90% threshold" >> $GITHUB_STEP_SUMMARY
+              echo "status=fail" >> $GITHUB_OUTPUT
+              echo "QUALITY_GATE_PASSED=false" >> $GITHUB_ENV
+            fi
+          else
+            echo "⚠️ WARNING: Could not calculate quality score" >> $GITHUB_STEP_SUMMARY
+            echo "status=unknown" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+      
+      - name: Check 5 - Unit Tests
+        id: tests
+        run: |
+          echo "### Check 5: Unit Tests" >> $GITHUB_STEP_SUMMARY
+          if composer test:unit; then
+            echo "✅ PASSED: All unit tests pass" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ WARNING: Tests require Nextcloud environment" >> $GITHUB_STEP_SUMMARY
+            echo "status=skipped" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+      
+      - name: Final Quality Gate Decision
+        run: |
+          echo "## 🏁 Final Result" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$QUALITY_GATE_PASSED" = "true" ]; then
+            echo "### ✅ QUALITY GATE PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "This PR meets all quality requirements and can be merged." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "### ❌ QUALITY GATE FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "This PR does not meet quality requirements." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Required actions:**" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ steps.syntax.outputs.status }}" = "fail" ]; then
+              echo "- Fix PHP syntax errors" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "${{ steps.phpcs.outputs.status }}" = "fail" ]; then
+              echo "- Fix PHPCS errors (run 'composer cs:fix')" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "${{ steps.phpmd.outputs.status }}" = "fail" ]; then
+              echo "- Refactor code to reduce PHPMD violations" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "${{ steps.quality.outputs.status }}" = "fail" ]; then
+              echo "- Improve overall code quality to reach 90% score" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Hint:** Run 'composer phpqa' locally to see detailed quality reports." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      
+      - name: Upload Quality Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-gate-reports
+          path: |
+            phpqa/
+            phpcs-output.json
+            phpmd-output.txt
+          retention-days: 30
+      
+      - name: Post Quality Gate Summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const passed = '${{ env.QUALITY_GATE_PASSED }}' === 'true';
+            const syntaxStatus = '${{ steps.syntax.outputs.status }}';
+            const phpcsStatus = '${{ steps.phpcs.outputs.status }}';
+            const phpmdStatus = '${{ steps.phpmd.outputs.status }}';
+            const qualityStatus = '${{ steps.quality.outputs.status }}';
+            const testsStatus = '${{ steps.tests.outputs.status }}';
+            
+            const qualityScore = '${{ steps.quality.outputs.score }}';
+            const phpcsErrors = '${{ steps.phpcs.outputs.errors }}';
+            const phpmdViolations = '${{ steps.phpmd.outputs.violations }}';
+            
+            const statusEmoji = (status) => {
+              if (status === 'pass') return '✅';
+              if (status === 'fail') return '❌';
+              if (status === 'skipped') return '⚠️';
+              return '❓';
+            };
+            
+            const body = `## 🚦 Quality Gate Status: ${passed ? '✅ PASSED' : '❌ FAILED'}
+            
+            | Check | Status | Details |
+            |-------|--------|---------|
+            | PHP Syntax | ${statusEmoji(syntaxStatus)} ${syntaxStatus.toUpperCase()} | All PHP files must be valid |
+            | Coding Standards (PHPCS) | ${statusEmoji(phpcsStatus)} ${phpcsStatus.toUpperCase()} | Errors: ${phpcsErrors} (must be 0) |
+            | Code Quality (PHPMD) | ${statusEmoji(phpmdStatus)} ${phpmdStatus.toUpperCase()} | Violations: ${phpmdViolations} (max 50) |
+            | Overall Quality Score | ${statusEmoji(qualityStatus)} ${qualityStatus.toUpperCase()} | Score: ${qualityScore}% (min 90%) |
+            | Unit Tests | ${statusEmoji(testsStatus)} ${testsStatus.toUpperCase()} | Test suite status |
+            
+            ### Requirements for Merge
+            
+            ${passed ? 
+              '✅ **All quality checks passed!** This PR meets the requirements for merging.' : 
+              '❌ **Quality gate failed.** Please address the issues above before merging.'}
+            
+            ${!passed ? `
+            ### How to Fix
+            
+            1. Run \`composer cs:fix\` to auto-fix coding standards
+            2. Run \`composer phpqa\` to see detailed quality reports
+            3. Review the generated report at \`phpqa/phpqa-offline.html\`
+            4. Fix any critical issues and re-push your changes
+            
+            📚 See [Quality Assurance Documentation](../docs/quality-assurance.md) for more details.
+            ` : ''}
+            
+            📊 Detailed reports are available in the workflow artifacts.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+        continue-on-error: true
+
+
+

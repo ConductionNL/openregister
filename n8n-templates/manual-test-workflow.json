@@ -1,0 +1,68 @@
+{
+  "name": "PHPQA Test (Manual Only)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Click to Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [20, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {"name": "maxIterations", "value": 2},
+            {"name": "currentIteration", "value": 0}
+          ],
+          "string": [
+            {"name": "container", "value": "master-nextcloud-1"},
+            {"name": "appPath", "value": "/var/www/html/apps-extra/openregister"}
+          ]
+        }
+      },
+      "id": "set-config",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --report=summary --standard=PSR12 lib/ 2>&1 || true\""
+      },
+      "id": "run-phpcs",
+      "name": "Run PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcbf --standard=PSR12 lib/ 2>&1 || true\""
+      },
+      "id": "run-phpcbf",
+      "name": "Run PHPCBF",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Click to Start": {
+      "main": [[{"node": "Configuration"}]]
+    },
+    "Configuration": {
+      "main": [[{"node": "Run PHPCS"}]]
+    },
+    "Run PHPCS": {
+      "main": [[{"node": "Run PHPCBF"}]]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

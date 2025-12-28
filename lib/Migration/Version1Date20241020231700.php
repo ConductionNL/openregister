@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+
 /**
  * OpenRegister Migration
  *
@@ -22,6 +22,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
@@ -30,37 +31,48 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
+/**
+ * Migration step for creating audit trails table
+ */
+
 class Version1Date20241020231700 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions before schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end preSchemaChange()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Apply schema changes
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // create the openregister_logs table
-        if (!$schema->hasTable('openregister_audit_trails')) {
+        // Create the openregister_logs table.
+        if ($schema->hasTable('openregister_audit_trails') === false) {
             $table = $schema->createTable('openregister_audit_trails');
             $table->addColumn('id', Types::INTEGER, ['autoincrement' => true, 'notnull' => true]);
             $table->addColumn('uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
@@ -82,26 +94,27 @@ class Version1Date20241020231700 extends SimpleMigrationStep
             $table->addIndex(['uuid'], 'openregister_logs_uuid_index');
         }//end if
 
-        // Update the openregister_objects table
+        // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
-        if (!$table->hasColumn('text_representation')) {
+        if ($table->hasColumn('text_representation') === false) {
             $table->addColumn(name: 'text_representation', typeName: Types::TEXT, options: ['notnull' => false]);
         }
 
         return $schema;
-
     }//end changeSchema()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions after schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
-
-
 }//end class

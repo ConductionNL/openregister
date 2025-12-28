@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Organisation Hierarchy Migration
  *
@@ -22,14 +20,16 @@ declare(strict_types=1);
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author   Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version  GIT: <git_id>
+ * @version GIT: <git_id>
  *
- * @link     https://www.OpenRegister.nl
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -50,89 +50,95 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251110000000 extends SimpleMigrationStep
 {
-
     /**
      * Add parent column and constraints to organisations table
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return ISchemaWrapper|null Updated schema or null if no changes
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        $schema  = $schemaClosure();
         $updated = false;
 
-        $output->info('🏗️  Adding organisation hierarchy support...');
+        $output->info(message: '🏗️  Adding organisation hierarchy support...');
 
-        // ============================================================
-        // Add parent column to openregister_organisations
-        // ============================================================
-        if ($schema->hasTable('openregister_organisations')) {
+        // ============================================================.
+        // Add parent column to openregister_organisations.
+        // ============================================================.
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
-            
-            if (!$table->hasColumn('parent')) {
-                $output->info('  📝 Adding organisations.parent column for hierarchy support');
-                
-                $table->addColumn('parent', Types::STRING, [
-                    'notnull' => false,
-                    'length'  => 255,
-                    'default' => null,
-                    'comment' => 'Parent organisation UUID for hierarchical relationships',
-                ]);
-                
-                $output->info('    ✅ organisations.parent column added');
+
+            if ($table->hasColumn('parent') === false) {
+                $output->info(message: '  📝 Adding organisations.parent column for hierarchy support');
+
+                $table->addColumn(
+                    'parent',
+                    Types::STRING,
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                        'default' => null,
+                        'comment' => 'Parent organisation UUID for hierarchical relationships',
+                    ]
+                );
+
+                $output->info(message: '    ✅ organisations.parent column added');
                 $updated = true;
             } else {
-                $output->info('  ℹ️  organisations.parent column already exists');
+                $output->info(message: '  ℹ️  organisations.parent column already exists');
             }
-            
-            // Add index for fast parent lookups (used in recursive queries)
-            if (!$table->hasIndex('parent_organisation_idx')) {
-                $output->info('  📝 Adding index on parent column');
-                
+
+            // Add index for fast parent lookups (used in recursive queries).
+            if ($table->hasIndex('parent_organisation_idx') === false) {
+                $output->info(message: '  📝 Adding index on parent column');
+
                 $table->addIndex(['parent'], 'parent_organisation_idx');
-                
-                $output->info('    ✅ Index on parent column added');
+
+                $output->info(message: '    ✅ Index on parent column added');
                 $updated = true;
             } else {
-                $output->info('  ℹ️  Index on parent column already exists');
+                $output->info(message: '  ℹ️  Index on parent column already exists');
             }
         } else {
-            $output->warning('  ⚠️  organisations table not found - skipping hierarchy migration');
-        }
+            $output->warning(message: '  ⚠️  organisations table not found - skipping hierarchy migration');
+        }//end if
 
-        if ($updated) {
-            $output->info('');
-            $output->info('🎉 Organisation hierarchy support added successfully!');
-            $output->info('');
+        if ($updated === true) {
+            $output->info(message: '');
+            $output->info(message: '🎉 Organisation hierarchy support added successfully!');
+            $output->info(message: '');
             $output->info('📊 Summary:');
-            $output->info('   • Parent column added to organisations table');
-            $output->info('   • Index created for efficient parent lookups');
-            $output->info('   • Foreign key constraint will be handled at application level');
-            $output->info('');
+            $output->info(message: '   • Parent column added to organisations table');
+            $output->info(message: '   • Index created for efficient parent lookups');
+            $output->info(message: '   • Foreign key constraint will be handled at application level');
+            $output->info(message: '');
             $output->info('✨ Features enabled:');
-            $output->info('   • Parent-child organisation relationships');
-            $output->info('   • Children inherit parent resource access');
-            $output->info('   • Recursive parent chain lookups');
-            $output->info('   • Support for multi-level hierarchies (max 10 levels)');
-            $output->info('');
+            $output->info(message: '   • Parent-child organisation relationships');
+            $output->info(message: '   • Children inherit parent resource access');
+            $output->info(message: '   • Recursive parent chain lookups');
+            $output->info(message: '   • Support for multi-level hierarchies (max 10 levels)');
+            $output->info(message: '');
             $output->info('📖 Use Case Example:');
-            $output->info('   VNG (root) → Amsterdam → Deelgemeente Noord');
-            $output->info('   → Noord sees schemas from Amsterdam and VNG');
-            $output->info('');
+            $output->info(message: '   VNG (root) → Amsterdam → Deelgemeente Noord');
+            $output->info(message: '   → Noord sees schemas from Amsterdam and VNG');
+            $output->info(message: '');
         } else {
-            $output->info('');
-            $output->info('ℹ️  No changes needed - organisation hierarchy already configured');
+            $output->info(message: '');
+            $output->info(message: 'ℹ️  No changes needed - organisation hierarchy already configured');
+        }//end if
+
+        if ($updated === true) {
+            return $schema;
         }
 
-        return $updated === true ? $schema : null;
-
+        return null;
     }//end changeSchema()
-
 
     /**
      * Post-schema change operations
@@ -142,25 +148,23 @@ class Version1Date20251110000000 extends SimpleMigrationStep
      * self-referencing foreign keys. The constraint is enforced at application
      * level in OrganisationMapper::validateParentAssignment().
      *
-     * @param IOutput $output Migration output interface
+     * @param IOutput $output        Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options Migration options
+     * @param array   $options       Migration options
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info('');
+        $output->info(message: '');
         $output->info('ℹ️  Post-migration notes:');
-        $output->info('   • Foreign key constraint enforced at application level');
+        $output->info(message: '   • Foreign key constraint enforced at application level');
         $output->info('   • Circular reference prevention: max depth 10 levels');
-        $output->info('   • If parent organisation is deleted, parent field will be set to NULL');
-        $output->info('   • All existing organisations have parent = NULL (no hierarchy)');
-        $output->info('');
-        $output->info('✅ Migration completed successfully');
-
+        $output->info(message: '   • If parent organisation is deleted, parent field will be set to NULL');
+        $output->info(message: '   • All existing organisations have parent = NULL (no hierarchy)');
+        $output->info(message: '');
+        $output->info(message: '✅ Migration completed successfully');
     }//end postSchemaChange()
-
-
 }//end class
-

@@ -24,6 +24,16 @@
 					<FileTreeOutline :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/entities')" :name="t('openregister', 'Entities')" @click="handleNavigate('/entities')">
+				<template #icon>
+					<AccountOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/templates')" :name="t('openregister', 'Templates')" @click="handleNavigate('/templates')">
+				<template #icon>
+					<FileOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/tables')" :name="t('openregister', 'Search / Views')" @click="handleNavigate('/tables')">
 				<template #icon>
 					<Magnify :size="20" />
@@ -82,6 +92,16 @@
 					<MagnifyPlus :size="20" />
 				</template>
 			</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/webhooks')" :name="t('openregister', 'Webhooks')" @click="handleNavigate('/webhooks')">
+			<template #icon>
+				<Webhook :size="20" />
+			</template>
+		</NcAppNavigationItem>
+		<NcAppNavigationItem :active="$route.path.startsWith('/endpoints')" :name="t('openregister', 'Endpoints')" @click="handleNavigate('/endpoints')">
+			<template #icon>
+				<Api :size="20" />
+			</template>
+		</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>
@@ -111,6 +131,10 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
+import Webhook from 'vue-material-design-icons/Webhook.vue'
+import Api from 'vue-material-design-icons/Api.vue'
+import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
+import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 
 // Store
 import { organisationStore } from '../store/store.js'
@@ -139,6 +163,10 @@ export default {
 		DeleteRestore,
 		TextBoxOutline,
 		MagnifyPlus,
+		Webhook,
+		Api,
+		AccountOutline,
+		FileOutline,
 	},
 	computed: {
 		/**
@@ -167,3 +195,38 @@ export default {
 	},
 }
 </script>
+
+<style scoped>
+/* Ensure navigation doesn't scroll and settings stay at bottom */
+:deep(.app-navigation) {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+}
+
+:deep(.app-navigation__list) {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	/* Hide scrollbar but keep scrolling functionality */
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
+}
+
+:deep(.app-navigation__list::-webkit-scrollbar) {
+	display: none; /* Chrome, Safari, Opera */
+}
+
+:deep(.app-navigation__settings) {
+	flex-shrink: 0;
+	margin-top: auto;
+	/* Hide scrollbar but keep scrolling functionality */
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
+}
+
+:deep(.app-navigation__settings::-webkit-scrollbar) {
+	display: none; /* Chrome, Safari, Opera */
+}
+</style>

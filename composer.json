@@ -28,12 +28,23 @@
 			"@composer bin all update --ansi"
 		],
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
+		"check:named-args": "php scripts/check-named-arguments.php --path=lib",
+		"fix:named-args": "php scripts/fix-named-arguments.php --path=lib",
+		"fix:named-args:dry-run": "php scripts/fix-named-arguments.php --dry-run --path=lib",
 		"cs:check": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"cs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
 		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"phpcs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
+		"phpcs:output": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ 2>/dev/null | tail -1 > phpcs-output.json",
 		"psalm": "psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
+		"psalm:fix": "psalm --threads=1 --no-cache --alter || echo 'Psalm not installed, skipping...'",
+		"psalm:output": "psalm --threads=1 --no-cache --output-format=json 2>/dev/null | tail -1 > psalm-output.json || echo 'Psalm not installed, skipping...'",
+		"phpstan": "php phpstan.phar analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
 		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
+		"phpmetrics": "./vendor/bin/phpmetrics --report-html=phpmetrics lib/",
+		"phpmetrics:json": "./vendor/bin/phpmetrics --report-json=phpmetrics/report.json lib/",
+		"phpmetrics:csv": "./vendor/bin/phpmetrics --report-csv=phpmetrics/report.csv lib/",
+		"phpmetrics:violations": "./vendor/bin/phpmetrics --violations-xml=phpmetrics/violations.xml lib/",
 		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
 		"test:integration": "./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
 		"test:db": "./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
@@ -47,32 +58,53 @@
 		"quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
 		"quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
 		"quality:psalm-score": "psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
+		"quality:phpstan-score": "php phpstan.phar analyse --memory-limit=1G --error-format=json --no-progress | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = \\$json['totals']['file_errors'] ?? 0; \\$score = 1000 - (\\$errors * 5); echo 'PHPStan Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'PHPStan not available'",
 		"quality:score": [
 			"@quality:phpcs-score",
 			"@quality:phpmd-score",
-			"@quality:psalm-score"
+			"@quality:psalm-score",
+			"@quality:phpstan-score"
 		],
 		"quality:baseline": "php scripts/quality-baseline.php",
 		"openapi": "generate-spec",
 		"check": [
 			"@lint",
+			"@check:named-args",
+			"@phpcs",
 			"@psalm",
 			"@test:unit"
 		],
 		"check:full": [
 			"@lint",
+			"@check:named-args",
+			"@phpcs",
 			"@psalm",
+			"@phpstan",
 			"@test:all"
 		],
 		"check:strict": [
 			"@lint",
+			"@check:named-args",
 			"@phpcs",
 			"@phpmd",
 			"@psalm",
+			"@phpstan",
 			"@test:all"
 		],
 		"fix": [
 			"@cs:fix"
+		],
+		"grumphp": "./vendor/bin/grumphp run",
+		"grumphp:init": "./vendor/bin/grumphp git:init",
+		"grumphp:deinit": "./vendor/bin/grumphp git:deinit",
+		"phpqa": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa",
+		"phpqa:full": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa --tools phpcs:0,phpmd:0,phploc:0,phpmetrics,phpcpd:0,parallel-lint:0",
+		"phpqa:ci": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa --tools phpcs,phpmd,phploc,phpmetrics,phpcpd,parallel-lint",
+		"qa:check": [
+			"@phpqa"
+		],
+		"qa:full": [
+			"@phpqa:full"
 		]
 	},
 	"require": {
@@ -93,8 +125,12 @@
 		"twig/twig": "^3.18"
 	},
 	"require-dev": {
+		"edgedesign/phpqa": "^1.27",
+		"nextcloud/coding-standard": "^1.4",
+		"nextcloud/ocp": "^31.0",
 		"phpcsstandards/phpcsextra": "^1.4",
 		"phpmd/phpmd": "^2.15",
+		"phpmetrics/phpmetrics": "^2.8",
 		"phpunit/phpunit": "^10.5",
 		"roave/security-advisories": "dev-latest",
 		"squizlabs/php_codesniffer": "^3.9",
@@ -104,7 +140,8 @@
 		"allow-plugins": {
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"phpro/grumphp": true
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,

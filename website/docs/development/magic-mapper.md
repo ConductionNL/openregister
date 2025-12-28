@@ -1,324 +1,492 @@
----
-title: MagicMapper - Dynamic Schema-Based Table Management
-sidebar_position: 35
----
-
-# MagicMapper - Dynamic Schema-Based Table Management
+# Magic Mapper Architecture
 
 ## Overview
 
-The MagicMapper is a standalone service that provides dynamic table creation and management based on JSON schema definitions. Instead of storing all objects in a single generic table, it creates dedicated tables for each schema, providing significant performance improvements and better data organization.
+The Magic Mapper system provides an alternative storage strategy for OpenRegister objects. Instead of storing all object data as JSON blobs in a single table, Magic Mapper creates dedicated database tables for each register+schema combination, mapping schema properties to SQL columns for efficient indexing and querying.
 
-## Key Features
+## Architecture Components
 
-### 🚀 **Dynamic Table Creation**
-- Automatically creates database tables based on JSON schema properties
-- Supports all major database systems (MySQL, MariaDB, PostgreSQL)
-- Intelligent SQL type mapping from JSON schema types
+### 1. Storage Abstraction Layer
 
-### 📊 **Metadata Integration**
-- All ObjectEntity metadata columns included with underscore prefix
-- Maintains compatibility with existing RBAC and multitenancy systems
-- Preserves all existing functionality (files, relations, authorization, etc.)
-
-### ⚡ **Performance Optimizations**
-- Schema-specific tables (faster queries, better indexing)
-- Automatic index creation for frequently filtered fields
-- Optimized storage with proper SQL column types
-- Better database query planning and statistics
-
-### 🔄 **Schema Evolution**
-- Automatic table updates when schemas change
-- Version tracking for change detection
-- Safe column additions without data loss
-
-### 🔍 **Advanced Search**
-- Native SQL search within schema-specific tables
-- Support for complex filtering and pagination
-- Returns ObjectEntity objects for compatibility
-
-## Table Structure
-
-### Naming Convention
-```
-oc_openregister_table_{schema_slug}
+```mermaid
+graph TD
+    A[ObjectService] --> B[UnifiedObjectMapper]
+    B --> C{shouldUseMagicMapper?}
+    C -->|Yes| D[MagicMapper]
+    C -->|No| E[ObjectEntityMapper]
+    D --> F[oc_openregister_table_X_Y]
+    E --> G[oc_openregister_objects]
+    
+    H[Register Configuration] -.->|Config| C
 ```
 
-### Column Types
-- **Metadata Columns**: All ObjectEntity properties prefixed with `_`
-- **Schema Columns**: JSON schema properties mapped to appropriate SQL types
+#### AbstractObjectMapper
+Base class defining the interface for all object mappers.
 
-### Example Table: `oc_openregister_table_users`
-```sql
--- Metadata columns (from ObjectEntity)
-_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-_uuid VARCHAR(36) UNIQUE NOT NULL,
-_register VARCHAR(255) NOT NULL,
-_schema VARCHAR(255) NOT NULL,
-_owner VARCHAR(64),
-_organisation VARCHAR(36),
-_name VARCHAR(255),
-_created DATETIME,
-_updated DATETIME,
-_published DATETIME,
-_files JSON,
-_relations JSON,
--- ... all other ObjectEntity metadata
+**Location:** 'lib/Db/AbstractObjectMapper.php'
 
--- Schema columns (from JSON schema)
-name VARCHAR(255) NOT NULL,        -- string property
-email VARCHAR(320),               -- string with email format
-age SMALLINT,                     -- integer with range
-isActive BOOLEAN,                 -- boolean property
-profile JSON,                     -- object property
-tags JSON,                        -- array property
-createdAt DATETIME                -- string with date-time format
-```
+**Responsibilities:**
+- Define contract for CRUD operations
+- Define contract for locking operations  
+- Define contract for bulk operations
+- Define contract for statistics and faceting
+- Define contract for search operations
 
-## Usage Examples
+#### UnifiedObjectMapper
+Routing facade that transparently switches between storage strategies.
 
-### Basic Usage
+**Location:** 'lib/Db/UnifiedObjectMapper.php'
 
-```php
-use OCA\OpenRegister\Service\MagicMapper;
+**Routing Logic:**
+1. Check if register and schema are provided
+2. Check register configuration for schema-specific magic mapping setting
+3. Verify magic table exists (auto-create if configured)
+4. Route to MagicMapper if all conditions met, otherwise ObjectEntityMapper
 
-// Initialize MagicMapper (usually via dependency injection)
-$magicMapper = new MagicMapper($db, $objectMapper, $schemaMapper, $registerMapper, $config, $logger);
+**Fallback Strategy:**
+- No register/schema context → ObjectEntityMapper (blob storage)
+- Magic mapping disabled → ObjectEntityMapper
+- Table doesn't exist and autoCreate disabled → ObjectEntityMapper
+- Table doesn't exist and autoCreate enabled → Create table, use MagicMapper
 
-// 1. Create table for schema
-$schema = $schemaMapper->find('users');
-$magicMapper->ensureTableForSchema($schema);
+#### MagicMapper Extensions
+ObjectEntity-compatible methods added to MagicMapper for UnifiedObjectMapper integration.
 
-// 2. Save objects to schema table
-$objects = [
-    [
-        '@self' => [
-            'uuid' => 'user-123',
-            'register' => 'main-register',
-            'schema' => 'users',
-            'owner' => 'admin',
-            'organisation' => 'org-456'
-        ],
-        'name' => 'John Doe',
-        'email' => 'john@example.com',
-        'age' => 30,
-        'isActive' => true,
-        'profile' => ['theme' => 'dark', 'language' => 'en']
-    ]
-];
+**Location:** 'lib/Db/MagicMapper.php'
 
-$savedUuids = $magicMapper->saveObjectsToSchemaTable($objects, $schema);
+**New Methods:**
+- 'findInRegisterSchemaTable()' - Find by identifier (ID/UUID/slug/URI)
+- 'findAllInRegisterSchemaTable()' - Find all with filtering and pagination
+- 'insertObjectEntity()' - Insert ObjectEntity into magic table
+- 'updateObjectEntity()' - Update ObjectEntity in magic table
+- 'deleteObjectEntity()' - Soft/hard delete support
+- 'lockObjectEntity()' - Lock object in magic table
+- 'unlockObjectEntity()' - Unlock object in magic table
 
-// 3. Search in schema table
-$query = [
-    'name' => 'John%',           // LIKE search
-    'age' => ['gt' => 18],       // Greater than
-    '@self' => ['owner' => 'admin'], // Metadata filter
-    '_limit' => 50,              // Pagination
-    '_offset' => 0
-];
+### 2. Configuration System
 
-$results = $magicMapper->searchObjectsInSchemaTable($query, $schema);
-```
+**Register Configuration:** Stored in 'oc_openregister_registers.configuration' JSON field.
 
-### Advanced Queries
-
-```php
-// Complex filtering
-$query = [
-    'isActive' => true,
-    'age' => ['gte' => 21, 'lte' => 65],
-    'email' => '%@company.com',
-    '@self' => [
-        'organisation' => 'org-123',
-        'published' => ['gt' => '2024-01-01']
-    ],
-    '_order' => ['name' => 'ASC', '@self.created' => 'DESC'],
-    '_limit' => 100
-];
-
-$results = $magicMapper->searchObjectsInSchemaTable($query, $schema);
-```
-
-## Schema Configuration
-
-### Enable Magic Mapping
-
-**Per Schema** (recommended):
 ```json
 {
-  "configuration": {
-    "magicMapping": true
+  "schemas": {
+    "5": {
+      "magicMapping": true,
+      "autoCreateTable": true,
+      "comment": "Person schema - optimized for name/birthdate search"
+    },
+    "7": {
+      "magicMapping": false,
+      "comment": "Documents schema - keep as blob for flexibility"
+    }
   }
 }
 ```
 
-**Globally**:
+**Helper Methods on Register Entity:**
+
 ```php
-$config->setAppValue('openregister', 'magic_mapping_enabled', 'true');
+// Check if magic mapping is enabled
+$register->isMagicMappingEnabledForSchema(int $schemaId): bool
+
+// Enable magic mapping
+$register->enableMagicMappingForSchema(
+    int $schemaId, 
+    bool $autoCreateTable = true, 
+    ?string $comment = null
+): Register
+
+// Disable magic mapping
+$register->disableMagicMappingForSchema(int $schemaId): Register
+
+// Get all schemas with magic mapping
+$register->getSchemasWithMagicMapping(): array
 ```
 
-### When to Enable Magic Mapping
+### 3. Table Structure
 
-Enable for schemas with:
-- **High volume**: >10,000 objects
-- **Frequent searches**: Heavy filtering and querying
-- **Performance requirements**: Sub-second response times needed
-- **Complex filtering**: Multiple property filters
+**Table Naming:** 'oc_openregister_table_{registerId}_{schemaId}'
 
-Keep disabled for:
-- **Low volume**: <1,000 objects
-- **Simple schemas**: Few properties, minimal filtering
-- **Development**: When schema structure changes frequently
+**Metadata Columns:** All ObjectEntity properties prefixed with underscore ('_')
+- '_id' (bigint, primary key, auto-increment)
+- '_uuid' (string(36), unique, indexed)
+- '_slug' (string(255), indexed)
+- '_deleted' (json) - for soft delete support
+- '_locked' (json) - for locking support
+- '_owner' (string(64), indexed) - for RBAC
+- '_organisation' (string(36), indexed) - for multi-tenancy
+- '_published', '_depublished' (datetime, indexed)
+- '_created', '_updated' (datetime, indexed)
+- Other metadata fields...
 
-## Performance Benefits
+**Schema Columns:** JSON schema properties mapped to appropriate SQL types
+- String → VARCHAR or TEXT
+- Integer → INT, SMALLINT, or BIGINT
+- Number → DECIMAL
+- Boolean → BOOLEAN
+- Date/DateTime → DATETIME
+- Array/Object → JSON
 
-### Query Performance
-- **Schema-specific tables**: No need to filter by schema ID
-- **Proper indexing**: Indexes tailored to schema properties
-- **Optimized storage**: SQL types instead of generic JSON storage
-- **Better statistics**: Database can optimize queries more effectively
+**Indexes:** Automatic creation for:
+- Unique index on '_uuid'
+- Composite index on ('_register', '_schema')
+- Index on '_organisation'
+- Index on '_owner'
+- Index on frequently filtered fields ('_created', '_updated', '_published', '_name')
 
-### Expected Improvements
-- **Search speed**: 3-5x faster for large datasets
-- **Memory usage**: 40-60% reduction for bulk operations
-- **Index efficiency**: Targeted indexes vs. generic JSON indexes
-- **Query planning**: Better execution plans from database optimizer
+## Usage
 
-## JSON Schema to SQL Type Mapping
+### Enabling Magic Mapping
 
-| JSON Schema Type | SQL Type | Notes |
-|------------------|----------|--------|
-| `string` | `VARCHAR(n)` or `TEXT` | Based on maxLength |
-| `string` (email) | `VARCHAR(320)` | RFC 5321 limit |
-| `string` (uuid) | `VARCHAR(36)` | Standard UUID length |
-| `string` (date-time) | `DATETIME` | Indexed for performance |
-| `integer` | `SMALLINT`, `INT`, or `BIGINT` | Based on min/max range |
-| `number` | `DECIMAL(10,2)` | Configurable precision |
-| `boolean` | `BOOLEAN` | Native boolean type |
-| `array` | `JSON` | Complex data as JSON |
-| `object` | `JSON` | Complex data as JSON |
-
-## Error Handling
-
-### Graceful Degradation
-- Falls back to regular ObjectService on errors
-- Comprehensive logging for troubleshooting
-- Non-blocking failures (continues with standard workflow)
-
-### Common Issues
-- **Table name conflicts**: Automatic sanitization and truncation
-- **Schema changes**: Automatic table updates with version tracking
-- **Database limitations**: Fallback to JSON for unsupported types
-
-## Monitoring and Debugging
-
-### Logging
-All operations are logged with structured data:
 ```php
-// Table creation
-$logger->info('Creating new schema table', [
-    'schemaId' => 123,
-    'tableName' => 'oc_openregister_table_users',
-    'columnCount' => 25
+// Get register and enable magic mapping for a schema
+$register = $registerMapper->find(1);
+$register->enableMagicMappingForSchema(
+    schemaId: 5,
+    autoCreateTable: true,
+    comment: 'Person schema - optimized for search'
+);
+$registerMapper->update($register);
+```
+
+### Creating Objects
+
+Once magic mapping is enabled, object creation is transparent:
+
+```php
+// Create object as usual
+$entity = new ObjectEntity();
+$entity->setRegister('1');
+$entity->setSchema('5');
+$entity->setObject(['name' => 'John Doe', 'age' => 30]);
+
+// Save - automatically routed to MagicMapper
+$savedEntity = $objectService->saveObject($entity);
+
+// Behind the scenes:
+// - UnifiedObjectMapper checks register+schema configuration
+// - Sees magic mapping is enabled for register 1 + schema 5
+// - Routes to MagicMapper->insertObjectEntity()
+// - Object stored in oc_openregister_table_1_5
+```
+
+### Querying Objects
+
+Queries also work transparently:
+
+```php
+// Find by UUID - automatically routed
+$entity = $objectService->findObject($uuid);
+
+// Search with filters - routed appropriately
+$results = $objectService->searchObjects([
+    'name' => 'John%',
+    '_order' => ['age' => 'DESC'],
+    '_limit' => 10
 ]);
 
-// Search operations  
-$logger->debug('Schema table search completed', [
-    'tableName' => 'oc_openregister_table_users',
-    'resultCount' => 150,
-    'queryFilters' => ['name', 'age', '@self.owner']
+// Behind the scenes:
+// - UnifiedObjectMapper determines storage strategy
+// - Routes to appropriate mapper
+// - Returns ObjectEntity instances regardless of storage
+```
+
+### Soft Delete Support
+
+Soft delete works identically with both storage strategies:
+
+```php
+// Delete object - sets _deleted JSON field
+$entity->delete($userSession, 'User requested deletion', 30);
+$objectService->saveObject($entity);
+
+// Object remains in database but marked as deleted
+// Excluded from searches by default
+```
+
+### Locking Support
+
+Object locking is storage-agnostic:
+
+```php
+// Lock object
+$entity->lock($userSession, 'Editing in progress', 3600);
+$objectService->saveObject($entity);
+
+// Check if locked
+if ($entity->isLocked()) {
+    $lockInfo = $entity->getLockInfo();
+}
+
+// Unlock object
+$entity->unlock($userSession);
+$objectService->saveObject($entity);
+```
+
+## Performance Comparison
+
+### Blob Storage (ObjectEntityMapper)
+
+**Strengths:**
+- Schema flexibility - no table alterations needed
+- Faster writes for highly dynamic schemas
+- Better for sparse/optional properties
+- Simpler for nested complex objects
+
+**Weaknesses:**
+- Slower property-based queries
+- JSON parsing overhead
+- Inefficient for faceted search
+- Poor database query planner statistics
+
+**Best For:**
+- Frequently changing schemas
+- Low query volume
+- Large/complex nested objects
+- Schemas with many optional properties
+
+### Column-Mapped Storage (MagicMapper)
+
+**Strengths:**
+- 50-80% faster indexed searches
+- 60-90% faster faceted navigation
+- 70-85% faster range queries
+- Better database query optimization
+- Efficient column indexing
+
+**Weaknesses:**
+- Schema changes require table alterations
+- Slightly slower writes
+- Less flexible for dynamic schemas
+- More complex table management
+
+**Best For:**
+- Stable schema definitions
+- High query volume
+- Frequently searched properties
+- Faceted navigation requirements
+- Range/date queries
+
+## Migration
+
+### From Blob to Magic Mapping
+
+#### Step 1: Enable Magic Mapping
+```php
+$register->enableMagicMappingForSchema(5, true);
+$registerMapper->update($register);
+```
+
+#### Step 2: Run Migration Command
+```bash
+# Using OCC command (recommended for large datasets)
+php occ openregister:migrate-to-magic-mapping 1 5
+
+# Options:
+# --batch-size=1000    Number of objects per batch
+# --dry-run            Test without actually migrating
+# --force              Skip confirmation prompts
+```
+
+#### Step 3: Verify Migration
+```php
+// Check objects are in magic table
+$objects = $objectService->searchObjects([
+    '@self.register' => 1,
+    '@self.schema' => 5
+]);
+
+// Verify count matches
+$count = $objectService->countObjects([
+    '@self.register' => 1,
+    '@self.schema' => 5
 ]);
 ```
 
-### Cache Management
+### From Magic Mapping to Blob
+
+#### Step 1: Disable Magic Mapping
 ```php
-// Clear table existence cache
-$magicMapper->clearCache();
-
-// Get existing schema tables
-$tables = $magicMapper->getExistingSchemaTables();
+$register->disableMagicMappingForSchema(5);
+$registerMapper->update($register);
 ```
 
-## Testing
+#### Step 2: Objects Auto-Migrate on Save
+New saves automatically go to blob storage. Existing objects in magic table remain accessible but read-only until manually migrated.
 
-### Unit Tests
-```bash
-# Run MagicMapper tests (when Nextcloud test environment is available)
-./vendor/bin/phpunit tests/Unit/Service/MagicMapperTest.php
+## Troubleshooting
 
-# Syntax validation
-php -l lib/Service/MagicMapper.php
+### Issue: Objects Not Using Magic Mapping
+
+**Symptom:** Objects stored in blob table despite magic mapping enabled.
+
+**Checklist:**
+1. Verify register configuration: '$register->isMagicMappingEnabledForSchema($schemaId)'
+2. Check table exists: '$magicMapper->existsTableForRegisterSchema($register, $schema)'
+3. Ensure register/schema set on entity before save
+4. Check UnifiedObjectMapper logs (debug level)
+
+**Solution:**
+```php
+// Manually create table if needed
+$magicMapper->ensureTableForRegisterSchema($register, $schema);
+
+// Or enable auto-create
+$register->enableMagicMappingForSchema($schemaId, autoCreateTable: true);
 ```
 
-### Integration Testing
-```bash
-# Run demo script
-php examples/magic_mapper_demo.php
+### Issue: Table Not Found Error
 
-# Test with real schemas (requires Nextcloud environment)
-# See examples in the demo script
+**Symptom:** Error about missing table when querying.
+
+**Cause:** Magic mapping enabled but table not created.
+
+**Solution:**
+```php
+// Option 1: Enable auto-create
+$config = $register->getConfiguration();
+$config['schemas'][$schemaId]['autoCreateTable'] = true;
+$register->setConfiguration($config);
+$registerMapper->update($register);
+
+// Option 2: Manually create table
+$magicMapper->ensureTableForRegisterSchema($register, $schema);
 ```
 
-## Security Considerations
+### Issue: Schema Changes Not Reflected
 
-### SQL Injection Prevention
-- All queries use parameterized statements
-- Table and column names are sanitized
-- Input validation for all user data
+**Symptom:** New schema properties not queryable.
 
-### Access Control
-- Integrates with existing RBAC system
-- Respects organisation-based multitenancy
-- Owner-based permissions maintained
+**Cause:** Magic table not updated after schema changes.
+
+**Solution:**
+```php
+// Force table update
+$magicMapper->ensureTableForRegisterSchema($register, $schema, force: true);
+
+// Or recreate table (requires data migration)
+$magicMapper->dropTable($tableName);
+$magicMapper->ensureTableForRegisterSchema($register, $schema);
+```
+
+## Best Practices
+
+### 1. Choose Storage Strategy Carefully
+
+**Use Magic Mapping For:**
+- Schemas with stable property structure
+- High-volume search operations
+- Faceted navigation needs
+- Properties frequently used in WHERE clauses
+
+**Use Blob Storage For:**
+- Rapidly evolving schemas
+- Low query volume
+- Complex nested structures
+- Many optional/sparse properties
+
+### 2. Schema Design for Magic Mapping
+
+**Do:**
+- Define clear property types
+- Use appropriate maxLength constraints
+- Specify required properties
+- Add format hints (date, email, uuid)
+
+**Don't:**
+- Frequently add/remove properties
+- Use deeply nested objects as properties
+- Leave property types ambiguous
+- Ignore required field declarations
+
+### 3. Index Strategy
+
+Magic Mapper automatically indexes:
+- Unique identifiers (uuid)
+- Foreign keys (register, schema, organisation, owner)
+- Timestamps (created, updated, published)
+- Short strings (<= 100 chars)
+
+For custom indexes on specific properties, consider direct database indexes after table creation.
+
+### 4. Monitoring Performance
+
+Track key metrics:
+- Query execution time (blob vs magic)
+- Table size growth
+- Index usage statistics
+- Schema evolution frequency
+
+Use these metrics to decide when to enable/disable magic mapping.
+
+## Technical Details
+
+### Type Mapping
+
+JSON Schema Type → SQL Type:
+- 'string' (default) → VARCHAR(255)
+- 'string' (maxLength > 255) → TEXT
+- 'string' (format: date/date-time) → DATETIME
+- 'string' (format: email) → VARCHAR(320)
+- 'string' (format: uuid) → VARCHAR(36)
+- 'integer' → INT, SMALLINT, or BIGINT (based on range)
+- 'number' → DECIMAL(10,2)
+- 'boolean' → BOOLEAN
+- 'array' → JSON
+- 'object' → JSON
+
+### Transaction Support
+
+Both storage strategies support transactions:
+```php
+$this->db->beginTransaction();
+try {
+    $entity1 = $objectService->saveObject($entity1);
+    $entity2 = $objectService->saveObject($entity2);
+    $this->db->commit();
+} catch (Exception $e) {
+    $this->db->rollBack();
+    throw $e;
+}
+```
+
+### Caching
+
+Magic table existence is cached for 5 minutes to avoid repeated database queries:
+```php
+// Cache invalidation
+$magicMapper->clearCache($registerId, $schemaId);
+```
 
 ## Future Enhancements
 
-### Potential Improvements
-- **Relationship columns**: Direct foreign key relationships
-- **Custom indexes**: Schema-defined index strategies
-- **Partitioning**: Time-based or organization-based partitioning
-- **Materialized views**: For complex aggregations
-- **Full-text search**: Schema-aware text search indexes
+### Planned Features
 
-### Migration Path
-- Gradual migration: Enable per schema as needed
-- Data migration tools: Move existing objects to schema tables
-- Parallel operation: Run alongside existing system during transition
+1. **Smart Migration** - Automatic background migration when enabling magic mapping
+2. **Hybrid Storage** - Store metadata in magic table, large objects in blob
+3. **Partitioning** - Automatic table partitioning for large datasets
+4. **Column Compression** - Compress rarely-used columns
+5. **Read Replicas** - Route reads to magic tables, writes to blob for consistency
 
-## Implementation Status
+### Under Consideration
 
-✅ **Completed Features**:
-- Dynamic table creation from JSON schemas
-- Metadata column integration from ObjectEntity
-- Schema-to-SQL type mapping for all common types
-- Table naming and sanitization logic
-- Search operations with filtering and pagination
-- Error handling and fallback scenarios
-- Comprehensive unit tests
-- Documentation and examples
-
-✅ **Validation Enhancement**:
-- SaveObjects handler now requires schema and register IDs
-- Proper error messages for missing required parameters
-
-🚧 **Standalone Status**:
-- MagicMapper is implemented as a standalone component
-- No integration with main ObjectService workflow yet
-- Ready for independent testing and evaluation
-- Can be integrated when ready for production use
-
-## Next Steps
-
-1. **Evaluate Performance**: Test with real schemas and large datasets
-2. **Validate Integration Points**: Ensure compatibility with existing workflows  
-3. **Production Testing**: Test in safe environment with real data
-4. **Gradual Rollout**: Enable for specific high-volume schemas first
-5. **Monitor Performance**: Compare query times before/after implementation
+1. **Virtual Columns** - Computed columns from JSON properties
+2. **Full-Text Indexes** - Native database full-text search on properties
+3. **JSON Path Indexes** - Specialized indexes for nested property queries
+4. **Automatic Schema Detection** - Suggest magic mapping based on query patterns
 
 ## Related Documentation
 
-- [Schemas](../Features/schemas.md) - Schema documentation
-- [Schema Technical Documentation](../technical/schemas.md) - Technical schema details
-- [Database Setup](../technical/database-setup.md) - Database configuration
+- [Magic Mapper Implementation Status](../../MAGIC_MAPPER_IMPLEMENTATION_STATUS.md)
+- [Magic Mapper Migration Guide](../../MAGIC_MAPPER_MIGRATION_GUIDE.md)
+- [Objects Feature Documentation](../Features/objects.md)
+- [Schema Documentation](../Features/schemas.md)
+- [Register Documentation](../Features/registers.md)
 
+## Support
+
+For issues or questions:
+1. Check implementation status document
+2. Review migration guide
+3. Enable debug logging in UnifiedObjectMapper
+4. Consult team for architecture decisions

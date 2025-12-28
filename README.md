@@ -19,6 +19,8 @@ Registers can also apply additional logic to objects, such as validation that is
 - 🛡️ **Validation**: Validate objects against their types.
 - 🏢 **Multi-Tenancy**: Complete organisation-based data isolation with user management and role-based access control.
 - 🔍 **SOLR Integration**: Enhanced search capabilities with improved metadata handling and configuration management.
+- 🔍 **PostgreSQL Search**: Built-in vector search (pgvector) and full-text search (pg_trgm) - no external search engine required!
+- 🧮 **Vector Embeddings**: Native vector storage and similarity search in PostgreSQL for semantic search capabilities.
 - 🔧 **Self-Metadata Handling**: Advanced metadata processing for better data organization and retrieval.
 - 💾 **Flexible Storage**: Store objects in Nextcloud, external databases, or object stores.
 - 🔄 **APIs**: Provide APIs for consumption.
@@ -40,6 +42,7 @@ Detailed technical and user documentation for all features is available in the f
 
 **Search & Discovery:**
 - [Search](website/docs/Features/search.md) - Full-text search, case-insensitive search, metadata filtering, ordering
+- [PostgreSQL Search](website/docs/development/postgresql-search.md) - Vector search and full-text search using PostgreSQL extensions
 - [Faceting](website/docs/Features/faceting.md) - Automatic facets, UUID resolution, dynamic filtering
 - [Search Trails](website/docs/Features/search-trails.md) - Search history and analytics
 
@@ -98,11 +101,11 @@ Open Register makes these principles accessible to any organization by providing
 
 | Feature | Description | Benefits |
 |---------|-------------|-----------|
-| 🔍 [Content Search](website/docs/content-search.md) | Full-text search across objects and files with SOLR | Quick discovery, unified search, advanced filtering |
+| 🔍 [Content Search](website/docs/content-search.md) | Full-text and vector search with PostgreSQL (pgvector + pg_trgm) | Quick discovery, unified search, no external dependencies |
 | 🏷️ [Automatic Facets](website/docs/automatic-facets.md) | Dynamic filtering based on object properties | Intuitive navigation, pattern discovery, smart filtering |
 | 🔍 [Advanced Search](website/docs/advanced-search.md) | Filter objects using flexible property-based queries | Precise filtering, complex conditions, efficient results |
-| 🤖 **Semantic Search** | AI-powered semantic search across objects and files | Find by meaning, not just keywords, better discovery |
-| 🧮 **Vector Embeddings** | Automatic vectorization of objects and files | Enable semantic search, similarity matching, content understanding |
+| 🤖 **Semantic Search** | AI-powered semantic search using PostgreSQL vector search | Find by meaning, not just keywords, better discovery |
+| 🧮 **Vector Embeddings** | Automatic vectorization stored in PostgreSQL with pgvector | Enable semantic search, similarity matching, native storage |
 | ✍️ **Text Generation** | AI-powered content generation and completion | Automated documentation, content creation, efficiency |
 | 📋 **Document Summarization** | Automatic summarization of documents and objects | Quick insights, time savings, overview generation |
 | 🌍 **Translation** | Multi-language content translation | Accessibility, international reach, localization |
@@ -130,13 +133,15 @@ Open Register includes powerful AI capabilities powered by Large Language Models
 - Search across objects and files simultaneously
 - Understand context and intent
 - More accurate results than traditional keyword search
+- Powered by PostgreSQL pgvector extension
 
 **🧮 Vector Embeddings**
 - Automatic vectorization of objects on creation/update
 - Automatic vectorization of files on upload (text extraction → chunks → embeddings)
 - Multiple embedding models supported
-- Efficient vector storage and retrieval
-- **Process Flow**: File → Text Extraction → Chunks (smaller text portions) → Embeddings (vector representations)
+- Efficient vector storage in PostgreSQL with pgvector
+- Native database integration - no external vector store needed
+- **Process Flow**: File → Text Extraction → Chunks (smaller text portions) → Embeddings (vector representations) → PostgreSQL storage
 
 **📄 Intelligent File Processing**
 - Support for PDF, DOCX, XLSX, TXT, MD, HTML, JSON, XML
@@ -174,7 +179,7 @@ Documentation is available at [https://openregisters.app/](https://openregisters
 
 - Nextcloud 25 or higher
 - PHP 8.1 or higher
-- Database: MySQL/MariaDB
+- Database: PostgreSQL 12+ (with pgvector and pg_trgm extensions)
 
 <!-- ## Installation
 
@@ -205,6 +210,55 @@ When running locally, or in development mode the folders nodus_modules and vendo
 ## Contributing
 
 Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
+
+## Testing
+
+OpenRegister includes comprehensive integration tests using Newman/Postman.
+
+### Quick Start
+
+```bash
+# Run tests locally:
+cd tests/integration
+./run-tests.sh
+
+# Run with clean start (recommended):
+./run-tests.sh --clean
+
+# Or use Make:
+make -f Makefile.newman test-clean
+```
+
+### Test Coverage
+
+The test suite includes:
+- ✅ Core CRUD operations (Create, Read, Update, Delete)
+- ✅ Multitenancy & organization isolation
+- ✅ Role-based access control (RBAC)
+- ✅ Schema validation & composition
+- ✅ File operations & uploads
+- ✅ Import/Export functionality
+- ✅ Bulk operations
+- ✅ Conversation management
+
+**Current Status**: 176/196 tests passing (89.8%)
+
+### Documentation
+
+See [tests/integration/README.md](tests/integration/README.md) for:
+- Detailed test documentation
+- Configuration options
+- Troubleshooting guide
+- CI/CD integration
+
+### GitHub Actions
+
+Tests run automatically on:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop`
+- Manual workflow dispatch
+
+See `.github/workflows/newman-tests.yml` for workflow configuration.
 
 ## License
 
@@ -240,15 +294,126 @@ docker-compose -f docker-compose.dev.yml up -d
 
 **Both modes include:**
 - Nextcloud with OpenRegister **automatically configured**
-- MariaDB database
-- Solr search engine (standalone mode)
+- PostgreSQL 16 database with pgvector and pg_trgm extensions
+- Vector search and full-text search capabilities built-in
 - Ollama for local LLM inference (AI features)
 
-See the [Docker Development Setup Guide](website/docs/Development/docker-setup.md) for detailed instructions.
+**Optional services (use Docker profiles):**
+- n8n workflow automation: `docker-compose --profile n8n up -d`
+- Hugging Face LLMs: `docker-compose --profile huggingface up -d`
+- OpenLLM management: `docker-compose --profile llm up -d`
+
+**What changed:**
+- ✅ Replaced MariaDB with PostgreSQL 16
+- ✅ Removed Solr/Elasticsearch (no longer needed!)
+- ✅ Added pgvector extension for vector similarity search
+- ✅ Added pg_trgm extension for full-text and partial text matching
+- ✅ All search capabilities now native in PostgreSQL
+- ✅ Added optional profiles for n8n and Hugging Face services
+
+See the [Docker Development Setup Guide](website/docs/Development/docker-setup.md), [PostgreSQL Search Guide](website/docs/development/postgresql-search.md), and [Docker Profiles Guide](website/docs/development/docker-profiles.md) for detailed instructions.
 
 ### Development Environment
 
 If you are looking to contribute, please setup your own development environment following [setting up a development environment](https://cloud.nextcloud.com/s/iyNGp8ryWxc7Efa?dir=/1%20Setting%20up%20a%20development%20environment/Tutorial%20for%20Windows&openfile=true) or use our docker-compose setup.
+
+## Code Quality
+
+### Static Analysis Status
+
+The codebase is analyzed using [Psalm](https://psalm.dev/) for static type checking and error detection.
+
+**Current Status:** 602 errors remaining (as of latest scan)
+
+**Error Breakdown by Type:**
+
+| Error Type | Count | Description |
+|------------|-------|-------------|
+| UndefinedClass | 64 | Classes/interfaces not found or missing use statements |
+| UndefinedMethod | 60 | Methods called that don't exist on the class |
+| InvalidArrayOffset | 39 | Array access on invalid keys or types |
+| UndefinedInterfaceMethod | 37 | Interface method calls on interfaces |
+| InvalidReturnStatement | 36 | Return values don't match declared return types |
+| TypeDoesNotContainType | 30 | Type comparisons that can never be true |
+| InvalidArgument | 28 | Wrong argument types passed to functions |
+| RedundantCondition | 22 | Unnecessary type checks that are always true/false |
+| InvalidReturnType | 23 | Declared return types don't match actual returns |
+| InvalidNamedArgument | 21 | Named arguments that don't exist on function |
+| UndefinedDocblockClass | 18 | Classes referenced in docblocks that don't exist |
+| RedundantPropertyInitializationCheck | 18 | Unnecessary isset checks on always-set properties |
+| TooFewArguments | 16 | Missing required function arguments |
+| UndefinedThisPropertyFetch | 15 | Accessing properties that don't exist |
+| UndefinedVariable | 13 | Variables used before being defined |
+| NoValue | 13 | Variables that may not have values |
+| InvalidScalarArgument | 13 | Wrong scalar types passed to functions |
+| InvalidMethodCall | 13 | Methods called incorrectly |
+| LessSpecificImplementedReturnType | 11 | Return types too generic compared to parent |
+| InvalidPropertyAssignmentValue | 11 | Wrong values assigned to properties |
+| RedundantCast | 10 | Unnecessary type casts |
+| TypeDoesNotContainNull | 9 | Null checks on non-nullable types |
+| MissingDependency | 8 | Missing required dependencies |
+| MissingTemplateParam | 7 | Missing template parameters on generic classes |
+| UndefinedThisPropertyAssignment | 6 | Assigning to non-existent properties |
+| UndefinedPropertyAssignment | 6 | Assigning to non-existent properties |
+| UndefinedFunction | 5 | Functions that don't exist |
+| MoreSpecificImplementedParamType | 5 | Parameter types too specific compared to parent |
+| ImplementedReturnTypeMismatch | 5 | Return type doesn't match parent class |
+| UndefinedPropertyFetch | 4 | Accessing non-existent properties |
+| TooManyArguments | 4 | Too many arguments passed to function |
+| ImplementedParamTypeMismatch | 4 | Parameter type doesn't match parent class |
+| MismatchingDocblockReturnType | 3 | Docblock return type doesn't match actual return type |
+| InvalidOperand | 3 | Invalid operations on types |
+| InvalidCast | 3 | Invalid type casts |
+| InaccessibleMethod | 3 | Calling inaccessible methods |
+| ImplicitToStringCast | 3 | Implicit string conversions |
+| DuplicateArrayKey | 3 | Duplicate keys in array literals |
+| StringIncrement | 2 | Incrementing strings |
+| ParamNameMismatch | 2 | Parameter name doesn't match parent |
+| ParadoxicalCondition | 2 | Conditions that can never be true |
+| MismatchingDocblockParamType | 2 | Docblock parameter type doesn't match |
+| InvalidDocblock | 2 | Invalid docblock syntax |
+| RedundantFunctionCall | 1 | Unnecessary function calls |
+| NullableReturnStatement | 1 | Returning null from non-nullable function |
+| NullArgument | 1 | Passing null to non-nullable parameter |
+| InvalidNullableReturnType | 1 | Return type incorrectly nullable |
+| InvalidArrayAccess | 1 | Invalid array access operations |
+| ForbiddenCode | 1 | Use of forbidden code patterns |
+
+**Running Psalm:**
+
+```bash
+composer psalm
+```
+
+**Current Status:**
+
+- **Total Errors:** 660
+- **Last Updated:** $(date)
+
+**Error Breakdown:**
+
+| Error Type | Count | Description |
+|------------|-------|-------------|
+| UnusedVariable | ~110 | Unused variables |
+| UnusedProperty | ~20 | Unused properties |
+| UnusedParam | ~61 | Unused parameters |
+| UnusedMethod | ~208 | Unused methods (many false positives) |
+| UndefinedMethod | ~50 | Methods that don't exist |
+| InvalidArgument | ~30 | Invalid argument types |
+| LessSpecificImplementedReturnType | ~25 | Return type too generic |
+| UndefinedDocblockClass | ~18 | Docblock references unknown class |
+| ImplementedReturnTypeMismatch | ~15 | Return type mismatch |
+| ImplementedParamTypeMismatch | ~10 | Parameter type mismatch |
+| RedundantCondition | ~20 | Redundant type checks |
+| MissingTemplateParam | ~7 | Missing template parameters |
+| UndefinedClass | ~64 | Unknown classes |
+| Other | ~122 | Various other error types |
+
+**Full Error Report:**
+
+A complete error report is available in `psalm-errors-current.md` after running Psalm.
+
+**Note:** These errors are being systematically fixed. Suppressions are avoided in favor of actual fixes where possible.
 
 ## Contact
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Add Default Organisation Flag Migration
  *
@@ -11,10 +12,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -34,82 +33,90 @@ use OCP\IDBConnection;
 class Version1Date20250723110323 extends SimpleMigrationStep
 {
     /**
-     * Database connection
+     * Database connection.
      *
      * @var IDBConnection
      */
     private IDBConnection $connection;
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param IDBConnection $connection Database connection
+     * @param IDBConnection $connection Database connection.
+     *
+     * @return void
      */
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
-
+    }//end __construct()
 
     /**
-     * Pre-schema change operations
+     * Pre-schema change operations.
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array                     $options       Migration options.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
-
+        // No pre-schema changes required.
     }//end preSchemaChange()
 
     /**
-     * Apply schema changes for is_default column
+     * Apply schema changes for is_default column.
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array                     $options       Migration options.
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper The modified schema.
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get schema from closure.
         $schema = $schemaClosure();
 
-        // Add is_default field to organisations table
-        if ($schema->hasTable('openregister_organisations')) {
+        // Add is_default field to organisations table.
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
-            
-            // Add is_default field (boolean flag for default organisation)
-            if (!$table->hasColumn('is_default')) {
-                $table->addColumn('is_default', Types::BOOLEAN, [
-                    'notnull' => false,
-                    'default' => false
-                ]);
-                $output->info('Added is_default column to organisations table');
+
+            // Add is_default field (boolean flag for default organisation).
+            if ($table->hasColumn('is_default') === false) {
+                $table->addColumn(
+                    'is_default',
+                    Types::BOOLEAN,
+                    [
+                            'notnull' => false,
+                            'default' => false,
+                        ]
+                );
+                $output->info(message: 'Added is_default column to organisations table');
             }
         }
 
         return $schema;
-    }
-
+    }//end changeSchema()
 
     /**
-     * Post-schema change operations
+     * Post-schema change operations.
      *
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * @param IOutput                   $output        Output interface.
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure.
+     * @param array                     $options       Migration options.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No post-schema changes required
-
+        // No post-schema changes required.
     }//end postSchemaChange()
-} 
+}//end class

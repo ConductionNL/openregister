@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+
 /**
  * OpenRegister Migration
  *
@@ -22,6 +22,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
@@ -35,39 +36,47 @@ use OCP\Migration\SimpleMigrationStep;
  * and folder column to openregister_registers table.
  * These columns are used to track object locking, ownership, access permissions and folder location
  */
+
 class Version1Date20250115230511 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions before schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end preSchemaChange()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Apply schema changes
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Update the openregister_objects table
+        // Update the openregister_objects table.
         $table = $schema->getTable('openregister_objects');
 
-        // Add locked column to store lock tokens as JSON array
+        // Add locked column to store lock tokens as JSON array.
         if ($table->hasColumn('locked') === false) {
             $table->addColumn(
                 'locked',
@@ -79,7 +88,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Add owner column to store user ID of object owner
+        // Add owner column to store user ID of object owner.
         if ($table->hasColumn('owner') === false) {
             $table->addColumn(
                 'owner',
@@ -92,7 +101,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Add authorization column to store access permissions as JSON object
+        // Add authorization column to store access permissions as JSON object.
         if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
                 'authorization',
@@ -104,7 +113,7 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Add folder column to store Nextcloud folder path
+        // Add folder column to store Nextcloud folder path.
         if ($table->hasColumn('folder') === false) {
             $table->addColumn(
                 'folder',
@@ -117,10 +126,10 @@ class Version1Date20250115230511 extends SimpleMigrationStep
             );
         }
 
-        // Update the openregister_registers table
+        // Update the openregister_registers table.
         $registersTable = $schema->getTable('openregister_registers');
 
-        // Add folder column to store Nextcloud folder path for registers
+        // Add folder column to store Nextcloud folder path for registers.
         if ($registersTable->hasColumn('folder') === false) {
             $registersTable->addColumn(
                 'folder',
@@ -134,19 +143,20 @@ class Version1Date20250115230511 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions after schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
-
-
 }//end class

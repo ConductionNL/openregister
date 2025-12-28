@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenReg  ister Audit Trail
  *
@@ -23,6 +24,12 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
+use Exception;
+use RuntimeException;
+use ReflectionClass;
+use stdClass;
+use OCA\OpenRegister\Exception\ValidationException;
+use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -32,92 +39,136 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
- * The SchemaMapper class
+ * SchemaMapper handles database operations for Schema entities
  *
  * Mapper for Schema entities with multi-tenancy and RBAC support.
+ * Provides CRUD operations with automatic organisation filtering, RBAC checks,
+ * schema extension resolution, and event dispatching.
  *
- * @package OCA\OpenRegister\Db
+ * @category Mapper
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @method Schema insert(Entity $entity)
+ * @method Schema update(Entity $entity)
+ * @method Schema insertOrUpdate(Entity $entity)
+ * @method Schema delete(Entity $entity)
+ * @method Schema find(int|string $id)
+ * @method Schema findEntity(IQueryBuilder $query)
+ * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
+ * @method list<Schema> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<Schema>
  */
 class SchemaMapper extends QBMapper
 {
     use MultiTenancyTrait;
 
     /**
-     * The event dispatcher instance
+     * Event dispatcher instance
      *
-     * @var IEventDispatcher
+     * Dispatches events when schemas are created, updated, or deleted.
+     *
+     * @var IEventDispatcher Event dispatcher instance
      */
-    private $eventDispatcher;
+    private readonly IEventDispatcher $eventDispatcher;
 
     /**
-     * The schema property validator instance
+     * Schema property validator instance
      *
-     * @var SchemaPropertyValidatorService
+     * Validates schema property definitions and types.
+     *
+     * @var PropertyValidatorHandler Schema property validator instance
      */
-    private $validator;
+    private readonly PropertyValidatorHandler $validator;
 
     /**
-     * Organisation service for multi-tenancy
+     * Organisation mapper for multi-tenancy
      *
-     * @var OrganisationService
+     * Used to get active organisation and apply organisation filters.
+     *
+     * @var OrganisationMapper Organisation mapper instance
      */
-    private OrganisationService $organisationService;
+    protected readonly OrganisationMapper $organisationMapper;
 
     /**
-     * User session for current user
+     * App configuration for multi-tenancy settings
      *
-     * @var IUserSession
-     */
-    private IUserSession $userSession;
-
-    /**
-     * Group manager for RBAC
+     * Used by MultiTenancyTrait to check multi-tenancy status.
      *
-     * @var IGroupManager
-     */
-    private IGroupManager $groupManager;
-
-    /**
-     * App configuration for reading multitenancy settings
-     *
-     * @var IAppConfig
+     * @var IAppConfig App configuration instance
      */
     private IAppConfig $appConfig;
 
     /**
-     * Constructor for the SchemaMapper
+     * User session for current user
      *
-     * @param IDBConnection                  $db                  The database connection
-     * @param IEventDispatcher               $eventDispatcher     The event dispatcher
-     * @param SchemaPropertyValidatorService $validator           The schema property validator
-     * @param OrganisationService            $organisationService Organisation service for multi-tenancy
-     * @param IUserSession                   $userSession         User session
-     * @param IGroupManager                  $groupManager        Group manager for RBAC
-     * @param IAppConfig                     $appConfig           App configuration for multitenancy settings
+     * Used to get current user context for RBAC and multi-tenancy.
+     *
+     * @var IUserSession User session instance
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Group manager for RBAC
+     *
+     * Used to check user group memberships for permission verification.
+     *
+     * @var IGroupManager Group manager instance
+     */
+    private readonly IGroupManager $groupManager;
+
+    // Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
+    // We assign it in the constructor to make it available to the trait methods.
+
+    /**
+     * Constructor
+     *
+     * Initializes mapper with database connection and required dependencies
+     * for multi-tenancy, RBAC, validation, and event dispatching.
+     *
+     * @param IDBConnection            $db                 Database connection for queries
+     * @param IEventDispatcher         $eventDispatcher    Event dispatcher for schema events
+     * @param PropertyValidatorHandler $validator          Schema property validator for validation
+     * @param OrganisationMapper       $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession             $userSession        User session for current user context
+     * @param IGroupManager            $groupManager       Group manager for RBAC checks
+     * @param IAppConfig               $appConfig          App configuration for multitenancy settings
+     *
+     * @return void
      */
     public function __construct(
         IDBConnection $db,
         IEventDispatcher $eventDispatcher,
-        SchemaPropertyValidatorService $validator,
-        OrganisationService $organisationService,
+        PropertyValidatorHandler $validator,
+        OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
         IAppConfig $appConfig
     ) {
-        parent::__construct($db, 'openregister_schemas');
-        $this->eventDispatcher = $eventDispatcher;
-        $this->validator       = $validator;
-        $this->organisationService = $organisationService;
-        $this->userSession         = $userSession;
-        $this->groupManager        = $groupManager;
-        $this->appConfig           = $appConfig;
+        // Initialize parent mapper with table name and entity class.
+        parent::__construct($db, 'openregister_schemas', Schema::class);
 
+        // Store dependencies for use in mapper methods.
+        $this->eventDispatcher    = $eventDispatcher;
+        $this->validator          = $validator;
+        $this->organisationMapper = $organisationMapper;
+        $this->userSession        = $userSession;
+        $this->groupManager       = $groupManager;
+        // Assign appConfig to trait's protected property.
+        $this->appConfig = $appConfig;
     }//end __construct()
-
 
     /**
      * Finds a schema by id, with optional extension for statistics
@@ -126,22 +177,24 @@ class SchemaMapper extends QBMapper
      * an 'extend' property set, it will load the parent schema and merge its
      * properties with the current schema, providing the complete resolved schema.
      *
-     * @param int|string $id        The id of the schema
-     * @param array      $extend    Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac      Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi     Whether to apply multi-tenancy filtering (default: true)
-     *                              Set to false to bypass organization filter (e.g., when expanding schemas for registers)
+     * @param int|string $id            The id of the schema
+     * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
+     * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     *                                  Set to false to bypass organization filter (e.g., when expanding schemas for registers)
      *
      * @return Schema The schema, possibly with stats and resolved extensions
      * @throws \Exception If user doesn't have read permission
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function find(string | int $id, ?array $extend=[], ?bool $published = null, bool $rbac = true, bool $multi = true): Schema
+    public function find(string | int $id, ?array $_extend = [], ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): Schema
     {
-        // Verify RBAC permission to read if RBAC is enabled
-        if ($rbac === true) {
+        // Verify RBAC permission to read if RBAC is enabled.
+        if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'schema');
+            // $this->verifyRbacPermission('read', 'schema');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -157,36 +210,46 @@ class SchemaMapper extends QBMapper
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
-        // Set $multi=false to bypass organization filter (e.g., when expanding schemas for registers)
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
+        // Use $published parameter if provided, otherwise check config.
+        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        }
+
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: '',
             enablePublished: $enablePublished,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: $_multitenancy
         );
 
-        // Get the schema entity
-        $schema = $this->findEntity(query: $qb);
-        
-        // Resolve schema composition if present (allOf, oneOf, anyOf)
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            throw new ValidationException('Schema not found');
+        }
+
+        $schema = Schema::fromRow($row);
+
+        // Resolve schema composition if present (allOf, oneOf, anyOf).
         $schema = $this->resolveSchemaExtension($schema);
-        
+
         return $schema;
-
     }//end find()
-
 
     /**
      * Finds multiple schemas by id
      *
-     * @param array $ids  The ids of the schemas
-     * @param bool  $rbac Whether to apply RBAC permission checks (default: true)
-     * @param bool  $multi Whether to apply multi-tenancy filtering (default: true)
+     * @param array     $ids           The ids of the schemas
+     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
+     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
@@ -194,35 +257,38 @@ class SchemaMapper extends QBMapper
      *
      * @todo: refactor this into find all
      *
-     * @return array The schemas
+     * @return Schema[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
-    public function findMultiple(array $ids, ?bool $published = null, bool $rbac = true, bool $multi = true): array
+    public function findMultiple(array $ids, ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): array
     {
         $result = [];
         foreach ($ids as $id) {
             try {
-                $result[] = $this->find($id, [], $published, $rbac, $multi);
+                $result[] = $this->find(id: $id, _extend: [], published: $published, _rbac: $_rbac, _multitenancy: $_multitenancy);
             } catch (\OCP\AppFramework\Db\DoesNotExistException | \OCP\AppFramework\Db\MultipleObjectsReturnedException | \OCP\DB\Exception) {
                 // Catch all exceptions but do nothing.
             }
         }
 
         return $result;
-
     }//end findMultiple()
 
     /**
      * Find multiple schemas by IDs using a single optimized query
      *
-     * This method performs a single database query to fetch multiple schemas,
-     * significantly improving performance compared to individual queries.
+     * This method performs a single database query to fetch multiple schemas, register: * significantly improving performance compared to individual queries.
      *
      * @param array $ids Array of schema IDs to find
-     * @return array Associative array of ID => Schema entity
+     *
+     * @return Entity&Schema[]
+     *
+     * @psalm-return array<Entity&Schema>
      */
     public function findMultipleOptimized(array $ids): array
     {
-        if (empty($ids)) {
+        if (empty($ids) === true) {
             return [];
         }
 
@@ -233,50 +299,53 @@ class SchemaMapper extends QBMapper
                 $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
             );
 
-        $result = $qb->executeQuery();
+        $result  = $qb->executeQuery();
         $schemas = [];
-        
-        while ($row = $result->fetch()) {
+
+        while (($row = $result->fetch()) !== false) {
             $schema = new Schema();
             $schema = $schema->fromRow($row);
             $schemas[$row['id']] = $schema;
         }
-        
+
         return $schemas;
     }//end findMultipleOptimized()
 
-
     /**
-     * Finds all schemas, with optional extension for statistics
+     * Finds all schemas, files: with optional extension for statistics
      *
      * @param int|null   $limit            The limit of the results
      * @param int|null   $offset           The offset of the results
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
-     * @param array      $extend           Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published       Whether to enable published bypass (default: null = check config)
-     * @param bool       $rbac            Whether to apply RBAC permission checks (default: true)
-     * @param bool       $multi           Whether to apply multi-tenancy filtering (default: true)
+     * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
+     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
+     * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
+     * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
-     * @return array The schemas, possibly with stats
+     * @return Schema[]
+     *
      * @throws \Exception If user doesn't have read permission
+     *
+     * @psalm-return     list<OCA\OpenRegister\Db\Schema>
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        ?array $extend=[],
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        ?array $_extend = [],
         ?bool $published = null,
-        bool $rbac = true,
-        bool $multi = true
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): array {
-        // Verify RBAC permission to read if RBAC is enabled
-        if ($rbac === true) {
+        // Verify RBAC permission to read if RBAC is enabled.
+        if ($_rbac === true) {
             // @todo: remove this hotfix for solr - uncomment when ready
-            //$this->verifyRbacPermission('read', 'schema');
+            // $this->verifyRbacPermission('read', 'schema');
         }
 
         $qb = $this->db->getQueryBuilder();
@@ -286,42 +355,48 @@ class SchemaMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        foreach ($filters as $filter => $value) {
+        foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         if (empty($searchConditions) === false) {
-            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams as $param => $value) {
+            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
+            foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
         // Apply organisation filter with published entity bypass support
-        // Published schemas can bypass multi-tenancy restrictions if configured
-        // applyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config
-        $enablePublished = $published !== null ? $published : $this->shouldPublishedObjectsBypassMultiTenancy();
+        // Published schemas can bypass multi-tenancy restrictions if configured.
+        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
+        // Use $published parameter if provided, otherwise check config.
+        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
+        if ($published !== null) {
+            $enablePublished = $published;
+        }
+
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
             tableAlias: '',
             enablePublished: $enablePublished,
-            multiTenancyEnabled: $multi
+            multiTenancyEnabled: $_multitenancy
         );
 
-        // Just return the entities; do not attach stats here
+        // Just return the entities; do not attach stats here.
         return $this->findEntities(query: $qb);
-
     }//end findAll()
-
 
     /**
      * Inserts a schema entity into the database
@@ -332,16 +407,17 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have create permission
      *
      * @return Entity The inserted entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
      */
     public function insert(Entity $entity): Entity
     {
         // Verify RBAC permission to create
-        //$this->verifyRbacPermission('create', 'schema');
-
-        // Auto-set organisation from active session
+        // $this->verifyRbacPermission('create', 'schema');
+        // Auto-set organisation from active session.
         $this->setOrganisationOnCreate($entity);
-        
-        // Auto-set owner from current user session
+
+        // Auto-set owner from current user session.
         $this->setOwnerOnCreate($entity);
 
         $entity = parent::insert($entity);
@@ -350,9 +426,7 @@ class SchemaMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new SchemaCreatedEvent($entity));
 
         return $entity;
-
     }//end insert()
-
 
     /**
      * Ensures that a schema object has a UUID and a slug.
@@ -363,20 +437,20 @@ class SchemaMapper extends QBMapper
      */
     private function cleanObject(Schema $schema): void
     {
-        // Enforce $ref is always a string in all properties and array items
+        // Enforce $ref is always a string in all properties and array items.
         $properties = $schema->getProperties() ?? [];
         $this->enforceRefIsStringRecursive($properties);
         $schema->setProperties($properties);
 
         // Check if UUID is set, if not, generate a new one.
         if ($schema->getUuid() === null) {
-            $schema->setUuid(Uuid::v4());
+            $schema->setUuid((string) Uuid::v4());
         }
 
         // Ensure the object has a slug.
         if (empty($schema->getSlug()) === true) {
             // Convert to lowercase and replace spaces with dashes.
-            $slug = strtolower(trim($schema->getTitle()));
+            $slug = strtolower(trim($schema->getTitle() ?? 'schema'));
             // Assuming title is used for slug.
             // Remove special characters.
             $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
@@ -404,36 +478,46 @@ class SchemaMapper extends QBMapper
         $objectNameField = $configuration['objectNameField'] ?? '';
         $objectDescriptionField = $configuration['objectDescriptionField'] ?? '';
 
-        // If an object name field is provided, it must exist in the properties
+        // If an object name field is provided, it must exist in the properties.
         if (empty($objectNameField) === false && in_array($objectNameField, $propertyKeys) === false) {
-            throw new \Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
+            throw new Exception("The value for objectNameField ('$objectNameField') does not exist as a property in the schema.");
         }
 
-        // If an object description field is provided, it must exist in the properties
+        // If an object description field is provided, it must exist in the properties.
         if (empty($objectDescriptionField) === false && in_array($objectDescriptionField, $propertyKeys) === false) {
-            throw new \Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
+            throw new Exception("The value for objectDescriptionField ('$objectDescriptionField') does not exist as a property in the schema.");
         }
 
-        // Establish the required fields based on the properties
-        // Empty the required array and rebuild it based on property requirements
-        $requiredFields = [];
-        foreach ($properties as $propertyKey => $property) {
-            // Check if the property has a 'required' field set to true or the string 'true'
-            if (isset($property['required']) === true) {
-                $requiredValue = $property['required'];
-                if ($requiredValue === true
-                    || $requiredValue === 'true'
-                    || (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')
-                ) {
-                    $requiredFields[] = $propertyKey;
+        // Establish the required fields based on the properties.
+        // If schema already has a required array (JSON Schema standard), preserve it.
+        // Otherwise, build from property-level 'required' flags (legacy support).
+        $existingRequired = $schema->getRequired();
+        $requiredFields   = [];
+
+        // PRIORITY 1: Use existing schema-level required array if present (JSON Schema standard).
+        if (empty($existingRequired) === false) {
+            $requiredFields = $existingRequired;
+        } else {
+            // PRIORITY 2: Build from property-level 'required' flags (legacy/fallback).
+            foreach ($properties as $propertyKey => $property) {
+                // Check if the property has a 'required' field set to true or the string 'true'.
+                if (($property['required'] ?? null) !== null) {
+                    $requiredValue = $property['required'];
+                    if (
+                        $requiredValue === true
+                        || $requiredValue === 'true'
+                        || (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')
+                    ) {
+                        $requiredFields[] = $propertyKey;
+                    }
                 }
             }
         }
 
-        // Set the required fields on the schema
+        // Set the required fields on the schema.
         $schema->setRequired($requiredFields);
 
-        // If the object name field is empty, try to find a logical key
+        // If the object name field is empty, try to find a logical key.
         if (empty($objectNameField) === true) {
             $nameKeys = [
                 'name',
@@ -443,7 +527,7 @@ class SchemaMapper extends QBMapper
             ];
             foreach ($nameKeys as $key) {
                 if (in_array($key, $propertyKeys) === true) {
-                    // Update the configuration array
+                    // Update the configuration array.
                     $configuration['objectNameField'] = $key;
                     $schema->setConfiguration($configuration);
                     break;
@@ -451,7 +535,7 @@ class SchemaMapper extends QBMapper
             }
         }
 
-        // If the object description field is empty, try to find a logical key
+        // If the object description field is empty, try to find a logical key.
         if (empty($objectDescriptionField) === true) {
             $descriptionKeys = [
                 'description',
@@ -461,56 +545,55 @@ class SchemaMapper extends QBMapper
             ];
             foreach ($descriptionKeys as $key) {
                 if (in_array($key, $propertyKeys) === true) {
-                    // Update the configuration array
+                    // Update the configuration array.
                     $configuration['objectDescriptionField'] = $key;
                     $schema->setConfiguration($configuration);
                     break;
                 }
             }
         }
-
     }//end cleanObject()
-
 
     /**
      * Recursively enforce that $ref is always a string in all properties and array items
      *
-     * @param  array &$properties The properties array to check
+     * @param array $properties The properties array to check (passed by reference)
+     *
+     * @return void
+     *
      * @throws \Exception If $ref is not a string or cannot be converted
      */
     private function enforceRefIsStringRecursive(array &$properties): void
     {
         foreach ($properties as $key => &$property) {
-            // If property is not an array, skip
-            if (!is_array($property)) {
+            // If property is not an array, skip.
+            if (is_array($property) === false) {
                 continue;
             }
 
-            // Check $ref at this level
-            if (isset($property['$ref'])) {
-                if (is_array($property['$ref']) && isset($property['$ref']['id'])) {
+            // Check $ref at this level.
+            if (($property['$ref'] ?? null) !== null) {
+                if (is_array($property['$ref']) === true && (($property['$ref']['id'] ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']['id'];
-                } else if (is_object($property['$ref']) && isset($property['$ref']->id)) {
+                } elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']->id;
-                } else if (is_int($property['$ref'])) {
-                } else if (!is_string($property['$ref']) && $property['$ref'] !== '') {
-                    throw new \Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
+                } elseif (is_int($property['$ref']) === true) {
+                } elseif (is_string($property['$ref']) === false && $property['$ref'] !== '') {
+                    throw new Exception("Schema property '$key' has a \$ref that is not a string or empty: " . print_r($property['$ref'], true));
                 }
             }
 
-            // Check array items recursively
-            if (isset($property['items']) && is_array($property['items'])) {
+            // Check array items recursively.
+            if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
                 $this->enforceRefIsStringRecursive($property['items']);
             }
 
-            // Check nested properties recursively
-            if (isset($property['properties']) && is_array($property['properties'])) {
+            // Check nested properties recursively.
+            if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
                 $this->enforceRefIsStringRecursive($property['properties']);
             }
         }//end foreach
-
     }//end enforceRefIsStringRecursive()
-
 
     /**
      * Creates a schema from an array
@@ -521,31 +604,37 @@ class SchemaMapper extends QBMapper
      * @param array $object The object to create
      *
      * @throws \OCP\DB\Exception If a database error occurs
-     * @throws Exception If property validation fails
+     * @throws \Exception If property validation fails
      *
      * @return Schema The created schema
      */
     public function createFromArray(array $object): Schema
     {
         $schema = new Schema();
-        $schema->hydrate($object, $this->validator);
+
+        // Ensure required field is always set to avoid NULL in database.
+        // This must be done BEFORE hydrate() so it gets marked as updated.
+        if (isset($object['required']) === false || $object['required'] === null) {
+            $object['required'] = [];
+        }
+
+        $schema->hydrate(object: $object, validator: $this->validator);
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($schema);
-        
-        // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf)
-        // This ensures we only store the differences, not the full resolved schema
+
+        // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
+        // This ensures we only store the differences, not the full resolved schema.
+        // NOTE: Circular reference validation is done during resolveSchemaExtension().
         $schema = $this->extractSchemaDelta($schema);
 
-        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
+        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
         $this->generateFacetConfiguration($schema);
 
         $schema = $this->insert($schema);
 
         return $schema;
-
     }//end createFromArray()
-
 
     /**
      * Updates a schema entity in the database
@@ -561,16 +650,17 @@ class SchemaMapper extends QBMapper
      * @throws \Exception If user doesn't have update permission or access to this organisation
      *
      * @return Entity The updated entity
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
      */
     public function update(Entity $entity): Entity
     {
         // Verify RBAC permission to update
-        //$this->verifyRbacPermission('update', 'schema');
-
-        // Verify user has access to this organisation
+        // $this->verifyRbacPermission('update', 'schema');
+        // Verify user has access to this organisation.
         $this->verifyOrganisationAccess($entity);
 
-        // Fetch old entity directly without organisation filter for event comparison
+        // Fetch old entity directly without organisation filter for event comparison.
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_schemas')
@@ -579,12 +669,13 @@ class SchemaMapper extends QBMapper
 
         // Clean the schema object to ensure UUID, slug, and version are set.
         $this->cleanObject($entity);
-        
-        // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf)
-        // This ensures we only store the differences, not the full resolved schema
+
+        // **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
+        // This ensures we only store the differences, not the full resolved schema.
+        // NOTE: Circular reference validation is done during resolveSchemaExtension().
         $entity = $this->extractSchemaDelta($entity);
 
-        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties
+        // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
         $this->generateFacetConfiguration($entity);
 
         $entity = parent::update($entity);
@@ -593,9 +684,7 @@ class SchemaMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent($entity, $oldSchema));
 
         return $entity;
-
     }//end update()
-
 
     /**
      * Updates a schema from an array
@@ -605,79 +694,83 @@ class SchemaMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
-     * @throws Exception If property validation fails
+     * @throws \Exception If property validation fails
      *
      * @return Schema The updated schema
      */
     public function updateFromArray(int $id, array $object): Schema
     {
-        $schema = $this->find($id);
+        // Disable multitenancy filtering for update operations.
+        // When updating by ID, we want to find the schema regardless of organisation.
+        // Access verification happens in update() method via verifyOrganisationAccess().
+        $schema = $this->find(id: $id, _multitenancy: false);
 
         // Set or update the version.
         if (isset($object['version']) === false) {
-            $version    = explode('.', $schema->getVersion());
-            $version[2] = ((int) $version[2] + 1);
+            $currentVersion = $schema->getVersion() ?? '0.0.0';
+            $version        = explode('.', $currentVersion);
+            $version[2]     = ((int) $version[2] + 1);
             $schema->setVersion(implode('.', $version));
         }
 
-        $schema->hydrate($object, $this->validator);
+        $schema->hydrate(object: $object, validator: $this->validator);
 
-        // Update the schema in the database
+        // Update the schema in the database.
         $schema = $this->update($schema);
 
         return $schema;
-
     }//end updateFromArray()
-
 
     /**
      * Delete a schema
      *
-     * @param Entity $schema The schema to delete
+     * @param Entity $entity The schema entity to delete
      *
      * @throws \OCP\DB\Exception If a database error occurs
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @return Schema The deleted schema
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function delete(Entity $schema): Schema
+    public function delete(Entity $entity): Schema
     {
         // Verify RBAC permission to delete
-        //$this->verifyRbacPermission('delete', 'schema');
+        // $this->verifyRbacPermission('delete', 'schema');
+        // Verify user has access to this organisation.
+        $this->verifyOrganisationAccess($entity);
 
-        // Verify user has access to this organisation
-        $this->verifyOrganisationAccess($schema);
+        // Check for attached objects before deleting (using direct database query to avoid circular dependency).
+        $schemaId = $entity->id;
+        if (method_exists($entity, 'getId') === true) {
+            $schemaId = $entity->getId();
+        }
 
-        // Check for attached objects before deleting (using direct database query to avoid circular dependency)
-        $schemaId = method_exists($schema, 'getId') ? $schema->getId() : $schema->id;
-        
-        // Count objects that reference this schema (excluding soft-deleted objects)
+        // Count objects that reference this schema (excluding soft-deleted objects).
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('*', 'count'))
+        $qb->select($qb->func()->count('*'))
             ->from('openregister_objects')
             ->where($qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->isNull('deleted'));
-        
+
         $result = $qb->executeQuery();
-        $count = (int) $result->fetchOne();
+        $count  = (int) $result->fetchOne();
         $result->closeCursor();
-        
+
         if ($count > 0) {
-            throw new \OCA\OpenRegister\Exception\ValidationException('Cannot delete schema: objects are still attached.');
+            throw new ValidationException('Cannot delete schema: objects are still attached.');
         }
 
-        // Proceed with deletion if no objects are attached
-        $result = parent::delete($schema);
+        // Proceed with deletion if no objects are attached.
+        $result = parent::delete($entity);
 
         // Dispatch deletion event.
         $this->eventDispatcher->dispatchTyped(
-            new SchemaDeletedEvent($schema)
+            new SchemaDeletedEvent($entity)
         );
 
         return $result;
-
     }//end delete()
-
 
     /**
      * Get the number of registers associated with each schema
@@ -685,13 +778,13 @@ class SchemaMapper extends QBMapper
      * This method returns an associative array where the key is the schema ID and the value is the number of registers that reference that schema.
      *
      * @phpstan-return array<int,int>  Associative array of schema ID => register count
-     * @psalm-return   array<int,int>    Associative array of schema ID => register count
      *
-     * @return array<int,int> Associative array of schema ID => register count
+     * @psalm-return array<int, int>
+     * @return       int[]
      */
     public function getRegisterCountPerSchema(): array
     {
-        // TODO: Optimize for large datasets (current approach loads all registers into memory)
+        // TODO: Optimize for large datasets (current approach loads all registers into memory).
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'schemas')
             ->from('openregister_registers');
@@ -699,17 +792,20 @@ class SchemaMapper extends QBMapper
 
         $counts = [];
         foreach ($result as $row) {
-            // Decode the schemas JSON array for each register
-            $schemas = json_decode($row['schemas'], true) ?: [];
+            // Decode the schemas JSON array for each register.
+            $decoded = json_decode($row['schemas'], true);
+            $schemas = [];
+            if ($decoded !== null && $decoded !== false) {
+                $schemas = $decoded;
+            }
+
             foreach ($schemas as $schemaId) {
                 $counts[(int) $schemaId] = ($counts[(int) $schemaId] ?? 0) + 1;
             }
         }
 
         return $counts;
-
     }//end getRegisterCountPerSchema()
-
 
     /**
      * Get all schema ID to slug mappings
@@ -724,14 +820,12 @@ class SchemaMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['id']] = $row['slug'];
         }
 
         return $mappings;
-
     }//end getIdToSlugMap()
-
 
     /**
      * Get all schema slug to ID mappings
@@ -746,14 +840,12 @@ class SchemaMapper extends QBMapper
 
         $result   = $qb->executeQuery();
         $mappings = [];
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $mappings[$row['slug']] = $row['id'];
         }
 
         return $mappings;
-
     }//end getSlugToIdMap()
-
 
     /**
      * Find schemas that have properties referencing the given schema
@@ -767,52 +859,52 @@ class SchemaMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @return array<Schema> Array of schemas that reference the target schema
+     * @return Schema[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
     public function getRelated(Schema|int|string $schema): array
     {
-        // If we received a Schema entity, get its ID, otherwise find the schema
-        if ($schema instanceof Schema) {
-            $targetSchemaId   = (string) $schema->getId();
-            $targetSchemaUuid = $schema->getUuid();
-            $targetSchemaSlug = $schema->getSlug();
-        } else {
-            // Find the target schema to get all its identifiers
-            $targetSchema     = $this->find($schema);
+        // If we received a Schema entity, get its ID, otherwise find the schema.
+        if ($schema instanceof Schema === false) {
+            // Find the target schema to get all its identifiers.
+            $targetSchema     = $this->find(id: $schema);
             $targetSchemaId   = (string) $targetSchema->getId();
             $targetSchemaUuid = $targetSchema->getUuid();
             $targetSchemaSlug = $targetSchema->getSlug();
+        } elseif ($schema instanceof Schema) {
+            $targetSchemaId   = (string) $schema->getId();
+            $targetSchemaUuid = $schema->getUuid();
+            $targetSchemaSlug = $schema->getSlug();
         }
 
-        // Get all schemas to search through their properties
+        // Get all schemas to search through their properties.
         $allSchemas     = $this->findAll();
         $relatedSchemas = [];
 
         foreach ($allSchemas as $currentSchema) {
-            // Skip the target schema itself
+            // Skip the target schema itself.
             if ($currentSchema->getId() === (int) $targetSchemaId) {
                 continue;
             }
 
-            // Get the properties of the current schema
+            // Get the properties of the current schema.
             $properties = $currentSchema->getProperties() ?? [];
 
-            // Search for references to the target schema
-            if ($this->hasReferenceToSchema($properties, $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+            // Search for references to the target schema.
+            if ($this->hasReferenceToSchema(properties: $properties, targetSchemaId: $targetSchemaId, targetSchemaUuid: $targetSchemaUuid, targetSchemaSlug: $targetSchemaSlug) === true) {
                 $relatedSchemas[] = $currentSchema;
             }
         }
 
         return $relatedSchemas;
-
     }//end getRelated()
-
 
     /**
      * Recursively check if properties contain a reference to the target schema
      *
      * This method searches through properties recursively to find $ref values
-     * that match the target schema's ID, UUID, or slug.
+     * that match the target schema's ID, files: UUID, rbac: or slug.
      *
      * @param array  $properties       The properties array to search through
      * @param string $targetSchemaId   The target schema ID to look for
@@ -824,17 +916,18 @@ class SchemaMapper extends QBMapper
     public function hasReferenceToSchema(array $properties, string $targetSchemaId, string $targetSchemaUuid, string $targetSchemaSlug): bool
     {
         foreach ($properties as $property) {
-            // Skip non-array properties
-            if (!is_array($property)) {
+            // Skip non-array properties.
+            if (is_array($property) === false) {
                 continue;
             }
 
-            // Check if this property has a $ref that matches our target schema
-            if (isset($property['$ref'])) {
+            // Check if this property has a $ref that matches our target schema.
+            if (($property['$ref'] ?? null) !== null) {
                 $ref = $property['$ref'];
 
-                // Check exact matches first
-                if ($ref === $targetSchemaId
+                // Check exact matches first.
+                if (
+                    $ref === $targetSchemaId
                     || $ref === $targetSchemaUuid
                     || $ref === $targetSchemaSlug
                     || $ref === (int) $targetSchemaId
@@ -842,44 +935,43 @@ class SchemaMapper extends QBMapper
                     return true;
                 }
 
-                // Check if the ref contains the target schema slug in JSON Schema format
+                // Check if the ref contains the target schema slug in JSON Schema format.
                 // Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
-                if (is_string($ref) && !empty($targetSchemaSlug)) {
-                    if (str_contains($ref, '/schemas/'.$targetSchemaSlug)
-                        || str_contains($ref, 'schemas/'.$targetSchemaSlug)
-                        || str_ends_with($ref, '/'.$targetSchemaSlug)
+                if (is_string($ref) === true && empty($targetSchemaSlug) === false) {
+                    if (
+                        str_contains($ref, '/schemas/' . $targetSchemaSlug) === true
+                        || str_contains($ref, 'schemas/' . $targetSchemaSlug) === true
+                        || str_ends_with($ref, '/' . $targetSchemaSlug) === true
                     ) {
                         return true;
                     }
                 }
 
-                // Check if the ref contains the target schema UUID
-                if (is_string($ref) && !empty($targetSchemaUuid)) {
-                    if (str_contains($ref, $targetSchemaUuid)) {
+                // Check if the entity contains the target schema UUID.
+                if (is_string($ref) === true && empty($targetSchemaUuid) === false) {
+                    if (str_contains($ref, $targetSchemaUuid) === true) {
                         return true;
                     }
                 }
             }//end if
 
-            // Recursively check nested properties
-            if (isset($property['properties']) && is_array($property['properties'])) {
-                if ($this->hasReferenceToSchema($property['properties'], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+            // Recursively check nested properties.
+            if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
+                if ($this->hasReferenceToSchema(properties: $property['properties'], targetSchemaId: $targetSchemaId, targetSchemaUuid: $targetSchemaUuid, targetSchemaSlug: $targetSchemaSlug) === true) {
                     return true;
                 }
             }
 
-            // Check array items for references
-            if (isset($property['items']) && is_array($property['items'])) {
-                if ($this->hasReferenceToSchema([$property['items']], $targetSchemaId, $targetSchemaUuid, $targetSchemaSlug)) {
+            // Check array items for references.
+            if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
+                if ($this->hasReferenceToSchema(properties: [$property['items']], targetSchemaId: $targetSchemaId, targetSchemaUuid: $targetSchemaUuid, targetSchemaSlug: $targetSchemaSlug) === true) {
                     return true;
                 }
             }
         }//end foreach
 
         return false;
-
     }//end hasReferenceToSchema()
-
 
     /**
      * Generate facet configuration from schema properties
@@ -900,100 +992,115 @@ class SchemaMapper extends QBMapper
      */
     private function generateFacetConfiguration(Schema $schema): void
     {
-        $properties = $schema->getProperties() ?? [];
+        $properties  = $schema->getProperties() ?? [];
         $facetConfig = [];
-        
-        // Add metadata facets (always available)
+
+        // Add metadata facets (always available).
         $facetConfig['@self'] = [
-            'register' => ['type' => 'terms'],
-            'schema' => ['type' => 'terms'], 
-            'created' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
+            'register'  => ['type' => 'terms'],
+            'schema'    => ['type' => 'terms'],
+            'created'   => ['type' => 'date_histogram', 'interval' => 'month'],
+            'updated'   => ['type' => 'date_histogram', 'interval' => 'month'],
             'published' => ['type' => 'date_histogram', 'interval' => 'month'],
-            'owner' => ['type' => 'terms']
+            'owner'     => ['type' => 'terms'],
         ];
-        
-        // Analyze properties for facetable fields
+
+        // Analyze properties for facetable fields.
         foreach ($properties as $fieldName => $property) {
-            if (!is_array($property)) {
+            if (is_array($property) === false) {
                 continue;
             }
-            
-            $facetType = $this->determineFacetTypeForProperty($property, $fieldName);
+
+                $facetType = $this->determineFacetTypeForProperty(
+                    property: $property,
+                    fieldName: $fieldName
+                );
             if ($facetType !== null) {
                 $facetConfig[$fieldName] = ['type' => $facetType];
-                
-                // Add interval for date histograms
+
+                // Add interval for date histograms.
                 if ($facetType === 'date_histogram') {
                     $facetConfig[$fieldName]['interval'] = 'month';
                 }
             }
         }
-        
-        // Store the facet configuration in the schema
-        if (!empty($facetConfig)) {
-            $schema->setFacets($facetConfig);
-        }
-        
-    }//end generateFacetConfiguration()
 
+        // Store the facet configuration in the schema.
+        // $facetConfig always contains at least '@self', so it's never empty.
+        $schema->setFacets($facetConfig);
+    }//end generateFacetConfiguration()
 
     /**
      * Determine the appropriate facet type for a schema property
      *
-     * **PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
+     * PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
      * property characteristics, names, and explicit facetable markers.
      *
      * @param array  $property  The property definition
      * @param string $fieldName The field name
      *
-     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
+     *
+     * @psalm-return 'date_histogram'|'terms'|null
      */
-    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
-        // Check if explicitly marked as facetable
-        if (isset($property['facetable']) && 
-            ($property['facetable'] === true || $property['facetable'] === 'true' || 
-             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        // Check if explicitly marked as facetable.
+        if (
+            ($property['facetable'] ?? null) !== null
+            && ($property['facetable'] === true || $property['facetable'] === 'true'
+            || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true') === true) === true
         ) {
             return $this->determineFacetTypeFromProperty($property);
         }
-        
-        // Auto-detect common facetable field names
+
+        // Auto-detect common facetable field names.
         $commonFacetableFields = [
-            'type', 'status', 'category', 'tags', 'label', 'group', 
-            'department', 'location', 'priority', 'state', 'classification',
-            'genre', 'brand', 'model', 'version', 'license', 'language'
+            'type',
+            'status',
+            'category',
+            'tags',
+            'label',
+            'group',
+            'department',
+            'location',
+            'priority',
+            'state',
+            'classification',
+            'genre',
+            'brand',
+            'model',
+            'version',
+            'license',
+            'language',
         ];
-        
+
         $lowerFieldName = strtolower($fieldName);
-        if (in_array($lowerFieldName, $commonFacetableFields)) {
+        if (in_array($lowerFieldName, $commonFacetableFields) === true) {
             return $this->determineFacetTypeFromProperty($property);
         }
-        
-        // Auto-detect enum properties (good for faceting)
-        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+
+        // Auto-detect enum properties (good for faceting).
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true && count($property['enum']) > 0) {
             return 'terms';
         }
-        
-        // Auto-detect date/datetime fields
+
+        // Auto-detect date/datetime fields.
         $propertyType = $property['type'] ?? '';
-        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
             return 'date_histogram';
         }
-        
-        // Check for date-like field names
+
+        // Check for date-like field names.
         $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
         foreach ($dateFields as $dateField) {
-            if (str_contains($lowerFieldName, $dateField)) {
+            if (str_contains($lowerFieldName, $dateField) === true) {
                 return 'date_histogram';
             }
         }
-        
-        return null;
-        
-    }//end determineFacetTypeForProperty()
 
+        return null;
+    }//end determineFacetTypeForProperty()
 
     /**
      * Determine facet type from property characteristics
@@ -1001,31 +1108,31 @@ class SchemaMapper extends QBMapper
      * @param array $property The property definition
      *
      * @return string The facet type ('terms' or 'date_histogram')
+     *
+     * @psalm-return 'date_histogram'|'terms'
      */
     private function determineFacetTypeFromProperty(array $property): string
     {
         $propertyType = $property['type'] ?? 'string';
-        
-        // Date/datetime properties use date_histogram
-        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+
+        // Date/datetime properties use date_histogram.
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
             return 'date_histogram';
         }
-        
-        // Enum properties use terms
-        if (isset($property['enum']) && is_array($property['enum'])) {
-            return 'terms';
-        }
-        
-        // Boolean, integer, number with small ranges use terms
-        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
-            return 'terms';
-        }
-        
-        // Default to terms for other types
-        return 'terms';
-        
-    }//end determineFacetTypeFromProperty()
 
+        // Enum properties use terms.
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
+            return 'terms';
+        }
+
+        // Boolean, integer, number with small ranges use terms.
+        if (in_array($propertyType, ['boolean', 'integer', 'number']) === true) {
+            return 'terms';
+        }
+
+        // Default to terms for other types.
+        return 'terms';
+    }//end determineFacetTypeFromProperty()
 
     /**
      * Resolve schema composition by merging referenced schemas
@@ -1035,13 +1142,13 @@ class SchemaMapper extends QBMapper
      * 2. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
      * 3. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
      * 4. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
-     * 
+     *
      * The method enforces the Liskov Substitution Principle:
      * - Extended schemas can ONLY ADD constraints, never relax them
      * - Metadata (title, description, order) can be overridden
      * - Validation rules (type, format, enum, min/max, pattern) cannot be relaxed
      *
-     * @param Schema $schema The schema to resolve
+     * @param Schema $schema  The schema to resolve
      * @param array  $visited Array of visited schema IDs to prevent circular references
      *
      * @throws \Exception If circular reference is detected or referenced schema not found
@@ -1050,42 +1157,40 @@ class SchemaMapper extends QBMapper
      */
     private function resolveSchemaExtension(Schema $schema, array $visited = []): Schema
     {
-        // Get current schema identifier for tracking
+        // Get current schema identifier for tracking.
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-        
-        // Check for circular references
-        if (in_array($currentId, $visited)) {
-            throw new \Exception("Circular schema composition detected: schema '{$currentId}' creates a loop");
+
+        // Check for circular references.
+        if (in_array($currentId, $visited) === true) {
+            throw new Exception("Circular schema composition detected: schema '{$currentId}' creates a loop");
         }
-        
-        // Add current schema to visited list
+
+        // Add current schema to visited list.
         $visited[] = $currentId;
-        
-        // Check for composition patterns (in order of precedence)
+
+        // Check for composition patterns (in order of precedence).
         $allOf = $schema->getAllOf();
         $oneOf = $schema->getOneOf();
         $anyOf = $schema->getAnyOf();
-        
-        // If schema has allOf, resolve it (most common for extension/inheritance)
-        if ($allOf !== null && is_array($allOf) && count($allOf) > 0) {
-            return $this->resolveAllOf($schema, $allOf, $visited);
+
+        // If schema has allOf, resolve it (most common for extension/inheritance).
+        if ($allOf !== null && count($allOf) > 0) {
+            return $this->resolveAllOf(schema: $schema, allOf: $allOf, visited: $visited);
         }
-        
-        // If schema has oneOf, resolve it
-        if ($oneOf !== null && is_array($oneOf) && count($oneOf) > 0) {
-            return $this->resolveOneOf($schema, $oneOf, $visited);
+
+        // If schema has oneOf, resolve it.
+        if ($oneOf !== null && count($oneOf) > 0) {
+            return $this->resolveOneOf(schema: $schema, oneOf: $oneOf, visited: $visited);
         }
-        
-        // If schema has anyOf, resolve it
-        if ($anyOf !== null && is_array($anyOf) && count($anyOf) > 0) {
-            return $this->resolveAnyOf($schema, $anyOf, $visited);
+
+        // If schema has anyOf, resolve it.
+        if ($anyOf !== null && count($anyOf) > 0) {
+            return $this->resolveAnyOf(schema: $schema, anyOf: $anyOf, visited: $visited);
         }
-        
-        // No composition - return schema as-is
+
+        // No composition - return schema as-is.
         return $schema;
-
     }//end resolveSchemaExtension()
-
 
     /**
      * Resolve allOf composition pattern
@@ -1094,8 +1199,8 @@ class SchemaMapper extends QBMapper
      * This is the recommended pattern for schema extension/inheritance.
      * Properties from all schemas are merged with the child schema.
      *
-     * @param Schema $schema The child schema
-     * @param array  $allOf Array of schema identifiers to merge
+     * @param Schema $schema  The child schema
+     * @param array  $allOf   Array of schema identifiers to merge
      * @param array  $visited Visited schemas for circular reference detection
      *
      * @throws \Exception If referenced schema not found or circular reference detected
@@ -1105,56 +1210,165 @@ class SchemaMapper extends QBMapper
     private function resolveAllOf(Schema $schema, array $allOf, array $visited): Schema
     {
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-        
-        // Start with empty properties and required fields
+
+        // Start with empty properties and required fields.
         $mergedProperties = [];
-        $mergedRequired = [];
-        
-        // Iterate through each referenced schema in allOf
+        $mergedRequired   = [];
+
+        // Iterate through each referenced schema in allOf.
         foreach ($allOf as $parentRef) {
-            // Check for self-reference
-            if ($parentRef === $currentId || $parentRef === $schema->getId() || 
-                $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()) {
-                throw new \Exception("Schema '{$currentId}' cannot reference itself in allOf");
+            // Skip empty or null references.
+            if (empty($parentRef) === true) {
+                continue;
             }
-            
-            // Load and resolve the parent schema
+
+            // Check for self-reference.
+            if (
+                $parentRef === $currentId || $parentRef === $schema->getId()
+                || $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
+            ) {
+                throw new Exception("Schema '{$currentId}' cannot reference itself in allOf");
+            }
+
+            // Load and resolve the parent schema.
             $parentSchema = $this->loadSchema($parentRef);
-            $parentSchema = $this->resolveSchemaExtension($parentSchema, $visited);
-            
-            // Merge properties from this parent
-            $mergedProperties = $this->mergeSchemaProperties(
-                $mergedProperties,
-                $parentSchema->getProperties()
+            $parentSchema = $this->resolveSchemaExtension(
+                schema: $parentSchema,
+                visited: $visited
             );
-            
-            // Merge required fields (union - must satisfy all)
+
+            // Merge properties from this parent.
+            $mergedProperties = $this->mergeSchemaProperties(
+                parentProperties: $mergedProperties,
+                childProperties: $parentSchema->getProperties()
+            );
+
+            // Merge required fields (union - must satisfy all).
             $mergedRequired = array_unique(
                 array_merge($mergedRequired, $parentSchema->getRequired())
             );
-        }
-        
-        // Now merge child schema properties on top (child can add constraints)
+        }//end foreach
+
+        // Now merge child schema properties on top (child can add constraints).
+        $childProperties  = $schema->getProperties();
         $mergedProperties = $this->mergeSchemaPropertiesWithValidation(
-            $mergedProperties,
-            $schema->getProperties(),
-            $currentId
+            parentProperties: $mergedProperties,
+            childProperties: $childProperties,
+            schemaId: (string) $currentId
         );
-        
-        // Merge child required fields (can only add, not remove)
+
+        // Merge child required fields (can only add, not remove).
         $mergedRequired = array_unique(
             array_merge($mergedRequired, $schema->getRequired())
         );
-        
-        // Create resolved schema
+
+        // Create resolved schema.
         $resolvedSchema = clone $schema;
         $resolvedSchema->setProperties($mergedProperties);
         $resolvedSchema->setRequired($mergedRequired);
-        
-        return $resolvedSchema;
 
+        return $resolvedSchema;
     }//end resolveAllOf()
 
+    /**
+     * Get property source metadata for a schema
+     *
+     * Returns metadata about each property indicating whether it's native (defined in this schema)
+     * or inherited (from a parent schema via allOf). For inherited properties, shows the source schema.
+     *
+     * @param Schema $schema The schema to analyze
+     *
+     * @return array<string, array<string, string|null>> Property metadata keyed by property name
+     *
+     * @psalm-return array<string, array{source: 'native'|'inherited', inheritedFrom: string|null}>
+     */
+    public function getPropertySourceMetadata(Schema $schema): array
+    {
+        $metadata         = [];
+        $nativeProperties = [];
+
+        // Get the raw schema data from database to see what properties it actually stores.
+        // This is necessary because the resolved schema has merged properties.
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('properties')
+                ->from('openregister_schemas')
+                ->where($qb->expr()->eq('id', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT)));
+            $result = $qb->executeQuery();
+            $row    = $result->fetch();
+            $result->closeCursor();
+
+            if ($row !== false && ($row['properties'] ?? null) !== null) {
+                $nativeProperties = json_decode($row['properties'], true) ?? [];
+            }
+        } catch (Exception $e) {
+            // If we can't get raw data, use current properties.
+            $nativeProperties = [];
+        }//end try
+
+        $allProperties = $schema->getProperties();
+        $allOf         = $schema->getAllOf() ?? [];
+
+        foreach ($allProperties as $propName => $propDef) {
+            // Suppress unused variable warning for $propDef - only processing property names.
+            unset($propDef);
+            $isNative = isset($nativeProperties[$propName]);
+
+            if ($isNative === true) {
+                $source = 'native';
+            } else {
+                $source = 'inherited';
+            }
+
+            if ($isNative === true) {
+                $inheritedFrom = null;
+            } else {
+                $inheritedFrom = $this->findPropertySource(
+                    propertyName: $propName,
+                    parentRefs: $allOf
+                );
+            }
+
+            $metadata[$propName] = [
+                'source'        => $source,
+                'inheritedFrom' => $inheritedFrom,
+            ];
+        }//end foreach
+
+        return $metadata;
+    }//end getPropertySourceMetadata()
+
+    /**
+     * Find which parent schema a property was inherited from
+     *
+     * @param string $propertyName The property name to search for
+     * @param array  $parentRefs   Array of parent schema references
+     *
+     * @return string|null The parent schema ID/UUID/slug, or null if not found
+     */
+    private function findPropertySource(string $propertyName, array $parentRefs): ?string
+    {
+        foreach ($parentRefs as $parentRef) {
+            // Skip empty or null references.
+            if (empty($parentRef) === true) {
+                continue;
+            }
+
+            try {
+                $parentSchema = $this->loadSchema($parentRef);
+                $parentSchema = $this->resolveSchemaExtension($parentSchema);
+
+                if (isset($parentSchema->getProperties()[$propertyName]) === true) {
+                    return $parentRef;
+                }
+            } catch (Exception $e) {
+                // Parent not found, continue.
+                continue;
+            }
+        }
+
+        return null;
+    }//end findPropertySource()
 
     /**
      * Resolve oneOf composition pattern
@@ -1163,8 +1377,8 @@ class SchemaMapper extends QBMapper
      * This pattern is used for mutually exclusive options.
      * Properties from each schema are kept separate (not merged).
      *
-     * @param Schema $schema The schema with oneOf
-     * @param array  $oneOf Array of schema identifiers
+     * @param Schema $schema  The schema with oneOf
+     * @param array  $oneOf   Array of schema identifiers
      * @param array  $visited Visited schemas for circular reference detection
      *
      * @throws \Exception If referenced schema not found
@@ -1173,26 +1387,29 @@ class SchemaMapper extends QBMapper
      */
     private function resolveOneOf(Schema $schema, array $oneOf, array $visited): Schema
     {
-        // For oneOf, we don't merge properties - each option stands alone
-        // Just validate that all referenced schemas exist and resolve them
+        // For oneOf, we don't merge properties - each option stands alone.
+        // Just validate that all referenced schemas exist and resolve them.
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-        
+
         foreach ($oneOf as $ref) {
-            if ($ref === $currentId || $ref === $schema->getId() || 
-                $ref === $schema->getUuid() || $ref === $schema->getSlug()) {
-                throw new \Exception("Schema '{$currentId}' cannot reference itself in oneOf");
+            if (
+                $ref === $currentId || $ref === $schema->getId()
+                || $ref === $schema->getUuid() || $ref === $schema->getSlug()
+            ) {
+                throw new Exception("Schema '{$currentId}' cannot reference itself in oneOf");
             }
-            
-            // Load and resolve referenced schema (validates it exists)
+
+            // Load and resolve referenced schema (validates it exists).
             $referencedSchema = $this->loadSchema($ref);
-            $this->resolveSchemaExtension($referencedSchema, $visited);
+                $this->resolveSchemaExtension(
+                    schema: $referencedSchema,
+                    visited: $visited
+                );
         }
-        
-        // Return schema as-is (oneOf schemas are not merged)
+
+        // Return schema as-is (oneOf schemas are not merged).
         return $schema;
-
     }//end resolveOneOf()
-
 
     /**
      * Resolve anyOf composition pattern
@@ -1201,8 +1418,8 @@ class SchemaMapper extends QBMapper
      * This pattern provides flexible composition.
      * Properties from each schema are kept separate (not merged).
      *
-     * @param Schema $schema The schema with anyOf
-     * @param array  $anyOf Array of schema identifiers
+     * @param Schema $schema  The schema with anyOf
+     * @param array  $anyOf   Array of schema identifiers
      * @param array  $visited Visited schemas for circular reference detection
      *
      * @throws \Exception If referenced schema not found
@@ -1211,26 +1428,29 @@ class SchemaMapper extends QBMapper
      */
     private function resolveAnyOf(Schema $schema, array $anyOf, array $visited): Schema
     {
-        // For anyOf, we don't merge properties - each option stands alone
-        // Just validate that all referenced schemas exist and resolve them
+        // For anyOf, we don't merge properties - each option stands alone.
+        // Just validate that all referenced schemas exist and resolve them.
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-        
+
         foreach ($anyOf as $ref) {
-            if ($ref === $currentId || $ref === $schema->getId() || 
-                $ref === $schema->getUuid() || $ref === $schema->getSlug()) {
-                throw new \Exception("Schema '{$currentId}' cannot reference itself in anyOf");
+            if (
+                $ref === $currentId || $ref === $schema->getId()
+                || $ref === $schema->getUuid() || $ref === $schema->getSlug()
+            ) {
+                throw new Exception("Schema '{$currentId}' cannot reference itself in anyOf");
             }
-            
-            // Load and resolve referenced schema (validates it exists)
+
+            // Load and resolve referenced schema (validates it exists).
             $referencedSchema = $this->loadSchema($ref);
-            $this->resolveSchemaExtension($referencedSchema, $visited);
+                $this->resolveSchemaExtension(
+                    schema: $referencedSchema,
+                    visited: $visited
+                );
         }
-        
-        // Return schema as-is (anyOf schemas are not merged)
+
+        // Return schema as-is (anyOf schemas are not merged).
         return $schema;
-
     }//end resolveAnyOf()
-
 
     /**
      * Load a schema by ID, UUID, or slug
@@ -1256,15 +1476,12 @@ class SchemaMapper extends QBMapper
                         $qb->expr()->eq('slug', $qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR))
                     )
                 );
-            
+
             return $this->findEntity(query: $qb);
-            
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            throw new \Exception("Schema '{$identifier}' not found");
+            throw new Exception("Schema '{$identifier}' not found");
         }
-
     }//end loadSchema()
-
 
     /**
      * Merge parent and child schema properties (without validation)
@@ -1285,24 +1502,26 @@ class SchemaMapper extends QBMapper
      */
     private function mergeSchemaProperties(array $parentProperties, array $childProperties): array
     {
-        // Start with parent properties as the base
+        // Start with parent properties as the base.
         $merged = $parentProperties;
-        
-        // Apply child properties on top (overriding parent where present)
+
+        // Apply child properties on top (overriding parent where present).
         foreach ($childProperties as $propertyName => $propertyDefinition) {
-            if (isset($merged[$propertyName]) && is_array($propertyDefinition) && is_array($merged[$propertyName])) {
-                // If property exists in both and both are arrays, perform deep merge
-                $merged[$propertyName] = $this->deepMergeProperty($merged[$propertyName], $propertyDefinition);
-            } else {
-                // Otherwise, child property completely replaces parent property
-                $merged[$propertyName] = $propertyDefinition;
+            if (($merged[$propertyName] ?? null) !== null && is_array($propertyDefinition) === true && is_array($merged[$propertyName]) === true) {
+                // If property exists in both and both are arrays, perform deep merge.
+                $merged[$propertyName] = $this->deepMergeProperty(
+                    parentProperty: $merged[$propertyName],
+                    childProperty: $propertyDefinition
+                );
+                continue;
             }
+
+            // Otherwise, child property completely replaces parent property.
+            $merged[$propertyName] = $propertyDefinition;
         }
-        
+
         return $merged;
-
     }//end mergeSchemaProperties()
-
 
     /**
      * Merge parent and child schema properties WITH Liskov Substitution validation
@@ -1311,7 +1530,7 @@ class SchemaMapper extends QBMapper
      * - Child schemas can ONLY ADD constraints, never relax them
      * - Metadata (title, description, order, icon) CAN be overridden
      * - Validation rules (type, format, enum, pattern, min/max) CANNOT be relaxed
-     * 
+     *
      * Examples of ALLOWED changes:
      * - Adding new properties
      * - Adding more restrictive validation (lower maxLength, higher minLength)
@@ -1337,38 +1556,37 @@ class SchemaMapper extends QBMapper
         array $childProperties,
         string $schemaId
     ): array {
-        // Start with parent properties as the base
+        // Start with parent properties as the base.
         $merged = $parentProperties;
-        
-        // Apply child properties on top with validation
+
+        // Apply child properties on top with validation.
         foreach ($childProperties as $propertyName => $childProperty) {
-            // If property doesn't exist in parent, it's new - allowed
-            if (!isset($merged[$propertyName])) {
+            // If property doesn't exist in parent, it's new - allowed.
+            if (isset($merged[$propertyName]) === false) {
                 $merged[$propertyName] = $childProperty;
                 continue;
             }
-            
+
             $parentProperty = $merged[$propertyName];
-            
-            // If both are arrays, perform deep merge with validation
-            if (is_array($parentProperty) && is_array($childProperty)) {
-                $merged[$propertyName] = $this->deepMergePropertyWithValidation(
-                    $parentProperty,
-                    $childProperty,
-                    $propertyName,
-                    $schemaId
-                );
-            } else {
-                // Scalar replacement - validate it doesn't relax constraints
-                $this->validateConstraintAddition($parentProperty, $childProperty, $propertyName, $schemaId);
+
+            // If both are arrays, perform deep merge with validation.
+            if (is_array($parentProperty) === false || is_array($childProperty) === false) {
+                // Scalar replacement - validate it doesn't relax constraints.
+                $this->validateConstraintAddition(parentProperty: $parentProperty, childProperty: $childProperty, propertyName: $propertyName, schemaId: $schemaId);
                 $merged[$propertyName] = $childProperty;
+                continue;
             }
-        }
-        
+
+            $merged[$propertyName] = $this->deepMergePropertyWithValidation(
+                parentProperty: $parentProperty,
+                childProperty: $childProperty,
+                propertyName: $propertyName,
+                schemaId: $schemaId
+            );
+        }//end foreach
+
         return $merged;
-
     }//end mergeSchemaPropertiesWithValidation()
-
 
     /**
      * Perform deep merge of a single property definition (WITHOUT validation)
@@ -1392,27 +1610,30 @@ class SchemaMapper extends QBMapper
     private function deepMergeProperty(array $parentProperty, array $childProperty): array
     {
         $merged = $parentProperty;
-        
+
         foreach ($childProperty as $key => $value) {
-            if (isset($merged[$key]) && is_array($value) && is_array($merged[$key])) {
-                // Recursively merge nested arrays
-                // Special handling for 'properties' and 'items' which need deep merge
-                if ($key === 'properties' || $key === 'items') {
-                    $merged[$key] = $this->deepMergeProperty($merged[$key], $value);
-                } else {
-                    // For other arrays (like enum, required at property level), child replaces parent
-                    $merged[$key] = $value;
-                }
-            } else {
-                // Scalar values: child overrides parent
+            if (($merged[$key] ?? null) === null || is_array($value) === false || is_array($merged[$key]) === false) {
+                // Scalar values: child overrides parent.
                 $merged[$key] = $value;
+                continue;
             }
+
+            // Recursively merge nested arrays.
+            // Special handling for 'properties' and 'items' which need deep merge.
+            if ($key !== 'properties' && $key !== 'items') {
+                // For other arrays (like enum, required at property level), child replaces parent.
+                $merged[$key] = $value;
+                continue;
+            }
+
+                $merged[$key] = $this->deepMergeProperty(
+                    parentProperty: $merged[$key],
+                    childProperty: $value
+                );
         }
-        
+
         return $merged;
-
     }//end deepMergeProperty()
-
 
     /**
      * Perform deep merge of a single property WITH Liskov Substitution validation
@@ -1436,92 +1657,128 @@ class SchemaMapper extends QBMapper
         string $propertyName,
         string $schemaId
     ): array {
-        // List of metadata fields that can be freely overridden
+        // List of metadata fields that can be freely overridden.
         $metadataFields = [
-            'title', 'description', 'order', 'icon', 'placeholder',
-            'help', 'example', 'examples', '$comment', 'deprecated',
-            'readOnly', 'writeOnly', 'default', 'x-order', 'x-display',
-            'x-tabName', 'x-section', 'ui:order', 'ui:widget', 'ui:options'
+            'title',
+            'description',
+            'order',
+            'icon',
+            'placeholder',
+            'help',
+            'example',
+            'examples',
+            '$comment',
+            'deprecated',
+            'readOnly',
+            'writeOnly',
+            'default',
+            'x-order',
+            'x-display',
+            'x-tabName',
+            'x-section',
+            'ui:order',
+            'ui:widget',
+            'ui:options',
         ];
-        
-        // List of validation fields that require constraint checking
+
+        // List of validation fields that require constraint checking.
         $validationFields = [
-            'type', 'format', 'pattern', 'enum', 'const',
-            'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum',
-            'minLength', 'maxLength', 'minItems', 'maxItems',
-            'minProperties', 'maxProperties', 'multipleOf',
-            'uniqueItems', 'required', 'additionalProperties',
-            'patternProperties', 'dependencies', 'if', 'then', 'else'
+            'type',
+            'format',
+            'pattern',
+            'enum',
+            'const',
+            'minimum',
+            'maximum',
+            'exclusiveMinimum',
+            'exclusiveMaximum',
+            'minLength',
+            'maxLength',
+            'minItems',
+            'maxItems',
+            'minProperties',
+            'maxProperties',
+            'multipleOf',
+            'uniqueItems',
+            'required',
+            'additionalProperties',
+            'patternProperties',
+            'dependencies',
+            'if',
+            'then',
+            'else',
         ];
-        
+
         $merged = $parentProperty;
-        
+
         foreach ($childProperty as $key => $childValue) {
-            // If key doesn't exist in parent, it's new - allowed
-            if (!isset($merged[$key])) {
+            // If key doesn't exist in parent, it's new - allowed.
+            if (isset($merged[$key]) === false) {
                 $merged[$key] = $childValue;
                 continue;
             }
-            
+
             $parentValue = $merged[$key];
-            
-            // Metadata fields can be freely overridden
-            if (in_array($key, $metadataFields)) {
+
+            // Metadata fields can be freely overridden.
+            if (in_array($key, $metadataFields) === true) {
                 $merged[$key] = $childValue;
                 continue;
             }
-            
-            // Special handling for nested properties and items
-            if (($key === 'properties' || $key === 'items') && is_array($childValue) && is_array($parentValue)) {
-                // Recursively validate nested properties
+
+            // Special handling for nested properties and items.
+            if (($key === 'properties' || $key === 'items') === true && is_array($childValue) === true && is_array($parentValue) === true) {
+                // Recursively validate nested properties.
                 $mergedNested = [];
                 foreach ($childValue as $nestedKey => $nestedChild) {
-                    if (isset($parentValue[$nestedKey])) {
-                        $mergedNested[$nestedKey] = $this->deepMergePropertyWithValidation(
-                            $parentValue[$nestedKey],
-                            $nestedChild,
-                            "{$propertyName}.{$key}.{$nestedKey}",
-                            $schemaId
-                        );
-                    } else {
-                        // New nested property - allowed
+                    if (($parentValue[$nestedKey] ?? null) === null) {
+                        // New nested property - allowed.
                         $mergedNested[$nestedKey] = $nestedChild;
+                        continue;
                     }
+
+                    $mergedNested[$nestedKey] = $this->deepMergePropertyWithValidation(
+                        parentProperty: $parentValue[$nestedKey],
+                        childProperty: $nestedChild,
+                        propertyName: "{$propertyName}.{$key}.{$nestedKey}",
+                        schemaId: $schemaId
+                    );
                 }
-                // Include parent nested properties not in child
+
+                // Include parent nested properties not in child.
                 foreach ($parentValue as $nestedKey => $nestedParent) {
-                    if (!isset($mergedNested[$nestedKey])) {
+                    if (isset($mergedNested[$nestedKey]) === false) {
                         $mergedNested[$nestedKey] = $nestedParent;
                     }
                 }
+
                 $merged[$key] = $mergedNested;
                 continue;
-            }
-            
-            // Validation fields require constraint checking
-            if (in_array($key, $validationFields)) {
-                $this->validateConstraintChange($parentValue, $childValue, $key, $propertyName, $schemaId);
+            }//end if
+
+            // Validation fields require constraint checking.
+            if (in_array($key, $validationFields) === true) {
+                $this->validateConstraintChange(parentValue: $parentValue, childValue: $childValue, constraint: $key, propertyName: $propertyName, schemaId: $schemaId);
                 $merged[$key] = $childValue;
                 continue;
             }
-            
-            // For other fields, perform standard merge
-            if (is_array($parentValue) && is_array($childValue)) {
-                $merged[$key] = $this->deepMergePropertyWithValidation(
-                    $parentValue,
-                    $childValue,
-                    "{$propertyName}.{$key}",
-                    $schemaId
-                );
-            } else {
+
+            // For other fields, perform standard merge.
+            if (is_array($parentValue) === false || is_array($childValue) === false) {
                 $merged[$key] = $childValue;
+                continue;
             }
-        }
-        
+
+            $merged[$key] = $this->deepMergePropertyWithValidation(
+                parentProperty: $parentValue,
+                childProperty: $childValue,
+                propertyName: "{$propertyName}.{$key}",
+                schemaId: $schemaId
+            );
+        }//end foreach
+
         return $merged;
-
     }//end deepMergePropertyWithValidation()
-
 
     /**
      * Validate that a constraint change does not relax validation
@@ -1545,84 +1802,82 @@ class SchemaMapper extends QBMapper
         string $propertyName,
         string $schemaId
     ): void {
-        // Type cannot be changed
+        // Type cannot be changed.
         if ($constraint === 'type' && $parentValue !== $childValue) {
-            // Allow array of types if child is subset or equal
-            if (is_array($parentValue) && is_array($childValue)) {
-                // Child must be subset of parent (more restrictive is ok)
+            // Allow array of types if child is subset or equal.
+            if (is_array($parentValue) === true && is_array($childValue) === true) {
+                // Child must be subset of parent (more restrictive is ok).
                 $diff = array_diff($childValue, $parentValue);
                 if (count($diff) > 0) {
-                    throw new \Exception(
-                        "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from " .
-                        json_encode($parentValue) . " to " . json_encode($childValue) . 
-                        " (adds types not in parent)"
+                    throw new Exception(
+                        "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from " . json_encode($parentValue) . " to " . json_encode($childValue) . " (adds types not in parent)"
                     );
                 }
-            } else if (!is_array($parentValue) && !is_array($childValue)) {
-                throw new \Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from " .
-                    "'{$parentValue}' to '{$childValue}'"
-                );
-            } else {
-                throw new \Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible"
+
+                return;
+            }
+
+            if (is_array($parentValue) === false && is_array($childValue) === false) {
+                throw new Exception(
+                    "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from " . "'{$parentValue}' to '{$childValue}'"
                 );
             }
-        }
-        
-        // Format can only be added or made more restrictive
+
+            throw new Exception(
+                "Schema '{$schemaId}': Property '{$propertyName}' type change is not compatible"
+            );
+        }//end if
+
+        // Format can only be added or made more restrictive.
         if ($constraint === 'format' && $parentValue !== null && $parentValue !== $childValue) {
-            throw new \Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' cannot change format from " .
-                "'{$parentValue}' to '{$childValue}'"
+            throw new Exception(
+                "Schema '{$schemaId}': Property '{$propertyName}' cannot change format from " . "'{$parentValue}' to '{$childValue}'"
             );
         }
-        
-        // Enum can only be made more restrictive (subset)
-        if ($constraint === 'enum' && is_array($parentValue) && is_array($childValue)) {
+
+        // Enum can only be made more restrictive (subset).
+        if ($constraint === 'enum' && is_array($parentValue) === true && is_array($childValue) === true) {
             $diff = array_diff($childValue, $parentValue);
             if (count($diff) > 0) {
-                throw new \Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' enum cannot add values not in parent " .
-                    "(added: " . json_encode($diff) . ")"
+                throw new Exception(
+                    "Schema '{$schemaId}': Property '{$propertyName}' enum cannot add values not in parent " . "(added: " . json_encode($diff) . ")"
                 );
             }
         }
-        
-        // Minimum constraints can only be increased (more restrictive)
-        if (($constraint === 'minimum' || $constraint === 'minLength' || 
-             $constraint === 'minItems' || $constraint === 'minProperties') &&
-            is_numeric($parentValue) && is_numeric($childValue)) {
+
+        // Minimum constraints can only be increased (more restrictive).
+        if (
+            ($constraint === 'minimum' || $constraint === 'minLength'
+            || $constraint === 'minItems' || $constraint === 'minProperties') === true
+            && is_numeric($parentValue) === true && is_numeric($childValue) === true
+        ) {
             if ($childValue < $parentValue) {
-                throw new \Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be decreased from " .
-                    "{$parentValue} to {$childValue} (relaxes constraint)"
+                throw new Exception(
+                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be decreased from " . "{$parentValue} to {$childValue} (relaxes constraint)"
                 );
             }
         }
-        
-        // Maximum constraints can only be decreased (more restrictive)
-        if (($constraint === 'maximum' || $constraint === 'maxLength' || 
-             $constraint === 'maxItems' || $constraint === 'maxProperties') &&
-            is_numeric($parentValue) && is_numeric($childValue)) {
+
+        // Maximum constraints can only be decreased (more restrictive).
+        if (
+            ($constraint === 'maximum' || $constraint === 'maxLength'
+            || $constraint === 'maxItems' || $constraint === 'maxProperties') === true
+            && is_numeric($parentValue) === true && is_numeric($childValue) === true
+        ) {
             if ($childValue > $parentValue) {
-                throw new \Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be increased from " .
-                    "{$parentValue} to {$childValue} (relaxes constraint)"
+                throw new Exception(
+                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be increased from " . "{$parentValue} to {$childValue} (relaxes constraint)"
                 );
             }
         }
-        
-        // Pattern can only be added, not changed
+
+        // Pattern can only be added, not changed.
         if ($constraint === 'pattern' && $parentValue !== null && $parentValue !== $childValue) {
-            throw new \Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' pattern cannot be changed from " .
-                "'{$parentValue}' to '{$childValue}'"
+            throw new Exception(
+                "Schema '{$schemaId}': Property '{$propertyName}' pattern cannot be changed from " . "'{$parentValue}' to '{$childValue}'"
             );
         }
-
     }//end validateConstraintChange()
-
 
     /**
      * Validate that replacing a property doesn't relax constraints
@@ -1644,16 +1899,13 @@ class SchemaMapper extends QBMapper
         string $propertyName,
         string $schemaId
     ): void {
-        // If parent had validation and child removes it, that's relaxing
-        if (!empty($parentProperty) && empty($childProperty)) {
-            throw new \Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' cannot remove constraints " .
-                "(parent had value, child is empty)"
+        // If parent had validation and child removes it, that's relaxing.
+        if (empty($parentProperty) === false && empty($childProperty) === true) {
+            throw new Exception(
+                "Schema '{$schemaId}': Property '{$propertyName}' cannot remove constraints " . "(parent had value, child is empty)"
             );
         }
-
     }//end validateConstraintAddition()
-
 
     /**
      * Extract the delta (differences) between parent schemas and child schema properties
@@ -1675,27 +1927,30 @@ class SchemaMapper extends QBMapper
      */
     private function extractSchemaDelta(Schema $schema): Schema
     {
-        // Get composition patterns
+        // Get composition patterns.
         $allOf = $schema->getAllOf();
         $oneOf = $schema->getOneOf();
         $anyOf = $schema->getAnyOf();
-        
-        // For oneOf and anyOf, no delta extraction (properties not merged)
-        if (($oneOf !== null && is_array($oneOf) && count($oneOf) > 0) ||
-            ($anyOf !== null && is_array($anyOf) && count($anyOf) > 0)) {
+
+        // For oneOf and anyOf, no delta extraction (properties not merged).
+        if (
+            ($oneOf !== null && count($oneOf) > 0)
+            || ($anyOf !== null && count($anyOf) > 0)
+        ) {
             return $schema;
         }
-        
-        // For allOf, extract delta against all parents
-        if ($allOf !== null && is_array($allOf) && count($allOf) > 0) {
-            return $this->extractAllOfDelta($schema, $allOf);
+
+        // For allOf, extract delta against all parents.
+        if ($allOf !== null && count($allOf) > 0) {
+            return $this->extractAllOfDelta(
+                schema: $schema,
+                allOf: $allOf
+            );
         }
-        
-        // No composition - return as-is
+
+        // No composition - return as-is.
         return $schema;
-
     }//end extractSchemaDelta()
-
 
     /**
      * Extract delta for allOf composition (multiple parents)
@@ -1704,7 +1959,7 @@ class SchemaMapper extends QBMapper
      * in the child schema.
      *
      * @param Schema $schema The child schema
-     * @param array  $allOf Array of parent schema identifiers
+     * @param array  $allOf  Array of parent schema identifiers
      *
      * @throws \Exception If parent schema not found
      *
@@ -1713,55 +1968,57 @@ class SchemaMapper extends QBMapper
     private function extractAllOfDelta(Schema $schema, array $allOf): Schema
     {
         try {
-            // Start with empty merged parent properties
+            // Start with empty merged parent properties.
             $mergedParentProperties = [];
-            $mergedParentRequired = [];
-            
-            // Load and merge all parent schemas
+            $mergedParentRequired   = [];
+
+            // Load and merge all parent schemas.
             foreach ($allOf as $parentRef) {
+                // Skip empty or null references.
+                if (empty($parentRef) === true) {
+                    continue;
+                }
+
                 $parentSchema = $this->loadSchema($parentRef);
-                
-                // Recursively resolve parent to get its full properties
+
+                // Recursively resolve parent to get its full properties.
                 if ($parentSchema->getAllOf() !== null) {
                     $parentSchema = $this->resolveSchemaExtension($parentSchema);
                 }
-                
-                // Merge this parent's properties into the accumulated parent properties
+
+                // Merge this parent's properties into the accumulated parent properties.
                 $mergedParentProperties = $this->mergeSchemaProperties(
-                    $mergedParentProperties,
-                    $parentSchema->getProperties()
+                    parentProperties: $mergedParentProperties,
+                    childProperties: $parentSchema->getProperties()
                 );
-                
-                // Merge required fields
-                $mergedParentRequired = array_unique(
-                    array_merge($mergedParentRequired, $parentSchema->getRequired())
-                );
-            }
-            
-            // Extract only the properties that differ from merged parents
+
+                    // Merge required fields.
+                    $mergedParentRequired = array_unique(
+                        array_merge($mergedParentRequired, $parentSchema->getRequired())
+                    );
+            }//end foreach
+
+            // Extract only the properties that differ from merged parents.
             $deltaProperties = $this->extractPropertyDelta(
-                $mergedParentProperties,
-                $schema->getProperties()
+                parentProperties: $mergedParentProperties,
+                childProperties: $schema->getProperties()
             );
-            
-            // Extract only the required fields that differ from merged parents
+
+            // Extract only the required fields that differ from merged parents.
             $deltaRequired = array_diff(
                 $schema->getRequired(),
                 $mergedParentRequired
             );
-            
-            // Update the schema with delta only
+
+            // Update the schema with delta only.
             $schema->setProperties($deltaProperties);
-            $schema->setRequired(array_values($deltaRequired)); // Re-index array
-            
+            $schema->setRequired(array_values($deltaRequired));
+            // Re-index array.
             return $schema;
-            
-        } catch (\Exception $e) {
-            throw new \Exception("Cannot extract allOf delta: " . $e->getMessage());
-        }
-
+        } catch (Exception $e) {
+            throw new Exception("Cannot extract allOf delta: " . $e->getMessage());
+        }//end try
     }//end extractAllOfDelta()
-
 
     /**
      * Extract properties that differ from parent
@@ -1777,33 +2034,41 @@ class SchemaMapper extends QBMapper
     private function extractPropertyDelta(array $parentProperties, array $childProperties): array
     {
         $delta = [];
-        
+
         foreach ($childProperties as $propertyName => $childProperty) {
-            // If property doesn't exist in parent, it's new - include in delta
-            if (!isset($parentProperties[$propertyName])) {
+            // If property doesn't exist in parent, it's new - include in delta.
+            if (isset($parentProperties[$propertyName]) === false) {
                 $delta[$propertyName] = $childProperty;
                 continue;
             }
-            
-            // If property exists in parent, check if it's different
+
+            // If property exists in parent, check if it's different.
             $parentProperty = $parentProperties[$propertyName];
-            
-            // Deep comparison: if properties are different, include in delta
-            if ($this->arePropertiesDifferent($parentProperty, $childProperty)) {
-                // For objects with nested properties, extract nested delta
-                if (is_array($childProperty) && is_array($parentProperty)) {
-                    $delta[$propertyName] = $this->extractNestedPropertyDelta($parentProperty, $childProperty);
-                } else {
+
+            // Deep comparison: if properties are different, include in delta.
+            if (
+                $this->arePropertiesDifferent(
+                    parentProperty: $parentProperty,
+                    childProperty: $childProperty
+                ) === true
+            ) {
+                // For objects with nested properties, extract nested delta.
+                if (is_array($childProperty) === false || is_array($parentProperty) === false) {
                     $delta[$propertyName] = $childProperty;
+                    continue;
                 }
+
+                $delta[$propertyName] = $this->extractNestedPropertyDelta(
+                    parentProperty: $parentProperty,
+                    childProperty: $childProperty
+                );
             }
-            // If properties are identical, don't include in delta
-        }
-        
+
+            // If properties are identical, don't include in delta.
+        }//end foreach
+
         return $delta;
-
     }//end extractPropertyDelta()
-
 
     /**
      * Check if two property definitions are different
@@ -1817,12 +2082,10 @@ class SchemaMapper extends QBMapper
      */
     private function arePropertiesDifferent($parentProperty, $childProperty): bool
     {
-        // Use JSON encoding for deep comparison
-        // This handles arrays, nested objects, and scalar values uniformly
+        // Use JSON encoding for deep comparison.
+        // This handles arrays, nested objects, and scalar values uniformly.
         return json_encode($parentProperty) !== json_encode($childProperty);
-
     }//end arePropertiesDifferent()
-
 
     /**
      * Extract nested property delta for object properties
@@ -1838,27 +2101,35 @@ class SchemaMapper extends QBMapper
     private function extractNestedPropertyDelta(array $parentProperty, array $childProperty): array
     {
         $delta = [];
-        
+
         foreach ($childProperty as $key => $value) {
-            if (!isset($parentProperty[$key])) {
-                // New field in child
+            if (isset($parentProperty[$key]) === false) {
+                // New field in child.
                 $delta[$key] = $value;
-            } else if ($this->arePropertiesDifferent($parentProperty[$key], $value)) {
-                // Changed field
-                if ($key === 'properties' && is_array($value) && is_array($parentProperty[$key])) {
-                    // Recursively extract delta for nested properties
-                    $delta[$key] = $this->extractPropertyDelta($parentProperty[$key], $value);
-                } else {
+            } elseif (
+                $this->arePropertiesDifferent(
+                    parentProperty: $parentProperty[$key],
+                    childProperty: $value
+                ) === true
+            ) {
+                // Changed field.
+                if ($key !== 'properties' || is_array($value) === false || is_array($parentProperty[$key]) === false) {
                     $delta[$key] = $value;
+                    continue;
                 }
+
+                // Recursively extract delta for nested properties.
+                $delta[$key] = $this->extractPropertyDelta(
+                    parentProperties: $parentProperty[$key],
+                    childProperties: $value
+                );
             }
-            // If field is identical, don't include in delta
-        }
-        
+
+            // If field is identical, don't include in delta.
+        }//end foreach
+
         return $delta;
-
     }//end extractNestedPropertyDelta()
-
 
     /**
      * Find schemas that compose with a given schema
@@ -1869,82 +2140,88 @@ class SchemaMapper extends QBMapper
      * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema
      *
      * @return array Array of schema UUIDs that compose with this schema
+     *
+     * @psalm-return list{0?: mixed,...}
      */
     public function findExtendedBy(int|string $schemaIdentifier): array
     {
-        // First, get the target schema to know all its identifiers
+        // First, get the target schema to know all its identifiers.
         try {
-            $targetSchema = $this->find($schemaIdentifier);
-        } catch (\Exception $e) {
-            // If schema not found, return empty array
+            $targetSchema = $this->find(id: $schemaIdentifier);
+        } catch (Exception $e) {
+            // If schema not found, register: return empty array.
             return [];
         }
 
-        $targetId = (string) $targetSchema->getId();
+        $targetId   = (string) $targetSchema->getId();
         $targetUuid = $targetSchema->getUuid();
         $targetSlug = $targetSchema->getSlug();
 
-        // Build query to find schemas that reference this schema in composition
+        // Build query to find schemas that reference this schema in composition.
         $qb = $this->db->getQueryBuilder();
         $qb->select('uuid')
             ->from($this->getTableName());
 
-        // Add conditions for all possible ways to reference the schema
+        // Add conditions for all possible ways to reference the schema.
         $orConditions = [];
-        
-        // Check in allOf field (JSON array)
-        if ($targetId) {
+
+        // Check in allOf field (JSON array).
+        if ($targetId !== '') {
             $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
-        if ($targetUuid) {
+
+        if ($targetUuid !== null && $targetUuid !== '') {
             $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
         }
-        if ($targetSlug) {
+
+        if ($targetSlug !== null && $targetSlug !== '') {
             $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
-        
-        // Check in oneOf field (JSON array)
-        if ($targetId) {
+
+        // Check in oneOf field (JSON array).
+        if ($targetId !== '') {
             $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
-        if ($targetUuid) {
+
+        if ($targetUuid !== null && $targetUuid !== '') {
             $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
         }
-        if ($targetSlug) {
+
+        if ($targetSlug !== null && $targetSlug !== '') {
             $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
-        
-        // Check in anyOf field (JSON array)
-        if ($targetId) {
+
+        // Check in anyOf field (JSON array).
+        // Note: $targetId is cast to (string), so it can never be null, only empty string.
+        if ($targetId !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
-        if ($targetUuid) {
+
+        if ($targetUuid !== null && $targetUuid !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
         }
-        if ($targetSlug) {
+
+        if ($targetSlug !== null && $targetSlug !== '') {
             $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
 
-        if (empty($orConditions)) {
+        if (empty($orConditions) === true) {
             return [];
         }
 
         $qb->where($qb->expr()->orX(...$orConditions));
 
         $result = $qb->executeQuery();
-        $uuids = [];
-        
-        while ($row = $result->fetch()) {
-            if (isset($row['uuid'])) {
+        $uuids  = [];
+
+        while (($row = $result->fetch()) !== false) {
+            if (($row['uuid'] ?? null) !== null) {
                 $uuids[] = $row['uuid'];
             }
         }
-        
+
         $result->closeCursor();
 
         return $uuids;
-
     }//end findExtendedBy()
-
-
 }//end class

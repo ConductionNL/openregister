@@ -11,6 +11,7 @@
 
 /node_modules/
 /website/node_modules/
+/website/.docusaurus/
 /js/
 /custom_apps/
 /config/
@@ -21,6 +22,7 @@
 # Quality reports
 /quality-reports/
 quality-baseline.json
+/phpmetrics/
 
 # Data files
 *.csv
@@ -55,3 +57,8 @@ test-solr-connection.php
 **/implements *
 
 website/.docusaurus/
+
+phpqa/
+
+# Docker AI models (too large for git)
+docker/dolphin/models/

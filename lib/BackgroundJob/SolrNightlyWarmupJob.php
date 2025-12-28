@@ -1,24 +1,28 @@
 <?php
 
-declare(strict_types=1);
-
 /**
- * SOLR Nightly Warmup Background Job
+ * OpenRegister SOLR Nightly Warmup Background Job
  *
  * Recurring background job that runs every night at 00:00 to warm up the SOLR index.
  * This ensures optimal search performance by keeping the index warm and ready for queries.
  *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
- * @author   OpenRegister Team
- * @copyright 2024 OpenRegister
- * @license  AGPL-3.0-or-later
- * @link     https://github.com/OpenRegister/OpenRegister
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\BackgroundJob\TimedJob;
@@ -54,78 +58,82 @@ class SolrNightlyWarmupJob extends TimedJob
     private const DEFAULT_NIGHTLY_MAX_OBJECTS = 10000;
 
     /**
-     * Default warmup mode for nightly runs
+     * Default warmup mode for nightly runs.
      */
     private const DEFAULT_NIGHTLY_MODE = 'parallel';
 
     /**
-     * Constructor
-     *
-     * @param ITimeFactory $time Time factory for job scheduling
-     *
-     * @return void
-     */
-    public function __construct(ITimeFactory $time)
-    {
-        parent::__construct($time);
-        
-        // Set interval to 24 hours (daily execution)
-        $this->setInterval(self::DEFAULT_INTERVAL);
-        
-        // Set the job to run at 00:00 UTC by default
-        // Note: Nextcloud will handle timezone conversion based on server settings
-        $this->setTimeSensitivity(\OCP\BackgroundJob\IJob::TIME_SENSITIVE);
-    }
-
-    /**
      * Execute the nightly SOLR warmup job
      *
-     * @param array $arguments Job arguments (unused for recurring jobs)
+     * @param mixed $_argument Job arguments (unused for recurring jobs)
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    protected function run($arguments): void
+    protected function run($argument): void
     {
         $startTime = microtime(true);
-        
-        /** @var LoggerInterface $logger */
+
+        /*
+         * @var LoggerInterface $logger
+         */
+
         $logger = \OC::$server->get(LoggerInterface::class);
-        
-        $logger->info('🌙 SOLR Nightly Warmup Job Started', [
-            'job_id' => $this->getId(),
-            'scheduled_time' => date('Y-m-d H:i:s'),
-            'timezone' => date_default_timezone_get()
-        ]);
+
+        $logger->info(
+            message: '🌙 SOLR Nightly Warmup Job Started',
+            context: [
+                    'job_id'         => $this->getId(),
+                    'scheduled_time' => date('Y-m-d H:i:s'),
+                    'timezone'       => date_default_timezone_get(),
+                ]
+        );
 
         try {
-            // Get required services
-            /** @var GuzzleSolrService $solrService */
-            $solrService = \OC::$server->get(GuzzleSolrService::class);
-            
-            /** @var SettingsService $settingsService */
+            /*
+             * Get required services.
+             *
+             * @var IndexService $solrService
+             */
+
+            $solrService = \OC::$server->get(IndexService::class);
+
+            /*
+             * @var SettingsService $settingsService
+             */
+
             $settingsService = \OC::$server->get(SettingsService::class);
-            
-            /** @var SchemaMapper $schemaMapper */
+
+            /*
+             * @var SchemaMapper $schemaMapper
+             */
+
             $schemaMapper = \OC::$server->get(SchemaMapper::class);
 
-            // Check if SOLR is enabled and available
-            if (!$this->isSolrEnabledAndAvailable($solrService, $settingsService, $logger)) {
-                $logger->info('SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
+            // Check if SOLR is enabled and available.
+            if ($this->isSolrEnabledAndAvailable(solrService: $solrService, settingsService: $settingsService, logger: $logger) === false) {
+                $logger->info(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled or available');
                 return;
             }
 
-            // Get warmup configuration from settings
-            $config = $this->getWarmupConfiguration($settingsService, $logger);
-            
-            // Get all schemas for comprehensive warmup
-            $schemas = $schemaMapper->findAll();
-            
-            $logger->info('Starting nightly SOLR index warmup', [
-                'schemas_found' => count($schemas),
-                'max_objects' => $config['maxObjects'],
-                'mode' => $config['mode'],
-                'collect_errors' => $config['collectErrors']
-            ]);
+            // Get warmup configuration from settings.
+            $config = $this->getWarmupConfiguration(_settingsService: $settingsService, _logger: $logger);
 
-            // Execute the comprehensive nightly warmup
+            // Get all schemas for comprehensive warmup.
+            $schemas = $schemaMapper->findAll();
+
+            $logger->info(
+                'Starting nightly SOLR index warmup',
+                context: [
+                        'schemas_found'  => count($schemas),
+                        'max_objects'    => $config['maxObjects'],
+                        'mode'           => $config['mode'],
+                        'collect_errors' => $config['collectErrors'],
+                    ]
+            );
+
+            // Execute the comprehensive nightly warmup.
             $result = $solrService->warmupIndex(
                 schemas: $schemas,
                 maxObjects: $config['maxObjects'],
@@ -136,226 +144,233 @@ class SolrNightlyWarmupJob extends TimedJob
             $executionTime = microtime(true) - $startTime;
 
             if ($result['success'] ?? false) {
-                $logger->info('✅ SOLR Nightly Warmup Job Completed Successfully', [
-                    'job_id' => $this->getId(),
-                    'execution_time_seconds' => round($executionTime, 2),
-                    'objects_indexed' => $result['operations']['objects_indexed'] ?? 0,
-                    'schemas_processed' => $result['operations']['schemas_processed'] ?? 0,
-                    'fields_created' => $result['operations']['fields_created'] ?? 0,
-                    'conflicts_resolved' => $result['operations']['conflicts_resolved'] ?? 0,
-                    'performance_metrics' => [
-                        'total_time_ms' => $result['execution_time_ms'] ?? 0,
-                        'objects_per_second' => $this->calculateObjectsPerSecond($result, $executionTime),
-                        'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL)
-                    ],
-                    'operations_summary' => $this->summarizeOperations($result['operations'] ?? [])
-                ]);
+                $logger->info(
+                    '✅ SOLR Nightly Warmup Job Completed Successfully',
+                    [
+                            'job_id'                 => $this->getId(),
+                            'execution_time_seconds' => round($executionTime, 2),
+                            'objects_indexed'        => $result['operations']['objects_indexed'] ?? 0,
+                            'schemas_processed'      => $result['operations']['schemas_processed'] ?? 0,
+                            'fields_created'         => $result['operations']['fields_created'] ?? 0,
+                            'conflicts_resolved'     => $result['operations']['conflicts_resolved'] ?? 0,
+                            'performance_metrics'    => [
+                                'total_time_ms'      => $result['execution_time_ms'] ?? 0,
+                                'objects_per_second' => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
+                                'next_run'           => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+                            ],
+                            'operations_summary'     => $this->summarizeOperations($result['operations'] ?? []),
+                        ]
+                );
 
-                // Log performance statistics for monitoring
-                $this->logPerformanceStats($result, $executionTime, $logger);
-                
-            } else {
-                $logger->error('❌ SOLR Nightly Warmup Job Failed', [
-                    'job_id' => $this->getId(),
-                    'execution_time_seconds' => round($executionTime, 2),
-                    'error' => $result['error'] ?? 'Unknown error',
-                    'next_retry' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL)
-                ]);
-            }
+                // Log performance statistics for monitoring.
+                $this->logPerformanceStats(result: $result, executionTime: $executionTime, logger: $logger);
+            }//end if
 
+            if (($result['success'] ?? false) === false) {
+                $logger->error(
+                    '❌ SOLR Nightly Warmup Job Failed',
+                    [
+                            'job_id'                 => $this->getId(),
+                            'execution_time_seconds' => round($executionTime, 2),
+                            'error'                  => $result['error'] ?? 'Unknown error',
+                            'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+                        ]
+                );
+            }//end if
         } catch (\Exception $e) {
             $executionTime = microtime(true) - $startTime;
-            
-            $logger->error('🚨 SOLR Nightly Warmup Job Exception', [
-                'job_id' => $this->getId(),
-                'execution_time_seconds' => round($executionTime, 2),
-                'exception' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'next_retry' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-                'trace' => $e->getTraceAsString()
-            ]);
 
-            // Don't re-throw for recurring jobs - let them retry next time
-        }
-    }
+            $logger->error(
+                message: '🚨 SOLR Nightly Warmup Job Exception',
+                context: [
+                        'job_id'                 => $this->getId(),
+                        'execution_time_seconds' => round($executionTime, 2),
+                        'exception'              => $e->getMessage(),
+                        'file'                   => $e->getFile(),
+                        'line'                   => $e->getLine(),
+                        'next_retry'             => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+                        'trace'                  => $e->getTraceAsString(),
+                    ]
+            );
 
-    /**
-     * Check if SOLR is enabled and available for nightly warmup
-     *
-     * @param GuzzleSolrService $solrService     The SOLR service
-     * @param SettingsService   $settingsService The settings service
-     * @param LoggerInterface   $logger          The logger
-     * @return bool True if SOLR is enabled and available
-     */
-    private function isSolrEnabledAndAvailable(
-        GuzzleSolrService $solrService, 
-        SettingsService $settingsService, 
-        LoggerInterface $logger
-    ): bool {
-        try {
-            // Check if SOLR is enabled in settings
-            $solrSettings = $settingsService->getSolrSettings();
-            
-            if (!($solrSettings['enabled'] ?? false)) {
-                $logger->info('SOLR is disabled in settings, skipping nightly warmup');
-                return false;
-            }
-            
-            // Test SOLR connection
-            $connectionTest = $solrService->testConnection();
-            
-            if ($connectionTest['success'] ?? false) {
-                return true;
-            }
-            
-            $logger->warning('SOLR connection test failed during nightly warmup job', [
-                'test_result' => $connectionTest
-            ]);
-            
-            return false;
-            
-        } catch (\Exception $e) {
-            $logger->warning('SOLR availability check failed during nightly warmup job', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return false;
-        }
-    }
-
-    /**
-     * Get warmup configuration from settings with defaults
-     *
-     * @param SettingsService $settingsService The settings service
-     * @param LoggerInterface $logger          The logger
-     * @return array Warmup configuration
-     */
-    private function getWarmupConfiguration(SettingsService $settingsService, LoggerInterface $logger): array
-    {
-        try {
-            $solrSettings = $settingsService->getSolrSettings();
-            
-            // Get nightly warmup specific settings with defaults
-            $config = [
-                'maxObjects' => $solrSettings['nightly_warmup_max_objects'] ?? self::DEFAULT_NIGHTLY_MAX_OBJECTS,
-                'mode' => $solrSettings['nightly_warmup_mode'] ?? self::DEFAULT_NIGHTLY_MODE,
-                'collectErrors' => $solrSettings['nightly_warmup_collect_errors'] ?? true, // More detailed logging for nightly runs
-            ];
-            
-            $logger->debug('Nightly warmup configuration loaded', $config);
-            
-            return $config;
-            
-        } catch (\Exception $e) {
-            $logger->warning('Failed to load nightly warmup configuration, using defaults', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return [
-                'maxObjects' => self::DEFAULT_NIGHTLY_MAX_OBJECTS,
-                'mode' => self::DEFAULT_NIGHTLY_MODE,
-                'collectErrors' => true
-            ];
-        }
-    }
+            // Don't re-throw for recurring jobs - let them retry next time.
+        }//end try
+    }//end run()
 
     /**
      * Calculate objects per second performance metric
      *
-     * @param array $result Warmup result
+     * @param array $result        Warmup result
      * @param float $executionTime Total execution time in seconds
+     *
      * @return float Objects indexed per second
+     *
+     * @psalm-suppress UnusedMethod
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float
     {
         $objectsIndexed = $result['operations']['objects_indexed'] ?? 0;
-        
+
         if ($executionTime > 0 && $objectsIndexed > 0) {
             return round($objectsIndexed / $executionTime, 2);
         }
-        
-        return 0.0;
-    }
 
-    /**
-     * Summarize operations for logging
-     *
-     * @param array $operations Operations array from warmup result
-     * @return array Summarized operations
-     */
-    private function summarizeOperations(array $operations): array
-    {
-        return [
-            'connection_test' => $operations['connection_test'] ?? false,
-            'schema_mirroring' => $operations['schema_mirroring'] ?? false,
-            'object_indexing' => $operations['object_indexing'] ?? false,
-            'commit' => $operations['commit'] ?? false,
-            'warmup_queries_successful' => $this->countSuccessfulWarmupQueries($operations)
-        ];
-    }
+        return 0.0;
+    }//end calculateObjectsPerSecond()
 
     /**
      * Count successful warmup queries
      *
      * @param array $operations Operations array
+     *
      * @return int Number of successful warmup queries
+     *
+     * @psalm-suppress UnusedMethod
+     *
+     * @psalm-return int<0, max>
      */
     private function countSuccessfulWarmupQueries(array $operations): int
     {
         $count = 0;
-        
+
         foreach ($operations as $key => $value) {
-            if (str_starts_with($key, 'warmup_query_') && $value === true) {
+            if (str_starts_with($key, 'warmup_query_') === true && $value === true) {
                 $count++;
             }
         }
-        
-        return $count;
-    }
 
-    /**
-     * Log detailed performance statistics for monitoring
-     *
-     * @param array           $result        Warmup result
-     * @param float           $executionTime Total execution time
-     * @param LoggerInterface $logger        The logger
-     */
-    private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
-    {
-        $stats = [
-            'nightly_warmup_performance' => [
-                'date' => date('Y-m-d'),
-                'execution_time_seconds' => round($executionTime, 2),
-                'objects_indexed' => $result['operations']['objects_indexed'] ?? 0,
-                'objects_per_second' => $this->calculateObjectsPerSecond($result, $executionTime),
-                'schemas_processed' => $result['operations']['schemas_processed'] ?? 0,
-                'fields_created' => $result['operations']['fields_created'] ?? 0,
-                'memory_usage_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2),
-                'warmup_efficiency' => $this->calculateWarmupEfficiency($result)
-            ]
-        ];
-        
-        $logger->info('📊 Nightly SOLR Warmup Performance Statistics', $stats);
-    }
+        return $count;
+    }//end countSuccessfulWarmupQueries()
 
     /**
      * Calculate warmup efficiency percentage
      *
      * @param array $result Warmup result
+     *
      * @return float Efficiency percentage
+     *
+     * @psalm-suppress UnusedMethod
      */
     private function calculateWarmupEfficiency(array $result): float
     {
-        $operations = $result['operations'] ?? [];
+        $operations      = $result['operations'] ?? [];
         $totalOperations = count($operations);
-        
+
         if ($totalOperations === 0) {
             return 0.0;
         }
-        
-        $successfulOperations = array_sum(array_map(fn($op) => $op === true ? 1 : 0, $operations));
-        
+
+        $successfulOperations = array_sum(
+            array_map(
+                function (bool $op): int {
+                    if ($op === true) {
+                        return 1;
+                    }
+
+                    return 0;
+                },
+                $operations
+            )
+        );
+
         return round(($successfulOperations / $totalOperations) * 100, 1);
-    }
-}
+    }//end calculateWarmupEfficiency()
+
+    /**
+     * Check if SOLR is enabled and available.
+     *
+     * @param IndexService    $solrService     SOLR service instance
+     * @param SettingsService $settingsService Settings service instance
+     * @param LoggerInterface $logger          Logger instance
+     *
+     * @return bool True if SOLR is enabled and available, false otherwise
+     */
+    private function isSolrEnabledAndAvailable(
+        IndexService $solrService,
+        SettingsService $settingsService,
+        LoggerInterface $logger
+    ): bool {
+        // Check if SOLR is enabled in settings.
+        $solrSettings = $settingsService->getSolrSettings();
+        if (($solrSettings['enabled'] ?? false) === false) {
+            $logger->debug(message: 'SOLR Nightly Warmup Job skipped - SOLR not enabled in settings');
+            return false;
+        }
+
+        // Check if SOLR service is available.
+        if ($solrService->isAvailable() === false) {
+            $logger->debug(message: 'SOLR Nightly Warmup Job skipped - SOLR service not available');
+            return false;
+        }
+
+        return true;
+    }//end isSolrEnabledAndAvailable()
+
+    /**
+     * Get warmup configuration from settings.
+     *
+     * @param SettingsService $_settingsService Settings service instance (unused, kept for API compatibility)
+     * @param LoggerInterface $_logger          Logger instance (unused, kept for API compatibility)
+     *
+     * @return array Warmup configuration array
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    private function getWarmupConfiguration(SettingsService $_settingsService, LoggerInterface $_logger): array
+    {
+        /*
+         * @var \OCP\IConfig $config
+         */
+
+        $config = \OC::$server->get(\OCP\IConfig::class);
+
+        $maxObjects    = $config->getAppValue('openregister', 'solr_nightly_max_objects', (string) self::DEFAULT_NIGHTLY_MAX_OBJECTS);
+        $mode          = $config->getAppValue('openregister', 'solr_nightly_mode', self::DEFAULT_NIGHTLY_MODE);
+        $collectErrors = $config->getAppValue('openregister', 'solr_nightly_collect_errors', 'false') === 'true';
+
+        return [
+            'maxObjects'    => (int) $maxObjects,
+            'mode'          => $mode,
+            'collectErrors' => $collectErrors,
+        ];
+    }//end getWarmupConfiguration()
+
+    /**
+     * Summarize operations for logging.
+     *
+     * @param array $operations Operations array
+     *
+     * @return (float|int)[]
+     *
+     * @psalm-return array{total: int<0, max>, successful: int<0, max>, efficiency: float}
+     */
+    private function summarizeOperations(array $operations): array
+    {
+        return [
+            'total'      => count($operations),
+            'successful' => $this->countSuccessfulWarmupQueries($operations),
+            'efficiency' => $this->calculateWarmupEfficiency(['operations' => $operations]),
+        ];
+    }//end summarizeOperations()
+
+    /**
+     * Log performance statistics.
+     *
+     * @param array           $result        Warmup result
+     * @param float           $executionTime Total execution time in seconds
+     * @param LoggerInterface $logger        Logger instance
+     *
+     * @return void
+     */
+    private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
+    {
+        $logger->info(
+            message: 'SOLR Nightly Warmup Performance Stats',
+            context: [
+                'execution_time_seconds' => round($executionTime, 2),
+                'objects_per_second'     => $this->calculateObjectsPerSecond(result: $result, executionTime: $executionTime),
+                'efficiency_percentage'  => $this->calculateWarmupEfficiency($result),
+            ]
+        );
+    }//end logPerformanceStats()
+}//end class

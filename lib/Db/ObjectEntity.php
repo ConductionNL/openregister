@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Object Entity
  *
@@ -19,8 +20,10 @@
 
 namespace OCA\OpenRegister\Db;
 
+use DateInterval;
 use DateTime;
 use Exception;
+use RuntimeException;
 use JsonSerializable;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\Entity;
@@ -32,30 +35,88 @@ use OCP\IUserSession;
  *
  * This class handles storage and manipulation of objects including their metadata,
  * locking mechanisms, and serialization for API responses.
- * 
+ *
  * ⚠️  BULK OPERATIONS INTEGRATION:
  * When adding new database fields to this entity, consider whether they should be
  * excluded from bulk operation change detection in:
  * - OptimizedBulkOperations::buildMassiveInsertOnDuplicateKeyUpdateSQL()
- * 
+ *
  * Database-managed fields (auto-populated/controlled by DB) should be added to the
  * $databaseManagedFields array to prevent false change detection:
  * - id, uuid: Primary identifiers (never change)
- * - created: Set by database DEFAULT CURRENT_TIMESTAMP  
+ * - created: Set by database DEFAULT CURRENT_TIMESTAMP
  * - updated: Set by database ON UPDATE CURRENT_TIMESTAMP
  * - published: Auto-managed by schema autoPublish logic
- * 
+ *
  * User/application-managed fields that CAN trigger updates:
- * - name, description, summary, image: Extracted metadata 
+ * - name, description, summary, image: Extracted metadata
  * - object: The actual data payload
  * - register, schema: Context fields
  * - owner, organisation: Ownership fields
- * 
+ *
  * Adding fields? Check if they should trigger change detection or be database-managed.
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getUri()
+ * @method void setUri(?string $uri)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getRegister()
+ * @method void setRegister(?string $register)
+ * @method string|null getSchema()
+ * @method void setSchema(?string $schema)
+ * @method array|null getObject()
+ * @method void setObject(?array $object)
+ * @method array|null getFiles()
+ * @method void setFiles(?array $files)
+ * @method array|null getRelations()
+ * @method void setRelations(?array $relations)
+ * @method array|null getLocked()
+ * @method void setLocked(?array $locked)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method string|null getFolder()
+ * @method void setFolder(?string $folder)
+ * @method string|null getApplication()
+ * @method void setApplication(?string $application)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method array|null getValidation()
+ * @method void setValidation(?array $validation)
+ * @method array|null getDeleted()
+ * @method void setDeleted(?array $deleted)
+ * @method array|null getGeo()
+ * @method void setGeo(?array $geo)
+ * @method array|null getRetention()
+ * @method void setRetention(?array $retention)
+ * @method int|null getSize()
+ * @method void setSize(?int $size)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getSummary()
+ * @method void setSummary(?string $summary)
+ * @method string|null getImage()
+ * @method void setImage(?string $image)
+ * @method string|null getLabels()
+ * @method void setLabels(?string $labels)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getPublished()
+ * @method void setPublished(?DateTime $published)
+ * @method DateTime|null getModified()
+ * @method void setModified(?DateTime $modified)
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the object.
      *
@@ -70,8 +131,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectSlugField": "naam" } }
      * The field value will be converted to a URL-friendly slug format.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null URL-friendly slug for the object, unique within register+schema combination
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $slug = null;
 
@@ -114,6 +176,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Files associated with the object.
      *
      * @var array|null Files associated with the object
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $files = [];
 
@@ -121,6 +185,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Relations to other objects stored as an array of file IDs.
      *
      * @var array|null Array of file IDs that are related to this object
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $relations = [];
 
@@ -142,6 +208,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Authorization details for the object.
      *
      * @var array|null JSON object describing authorizations
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $authorization = [];
 
@@ -170,6 +238,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Validation results for the object.
      *
      * @var array|null Array describing validation results
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $validation = [];
 
@@ -177,6 +247,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Deletion details if the object is deleted.
      *
      * @var array|null Array describing deletion details
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $deleted = [];
 
@@ -184,6 +256,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Geographical details for the object.
      *
      * @var array|null Array describing geographical details
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $geo = [];
 
@@ -191,6 +265,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Retention details for the object.
      *
      * @var array|null Array describing retention details
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $retention = [];
 
@@ -210,7 +286,7 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Last update timestamp.
-     * 
+     *
      * 🔒 DATABASE-MANAGED: Set by database ON UPDATE CURRENT_TIMESTAMP
      * This field should NOT be set during bulk preparation to avoid false change detection.
      *
@@ -220,8 +296,8 @@ class ObjectEntity extends Entity implements JsonSerializable
 
     /**
      * Creation timestamp.
-     * 
-     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP  
+     *
+     * 🔒 DATABASE-MANAGED: Set by database DEFAULT CURRENT_TIMESTAMP
      * This field should NOT be set during bulk preparation to avoid false change detection.
      *
      * @var DateTime|null Creation timestamp
@@ -234,12 +310,13 @@ class ObjectEntity extends Entity implements JsonSerializable
      * This field can be automatically populated via schema metadata mapping configuration.
      * Configure in schema: { "configuration": { "objectPublishedField": "publicatieDatum" } }
      * Supports various datetime formats which will be parsed to DateTime objects.
-     * 
+     *
      * ⚠️  PARTIALLY DATABASE-MANAGED: Auto-publish logic sets this for NEW objects only.
      * Excluded from bulk change detection to avoid false updates on existing objects.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Published timestamp
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?DateTime $published = null;
 
@@ -250,8 +327,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectDepublishedField": "einddatum" } }
      * Supports various datetime formats which will be parsed to DateTime objects.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var DateTime|null Depublished timestamp
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?DateTime $depublished = null;
 
@@ -271,8 +349,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectNameField": "naam" } } or
      * with twig-like concatenation: { "objectNameField": "{{ voornaam }} {{ achternaam }}" }
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Name of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $name = null;
 
@@ -283,8 +362,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectDescriptionField": "beschrijving" } }
      * Supports dot notation for nested fields: "contact.beschrijving"
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Description of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $description = null;
 
@@ -295,8 +375,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectSummaryField": "beschrijvingKort" } }
      * Supports twig-like templates for combining fields.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Summary of the object
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $summary = null;
 
@@ -307,8 +388,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Configure in schema: { "configuration": { "objectImageField": "afbeelding" } }
      * Can reference file fields or contain base64 encoded image data.
      *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      * @var string|null Image of the object (base64 encoded or file reference)
+     *
+     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
      */
     protected ?string $image = null;
 
@@ -330,6 +412,8 @@ class ObjectEntity extends Entity implements JsonSerializable
      * @var         array|null
      * @phpstan-var array<string, array<string>>|null
      * @psalm-var   array<string, list<string>>|null
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?array $groups = [];
 
@@ -337,9 +421,10 @@ class ObjectEntity extends Entity implements JsonSerializable
      * The expiration timestamp for this object
      *
      * @var DateTime|null The expiration timestamp for this object
+     *
+     * @psalm-suppress PossiblyUnusedProperty
      */
     protected ?DateTime $expires = null;
-
 
     /**
      * Initialize the entity and define field types
@@ -377,16 +462,14 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'expires', type: 'datetime');
-
     }//end __construct()
-
 
     /**
      * Override getter to provide default empty arrays for JSON array fields
-     * 
+     *
      * We only override this one method from parent Entity - everything else
      * (setters, type conversion, change tracking) uses parent's implementation.
-     * 
+     *
      * The ONLY difference: we return [] instead of null for specific JSON fields
      * that represent collections, making code cleaner throughout the app.
      *
@@ -396,7 +479,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected function getter(string $name): mixed
     {
-        // Array fields that should return [] instead of null when unset
+        // Array fields that should return [] instead of null when unset.
         $arrayFieldsWithEmptyDefault = [
             'files',
             'relations',
@@ -408,16 +491,14 @@ class ObjectEntity extends Entity implements JsonSerializable
             'retention',
         ];
 
-        // If this is an array field and it's null, return empty array
-        if (in_array($name, $arrayFieldsWithEmptyDefault) && property_exists($this, $name)) {
+        // If this is an array field and it's null, return empty array.
+        if (in_array($name, $arrayFieldsWithEmptyDefault) === true && property_exists($this, $name) === true) {
             return $this->$name ?? [];
         }
 
-        // Otherwise, delegate to parent's standard getter behavior
+        // Otherwise, delegate to parent's standard getter behavior.
         return parent::getter($name);
-
     }//end getter()
-
 
     /**
      * Get the object data and set the 'id' to the 'uuid'
@@ -425,25 +506,27 @@ class ObjectEntity extends Entity implements JsonSerializable
      * This getter has special logic to inject the UUID as 'id' field,
      * so it must remain explicit rather than using the magic method.
      *
-     * @return array The object data with 'id' set to 'uuid', or empty array if null
+     * @return (mixed|null|string)[]
+     *
+     * @psalm-return array{id: mixed|null|string,...}
      */
     public function getObject(): array
     {
-        // Initialize the object data with an empty array if null
+        // Initialize the object data with an empty array if null.
         $objectData = $this->object ?? [];
 
-        // Ensure 'id' is the first field by setting it before merging with object data
+        // Ensure 'id' is the first field by setting it before merging with object data.
         $objectData = array_merge(['id' => $this->uuid], $objectData);
 
         return $objectData;
-
     }//end getObject()
-
 
     /**
      * Get array of field names that are JSON type
      *
-     * @return array List of field names that are JSON type
+     * @return string[] List of field names that are JSON type
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -455,18 +538,16 @@ class ObjectEntity extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity from an array of data
      *
      * @param array $object Array of data to hydrate the entity with
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -479,7 +560,7 @@ class ObjectEntity extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -489,7 +570,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -497,22 +577,21 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @param array $object Array of data to hydrate the entity with
      *
-     * @return self Returns the hydrated entity
+     * @return static Returns the hydrated entity
      */
-    public function hydrateObject(array $object): self
+    public function hydrateObject(array $object): static
     {
-        // Lets grap the metadata fields and remove them from the object
+        // Lets grap the metadata fields and remove them from the object.
         $metaDataFields = $object['@self'];
         unset($object['@self']);
 
-        // Hydrate the entity with the metadata fields
+        // Hydrate the entity with the metadata fields.
         $this->hydrate($metaDataFields);
         $this->setObject($object);
 
-        // Return the hydrated entity
+        // Return the hydrated entity.
         return $this;
-
-    }//end hydrate()
+    }//end hydrateObject()
 
     /**
      * Serialize the entity to JSON format
@@ -520,35 +599,50 @@ class ObjectEntity extends Entity implements JsonSerializable
      * Merges the object's own data with a '@self' key containing metadata.
      * Ensures that if a name is not set, the UUID is used as a fallback.
      *
-     * @return array Serialized object data
+     * @return ((array|int|mixed|null|string)[]|mixed)[]
+     *
+     * @psalm-return array{'@self': array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null},...}
      */
     public function jsonSerialize(): array
     {
         // Backwards compatibility for old objects.
-        $object = ($this->object ?? []);
-        // Default to an empty array if $this->object is null.
-        $object['@self'] = $this->getObjectArray($object);
+        if (($this->object ?? null) !== null) {
+            $object = $this->object;
+        } else {
+            $object = [];
+        }
 
-        // Check if name is empty and set uuid as fallback
-        if (empty($object['@self']['name'])) {
+        // Default to an empty array if $this->object is null.
+        $object['@self'] = $this->getObjectArray($object ?? []);
+
+        // Check if name is empty and set uuid as fallback.
+        if (empty($object['@self']['name']) === true) {
             $object['@self']['name'] = $this->uuid;
+        }
+
+        // Ensure organisation is always accessible at top level (not just in @self).
+        // Organisation should NEVER be null - it should always have at least the default organisation.
+        if (($this->organisation ?? null) !== null) {
+            $object['organisation'] = $this->organisation;
         }
 
         // Let's merge and return.
         return $object;
-
     }//end jsonSerialize()
-
 
     /**
      * Get array representation of all object properties
      *
-     * @return array Array containing all object properties
+     * @param array $object Object array parameter
+     *
+     * @return (array|int|mixed|null|string)[] Array containing all object properties
+     *
+     * @psalm-return array{id: null|string, slug: null|string, name: null|string, description: int|string, summary: null|string, image: null|string, uri: null|string, version: null|string, register: array|null|string, schema: array|null|string, schemaVersion: null|string, files: array|null, relations: array|null, locked: array|null, owner: array|null|string, organisation: array|null|string, groups: mixed, authorization: array|null, folder: null|string, application: array|null|string, validation: array|null, geo: array|null, retention: array|null, size: null|string, updated: null|string, created: null|string, published: null|string, depublished: null|string, deleted: array|null}
      */
-    public function getObjectArray(array $object=[]): array
+    public function getObjectArray(array $object = []): array
     {
         // Initialize the object array with default properties.
-        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays)
+        // Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
         $objectArray = [
             'id'            => $this->uuid,
             'slug'          => $this->slug,
@@ -582,35 +676,33 @@ class ObjectEntity extends Entity implements JsonSerializable
         ];
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
-        if (isset($object['@self']) === true && is_array($object['@self']) === true) {
+        if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
             $self = $object['@self'];
 
             // Use the '@self' values if they are arrays.
-            if (isset($self['register']) === true && is_array($self['register']) === true) {
+            if (($self['register'] ?? null) !== null && is_array($self['register']) === true) {
                 $objectArray['register'] = $self['register'];
             }
 
-            if (isset($self['schema']) === true && is_array($self['schema']) === true) {
+            if (($self['schema'] ?? null) !== null && is_array($self['schema']) === true) {
                 $objectArray['schema'] = $self['schema'];
             }
 
-            if (isset($self['owner']) === true && is_array($self['owner']) === true) {
+            if (($self['owner'] ?? null) !== null && is_array($self['owner']) === true) {
                 $objectArray['owner'] = $self['owner'];
             }
 
-            if (isset($self['organisation']) === true && is_array($self['organisation']) === true) {
+            if (($self['organisation'] ?? null) !== null) {
                 $objectArray['organisation'] = $self['organisation'];
             }
 
-            if (isset($self['application']) === true && is_array($self['application']) === true) {
+            if (($self['application'] ?? null) !== null && is_array($self['application']) === true) {
                 $objectArray['application'] = $self['application'];
             }
         }//end if
 
         return $objectArray;
-
     }//end getObjectArray()
-
 
     /**
      * Format DateTime object to ISO 8601 string or return null
@@ -626,9 +718,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         return $date->format('c');
-
     }//end getFormattedDate()
-
 
     /**
      * Lock the object for a specific duration
@@ -639,9 +729,11 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If object is already locked by another user
      *
-     * @return bool True if lock was successful
+     * @return true True if lock was successful
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function lock(IUserSession $userSession, ?string $process=null, ?int $duration=3600): bool
+    public function lock(IUserSession $userSession, ?string $process = null, ?int $duration = 3600): bool
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
@@ -649,11 +741,14 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         $userId = $currentUser->getUID();
-        $now    = new \DateTime();
+        $now    = new DateTime();
 
         // If already locked, check if it's the same user and not expired.
         if ($this->isLocked() === true) {
-            $lock = $this->setLocked();
+            $lock = $this->getLocked();
+            if ($lock === null) {
+                throw new Exception('Lock data is missing');
+            }
 
             // If locked by different user.
             if ($lock['user'] !== $userId) {
@@ -661,39 +756,36 @@ class ObjectEntity extends Entity implements JsonSerializable
             }
 
             // If same user, extend the lock.
-            $expirationDate = new \DateTime($lock['expiration']);
-            $newExpiration  = clone $now;
-            $newExpiration->add(new \DateInterval('PT'.$duration.'S'));
+            $newExpiration = clone $now;
+            $newExpiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
 
             $this->setLocked(
-                    [
+                locked: [
                         'user'       => $userId,
                         'process'    => ($process ?? $lock['process']),
                         'created'    => $lock['created'],
                         'duration'   => $duration,
                         'expiration' => $newExpiration->format('c'),
                     ]
-                    );
+            );
         } else {
             // Create new lock.
             $expiration = clone $now;
-            $expiration->add(new \DateInterval('PT'.$duration.'S'));
+            $expiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
 
             $this->setLocked(
-                    [
+                locked: [
                         'user'       => $userId,
                         'process'    => $process,
                         'created'    => $now->format('c'),
                         'duration'   => $duration,
                         'expiration' => $expiration->format('c'),
                     ]
-                    );
+            );
         }//end if
 
         return true;
-
     }//end lock()
-
 
     /**
      * Unlock the object
@@ -702,7 +794,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If object is locked by another user
      *
-     * @return bool True if unlock was successful
+     * @return true True if unlock was successful
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function unlock(IUserSession $userSession): bool
     {
@@ -718,15 +812,17 @@ class ObjectEntity extends Entity implements JsonSerializable
         $userId = $currentUser->getUID();
 
         // Check if locked by different user.
+        if ($this->locked === null) {
+            throw new Exception('Object is not locked');
+        }
+
         if ($this->locked['user'] !== $userId) {
             throw new Exception('Object is locked by another user');
         }
 
-        $this->setLocked(null);
+        $this->setLocked(locked: null);
         return true;
-
     }//end unlock()
-
 
     /**
      * Check if the object is currently locked
@@ -735,18 +831,32 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function isLocked(): bool
     {
-        if ($this->locked === null) {
+        if ($this->locked === null || empty($this->locked)) {
             return false;
         }
 
         // Check if lock has expired.
-        $now        = new \DateTime();
-        $expiration = new \DateTime($this->locked['expiration']);
+        $now = new DateTime();
 
-        return $now < $expiration;
+        // Check if expiration key exists.
+        if (isset($this->locked['expiration']) === true) {
+            // New format with expiration.
+            $expiration = new DateTime($this->locked['expiration']);
+            return $now < $expiration;
+        }
 
+        // Legacy format: calculate expiration from lockedAt + duration.
+        if (isset($this->locked['lockedAt']) === true && isset($this->locked['duration']) === true) {
+            $lockedAt   = new DateTime($this->locked['lockedAt']);
+            $duration   = (int) $this->locked['duration'];
+            $expiration = clone $lockedAt;
+            $expiration->add(new \DateInterval('PT' . $duration . 'S'));
+            return $now < $expiration;
+        }
+
+        // If no expiration info, treat as permanently locked (until explicitly unlocked).
+        return true;
     }//end isLocked()
-
 
     /**
      * Get lock information
@@ -760,9 +870,25 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         return $this->locked;
-
     }//end getLockInfo()
 
+    /**
+     * Get the user ID who locked the object
+     *
+     * Returns the user ID (UID) of the user who has locked this object.
+     * Returns null if the object is not locked or lock information is missing.
+     *
+     * @return string|null User ID who locked the object, or null if not locked
+     */
+    public function getLockedBy(): ?string
+    {
+        if ($this->isLocked() === false) {
+            return null;
+        }
+
+        // Return the user from the lock array.
+        return $this->locked['user'] ?? null;
+    }//end getLockedBy()
 
     /**
      * Delete the object
@@ -773,9 +899,9 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * @throws Exception If no user is logged in
      *
-     * @return self Returns the entity
+     * @return static Returns the entity
      */
-    public function delete(IUserSession $userSession, ?string $deletedReason=null, ?int $retentionPeriod=30): self
+    public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static
     {
         $currentUser = $userSession->getUser();
         if ($currentUser === null) {
@@ -783,25 +909,23 @@ class ObjectEntity extends Entity implements JsonSerializable
         }
 
         $userId    = $currentUser->getUID();
-        $now       = new \DateTime();
+        $now       = new DateTime();
         $purgeDate = clone $now;
-        // $purgeDate->add(new \DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
-        $purgeDate->add(new \DateInterval('P31D'));
+        // $purgeDate->add(new DateInterval('P'.(string)$retentionPeriod.'D')); @todo fix this
+        $purgeDate->add(new DateInterval('P31D'));
 
         $this->setDeleted(
-                [
+            deleted: [
                     'deleted'         => $now->format('c'),
                     'deletedBy'       => $userId,
                     'deletedReason'   => $deletedReason,
                     'retentionPeriod' => $retentionPeriod,
                     'purgeDate'       => $purgeDate->format('c'),
                 ]
-                );
+        );
 
         return $this;
-
     }//end delete()
-
 
     /**
      * Get the last log entry for this object (runtime only)
@@ -813,25 +937,22 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function getLastLog(): ?array
     {
         return $this->lastLog;
-
     }//end getLastLog()
-
 
     /**
      * Set the last log entry for this object (runtime only)
      *
-     * @param         array|null $log The log entry to set
+     * @param array|null $log The log entry to set
+     *
      * @phpstan-param array<string, mixed>|null $log
      * @psalm-param   array<string, mixed>|null $log
      *
      * @return void
      */
-    public function setLastLog(?array $log=null): void
+    public function setLastLog(?array $log = null): void
     {
         $this->lastLog = $log;
-
     }//end setLastLog()
-
 
     /**
      * String representation of the object entity
@@ -843,21 +964,19 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if UUID is not available
+        // Fallback to ID if UUID is not available.
         if ($this->id !== null) {
-            return 'Object #'.$this->id;
+            return 'Object #' . $this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Object Entity';
-
     }//end __toString()
-
 
     /**
      * Check if this object is managed by any configuration
@@ -880,15 +999,13 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $objects = $configuration->getObjects();
-            if (in_array($this->id, $objects, true) === true) {
+            if (in_array($this->id, $objects ?? [], true) === true) {
                 return true;
             }
         }
 
         return false;
-
     }//end isManagedByConfiguration()
-
 
     /**
      * Get the configuration that manages this object
@@ -911,14 +1028,11 @@ class ObjectEntity extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $objects = $configuration->getObjects();
-            if (in_array($this->id, $objects, true) === true) {
+            if (in_array($this->id, $objects ?? [], true) === true) {
                 return $configuration;
             }
         }
 
         return null;
-
     }//end getManagedByConfiguration()
-
-
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Agent Entity
  *
@@ -102,7 +103,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Agent extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the agent
      *
@@ -162,7 +162,7 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Maximum tokens to generate in responses
      *
-     * @var int|null Token limit
+     * @var integer|null Token limit
      */
     protected ?int $maxTokens = null;
 
@@ -185,7 +185,7 @@ class Agent extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfiguration = null;
+    protected ?Configuration $managedByConfiguration = null;
 
     /**
      * Owner user ID
@@ -197,14 +197,14 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Whether the agent is active
      *
-     * @var bool Active status
+     * @var boolean Active status
      */
     protected bool $active = true;
 
     /**
      * Enable RAG (Retrieval-Augmented Generation)
      *
-     * @var bool Whether to use RAG for context retrieval
+     * @var boolean Whether to use RAG for context retrieval
      */
     protected bool $enableRag = false;
 
@@ -218,35 +218,35 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Number of sources to retrieve for RAG
      *
-     * @var int|null Number of context sources
+     * @var integer|null Number of context sources
      */
     protected ?int $ragNumSources = null;
 
     /**
      * Include files in RAG search
      *
-     * @var bool Whether to search files
+     * @var boolean Whether to search files
      */
     protected bool $ragIncludeFiles = false;
 
     /**
      * Include objects in RAG search
      *
-     * @var bool Whether to search objects
+     * @var boolean Whether to search objects
      */
     protected bool $ragIncludeObjects = false;
 
     /**
      * API request quota per day (0 = unlimited)
      *
-     * @var int|null Maximum requests per day
+     * @var integer|null Maximum requests per day
      */
     protected ?int $requestQuota = null;
 
     /**
      * Token quota per day (0 = unlimited)
      *
-     * @var int|null Maximum tokens per day
+     * @var integer|null Maximum tokens per day
      */
     protected ?int $tokenQuota = null;
 
@@ -260,21 +260,21 @@ class Agent extends Entity implements JsonSerializable
     /**
      * Whether to search in files (Nextcloud files)
      *
-     * @var bool|null Search in files flag
+     * @var boolean|null Search in files flag
      */
     protected ?bool $searchFiles = null;
 
     /**
      * Whether to search in objects (OpenRegister objects)
      *
-     * @var bool|null Search in objects flag
+     * @var boolean|null Search in objects flag
      */
     protected ?bool $searchObjects = null;
 
     /**
      * Whether agent is private (not shared with organization)
      *
-     * @var bool|null Private flag
+     * @var boolean|null Private flag
      */
     protected ?bool $isPrivate = null;
 
@@ -328,7 +328,6 @@ class Agent extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Agent constructor
      *
@@ -366,28 +365,7 @@ class Agent extends Entity implements JsonSerializable
         $this->addType('user', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
-
-
-    /**
-     * Validate UUID format
-     *
-     * @param string $uuid The UUID to validate
-     *
-     * @return bool True if UUID format is valid
-     */
-    public static function isValidUuid(string $uuid): bool
-    {
-        try {
-            Uuid::fromString($uuid);
-            return true;
-        } catch (\InvalidArgumentException $e) {
-            return false;
-        }
-
-    }//end isValidUuid()
-
 
     /**
      * Check if a user is invited to access this private agent
@@ -401,72 +379,27 @@ class Agent extends Entity implements JsonSerializable
         if ($this->invitedUsers === null) {
             return false;
         }
-        
+
         return in_array($userId, $this->invitedUsers, true);
-
     }//end hasInvitedUser()
-
-
-    /**
-     * Add a user to the invited users list
-     *
-     * @param string $userId The user ID to add
-     *
-     * @return void
-     */
-    public function addInvitedUser(string $userId): void
-    {
-        if ($this->invitedUsers === null) {
-            $this->invitedUsers = [];
-        }
-        
-        if (!in_array($userId, $this->invitedUsers, true)) {
-            $this->invitedUsers[] = $userId;
-            $this->markFieldUpdated('invitedUsers');
-        }
-
-    }//end addInvitedUser()
-
-
-    /**
-     * Remove a user from the invited users list
-     *
-     * @param string $userId The user ID to remove
-     *
-     * @return void
-     */
-    public function removeInvitedUser(string $userId): void
-    {
-        if ($this->invitedUsers === null) {
-            return;
-        }
-        
-        $key = array_search($userId, $this->invitedUsers, true);
-        if ($key !== false) {
-            unset($this->invitedUsers[$key]);
-            $this->invitedUsers = array_values($this->invitedUsers);
-            $this->markFieldUpdated('invitedUsers');
-        }
-
-    }//end removeInvitedUser()
-
 
     /**
      * Hydrate the entity from an array
      *
      * @param array<string, mixed> $object The data to hydrate from
      *
-     * @return self The hydrated entity
+     * @return static The hydrated entity
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
-        // Set UUID - generate if not provided
-        if (isset($object['uuid']) && !empty($object['uuid'])) {
+        // Set UUID - generate if not provided.
+        if (($object['uuid'] ?? null) !== null && empty($object['uuid']) === false) {
             $this->setUuid($object['uuid']);
         } else {
-            // Generate new UUID if not provided
+            // Generate new UUID if not provided.
             $this->setUuid(Uuid::v4()->toRfc4122());
         }
+
         $this->setName($object['name'] ?? null);
         $this->setDescription($object['description'] ?? null);
         $this->setType($object['type'] ?? null);
@@ -496,144 +429,70 @@ class Agent extends Entity implements JsonSerializable
         $this->setUser($object['user'] ?? null);
 
         return $this;
-
     }//end hydrate()
-
 
     /**
      * Serialize the entity to JSON
      *
-     * @return array<string, mixed> The serialized data
+     * @return (array|null|scalar)[]
+     *
+     * @psalm-return array{id: int, uuid: null|string, name: null|string, description: null|string, type: null|string, provider: null|string, model: null|string, prompt: null|string, temperature: float|null, maxTokens: int|null, configuration: array|null, organisation: null|string, owner: null|string, active: bool, enableRag: bool, ragSearchMode: null|string, ragNumSources: int|null, ragIncludeFiles: bool, ragIncludeObjects: bool, requestQuota: int|null, tokenQuota: int|null, views: array|null, searchFiles: bool|null, searchObjects: bool|null, isPrivate: bool|null, invitedUsers: array|null, groups: array|null, tools: array|null, user: null|string, created: null|string, updated: null|string, managedByConfiguration: array{id: int, uuid: null|string, title: null|string}|null}
      */
     public function jsonSerialize(): array
     {
         return [
-            'id'                 => $this->id,
-            'uuid'               => $this->uuid,
-            'name'               => $this->name,
-            'description'        => $this->description,
-            'type'               => $this->type,
-            'provider'           => $this->provider,
-            'model'              => $this->model,
-            'prompt'             => $this->prompt,
-            'temperature'        => $this->temperature,
-            'maxTokens'          => $this->maxTokens,
-            'configuration'      => $this->configuration,
-            'organisation'       => $this->organisation,
-            'owner'              => $this->owner,
-            'active'             => $this->active,
-            'enableRag'          => $this->enableRag,
-            'ragSearchMode'      => $this->ragSearchMode,
-            'ragNumSources'      => $this->ragNumSources,
-            'ragIncludeFiles'    => $this->ragIncludeFiles,
-            'ragIncludeObjects'  => $this->ragIncludeObjects,
-            'requestQuota'       => $this->requestQuota,
-            'tokenQuota'         => $this->tokenQuota,
-            'views'              => $this->views,
-            'searchFiles'        => $this->searchFiles,
-            'searchObjects'      => $this->searchObjects,
-            'isPrivate'          => $this->isPrivate,
-            'invitedUsers'       => $this->invitedUsers,
-            'groups'             => $this->groups,
-            'tools'              => $this->tools,
-            'user'               => $this->user,
-            'created'            => $this->created?->format('Y-m-d\TH:i:s\Z'),
-            'updated'            => $this->updated?->format('Y-m-d\TH:i:s\Z'),
-            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
-                'id' => $this->managedByConfiguration->getId(),
-                'uuid' => $this->managedByConfiguration->getUuid(),
-                'title' => $this->managedByConfiguration->getTitle(),
-            ] : null,
+            'id'                     => $this->id,
+            'uuid'                   => $this->uuid,
+            'name'                   => $this->name,
+            'description'            => $this->description,
+            'type'                   => $this->type,
+            'provider'               => $this->provider,
+            'model'                  => $this->model,
+            'prompt'                 => $this->prompt,
+            'temperature'            => $this->temperature,
+            'maxTokens'              => $this->maxTokens,
+            'configuration'          => $this->configuration,
+            'organisation'           => $this->organisation,
+            'owner'                  => $this->owner,
+            'active'                 => $this->active,
+            'enableRag'              => $this->enableRag,
+            'ragSearchMode'          => $this->ragSearchMode,
+            'ragNumSources'          => $this->ragNumSources,
+            'ragIncludeFiles'        => $this->ragIncludeFiles,
+            'ragIncludeObjects'      => $this->ragIncludeObjects,
+            'requestQuota'           => $this->requestQuota,
+            'tokenQuota'             => $this->tokenQuota,
+            'views'                  => $this->views,
+            'searchFiles'            => $this->searchFiles,
+            'searchObjects'          => $this->searchObjects,
+            'isPrivate'              => $this->isPrivate,
+            'invitedUsers'           => $this->invitedUsers,
+            'groups'                 => $this->groups,
+            'tools'                  => $this->tools,
+            'user'                   => $this->user,
+            'created'                => $this->created?->format('Y-m-d\TH:i:s\Z'),
+            'updated'                => $this->updated?->format('Y-m-d\TH:i:s\Z'),
+            'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
-
     }//end jsonSerialize()
 
-
     /**
-     * Get the configuration that manages this agent (transient property)
+     * Get managed by configuration data for JSON serialization
      *
-     * @return Configuration|null The managing configuration or null
+     * @return (int|null|string)[]|null Configuration data or null
+     *
+     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
      */
-    public function getManagedByConfigurationEntity(): ?Configuration
+    private function getManagedByConfigurationData(): array|null
     {
-        return $this->managedByConfiguration;
-
-    }//end getManagedByConfigurationEntity()
-
-
-    /**
-     * Set the configuration that manages this agent (transient property)
-     *
-     * @param Configuration|null $configuration The managing configuration
-     *
-     * @return void
-     */
-    public function setManagedByConfigurationEntity(?Configuration $configuration): void
-    {
-        $this->managedByConfiguration = $configuration;
-
-    }//end setManagedByConfigurationEntity()
-
-
-    /**
-     * Check if this agent is managed by a configuration
-     *
-     * Returns true if this agent's ID appears in any of the provided configurations' agents arrays.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return bool True if managed by a configuration, false otherwise
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function isManagedByConfiguration(array $configurations): bool
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return false;
-        }
-
-        foreach ($configurations as $configuration) {
-            $agents = $configuration->getAgents();
-            if (in_array($this->id, $agents, true) === true) {
-                return true;
-            }
-        }
-
-        return false;
-
-    }//end isManagedByConfiguration()
-
-
-    /**
-     * Get the configuration that manages this agent
-     *
-     * Returns the first configuration that has this agent's ID in its agents array.
-     * Returns null if the agent is not managed by any configuration.
-     *
-     * @param array<Configuration> $configurations Array of Configuration entities to check against
-     *
-     * @return Configuration|null The configuration managing this agent, or null
-     *
-     * @phpstan-param array<Configuration> $configurations
-     * @psalm-param   array<Configuration> $configurations
-     */
-    public function getManagedByConfiguration(array $configurations): ?Configuration
-    {
-        if (empty($configurations) === true || $this->id === null) {
-            return null;
-        }
-
-        foreach ($configurations as $configuration) {
-            $agents = $configuration->getAgents();
-            if (in_array($this->id, $agents, true) === true) {
-                return $configuration;
-            }
+        if ($this->managedByConfiguration !== null) {
+            return [
+                'id'    => $this->managedByConfiguration->getId(),
+                'uuid'  => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ];
         }
 
         return null;
-
-    }//end getManagedByConfiguration()
-
-
+    }//end getManagedByConfigurationData()
 }//end class

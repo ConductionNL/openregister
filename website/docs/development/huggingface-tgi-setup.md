@@ -42,8 +42,8 @@ Run **Mistral** and other Hugging Face models locally with an **OpenAI-compatibl
 
 **Installation**:
 ```bash
-# Already configured in docker-compose.huggingface.yml
-docker-compose -f docker-compose.huggingface.yml up -d tgi-mistral
+# Use the huggingface profile in docker-compose.dev.yml
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d tgi-mistral
 ```
 
 ### Option 2: vLLM - Alternative
@@ -56,8 +56,8 @@ docker-compose -f docker-compose.huggingface.yml up -d tgi-mistral
 
 **Installation**:
 ```bash
-# Already configured in docker-compose.huggingface.yml
-docker-compose -f docker-compose.huggingface.yml up -d vllm-mistral
+# Use the huggingface profile in docker-compose.dev.yml
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d vllm-mistral
 ```
 
 ## Quick Start
@@ -67,11 +67,11 @@ docker-compose -f docker-compose.huggingface.yml up -d vllm-mistral
 ```bash
 cd /path/to/openregister
 
-# Start TGI (choose ONE)
-docker-compose -f docker-compose.huggingface.yml up -d tgi-mistral
+# Start TGI (choose ONE) - using huggingface profile
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d tgi-mistral
 
-# OR start vLLM
-docker-compose -f docker-compose.huggingface.yml up -d vllm-mistral
+# OR start vLLM (if configured)
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d vllm-mistral
 ```
 
 ### 2. Wait for Model Download
@@ -206,7 +206,7 @@ echo $answer;
 
 ### Changing the Model
 
-Edit `docker-compose.huggingface.yml`:
+Edit `docker-compose.dev.yml`:
 
 **For TGI**:
 ```yaml
@@ -216,7 +216,7 @@ tgi-mistral:
     - MODEL_ID=mistralai/Mixtral-8x7B-Instruct-v0.1
 ```
 
-**For vLLM**:
+**For vLLM** (if configured):
 ```yaml
 vllm-mistral:
   command:
@@ -226,7 +226,7 @@ vllm-mistral:
 
 Then restart:
 ```bash
-docker-compose -f docker-compose.huggingface.yml up -d --force-recreate
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d --force-recreate tgi-mistral
 ```
 
 ## OpenAI API Compatibility
@@ -323,10 +323,10 @@ docker logs openregister-tgi-mistral
 
 # If authentication required (gated models)
 # Add Hugging Face token
-docker-compose -f docker-compose.huggingface.yml down
-# Edit docker-compose.huggingface.yml:
+docker-compose -f docker-compose.dev.yml --profile huggingface down
+# Edit docker-compose.dev.yml:
 # - HUGGING_FACE_HUB_TOKEN=hf_your_token_here
-docker-compose -f docker-compose.huggingface.yml up -d
+docker-compose -f docker-compose.dev.yml --profile huggingface up -d
 ```
 
 ### Out of Memory
@@ -481,9 +481,9 @@ location /v1/ {
 
 ## Related Documentation
 
-- [Docker Services Overview](./docker-services.md) - All included services
+- [Docker Setup](./docker-setup.md) - Complete Docker development setup guide
 - [Presidio Setup](./presidio-setup.md) - Entity extraction
-- [Ollama Configuration](./docker-setup.md) - Alternative local LLM
+- [Ollama Configuration](../development/docker-setup.md) - Alternative local LLM
 - [NER & NLP Concepts](../features/ner-nlp-concepts.md) - Entity recognition
 
 ## External Resources

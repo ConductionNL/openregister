@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Organisation Created Event
  *
@@ -9,7 +10,7 @@
  * @author    Conduction b.v. <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @version   1.0.0
+ * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/OpenRegister
  */
 
@@ -35,14 +36,12 @@ use OCA\OpenRegister\Db\Organisation;
  */
 class OrganisationCreatedEvent extends Event
 {
-
     /**
      * The organisation that was created
      *
      * @var Organisation
      */
     private Organisation $organisation;
-
 
     /**
      * OrganisationCreatedEvent constructor
@@ -53,9 +52,7 @@ class OrganisationCreatedEvent extends Event
     {
         parent::__construct();
         $this->organisation = $organisation;
-
     }//end __construct()
-
 
     /**
      * Get the organisation that was created
@@ -65,8 +62,5 @@ class OrganisationCreatedEvent extends Event
     public function getOrganisation(): Organisation
     {
         return $this->organisation;
-
     }//end getOrganisation()
-
-
 }//end class

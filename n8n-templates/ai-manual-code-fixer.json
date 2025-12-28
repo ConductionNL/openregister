@@ -1,0 +1,240 @@
+{
+  "name": "AI Manual Code Fixer (Ollama)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [20, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    iteration: 0,\n    maxIterations: 5,\n    container: 'master-nextcloud-1',\n    appPath: '/var/www/html/apps-extra/openregister',\n    ollamaUrl: 'http://openregister-ollama:11434',\n    model: 'codellama:7b-instruct',\n    previousIssues: 999999,\n    fixesApplied: 0,\n    startTime: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "initialize",
+      "name": "Initialize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --standard=PSR12 --report=json lib/ 2>&1 || echo '{}'\""
+      },
+      "id": "scan-phpcs",
+      "name": "Scan PHPCS (JSON)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst phpcsOutput = config.stdout || '{}';\n\nlet phpcsData;\ntry {\n  phpcsData = JSON.parse(phpcsOutput);\n} catch (e) {\n  console.log('Failed to parse PHPCS JSON, using empty');\n  phpcsData = {files: {}};\n}\n\nconst files = phpcsData.files || {};\nconst allIssues = [];\n\n// Extract first 3 fixable issues for AI\nlet issueCount = 0;\nfor (const [filePath, fileData] of Object.entries(files)) {\n  if (issueCount >= 3) break;\n  \n  const messages = fileData.messages || [];\n  for (const msg of messages) {\n    if (issueCount >= 3) break;\n    \n    // Focus on specific fixable issues\n    if (msg.message.includes('line exceeds') || \n        msg.message.includes('Comment') || \n        msg.message.includes('Doc comment')) {\n      allIssues.push({\n        file: filePath,\n        line: msg.line,\n        column: msg.column,\n        type: msg.type,\n        message: msg.message,\n        source: msg.source\n      });\n      issueCount++;\n    }\n  }\n}\n\nconst analysis = {\n  ...config,\n  iteration: (config.iteration || 0) + 1,\n  totalFiles: Object.keys(files).length,\n  issuesForAI: allIssues,\n  hasIssues: allIssues.length > 0\n};\n\nconsole.log(`Iteration ${analysis.iteration}: Found ${allIssues.length} issues for AI fixing`);\nreturn [{ json: analysis }];"
+      },
+      "id": "parse-issues",
+      "name": "Parse Issues for AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasIssues }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-issues",
+      "name": "Has Issues?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && head -n 50 {{ $json.issuesForAI[0].file.replace('/var/www/html/apps-extra/openregister/', '') }}\""
+      },
+      "id": "read-file",
+      "name": "Read File Context",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst fileContent = config.stdout || '';\nconst issue = config.issuesForAI[0];\n\nconst prompt = `You are a PHP coding expert. Fix this PSR-12 violation:\n\nFile: ${issue.file}\nLine: ${issue.line}\nIssue: ${issue.message}\n\nFile content (first 50 lines):\n${fileContent}\n\nProvide ONLY the fixed PHP code for line ${issue.line}, nothing else. No explanations, no markdown, just the corrected line of code.`;\n\nconst result = {\n  ...config,\n  aiPrompt: prompt,\n  currentIssue: issue,\n  fileContent: fileContent\n};\n\nconsole.log(`Asking AI to fix: ${issue.message}`);\nreturn [{ json: result }];"
+      },
+      "id": "prepare-ai-prompt",
+      "name": "Prepare AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ollamaUrl }}/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $json.model }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.aiPrompt }}"
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            },
+            {
+              "name": "temperature",
+              "value": "0.1"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "call-ollama",
+      "name": "Call Ollama AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst aiResponse = config.response || '';\nconst issue = config.currentIssue;\n\n// Extract code from AI response\nlet fixedCode = aiResponse.trim();\n\n// Remove any markdown code blocks\nfixedCode = fixedCode.replace(/```php\\n?/g, '').replace(/```\\n?/g, '');\n\n// Clean up\nfixedCode = fixedCode.split('\\n')[0].trim();\n\nconst result = {\n  ...config,\n  aiFixedCode: fixedCode,\n  fixReady: fixedCode.length > 0\n};\n\nconsole.log(`AI suggested fix: ${fixedCode.substring(0, 100)}...`);\nreturn [{ json: result }];"
+      },
+      "id": "parse-ai-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst issue = config.currentIssue;\nconst fixedCode = config.aiFixedCode;\nconst filePath = issue.file.replace('/var/www/html/apps-extra/openregister/', '');\nconst lineNum = issue.line;\n\n// Create sed command to replace the line\nconst sedCmd = `docker exec -u 33 ${config.container} bash -c \"cd ${config.appPath} && sed -i '${lineNum}s/.*/    ${fixedCode.replace(/'/g, \"'\\\\\\\"'\\\\\\\"'\")}/' ${filePath}\"`;\n\nconst result = {\n  ...config,\n  sedCommand: sedCmd,\n  targetFile: filePath,\n  targetLine: lineNum\n};\n\nconsole.log(`Applying fix to ${filePath}:${lineNum}`);\nreturn [{ json: result }];"
+      },
+      "id": "prepare-file-edit",
+      "name": "Prepare File Edit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.sedCommand }}"
+      },
+      "id": "apply-fix",
+      "name": "Apply AI Fix to File",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\n\nconst result = {\n  ...config,\n  fixesApplied: (config.fixesApplied || 0) + 1,\n  previousIssues: config.issuesForAI.length - 1\n};\n\nconsole.log(`✅ Applied AI fix #${result.fixesApplied}`);\nreturn [{ json: result }];"
+      },
+      "id": "track-fix",
+      "name": "Track Fix Applied",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2440, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.iteration }}",
+              "operation": "smaller",
+              "value2": "={{ $json.maxIterations }}"
+            }
+          ]
+        }
+      },
+      "id": "continue-loop",
+      "name": "Continue Loop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2660, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const final = $input.item.json;\n\nconst report = {\n  title: '🤖 AI Manual Code Fixes Complete',\n  iterations: final.iteration,\n  fixesApplied: final.fixesApplied,\n  model: final.model,\n  duration: Math.round((new Date() - new Date(final.startTime)) / 1000) + 's',\n  message: `Applied ${final.fixesApplied} AI-powered manual fixes using ${final.model}`\n};\n\nconsole.log('=== AI FIXING COMPLETE ===');\nconsole.log(JSON.stringify(report, null, 2));\n\nreturn [{ json: report }];"
+      },
+      "id": "final-report",
+      "name": "Generate Final Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{"node": "Initialize", "type": "main", "index": 0}]]
+    },
+    "Initialize": {
+      "main": [[{"node": "Scan PHPCS (JSON)", "type": "main", "index": 0}]]
+    },
+    "Scan PHPCS (JSON)": {
+      "main": [[{"node": "Parse Issues for AI", "type": "main", "index": 0}]]
+    },
+    "Parse Issues for AI": {
+      "main": [[{"node": "Has Issues?", "type": "main", "index": 0}]]
+    },
+    "Has Issues?": {
+      "main": [
+        [{"node": "Read File Context", "type": "main", "index": 0}],
+        [{"node": "Generate Final Report", "type": "main", "index": 0}]
+      ]
+    },
+    "Read File Context": {
+      "main": [[{"node": "Prepare AI Prompt", "type": "main", "index": 0}]]
+    },
+    "Prepare AI Prompt": {
+      "main": [[{"node": "Call Ollama AI", "type": "main", "index": 0}]]
+    },
+    "Call Ollama AI": {
+      "main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]
+    },
+    "Parse AI Response": {
+      "main": [[{"node": "Prepare File Edit", "type": "main", "index": 0}]]
+    },
+    "Prepare File Edit": {
+      "main": [[{"node": "Apply AI Fix to File", "type": "main", "index": 0}]]
+    },
+    "Apply AI Fix to File": {
+      "main": [[{"node": "Track Fix Applied", "type": "main", "index": 0}]]
+    },
+    "Track Fix Applied": {
+      "main": [[{"node": "Continue Loop?", "type": "main", "index": 0}]]
+    },
+    "Continue Loop?": {
+      "main": [
+        [{"node": "Scan PHPCS (JSON)", "type": "main", "index": 0}],
+        [{"node": "Generate Final Report", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionTimeout": 3600
+  },
+  "versionId": "1",
+  "id": "ai-manual-fixer",
+  "tags": []
+}
+
+
+

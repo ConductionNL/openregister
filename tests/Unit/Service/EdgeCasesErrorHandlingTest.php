@@ -72,13 +72,13 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testUnauthenticatedRequests(): void
     {
-        // Arrange: No authenticated user
+        // Arrange: No authenticated user.
         $this->userSession->method('getUser')->willReturn(null);
 
-        // Act: Attempt unauthenticated operation
+        // Act: Attempt unauthenticated operation.
         $response = $this->organisationController->index();
 
-        // Assert: Unauthorized response
+        // Assert: Unauthorized response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(401, $response->getStatus());
         
@@ -92,25 +92,25 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testMalformedJsonRequests(): void
     {
-        // Arrange: Valid user but malformed request data
+        // Arrange: Valid user but malformed request data.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Mock: Invalid JSON structure
+        // Mock: Invalid JSON structure.
         $this->request->method('getParam')
             ->willReturnCallback(function($key, $default) {
                 if ($key === 'name') {
-                    // Simulate malformed data that causes processing errors
+                    // Simulate malformed data that causes processing errors.
                     return ['invalid' => 'structure'];
                 }
                 return $default;
             });
 
-        // Act: Attempt to create organisation with malformed data
+        // Act: Attempt to create organisation with malformed data.
         $response = $this->organisationController->create(['invalid' => 'structure'], 'Test description');
 
-        // Assert: Bad request response
+        // Assert: Bad request response.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(400, $response->getStatus());
         
@@ -123,23 +123,23 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testSqlInjectionAttempts(): void
     {
-        // Arrange: User with SQL injection payload
+        // Arrange: User with SQL injection payload.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
         $maliciousInput = "'; DROP TABLE organisations; --";
         
-        // Mock: Parameterized queries should prevent injection
+        // Mock: Parameterized queries should prevent injection.
         $this->organisationMapper->expects($this->once())
             ->method('findByName')
             ->with($maliciousInput) // Input is safely parameterized
             ->willReturn([]);
 
-        // Act: Search with malicious input
+        // Act: Search with malicious input.
         $response = $this->organisationController->search($maliciousInput);
 
-        // Assert: Safe handling, no SQL injection
+        // Assert: Safe handling, no SQL injection.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -153,27 +153,27 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testVeryLongOrganisationNames(): void
     {
-        // Arrange: User creates organisation with very long name
+        // Arrange: User creates organisation with very long name.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // 1000 character name
+        // 1000 character name.
         $veryLongName = str_repeat('A', 1000);
         
-        // Act: Attempt to create organisation with very long name
+        // Act: Attempt to create organisation with very long name.
         $response = $this->organisationController->create($veryLongName, 'Test description');
 
-        // Assert: Should handle gracefully (truncate or reject)
+        // Assert: Should handle gracefully (truncate or reject).
         $this->assertInstanceOf(JSONResponse::class, $response);
         
         if ($response->getStatus() === 400) {
-            // Name too long - rejected
+            // Name too long - rejected.
             $responseData = $response->getData();
             $this->assertArrayHasKey('error', $responseData);
             $this->assertStringContainsString('too long', strtolower($responseData['error']));
         } else {
-            // Name truncated - accepted
+            // Name truncated - accepted.
             $this->assertEquals(200, $response->getStatus());
             $responseData = $response->getData();
             $this->assertLessThanOrEqual(255, strlen($responseData['name'])); // Truncated
@@ -185,16 +185,16 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testUnicodeAndSpecialCharacters(): void
     {
-        // Arrange: User with Unicode-capable session
+        // Arrange: User with Unicode-capable session.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Unicode name with emojis and special characters
+        // Unicode name with emojis and special characters.
         $unicodeName = "测试机构 🏢 Café München & Co.";
         $unicodeDescription = "Multi-language org with émojis and spëcial chars: áéíóú";
         
-        // Mock: Organisation creation with Unicode
+        // Mock: Organisation creation with Unicode.
         $unicodeOrg = new Organisation();
         $unicodeOrg->setName($unicodeName);
         $unicodeOrg->setDescription($unicodeDescription);
@@ -206,10 +206,10 @@ class EdgeCasesErrorHandlingTest extends TestCase
             ->method('insert')
             ->willReturn($unicodeOrg);
 
-        // Act: Create organisation with Unicode content
+        // Act: Create organisation with Unicode content.
         $response = $this->organisationController->create($unicodeName, $unicodeDescription);
 
-        // Assert: Unicode properly supported
+        // Assert: Unicode properly supported.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(200, $response->getStatus());
         
@@ -217,7 +217,7 @@ class EdgeCasesErrorHandlingTest extends TestCase
         $this->assertEquals($unicodeName, $responseData['name']);
         $this->assertEquals($unicodeDescription, $responseData['description']);
         
-        // Verify UTF-8 encoding preserved
+        // Verify UTF-8 encoding preserved.
         $this->assertStringContainsString('测试机构', $responseData['name']);
         $this->assertStringContainsString('🏢', $responseData['name']);
         $this->assertStringContainsString('émojis', $responseData['description']);
@@ -228,12 +228,12 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testNullAndEmptyValueHandling(): void
     {
-        // Arrange: User session
+        // Arrange: User session.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Test various null/empty scenarios
+        // Test various null/empty scenarios.
         $testCases = [
             ['name' => null, 'description' => 'Valid description'],
             ['name' => '', 'description' => 'Valid description'],
@@ -245,11 +245,11 @@ class EdgeCasesErrorHandlingTest extends TestCase
         foreach ($testCases as $testCase) {
             $response = $this->organisationController->create($testCase['name'], $testCase['description']);
             
-            // Assert: Proper validation of null/empty values
+            // Assert: Proper validation of null/empty values.
             if (empty(trim($testCase['name']))) {
                 $this->assertEquals(400, $response->getStatus());
             } else {
-                // Valid name with empty description should be allowed
+                // Valid name with empty description should be allowed.
                 $this->assertContains($response->getStatus(), [200, 400]); // Either success or validation error
             }
         }
@@ -260,7 +260,7 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testExceptionHandlingAndLogging(): void
     {
-        // Arrange: Force database exception
+        // Arrange: Force database exception.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
@@ -269,15 +269,15 @@ class EdgeCasesErrorHandlingTest extends TestCase
             ->method('insert')
             ->willThrowException(new \Exception('Database connection failed'));
 
-        // Mock: Logger should capture the exception
+        // Mock: Logger should capture the exception.
         $this->logger->expects($this->once())
             ->method('error')
             ->with($this->stringContains('Database connection failed'));
 
-        // Act: Attempt operation that causes exception
+        // Act: Attempt operation that causes exception.
         $response = $this->organisationController->create('Test Org', 'Test description');
 
-        // Assert: Graceful error handling
+        // Assert: Graceful error handling.
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertEquals(500, $response->getStatus());
         
@@ -291,23 +291,23 @@ class EdgeCasesErrorHandlingTest extends TestCase
      */
     public function testRateLimitingSimulation(): void
     {
-        // Arrange: Simulate rapid requests from same user
+        // Arrange: Simulate rapid requests from same user.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('rapid_user');
         $this->userSession->method('getUser')->willReturn($user);
 
-        // Mock: Rate limiting check (simulated)
+        // Mock: Rate limiting check (simulated).
         $requestCount = 0;
         $maxRequests = 5;
         
         $responses = [];
         
-        // Act: Make multiple rapid requests
+        // Act: Make multiple rapid requests.
         for ($i = 0; $i < 10; $i++) {
             $requestCount++;
             
             if ($requestCount > $maxRequests) {
-                // Simulate rate limiting
+                // Simulate rate limiting.
                 $response = new JSONResponse(['error' => 'Rate limit exceeded'], 429);
             } else {
                 $response = $this->organisationController->index();
@@ -316,7 +316,7 @@ class EdgeCasesErrorHandlingTest extends TestCase
             $responses[] = $response;
         }
 
-        // Assert: Rate limiting kicks in
+        // Assert: Rate limiting kicks in.
         $rateLimitedResponses = array_filter($responses, function($response) {
             return $response->getStatus() === 429;
         });

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Objects Schema Version Migration
  *
@@ -32,47 +33,45 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250830130000 extends SimpleMigrationStep
 {
-
-
     /**
      * Change the database schema
      *
-     * @param IOutput       $output        Output for the migration process
-     * @param Closure       $schemaClosure The schema closure
-     * @param array<string> $options       Migration options
+     * @param IOutput                 $output        Output for the migration process
+     * @param Closure                 $schemaClosure The schema closure
+     * @param array<array-key, mixed> $options       Migration options
      *
      * @return ISchemaWrapper|null The modified schema
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // Check if the objects table exists
+        // Check if the objects table exists.
         if ($schema->hasTable('openregister_objects') === true) {
             $table = $schema->getTable('openregister_objects');
 
-            // Add schemaVersion column if it doesn't exist
+            // Add schemaVersion column if it doesn't exist.
             if ($table->hasColumn('schemaVersion') === false) {
                 $table->addColumn(
-                        'schemaVersion',
-                        Types::STRING,
-                        [
+                    'schemaVersion',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'Version of the schema used for this object',
                         ]
-                        );
-                $output->info('Added schemaVersion column to openregister_objects table');
+                );
+                $output->info(message: 'Added schemaVersion column to openregister_objects table');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
-
-
 }//end class

@@ -1,0 +1,283 @@
+{
+  "name": "AI-Powered PHPQA Auto-Fixer (Complete)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [20, 200]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger (Click to Test)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [20, 400]
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "maxIterations",
+              "value": 5
+            },
+            {
+              "name": "currentIteration",
+              "value": 0
+            }
+          ],
+          "string": [
+            {
+              "name": "container",
+              "value": "master-nextcloud-1"
+            },
+            {
+              "name": "appPath",
+              "value": "/var/www/html/apps-extra/openregister"
+            }
+          ]
+        }
+      },
+      "id": "set-config",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --report=summary --standard=PSR12 lib/ 2>&1 || true\""
+      },
+      "id": "run-phpcs",
+      "name": "Run PHPCS Summary",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.item.json.stdout || '';\nconst config = $input.item.json;\nconst errorMatch = stdout.match(/(\\d+)\\s+ERRORS?/i);\nconst warningMatch = stdout.match(/(\\d+)\\s+WARNINGS?/i);\nconst errors = errorMatch ? parseInt(errorMatch[1]) : 0;\nconst warnings = warningMatch ? parseInt(warningMatch[1]) : 0;\nconst totalIssues = errors + warnings;\nconsole.log(`PHPCS Results - Iteration ${config.currentIteration || 0}:`);\nconsole.log(`  Errors: ${errors}`);\nconsole.log(`  Warnings: ${warnings}`);\nconsole.log(`  Total Issues: ${totalIssues}`);\nreturn [{\n  json: {\n    ...config,\n    metrics: {\n      phpcsErrors: errors,\n      phpcsWarnings: warnings,\n      totalIssues,\n      iteration: config.currentIteration || 0\n    },\n    totalIssues,\n    hasIssues: totalIssues > 0,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-phpcs-summary",
+      "name": "Parse PHPCS Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasIssues }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-issues",
+      "name": "Has Issues?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --report=json --standard=PSR12 lib/ 2>&1 || echo '{}'\""
+      },
+      "id": "run-phpcs-detailed",
+      "name": "Get Detailed PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.item.json.stdout || '{}';\nconst config = $input.item.json;\nconst errors = [];\ntry {\n  const jsonMatch = stdout.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    console.log('No JSON found in PHPCS output');\n    return [{ json: { ...config, errors: [], totalErrors: 0 } }];\n  }\n  const phpcsOutput = JSON.parse(jsonMatch[0]);\n  for (const [filePath, fileData] of Object.entries(phpcsOutput.files || {})) {\n    if (fileData.messages && fileData.messages.length > 0) {\n      fileData.messages.forEach((msg, index) => {\n        if (msg.type === 'ERROR') {\n          errors.push({\n            id: `${filePath}-${msg.line}-${index}`,\n            file: filePath,\n            line: msg.line,\n            column: msg.column || 0,\n            message: msg.message,\n            source: msg.source || 'Unknown',\n            severity: msg.severity || 5,\n            fixable: msg.fixable || false\n          });\n        }\n      });\n    }\n  }\n  errors.sort((a, b) => b.severity - a.severity);\n  const topErrors = errors.slice(0, 10);\n  console.log(`Found ${errors.length} PHPCS errors, processing top ${topErrors.length}`);\n  return topErrors.map(error => ({ json: { ...config, ...error } }));\n} catch (error) {\n  console.error('Error parsing PHPCS:', error.message);\n  return [{ json: { ...config, error: error.message, errors: [], totalErrors: 0 } }];\n}"
+      },
+      "id": "parse-phpcs",
+      "name": "Parse PHPCS Errors (Top 10)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.item.json;\nconst prompt = `You are a PHP code fixing expert. Fix this PHPCS error:\\n\\nFile: ${error.file}\\nLine: ${error.line}\\nError: ${error.message}\\nRule: ${error.source}\\n\\nProvide ONLY the fixed code line(s). No explanations. No markdown. Just the corrected PHP code.`;\nreturn [{ json: { ...error, prompt } }];"
+      },
+      "id": "prepare-ai-prompt",
+      "name": "Prepare AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://openregister-ollama:11434/api/generate",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"codellama:7b-instruct\",\n  \"prompt\": $json.prompt,\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.1,\n    \"top_p\": 0.9,\n    \"num_predict\": 200\n  }\n} }}"
+      },
+      "id": "call-ollama",
+      "name": "Generate Fix with Ollama AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.item.json;\nlet aiResponse = '';\ntry {\n  const body = typeof $input.item.json.body === 'string' ? JSON.parse($input.item.json.body) : $input.item.json.body;\n  aiResponse = body.response || '';\n} catch (e) {\n  console.error('Error parsing Ollama response:', e.message);\n  aiResponse = '';\n}\nlet fixedCode = aiResponse.trim();\nconst codeBlockMatch = fixedCode.match(/```(?:php)?\\n?([\\s\\S]*?)```/);\nif (codeBlockMatch) {\n  fixedCode = codeBlockMatch[1].trim();\n}\nfixedCode = fixedCode.replace(/^<\\?php\\s*/, '');\nconsole.log(`AI generated fix for ${error.file}:${error.line}`);\nconsole.log(`Fix: ${fixedCode.substring(0, 100)}...`);\nreturn [{\n  json: {\n    ...error,\n    suggestedFix: fixedCode,\n    applied: false,\n    aiResponse: aiResponse.substring(0, 200)\n  }\n}];"
+      },
+      "id": "extract-fix",
+      "name": "Extract AI Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"echo 'AI Fix collected for {{ $json.file }}:{{ $json.line }}'\""
+      },
+      "id": "log-fix",
+      "name": "Log Fix",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcbf --standard=PSR12 lib/ 2>&1 || true\""
+      },
+      "id": "run-phpcbf",
+      "name": "Run PHPCBF Auto-Fix",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2440, 200]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --report=summary --standard=PSR12 lib/ 2>&1 || true\""
+      },
+      "id": "verify-fixes",
+      "name": "Verify Fixes",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2660, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst stdout = config.stdout || '';\nconst errorMatch = stdout.match(/(\\d+)\\s+ERRORS?/i);\nconst remainingErrors = errorMatch ? parseInt(errorMatch[1]) : 0;\nconst iteration = (config.currentIteration || 0) + 1;\nconst maxIterations = config.maxIterations || 5;\nconst previousIssues = config.previousIssues || config.totalIssues || 999999;\nconst improved = remainingErrors < previousIssues;\nconst shouldContinue = improved && iteration < maxIterations && remainingErrors > 0;\nconsole.log(`Iteration ${iteration}/${maxIterations}`);\nconsole.log(`Errors: ${previousIssues} → ${remainingErrors}`);\nconsole.log(`Improved: ${improved}`);\nconsole.log(`Continue: ${shouldContinue}`);\nreturn [{\n  json: {\n    ...config,\n    currentIteration: iteration,\n    previousIssues: remainingErrors,\n    totalIssues: remainingErrors,\n    continueLoop: shouldContinue,\n    reason: !improved ? 'No improvement' : iteration >= maxIterations ? 'Max iterations reached' : remainingErrors === 0 ? 'All issues fixed' : 'Continuing'\n  }\n}];"
+      },
+      "id": "check-continue",
+      "name": "Should Continue?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.continueLoop }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "continue-loop",
+      "name": "Continue Loop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [3100, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst report = {\n  title: 'AI-Powered PHPQA Auto-Fix Report',\n  timestamp: new Date().toISOString(),\n  summary: {\n    iterations: config.currentIteration || 0,\n    initialIssues: config.metrics?.totalIssues || 0,\n    finalIssues: config.totalIssues || 0,\n    issuesFixed: (config.metrics?.totalIssues || 0) - (config.totalIssues || 0),\n    reason: config.reason || 'Completed'\n  },\n  metrics: config.metrics\n};\nconsole.log('=== FINAL REPORT ===');\nconsole.log(JSON.stringify(report, null, 2));\nreturn [{ json: report }];"
+      },
+      "id": "final-report",
+      "name": "Generate Final Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3320, 300]
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [[{ "node": "Configuration" }]]
+    },
+    "Manual Trigger (Click to Test)": {
+      "main": [[{ "node": "Configuration" }]]
+    },
+    "Configuration": {
+      "main": [[{ "node": "Run PHPCS Summary" }]]
+    },
+    "Run PHPCS Summary": {
+      "main": [[{ "node": "Parse PHPCS Summary" }]]
+    },
+    "Parse PHPCS Summary": {
+      "main": [[{ "node": "Has Issues?" }]]
+    },
+    "Has Issues?": {
+      "main": [
+        [{ "node": "Get Detailed PHPCS" }],
+        [{ "node": "Generate Final Report" }]
+      ]
+    },
+    "Get Detailed PHPCS": {
+      "main": [[{ "node": "Parse PHPCS Errors (Top 10)" }]]
+    },
+    "Parse PHPCS Errors (Top 10)": {
+      "main": [[{ "node": "Prepare AI Prompt" }]]
+    },
+    "Prepare AI Prompt": {
+      "main": [[{ "node": "Generate Fix with Ollama AI" }]]
+    },
+    "Generate Fix with Ollama AI": {
+      "main": [[{ "node": "Extract AI Fix" }]]
+    },
+    "Extract AI Fix": {
+      "main": [[{ "node": "Log Fix" }]]
+    },
+    "Log Fix": {
+      "main": [[{ "node": "Run PHPCBF Auto-Fix" }]]
+    },
+    "Run PHPCBF Auto-Fix": {
+      "main": [[{ "node": "Verify Fixes" }]]
+    },
+    "Verify Fixes": {
+      "main": [[{ "node": "Should Continue?" }]]
+    },
+    "Should Continue?": {
+      "main": [[{ "node": "Continue Loop?" }]]
+    },
+    "Continue Loop?": {
+      "main": [
+        [{ "node": "Run PHPCS Summary" }],
+        [{ "node": "Generate Final Report" }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

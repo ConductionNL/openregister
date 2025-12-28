@@ -1,0 +1,91 @@
+{
+  "name": "Simple Test (No Configuration)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [20, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker ps --format 'table {{.Names}}\\t{{.Status}}' | head -5"
+      },
+      "id": "test-docker",
+      "name": "Test Docker Command",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && php vendor/bin/phpcs --version'"
+      },
+      "id": "test-phpcs",
+      "name": "Test PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dockerOutput = $input.first().json.stdout || 'No output';\nconsole.log('=== Test Results ===');\nconsole.log('Docker output:', dockerOutput);\nreturn [{ json: { success: true, timestamp: new Date().toISOString(), dockerOutput } }];"
+      },
+      "id": "show-results",
+      "name": "Show Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Test Docker Command"
+          }
+        ]
+      ]
+    },
+    "Test Docker Command": {
+      "main": [
+        [
+          {
+            "node": "Test PHPCS"
+          }
+        ]
+      ]
+    },
+    "Test PHPCS": {
+      "main": [
+        [
+          {
+            "node": "Show Results"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}
+
+
+

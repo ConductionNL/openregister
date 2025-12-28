@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Download Service
  *
@@ -29,139 +30,111 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IURLGenerator;
 
 /**
- * Service for handling download requests for database entities.
+ * DownloadService handles download requests for database entities
  *
+ * Service for handling download requests for database entities.
  * This service enables downloading database entities as files in various formats,
  * determined by the `Accept` header of the request. It retrieves the appropriate
  * data from mappers and generates responses or downloadable files.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class DownloadService
 {
-
+    /**
+     * Register mapper
+     *
+     * Handles database operations for register entities.
+     *
+     * @var RegisterMapper Register mapper instance
+     */
+    private readonly RegisterMapper $registerMapper;
 
     /**
-     * Constructor for the DownloadService class.
+     * Schema mapper
      *
-     * @param IURLGenerator  $urlGenerator   The URL generator service.
-     * @param SchemaMapper   $schemaMapper   The schema mapper service.
-     * @param RegisterMapper $registerMapper The register mapper service.
+     * Handles database operations for schema entities.
      *
-     * @return void
+     * @var SchemaMapper Schema mapper instance
      */
-    public function __construct(
-        private IURLGenerator $urlGenerator,
-        private SchemaMapper $schemaMapper,
-        private RegisterMapper $registerMapper
-    ) {
-
-    }//end __construct()
-
+    private readonly SchemaMapper $schemaMapper;
 
     /**
-     * Download a DB entity as a file. Depending on given Accept-header the file type might differ.
+     * Generate a downloadable JSON file response
      *
-     * @param string     $objectType The type of object to download.
-     * @param string|int $id         The id of the object to download.
-     * @param string     $accept     The Accept-header from the download request.
+     * Creates a temporary JSON file from provided data and sends it as a download
+     * to the client. Sets appropriate HTTP headers for file download and cleans
+     * up temporary file after sending.
      *
-     * @throws Exception
+     * @param string $jsonData The JSON data to create a JSON file with
+     * @param string $filename The base filename (without extension).
+     *                         .json extension will be added automatically
      *
-     * @return array The response data for the download request.
+     * @return never This method exits script execution after sending file
+     *
+     * @NoReturn
      */
-    public function download(string $objectType, string | int $id, string $accept): array
+    private function downloadJson(string $jsonData, string $filename): never
     {
-        // Get the appropriate mapper for the object type.
-        $mapper = $this->getMapper($objectType);
+        // Step 1: Define the file name and path for the temporary JSON file.
+        // Uses system temporary directory for file storage.
+        $fileName = $filename . '.json';
+        $filePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
 
-        try {
-            $object = $mapper->find($id);
-        } catch (Exception $exception) {
-            return ['error' => "Could not find $objectType with id $id.", 'statusCode' => 404];
-        }
-
-        $objectArray = $object->jsonSerialize();
-        $filename    = $objectArray['title'].ucfirst($objectType).'-v'.$objectArray['version'];
-
-        if (str_contains($accept, 'application/json') === true || $accept === '*/*') {
-            $url = $this->urlGenerator->getAbsoluteURL(
-                $this->urlGenerator->linkToRoute('openregister.'.ucfirst($objectType).'s.show', ['id' => $object->getId()])
-            );
-
-            $objArray['title']   = $objectArray['title'];
-            $objArray['$id']     = $url;
-            $objArray['$schema'] = 'https://docs.commongateway.nl/schemas/'.ucfirst($objectType).'.schema.json';
-            $objArray['version'] = $objectArray['version'];
-            $objArray['type']    = $objectType;
-            unset($objectArray['title'], $objectArray['version'], $objectArray['id'], $objectArray['uuid']);
-            $objArray = array_merge($objArray, $objectArray);
-
-            // Convert the object data to JSON.
-            $jsonData = json_encode($objArray, JSON_PRETTY_PRINT);
-
-            $this->downloadJson($jsonData, $filename);
-        }
-
-        return ['error' => "The Accept type $accept is not supported.", 'statusCode' => 400];
-
-    }//end download()
-
-
-    /**
-     * Generate a downloadable json file response.
-     *
-     * @param string $jsonData The json data to create a json file with.
-     * @param string $filename The filename, .json will be added after this filename in this function.
-     *
-     * @return void
-     */
-    private function downloadJson(string $jsonData, string $filename): void
-    {
-        // Define the file name and path for the temporary JSON file.
-        $fileName = $filename.'.json';
-        $filePath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$fileName;
-
-        // Create and write the JSON data to the file.
+        // Step 2: Create and write the JSON data to the temporary file.
         file_put_contents($filePath, $jsonData);
 
-        // Set headers to download the file.
+        // Step 3: Set HTTP headers to trigger file download.
+        // Content-Type tells browser this is JSON data.
+        // Content-Disposition tells browser to download file with specified name.
+        // Content-Length specifies file size for download progress.
         header('Content-Type: application/json');
-        header('Content-Disposition: attachment; filename="'.$fileName.'"');
-        header('Content-Length: '.filesize($filePath));
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Content-Length: ' . filesize($filePath));
 
-        // Output the file contents.
+        // Step 4: Output the file contents to client.
         readfile($filePath);
 
-        // Clean up: delete the temporary file.
+        // Step 5: Clean up temporary file after sending.
         unlink($filePath);
 
-        // Ensure no further script execution.
+        // Step 6: Exit script execution to prevent further output.
         exit;
-
     }//end downloadJson()
 
-
     /**
-     * Gets the appropriate mapper based on the object type.
+     * Gets the appropriate mapper based on the object type
      *
-     * @param string $objectType The type of object to retrieve the mapper for.
+     * Returns the correct mapper instance for the specified object type.
+     * Used to route download requests to the appropriate data source.
      *
-     * @throws InvalidArgumentException If an unknown object type is provided.
-     * @throws Exception
+     * @param string $objectType The type of object to retrieve the mapper for
+     *                           (e.g., 'schema', 'register')
      *
-     * @return mixed The appropriate mapper.
+     * @return RegisterMapper|SchemaMapper The appropriate mapper instance
+     *
+     * @throws InvalidArgumentException If an unknown object type is provided
      */
-    private function getMapper(string $objectType): mixed
+    private function getMapper(string $objectType): RegisterMapper|SchemaMapper
     {
+        // Normalize object type to lowercase for case-insensitive matching.
         $objectTypeLower = strtolower($objectType);
 
-        // If the source is internal, return the appropriate mapper based on the object type.
+        // Return the appropriate mapper based on object type.
+        // Match expression provides type-safe routing.
         return match ($objectTypeLower) {
             'schema' => $this->schemaMapper,
             'register' => $this->registerMapper,
             default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
-
     }//end getMapper()
-
-
 }//end class

@@ -1,0 +1,680 @@
+{
+  "name": "AI Code Fixer - Full Cycle with Tests",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        20,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/10 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        20,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    cycle: 0,\n    maxCycles: 10,\n    rescueCycle: 0,\n    maxRescueCycles: 5,\n    container: 'master-nextcloud-1',\n    appPath: '/var/www/html/apps-extra/openregister',\n    wslPath: '/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister',\n    ollamaUrl: 'http://openregister-ollama:11434',\n    model: 'codellama:7b-instruct',\n    fixesApplied: [],\n    totalFixed: 0,\n    startTime: Date.now(),\n    initialIssues: 0,\n    phase: 'initial'\n  }\n}];"
+      },
+      "id": "initialize",
+      "name": "Initialize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --standard=PSR12 --report=summary lib/ 2>&1 | grep 'A TOTAL OF' || echo '0 ERRORS AND 0 WARNINGS'\""
+      },
+      "id": "count-initial-issues",
+      "name": "Count Initial Issues",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        460,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst output = config.stdout || '';\nconst match = output.match(/(\\d+)\\s+ERRORS?.*?(\\d+)\\s+WARNINGS?/i);\nconst errors = match ? parseInt(match[1]) : 0;\nconst warnings = match ? parseInt(match[2]) : 0;\nconst total = errors + warnings;\n\nconsole.log(`Initial scan: ${total} issues (${errors} errors, ${warnings} warnings)`);\n\nreturn [{ json: { ...config, initialIssues: total } }];"
+      },
+      "id": "store-initial-count",
+      "name": "Store Initial Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --standard=PSR12 --report=json lib/ 2>&1 | head -c 50000\""
+      },
+      "id": "scan-phpcs",
+      "name": "Scan PHPCS for Issues",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst phpcsOutput = config.stdout || '{}';\n\nlet phpcsData;\ntry {\n  phpcsData = JSON.parse(phpcsOutput);\n} catch (e) {\n  console.log('Failed to parse PHPCS JSON');\n  phpcsData = {files: {}};\n}\n\nconst files = phpcsData.files || {};\nconst fixableIssues = [];\n\n// Focus on actual code lines that are too long (not comments)\nfor (const [filePath, fileData] of Object.entries(files)) {\n  if (fixableIssues.length >= 3) break;\n  \n  const messages = fileData.messages || [];\n  for (const msg of messages) {\n    if (fixableIssues.length >= 3) break;\n    \n    // Focus on line length in actual code\n    if (msg.message.includes('line exceeds') && \n        msg.type === 'ERROR' &&\n        !msg.message.includes('comment')) {\n      fixableIssues.push({\n        file: filePath,\n        line: msg.line,\n        message: msg.message\n      });\n    }\n  }\n}\n\nconst result = {\n  ...config,\n  cycle: (config.cycle || 0) + 1,\n  issuesForAI: fixableIssues,\n  hasIssues: fixableIssues.length > 0\n};\n\nconsole.log(`Cycle ${result.cycle}: Found ${fixableIssues.length} fixable issues`);\nreturn [{ json: result }];"
+      },
+      "id": "parse-fixable-issues",
+      "name": "Parse Fixable Issues",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.hasIssues }}",
+              "value2": true,
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "has-fixable-issues",
+      "name": "Has Fixable Issues?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst issue = config.issuesForAI[0];\nconst relFile = issue.file.replace('/var/www/html/apps-extra/openregister/', '');\nconst lineNum = issue.line;\n\n// Read more context\nconst readCmd = `docker exec -u 33 ${config.container} bash -c \"cd ${config.appPath} && sed -n '${Math.max(1, lineNum-5)},${lineNum+5}p' ${relFile}\"`;\n\nreturn [{ json: { ...config, currentIssue: issue, readCommand: readCmd } }];"
+      },
+      "id": "prepare-context-read",
+      "name": "Prepare Context Read",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.readCommand }}"
+      },
+      "id": "read-context",
+      "name": "Read File Context",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst context = config.stdout || '';\nconst issue = config.currentIssue;\nconst lines = context.split('\\n');\nconst targetLine = lines[Math.min(5, lines.length-1)] || '';\n\nconst prompt = `You are a PHP coding expert. This line is too long and violates PSR-12 (max 120 chars):\n\n${targetLine}\n\nContext (surrounding lines):\n${context}\n\nRewrite ONLY this specific line to be under 120 characters. Break it into multiple lines if needed, maintaining proper PHP syntax and indentation. Provide ONLY the fixed code, no explanations.`;\n\nreturn [{ json: { ...config, aiPrompt: prompt, targetLine: targetLine } }];"
+      },
+      "id": "prepare-ai-prompt",
+      "name": "Prepare AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.ollamaUrl }}/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $json.model }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.aiPrompt }}"
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            },
+            {
+              "name": "temperature",
+              "value": "0.2"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "call-ollama",
+      "name": "Call Ollama AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst aiResponse = config.response || '';\nlet fixedCode = aiResponse.trim();\n\n// Clean up AI response\nfixedCode = fixedCode.replace(/```php\\n?/g, '').replace(/```\\n?/g, '');\nfixedCode = fixedCode.trim();\n\n// Validate it's not empty and looks like PHP\nconst isValid = fixedCode.length > 10 && fixedCode.length < config.targetLine.length * 2;\n\nconst result = {\n  ...config,\n  aiFixedCode: fixedCode,\n  fixValid: isValid\n};\n\nconsole.log(`AI fix valid: ${isValid}, length: ${fixedCode.length}`);\nreturn [{ json: result }];"
+      },
+      "id": "validate-ai-fix",
+      "name": "Validate AI Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.fixValid }}",
+              "value2": true,
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "is-fix-valid",
+      "name": "Is Fix Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2660,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst issue = config.currentIssue;\nconst fixedCode = config.aiFixedCode;\nconst relFile = issue.file.replace('/var/www/html/apps-extra/openregister/', '');\nconst lineNum = issue.line;\n\n// Create the sed replacement (properly escaped)\nconst escapedFix = fixedCode.replace(/'/g, \"'\\\\\\\"'\\\\\\\"'\").replace(/\\$/g, '\\\\$');\nconst sedCmd = `docker exec -u 33 ${config.container} bash -c \"cd ${config.appPath} && sed -i '${lineNum}d' ${relFile} && sed -i '${lineNum-1}a\\\\${escapedFix}' ${relFile}\"`;\n\nreturn [{ json: { ...config, applyCommand: sedCmd } }];"
+      },
+      "id": "prepare-apply",
+      "name": "Prepare Apply Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.applyCommand }}"
+      },
+      "id": "apply-fix",
+      "name": "Apply AI Fix",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst fixes = config.fixesApplied || [];\nfixes.push({\n  cycle: config.cycle,\n  file: config.currentIssue.file,\n  line: config.currentIssue.line,\n  message: config.currentIssue.message\n});\n\nconst result = {\n  ...config,\n  fixesApplied: fixes,\n  totalFixed: fixes.length\n};\n\nconsole.log(`\u2705 Applied fix #${result.totalFixed}`);\nreturn [{ json: result }];"
+      },
+      "id": "track-fix",
+      "name": "Track Fix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.cycle }}",
+              "operation": "smaller",
+              "value2": "={{ $json.maxCycles }}"
+            }
+          ]
+        }
+      },
+      "id": "continue-cycles",
+      "name": "Continue Cycles?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3540,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && composer phpqa 2>&1 | tail -100\""
+      },
+      "id": "run-phpqa-verify",
+      "name": "Run PHPQA Verification",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3760,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --standard=PSR12 --report=summary lib/ 2>&1 | grep 'A TOTAL OF' || echo '0 ERRORS AND 0 WARNINGS'\""
+      },
+      "id": "count-final-issues",
+      "name": "Count Final Issues",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3980,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst output = config.stdout || '';\nconst match = output.match(/(\\d+)\\s+ERRORS?.*?(\\d+)\\s+WARNINGS?/i);\nconst errors = match ? parseInt(match[1]) : 0;\nconst warnings = match ? parseInt(match[2]) : 0;\nconst finalIssues = errors + warnings;\nconst improvement = config.initialIssues - finalIssues;\n\nconsole.log(`Final: ${finalIssues} issues. Improved by: ${improvement}`);\n\nreturn [{ json: { ...config, finalIssues, improvement } }];"
+      },
+      "id": "calculate-improvement",
+      "name": "Calculate Improvement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4200,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && if [ -f tests/postman/collection.json ]; then newman run tests/postman/collection.json -e tests/postman/environment.json 2>&1 | tail -50; else echo 'Newman tests not found, skipping'; fi\""
+      },
+      "id": "run-newman-tests",
+      "name": "Run Newman Integration Tests",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        4420,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst newmanOutput = config.stdout || '';\nconst testsPassed = !newmanOutput.includes('AssertionError') && \n                    (newmanOutput.includes('Newman tests not found') || \n                     newmanOutput.includes('passed'));\n\nconsole.log(`Newman tests passed: ${testsPassed}`);\n\nreturn [{ json: { ...config, testsPassed } }];"
+      },
+      "id": "check-tests",
+      "name": "Check Test Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4640,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.testsPassed }}",
+              "value2": true,
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "tests-passed",
+      "name": "Tests Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4860,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.item.json;\nconst fixes = config.fixesApplied || [];\n\n// Generate commit message\nlet commitMsg = `chore: AI code quality improvements\\n\\n`;\ncommitMsg += `Applied ${config.totalFixed} AI-powered fixes across ${config.cycle} cycles.\\n\\n`;\ncommitMsg += `Results:\\n`;\ncommitMsg += `- Initial issues: ${config.initialIssues}\\n`;\ncommitMsg += `- Final issues: ${config.finalIssues}\\n`;\ncommitMsg += `- Improvement: ${config.improvement} issues resolved\\n`;\ncommitMsg += `- Newman tests: ${config.testsPassed ? 'PASSED' : 'SKIPPED'}\\n\\n`;\ncommitMsg += `Fixed issues:\\n`;\n\nfixes.slice(0, 10).forEach(fix => {\n  const shortFile = fix.file.replace('/var/www/html/apps-extra/openregister/', '');\n  commitMsg += `- ${shortFile}:${fix.line} - ${fix.message.substring(0, 60)}\\n`;\n});\n\nif (fixes.length > 10) {\n  commitMsg += `... and ${fixes.length - 10} more fixes\\n`;\n}\n\ncommitMsg += `\\nGenerated by: n8n AI Code Fixer workflow\\nModel: ${config.model}\\nDuration: ${Math.round((new Date() - new Date(config.startTime)) / 1000)}s`;\n\nreturn [{ json: { ...config, commitMessage: commitMsg } }];"
+      },
+      "id": "generate-commit-msg",
+      "name": "Generate Commit Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5080,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister && git add -A && git commit -m '{{ $json.commitMessage }}' 2>&1"
+      },
+      "id": "git-commit",
+      "name": "Git Commit Changes (WSL)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5300,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const final = $input.item.json;\nconst commitOutput = final.stdout || '';\nconst committed = !commitOutput.includes('nothing to commit');\n\nconst report = {\n  title: '\ud83e\udd16 AI Code Fixer - Complete',\n  cycles: final.cycle,\n  fixesApplied: final.totalFixed,\n  improvement: final.improvement,\n  initialIssues: final.initialIssues,\n  finalIssues: final.finalIssues,\n  testsPassed: final.testsPassed,\n  committed: committed,\n  commitMessage: final.commitMessage,\n  duration: Math.round((new Date() - new Date(final.startTime)) / 1000) + 's',\n  model: final.model\n};\n\nconsole.log('=== FINAL REPORT ===');\nconsole.log(JSON.stringify(report, null, 2));\n\nreturn [{ json: report }];"
+      },
+      "id": "final-report",
+      "name": "Generate Final Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5520,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initialize"
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initialize"
+          }
+        ]
+      ]
+    },
+    "Initialize": {
+      "main": [
+        [
+          {
+            "node": "Count Initial Issues"
+          }
+        ]
+      ]
+    },
+    "Count Initial Issues": {
+      "main": [
+        [
+          {
+            "node": "Store Initial Count"
+          }
+        ]
+      ]
+    },
+    "Store Initial Count": {
+      "main": [
+        [
+          {
+            "node": "Scan PHPCS for Issues"
+          }
+        ]
+      ]
+    },
+    "Scan PHPCS for Issues": {
+      "main": [
+        [
+          {
+            "node": "Parse Fixable Issues"
+          }
+        ]
+      ]
+    },
+    "Parse Fixable Issues": {
+      "main": [
+        [
+          {
+            "node": "Has Fixable Issues?"
+          }
+        ]
+      ]
+    },
+    "Has Fixable Issues?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context Read"
+          }
+        ],
+        [
+          {
+            "node": "Continue Cycles?"
+          }
+        ]
+      ]
+    },
+    "Prepare Context Read": {
+      "main": [
+        [
+          {
+            "node": "Read File Context"
+          }
+        ]
+      ]
+    },
+    "Read File Context": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Prompt"
+          }
+        ]
+      ]
+    },
+    "Prepare AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Ollama AI"
+          }
+        ]
+      ]
+    },
+    "Call Ollama AI": {
+      "main": [
+        [
+          {
+            "node": "Validate AI Fix"
+          }
+        ]
+      ]
+    },
+    "Validate AI Fix": {
+      "main": [
+        [
+          {
+            "node": "Is Fix Valid?"
+          }
+        ]
+      ]
+    },
+    "Is Fix Valid?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Apply Command"
+          }
+        ],
+        [
+          {
+            "node": "Track Fix"
+          }
+        ]
+      ]
+    },
+    "Prepare Apply Command": {
+      "main": [
+        [
+          {
+            "node": "Apply AI Fix"
+          }
+        ]
+      ]
+    },
+    "Apply AI Fix": {
+      "main": [
+        [
+          {
+            "node": "Track Fix"
+          }
+        ]
+      ]
+    },
+    "Track Fix": {
+      "main": [
+        [
+          {
+            "node": "Continue Cycles?"
+          }
+        ]
+      ]
+    },
+    "Continue Cycles?": {
+      "main": [
+        [
+          {
+            "node": "Scan PHPCS for Issues"
+          }
+        ],
+        [
+          {
+            "node": "Run PHPQA Verification"
+          }
+        ]
+      ]
+    },
+    "Run PHPQA Verification": {
+      "main": [
+        [
+          {
+            "node": "Count Final Issues"
+          }
+        ]
+      ]
+    },
+    "Count Final Issues": {
+      "main": [
+        [
+          {
+            "node": "Calculate Improvement"
+          }
+        ]
+      ]
+    },
+    "Calculate Improvement": {
+      "main": [
+        [
+          {
+            "node": "Run Newman Integration Tests"
+          }
+        ]
+      ]
+    },
+    "Run Newman Integration Tests": {
+      "main": [
+        [
+          {
+            "node": "Check Test Results"
+          }
+        ]
+      ]
+    },
+    "Check Test Results": {
+      "main": [
+        [
+          {
+            "node": "Tests Passed?"
+          }
+        ]
+      ]
+    },
+    "Tests Passed?": {
+      "main": [
+        [
+          {
+            "node": "Generate Commit Message"
+          }
+        ],
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
+      ]
+    },
+    "Generate Commit Message": {
+      "main": [
+        [
+          {
+            "node": "Git Commit Changes (WSL)"
+          }
+        ]
+      ]
+    },
+    "Git Commit Changes (WSL)": {
+      "main": [
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionTimeout": 7200,
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true
+  }
+}

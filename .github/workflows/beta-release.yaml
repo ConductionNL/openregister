@@ -58,18 +58,288 @@ jobs:
           echo "Current version: $current_version"
           echo "Using beta version: $beta_version"
 
-      # Stap 4: Update de versie in info.xml
+      # Stap 4: Genereer changelog entries vanaf laatste release met PR descriptions
+      - name: Generate changelog entries from PRs
+        id: generate_changelog
+        run: |
+          # Get the date for the changelog entry
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          
+          # Find the last release tag (beta or main)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          # Determine the base commit for finding PRs
+          if [ -z "$LAST_TAG" ]; then
+            # If no tag exists, use main branch as base
+            git fetch origin main
+            BASE_SHA=$(git rev-parse origin/main)
+            echo "No previous tag found, using main branch as base: $BASE_SHA"
+          else
+            # Use the tag as base
+            BASE_SHA=$(git rev-parse "$LAST_TAG")
+            echo "Found last tag: $LAST_TAG ($BASE_SHA)"
+          fi
+          
+          CURRENT_SHA=$(git rev-parse HEAD)
+          
+          # Create category files before processing
+          FEATURES_FILE=$(mktemp)
+          FIXES_FILE=$(mktemp)
+          DOCS_FILE=$(mktemp)
+          IMPROVEMENTS_FILE=$(mktemp)
+          OTHER_FILE=$(mktemp)
+          
+          # Track PRs we've already processed (by PR number)
+          PROCESSED_PRS=$(mktemp)
+          
+          # Fetch PRs that were merged into the beta branch
+          # We'll query PRs and check if their merge commit is in our range
+          echo "Fetching merged PRs from GitHub API..."
+          
+          # Get all commits in the range
+          COMMITS_IN_RANGE=$(git log --pretty=format:"%H" "$BASE_SHA..$CURRENT_SHA")
+          
+          # For each commit, check if it's a merge commit and find associated PR
+          for commit_sha in $COMMITS_IN_RANGE; do
+            # Skip if this commit is a version bump or skip-changelog
+            commit_msg=$(git log -1 --pretty=format:"%s" "$commit_sha")
+            if echo "$commit_msg" | grep -qiE "\[skip ci\]|Bump.*version|skip-changelog"; then
+              continue
+            fi
+            
+            # Try to find PR associated with this commit
+            # GitHub API: GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls
+            pr_data=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/commits/$commit_sha/pulls" || echo "[]")
+            
+            # Parse PR numbers from response
+            pr_numbers=$(echo "$pr_data" | jq -r '.[].number' 2>/dev/null || echo "")
+            
+            if [ -n "$pr_numbers" ]; then
+              for pr_num in $pr_numbers; do
+                # Skip if we've already processed this PR
+                if grep -q "^$pr_num$" "$PROCESSED_PRS"; then
+                  continue
+                fi
+                
+                # Mark as processed
+                echo "$pr_num" >> "$PROCESSED_PRS"
+                
+                # Fetch PR details
+                pr_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                  -H "Accept: application/vnd.github+json" \
+                  "https://api.github.com/repos/${{ github.repository }}/pulls/$pr_num" || echo "{}")
+                
+                # Check if PR is merged and not excluded
+                pr_state=$(echo "$pr_info" | jq -r '.state // "unknown"' 2>/dev/null)
+                pr_merged=$(echo "$pr_info" | jq -r '.merged // false' 2>/dev/null)
+                pr_labels=$(echo "$pr_info" | jq -r '[.labels[].name] | join(",")' 2>/dev/null || echo "")
+                
+                # Skip if PR is not merged or has skip-changelog label
+                if [ "$pr_state" != "closed" ] || [ "$pr_merged" != "true" ]; then
+                  continue
+                fi
+                
+                if echo "$pr_labels" | grep -qi "skip-changelog"; then
+                  echo "Skipping PR #$pr_num (has skip-changelog label)"
+                  continue
+                fi
+                
+                # Extract PR information
+                pr_title=$(echo "$pr_info" | jq -r '.title // ""' 2>/dev/null)
+                pr_body=$(echo "$pr_info" | jq -r '.body // ""' 2>/dev/null)
+                pr_url=$(echo "$pr_info" | jq -r '.html_url // ""' 2>/dev/null)
+                
+                # Use PR description (body) if available, otherwise use title
+                if [ -n "$pr_body" ] && [ "$pr_body" != "null" ] && [ "$pr_body" != "" ]; then
+                  # Clean up PR body - remove markdown code blocks, images, and formatting
+                  # Extract first meaningful paragraph (skip empty lines and common prefixes)
+                  pr_description=$(echo "$pr_body" | \
+                    sed -E 's/```[^`]*```//g' | \
+                    sed -E 's/!\[.*\]\(.*\)//g' | \
+                    sed -E 's/#+ //g' | \
+                    sed -E 's/^\*\*.*\*\*$//g' | \
+                    grep -v '^[[:space:]]*$' | \
+                    head -n 5 | \
+                    tr '\n' ' ' | \
+                    sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | \
+                    sed -E 's/[[:space:]]+/ /g')
+                  
+                  # If description is too long, too short, or empty, use title
+                  if [ ${#pr_description} -gt 250 ] || [ ${#pr_description} -lt 10 ] || [ -z "$pr_description" ]; then
+                    pr_description="$pr_title"
+                  fi
+                else
+                  pr_description="$pr_title"
+                fi
+                
+                # Create entry with PR link
+                entry="- ${pr_description} ([#${pr_num}](${pr_url}))"
+                
+                # Categorize based on PR labels first (more accurate), then fall back to title/content
+                category="OTHER"
+                if echo "$pr_labels" | grep -qiE "(feature|feat|enhancement)"; then
+                  category="FEATURES"
+                elif echo "$pr_labels" | grep -qiE "(bug|bugfix|fix|hotfix)"; then
+                  category="FIXES"
+                elif echo "$pr_labels" | grep -qiE "(doc|docs|documentation)"; then
+                  category="DOCS"
+                elif echo "$pr_labels" | grep -qiE "(refactor|perf|style|chore|improvements)"; then
+                  category="IMPROVEMENTS"
+                elif echo "$pr_title" | grep -qiE "^(feat|feature|add|new):"; then
+                  category="FEATURES"
+                elif echo "$pr_title" | grep -qiE "^(fix|bugfix|bug|hotfix):"; then
+                  category="FIXES"
+                elif echo "$pr_title" | grep -qiE "^(doc|docs|documentation):"; then
+                  category="DOCS"
+                elif echo "$pr_title" | grep -qiE "^(refactor|perf|style|chore|improve|improvement):"; then
+                  category="IMPROVEMENTS"
+                fi
+                
+                # Write to appropriate category file
+                case "$category" in
+                  FEATURES)
+                    echo "$entry" >> "$FEATURES_FILE"
+                    ;;
+                  FIXES)
+                    echo "$entry" >> "$FIXES_FILE"
+                    ;;
+                  DOCS)
+                    echo "$entry" >> "$DOCS_FILE"
+                    ;;
+                  IMPROVEMENTS)
+                    echo "$entry" >> "$IMPROVEMENTS_FILE"
+                    ;;
+                  *)
+                    echo "$entry" >> "$OTHER_FILE"
+                    ;;
+                esac
+              done
+            fi
+          done
+          
+          # Check if we found any PRs
+          total_entries=$(cat "$FEATURES_FILE" "$FIXES_FILE" "$DOCS_FILE" "$IMPROVEMENTS_FILE" "$OTHER_FILE" 2>/dev/null | wc -l)
+          
+          if [ "$total_entries" -eq 0 ]; then
+            echo "No merged PRs found for changelog"
+            echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
+            rm -f "$PROCESSED_PRS" "$FEATURES_FILE" "$FIXES_FILE" "$DOCS_FILE" "$IMPROVEMENTS_FILE" "$OTHER_FILE"
+          else
+            # Build changelog entry in a file
+            CHANGELOG_ENTRY_FILE=$(mktemp)
+            echo "## ${{ env.NEW_VERSION }} – ${RELEASE_DATE}" > "$CHANGELOG_ENTRY_FILE"
+            
+            if [ -s "$FEATURES_FILE" ]; then
+              echo "" >> "$CHANGELOG_ENTRY_FILE"
+              echo "### Added" >> "$CHANGELOG_ENTRY_FILE"
+              cat "$FEATURES_FILE" >> "$CHANGELOG_ENTRY_FILE"
+            fi
+            
+            if [ -s "$FIXES_FILE" ]; then
+              echo "" >> "$CHANGELOG_ENTRY_FILE"
+              echo "### Fixed" >> "$CHANGELOG_ENTRY_FILE"
+              cat "$FIXES_FILE" >> "$CHANGELOG_ENTRY_FILE"
+            fi
+            
+            if [ -s "$IMPROVEMENTS_FILE" ]; then
+              echo "" >> "$CHANGELOG_ENTRY_FILE"
+              echo "### Changed" >> "$CHANGELOG_ENTRY_FILE"
+              cat "$IMPROVEMENTS_FILE" >> "$CHANGELOG_ENTRY_FILE"
+            fi
+            
+            if [ -s "$DOCS_FILE" ]; then
+              echo "" >> "$CHANGELOG_ENTRY_FILE"
+              echo "### Documentation" >> "$CHANGELOG_ENTRY_FILE"
+              cat "$DOCS_FILE" >> "$CHANGELOG_ENTRY_FILE"
+            fi
+            
+            if [ -s "$OTHER_FILE" ]; then
+              echo "" >> "$CHANGELOG_ENTRY_FILE"
+              echo "### Other" >> "$CHANGELOG_ENTRY_FILE"
+              cat "$OTHER_FILE" >> "$CHANGELOG_ENTRY_FILE"
+            fi
+            
+            echo "" >> "$CHANGELOG_ENTRY_FILE"
+            
+            # Save changelog entry file path for next step
+            echo "$CHANGELOG_ENTRY_FILE" > changelog_entry_path.txt
+            
+            # Clean up temp files (except the entry file)
+            rm -f "$PRS_FILE" "$PROCESSED_PRS" "$FEATURES_FILE" "$FIXES_FILE" "$DOCS_FILE" "$IMPROVEMENTS_FILE" "$OTHER_FILE"
+            
+            echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
+            echo "✓ Generated changelog entry for ${{ env.NEW_VERSION }} with $total_entries PR entries"
+          fi
+          
+          echo "RELEASE_DATE=$RELEASE_DATE" >> $GITHUB_ENV
+
+      # Stap 5: Update CHANGELOG.md met nieuwe entries
+      - name: Update CHANGELOG.md
+        if: steps.generate_changelog.outputs.HAS_CHANGES == 'true'
+        run: |
+          # Read changelog entry file path
+          if [ -f "changelog_entry_path.txt" ]; then
+            NEW_ENTRY_FILE=$(cat changelog_entry_path.txt)
+            
+            # Read current changelog and insert new entry
+            if [ -f "CHANGELOG.md" ]; then
+              # Insert new entry after "# Changelog" line and before first version entry
+              awk -v new_entry_file="$NEW_ENTRY_FILE" '
+                /^# Changelog$/ {
+                  print
+                  getline
+                  if (/^$/) print
+                  # Read and print new entry
+                  while ((getline line < new_entry_file) > 0) {
+                    print line
+                  }
+                  close(new_entry_file)
+                  # Print the line we read (empty line or first version)
+                  if (!/^$/) print
+                  next
+                }
+                { print }
+              ' CHANGELOG.md > CHANGELOG.md.tmp && mv CHANGELOG.md.tmp CHANGELOG.md
+            else
+              # Create new changelog file
+              echo "# Changelog" > CHANGELOG.md
+              echo "" >> CHANGELOG.md
+              cat "$NEW_ENTRY_FILE" >> CHANGELOG.md
+            fi
+            
+            # Clean up
+            rm -f "$NEW_ENTRY_FILE" changelog_entry_path.txt
+            echo "✓ CHANGELOG.md updated with version ${{ env.NEW_VERSION }}"
+          else
+            echo "Warning: changelog_entry_path.txt not found, skipping CHANGELOG.md update"
+          fi
+
+      # Stap 6: Update de versie in info.xml
       - name: Update version in info.xml
         run: |
           sed -i "s|<version>.*</version>|<version>${{ env.NEW_VERSION }}</version>|" appinfo/info.xml
 
-      # Stap 5: Commit de nieuwe versie (indien er wijzigingen zijn)
-      - name: Commit version update
+      # Stap 7: Commit de nieuwe versie en changelog (indien er wijzigingen zijn)
+      - name: Commit version update and changelog
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Bump beta version to ${{ env.NEW_VERSION }} [skip ci]"
-          git push
+          
+          # Check if there are changes to commit
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            if [ "${{ steps.generate_changelog.outputs.HAS_CHANGES }}" == "true" ]; then
+              git add CHANGELOG.md appinfo/info.xml
+              git commit -m "Bump beta version to ${{ env.NEW_VERSION }} and update changelog [skip ci]"
+            else
+              git add appinfo/info.xml
+              git commit -m "Bump beta version to ${{ env.NEW_VERSION }} [skip ci]"
+            fi
+            git push
+          fi
 
       # Stap 6: Bereid de signing certificaten voor
       - name: Prepare Signing Certificate and Key

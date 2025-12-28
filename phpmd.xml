@@ -36,8 +36,10 @@
     <rule ref="rulesets/controversial.xml/CamelCaseClassName"/>
     <rule ref="rulesets/controversial.xml/CamelCasePropertyName"/>
     <rule ref="rulesets/controversial.xml/CamelCaseMethodName"/>
-    <rule ref="rulesets/controversial.xml/CamelCaseParameterName"/>
-    <rule ref="rulesets/controversial.xml/CamelCaseVariableName"/>
+    <!-- CamelCaseParameterName removed - we allow leading underscores on parameters (convention for unused/config params) -->
+    <!-- <rule ref="rulesets/controversial.xml/CamelCaseParameterName"/> -->
+    <!-- CamelCaseVariableName removed - we allow leading underscores on variables (convention for unused loop vars) -->
+    <!-- <rule ref="rulesets/controversial.xml/CamelCaseVariableName"/> -->
 
     <!-- Design Rules -->
     <rule ref="rulesets/design.xml/ExitExpression"/>
@@ -53,7 +55,13 @@
     <!-- Naming Rules -->
     <rule ref="rulesets/naming.xml/LongClassName"/>
     <rule ref="rulesets/naming.xml/ShortClassName"/>
-    <rule ref="rulesets/naming.xml/ShortVariable"/>
+    <!-- ShortVariable configured with allowlist of idiomatic short names -->
+    <rule ref="rulesets/naming.xml/ShortVariable">
+        <properties>
+            <property name="minimum" value="3" />
+            <property name="exceptions" value="id,db,qb,op,ui,io,gc,tz,pk,fk,to,ch,a,b,l,v,c,t,r,f,n,k,e" />
+        </properties>
+    </rule>
     <rule ref="rulesets/naming.xml/LongVariable"/>
     <rule ref="rulesets/naming.xml/ShortMethodName"/>
     <rule ref="rulesets/naming.xml/ConstructorWithNameAsEnclosingClass"/>
@@ -64,5 +72,7 @@
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateField"/>
     <rule ref="rulesets/unusedcode.xml/UnusedLocalVariable"/>
     <rule ref="rulesets/unusedcode.xml/UnusedPrivateMethod"/>
-    <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter"/>
+    <rule ref="rulesets/unusedcode.xml/UnusedFormalParameter">
+        <exclude-pattern>*Migration*</exclude-pattern>
+    </rule>
 </ruleset>

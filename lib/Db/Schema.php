@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Schema
  *
@@ -20,12 +21,15 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use InvalidArgumentException;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
 use stdClass;
-use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
+use Exception;
+use RuntimeException;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
  * Class Schema
@@ -33,10 +37,54 @@ use OCA\OpenRegister\Service\SchemaPropertyValidatorService;
  * Entity class representing a Schema
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getUri()
+ * @method void setUri(?string $uri)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getTitle()
+ * @method void setTitle(?string $title)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getSummary()
+ * @method void setSummary(?string $summary)
+ * @method array|null getRequired()
+ * @method void setRequired(?array $required)
+ * @method array|null getProperties()
+ * @method void setProperties(?array $properties)
+ * @method array|null getArchive()
+ * @method void setArchive(?array $archive)
+ * @method array|null getFacets()
+ * @method void setFacets(?array $facets)
+ * @method string|null getSource()
+ * @method void setSource(?string $source)
+ * @method bool getHardValidation()
+ * @method void setHardValidation(bool $hardValidation)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method int getMaxDepth()
+ * @method void setMaxDepth(int $maxDepth)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method string|null getApplication()
+ * @method void setApplication(?string $application)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method array|null getAuthorization()
+ * @method void setAuthorization(?array $authorization)
+ * @method DateTime|null getDeleted()
+ * @method void setDeleted(?DateTime $deleted)
+ * @method array|null getConfiguration()
+ * @method void setConfiguration(?array $configuration)
  */
 class Schema extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the schema
      *
@@ -116,7 +164,13 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var array|null Facet configuration with field types and options
      */
-    protected ?array $facets = null;
+
+    /**
+     * Facets configuration for the schema
+     *
+     * @var array|string|null
+     */
+    protected $facets = null;
 
     /**
      * Source of the schema
@@ -130,7 +184,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @var boolean Whether hard validation is enabled
      */
-    protected bool $hardValidation = false;
+    protected bool $hardValidation = true;
 
     /**
      * Last update timestamp
@@ -199,7 +253,13 @@ class Schema extends Entity implements JsonSerializable
      * @phpstan-var array<string, mixed>|null
      * @psalm-var   array<string, mixed>|null
      */
-    protected ?array $configuration = null;
+
+    /**
+     * Configuration data for the schema
+     *
+     * @var array|string|null
+     */
+    protected $configuration = null;
 
     /**
      * The icon for the schema from Material Design Icons
@@ -298,7 +358,6 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?DateTime $depublished = null;
 
-
     /**
      * Constructor for the Schema class
      *
@@ -337,9 +396,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
-
     }//end __construct()
-
 
     /**
      * Get the required data
@@ -349,9 +406,25 @@ class Schema extends Entity implements JsonSerializable
     public function getRequired(): array
     {
         return ($this->required ?? []);
-
     }//end getRequired()
 
+    /**
+     * Set the required data
+     *
+     * Always ensures required is an array, never NULL.
+     * This prevents database errors during schema validation.
+     *
+     * @param array|null $required The required field names
+     *
+     * @return void
+     */
+    public function setRequired(?array $required): void
+    {
+        // Always ensure required is an array, never NULL.
+        // This is critical for schema validation to work correctly.
+        $this->required = ($required ?? []);
+        $this->markFieldUpdated('required');
+    }//end setRequired()
 
     /**
      * Get the properties data
@@ -361,9 +434,7 @@ class Schema extends Entity implements JsonSerializable
     public function getProperties(): array
     {
         return ($this->properties ?? []);
-
     }//end getProperties()
-
 
     /**
      * Get the archive data
@@ -373,16 +444,16 @@ class Schema extends Entity implements JsonSerializable
     public function getArchive(): array
     {
         return ($this->archive ?? []);
-
     }//end getArchive()
-
 
     /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -394,34 +465,32 @@ class Schema extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
-
 
     /**
      * Validate the schema properties
      *
-     * @param SchemaPropertyValidatorService $validator The schema property validator
+     * @param PropertyValidatorHandler $validator The schema property validator
      *
-     * @throws Exception If the properties are invalid
+     * @throws \Exception If the properties are invalid
      *
-     * @return bool True if the properties are valid
+     * @return true True if the properties are valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function validateProperties(SchemaPropertyValidatorService $validator): bool
+    public function validateProperties(PropertyValidatorHandler $validator): bool
     {
         // Check if properties are set and not empty.
         if (empty($this->properties) === true) {
             return true;
         }
 
-        // Validate and normalize inversedBy properties to ensure they are strings
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
+        // Validate and normalize inversedBy properties to ensure they are strings.
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $this->normalizeInversedByProperties();
 
         return $validator->validateProperties($this->properties);
-
     }//end validateProperties()
-
 
     /**
      * Validate the authorization structure for RBAC
@@ -437,7 +506,9 @@ class Schema extends Entity implements JsonSerializable
      *
      * @throws \InvalidArgumentException If the authorization structure is invalid
      *
-     * @return bool True if the authorization structure is valid
+     * @return true True if the authorization structure is valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function validateAuthorization(): bool
     {
@@ -448,28 +519,26 @@ class Schema extends Entity implements JsonSerializable
         $validActions = ['create', 'read', 'update', 'delete'];
 
         foreach ($this->authorization as $action => $groups) {
-            // Validate action is a valid CRUD operation
+            // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
-                throw new \InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: ".implode(', ', $validActions));
+                throw new InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: " . implode(', ', $validActions));
             }
 
-            // Validate groups is an array
+            // Validate groups is an array.
             if (is_array($groups) === false) {
-                throw new \InvalidArgumentException("Authorization groups for action '{$action}' must be an array");
+                throw new InvalidArgumentException("Authorization groups for action '{$action}' must be an array");
             }
 
-            // Validate each group ID is a non-empty string
+            // Validate each group ID is a non-empty string.
             foreach ($groups as $groupId) {
                 if (is_string($groupId) === false || trim($groupId) === '') {
-                    throw new \InvalidArgumentException("Group ID in authorization for action '{$action}' must be a non-empty string");
+                    throw new InvalidArgumentException("Group ID in authorization for action '{$action}' must be a non-empty string");
                 }
             }
         }
 
         return true;
-
     }//end validateAuthorization()
-
 
     /**
      * Check if a user group has permission for a specific CRUD action
@@ -493,33 +562,31 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if the group has permission for the action
      */
-    public function hasPermission(string $groupId, string $action, ?string $userId=null, ?string $userGroup=null, ?string $objectOwner=null): bool
+    public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null): bool
     {
-        // Admin group always has all permissions
+        // Admin group always has all permissions.
         if ($groupId === 'admin' || $userGroup === 'admin') {
             return true;
         }
 
-        // Object owner always has all permissions for their specific objects
+        // Object owner always has all permissions for their specific objects.
         if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
             return true;
         }
 
-        // If no authorization is set, everyone has all permissions
+        // If no authorization is set, everyone has all permissions.
         if (empty($this->authorization) === true) {
             return true;
         }
 
-        // If action is not specified in authorization, everyone has permission
+        // If action is not specified in authorization, everyone has permission.
         if (isset($this->authorization[$action]) === false) {
             return true;
         }
 
-        // Check if group is in the allowed groups for this action
+        // Check if group is in the allowed groups for this action.
         return in_array($groupId, $this->authorization[$action] ?? []);
-
     }//end hasPermission()
-
 
     /**
      * Get all groups that have permission for a specific action
@@ -530,21 +597,19 @@ class Schema extends Entity implements JsonSerializable
      */
     public function getAuthorizedGroups(string $action): array
     {
-        // If no authorization is set, return empty array (meaning all groups)
+        // If no authorization is set, return empty array (meaning all groups).
         if (empty($this->authorization) === true) {
             return [];
         }
 
-        // If action is not specified, return empty array (meaning all groups)
+        // If action is not specified, return empty array (meaning all groups).
         if (isset($this->authorization[$action]) === false) {
             return [];
         }
 
-        // Return the specific groups that have permission
+        // Return the specific groups that have permission.
         return $this->authorization[$action] ?? [];
-
     }//end getAuthorizedGroups()
-
 
     /**
      * Normalize inversedBy properties to ensure they are always strings
@@ -560,44 +625,49 @@ class Schema extends Entity implements JsonSerializable
         }
 
         foreach ($this->properties as $propertyName => $property) {
-            // Handle regular object properties
-            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-            if (isset($property['inversedBy']) === true) {
-                if (is_array($property['inversedBy']) === true && isset($property['inversedBy']['id']) === true) {
+            // Handle regular object properties.
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+            if (($property['inversedBy'] ?? null) !== null) {
+                if (is_array($property['inversedBy']) === true && (($property['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
-                } else if (is_string($property['inversedBy']) === false) {
-                    // Remove invalid inversedBy if it's not a string or object with id
+                    continue;
+                }
+
+                if (is_string($property['inversedBy']) === false) {
+                    // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['inversedBy']);
                 }
             }
 
-            // Handle array items with inversedBy
-            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-            if (isset($property['items']['inversedBy']) === true) {
-                if (is_array($property['items']['inversedBy']) === true && isset($property['items']['inversedBy']['id']) === true) {
+            // Handle array items with inversedBy.
+                        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
+            if (($property['items']['inversedBy'] ?? null) !== null) {
+                if (is_array($property['items']['inversedBy']) === true && (($property['items']['inversedBy']['id'] ?? null) !== null)) {
                     $this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
-                } else if (is_string($property['items']['inversedBy']) === false) {
-                    // Remove invalid inversedBy if it's not a string or object with id
+                    continue;
+                }
+
+                if (is_string($property['items']['inversedBy']) === false) {
+                    // Remove invalid inversedBy if it's not a string or object with id.
                     unset($this->properties[$propertyName]['items']['inversedBy']);
                 }
             }
         }//end foreach
-
     }//end normalizeInversedByProperties()
-
 
     /**
      * Hydrate the entity with data from an array
      *
      * Sets entity properties based on input array values
      *
-     * @param array                          $object    The data array to hydrate from
-     * @param SchemaPropertyValidatorService $validator Optional validator for properties
+     * @param array                    $object    The data array to hydrate from
+     * @param PropertyValidatorHandler $validator Optional validator for properties
      *
-     * @throws Exception If property validation fails
-     * @return self Returns $this for method chaining
+     * @throws \Exception If property validation fails
+     *
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object, ?SchemaPropertyValidatorService $validator=null): self
+    public function hydrate(array $object, ?PropertyValidatorHandler $validator = null): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -605,29 +675,60 @@ class Schema extends Entity implements JsonSerializable
             $object['metadata'] = [];
         }
 
+        // Default required to empty array if not provided.
+        // This ensures validation works correctly.
+        if (isset($object['required']) === false) {
+            $object['required'] = [];
+        }
+
+        // Default hardValidation to true if not explicitly provided.
+        // This ensures schemas validate by default unless explicitly disabled.
+        if (isset($object['hardValidation']) === false) {
+            $object['hardValidation'] = true;
+        }
+
         foreach ($object as $key => $value) {
+            // Special handling for 'required' field - must always be an array, never NULL.
+            if ($key === 'required') {
+                if ($value === null || $value === []) {
+                    $value = [];
+                }
+
+                $this->setRequired($value);
+                continue;
+            }
+
             if (in_array($key, $jsonFields) === true && $value === []) {
                 $value = null;
             }
 
-            // Use special validation for configuration
+            // Force hardValidation to be set explicitly to override database default.
+            // The database column defaults to 0/false, but we want schemas to validate by default.
+            if ($key === 'hardValidation') {
+                // Explicitly set the value and mark as updated to ensure it persists to database.
+                $this->hardValidation = (bool) $value;
+                $this->markFieldUpdated('hardValidation');
+                continue;
+            }
+
+            // Use special validation for configuration.
             if ($key === 'configuration') {
                 try {
-                    // If it's a JSON string, decode it first
-                    if (is_string($value)) {
+                    // If it's a JSON string, decode it first.
+                    if (is_string($value) === true) {
                         $decoded = json_decode($value, true);
-                        // Only use decoded value if JSON was valid
+                        // Only use decoded value if JSON was valid.
                         if (json_last_error() === JSON_ERROR_NONE) {
                             $value = $decoded;
                         } else {
-                            // Invalid JSON, set to null
+                            // Invalid JSON, set to null.
                             $value = null;
                         }
                     }
 
                     $this->setConfiguration($value);
                 } catch (\Exception $exception) {
-                    // Silently ignore invalid configuration and set to null
+                    // Silently ignore invalid configuration and set to null.
                     $this->configuration = null;
                     $this->markFieldUpdated('configuration');
                 }
@@ -635,7 +736,7 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }//end if
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -645,35 +746,35 @@ class Schema extends Entity implements JsonSerializable
         }//end foreach
 
         // Validate properties if validator is provided.
-        if ($validator !== null && isset($object['properties']) === true) {
+        if ($validator !== null && (($object['properties'] ?? null) !== null)) {
             $this->validateProperties($validator);
         }
 
-        // Validate authorization structure
-        if (isset($object['authorization']) === true) {
+        // Validate authorization structure.
+        if (($object['authorization'] ?? null) !== null) {
             $this->validateAuthorization();
         }
 
         return $this;
-
     }//end hydrate()
-
 
     /**
      * Serializes the schema to an array
      *
      * Converts entity data to a JSON serializable array
      *
-     * @return array<string, mixed> The serialized schema data
+     * @return ((mixed|string[])[]|bool|int|null|string)[] The serialized schema data
+     *
+     * @psalm-return array{id: int, uuid: null|string, uri: null|string, slug: null|string, title: null|string, description: null|string, version: null|string, summary: null|string, icon: null|string, required: array, properties: array, archive: array|null, source: null|string, hardValidation: bool, immutable: bool, searchable: bool, updated: null|string, created: null|string, maxDepth: int, owner: null|string, application: null|string, organisation: null|string, groups: array<string, list<string>>|null, authorization: array|null, deleted: null|string, published: null|string, depublished: null|string, configuration: array|null|string, allOf: array|null, oneOf: array|null, anyOf: array|null}
      */
     public function jsonSerialize(): array
     {
         $required   = ($this->required ?? []);
         $properties = [];
 
-        if (isset($this->properties) === true) {
-            foreach ($this->properties as $propertyKey => $property) {
-                $isRequired    = (isset($property['required']) === true && $property['required'] === true);
+        if (($this->properties ?? null) !== null) {
+            foreach ($this->properties ?? [] as $propertyKey => $property) {
+                $isRequired    = (isset($property['required']) && $property['required'] === true);
                 $notInRequired = in_array($propertyKey, $required) === false;
 
                 if ($isRequired === true && $notInRequired === true) {
@@ -685,17 +786,17 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $updated = null;
-        if (isset($this->updated) === true) {
+        if ($this->updated !== null) {
             $updated = $this->updated->format('c');
         }
 
         $created = null;
-        if (isset($this->created) === true) {
+        if ($this->created !== null) {
             $created = $this->created->format('c');
         }
 
         $deleted = null;
-        if (isset($this->deleted) === true) {
+        if ($this->deleted !== null) {
             $deleted = $this->deleted->format('c');
         }
 
@@ -726,7 +827,7 @@ class Schema extends Entity implements JsonSerializable
             'hardValidation' => $this->hardValidation,
             'immutable'      => $this->immutable,
             'searchable'     => $this->searchable,
-        // @todo: should be refactored to strict
+        // @todo: should be refactored to strict.
             'updated'        => $updated,
             'created'        => $created,
             'maxDepth'       => $this->maxDepth,
@@ -743,9 +844,7 @@ class Schema extends Entity implements JsonSerializable
             'oneOf'          => $this->oneOf,
             'anyOf'          => $this->anyOf,
         ];
-
     }//end jsonSerialize()
-
 
     /**
      * Converts schema to an object representation
@@ -754,9 +853,9 @@ class Schema extends Entity implements JsonSerializable
      *
      * @param IURLGenerator $urlGenerator The URL generator for URLs in the schema
      *
-     * @return object A standard object representation of the schema
+     * @return stdClass A standard object representation of the schema
      */
-    public function getSchemaObject(IURLGenerator $urlGenerator): object
+    public function getSchemaObject(IURLGenerator $urlGenerator): stdClass
     {
         $schema        = new stdClass();
         $schema->title = $this->title;
@@ -765,20 +864,20 @@ class Schema extends Entity implements JsonSerializable
         $schema->type        = 'object';
         $schema->required    = $this->required;
         $schema->{'$schema'} = 'https://json-schema.org/draft/2020-12/schema';
-        $schema->{'$id'}     = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->{'$id'}     = $urlGenerator->getBaseUrl() . '/apps/openregister/api/v1/schemas/' . $this->uuid;
         $schema->properties  = new stdClass();
 
-        foreach ($this->properties as $propertyName => $property) {
-            if (isset($property['properties']) === true) {
+        foreach ($this->properties ?? [] as $propertyName => $property) {
+            if (($property['properties'] ?? null) !== null) {
                 $nestedProperties         = new stdClass();
                 $nestedProperty           = new stdClass();
                 $nestedProperty->type     = 'object';
                 $nestedProperty->title    = $property['title'];
                 $nestedProperty->required = [];
 
-                if (isset($property['properties']) === true) {
+                if (($property['properties'] ?? null) !== null) {
                     foreach ($property['properties'] as $subName => $subProperty) {
-                        if ((isset($subProperty['required']) === true) && ($subProperty['required'] === true)) {
+                        if ((($subProperty['required'] ?? null) !== null) === true && ($subProperty['required'] === true) === true) {
                             $nestedProperty->required[] = $subName;
                         }
 
@@ -797,23 +896,22 @@ class Schema extends Entity implements JsonSerializable
 
                 $nestedProperty->properties          = $nestedProperties;
                 $schema->properties->{$propertyName} = $nestedProperty;
-            } else {
-                $prop = new stdClass();
-                foreach ($property as $key => $value) {
-                    // Skip 'required' property on this level.
-                    if ($key !== 'required' && (empty($value) === false)) {
-                        $prop->{$key} = $value;
-                    }
-                }
-
-                $schema->properties->{$propertyName} = $prop;
+                continue;
             }//end if
+
+            $prop = new stdClass();
+            foreach ($property as $key => $value) {
+                // Skip 'required' property on this level.
+                if ($key !== 'required' && (empty($value) === false)) {
+                    $prop->{$key} = $value;
+                }
+            }
+
+            $schema->properties->{$propertyName} = $prop;
         }//end foreach
 
         return $schema;
-
     }//end getSchemaObject()
-
 
     /**
      * Set the slug, ensuring it is always lowercase
@@ -830,9 +928,7 @@ class Schema extends Entity implements JsonSerializable
 
         $this->slug = $slug;
         $this->markFieldUpdated('slug');
-
     }//end setSlug()
-
 
     /**
      * Get the icon for the schema
@@ -842,9 +938,7 @@ class Schema extends Entity implements JsonSerializable
     public function getIcon(): ?string
     {
         return $this->icon;
-
     }//end getIcon()
-
 
     /**
      * Set the icon for the schema
@@ -857,9 +951,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->icon = $icon;
         $this->markFieldUpdated('icon');
-
     }//end setIcon()
-
 
     /**
      * Get the configuration for the schema
@@ -875,24 +967,17 @@ class Schema extends Entity implements JsonSerializable
             return null;
         }
 
-        // If it's already an array, return it
-        if (is_array($this->configuration)) {
-            return $this->configuration;
-        }
-
-        // If it's a JSON string, decode it
-        if (is_string($this->configuration)) {
+        // If it's a JSON string, decode it.
+        if (is_string($this->configuration) === true) {
             $decoded = json_decode($this->configuration, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
             }
         }
 
-        // If we get here, something is wrong - return null
+        // If we get here, something is wrong - return null.
         return null;
-
     }//end getConfiguration()
-
 
     /**
      * Set the configuration for the schema with validation
@@ -925,21 +1010,25 @@ class Schema extends Entity implements JsonSerializable
             return;
         }
 
-        // Handle JSON strings from database
-        if (is_string($configuration)) {
+        // Handle JSON strings from database.
+        if (is_string($configuration) === true) {
+            /*
+             * @psalm-suppress NoValue - json_decode returns array when successful
+             */
+
             $decoded = json_decode($configuration, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            if (json_last_error() === JSON_ERROR_NONE && $decoded !== null) {
                 $configuration = $decoded;
             } else {
-                // Invalid JSON, set to null
+                // Invalid JSON, set to null.
                 $this->configuration = null;
                 $this->markFieldUpdated('configuration');
                 return;
             }
         }
 
-        // If it's still not an array at this point, set to null
-        if (!is_array($configuration)) {
+        // If it's still not an array at this point, set to null.
+        if (is_array($configuration) === false) {
             $this->configuration = null;
             $this->markFieldUpdated('configuration');
             return;
@@ -959,8 +1048,8 @@ class Schema extends Entity implements JsonSerializable
         ];
 
         foreach ($configuration as $key => $value) {
-            // Skip unknown configuration keys
-            if (!in_array($key, $allowedKeys)) {
+            // Skip unknown configuration keys.
+            if (in_array($key, $allowedKeys) === false) {
                 continue;
             }
 
@@ -969,43 +1058,46 @@ class Schema extends Entity implements JsonSerializable
                 case 'objectDescriptionField':
                 case 'objectSummaryField':
                 case 'objectImageField':
-                    // These should be strings (dot-notation paths) or empty
-                    if ($value !== null && $value !== '' && !is_string($value)) {
-                        throw new \InvalidArgumentException("Configuration '{$key}' must be a string or null");
+                    // These should be strings (dot-notation paths) or empty.
+                    if ($value !== null && $value !== '' && is_string($value) === false) {
+                        throw new InvalidArgumentException("Configuration '{$key}' must be a string or null");
                     }
 
-                    $validatedConfig[$key] = $value === '' ? null : $value;
+                    $validatedConfig[$key] = $value;
+                    if ($value === '') {
+                        $validatedConfig[$key] = null;
+                    }
                     break;
 
                 case 'allowFiles':
-                    // This should be a boolean
-                    if ($value !== null && !is_bool($value)) {
-                        throw new \InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
+                    // This should be a boolean.
+                    if ($value !== null && is_bool($value) === false) {
+                        throw new InvalidArgumentException("Configuration 'allowFiles' must be a boolean or null");
                     }
 
                     $validatedConfig[$key] = $value;
                     break;
 
                 case 'autoPublish':
-                    // This should be a boolean
-                    if ($value !== null && !is_bool($value)) {
-                        throw new \InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
+                    // This should be a boolean.
+                    if ($value !== null && is_bool($value) === false) {
+                        throw new InvalidArgumentException("Configuration 'autoPublish' must be a boolean or null");
                     }
 
                     $validatedConfig[$key] = $value;
                     break;
 
                 case 'allowedTags':
-                    // This should be an array of strings
+                    // This should be an array of strings.
                     if ($value !== null) {
-                        if (!is_array($value)) {
-                            throw new \InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
+                        if (is_array($value) === false) {
+                            throw new InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
                         }
 
-                        // Validate that all tags are strings
+                        // Validate that all tags are strings.
                         foreach ($value as $tag) {
-                            if (!is_string($tag)) {
-                                throw new \InvalidArgumentException("All values in 'allowedTags' must be strings");
+                            if (is_string($tag) === false) {
+                                throw new InvalidArgumentException("All values in 'allowedTags' must be strings");
                             }
                         }
                     }
@@ -1017,11 +1109,13 @@ class Schema extends Entity implements JsonSerializable
             }//end switch
         }//end foreach
 
-        $this->configuration = empty($validatedConfig) ? null : $validatedConfig;
+        $this->configuration = null;
+        if (empty($validatedConfig) === false) {
+            $this->configuration = $validatedConfig;
+        }
+
         $this->markFieldUpdated('configuration');
-
     }//end setConfiguration()
-
 
     /**
      * Get whether this schema should be searchable in SOLR
@@ -1031,9 +1125,7 @@ class Schema extends Entity implements JsonSerializable
     public function getSearchable(): bool
     {
         return $this->searchable;
-
     }//end getSearchable()
-
 
     /**
      * Set whether this schema should be searchable in SOLR
@@ -1046,9 +1138,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->searchable = $searchable;
         $this->markFieldUpdated('searchable');
-
     }//end setSearchable()
-
 
     /**
      * String representation of the schema
@@ -1060,21 +1150,19 @@ class Schema extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the schema slug if available, otherwise return a descriptive string
+        // Return the schema slug if available, otherwise return a descriptive string.
         if ($this->slug !== null && $this->slug !== '') {
             return $this->slug;
         }
 
-        // Fallback to title if slug is not available
+        // Fallback to title if slug is not available.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Final fallback with ID
-        return 'Schema #'.($this->id ?? 'unknown');
-
+        // Final fallback with ID.
+        return 'Schema #' . ($this->id ?? 'unknown');
     }//end __toString()
-
 
     /**
      * Get the pre-computed facet configuration
@@ -1093,23 +1181,19 @@ class Schema extends Entity implements JsonSerializable
             return null;
         }
 
-        // If it's already an array, return it
-        if (is_array($this->facets)) {
-            return $this->facets;
-        }
-
-        // If it's a JSON string, decode it
-        if (is_string($this->facets)) {
+        // If it's a JSON string, decode it.
+        if (is_string($this->facets) === true) {
             $decoded = json_decode($this->facets, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 return $decoded;
             }
+
+            return null;
         }
 
-        return null;
-
+        // Otherwise, it's already an array.
+        return $this->facets;
     }//end getFacets()
-
 
     /**
      * Set the facet configuration
@@ -1123,25 +1207,23 @@ class Schema extends Entity implements JsonSerializable
      */
     public function setFacets(array|string|null $facets): void
     {
-        // **DATABASE COMPATIBILITY**: Handle JSON string from database
-        if (is_string($facets)) {
+        // **DATABASE COMPATIBILITY**: Handle JSON string from database.
+        if (is_string($facets) === true) {
             try {
                 $this->facets = json_decode($facets, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    // Invalid JSON, set to null
+                    // Invalid JSON, set to null.
                     $this->facets = null;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->facets = null;
             }
         } else {
             $this->facets = $facets;
         }
-        
+
         $this->markFieldUpdated('facets');
-
     }//end setFacets()
-
 
     /**
      * Regenerate facets from current schema properties
@@ -1155,97 +1237,96 @@ class Schema extends Entity implements JsonSerializable
     public function regenerateFacetsFromProperties(): void
     {
         $properties = $this->getProperties();
-        
-        if (empty($properties)) {
+
+        if (empty($properties) === true) {
             $this->setFacets(null);
             return;
         }
 
         $facetConfig = [
-            'object_fields' => [],
-            'generated_at' => time(),
-            'schema_version' => $this->getVersion() ?? '1.0'
+            'object_fields'  => [],
+            'generated_at'   => time(),
+            'schema_version' => $this->getVersion() ?? '1.0',
         ];
 
-        // Analyze each property for facetable configuration
+        // Analyze each property for facetable configuration.
         foreach ($properties as $propertyKey => $property) {
-            // Skip properties that are not marked as facetable
-            if (!isset($property['facetable']) || $property['facetable'] !== true) {
+            // Skip properties that are not marked as facetable.
+            if (isset($property['facetable']) === false || $property['facetable'] !== true) {
                 continue;
             }
 
-            // Determine appropriate facet type based on property configuration
+            // Determine appropriate facet type based on property configuration.
             $facetType = $this->determineFacetType($property);
-            
+
             if ($facetType !== null) {
                 $facetConfig['object_fields'][$propertyKey] = [
-                    'type' => $facetType,
-                    'title' => $property['title'] ?? $propertyKey,
-                    'description' => $property['description'] ?? null,
-                    'data_type' => $property['type'] ?? 'string',
-                    'queryParameter' => $propertyKey
+                    'type'           => $facetType,
+                    'title'          => $property['title'] ?? $propertyKey,
+                    'description'    => $property['description'] ?? null,
+                    'data_type'      => $property['type'] ?? 'string',
+                    'queryParameter' => $propertyKey,
                 ];
 
-                // Add type-specific configuration
+                // Add type-specific configuration.
                 if ($facetType === 'date_histogram') {
-                    $facetConfig['object_fields'][$propertyKey]['default_interval'] = 'month';
+                    $facetConfig['object_fields'][$propertyKey]['default_interval']    = 'month';
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
                 } elseif ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-                } elseif ($facetType === 'terms' && isset($property['enum'])) {
+                } elseif ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
                 }
             }
-        }
+        }//end foreach
 
-        // Set the generated facet configuration
+        // Set the generated facet configuration.
         $this->setFacets($facetConfig);
-
     }//end regenerateFacetsFromProperties()
-
 
     /**
      * Determine the appropriate facet type for a property
      *
      * @param array $property The property configuration
      *
-     * @return string|null The facet type ('terms', 'date_histogram', 'range') or null
-     *
      * @phpstan-param array<string, mixed> $property
-     * @psalm-param   array<string, mixed> $property
+     *
+     * @psalm-param array<string, mixed> $property
+     *
+     * @return string The facet type
+     *
      * @phpstan-return string|null
-     * @psalm-return   string|null
+     *
+     * @psalm-return 'date_histogram'|'range'|'terms'
      */
-    private function determineFacetType(array $property): ?string
+    private function determineFacetType(array $property): string
     {
-        $type = $property['type'] ?? 'string';
+        $type   = $property['type'] ?? 'string';
         $format = $property['format'] ?? null;
 
-        // Date/datetime fields use date_histogram
+        // Date/datetime fields use date_histogram.
         if ($type === 'string' && ($format === 'date' || $format === 'date-time')) {
             return 'date_histogram';
         }
 
-        // Numeric fields can use range facets
+        // Numeric fields can use range facets.
         if ($type === 'number' || $type === 'integer') {
             return 'range';
         }
 
-        // String fields with enums or categorical data use terms
+        // String fields with enums or categorical data use terms.
         if ($type === 'string' || $type === 'boolean') {
             return 'terms';
         }
 
-        // Arrays typically use terms (for categorical values)
+        // Arrays typically use terms (for categorical values).
         if ($type === 'array') {
             return 'terms';
         }
 
-        // Default to terms for other types
+        // Default to terms for other types.
         return 'terms';
-
     }//end determineFacetType()
-
 
     /**
      * Determine the appropriate facet type for a schema property
@@ -1253,53 +1334,68 @@ class Schema extends Entity implements JsonSerializable
      * @param array  $property  The property definition
      * @param string $fieldName The field name
      *
-     * @return string|null The facet type ('terms', 'date_histogram') or null if not facetable
+     * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
+     *
+     * @psalm-return 'date_histogram'|'terms'|null
      */
-    private function determineFacetTypeForProperty(array $property, string $fieldName): ?string
+    private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
-        // Check if explicitly marked as facetable
-        if (isset($property['facetable']) && 
-            ($property['facetable'] === true || $property['facetable'] === 'true' || 
-             (is_string($property['facetable']) && strtolower(trim($property['facetable'])) === 'true'))
+        // Check if explicitly marked as facetable.
+        if (
+            ($property['facetable'] ?? null) !== null
+            && ($property['facetable'] === true || $property['facetable'] === 'true'
+            || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true')) === true
         ) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
-        
-        // Auto-detect common facetable field names
+
+        // Auto-detect common facetable field names.
         $commonFacetableFields = [
-            'type', 'status', 'category', 'tags', 'label', 'group', 
-            'department', 'location', 'priority', 'state', 'classification',
-            'genre', 'brand', 'model', 'version', 'license', 'language'
+            'type',
+            'status',
+            'category',
+            'tags',
+            'label',
+            'group',
+            'department',
+            'location',
+            'priority',
+            'state',
+            'classification',
+            'genre',
+            'brand',
+            'model',
+            'version',
+            'license',
+            'language',
         ];
-        
+
         $lowerFieldName = strtolower($fieldName);
-        if (in_array($lowerFieldName, $commonFacetableFields)) {
+        if (in_array($lowerFieldName, $commonFacetableFields) === true) {
             return $this->determineFacetTypeFromPropertyType($property);
         }
-        
-        // Auto-detect enum properties (good for faceting)
-        if (isset($property['enum']) && is_array($property['enum']) && count($property['enum']) > 0) {
+
+        // Auto-detect enum properties (good for faceting).
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true && (count($property['enum']) > 0) === true) {
             return 'terms';
         }
-        
-        // Auto-detect date/datetime fields
+
+        // Auto-detect date/datetime fields.
         $propertyType = $property['type'] ?? '';
-        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
             return 'date_histogram';
         }
-        
-        // Check for date-like field names
+
+        // Check for date-like field names.
         $dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
         foreach ($dateFields as $dateField) {
-            if (str_contains($lowerFieldName, $dateField)) {
+            if (str_contains($lowerFieldName, $dateField) === true) {
                 return 'date_histogram';
             }
         }
-        
-        return null;
-        
-    }//end determineFacetTypeForProperty()
 
+        return null;
+    }//end determineFacetTypeForProperty()
 
     /**
      * Determine facet type from property type
@@ -1307,31 +1403,31 @@ class Schema extends Entity implements JsonSerializable
      * @param array $property The property definition
      *
      * @return string The facet type ('terms' or 'date_histogram')
+     *
+     * @psalm-return 'date_histogram'|'terms'
      */
     private function determineFacetTypeFromPropertyType(array $property): string
     {
         $propertyType = $property['type'] ?? 'string';
-        
-        // Date/datetime properties use date_histogram
-        if (in_array($propertyType, ['date', 'datetime', 'date-time'])) {
+
+        // Date/datetime properties use date_histogram.
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
             return 'date_histogram';
         }
-        
-        // Enum properties use terms
-        if (isset($property['enum']) && is_array($property['enum'])) {
-            return 'terms';
-        }
-        
-        // Boolean, integer, number with small ranges use terms
-        if (in_array($propertyType, ['boolean', 'integer', 'number'])) {
-            return 'terms';
-        }
-        
-        // Default to terms for other types
-        return 'terms';
-        
-    }//end determineFacetTypeFromPropertyType()
 
+        // Enum properties use terms.
+        if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
+            return 'terms';
+        }
+
+        // Boolean, integer, number with small ranges use terms.
+        if (in_array($propertyType, ['boolean', 'integer', 'number']) === true) {
+            return 'terms';
+        }
+
+        // Default to terms for other types.
+        return 'terms';
+    }//end determineFacetTypeFromPropertyType()
 
     /**
      * Get the array of schema references that this schema must validate against (allOf)
@@ -1344,9 +1440,7 @@ class Schema extends Entity implements JsonSerializable
     public function getAllOf(): ?array
     {
         return $this->allOf;
-
     }//end getAllOf()
-
 
     /**
      * Set the array of schema references that this schema must validate against (allOf)
@@ -1363,9 +1457,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->allOf = $allOf;
         $this->markFieldUpdated('allOf');
-
     }//end setAllOf()
-
 
     /**
      * Get the array of schema references where instance must validate against exactly one (oneOf)
@@ -1378,9 +1470,7 @@ class Schema extends Entity implements JsonSerializable
     public function getOneOf(): ?array
     {
         return $this->oneOf;
-
     }//end getOneOf()
-
 
     /**
      * Set the array of schema references where instance must validate against exactly one (oneOf)
@@ -1396,9 +1486,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->oneOf = $oneOf;
         $this->markFieldUpdated('oneOf');
-
     }//end setOneOf()
-
 
     /**
      * Get the array of schema references where instance must validate against at least one (anyOf)
@@ -1411,9 +1499,7 @@ class Schema extends Entity implements JsonSerializable
     public function getAnyOf(): ?array
     {
         return $this->anyOf;
-
     }//end getAnyOf()
-
 
     /**
      * Set the array of schema references where instance must validate against at least one (anyOf)
@@ -1429,9 +1515,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->anyOf = $anyOf;
         $this->markFieldUpdated('anyOf');
-
     }//end setAnyOf()
-
 
     /**
      * Get the publication timestamp
@@ -1441,9 +1525,7 @@ class Schema extends Entity implements JsonSerializable
     public function getPublished(): ?DateTime
     {
         return $this->published;
-
     }//end getPublished()
-
 
     /**
      * Set the publication timestamp
@@ -1456,9 +1538,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->published = $published;
         $this->markFieldUpdated('published');
-
     }//end setPublished()
-
 
     /**
      * Get the depublication timestamp
@@ -1468,9 +1548,7 @@ class Schema extends Entity implements JsonSerializable
     public function getDepublished(): ?DateTime
     {
         return $this->depublished;
-
     }//end getDepublished()
-
 
     /**
      * Set the depublication timestamp
@@ -1483,9 +1561,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->depublished = $depublished;
         $this->markFieldUpdated('depublished');
-
     }//end setDepublished()
-
 
     /**
      * Check if this schema is managed by any configuration
@@ -1508,15 +1584,13 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $schemas = $configuration->getSchemas();
-            if (in_array($this->id, $schemas, true) === true) {
+            if (in_array($this->id, $schemas ?? [], true) === true) {
                 return true;
             }
         }
 
         return false;
-
     }//end isManagedByConfiguration()
-
 
     /**
      * Get the configuration that manages this schema
@@ -1539,14 +1613,11 @@ class Schema extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $schemas = $configuration->getSchemas();
-            if (in_array($this->id, $schemas, true) === true) {
+            if (in_array($this->id, $schemas ?? [], true) === true) {
                 return $configuration;
             }
         }
 
         return null;
-
     }//end getManagedByConfiguration()
-
-
 }//end class

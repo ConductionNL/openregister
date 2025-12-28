@@ -174,10 +174,10 @@ class ObjectEntityMapperTest extends TestCase
             ->getMock();
         $register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
         $register->method('getId')->willReturn(1);
-        // Patch ObjectEntityMapper to return stats with total > 0
+        // Patch ObjectEntityMapper to return stats with total > 0.
         $objectEntityMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
         $objectEntityMapper->method('getStatistics')->willReturn(['total' => 1]);
-        // Inject the mock into the RegisterMapper
+        // Inject the mock into the RegisterMapper.
         \Closure::bind(function () use ($objectEntityMapper) {
             $this->objectEntityMapper = $objectEntityMapper;
         }, $registerMapper, $registerMapper)();

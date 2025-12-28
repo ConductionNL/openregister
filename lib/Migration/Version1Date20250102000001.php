@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Organisation Active Field Migration
  *
@@ -11,10 +12,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -51,7 +50,7 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-    }
+    }//end __construct()
 
     /**
      * Pre-schema change operations
@@ -60,12 +59,13 @@ class Version1Date20250102000001 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @return void
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // No pre-schema changes required
-
+        // No pre-schema changes required.
     }//end preSchemaChange()
 
     /**
@@ -75,31 +75,36 @@ class Version1Date20250102000001 extends SimpleMigrationStep
      * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
      * @param array                     $options       Migration options
      *
-     * @return null|ISchemaWrapper
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get schema wrapper instance from closure.
         $schema = $schemaClosure();
 
-        // Add active field to organisations table
-        if ($schema->hasTable('openregister_organisations')) {
+        // Add active field to organisations table.
+        if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
-            
-            // Add active field (boolean)
-            if (!$table->hasColumn('active')) {
-                $table->addColumn('active', Types::BOOLEAN, [
-                    'notnull' => true,
-                    'default' => true,
-                    'comment' => 'Whether the organisation is active'
-                ]);
-                $output->info('Added active column to organisations table');
+
+            // Add active field (boolean).
+            if ($table->hasColumn('active') === false) {
+                $table->addColumn(
+                    'active',
+                    Types::BOOLEAN,
+                    [
+                            'notnull' => true,
+                            'default' => true,
+                            'comment' => 'Whether the organisation is active',
+                        ]
+                );
+                $output->info(message: 'Added active column to organisations table');
             }
         }
 
         return $schema;
     }//end changeSchema()
-
 
     /**
      * Post-schema change operations
@@ -109,12 +114,12 @@ class Version1Date20250102000001 extends SimpleMigrationStep
      * @param array                     $options       Migration options
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        // All organisations should be active by default (already set by column default)
-        $output->info('All existing organisations are now active by default');
-
+        // All organisations should be active by default (already set by column default).
+        $output->info(message: 'All existing organisations are now active by default');
     }//end postSchemaChange()
 }//end class
-

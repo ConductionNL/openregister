@@ -1,0 +1,298 @@
+{
+  "name": "OpenRegister Bidirectional Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-from-external",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-from-or",
+      "name": "Webhook - From OpenRegister",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        200
+      ],
+      "webhookId": "openregister-from-external"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "poll-external",
+      "name": "Poll External System",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://master-nextcloud-1/apps/openregister/api/objects/{{$json.body.data.object.uuid}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "id": "get-or-object",
+      "name": "Get OpenRegister Object",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        460,
+        200
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "OpenRegister API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform OpenRegister object to external format.\nconst object = $input.item.json;\n\nreturn {\n  external_id: object.uuid,\n  name: object.data?.title || 'Untitled',\n  description: object.data?.description || '',\n  custom_fields: object.data,\n  source: 'openregister',\n  last_updated: object.updated\n};"
+      },
+      "id": "transform-to-external",
+      "name": "Transform to External Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-external-system.com/api/records",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "sync-to-external",
+      "name": "Sync to External System",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "External System API"
+        }
+      },
+      "notes": "Configure with your external system API"
+    },
+    {
+      "parameters": {
+        "url": "https://your-external-system.com/api/records/updated",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "since",
+                "value": "={{$now.minus({minutes: 10}).toISO()}}"
+              },
+              {
+                "name": "source",
+                "value": "external"
+              }
+            ]
+          }
+        }
+      },
+      "id": "get-external-changes",
+      "name": "Get External Changes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        460,
+        600
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "External System API"
+        }
+      },
+      "notes": "Polls external system for changes every 5 minutes"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transform external system records to OpenRegister format.\nconst records = $input.all();\nconst transformed = [];\n\nfor (const record of records) {\n  const item = record.json;\n  \n  transformed.push({\n    json: {\n      uuid: item.external_id,\n      register: 'external-sync',\n      schema: 'external-record',\n      data: {\n        title: item.name,\n        description: item.description,\n        external_fields: item.custom_fields,\n        synced_from: 'external',\n        external_updated: item.last_updated\n      }\n    }\n  });\n}\n\nreturn transformed;"
+      },
+      "id": "transform-from-external",
+      "name": "Transform from External Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://master-nextcloud-1/apps/openregister/api/objects/{{$json.uuid}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "update-or",
+      "name": "Update OpenRegister",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        900,
+        600
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "1",
+          "name": "OpenRegister API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.event}}",
+              "operation": "notContains",
+              "value2": "Deleted"
+            }
+          ]
+        }
+      },
+      "id": "filter-delete",
+      "name": "Filter Non-Delete Events",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - From OpenRegister": {
+      "main": [
+        [
+          {
+            "node": "Filter Non-Delete Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Non-Delete Events": {
+      "main": [
+        [
+          {
+            "node": "Get OpenRegister Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get OpenRegister Object": {
+      "main": [
+        [
+          {
+            "node": "Transform to External Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform to External Format": {
+      "main": [
+        [
+          {
+            "node": "Sync to External System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll External System": {
+      "main": [
+        [
+          {
+            "node": "Get External Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get External Changes": {
+      "main": [
+        [
+          {
+            "node": "Transform from External Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform from External Format": {
+      "main": [
+        [
+          {
+            "node": "Update OpenRegister",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "name": "OpenRegister",
+      "id": "1"
+    },
+    {
+      "name": "Bidirectional",
+      "id": "2"
+    },
+    {
+      "name": "Sync",
+      "id": "3"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}
+

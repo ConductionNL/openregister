@@ -308,7 +308,7 @@ Vectorized entities can be searched using semantic similarity:
 3. **Return top N matches** sorted by similarity
 4. **Retrieve source entities** using entity_type and entity_id
 
-See [Vector Search Backends](./vector-search-backends.md) for details on search backends.
+See [Vector Search Backends](../technical/vectorization.md#vector-search-backends) for details on search backends.
 
 ## Hybrid Search Architecture
 
@@ -361,7 +361,7 @@ User Query
 
 ## Related Documentation
 
-- [Vector Search Backends](./vector-search-backends.md) - Vector search backend options
+- [Vector Search Backends](../technical/vectorization.md#vector-search-backends) - Vector search backend options
 - [Services Architecture](../development/services-architecture.md) - Overall service architecture
 
 **File-specific logic:**

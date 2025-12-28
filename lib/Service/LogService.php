@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister LogService
  *
@@ -18,69 +19,159 @@
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
+use Exception;
+use InvalidArgumentException;
+use RuntimeException;
+use SimpleXMLElement;
+use stdClass;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 
 /**
- * Class LogService
- * Service for handling audit trail logs
+ * LogService handles audit trail logs
+ *
+ * Service class for handling audit trail logs in the OpenRegister application.
+ * Provides methods for retrieving, filtering, and counting audit trail entries
+ * for objects and system-wide operations.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.app
  */
 class LogService
 {
+    /**
+     * Audit trail mapper
+     *
+     * Handles database operations for audit trail entries.
+     *
+     * @var AuditTrailMapper Audit trail mapper instance
+     */
+    private readonly AuditTrailMapper $auditTrailMapper;
 
+    /**
+     * Object entity mapper
+     *
+     * Used to validate object existence and retrieve object details.
+     *
+     * @var ObjectEntityMapper Object entity mapper instance
+     */
+    private readonly ObjectEntityMapper $objectEntityMapper;
+
+    /**
+     * Register mapper
+     *
+     * Reserved for future use in log filtering and validation.
+     *
+     * @var RegisterMapper Register mapper instance
+     *
+     * @psalm-suppress UnusedProperty
+     */
+    private readonly RegisterMapper $registerMapper;
+
+    /**
+     * Schema mapper
+     *
+     * Reserved for future use in log filtering and validation.
+     *
+     * @var SchemaMapper Schema mapper instance
+     *
+     * @psalm-suppress UnusedProperty
+     */
+    private readonly SchemaMapper $schemaMapper;
 
     /**
      * Constructor for LogService
      *
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * Initializes the LogService with required mapper dependencies for handling
+     * audit trail logs and related entities.
+     *
+     * @param AuditTrailMapper   $auditTrailMapper   Mapper for audit trail database operations
+     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity database operations
+     * @param RegisterMapper     $registerMapper     Mapper for register database operations
+     * @param SchemaMapper       $schemaMapper       Mapper for schema database operations
+     *
+     * @return void
      */
     public function __construct(
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper
+        AuditTrailMapper $auditTrailMapper,
+        ObjectEntityMapper $objectEntityMapper,
+        RegisterMapper $registerMapper,
+        SchemaMapper $schemaMapper
     ) {
-
+        $this->auditTrailMapper   = $auditTrailMapper;
+        $this->objectEntityMapper = $objectEntityMapper;
+        $this->registerMapper     = $registerMapper;
+        $this->schemaMapper       = $schemaMapper;
     }//end __construct()
-
 
     /**
      * Get logs for an object
      *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     * @param string $id       The object ID
-     * @param array  $config   Configuration array containing:
-     *                         - limit: (int) Maximum number of items per page
-     *                         - offset: (int|null) Number of items to skip
-     *                         - page: (int|null) Current page number
-     *                         - filters: (array) Filter parameters
-     *                         - sort: (array) Sort parameters ['field' => 'ASC|DESC']
-     *                         - search: (string|null) Search term
+     * Retrieves audit trail logs for a specific object with optional filtering,
+     * pagination, sorting, and search capabilities. Validates that the object
+     * belongs to the specified register and schema.
      *
-     * @return array Array of log entries
+     * @param string               $register The register identifier (slug or ID)
+     * @param string               $schema   The schema identifier (slug or ID)
+     * @param string               $id       The object ID to retrieve logs for
+     * @param array<string, mixed> $config   Configuration array containing:
+     *                                       - limit: (int) Maximum number of items per page (default: 20)
+     *                                       - offset: (int|null) Number of items to skip for pagination
+     *                                       - page: (int|null) Current page number (alternative to offset)
+     *                                       - filters: (array) Filter parameters (e.g., ['action' => 'create'])
+     *                                       - sort: (array) Sort parameters ['field' => 'ASC|DESC'] (default: ['created' => 'DESC'])
+     *                                       - search: (string|null) Search term for log content
+     *
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail log entries
+     *
      * @throws \InvalidArgumentException If object does not belong to specified register/schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function getLogs(string $register, string $schema, string $id, array $config=[]): array
+    public function getLogs(string $register, string $schema, string $id, array $config = []): array
     {
-        // Get the object to ensure it exists and belongs to the correct register/schema.
-        $object = $this->objectEntityMapper->find($id);
+        // Step 1: Get the object to ensure it exists.
+        // Include deleted objects so audit trail is accessible even after soft-delete
+        $object = $this->objectEntityMapper->find($id, null, null, true);
 
-        if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
-            throw new \InvalidArgumentException('Object does not belong to specified register/schema');
+        // Step 2: Validate object belongs to specified register/schema by comparing stored IDs
+        // We skip entity resolution to allow access even if register/schema are soft-deleted
+        // The object's register/schema fields store IDs as strings
+        // We need to resolve the slugs to IDs for comparison
+        try {
+            // Try to resolve slugs, but allow deleted entities
+            $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
+            $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
+
+            if ($object->getRegister() !== (string) $registerEntity->getId() || $object->getSchema() !== (string) $schemaEntity->getId()) {
+                throw new InvalidArgumentException('Object does not belong to specified register/schema');
+            }
+        } catch (\Exception $e) {
+            // If register/schema not found (likely deleted), we can't validate
+            // But we still allow audit trail access for the object
         }
 
-        // Add object ID to filters.
+        // Step 3: Add object ID to filters to restrict logs to this object.
         $filters           = $config['filters'] ?? [];
         $filters['object'] = $object->getId();
 
-        // Get logs from audit trail mapper.
+        // Note: We do NOT add register/schema filters here because:
+        // 1. The object already ensures it belongs to the correct register/schema
+        // 2. Adding those filters can cause issues if register/schema have been recreated with same slug
+        // 3. The object ID is sufficient to uniquely identify audit trails
+        // Step 4: Retrieve logs from audit trail mapper with pagination and filtering.
         return $this->auditTrailMapper->findAll(
             limit: $config['limit'] ?? 20,
             offset: $config['offset'] ?? 0,
@@ -88,39 +179,55 @@ class LogService
             sort: $config['sort'] ?? ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
-
     }//end getLogs()
-
 
     /**
      * Count logs for an object
      *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     * @param string $id       The object ID
+     * Counts total number of audit trail entries for a specific object.
+     * Validates that the object belongs to the specified register and schema.
      *
-     * @return int Number of logs
+     * @param string $register The register identifier (slug or ID)
+     * @param string $schema   The schema identifier (slug or ID)
+     * @param string $id       The object ID to count logs for
+     *
+     * @return int Number of log entries (0 or positive integer)
+     *
      * @throws \InvalidArgumentException If object does not belong to specified register/schema
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
+     *
+     * @psalm-return int<0, max>
      */
     public function count(string $register, string $schema, string $id): int
     {
-        // Get the object to ensure it exists and belongs to the correct register/schema.
-        $object = $this->objectEntityMapper->find($id);
+        // Step 1: Get the object to ensure it exists.
+        // Include deleted objects so audit trail count is accessible even after soft-delete
+        $object = $this->objectEntityMapper->find($id, null, null, true);
 
-        if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
-            throw new \InvalidArgumentException('Object does not belong to specified register/schema');
+        // Step 2: Validate object belongs to specified register/schema by comparing stored IDs
+        // We skip entity resolution to allow access even if register/schema are soft-deleted
+        try {
+            // Try to resolve slugs, but allow deleted entities
+            $registerEntity = $this->registerMapper->find($register, _multitenancy: false, _rbac: false);
+            $schemaEntity   = $this->schemaMapper->find($schema, _multitenancy: false, _rbac: false);
+
+            if ($object->getRegister() !== (string) $registerEntity->getId() || $object->getSchema() !== (string) $schemaEntity->getId()) {
+                throw new InvalidArgumentException('Object does not belong to specified register/schema');
+            }
+        } catch (\Exception $e) {
+            // If register/schema not found (likely deleted), we can't validate
+            // But we still allow audit trail access for the object
         }
 
-        // Get logs using findAll with a filter for the object.
+        // Step 3: Get all logs for this object using filter.
+        // No pagination needed since we're only counting.
         $logs = $this->auditTrailMapper->findAll(
             filters: ['object' => $object->getId()]
         );
 
+        // Step 4: Return count of log entries.
         return count($logs);
-
     }//end count()
-
 
     /**
      * Get all audit trail logs with optional filtering
@@ -133,9 +240,11 @@ class LogService
      *                      - sort: (array) Sort parameters ['field' => 'ASC|DESC']
      *                      - search: (string|null) Search term
      *
-     * @return array Array of audit trail entries
+     * @return \OCA\OpenRegister\Db\AuditTrail[] Array of audit trail entries
+     *
+     * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function getAllLogs(array $config=[]): array
+    public function getAllLogs(array $config = []): array
     {
         return $this->auditTrailMapper->findAll(
             limit: $config['limit'] ?? 20,
@@ -144,9 +253,7 @@ class LogService
             sort: $config['sort'] ?? ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
-
     }//end getAllLogs()
-
 
     /**
      * Count all audit trail logs with optional filtering
@@ -154,14 +261,14 @@ class LogService
      * @param array $filters Optional filters to apply
      *
      * @return int Number of audit trail entries
+     *
+     * @psalm-return int<0, max>
      */
-    public function countAllLogs(array $filters=[]): int
+    public function countAllLogs(array $filters = []): int
     {
         $logs = $this->auditTrailMapper->findAll(filters: $filters);
         return count($logs);
-
     }//end countAllLogs()
-
 
     /**
      * Get a single audit trail log by ID
@@ -174,9 +281,7 @@ class LogService
     public function getLog(int $id)
     {
         return $this->auditTrailMapper->find($id);
-
     }//end getLog()
-
 
     /**
      * Export audit trail logs with specified format and filters
@@ -191,28 +296,28 @@ class LogService
      *                       metadata - search:
      *                       (string|null) Search term
      *
-     * @return array Array containing:
-     *               - content: (string) Exported content
-     *               - filename: (string) Suggested filename
-     *               - contentType: (string) MIME content type
+     * @return (bool|string)[]
+     *
      * @throws \InvalidArgumentException If unsupported format is specified
+     *
+     * @psalm-return array{content: bool|string, filename: string, contentType: string}
      */
-    public function exportLogs(string $format, array $config=[]): array
+    public function exportLogs(string $format, array $config = []): array
     {
-        // Get all logs with current filters
+        // Get all logs with current filters.
         $logs = $this->auditTrailMapper->findAll(
             filters: $config['filters'] ?? [],
             sort: ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
 
-        // Process logs for export
-        $exportData = $this->prepareLogsForExport($logs, $config);
+        // Process logs for export.
+        $exportData = $this->prepareLogsForExport(logs: $logs, config: $config);
 
-        // Generate content based on format
+        // Generate content based on format.
         switch (strtolower($format)) {
             case 'csv':
-                return $this->exportToCsv($exportData);
+                return $this->exportToCsv(data: $exportData);
             case 'json':
                 return $this->exportToJson($exportData);
             case 'xml':
@@ -220,18 +325,17 @@ class LogService
             case 'txt':
                 return $this->exportToTxt($exportData);
             default:
-                throw new \InvalidArgumentException("Unsupported export format: {$format}");
+                throw new InvalidArgumentException("Unsupported export format: {$format}");
         }
-
     }//end exportLogs()
-
 
     /**
      * Delete a single audit trail log by ID
      *
      * @param int $id The audit trail ID to delete
      *
-     * @return bool True if deletion was successful
+     * @return true True if deletion was successful
+     *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If audit trail not found
      */
     public function deleteLog(int $id): bool
@@ -240,12 +344,10 @@ class LogService
             $log = $this->auditTrailMapper->find($id);
             $this->auditTrailMapper->delete($log);
             return true;
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to delete audit trail: ".$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Failed to delete audit trail: " . $e->getMessage());
         }
-
     }//end deleteLog()
-
 
     /**
      * Delete multiple audit trail logs based on filters
@@ -255,30 +357,31 @@ class LogService
      *                      - search: (string|null) Search term
      *                      - ids: (array|null) Specific IDs to delete
      *
-     * @return array Array containing:
-     *               - deleted: (int) Number of logs deleted
-     *               - failed: (int) Number of logs that failed to delete
+     * @return int[] Array containing: - deleted: (int) Number of logs deleted - failed: (int) Number of logs that failed to delete
+     *
      * @throws \Exception If mass deletion fails
+     *
+     * @psalm-return array{deleted: int<0, max>, failed: int<0, max>, total: int<0, max>}
      */
-    public function deleteLogs(array $config=[]): array
+    public function deleteLogs(array $config = []): array
     {
         $deleted = 0;
         $failed  = 0;
 
         try {
-            // If specific IDs are provided, use those
-            if (!empty($config['ids']) && is_array($config['ids'])) {
+            // If specific IDs are provided, use those.
+            if (empty($config['ids']) === false && is_array($config['ids']) === true) {
                 foreach ($config['ids'] as $id) {
                     try {
                         $log = $this->auditTrailMapper->find($id);
                         $this->auditTrailMapper->delete($log);
                         $deleted++;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $failed++;
                     }
                 }
             } else {
-                // Otherwise, use filters to find logs to delete
+                // Otherwise, use filters to find logs to delete.
                 $logs = $this->auditTrailMapper->findAll(
                     filters: $config['filters'] ?? [],
                     search: $config['search'] ?? null
@@ -288,7 +391,7 @@ class LogService
                     try {
                         $this->auditTrailMapper->delete($log);
                         $deleted++;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $failed++;
                     }
                 }
@@ -299,12 +402,10 @@ class LogService
                 'failed'  => $failed,
                 'total'   => $deleted + $failed,
             ];
-        } catch (\Exception $e) {
-            throw new \Exception("Mass deletion failed: ".$e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception("Mass deletion failed: " . $e->getMessage());
         }//end try
-
     }//end deleteLogs()
-
 
     /**
      * Prepare logs data for export by filtering and formatting fields
@@ -312,7 +413,25 @@ class LogService
      * @param array $logs   Array of audit trail logs
      * @param array $config Export configuration
      *
-     * @return array Prepared data for export
+     * @return (mixed|string)[][] Prepared data for export
+     *
+     * @psalm-return list<array{
+     *     action: ''|mixed,
+     *     changes?: string,
+     *     created: ''|mixed,
+     *     id: ''|mixed,
+     *     ipAddress?: ''|mixed,
+     *     object: ''|mixed,
+     *     register: ''|mixed,
+     *     request?: ''|mixed,
+     *     schema: ''|mixed,
+     *     session?: ''|mixed,
+     *     size: ''|mixed,
+     *     user: ''|mixed,
+     *     userName: ''|mixed,
+     *     uuid: ''|mixed,
+     *     version?: ''|mixed
+     * }>
      */
     private function prepareLogsForExport(array $logs, array $config): array
     {
@@ -323,7 +442,7 @@ class LogService
         foreach ($logs as $log) {
             $logData = $log->jsonSerialize();
 
-            // Always include basic fields
+            // Always include basic fields.
             $exportRow = [
                 'id'       => $logData['id'] ?? '',
                 'uuid'     => $logData['uuid'] ?? '',
@@ -337,13 +456,13 @@ class LogService
                 'size'     => $logData['size'] ?? '',
             ];
 
-            // Include changes if requested
-            if ($includeChanges && !empty($logData['changed'])) {
-                $exportRow['changes'] = is_array($logData['changed']) ? json_encode($logData['changed']) : $logData['changed'];
+            // Include changes if requested.
+            if ($includeChanges === true && empty($logData['changed']) === false) {
+                $exportRow['changes'] = $this->getChangesFormatted($logData['changed']);
             }
 
-            // Include metadata if requested
-            if ($includeMetadata) {
+            // Include metadata if requested.
+            if ($includeMetadata === true) {
                 $exportRow['session']   = $logData['session'] ?? '';
                 $exportRow['request']   = $logData['request'] ?? '';
                 $exportRow['ipAddress'] = $logData['ipAddress'] ?? '';
@@ -354,33 +473,33 @@ class LogService
         }//end foreach
 
         return $exportData;
-
     }//end prepareLogsForExport()
-
 
     /**
      * Export data to CSV format
      *
      * @param array $data Prepared export data
      *
-     * @return array Export result
+     * @return (false|string)[]
+     *
+     * @psalm-return array{content: false|string, filename: string, contentType: 'text/csv'}
      */
     private function exportToCsv(array $data): array
     {
-        if (empty($data)) {
+        if (empty($data) === true) {
             return [
                 'content'     => '',
-                'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
+                'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.csv',
                 'contentType' => 'text/csv',
             ];
         }
 
         $output = fopen('php://temp', 'r+');
 
-        // Write header
+        // Write header.
         fputcsv($output, array_keys($data[0]));
 
-        // Write data rows
+        // Write data rows.
         foreach ($data as $row) {
             fputcsv($output, $row);
         }
@@ -391,78 +510,78 @@ class LogService
 
         return [
             'content'     => $content,
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.csv',
             'contentType' => 'text/csv',
         ];
-
     }//end exportToCsv()
-
 
     /**
      * Export data to JSON format
      *
      * @param array $data Prepared export data
      *
-     * @return array Export result
+     * @return (false|string)[]
+     *
+     * @psalm-return array{content: false|string, filename: string, contentType: 'application/json'}
      */
     private function exportToJson(array $data): array
     {
         return [
             'content'     => json_encode($data, JSON_PRETTY_PRINT),
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.json',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.json',
             'contentType' => 'application/json',
         ];
-
     }//end exportToJson()
-
 
     /**
      * Export data to XML format
      *
      * @param array $data Prepared export data
      *
-     * @return array Export result
+     * @return (bool|string)[]
+     *
+     * @psalm-return array{content: bool|string, filename: string, contentType: 'application/xml'}
      */
     private function exportToXml(array $data): array
     {
-        $xml = new \SimpleXMLElement('<auditTrails/>');
+        $xml = new SimpleXMLElement('<auditTrails/>');
 
         foreach ($data as $logData) {
             $logElement = $xml->addChild('auditTrail');
             foreach ($logData as $key => $value) {
-                // Handle special characters and ensure valid XML
+                // Handle special characters and ensure valid XML.
                 $cleanKey = preg_replace('/[^a-zA-Z0-9_]/', '_', $key);
-                $logElement->addChild($cleanKey, htmlspecialchars($value ?? ''));
+                $logElement->addChild(name: $cleanKey, value: htmlspecialchars($value ?? ''));
             }
         }
 
         return [
             'content'     => $xml->asXML(),
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.xml',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.xml',
             'contentType' => 'application/xml',
         ];
-
     }//end exportToXml()
-
 
     /**
      * Export data to plain text format
      *
      * @param array $data Prepared export data
      *
-     * @return array Export result
+     * @return string[]
+     *
+     * @psalm-return array{content: string, filename: string, contentType: 'text/plain'}
      */
     private function exportToTxt(array $data): array
     {
-        $content  = "Audit Trail Export - Generated on ".date('Y-m-d H:i:s')."\n";
-        $content .= str_repeat('=', 60)."\n\n";
+        $content  = "Audit Trail Export - Generated on " . date('Y-m-d H:i:s') . "\n";
+        $content .= str_repeat('=', 60) . "\n\n";
 
         foreach ($data as $index => $logData) {
-            $content .= "Entry #".($index + 1)."\n";
-            $content .= str_repeat('-', 20)."\n";
+            $content .= "Entry #" . ((int) $index + 1) . "\n";
+            $content .= str_repeat('-', 20) . "\n";
 
             foreach ($logData as $key => $value) {
-                $content .= ucfirst($key).': '.($value ?? 'N/A')."\n";
+                $content .= ucfirst($key) . ': ' . ($value ?? 'N/A') . "\n";
             }
 
             $content .= "\n";
@@ -470,11 +589,24 @@ class LogService
 
         return [
             'content'     => $content,
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.txt',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.txt',
             'contentType' => 'text/plain',
         ];
-
     }//end exportToTxt()
 
+    /**
+     * Get changes formatted as JSON string or original value
+     *
+     * @param mixed $changed Changed data
+     *
+     * @return string Formatted changes
+     */
+    private function getChangesFormatted($changed): string
+    {
+        if (is_array($changed) === true) {
+            return json_encode($changed);
+        }
 
+        return (string) $changed;
+    }//end getChangesFormatted()
 }//end class

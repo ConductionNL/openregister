@@ -57,25 +57,25 @@ class SessionCacheManagementTest extends TestCase
      */
     public function testSessionPersistence(): void
     {
-        // Arrange
+        // Arrange.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
         
         $orgUuid = 'persistent-org-uuid';
         
-        // Mock: Set active organisation
+        // Mock: Set active organisation.
         $this->session->expects($this->once())
             ->method('set')
             ->with('openregister_active_organisation_alice', $orgUuid);
         
-        // Mock: Subsequent get from session
+        // Mock: Subsequent get from session.
         $this->session->expects($this->once())
             ->method('get')
             ->with('openregister_active_organisation_alice')
             ->willReturn($orgUuid);
 
-        // Act & Assert: Set and get should persist
+        // Act & Assert: Set and get should persist.
         $this->organisationService->setActiveOrganisation($orgUuid);
         $this->assertEquals($orgUuid, $this->session->get('openregister_active_organisation_alice'));
     }
@@ -85,28 +85,28 @@ class SessionCacheManagementTest extends TestCase
      */
     public function testCachePerformance(): void
     {
-        // Arrange
+        // Arrange.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
         
         $cachedOrgs = [new Organisation()];
         
-        // Mock: First call hits database
+        // Mock: First call hits database.
         $this->organisationMapper->expects($this->once())
             ->method('findByUserId')
             ->willReturn($cachedOrgs);
         
-        // Mock: Second call uses cache
+        // Mock: Second call uses cache.
         $this->session->method('get')
             ->with('openregister_organisations_alice')
             ->willReturn($cachedOrgs);
 
-        // Act: Multiple calls should use cache
+        // Act: Multiple calls should use cache.
         $orgs1 = $this->organisationService->getUserOrganisations(false);
         $orgs2 = $this->organisationService->getUserOrganisations(true); // Use cache
 
-        // Assert: Performance improvement through caching
+        // Assert: Performance improvement through caching.
         $this->assertEquals($orgs1, $cachedOrgs);
         $this->assertEquals($orgs2, $cachedOrgs);
     }
@@ -116,12 +116,12 @@ class SessionCacheManagementTest extends TestCase
      */
     public function testManualCacheClear(): void
     {
-        // Arrange
+        // Arrange.
         $user = $this->createMock(IUser::class);
         $user->method('getUID')->willReturn('alice');
         $this->userSession->method('getUser')->willReturn($user);
         
-        // Mock: Cache removal
+        // Mock: Cache removal.
         $this->session->expects($this->exactly(2))
             ->method('remove')
             ->withConsecutive(
@@ -129,10 +129,10 @@ class SessionCacheManagementTest extends TestCase
                 ['openregister_organisations_alice']
             );
 
-        // Act: Clear cache
+        // Act: Clear cache.
         $this->organisationService->clearCache();
         
-        // Assert: Cache cleared successfully
+        // Assert: Cache cleared successfully.
         $this->addToAssertionCount(1);
     }
 
@@ -141,28 +141,28 @@ class SessionCacheManagementTest extends TestCase
      */
     public function testCrossUserSessionIsolation(): void
     {
-        // Arrange: Two different users
+        // Arrange: Two different users.
         $alice = $this->createMock(IUser::class);
         $alice->method('getUID')->willReturn('alice');
         
         $bob = $this->createMock(IUser::class);
         $bob->method('getUID')->willReturn('bob');
         
-        // Mock: Alice's session
+        // Mock: Alice's session.
         $this->userSession->method('getUser')->willReturn($alice);
         $this->session->method('set')
             ->with('openregister_active_organisation_alice', 'alice-org');
 
-        // Act: Alice sets active organisation
+        // Act: Alice sets active organisation.
         $this->organisationService->setActiveOrganisation('alice-org');
         
-        // Mock: Bob's session should be isolated
+        // Mock: Bob's session should be isolated.
         $this->userSession->method('getUser')->willReturn($bob);
         $this->session->method('get')
             ->with('openregister_active_organisation_bob')
             ->willReturn('bob-org'); // Bob has different active org
 
-        // Assert: Users have isolated sessions
+        // Assert: Users have isolated sessions.
         $this->assertNotEquals('alice-org', 'bob-org');
     }
 } 

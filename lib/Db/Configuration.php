@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Configuration Entity
  *
@@ -97,7 +98,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Configuration extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the configuration
      *
@@ -178,7 +178,7 @@ class Configuration extends Entity implements JsonSerializable
     /**
      * Whether to automatically update when new version is available
      *
-     * @var bool
+     * @var boolean
      */
     protected $autoUpdate = false;
 
@@ -215,7 +215,7 @@ class Configuration extends Entity implements JsonSerializable
      * Local configurations are created/maintained in this installation
      * External configurations are imported and synchronized from remote sources
      *
-     * @var bool
+     * @var boolean
      */
     protected bool $isLocal = true;
 
@@ -223,7 +223,7 @@ class Configuration extends Entity implements JsonSerializable
      * Whether automatic synchronization is enabled for this configuration
      * Only applicable for external configurations (isLocal = false)
      *
-     * @var bool
+     * @var boolean
      */
     protected bool $syncEnabled = false;
 
@@ -231,7 +231,7 @@ class Configuration extends Entity implements JsonSerializable
      * Synchronization interval in hours
      * How often to check for updates from the source
      *
-     * @var int
+     * @var integer
      */
     protected int $syncInterval = 24;
 
@@ -335,7 +335,6 @@ class Configuration extends Entity implements JsonSerializable
      */
     protected $updated = null;
 
-
     /**
      * Constructor to set up the entity with required types
      */
@@ -375,9 +374,7 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
-
 
     /**
      * Validate UUID format
@@ -394,16 +391,16 @@ class Configuration extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-
     }//end isValidUuid()
-
 
     /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -415,9 +412,7 @@ class Configuration extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -426,14 +421,14 @@ class Configuration extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
-        // Map 'application' to 'app' for frontend compatibility
-        if (isset($object['application']) && !isset($object['app'])) {
+        // Map 'application' to 'app' for frontend compatibility.
+        if (($object['application'] ?? null) !== null && (($object['app'] ?? null) === null) === true) {
             $object['app'] = $object['application'];
         }
 
@@ -442,12 +437,12 @@ class Configuration extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            // Skip 'application' as it's already mapped to 'app'
+            // Skip 'application' as it's already mapped to 'app'.
             if ($key === 'application') {
                 continue;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -457,14 +452,50 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
-
 
     /**
      * Serialize the entity to JSON
      *
-     * @return array<string, mixed> The serialized entity
+     * @return (array|bool|int|null|string)[] The serialized entity
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     title: string,
+     *     description: null|string,
+     *     type: string,
+     *     app: string,
+     *     application: string,
+     *     version: string,
+     *     sourceType: null|string,
+     *     sourceUrl: null|string,
+     *     localVersion: null|string,
+     *     remoteVersion: null|string,
+     *     lastChecked: null|string,
+     *     autoUpdate: bool,
+     *     notificationGroups: array|null,
+     *     githubRepo: null|string,
+     *     githubBranch: null|string,
+     *     githubPath: null|string,
+     *     isLocal: bool,
+     *     syncEnabled: bool,
+     *     syncInterval: int,
+     *     lastSyncDate: null|string,
+     *     syncStatus: string,
+     *     openregister: null|string,
+     *     organisation: null|string,
+     *     owner: null|string,
+     *     registers: array|null,
+     *     schemas: array|null,
+     *     objects: array|null,
+     *     views: array|null,
+     *     agents: array|null,
+     *     sources: array|null,
+     *     applications: array|null,
+     *     created: null|string,
+     *     updated: null|string
+     * }
      */
     public function jsonSerialize(): array
     {
@@ -475,13 +506,14 @@ class Configuration extends Entity implements JsonSerializable
             'description'        => $this->description,
             'type'               => $this->type,
             'app'                => $this->app,
-            'application'        => $this->app, // Alias for frontend compatibility
+            'application'        => $this->app,
+        // Alias for frontend compatibility.
             'version'            => $this->version,
             'sourceType'         => $this->sourceType,
             'sourceUrl'          => $this->sourceUrl,
             'localVersion'       => $this->localVersion,
             'remoteVersion'      => $this->remoteVersion,
-            'lastChecked'        => ($this->lastChecked !== null) ? $this->lastChecked->format('c') : null,
+            'lastChecked'        => $this->getLastCheckedFormatted(),
             'autoUpdate'         => $this->autoUpdate,
             'notificationGroups' => $this->notificationGroups,
             'githubRepo'         => $this->githubRepo,
@@ -490,7 +522,7 @@ class Configuration extends Entity implements JsonSerializable
             'isLocal'            => $this->isLocal,
             'syncEnabled'        => $this->syncEnabled,
             'syncInterval'       => $this->syncInterval,
-            'lastSyncDate'       => ($this->lastSyncDate !== null) ? $this->lastSyncDate->format('c') : null,
+            'lastSyncDate'       => $this->getLastSyncDateFormatted(),
             'syncStatus'         => $this->syncStatus,
             'openregister'       => $this->openregister,
             'organisation'       => $this->organisation,
@@ -502,12 +534,10 @@ class Configuration extends Entity implements JsonSerializable
             'agents'             => $this->agents,
             'sources'            => $this->sources,
             'applications'       => $this->applications,
-            'created'            => ($this->created !== null) ? $this->created->format('c') : null,
-            'updated'            => ($this->updated !== null) ? $this->updated->format('c') : null,
+            'created'            => $this->getCreatedFormatted(),
+            'updated'            => $this->getUpdatedFormatted(),
         ];
-
     }//end jsonSerialize()
-
 
     /**
      * Check if a remote update is available
@@ -523,9 +553,7 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return version_compare($this->remoteVersion, $this->localVersion, '>');
-
     }//end hasUpdateAvailable()
-
 
     /**
      * Check if this configuration is from a remote source
@@ -535,9 +563,7 @@ class Configuration extends Entity implements JsonSerializable
     public function isRemoteSource(): bool
     {
         return in_array($this->sourceType, ['github', 'gitlab', 'url']);
-
     }//end isRemoteSource()
-
 
     /**
      * Check if this configuration is local
@@ -547,9 +573,7 @@ class Configuration extends Entity implements JsonSerializable
     public function isLocalSource(): bool
     {
         return $this->sourceType === 'local';
-
     }//end isLocalSource()
-
 
     /**
      * Check if this configuration is manually created
@@ -559,9 +583,7 @@ class Configuration extends Entity implements JsonSerializable
     public function isManualSource(): bool
     {
         return $this->sourceType === 'manual';
-
     }//end isManualSource()
-
 
     /**
      * String representation of the configuration
@@ -573,25 +595,78 @@ class Configuration extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the title if available, otherwise return a descriptive string
+        // Return the title if available, otherwise return a descriptive string.
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to type if available
+        // Fallback to type if available.
         if ($this->type !== null && $this->type !== '') {
-            return 'Config: '.$this->type;
+            return 'Config: ' . $this->type;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'Configuration #'.$this->id;
+            return 'Configuration #' . $this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Configuration';
-
     }//end __toString()
 
+    /**
+     * Get lastChecked date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getLastCheckedFormatted(): ?string
+    {
+        if ($this->lastChecked !== null) {
+            return $this->lastChecked->format('c');
+        }
 
+        return null;
+    }//end getLastCheckedFormatted()
+
+    /**
+     * Get lastSyncDate formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getLastSyncDateFormatted(): ?string
+    {
+        if ($this->lastSyncDate !== null) {
+            return $this->lastSyncDate->format('c');
+        }
+
+        return null;
+    }//end getLastSyncDateFormatted()
+
+    /**
+     * Get created date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getCreatedFormatted(): ?string
+    {
+        if ($this->created !== null) {
+            return $this->created->format('c');
+        }
+
+        return null;
+    }//end getCreatedFormatted()
+
+    /**
+     * Get updated date formatted as ISO 8601 string or null
+     *
+     * @return string|null Formatted date or null
+     */
+    private function getUpdatedFormatted(): ?string
+    {
+        if ($this->updated !== null) {
+            return $this->updated->format('c');
+        }
+
+        return null;
+    }//end getUpdatedFormatted()
 }//end class

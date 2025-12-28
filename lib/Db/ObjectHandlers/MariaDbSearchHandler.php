@@ -20,6 +20,8 @@
 
 namespace OCA\OpenRegister\Db\ObjectHandlers;
 
+use DateTime;
+use Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
@@ -32,8 +34,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  */
 class MariaDbSearchHandler
 {
-
-
     /**
      * Apply metadata filters to the query builder
      *
@@ -59,15 +59,15 @@ class MariaDbSearchHandler
             $textFields = ['name', 'description', 'uri', 'folder', 'application', 'organisation', 'owner', 'schemaVersion'];
 
             foreach ($metadataFilters as $field => $value) {
-                // Only process fields that are actual metadata fields
+                // Only process fields that are actual metadata fields.
                 if (in_array($field, $mainFields) === false) {
                     continue;
                 }
 
-                // Use table alias to avoid ambiguous column references when JOINs are present
-                $qualifiedField = 'o.'.$field;
+                // Use table alias to avoid ambiguous column references when JOINs are present.
+                $qualifiedField = 'o.' . $field;
 
-                // Handle special null checks
+                // Handle special null checks.
                 if ($value === 'IS NOT NULL') {
                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($qualifiedField));
                     continue;
@@ -78,130 +78,144 @@ class MariaDbSearchHandler
                     continue;
                 }
 
-                // Handle complex operators for text fields
-                if (in_array($field, $textFields) && is_array($value)) {
+                // Handle complex operators for text fields.
+                if (in_array($field, $textFields, true) === true && is_array($value) === true) {
                     foreach ($value as $operator => $operatorValue) {
                         switch ($operator) {
                             case '~':
-                                // Contains
+                                // Contains.
                                 $queryBuilder->andWhere(
-                                $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%'.$operatorValue.'%'))
+                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%' . $operatorValue . '%'))
                                 );
                                 break;
                             case '^':
-                                // Starts with
+                                // Starts with.
                                 $queryBuilder->andWhere(
-                                $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter($operatorValue.'%'))
+                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter($operatorValue . '%'))
                                 );
                                 break;
                             case '$':
-                                // Ends with
+                                // Ends with.
                                 $queryBuilder->andWhere(
-                                $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%'.$operatorValue))
+                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%' . $operatorValue))
                                 );
                                 break;
                             case 'ne':
-                                // Not equals
+                                // Not equals.
                                 $queryBuilder->andWhere(
-                                $queryBuilder->expr()->neq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
+                                    $queryBuilder->expr()->neq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
                                 );
                                 break;
                             case '===':
-                                // Case sensitive equals
+                                // Case sensitive equals.
                                 $queryBuilder->andWhere(
-                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
+                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
                                 );
                                 break;
                             case 'exists':
-                                // Field exists (not null and not empty)
-                                if ($operatorValue === 'true' || $operatorValue === true) {
+                                // Field exists (not null and not empty).
+                                if ($operatorValue !== 'true' && $operatorValue !== true) {
                                     $queryBuilder->andWhere(
+                                        $queryBuilder->expr()->orX(
+                                            $queryBuilder->expr()->isNull($qualifiedField),
+                                            $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter(''))
+                                        )
+                                    );
+                                    break;
+                                }
+
+                                $queryBuilder->andWhere(
                                     $queryBuilder->expr()->andX(
                                         $queryBuilder->expr()->isNotNull($qualifiedField),
                                         $queryBuilder->expr()->neq($qualifiedField, $queryBuilder->createNamedParameter(''))
                                     )
-                                    );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->orX(
-                                        $queryBuilder->expr()->isNull($qualifiedField),
-                                        $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter(''))
-                                    )
-                                    );
-                                }
+                                );
                                 break;
                             case 'empty':
-                                // Field is empty
-                                if ($operatorValue === 'true' || $operatorValue === true) {
+                                // Field is empty.
+                                if ($operatorValue !== 'true' && $operatorValue !== true) {
                                     $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter(''))
+                                        $queryBuilder->expr()->neq($qualifiedField, $queryBuilder->createNamedParameter(''))
                                     );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->neq($qualifiedField, $queryBuilder->createNamedParameter(''))
-                                    );
+                                    break;
                                 }
+
+                                $queryBuilder->andWhere(
+                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter(''))
+                                );
                                 break;
                             case 'null':
-                                // Field is null
-                                if ($operatorValue === 'true' || $operatorValue === true) {
-                                    $queryBuilder->andWhere($queryBuilder->expr()->isNull($qualifiedField));
-                                } else {
+                                // Field is null.
+                                if ($operatorValue !== 'true' && $operatorValue !== true) {
                                     $queryBuilder->andWhere($queryBuilder->expr()->isNotNull($qualifiedField));
+                                    break;
                                 }
+
+                                $queryBuilder->andWhere($queryBuilder->expr()->isNull($qualifiedField));
                                 break;
                             case 'or':
-                                // OR logic: field matches ANY of the values
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
-                                if (!empty($values)) {
+                                // OR logic: field matches ANY of the values.
+                                $values = $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                }
+
+                                if (empty($values) === false) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
-                                        if (in_array($field, $textFields)) {
-                                            $orConditions->add(
-                                                $queryBuilder->expr()->eq(
-                                                    $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
-                                                    $queryBuilder->createNamedParameter(strtolower($val))
-                                                )
-                                            );
-                                        } else {
+                                        if (in_array($field, $textFields) === false) {
                                             $orConditions->add(
                                                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                                             );
+                                            continue;
                                         }
+
+                                        $orConditions->add(
+                                            $queryBuilder->expr()->eq(
+                                                $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
+                                                $queryBuilder->createNamedParameter(strtolower($val))
+                                            )
+                                        );
                                     }
+
                                     $queryBuilder->andWhere($orConditions);
                                 }
                                 break 2;
                             case 'and':
-                                // AND logic: field must match ALL values (multiple andWhere calls)
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                // AND logic: field must match ALL values (multiple andWhere calls).
+                                $values = $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                }
+
                                 foreach ($values as $val) {
-                                    if (in_array($field, $textFields)) {
-                                        $queryBuilder->andWhere(
-                                            $queryBuilder->expr()->eq(
-                                                $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
-                                                $queryBuilder->createNamedParameter(strtolower($val))
-                                            )
-                                        );
-                                    } else {
+                                    if (in_array($field, $textFields) === false) {
                                         $queryBuilder->andWhere(
                                             $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                                         );
+                                        continue;
                                     }
+
+                                    $queryBuilder->andWhere(
+                                        $queryBuilder->expr()->eq(
+                                            $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
+                                            $queryBuilder->createNamedParameter(strtolower($val))
+                                        )
+                                    );
                                 }
                                 break 2;
                             default:
-                                // For non-text operators or unsupported operators, treat as regular array (IN clause)
-                                if (is_numeric($operator)) {
-                                    // This is a regular array, not an operator array
+                                // For non-text operators or unsupported operators, treat as regular array (IN clause).
+                                if (is_numeric($operator) === true) {
+                                    // This is a regular array, not an operator array.
                                     $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->in(
-                                        $qualifiedField,
-                                        $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                                    )
+                                        $queryBuilder->expr()->in(
+                                            $qualifiedField,
+                                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                                        )
                                     );
                                     break 2;
-                                    // Break out of both switch and foreach
+                                    // Break out of both switch and foreach.
                                 }
                                 break;
                         }//end switch
@@ -210,117 +224,121 @@ class MariaDbSearchHandler
                     continue;
                 }//end if
 
-                // Handle complex operators for date fields
-                if (in_array($field, $dateFields) && is_array($value)) {
+                // Handle complex operators for date fields.
+                if (in_array($field, $dateFields, true) === true && is_array($value) === true) {
                     foreach ($value as $operator => $operatorValue) {
-                        // CRITICAL FIX: Convert PHP-friendly operator names back to SQL operators
-                        // Frontend sends 'gte', 'lte', etc. because PHP's $_GET can't handle >= in array keys
+                        // CRITICAL FIX: Convert PHP-friendly operator names back to SQL operators.
+                        // Frontend sends 'gte', 'lte', etc. because PHP's $_GET can't handle >= in array keys.
                         $sqlOperator = $operator;
                         if ($operator === 'gte') {
                             $sqlOperator = '>=';
-                        } else if ($operator === 'lte') {
+                        } elseif ($operator === 'lte') {
                             $sqlOperator = '<=';
-                        } else if ($operator === 'gt') {
+                        } elseif ($operator === 'gt') {
                             $sqlOperator = '>';
-                        } else if ($operator === 'lt') {
+                        } elseif ($operator === 'lt') {
                             $sqlOperator = '<';
-                        } else if ($operator === 'ne') {
+                        } elseif ($operator === 'ne') {
                             $sqlOperator = '!=';
-                        } else if ($operator === 'eq') {
+                        } elseif ($operator === 'eq') {
                             $sqlOperator = '=';
                         }
 
-                        // Normalize the filter value for date fields to a consistent format
+                        // Normalize the filter value for date fields to a consistent format.
                         $normalizedValue = $operatorValue;
-                        if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
+                        if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
                             try {
-                                // Convert to database format: Y-m-d H:i:s (2025-06-25 21:46:59)
-                                $dateTime        = new \DateTime($operatorValue);
+                                // Convert to database format: Y-m-d H:i:s (2025-06-25 21:46:59).
+                                $dateTime        = new DateTime($operatorValue);
                                 $normalizedValue = $dateTime->format('Y-m-d H:i:s');
-                            } catch (\Exception $e) {
-                                // Fall back to original value if date parsing fails
+                            } catch (Exception $e) {
+                                // Fall back to original value if date parsing fails.
                                 $normalizedValue = $operatorValue;
                             }
                         }
 
                         switch ($sqlOperator) {
                             case '>=':
-                                // For date fields, ensure proper datetime comparison
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
-                                    // Use simple string comparison since both sides are in Y-m-d H:i:s format
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->gte($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
-                                    );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->gte($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
-                                    );
+                                // For date fields, ensure proper datetime comparison.
+                                $valueToUse = $operatorValue;
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
+                                    // Use simple string comparison since both sides are in Y-m-d H:i:s format.
+                                    $valueToUse = $normalizedValue;
                                 }
+
+                                $queryBuilder->andWhere(
+                                    $queryBuilder->expr()->gte($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                );
                                 break;
                             case '<=':
-                                // For date fields, ensure proper datetime comparison
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->lte($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
-                                    );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->lte($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
-                                    );
+                                // For date fields, ensure proper datetime comparison.
+                                $valueToUse = $operatorValue;
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
+                                    $valueToUse = $normalizedValue;
                                 }
+
+                                $queryBuilder->andWhere(
+                                    $queryBuilder->expr()->lte($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                );
                                 break;
                             case '>':
-                                // For date fields, ensure proper datetime comparison
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->gt($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
-                                    );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->gt($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
-                                    );
+                                // For date fields, ensure proper datetime comparison.
+                                $valueToUse = $operatorValue;
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
+                                    $valueToUse = $normalizedValue;
                                 }
+
+                                $queryBuilder->andWhere(
+                                    $queryBuilder->expr()->gt($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                );
                                 break;
                             case '<':
-                                // For date fields, ensure proper datetime comparison
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->lt($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
-                                    );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->lt($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
-                                    );
+                                // For date fields, ensure proper datetime comparison.
+                                $valueToUse = $operatorValue;
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
+                                    $valueToUse = $normalizedValue;
                                 }
+
+                                $queryBuilder->andWhere(
+                                    $queryBuilder->expr()->lt($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                );
                                 break;
                             case '=':
-                                // For date fields, ensure proper datetime comparison
-                                if (in_array($field, ['created', 'updated', 'published', 'depublished'])) {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($normalizedValue))
-                                    );
-                                } else {
-                                    $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($operatorValue))
-                                    );
+                                // For date fields, ensure proper datetime comparison.
+                                $valueToUse = $operatorValue;
+                                if (in_array($field, ['created', 'updated', 'published', 'depublished']) === true) {
+                                    $valueToUse = $normalizedValue;
                                 }
+
+                                $queryBuilder->andWhere(
+                                    $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($valueToUse))
+                                );
                                 break;
                             case 'or':
-                                // OR logic for date/numeric fields: field matches ANY of the values
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
-                                if (!empty($values)) {
+                                // OR logic for date/numeric fields: field matches ANY of the values.
+                                $values = $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                }
+
+                                if (empty($values) === false) {
                                     $orConditions = $queryBuilder->expr()->orX();
                                     foreach ($values as $val) {
                                         $orConditions->add(
                                             $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                                         );
                                     }
+
                                     $queryBuilder->andWhere($orConditions);
                                 }
                                 break 2;
                             case 'and':
-                                // AND logic for date/numeric fields: field must match ALL values
-                                $values = is_string($operatorValue) ? array_map('trim', explode(',', $operatorValue)) : $operatorValue;
+                                // AND logic for date/numeric fields: field must match ALL values.
+                                $values = $operatorValue;
+                                if (is_string($operatorValue) === true) {
+                                    $values = array_map('trim', explode(',', $operatorValue));
+                                }
+
                                 foreach ($values as $val) {
                                     $queryBuilder->andWhere(
                                         $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
@@ -328,17 +346,17 @@ class MariaDbSearchHandler
                                 }
                                 break 2;
                             default:
-                                // For non-date operators or unsupported operators, treat as regular array (IN clause)
-                                if (is_numeric($operator)) {
-                                    // This is a regular array, not an operator array
+                                // For non-date operators or unsupported operators, treat as regular array (IN clause).
+                                if (is_numeric($operator) === true) {
+                                    // This is a regular array, not an operator array.
                                     $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->in(
-                                        $qualifiedField,
-                                        $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                                    )
+                                        $queryBuilder->expr()->in(
+                                            $qualifiedField,
+                                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                                        )
                                     );
                                     break 2;
-                                    // Break out of both switch and foreach
+                                    // Break out of both switch and foreach.
                                 }
                                 break;
                         }//end switch
@@ -347,78 +365,93 @@ class MariaDbSearchHandler
                     continue;
                 }//end if
 
-                // Handle [or] and [and] operators for non-text, non-date fields (e.g. schema, register)
-                if (is_array($value) && (isset($value['or']) || isset($value['and']))) {
-                    if (isset($value['or'])) {
-                        // OR logic: (field=val1 OR field=val2)
-                        $values = is_string($value['or']) ? array_map('trim', explode(',', $value['or'])) : $value['or'];
-                        $orConditions = $queryBuilder->expr()->orX();
-                        foreach ($values as $val) {
-                            $orConditions->add(
-                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
-                            );
+                // Handle [or] and [and] operators for non-text, non-date fields (e.g. schema, register).
+                if (is_array($value) === true && ((($value['or'] ?? null) !== null) === true || (($value['and'] ?? null) !== null) === true) === true) {
+                    if (($value['and'] ?? null) !== null) {
+                        // AND logic: multiple andWhere clauses.
+                        $values = $value['and'];
+                        if (is_string($value['and']) === true) {
+                            $values = array_map('trim', explode(',', $value['and']));
                         }
-                        $queryBuilder->andWhere($orConditions);
-                    } elseif (isset($value['and'])) {
-                        // AND logic: multiple andWhere clauses
-                        $values = is_string($value['and']) ? array_map('trim', explode(',', $value['and'])) : $value['and'];
+
                         foreach ($values as $val) {
                             $queryBuilder->andWhere(
                                 $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                             );
                         }
-                    }
-                    continue;
-                }
 
-                // Handle array values (one of search) for non-date fields or simple arrays
-                if (is_array($value) === true) {
-                    if (in_array($field, $textFields)) {
-                        // Case-insensitive array search for text fields
+                        continue;
+                    }
+
+                    if (($value['or'] ?? null) !== null) {
+                        // OR logic: (field=val1 OR field=val2).
+                        $values = $value['or'];
+                        if (is_string($value['or']) === true) {
+                            $values = array_map('trim', explode(',', $value['or']));
+                        }
+
                         $orConditions = $queryBuilder->expr()->orX();
-                        foreach ($value as $arrayValue) {
+                        foreach ($values as $val) {
                             $orConditions->add(
-                            $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
-                                $queryBuilder->createNamedParameter(strtolower($arrayValue))
-                            )
+                                $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($val))
                             );
                         }
 
                         $queryBuilder->andWhere($orConditions);
-                    } else {
-                        $queryBuilder->andWhere(
-                        $queryBuilder->expr()->in(
-                            $qualifiedField,
-                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-                        )
-                        );
                     }//end if
-                } else {
-                    // Handle single values - use case-insensitive comparison for text fields
-                    if (in_array($field, $textFields)) {
+
+                    continue;
+                }//end if
+
+                // Handle array values (one of search) for non-date fields or simple arrays.
+                if (is_array($value) === true) {
+                    if (in_array($field, $textFields) === false) {
                         $queryBuilder->andWhere(
-                        $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
-                            $queryBuilder->createNamedParameter(strtolower($value))
-                        )
+                            $queryBuilder->expr()->in(
+                                $qualifiedField,
+                                $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                            )
                         );
-                    } else {
-                        $queryBuilder->andWhere(
-                        $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($value))
+                        continue;
+                    }
+
+                    // Case-insensitive array search for text fields.
+                    $orConditions = $queryBuilder->expr()->orX();
+                    foreach ($value as $arrayValue) {
+                        $orConditions->add(
+                            $queryBuilder->expr()->eq(
+                                $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
+                                $queryBuilder->createNamedParameter(strtolower($arrayValue))
+                            )
                         );
                     }
+
+                    $queryBuilder->andWhere($orConditions);
+                    continue;
                 }//end if
+
+                // Handle single values - use case-insensitive comparison for text fields.
+                if (in_array($field, $textFields) === false) {
+                    $queryBuilder->andWhere(
+                        $queryBuilder->expr()->eq($qualifiedField, $queryBuilder->createNamedParameter($value))
+                    );
+                    continue;
+                }
+
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
+                        $queryBuilder->createNamedParameter(strtolower($value))
+                    )
+                );
             }//end foreach
 
             return $queryBuilder;
         } catch (\Exception $e) {
-            // Re-throw the exception to maintain original behavior
+            // Re-throw the exception to maintain original behavior.
             throw $e;
         }//end try
-
     }//end applyMetadataFilters()
-
 
     /**
      * Apply JSON object filters to the query builder
@@ -439,13 +472,11 @@ class MariaDbSearchHandler
     public function applyObjectFilters(IQueryBuilder $queryBuilder, array $objectFilters): IQueryBuilder
     {
         foreach ($objectFilters as $field => $value) {
-            $this->applyJsonFieldFilter($queryBuilder, $field, $value);
+            $this->applyJsonFieldFilter(queryBuilder: $queryBuilder, field: $field, value: $value);
         }
 
         return $queryBuilder;
-
     }//end applyObjectFilters()
-
 
     /**
      * Apply a filter on a specific JSON field
@@ -468,15 +499,15 @@ class MariaDbSearchHandler
      */
     private function applyJsonFieldFilter(IQueryBuilder $queryBuilder, string $field, mixed $value): void
     {
-        // Build the JSON path - convert dot notation to JSON path
-        $jsonPath = '$.'.str_replace('.', '.', $field);
+        // Build the JSON path - convert dot notation to JSON path.
+        $jsonPath = '$.' . str_replace('.', '.', $field);
 
-        // Handle special null checks
+        // Handle special null checks.
         if ($value === 'IS NOT NULL') {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction(
-                        'JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')'
+                        'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
                     )
                 )
             );
@@ -487,111 +518,110 @@ class MariaDbSearchHandler
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->isNull(
                     $queryBuilder->createFunction(
-                        'JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')'
+                        'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
                     )
                 )
             );
             return;
         }
 
-        // Handle array values (one of search)
+        // Handle array values (one of search).
         if (is_array($value) === true) {
             $orConditions = $queryBuilder->expr()->orX();
 
             foreach ($value as $arrayValue) {
-                // Use case-insensitive comparison for string values
-                if (is_string($arrayValue)) {
-                    // Check for exact match (single value)
+                // Use case-insensitive comparison for string values.
+                if (is_string($arrayValue) === false) {
+                    // Exact match for non-string values (numbers, booleans, etc.).
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
                             $queryBuilder->createFunction(
-                                'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
-                            ),
-                            $queryBuilder->createNamedParameter(strtolower($arrayValue))
-                        )
-                    );
-
-                    // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
-                    $orConditions->add(
-                        $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))).")"),
-                            $queryBuilder->createNamedParameter(1)
-                        )
-                    );
-                } else {
-                    // Exact match for non-string values (numbers, booleans, etc.)
-                    $orConditions->add(
-                        $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction(
-                                'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
+                                'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
                             ),
                             $queryBuilder->createNamedParameter($arrayValue)
                         )
                     );
 
-                    // Check if the value exists within an array using JSON_CONTAINS
+                    // Check if the value exists within an array using JSON_CONTAINS.
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($arrayValue)).")"),
+                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($arrayValue)) . ")"),
                             $queryBuilder->createNamedParameter(1)
                         )
                     );
-                }//end if
+                    continue;
+                }
+
+                // Check for exact match (single value).
+                $orConditions->add(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction(
+                            'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
+                        ),
+                        $queryBuilder->createNamedParameter(strtolower($arrayValue))
+                    )
+                );
+
+                // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
+                $orConditions->add(
+                    $queryBuilder->expr()->eq(
+                        $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . ")), " . $queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))) . ")"),
+                        $queryBuilder->createNamedParameter(1)
+                    )
+                );
             }//end foreach
 
             $queryBuilder->andWhere($orConditions);
-        } else {
-            // Handle single values - use case-insensitive comparison for strings
-            if (is_string($value)) {
-                $singleValueConditions = $queryBuilder->expr()->orX();
-
-                // Check for exact match (single value)
-                $singleValueConditions->add(
-                    $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction(
-                            'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
-                        ),
-                        $queryBuilder->createNamedParameter(strtolower($value))
-                    )
-                );
-
-                // Check if the value exists within an array using JSON_CONTAINS (case-insensitive)
-                $singleValueConditions->add(
-                    $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($value))).")"),
-                        $queryBuilder->createNamedParameter(1)
-                    )
-                );
-
-                $queryBuilder->andWhere($singleValueConditions);
-            } else {
-                // Exact match for non-string values (numbers, booleans, etc.)
-                $singleValueConditions = $queryBuilder->expr()->orX();
-
-                // Check for exact match (single value)
-                $singleValueConditions->add(
-                    $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction(
-                            'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
-                        ),
-                        $queryBuilder->createNamedParameter($value)
-                    )
-                );
-
-                // Check if the value exists within an array using JSON_CONTAINS
-                $singleValueConditions->add(
-                    $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
-                        $queryBuilder->createNamedParameter(1)
-                    )
-                );
-
-                $queryBuilder->andWhere($singleValueConditions);
-            }//end if
+            return;
         }//end if
 
-    }//end applyJsonFieldFilter()
+        // Handle single values - use case-insensitive comparison for strings.
+        $singleValueConditions = $queryBuilder->expr()->orX();
 
+        if (is_string($value) === false) {
+            // Exact match for non-string values (numbers, booleans, etc.).
+            // Check for exact match (single value).
+            $singleValueConditions->add(
+                $queryBuilder->expr()->eq(
+                    $queryBuilder->createFunction(
+                        'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
+                    ),
+                    $queryBuilder->createNamedParameter($value)
+                )
+            );
+
+            // Check if the value exists within an array using JSON_CONTAINS.
+            $singleValueConditions->add(
+                $queryBuilder->expr()->eq(
+                    $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
+                    $queryBuilder->createNamedParameter(1)
+                )
+            );
+
+            $queryBuilder->andWhere($singleValueConditions);
+            return;
+        }//end if
+
+        // Check for exact match (single value).
+        $singleValueConditions->add(
+            $queryBuilder->expr()->eq(
+                $queryBuilder->createFunction(
+                    'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
+                ),
+                $queryBuilder->createNamedParameter(strtolower($value))
+            )
+        );
+
+        // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
+        $singleValueConditions->add(
+            $queryBuilder->expr()->eq(
+                $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . ")), " . $queryBuilder->createNamedParameter(json_encode(strtolower($value))) . ")"),
+                $queryBuilder->createNamedParameter(1)
+            )
+        );
+
+        $queryBuilder->andWhere($singleValueConditions);
+    }//end applyJsonFieldFilter()
 
     /**
      * Apply full-text search on JSON object and metadata fields
@@ -619,7 +649,7 @@ class MariaDbSearchHandler
      */
     public function applyFullTextSearch(IQueryBuilder $queryBuilder, string $searchTerm): IQueryBuilder
     {
-        // Split search terms by ' OR ' to handle multiple search words
+        // Split search terms by ' OR ' to handle multiple search words.
         $searchTerms = array_filter(
             array_map('trim', explode(' OR ', $searchTerm)),
             function ($term) {
@@ -627,87 +657,81 @@ class MariaDbSearchHandler
             }
         );
 
-        // If no valid search terms, return the query builder unchanged
+        // If no valid search terms, return the query builder unchanged.
         if (empty($searchTerms) === true) {
             return $queryBuilder;
         }
 
-        // Create OR conditions for each search term
+        // Create OR conditions for each search term.
         $orConditions = $queryBuilder->expr()->orX();
 
         foreach ($searchTerms as $term) {
-            // Clean the search term - remove wildcards and convert to lowercase
+            // Clean the search term - remove wildcards and convert to lowercase.
             $cleanTerm = strtolower(trim($term));
             $cleanTerm = str_replace(['*', '%'], '', $cleanTerm);
 
-            // Skip empty terms after cleaning
+            // Skip empty terms after cleaning.
             if (empty($cleanTerm) === true) {
                 continue;
             }
 
-            // Create a parameter for the search term to avoid SQL injection
-            $searchParam = $queryBuilder->createNamedParameter('%'.$cleanTerm.'%');
-
-            // Create OR conditions for each searchable field
-            // PERFORMANCE OPTIMIZATION: Search indexed metadata columns first for best performance
+            // Create OR conditions for each searchable field.
+            // PERFORMANCE OPTIMIZATION: Search indexed metadata columns first for best performance.
             $termConditions = $queryBuilder->expr()->orX();
 
-            // PRIORITY 1: Search in indexed metadata fields (FASTEST - uses database indexes)
-            // These columns have indexes and provide the best search performance
+            // PRIORITY 1: Search in indexed metadata fields (FASTEST - uses database indexes).
+            // These columns have indexes and provide the best search performance.
             $indexedFields = [
-                'o.name' => 'name',
-                'o.summary' => 'summary', 
-                'o.description' => 'description'
+                'o.name'        => 'name',
+                'o.summary'     => 'summary',
+                'o.description' => 'description',
             ];
-            
-            foreach ($indexedFields as $columnName => $fieldName) {
+
+            foreach (array_keys($indexedFields) as $columnName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
-                        $queryBuilder->createFunction('LOWER('.$columnName.')'),
-                        $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
+                        $queryBuilder->createFunction('LOWER(' . $columnName . ')'),
+                        $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
                     )
                 );
             }
 
-            // PRIORITY 2: Search in other metadata fields (MODERATE - no indexes but direct column access)
+            // PRIORITY 2: Search in other metadata fields (MODERATE - no indexes but direct column access).
             $otherMetadataFields = ['o.image'];
             foreach ($otherMetadataFields as $columnName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
-                        $queryBuilder->createFunction('LOWER('.$columnName.')'),
-                        $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
+                        $queryBuilder->createFunction('LOWER(' . $columnName . ')'),
+                        $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
                     )
                 );
             }
 
-            // **PERFORMANCE OPTIMIZATION**: JSON search on object field DISABLED for performance
-            // JSON_SEARCH on large object fields is extremely expensive (can add 500ms+ per query)
-            // _search now only covers: name, description, summary for sub-500ms performance
-            // 
-            // If comprehensive JSON search is needed, use specific object field filters instead:
-            // e.g., ?fieldName=searchTerm rather than ?_search=searchTerm
+            // **PERFORMANCE OPTIMIZATION**: JSON search on object field DISABLED for performance.
+            // JSON_SEARCH on large object fields is extremely expensive (can add 500ms+ per query).
+            // _search now only covers: name, description, summary for sub-500ms performance.
             //
-            // Original code (DISABLED for performance):
+            // If comprehensive JSON search is needed, use specific object field filters instead:.
+            // E.g., ?fieldName=searchTerm rather than ?_search=searchTerm.
+            //
+            // Original code (DISABLED for performance):.
             // $jsonSearchFunction = "JSON_SEARCH(LOWER(`object`), 'all', ".$searchParam.")";
             // $termConditions->add(
-            //     $queryBuilder->expr()->isNotNull(
-            //         $queryBuilder->createFunction($jsonSearchFunction)
-            //     )
+            // $queryBuilder->expr()->isNotNull(
+            // $queryBuilder->createFunction($jsonSearchFunction)
+            // ).
             // );
-
-            // Add the term conditions to the main OR group
+            // Add the term conditions to the main OR group.
             $orConditions->add($termConditions);
         }//end foreach
 
-        // Add the OR conditions to the query if we have any valid terms
+        // Add the OR conditions to the query if we have any valid terms.
         if ($orConditions->count() > 0) {
             $queryBuilder->andWhere($orConditions);
         }
 
         return $queryBuilder;
-
     }//end applyFullTextSearch()
-
 
     /**
      * Apply sorting on JSON fields
@@ -728,26 +752,23 @@ class MariaDbSearchHandler
     public function applySorting(IQueryBuilder $queryBuilder, array $sortFields): IQueryBuilder
     {
         foreach ($sortFields as $field => $direction) {
-            // Validate direction
+            // Validate direction.
             $direction = strtoupper($direction);
             if (in_array($direction, ['ASC', 'DESC']) === false) {
                 $direction = 'ASC';
             }
 
-            // Build the JSON path
-            $jsonPath = '$.'.str_replace('.', '.', $field);
+            // Build the JSON path.
+            $jsonPath = '$.' . str_replace('.', '.', $field);
 
             $queryBuilder->addOrderBy(
                 $queryBuilder->createFunction(
-                    'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
+                    'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
                 ),
                 $direction
             );
         }
 
         return $queryBuilder;
-
     }//end applySorting()
-
-
 }//end class

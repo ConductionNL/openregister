@@ -136,7 +136,7 @@ class BulkMetadataHandlingTest extends TestCase
     {
         parent::setUp();
 
-        // Create mocks for all dependencies
+        // Create mocks for all dependencies.
         $this->mockObjectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->mockSchemaMapper = $this->createMock(SchemaMapper::class);
         $this->mockRegisterMapper = $this->createMock(RegisterMapper::class);
@@ -145,19 +145,19 @@ class BulkMetadataHandlingTest extends TestCase
         $this->mockUserSession = $this->createMock(IUserSession::class);
         $this->mockOrganisationService = $this->createMock(OrganisationService::class);
 
-        // Create mock entities
+        // Create mock entities.
         $this->mockUser = $this->createMock(IUser::class);
         $this->mockRegister = $this->createMock(Register::class);
         $this->mockSchema = $this->createMock(Schema::class);
 
-        // Configure basic mock entity behavior
+        // Configure basic mock entity behavior.
         $this->mockRegister->method('getId')->willReturn(1);
         $this->mockSchema->method('getId')->willReturn(1);
         $this->mockSchema->method('getProperties')->willReturn([]);
         $this->mockSchema->method('getConfiguration')->willReturn([]);
         $this->mockSchema->method('getHardValidation')->willReturn(false);
 
-        // Create the SaveObjects handler with mocked dependencies
+        // Create the SaveObjects handler with mocked dependencies.
         $this->saveObjectsHandler = new SaveObjects(
             $this->mockObjectEntityMapper,
             $this->mockSchemaMapper,
@@ -178,24 +178,24 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testOwnerMetadataSetFromCurrentUser(): void
     {
-        // Configure user session mock to return a valid user
+        // Configure user session mock to return a valid user.
         $this->mockUser->method('getUID')->willReturn('test-user-123');
         $this->mockUserSession->method('getUser')->willReturn($this->mockUser);
 
-        // Configure OrganisationService to return test organization
+        // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
             ->method('getOrganisationForNewEntity')
             ->willReturn('test-org-456');
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn(['test-uuid-123']);
 
-        // Test object without owner or organization metadata
+        // Test object without owner or organization metadata.
         $testObjects = [
             [
                 '@self' => [
@@ -207,7 +207,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -218,13 +218,13 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful
+        // Verify the operation was successful.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertGreaterThan(0, $result['statistics']['saved']);
 
-        // Verify owner and organization were set correctly
+        // Verify owner and organization were set correctly.
         // Note: We can't directly inspect the internal transformation,
-        // but we can verify the mocks were called correctly
+        // but we can verify the mocks were called correctly.
         $this->assertTrue(true, 'Bulk save operation completed successfully with metadata setting');
 
     }//end testOwnerMetadataSetFromCurrentUser()
@@ -237,25 +237,25 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testOrganizationMetadataSetFromOrganisationService(): void
     {
-        // Configure user session mock to return a valid user
+        // Configure user session mock to return a valid user.
         $this->mockUser->method('getUID')->willReturn('test-user-123');
         $this->mockUserSession->method('getUser')->willReturn($this->mockUser);
 
-        // Configure OrganisationService to return test organization
+        // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
             ->expects($this->atLeastOnce())
             ->method('getOrganisationForNewEntity')
             ->willReturn('test-org-456');
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn(['test-uuid-456']);
 
-        // Test object without organization metadata
+        // Test object without organization metadata.
         $testObjects = [
             [
                 '@self' => [
@@ -268,7 +268,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -279,11 +279,11 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful
+        // Verify the operation was successful.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertGreaterThan(0, $result['statistics']['saved']);
 
-        // The expectation on getOrganisationForNewEntity() will be verified automatically
+        // The expectation on getOrganisationForNewEntity() will be verified automatically.
         $this->assertTrue(true, 'Organization metadata setting verified through mock expectations');
 
     }//end testOrganizationMetadataSetFromOrganisationService()
@@ -296,24 +296,24 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testExistingMetadataIsPreserved(): void
     {
-        // Configure user session mock to return a different user
+        // Configure user session mock to return a different user.
         $this->mockUser->method('getUID')->willReturn('current-user-999');
         $this->mockUserSession->method('getUser')->willReturn($this->mockUser);
 
-        // Configure OrganisationService to return different organization
+        // Configure OrganisationService to return different organization.
         $this->mockOrganisationService
             ->method('getOrganisationForNewEntity')
             ->willReturn('default-org-999');
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn(['test-uuid-preserve']);
 
-        // Test object WITH existing owner and organization metadata
+        // Test object WITH existing owner and organization metadata.
         $testObjects = [
             [
                 '@self' => [
@@ -327,7 +327,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -338,12 +338,12 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful
+        // Verify the operation was successful.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertGreaterThan(0, $result['statistics']['saved']);
 
-        // Since existing metadata is provided, OrganisationService should NOT be called
-        // This is verified implicitly - if it were called, the mock would show it
+        // Since existing metadata is provided, OrganisationService should NOT be called.
+        // This is verified implicitly - if it were called, the mock would show it.
         $this->assertTrue(true, 'Existing metadata preservation verified');
 
     }//end testExistingMetadataIsPreserved()
@@ -356,23 +356,23 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testGracefulHandlingWhenUserSessionIsNull(): void
     {
-        // Configure user session mock to return null (not logged in)
+        // Configure user session mock to return null (not logged in).
         $this->mockUserSession->method('getUser')->willReturn(null);
 
-        // Configure OrganisationService to return test organization
+        // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
             ->method('getOrganisationForNewEntity')
             ->willReturn('test-org-456');
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn(['test-uuid-null-user']);
 
-        // Test object without owner metadata when user is not logged in
+        // Test object without owner metadata when user is not logged in.
         $testObjects = [
             [
                 '@self' => [
@@ -384,7 +384,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -395,7 +395,7 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful despite null user
+        // Verify the operation was successful despite null user.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertGreaterThan(0, $result['statistics']['saved']);
 
@@ -411,24 +411,24 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testGracefulHandlingWhenOrganisationServiceFails(): void
     {
-        // Configure user session mock to return a valid user
+        // Configure user session mock to return a valid user.
         $this->mockUser->method('getUID')->willReturn('test-user-123');
         $this->mockUserSession->method('getUser')->willReturn($this->mockUser);
 
-        // Configure OrganisationService to throw exception
+        // Configure OrganisationService to throw exception.
         $this->mockOrganisationService
             ->method('getOrganisationForNewEntity')
             ->willThrowException(new \Exception('Organisation service unavailable'));
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn(['test-uuid-org-fail']);
 
-        // Test object without organization metadata when service fails
+        // Test object without organization metadata when service fails.
         $testObjects = [
             [
                 '@self' => [
@@ -440,7 +440,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -451,7 +451,7 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful despite organization service failure
+        // Verify the operation was successful despite organization service failure.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertGreaterThan(0, $result['statistics']['saved']);
 
@@ -467,28 +467,28 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testBulkOperationsWithMixedMetadataScenarios(): void
     {
-        // Configure user session mock to return a valid user
+        // Configure user session mock to return a valid user.
         $this->mockUser->method('getUID')->willReturn('current-user-123');
         $this->mockUserSession->method('getUser')->willReturn($this->mockUser);
 
-        // Configure OrganisationService to return test organization
+        // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
             ->method('getOrganisationForNewEntity')
             ->willReturn('default-org-456');
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn([
             'test-uuid-1', 'test-uuid-2', 'test-uuid-3', 'test-uuid-4'
         ]);
 
-        // Test objects with different metadata scenarios
+        // Test objects with different metadata scenarios.
         $testObjects = [
-            // Object 1: No metadata - should get defaults
+            // Object 1: No metadata - should get defaults.
             [
                 '@self' => [
                     'schema' => 1,
@@ -496,7 +496,7 @@ class BulkMetadataHandlingTest extends TestCase
                 ],
                 'title' => 'Object Without Metadata',
             ],
-            // Object 2: Has owner, no organization - should get default organization
+            // Object 2: Has owner, no organization - should get default organization.
             [
                 '@self' => [
                     'schema' => 1,
@@ -505,7 +505,7 @@ class BulkMetadataHandlingTest extends TestCase
                 ],
                 'title' => 'Object With Owner Only',
             ],
-            // Object 3: Has organization, no owner - should get current user
+            // Object 3: Has organization, no owner - should get current user.
             [
                 '@self' => [
                     'schema' => 1,
@@ -514,7 +514,7 @@ class BulkMetadataHandlingTest extends TestCase
                 ],
                 'title' => 'Object With Organization Only',
             ],
-            // Object 4: Has both - should preserve both
+            // Object 4: Has both - should preserve both.
             [
                 '@self' => [
                     'schema' => 1,
@@ -526,7 +526,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -537,12 +537,12 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful for all objects
+        // Verify the operation was successful for all objects.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertEquals(4, $result['statistics']['saved']);
 
-        // Verify OrganisationService was called for objects without organization
-        // (Objects 1 and 3 need default organization)
+        // Verify OrganisationService was called for objects without organization.
+        // (Objects 1 and 3 need default organization).
         $this->assertTrue(true, 'Mixed metadata scenarios handled correctly');
 
     }//end testBulkOperationsWithMixedMetadataScenarios()
@@ -555,28 +555,28 @@ class BulkMetadataHandlingTest extends TestCase
      */
     public function testCachingOptimizationDuringBulkOperations(): void
     {
-        // Configure user session mock to return a valid user
+        // Configure user session mock to return a valid user.
         $this->mockUser->method('getUID')->willReturn('test-user-123');
         $this->mockUserSession->method('getUser')->willReturn($this->mockUser);
 
-        // Configure OrganisationService to return test organization
-        // The method should be called but leverage caching internally
+        // Configure OrganisationService to return test organization.
+        // The method should be called but leverage caching internally.
         $this->mockOrganisationService
             ->expects($this->atLeastOnce())
             ->method('getOrganisationForNewEntity')
             ->willReturn('cached-org-789');
 
-        // Configure schema and register mocks
+        // Configure schema and register mocks.
         $this->mockSchemaMapper->method('find')->with(1)->willReturn($this->mockSchema);
         $this->mockRegisterMapper->method('find')->with(1)->willReturn($this->mockRegister);
 
-        // Configure ObjectEntityMapper to return empty results (no existing objects)
+        // Configure ObjectEntityMapper to return empty results (no existing objects).
         $this->mockObjectEntityMapper->method('findAll')->willReturn([]);
         $this->mockObjectEntityMapper->method('saveObjects')->willReturn([
             'test-uuid-1', 'test-uuid-2', 'test-uuid-3'
         ]);
 
-        // Create multiple objects without organization metadata
+        // Create multiple objects without organization metadata.
         $testObjects = [
             [
                 '@self' => [
@@ -601,7 +601,7 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
-        // Execute the bulk save operation
+        // Execute the bulk save operation.
         $result = $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->mockRegister,
@@ -612,11 +612,11 @@ class BulkMetadataHandlingTest extends TestCase
             events: false
         );
 
-        // Verify the operation was successful for all objects
+        // Verify the operation was successful for all objects.
         $this->assertArrayHasKey('statistics', $result);
         $this->assertEquals(3, $result['statistics']['saved']);
 
-        // The expectation on getOrganisationForNewEntity() will verify it was called
+        // The expectation on getOrganisationForNewEntity() will verify it was called.
         $this->assertTrue(true, 'Caching optimization leveraged during bulk operations');
 
     }//end testCachingOptimizationDuringBulkOperations()

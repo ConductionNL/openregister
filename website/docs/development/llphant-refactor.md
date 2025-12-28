@@ -184,5 +184,5 @@ public function extractTextFromFile(int $fileId, array $ncFile): array
 ## Related Documentation
 
 - [LLPhant Setup](./llphant-setup.md) - LLPhant installation guide
-- [Text Extraction Implementation](../technical/text-extraction-implementation.md) - Current text extraction implementation
+- [Text Extraction Implementation](../technical/text-extraction.md) - Current text extraction implementation
 

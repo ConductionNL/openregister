@@ -12,37 +12,57 @@ jobs:
   deploy:
     name: Deploy Documentation
     runs-on: ubuntu-latest
+    # Only deploy on push, not on pull requests
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
     steps:
       # https://github.com/marketplace/actions/checkout
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Verify directory structure
-      - name: List directory structure
-        run: |
-          ls -la
-          ls -la website/
-
-      # Generate SVG files using PlantUML
-      - name: plantuml
-        id: plantuml
-        uses: grassedge/generate-plantuml-action@v1.5
-        with:
-          message: "Render PlantUML files"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
       - name: Setup Node.js 18
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Install dependencies and build
+      - name: Copy CONTRIBUTING.md to documentation
+        run: |
+          # Copy CONTRIBUTING.md to website/docs/development/ with Docusaurus frontmatter
+          {
+            echo "---"
+            echo "sidebar_position: 1"
+            echo "title: Contributing"
+            echo "description: Guidelines for contributing to OpenRegister, including PR descriptions and changelog formatting"
+            echo "---"
+            echo ""
+            cat CONTRIBUTING.md
+          } > website/docs/development/contributing.md
+          echo "✓ Copied CONTRIBUTING.md to website/docs/development/contributing.md"
+
+      - name: Clear build cache and install dependencies
         timeout-minutes: 3
         run: |
           cd website
+          rm -rf node_modules/.cache
+          rm -rf .docusaurus
+          rm -rf build
           npm run ci
+
+      - name: Verify build output
+        run: |
+          cd website/build
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html not found in build directory!"
+            exit 1
+          fi
+
+      - name: Create .nojekyll and CNAME files
+        run: |
+          cd website/build
+          touch .nojekyll
+          echo "openregisters.app" > CNAME
 
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
@@ -50,8 +70,17 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./website/build
-          user_name: ${{ github.actor }}
-          user_email: ${{ github.event.pusher.email || github.actor }}
+          publish_branch: gh-pages
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          force_orphan: false
+          allow_empty_commit: true
+          keep_files: false
+          
+      - name: Verify deployment
+        run: |
+          git fetch origin gh-pages
+          echo "✅ Deployment completed. Latest commit: $(git rev-parse origin/gh-pages)"
 
       # https://github.com/marketplace/actions/create-an-issue
       - name: Create issue on failure

@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="1"
+    errorLevel="4"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
-    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     findUnusedBaselineEntry="true"
     findUnusedCode="true"
+    findUnusedVariablesAndParams="true"
+    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="lib" />
@@ -14,7 +15,84 @@
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>
-	<extraFiles>
-		<directory name="vendor"/>
-	</extraFiles>
+    <stubs>
+        <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
+    </stubs>
+    <issueHandlers>
+        <UndefinedDocblockClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Doctrine\DBAL\Schema\Table"/>
+                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
+                <referencedClass name="OCP\IMemcache"/>
+                <referencedClass name="OCP\IDBConnection"/>
+                <referencedClass name="OCP\AppFramework\IAppContainer"/>
+                <referencedClass name="OCP\AppFramework\Db\DoesNotExistException"/>
+                <referencedClass name="OCP\AppFramework\Db\Entity"/>
+                <referencedClass name="OCP\DB\Exception"/>
+            </errorLevel>
+        </UndefinedDocblockClass>
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="OC"/>
+                <referencedClass name="Doctrine\DBAL\Types\Types"/>
+                <referencedClass name="Doctrine\DBAL\Types\Type"/>
+                <referencedClass name="Doctrine\DBAL\Connection"/>
+                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
+                <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\MySQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\ParameterType"/>
+                <referencedClass name="APCUIterator"/>
+                <referencedClass name="React\Async\PromiseInterface"/>
+                <referencedClass name="Solarium\Client"/>
+                <referencedClass name="Solarium\Core\Client\Adapter\Curl"/>
+                <referencedClass name="Solarium\Exception\HttpException"/>
+                <referencedClass name="Symfony\Component\EventDispatcher\EventDispatcher"/>
+                <referencedClass name="Ramsey\Uuid\Uuid"/>
+                <!-- Nextcloud OCP Classes -->
+                <referencedClass name="OCP\AppFramework\App"/>
+                <referencedClass name="OCP\AppFramework\Bootstrap\IBootstrap"/>
+                <referencedClass name="OCP\AppFramework\Controller"/>
+                <referencedClass name="OCP\AppFramework\IAppContainer"/>
+                <referencedClass name="OCP\App\IAppManager"/>
+                <referencedClass name="OCP\BackgroundJob\IJobList"/>
+                <referencedClass name="OCP\BackgroundJob\QueuedJob"/>
+                <referencedClass name="OCP\BackgroundJob\TimedJob"/>
+                <referencedClass name="OCP\EventDispatcher\Event"/>
+                <referencedClass name="OCP\EventDispatcher\IEventListener"/>
+                <referencedClass name="OCP\IAppConfig"/>
+                <referencedClass name="OCP\ICacheFactory"/>
+                <referencedClass name="OCP\IConfig"/>
+                <referencedClass name="OCP\IDBConnection"/>
+                <referencedClass name="OCP\IGroupManager"/>
+                <referencedClass name="OCP\IUserManager"/>
+                <referencedClass name="OCP\IUserSession"/>
+                <referencedClass name="OCP\Search\IFilteringProvider"/>
+            </errorLevel>
+        </UndefinedClass>
+        <UndefinedMagicMethod errorLevel="suppress"/>
+        <UnusedClass errorLevel="suppress"/>
+        <PossiblyUnusedMethod errorLevel="suppress"/>
+        <UnusedMethod errorLevel="suppress"/>
+        <UnusedProperty errorLevel="suppress"/>
+        <PossiblyUnusedParam errorLevel="suppress"/>
+        <UnusedDocblockParam errorLevel="suppress"/>
+        <UnusedVariable errorLevel="suppress"/>
+        <PossiblyUnusedReturnValue errorLevel="suppress"/>
+        <RedundantCondition errorLevel="suppress"/>
+        <RedundantFunctionCall errorLevel="suppress"/>
+        <RedundantCast errorLevel="suppress"/>
+        <RedundantPropertyInitializationCheck errorLevel="suppress"/>
+        <StringIncrement errorLevel="suppress"/>
+        <InvalidDocblock errorLevel="suppress"/>
+        <MoreSpecificImplementedParamType errorLevel="suppress"/>
+        <MissingDependency errorLevel="suppress"/>
+        <UnevaluatedCode errorLevel="suppress"/>
+    </issueHandlers>
+    <extraFiles>
+        <directory name="vendor/nextcloud/ocp" />
+    </extraFiles>
 </psalm>

@@ -21,7 +21,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\GuzzleSolrService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectCacheService;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaFacetCacheService;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -90,7 +90,7 @@ class SettingsServiceTest extends TestCase
     /** @var ObjectCacheService|MockObject */
     private $objectCacheService;
 
-    /** @var SchemaCacheService|MockObject */
+    /** @var SchemaCacheHandler|MockObject */
     private $schemaCacheService;
 
     /** @var SchemaFacetCacheService|MockObject */
@@ -103,7 +103,7 @@ class SettingsServiceTest extends TestCase
     {
         parent::setUp();
 
-        // Mock all dependencies
+        // Mock all dependencies.
         $this->config = $this->createMock(IConfig::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
         $this->request = $this->createMock(IRequest::class);
@@ -118,11 +118,11 @@ class SettingsServiceTest extends TestCase
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
         $this->objectCacheService = $this->createMock(ObjectCacheService::class);
-        $this->schemaCacheService = $this->createMock(SchemaCacheService::class);
+        $this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
         $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
         $this->cacheFactory = $this->createMock(ICacheFactory::class);
 
-        // Create SettingsService instance
+        // Create SettingsService instance.
         $this->settingsService = new SettingsService(
             $this->config,
             $this->appConfig,
@@ -205,7 +205,7 @@ class SettingsServiceTest extends TestCase
      */
     public function testGetSettings(): void
     {
-        // Mock various config calls that getSettings() makes
+        // Mock various config calls that getSettings() makes.
         $this->config->method('getAppValue')
             ->willReturnMap([
                 ['openregister', 'solr', '{}', '{"enabled": true, "host": "localhost"}'],
@@ -282,7 +282,7 @@ class SettingsServiceTest extends TestCase
      */
     public function testGetStats(): void
     {
-        // Mock the various mappers for statistics
+        // Mock the various mappers for statistics.
         $this->objectEntityMapper->method('countAll')
             ->willReturn(100);
         
@@ -335,7 +335,7 @@ class SettingsServiceTest extends TestCase
         $this->assertTrue($result['success']);
     }
 
-    // ===== SOLR-RELATED TESTS (These methods will be moved to GuzzleSolrService) =====
+    // ===== SOLR-RELATED TESTS (These methods will be moved to GuzzleSolrService) =====.
 
     /**
      * Test getting SOLR settings
@@ -359,7 +359,7 @@ class SettingsServiceTest extends TestCase
      */
     public function testTestSolrConnection(): void
     {
-        // Mock GuzzleSolrService testConnection method
+        // Mock GuzzleSolrService testConnection method.
         $this->guzzleSolrService->method('testConnection')
             ->willReturn([
                 'success' => true,
@@ -382,7 +382,7 @@ class SettingsServiceTest extends TestCase
      */
     public function testWarmupSolrIndex(): void
     {
-        // Mock GuzzleSolrService warmupIndex method
+        // Mock GuzzleSolrService warmupIndex method.
         $this->guzzleSolrService->method('warmupIndex')
             ->willReturn([
                 'success' => true,
@@ -402,7 +402,7 @@ class SettingsServiceTest extends TestCase
      */
     public function testGetSolrDashboardStats(): void
     {
-        // Mock GuzzleSolrService getDashboardStats method
+        // Mock GuzzleSolrService getDashboardStats method.
         $this->guzzleSolrService->method('getDashboardStats')
             ->willReturn([
                 'available' => true,
@@ -423,7 +423,7 @@ class SettingsServiceTest extends TestCase
      */
     public function testManageSolr(): void
     {
-        // Mock various operations
+        // Mock various operations.
         $this->guzzleSolrService->method('clearIndex')
             ->willReturn(['success' => true]);
 
@@ -495,7 +495,7 @@ class SettingsServiceTest extends TestCase
         $this->assertTrue($result['success']);
     }
 
-    // ===== NON-SOLR SETTINGS TESTS =====
+    // ===== NON-SOLR SETTINGS TESTS =====.
 
     /**
      * Test getting RBAC settings only
@@ -646,7 +646,7 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->getSettings();
 
         $this->assertIsArray($result);
-        // Should return default/fallback settings even if config fails
+        // Should return default/fallback settings even if config fails.
     }
 
     /**
@@ -673,11 +673,11 @@ class SettingsServiceTest extends TestCase
             'rbac' => ['enabled' => 'not_boolean']
         ];
 
-        // Should handle invalid data gracefully
+        // Should handle invalid data gracefully.
         $result = $this->settingsService->updateSettings($invalidData);
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('success', $result);
-        // May be false due to validation issues
+        // May be false due to validation issues.
     }
 }

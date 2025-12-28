@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+
 /**
  * OpenRegister Migration
  *
@@ -22,6 +22,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
@@ -30,59 +31,71 @@ use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
+/**
+ * Migration step for fixing register column name in audit trails table
+ */
+
 class Version1Date20241022135300 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions before schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end preSchemaChange()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Apply schema changes
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
-        // rename the register column to regsiter
+        // Rename the register column to regsiter.
         $table = $schema->getTable('openregister_audit_trails');
-        if (!$table->hasColumn('register')) {
+        if ($table->hasColumn('register') === false) {
             $table->addColumn('register', Types::INTEGER, ['notnull' => false]);
         }
 
-        if ($table->hasColumn('regsiter')) {
+        if ($table->hasColumn('regsiter') === true) {
             $table->dropColumn('regsiter', 'register');
         }
 
         return $schema;
-
     }//end changeSchema()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions after schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
-
-
 }//end class

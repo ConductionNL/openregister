@@ -1,13 +1,23 @@
 <?php
 
-declare(strict_types=1);
-
 /**
+ * OpenRegister GDPR Entity
+ *
  * GDPR entity representing detected PII/contact information.
  *
- * @category Db
+ * @category Database
  * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -41,25 +51,84 @@ use OCP\AppFramework\Db\Entity;
  */
 class GdprEntity extends Entity implements JsonSerializable
 {
+    /**
+     * UUID.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
+
+    /**
+     * Type.
+     *
+     * @var string|null
+     */
     protected ?string $type = null;
+
+    /**
+     * Value.
+     *
+     * @var string|null
+     */
     protected ?string $value = null;
+
+    /**
+     * Category.
+     *
+     * @var string|null
+     */
     protected ?string $category = null;
+
+    /**
+     * Belongs to entity ID.
+     *
+     * @var integer|null
+     */
     protected ?int $belongsToEntityId = null;
+
+    /**
+     * Metadata.
+     *
+     * @var array|null
+     */
     protected ?array $metadata = null;
+
+    /**
+     * Owner.
+     *
+     * @var string|null
+     */
     protected ?string $owner = null;
+
+    /**
+     * Organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
+
+    /**
+     * Detected at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $detectedAt = null;
+
+    /**
+     * Updated at timestamp.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updatedAt = null;
 
-    public const TYPE_PERSON = 'person';
-    public const TYPE_EMAIL = 'email';
-    public const TYPE_PHONE = 'phone';
+    public const TYPE_PERSON       = 'person';
+    public const TYPE_EMAIL        = 'email';
+    public const TYPE_PHONE        = 'phone';
     public const TYPE_ORGANIZATION = 'organization';
 
-    public const CATEGORY_PII = 'pii';
+    public const CATEGORY_PII       = 'pii';
     public const CATEGORY_SENSITIVE = 'sensitive_pii';
-    public const CATEGORY_BUSINESS = 'business_data';
+    public const CATEGORY_BUSINESS  = 'business_data';
 
     /**
      * Constructor.
@@ -76,31 +145,29 @@ class GdprEntity extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('detectedAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-    }
+    }//end __construct()
 
     /**
      * JSON serialization.
      *
-     * @return array<string,mixed>
+     * @return (array|int|null|string)[]
+     *
+     * @psalm-return array{id: int, uuid: null|string, type: null|string, value: null|string, category: null|string, belongsToEntityId: int|null, metadata: array|null, owner: null|string, organisation: null|string, detectedAt: null|string, updatedAt: null|string}
      */
     public function jsonSerialize(): array
     {
         return [
-            'id' => $this->id,
-            'uuid' => $this->uuid,
-            'type' => $this->type,
-            'value' => $this->value,
-            'category' => $this->category,
+            'id'                => $this->id,
+            'uuid'              => $this->uuid,
+            'type'              => $this->type,
+            'value'             => $this->value,
+            'category'          => $this->category,
             'belongsToEntityId' => $this->belongsToEntityId,
-            'metadata' => $this->metadata,
-            'owner' => $this->owner,
-            'organisation' => $this->organisation,
-            'detectedAt' => $this->detectedAt?->format(DateTime::ATOM),
-            'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
+            'metadata'          => $this->metadata,
+            'owner'             => $this->owner,
+            'organisation'      => $this->organisation,
+            'detectedAt'        => $this->detectedAt?->format(DateTime::ATOM),
+            'updatedAt'         => $this->updatedAt?->format(DateTime::ATOM),
         ];
-    }
-}
-
-
-
-
+    }//end jsonSerialize()
+}//end class

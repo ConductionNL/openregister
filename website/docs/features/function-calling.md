@@ -8,19 +8,63 @@ OpenRegister supports **function calling** (also known as tools), enabling AI ag
 
 | Provider | Function Calling Support | Status |
 |----------|------------------------|--------|
-| **OpenAI** | ✅ **Fully Supported** | Recommended |
-| **Ollama** | ✅ **Supported** | Works with compatible models |
+| **OpenAI** | ✅ **Fully Supported** | Excellent |
+| **Ollama** | ✅ **Supported** | Good with compatible models |
 | **Fireworks AI** | ❌ **Not Implemented** | Use OpenAI or Ollama |
 
-### ⚠️ Important Note
+### 🎯 **Recommended Models for Tool-Oriented Agents**
+
+For agents that need to use tools (function calling), model selection is critical. Not all models support function calling reliably.
+
+#### **Ollama Models - Function Calling Performance**
+
+| Model | Function Calling | Performance | Recommended For |
+|-------|-----------------|-------------|-----------------|
+| **mistral-nemo** | ⭐⭐⭐⭐⭐ **Excellent** | Fast, reliable tool execution | **RECOMMENDED for all tool agents** |
+| llama3.2:3b | ⭐⭐⭐ Good | Lightweight, decent tool support | Basic tool usage, resource-constrained |
+| llama3.1:8b | ⭐⭐⭐⭐ Very Good | Reliable function calling | Alternative to mistral-nemo |
+| mistral:7b | ⭐⭐ Fair | Inconsistent tool calling | NOT recommended for tools |
+| qwen2:0.5b | ⭐ Poor | Minimal function support | Only for chat, not tools |
+| phi3:mini | ⭐⭐ Fair | Limited tool support | NOT recommended for tools |
+
+#### **Installation**
+
+To install Mistral Nemo (recommended for tool agents):
+
+```bash
+docker exec openregister-ollama ollama pull mistral-nemo
+```
+
+#### **Agent Configuration**
+
+For tool-oriented agents, configure:
+
+```json
+{
+  'provider': 'ollama',
+  'model': 'mistral-nemo',
+  'temperature': 0.3,
+  'tools': ['opencatalogi.cms', 'openregister.objects']
+}
+```
+
+**Why Mistral Nemo?**
+- ✅ **Reliable function execution** - Consistently calls tools when appropriate
+- ✅ **Proper parameter handling** - Correctly formats function arguments
+- ✅ **Low hallucination** - Doesn't invent functions or parameters
+- ✅ **Fast inference** - Reasonable speed even on CPU
+- ✅ **Good context retention** - Remembers conversation history well
+
+### ⚠️ Important Notes
 
 **Function calling is NOT yet implemented for Fireworks AI.** If you want to use tools, you must:
 
 1. Configure **OpenAI** or **Ollama** as your chat provider
-2. Ensure your agent is configured with at least one tool
-3. Test with natural language commands (e.g., 'List all applications')
+2. Use a **function-calling compatible model** (see table above)
+3. Ensure your agent is configured with at least one tool
+4. Test with natural language commands (e.g., 'List all applications')
 
-We use a direct cURL implementation for Fireworks AI to avoid client library bugs, and function calling support has not been added to this custom implementation yet.
+**For Ollama users:** We strongly recommend **mistral-nemo** for any agent that needs to use tools. Other models may describe what they would do instead of actually executing functions.
 
 ---
 
@@ -280,5 +324,5 @@ All tools respect:
 
 - [RAG Deep Dive](./chat-rag-deepdive.md) - How agents find information
 - [Agent Configuration](./agents.md) - Configure agents and tools
-- [AI Configuration](./ai.md) - Provider setup and AI features
+- [AI Configuration](../Features/ai.md) - Provider setup and AI features
 

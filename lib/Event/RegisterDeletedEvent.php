@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RegisterDeletedEvent
  *
@@ -27,14 +28,12 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterDeletedEvent extends Event
 {
-
     /**
      * The deleted register
      *
      * @var Register The register that was deleted
      */
     private Register $register;
-
 
     /**
      * Constructor for RegisterDeletedEvent
@@ -47,9 +46,7 @@ class RegisterDeletedEvent extends Event
     {
         parent::__construct();
         $this->register = $register;
-
     }//end __construct()
-
 
     /**
      * Get the deleted register
@@ -59,8 +56,5 @@ class RegisterDeletedEvent extends Event
     public function getRegister(): Register
     {
         return $this->register;
-
     }//end getRegister()
-
-
 }//end class

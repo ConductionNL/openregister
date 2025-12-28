@@ -11,17 +11,11 @@
 :root {
   /* Primary color: Open Webconcept green */
   --ifm-color-primary: #2fb298;
-  /* 15% darker than primary */
   --ifm-color-primary-dark: #28a088;
-  /* 25% darker than primary */
   --ifm-color-primary-darker: #248e79;
-  /* 40% darker than primary */
   --ifm-color-primary-darkest: #1d7563;
-  /* 15% lighter than primary */
   --ifm-color-primary-light: #34c4a7;
-  /* 25% lighter than primary */
   --ifm-color-primary-lighter: #3dd1b3;
-  /* 40% lighter than primary */
   --ifm-color-primary-lightest: #5ad9c1;
   
   /* Typography settings */
@@ -39,9 +33,9 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* Dark mode color palette */
 [data-theme='dark'] {
-  /* Brighter version of the primary color for dark mode */
+  /* Primary colors */
   --ifm-color-primary: #34c4a7;
   --ifm-color-primary-dark: #2fb298;
   --ifm-color-primary-darker: #2ba68d;
@@ -50,17 +44,51 @@
   --ifm-color-primary-lighter: #54cfb7;
   --ifm-color-primary-lightest: #71d8c4;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  
+  /* Background colors */
+  --ifm-background-color: #1e1e1e;
+  --ifm-background-surface-color: #242526;
+  
+  /* Text colors */
+  --ifm-font-color-base: #e5e5e5;
+  --ifm-heading-color: #ffffff;
+  --ifm-color-content: #e5e5e5;
+  --ifm-color-content-secondary: #b0b0b0;
+  
+  /* Navbar */
+  --ifm-navbar-background-color: #242526;
+  --ifm-navbar-link-color: #e5e5e5;
+  --ifm-navbar-link-hover-color: #34c4a7;
+  
+  /* Sidebar */
+  --ifm-sidebar-background-color: #1e1e1e;
+  --ifm-menu-color: #e5e5e5;
+  --ifm-menu-color-active: #34c4a7;
+  
+  /* Code blocks */
+  --ifm-code-background: rgba(0, 0, 0, 0.3);
+  --ifm-code-color: #e5e5e5;
+  
+  /* Tables */
+  --ifm-table-border-color: #3a3a3a;
+  --ifm-table-stripe-background: rgba(255, 255, 255, 0.05);
+  
+  /* Cards */
+  --ifm-card-background-color: #242526;
+  --ifm-card-border-color: #3a3a3a;
+  
+  /* Performance optimizations */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Additional typography adjustments */
+/* Typography adjustments */
 .markdown {
-  /* Improve readability of main content */
   font-weight: 400;
   line-height: 1.8;
 }
 
 .markdown h1, .markdown h2, .markdown h3, .markdown h4 {
-  /* Add some breathing room to headings */
   margin-top: 2rem;
   margin-bottom: 1rem;
   font-weight: 600;
@@ -74,4 +102,20 @@
 /* Sidebar adjustments */
 .menu {
   font-weight: 400;
-} 
+}
+
+/* Smooth transitions for theme switching */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

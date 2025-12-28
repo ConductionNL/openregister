@@ -80,18 +80,18 @@ class FileTextExtractionJobTest extends TestCase
         $fileId = 123;
         $argument = ['file_id' => $fileId];
 
-        // Mock FileText result
+        // Mock FileText result.
         $fileText = $this->createMock(FileText::class);
         $fileText->method('getTextLength')->willReturn(5000);
 
-        // Mock that extraction is needed
+        // Mock that extraction is needed.
         $this->fileTextService
             ->expects($this->once())
             ->method('needsExtraction')
             ->with($fileId)
             ->willReturn(true);
 
-        // Mock successful extraction
+        // Mock successful extraction.
         $this->fileTextService
             ->expects($this->once())
             ->method('extractAndStoreFileText')
@@ -101,7 +101,7 @@ class FileTextExtractionJobTest extends TestCase
                 'fileText' => $fileText,
             ]);
 
-        // Expect success logging
+        // Expect success logging.
         $this->logger
             ->expects($this->atLeastOnce())
             ->method('info')
@@ -110,7 +110,7 @@ class FileTextExtractionJobTest extends TestCase
                 [$this->stringContains('completed successfully')]
             );
 
-        // Run the job
+        // Run the job.
         $this->job->start($argument);
     }
 
@@ -124,19 +124,19 @@ class FileTextExtractionJobTest extends TestCase
         $fileId = 456;
         $argument = ['file_id' => $fileId];
 
-        // Mock that extraction is NOT needed
+        // Mock that extraction is NOT needed.
         $this->fileTextService
             ->expects($this->once())
             ->method('needsExtraction')
             ->with($fileId)
             ->willReturn(false);
 
-        // Should NOT call extractAndStoreFileText
+        // Should NOT call extractAndStoreFileText.
         $this->fileTextService
             ->expects($this->never())
             ->method('extractAndStoreFileText');
 
-        // Expect info logging that extraction not needed
+        // Expect info logging that extraction not needed.
         $this->logger
             ->expects($this->atLeastOnce())
             ->method('info')
@@ -145,7 +145,7 @@ class FileTextExtractionJobTest extends TestCase
                 [$this->stringContains('no longer needed')]
             );
 
-        // Run the job
+        // Run the job.
         $this->job->start($argument);
     }
 
@@ -159,14 +159,14 @@ class FileTextExtractionJobTest extends TestCase
         $fileId = 789;
         $argument = ['file_id' => $fileId];
 
-        // Mock that extraction is needed
+        // Mock that extraction is needed.
         $this->fileTextService
             ->expects($this->once())
             ->method('needsExtraction')
             ->with($fileId)
             ->willReturn(true);
 
-        // Mock failed extraction
+        // Mock failed extraction.
         $this->fileTextService
             ->expects($this->once())
             ->method('extractAndStoreFileText')
@@ -176,13 +176,13 @@ class FileTextExtractionJobTest extends TestCase
                 'error' => 'Unsupported file format',
             ]);
 
-        // Expect warning logging
+        // Expect warning logging.
         $this->logger
             ->expects($this->atLeastOnce())
             ->method('warning')
             ->with($this->stringContains('Text extraction failed'));
 
-        // Run the job
+        // Run the job.
         $this->job->start($argument);
     }
 
@@ -197,21 +197,21 @@ class FileTextExtractionJobTest extends TestCase
         $argument = ['file_id' => $fileId];
         $exceptionMessage = 'Database connection failed';
 
-        // Mock that extraction is needed
+        // Mock that extraction is needed.
         $this->fileTextService
             ->expects($this->once())
             ->method('needsExtraction')
             ->with($fileId)
             ->willReturn(true);
 
-        // Mock exception during extraction
+        // Mock exception during extraction.
         $this->fileTextService
             ->expects($this->once())
             ->method('extractAndStoreFileText')
             ->with($fileId)
             ->willThrowException(new \Exception($exceptionMessage));
 
-        // Expect error logging
+        // Expect error logging.
         $this->logger
             ->expects($this->once())
             ->method('error')
@@ -223,7 +223,7 @@ class FileTextExtractionJobTest extends TestCase
                 })
             );
 
-        // Run the job (should not throw exception)
+        // Run the job (should not throw exception).
         $this->job->start($argument);
     }
 
@@ -236,7 +236,7 @@ class FileTextExtractionJobTest extends TestCase
     {
         $argument = []; // Missing file_id
 
-        // Should NOT call any service methods
+        // Should NOT call any service methods.
         $this->fileTextService
             ->expects($this->never())
             ->method('needsExtraction');
@@ -245,13 +245,13 @@ class FileTextExtractionJobTest extends TestCase
             ->expects($this->never())
             ->method('extractAndStoreFileText');
 
-        // Expect error logging
+        // Expect error logging.
         $this->logger
             ->expects($this->once())
             ->method('error')
             ->with($this->stringContains('Missing file_id'));
 
-        // Run the job
+        // Run the job.
         $this->job->start($argument);
     }
 }
