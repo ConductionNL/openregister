@@ -189,7 +189,7 @@ class SchemaMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function find(string | int $id, ?array $_extend=[], ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): Schema
+    public function find(string | int $id, ?array $_extend = [], ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): Schema
     {
         // Verify RBAC permission to read if RBAC is enabled.
         if ($_rbac === true) {
@@ -279,7 +279,7 @@ class SchemaMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Schema>
      */
-    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
+    public function findMultiple(array $ids, ?bool $published = null, bool $_rbac = true, bool $_multitenancy = true): array
     {
         $result = [];
         foreach ($ids as $id) {
@@ -350,15 +350,15 @@ class SchemaMapper extends QBMapper
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        ?array $_extend=[],
-        ?bool $published=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        ?array $_extend = [],
+        ?bool $published = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): array {
         // Verify RBAC permission to read if RBAC is enabled.
         if ($_rbac === true) {
@@ -388,7 +388,7 @@ class SchemaMapper extends QBMapper
         }
 
         if (empty($searchConditions) === false) {
-            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
+            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
             foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
@@ -521,7 +521,8 @@ class SchemaMapper extends QBMapper
                 // Check if the property has a 'required' field set to true or the string 'true'.
                 if (($property['required'] ?? null) !== null) {
                     $requiredValue = $property['required'];
-                    if ($requiredValue === true
+                    if (
+                        $requiredValue === true
                         || $requiredValue === 'true'
                         || (is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true')
                     ) {
@@ -592,11 +593,11 @@ class SchemaMapper extends QBMapper
             if (($property['$ref'] ?? null) !== null) {
                 if (is_array($property['$ref']) === true && (($property['$ref']['id'] ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']['id'];
-                } else if (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
+                } elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
                     $property['$ref'] = $property['$ref']->id;
-                } else if (is_int($property['$ref']) === true) {
-                } else if (is_string($property['$ref']) === false && $property['$ref'] !== '') {
-                    throw new Exception("Schema property '$key' has a \$ref that is not a string or empty: ".print_r($property['$ref'], true));
+                } elseif (is_int($property['$ref']) === true) {
+                } elseif (is_string($property['$ref']) === false && $property['$ref'] !== '') {
+                    throw new Exception("Schema property '$key' has a \$ref that is not a string or empty: " . print_r($property['$ref'], true));
                 }
             }
 
@@ -889,7 +890,7 @@ class SchemaMapper extends QBMapper
             $targetSchemaId   = (string) $targetSchema->getId();
             $targetSchemaUuid = $targetSchema->getUuid();
             $targetSchemaSlug = $targetSchema->getSlug();
-        } else if ($schema instanceof Schema) {
+        } elseif ($schema instanceof Schema) {
             $targetSchemaId   = (string) $schema->getId();
             $targetSchemaUuid = $schema->getUuid();
             $targetSchemaSlug = $schema->getSlug();
@@ -943,7 +944,8 @@ class SchemaMapper extends QBMapper
                 $ref = $property['$ref'];
 
                 // Check exact matches first.
-                if ($ref === $targetSchemaId
+                if (
+                    $ref === $targetSchemaId
                     || $ref === $targetSchemaUuid
                     || $ref === $targetSchemaSlug
                     || $ref === (int) $targetSchemaId
@@ -954,9 +956,10 @@ class SchemaMapper extends QBMapper
                 // Check if the ref contains the target schema slug in JSON Schema format.
                 // Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
                 if (is_string($ref) === true && empty($targetSchemaSlug) === false) {
-                    if (str_contains($ref, '/schemas/'.$targetSchemaSlug) === true
-                        || str_contains($ref, 'schemas/'.$targetSchemaSlug) === true
-                        || str_ends_with($ref, '/'.$targetSchemaSlug) === true
+                    if (
+                        str_contains($ref, '/schemas/' . $targetSchemaSlug) === true
+                        || str_contains($ref, 'schemas/' . $targetSchemaSlug) === true
+                        || str_ends_with($ref, '/' . $targetSchemaSlug) === true
                     ) {
                         return true;
                     }
@@ -1061,7 +1064,8 @@ class SchemaMapper extends QBMapper
     private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
         // Check if explicitly marked as facetable.
-        if (($property['facetable'] ?? null) !== null
+        if (
+            ($property['facetable'] ?? null) !== null
             && ($property['facetable'] === true || $property['facetable'] === 'true'
             || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true') === true) === true
         ) {
@@ -1169,7 +1173,7 @@ class SchemaMapper extends QBMapper
      *
      * @return Schema The resolved schema with merged properties
      */
-    private function resolveSchemaExtension(Schema $schema, array $visited=[]): Schema
+    private function resolveSchemaExtension(Schema $schema, array $visited = []): Schema
     {
         // Get current schema identifier for tracking.
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
@@ -1237,7 +1241,8 @@ class SchemaMapper extends QBMapper
             }
 
             // Check for self-reference.
-            if ($parentRef === $currentId || $parentRef === $schema->getId()
+            if (
+                $parentRef === $currentId || $parentRef === $schema->getId()
                 || $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
             ) {
                 throw new Exception("Schema '{$currentId}' cannot reference itself in allOf");
@@ -1405,7 +1410,8 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($oneOf as $ref) {
-            if ($ref === $currentId || $ref === $schema->getId()
+            if (
+                $ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
                 throw new Exception("Schema '{$currentId}' cannot reference itself in oneOf");
@@ -1445,7 +1451,8 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($anyOf as $ref) {
-            if ($ref === $currentId || $ref === $schema->getId()
+            if (
+                $ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
                 throw new Exception("Schema '{$currentId}' cannot reference itself in anyOf");
@@ -1821,7 +1828,7 @@ class SchemaMapper extends QBMapper
                 $diff = array_diff($childValue, $parentValue);
                 if (count($diff) > 0) {
                     throw new Exception(
-                        "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from ".json_encode($parentValue)." to ".json_encode($childValue)." (adds types not in parent)"
+                        "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from " . json_encode($parentValue) . " to " . json_encode($childValue) . " (adds types not in parent)"
                     );
                 }
 
@@ -1830,7 +1837,7 @@ class SchemaMapper extends QBMapper
 
             if (is_array($parentValue) === false && is_array($childValue) === false) {
                 throw new Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from "."'{$parentValue}' to '{$childValue}'"
+                    "Schema '{$schemaId}': Property '{$propertyName}' cannot change type from " . "'{$parentValue}' to '{$childValue}'"
                 );
             }
 
@@ -1842,7 +1849,7 @@ class SchemaMapper extends QBMapper
         // Format can only be added or made more restrictive.
         if ($constraint === 'format' && $parentValue !== null && $parentValue !== $childValue) {
             throw new Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' cannot change format from "."'{$parentValue}' to '{$childValue}'"
+                "Schema '{$schemaId}': Property '{$propertyName}' cannot change format from " . "'{$parentValue}' to '{$childValue}'"
             );
         }
 
@@ -1851,31 +1858,33 @@ class SchemaMapper extends QBMapper
             $diff = array_diff($childValue, $parentValue);
             if (count($diff) > 0) {
                 throw new Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' enum cannot add values not in parent "."(added: ".json_encode($diff).")"
+                    "Schema '{$schemaId}': Property '{$propertyName}' enum cannot add values not in parent " . "(added: " . json_encode($diff) . ")"
                 );
             }
         }
 
         // Minimum constraints can only be increased (more restrictive).
-        if (($constraint === 'minimum' || $constraint === 'minLength'
+        if (
+            ($constraint === 'minimum' || $constraint === 'minLength'
             || $constraint === 'minItems' || $constraint === 'minProperties') === true
             && is_numeric($parentValue) === true && is_numeric($childValue) === true
         ) {
             if ($childValue < $parentValue) {
                 throw new Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be decreased from "."{$parentValue} to {$childValue} (relaxes constraint)"
+                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be decreased from " . "{$parentValue} to {$childValue} (relaxes constraint)"
                 );
             }
         }
 
         // Maximum constraints can only be decreased (more restrictive).
-        if (($constraint === 'maximum' || $constraint === 'maxLength'
+        if (
+            ($constraint === 'maximum' || $constraint === 'maxLength'
             || $constraint === 'maxItems' || $constraint === 'maxProperties') === true
             && is_numeric($parentValue) === true && is_numeric($childValue) === true
         ) {
             if ($childValue > $parentValue) {
                 throw new Exception(
-                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be increased from "."{$parentValue} to {$childValue} (relaxes constraint)"
+                    "Schema '{$schemaId}': Property '{$propertyName}' {$constraint} cannot be increased from " . "{$parentValue} to {$childValue} (relaxes constraint)"
                 );
             }
         }
@@ -1883,7 +1892,7 @@ class SchemaMapper extends QBMapper
         // Pattern can only be added, not changed.
         if ($constraint === 'pattern' && $parentValue !== null && $parentValue !== $childValue) {
             throw new Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' pattern cannot be changed from "."'{$parentValue}' to '{$childValue}'"
+                "Schema '{$schemaId}': Property '{$propertyName}' pattern cannot be changed from " . "'{$parentValue}' to '{$childValue}'"
             );
         }
     }//end validateConstraintChange()
@@ -1911,7 +1920,7 @@ class SchemaMapper extends QBMapper
         // If parent had validation and child removes it, that's relaxing.
         if (empty($parentProperty) === false && empty($childProperty) === true) {
             throw new Exception(
-                "Schema '{$schemaId}': Property '{$propertyName}' cannot remove constraints "."(parent had value, child is empty)"
+                "Schema '{$schemaId}': Property '{$propertyName}' cannot remove constraints " . "(parent had value, child is empty)"
             );
         }
     }//end validateConstraintAddition()
@@ -1942,7 +1951,8 @@ class SchemaMapper extends QBMapper
         $anyOf = $schema->getAnyOf();
 
         // For oneOf and anyOf, no delta extraction (properties not merged).
-        if (($oneOf !== null && count($oneOf) > 0)
+        if (
+            ($oneOf !== null && count($oneOf) > 0)
             || ($anyOf !== null && count($anyOf) > 0)
         ) {
             return $schema;
@@ -1951,8 +1961,8 @@ class SchemaMapper extends QBMapper
         // For allOf, extract delta against all parents.
         if ($allOf !== null && count($allOf) > 0) {
             return $this->extractAllOfDelta(
-            schema: $schema,
-            allOf: $allOf
+                schema: $schema,
+                allOf: $allOf
             );
         }
 
@@ -1998,11 +2008,11 @@ class SchemaMapper extends QBMapper
                 $mergedParentProperties = $this->mergeSchemaProperties(
                     parentProperties: $mergedParentProperties,
                     childProperties: $parentSchema->getProperties()
-                    );
+                );
 
                     // Merge required fields.
                     $mergedParentRequired = array_unique(
-                    array_merge($mergedParentRequired, $parentSchema->getRequired())
+                        array_merge($mergedParentRequired, $parentSchema->getRequired())
                     );
             }//end foreach
 
@@ -2024,7 +2034,7 @@ class SchemaMapper extends QBMapper
             // Re-index array.
             return $schema;
         } catch (Exception $e) {
-            throw new Exception("Cannot extract allOf delta: ".$e->getMessage());
+            throw new Exception("Cannot extract allOf delta: " . $e->getMessage());
         }//end try
     }//end extractAllOfDelta()
 
@@ -2054,10 +2064,11 @@ class SchemaMapper extends QBMapper
             $parentProperty = $parentProperties[$propertyName];
 
             // Deep comparison: if properties are different, include in delta.
-            if ($this->arePropertiesDifferent(
-                parentProperty: $parentProperty,
-                childProperty: $childProperty
-            ) === true
+            if (
+                $this->arePropertiesDifferent(
+                    parentProperty: $parentProperty,
+                    childProperty: $childProperty
+                ) === true
             ) {
                 // For objects with nested properties, extract nested delta.
                 if (is_array($childProperty) === false || is_array($parentProperty) === false) {
@@ -2113,10 +2124,11 @@ class SchemaMapper extends QBMapper
             if (isset($parentProperty[$key]) === false) {
                 // New field in child.
                 $delta[$key] = $value;
-            } else if ($this->arePropertiesDifferent(
-                parentProperty: $parentProperty[$key],
-                childProperty: $value
-            ) === true
+            } elseif (
+                $this->arePropertiesDifferent(
+                    parentProperty: $parentProperty[$key],
+                    childProperty: $value
+                ) === true
             ) {
                 // Changed field.
                 if ($key !== 'properties' || is_array($value) === false || is_array($parentProperty[$key]) === false) {
@@ -2173,42 +2185,42 @@ class SchemaMapper extends QBMapper
 
         // Check in allOf field (JSON array).
         if ($targetId !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {
-            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
+            $orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
 
         // Check in oneOf field (JSON array).
         if ($targetId !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {
-            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
+            $orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
 
         // Check in anyOf field (JSON array).
         // Note: $targetId is cast to (string), so it can never be null, only empty string.
         if ($targetId !== '') {
-            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetId.'"%'));
+            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
         }
 
         if ($targetUuid !== null && $targetUuid !== '') {
-            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetUuid.'"%'));
+            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
         }
 
         if ($targetSlug !== null && $targetSlug !== '') {
-            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"'.$targetSlug.'"%'));
+            $orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
         }
 
         if (empty($orConditions) === true) {

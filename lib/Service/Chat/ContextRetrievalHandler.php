@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Chat Context Retrieval Handler
  *
@@ -40,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class ContextRetrievalHandler
 {
-
     /**
      * Vector embeddings service
      *
@@ -79,7 +79,6 @@ class ContextRetrievalHandler
         $this->vectorService = $vectorService;
         $this->solrService   = $solrService;
         $this->logger        = $logger;
-
     }//end __construct()
 
     /**
@@ -97,7 +96,7 @@ class ContextRetrievalHandler
      *
      * @psalm-return array{text: string, sources: list<array{file_id?: mixed|null, file_path?: mixed|null, id: mixed|null, mime_type?: mixed|null, name: string, register?: mixed|null, schema?: mixed|null, similarity: float(1)|mixed, text: ''|mixed, type: 'unknown'|mixed, uri?: mixed|null, uuid?: mixed|null}>}
      */
-    public function retrieveContext(string $query, ?Agent $agent, array $selectedViews=[], array $ragSettings=[]): array
+    public function retrieveContext(string $query, ?Agent $agent, array $selectedViews = [], array $ragSettings = []): array
     {
         $this->logger->info(
             message: '[ChatService] Retrieving context',
@@ -144,7 +143,7 @@ class ContextRetrievalHandler
                     ]
                 );
             }
-        } else if (empty($selectedViews) === false) {
+        } elseif (empty($selectedViews) === false) {
             // User selected views but agent has no views configured - use selected ones.
             $viewFilters = $selectedViews;
             $this->logger->info(
@@ -187,7 +186,7 @@ class ContextRetrievalHandler
                     filters: $vectorFilters
                     // Pass filters array instead of 0.7.
                 );
-            } else if ($searchMode === 'hybrid') {
+            } elseif ($searchMode === 'hybrid') {
                 $hybridResponse = $this->vectorService->hybridSearch(
                     query: $query,
                     solrFilters: ['vector_filters' => $vectorFilters],
@@ -293,7 +292,7 @@ class ContextRetrievalHandler
                 // Increment the appropriate counter.
                 if ($isFile === true) {
                     $fileSourceCount++;
-                } else if ($isObject === true) {
+                } elseif ($isObject === true) {
                     $objectSourceCount++;
                 }
 
@@ -302,7 +301,8 @@ class ContextRetrievalHandler
                 $contextText .= "{$source['text']}\n\n";
 
                 // Stop if we've reached limits for both types.
-                if ((($includeFiles === false) === true || $fileSourceCount >= $numSourcesFiles)
+                if (
+                    (($includeFiles === false) === true || $fileSourceCount >= $numSourcesFiles)
                     && (($includeObjects === false) === true || $objectSourceCount >= $numSourcesObjects)
                 ) {
                     break;
@@ -352,7 +352,6 @@ class ContextRetrievalHandler
                 'sources' => [],
             ];
         }//end try
-
     }//end retrieveContext()
 
     /**
@@ -391,7 +390,6 @@ class ContextRetrievalHandler
         }
 
         return $transformed;
-
     }//end searchKeywordOnly()
 
     /**
@@ -449,11 +447,10 @@ class ContextRetrievalHandler
             $type = $result['entity_type'] ?? 'Item';
             // Capitalize first letter for display.
             $type = ucfirst($type);
-            return $type.' #'.substr($result['entity_id'], 0, 8);
+            return $type . ' #' . substr($result['entity_id'], 0, 8);
         }
 
         // Final fallback.
         return 'Unknown Source';
-
     }//end extractSourceName()
 }//end class

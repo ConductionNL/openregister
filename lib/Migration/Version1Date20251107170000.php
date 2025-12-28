@@ -59,14 +59,14 @@ class Version1Date20251107170000 extends SimpleMigrationStep
 
             if ($table->hasColumn('chunks_json') === false) {
                 $table->addColumn(
-                        'chunks_json',
-                        Types::TEXT,
-                        [
+                    'chunks_json',
+                    Types::TEXT,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'JSON-encoded array of text chunks with metadata',
                         ]
-                        );
+                );
                 $output->info(message: '✅ Added chunks_json column to file_texts table');
                 $updated = true;
             } else {
@@ -81,7 +81,6 @@ class Version1Date20251107170000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -99,6 +98,5 @@ class Version1Date20251107170000 extends SimpleMigrationStep
     {
         $output->info(message: '✅ Migration complete - Text extraction is now independent of SOLR');
         $output->info(message: '   Chunks will be generated during extraction and stored for later use');
-
     }//end postSchemaChange()
 }//end class

@@ -83,15 +83,15 @@ class Version1Date20251111000000 extends SimpleMigrationStep
                 $output->info(message: '  📝 Adding vectors.embedding_model column');
 
                 $table->addColumn(
-                        'embedding_model',
-                        Types::STRING,
-                        [
+                    'embedding_model',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'Embedding model used to generate this vector (e.g., text-embedding-ada-002, nomic-embed-text)',
                         ]
-                        );
+                );
 
                 $output->info(message: '    ✅ vectors.embedding_model column added');
                 $updated = true;
@@ -143,7 +143,6 @@ class Version1Date20251111000000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -167,6 +166,5 @@ class Version1Date20251111000000 extends SimpleMigrationStep
         $output->info('   • Use "Clear All Embeddings" action to remove vectors after model change');
         $output->info(message: '');
         $output->info(message: '✅ Migration completed successfully');
-
     }//end postSchemaChange()
 }//end class

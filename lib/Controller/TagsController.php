@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Tags Controller
  *
@@ -71,7 +72,6 @@ class TagsController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -97,6 +97,5 @@ class TagsController extends Controller
 
         // Return tags as JSON response.
         return new JSONResponse(data: $tags);
-
     }//end getAllTags()
 }//end class

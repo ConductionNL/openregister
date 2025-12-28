@@ -54,72 +54,72 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-            'id',
-            'bigint',
-            [
+                'id',
+                'bigint',
+                [
                 'autoincrement' => true,
                 'notnull'       => true,
                 'length'        => 20,
-            ]
+                ]
             );
 
             // User who sent the message.
             $table->addColumn(
-            'user_id',
-            'string',
-            [
+                'user_id',
+                'string',
+                [
                 'notnull' => true,
                 'length'  => 64,
-            ]
+                ]
             );
 
             // User message.
             $table->addColumn(
-            'user_message',
-            'text',
-            [
+                'user_message',
+                'text',
+                [
                 'notnull' => true,
-            ]
+                ]
             );
 
             // AI response.
             $table->addColumn(
-            'ai_response',
-            'text',
-            [
+                'ai_response',
+                'text',
+                [
                 'notnull' => true,
-            ]
+                ]
             );
 
             // Context sources used for the response (JSON array).
             $table->addColumn(
-            'context_sources',
-            'text',
-            [
+                'context_sources',
+                'text',
+                [
                 'notnull' => false,
                 'default' => null,
-            ]
+                ]
             );
 
             // User feedback (positive, negative, or null).
             $table->addColumn(
-            'feedback',
-            'string',
-            [
+                'feedback',
+                'string',
+                [
                 'notnull' => false,
                 'length'  => 20,
                 'default' => null,
-            ]
+                ]
             );
 
             // Timestamp.
             $table->addColumn(
-            'created_at',
-            'bigint',
-            [
+                'created_at',
+                'bigint',
+                [
                 'notnull' => true,
                 'default' => 0,
-            ]
+                ]
             );
 
             // Set primary key.
@@ -132,7 +132,6 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -149,6 +148,5 @@ class Version002004000Date20251013000000 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         return null;
-
     }//end postSchemaChange()
 }//end class

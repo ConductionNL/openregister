@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Chat Tool Management Handler
  *
@@ -41,7 +42,6 @@ use LLPhant\Chat\FunctionInfo\Parameter;
  */
 class ToolManagementHandler
 {
-
     /**
      * Agent mapper
      *
@@ -80,7 +80,6 @@ class ToolManagementHandler
         $this->agentMapper  = $agentMapper;
         $this->toolRegistry = $toolRegistry;
         $this->logger       = $logger;
-
     }//end __construct()
 
     /**
@@ -96,7 +95,7 @@ class ToolManagementHandler
      *
      * @psalm-return list<ToolInterface>
      */
-    public function getAgentTools(?Agent $agent, array $selectedTools=[]): array
+    public function getAgentTools(?Agent $agent, array $selectedTools = []): array
     {
         if ($agent === null) {
             return [];
@@ -127,7 +126,7 @@ class ToolManagementHandler
             if (strpos($toolId, '.') !== false) {
                 $fullToolId = $toolId;
             } else {
-                $fullToolId = 'openregister.'.$toolId;
+                $fullToolId = 'openregister.' . $toolId;
             }
 
             $tool = $this->toolRegistry->getTool($fullToolId);
@@ -147,7 +146,6 @@ class ToolManagementHandler
         }//end foreach
 
         return $tools;
-
     }//end getAgentTools()
 
     /**
@@ -173,7 +171,6 @@ class ToolManagementHandler
         }
 
         return $functions;
-
     }//end convertToolsToFunctions()
 
     /**
@@ -212,7 +209,7 @@ class ToolManagementHandler
                     if ($type === 'object') {
                         // For object types, pass the properties definition (empty array if not specified).
                         $itemsOrProperties = $paramDef['properties'] ?? [];
-                    } else if ($type === 'array') {
+                    } elseif ($type === 'array') {
                         // For array types, pass the items definition (empty array if not specified).
                         $itemsOrProperties = $paramDef['items'] ?? [];
                     }
@@ -254,6 +251,5 @@ class ToolManagementHandler
         }//end foreach
 
         return $functionInfoObjects;
-
     }//end convertFunctionsToFunctionInfo()
 }//end class

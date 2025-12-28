@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20251128120000
  *
@@ -408,7 +409,6 @@ class Version1Date20251128120000 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -426,6 +426,5 @@ class Version1Date20251128120000 extends SimpleMigrationStep
     {
         $output->info('✅ Endpoint management system migration complete');
         $output->info('   Endpoints can now be created to expose views, agents, webhooks, registers, and schemas');
-
     }//end postSchemaChange()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Agent Entity
  *
@@ -102,7 +103,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Agent extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the agent
      *
@@ -365,7 +365,6 @@ class Agent extends Entity implements JsonSerializable
         $this->addType('user', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -382,7 +381,6 @@ class Agent extends Entity implements JsonSerializable
         }
 
         return in_array($userId, $this->invitedUsers, true);
-
     }//end hasInvitedUser()
 
     /**
@@ -431,7 +429,6 @@ class Agent extends Entity implements JsonSerializable
         $this->setUser($object['user'] ?? null);
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -477,7 +474,6 @@ class Agent extends Entity implements JsonSerializable
             'updated'                => $this->updated?->format('Y-m-d\TH:i:s\Z'),
             'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -498,6 +494,5 @@ class Agent extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfigurationData()
 }//end class

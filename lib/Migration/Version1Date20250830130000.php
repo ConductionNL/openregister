@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Objects Schema Version Migration
  *
@@ -58,20 +59,19 @@ class Version1Date20250830130000 extends SimpleMigrationStep
             // Add schemaVersion column if it doesn't exist.
             if ($table->hasColumn('schemaVersion') === false) {
                 $table->addColumn(
-                        'schemaVersion',
-                        Types::STRING,
-                        [
+                    'schemaVersion',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'Version of the schema used for this object',
                         ]
-                        );
+                );
                 $output->info(message: 'Added schemaVersion column to openregister_objects table');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

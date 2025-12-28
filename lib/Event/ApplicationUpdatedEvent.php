@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ApplicationUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ApplicationUpdatedEvent extends Event
 {
-
     /**
      * The updated application state.
      *
@@ -59,7 +59,6 @@ class ApplicationUpdatedEvent extends Event
         parent::__construct();
         $this->newApplication = $newApplication;
         $this->oldApplication = $oldApplication;
-
     }//end __construct()
 
     /**
@@ -70,7 +69,6 @@ class ApplicationUpdatedEvent extends Event
     public function getNewApplication(): Application
     {
         return $this->newApplication;
-
     }//end getNewApplication()
 
     /**
@@ -81,6 +79,5 @@ class ApplicationUpdatedEvent extends Event
     public function getOldApplication(): Application
     {
         return $this->oldApplication;
-
     }//end getOldApplication()
 }//end class

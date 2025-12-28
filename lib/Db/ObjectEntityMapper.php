@@ -213,7 +213,6 @@ class ObjectEntityMapper extends QBMapper
         $this->facetsHandler            = new FacetsHandler(logger: $logger, schemaMapper: $schemaMapper);
         $this->queryOptimizationHandler = new QueryOptimizationHandler(db: $db, logger: $logger, tableName: 'openregister_objects');
         $this->bulkOperationsHandler    = new BulkOperationsHandler(db: $db, logger: $logger, queryBuilderHandler: $this->queryBuilderHandler, tableName: 'openregister_objects');
-
     }//end __construct()
 
     // ==================================================================================
@@ -228,7 +227,6 @@ class ObjectEntityMapper extends QBMapper
     public function getQueryBuilder(): IQueryBuilder
     {
         return $this->queryBuilderHandler->getQueryBuilder();
-
     }//end getQueryBuilder()
 
     /**
@@ -239,7 +237,6 @@ class ObjectEntityMapper extends QBMapper
     public function getMaxAllowedPacketSize(): int
     {
         return $this->queryBuilderHandler->getMaxAllowedPacketSize();
-
     }//end getMaxAllowedPacketSize()
 
     // ==================================================================================
@@ -258,7 +255,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return array{locked: mixed, uuid: string}
      */
-    public function lockObject(string $uuid, ?int $lockDuration=null): array
+    public function lockObject(string $uuid, ?int $lockDuration = null): array
     {
         try {
             // Get current user from session.
@@ -281,7 +278,7 @@ class ObjectEntityMapper extends QBMapper
             $now        = new DateTime();
             $expiration = clone $now;
             if ($lockDuration !== null && $lockDuration > 0) {
-                $expiration->add(new \DateInterval('PT'.$lockDuration.'S'));
+                $expiration->add(new \DateInterval('PT' . $lockDuration . 'S'));
             } else {
                 // Default 1 hour if no duration specified.
                 $expiration->add(new \DateInterval('PT3600S'));
@@ -307,9 +304,8 @@ class ObjectEntityMapper extends QBMapper
                 'uuid'   => $uuid,
             ];
         } catch (\Exception $e) {
-            throw new Exception("Failed to lock object: ".$e->getMessage());
+            throw new Exception("Failed to lock object: " . $e->getMessage());
         }//end try
-
     }//end lockObject()
 
     /**
@@ -333,7 +329,6 @@ class ObjectEntityMapper extends QBMapper
         } catch (\Exception $e) {
             return false;
         }
-
     }//end unlockObject()
 
     // ==================================================================================
@@ -361,7 +356,6 @@ class ObjectEntityMapper extends QBMapper
         $this->eventDispatcher->dispatch(ObjectCreatedEvent::class, new ObjectCreatedEvent($result));
 
         return $result;
-
     }//end insert()
 
     /**
@@ -386,7 +380,6 @@ class ObjectEntityMapper extends QBMapper
         $this->eventDispatcher->dispatch(ObjectUpdatedEvent::class, new ObjectUpdatedEvent($result, $entity));
 
         return $result;
-
     }//end update()
 
     /**
@@ -410,7 +403,6 @@ class ObjectEntityMapper extends QBMapper
         $this->eventDispatcher->dispatch(ObjectDeletedEvent::class, new ObjectDeletedEvent($result));
 
         return $result;
-
     }//end delete()
 
     /**
@@ -429,7 +421,6 @@ class ObjectEntityMapper extends QBMapper
     public function insertEntity(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         return parent::insert($entity);
-
     }//end insertEntity()
 
     /**
@@ -448,7 +439,6 @@ class ObjectEntityMapper extends QBMapper
     public function updateEntity(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         return parent::update($entity);
-
     }//end updateEntity()
 
     /**
@@ -467,7 +457,6 @@ class ObjectEntityMapper extends QBMapper
     public function deleteEntity(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         return parent::delete($entity);
-
     }//end deleteEntity()
 
     // ==================================================================================
@@ -483,10 +472,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Statistics including total, size, invalid, deleted, locked, published counts.
      */
-    public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
+    public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array
     {
         return $this->statisticsHandler->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
-
     }//end getStatistics()
 
     /**
@@ -497,10 +485,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         return $this->statisticsHandler->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
-
     }//end getRegisterChartData()
 
     /**
@@ -511,10 +498,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         return $this->statisticsHandler->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
-
     }//end getSchemaChartData()
 
     /**
@@ -525,10 +511,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getSizeDistributionChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         return $this->statisticsHandler->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
-
     }//end getSizeDistributionChartData()
 
     // ==================================================================================
@@ -544,10 +529,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
-    public function getSimpleFacets(array $query=[]): array
+    public function getSimpleFacets(array $query = []): array
     {
         return $this->facetsHandler->getSimpleFacets($query);
-
     }//end getSimpleFacets()
 
     /**
@@ -559,10 +543,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
-    public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
+    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
     {
         return $this->facetsHandler->getFacetableFieldsFromSchemas($baseQuery);
-
     }//end getFacetableFieldsFromSchemas()
 
     // ==================================================================================
@@ -577,10 +560,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of processed UUIDs.
      */
-    public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
+    public function ultraFastBulkSave(array $insertObjects = [], array $updateObjects = []): array
     {
         return $this->bulkOperationsHandler->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
-
     }//end ultraFastBulkSave()
 
     /**
@@ -591,10 +573,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
+    public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
     {
         return $this->bulkOperationsHandler->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
-
     }//end deleteObjects()
 
     /**
@@ -605,10 +586,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of published objects.
      */
-    public function publishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
+    public function publishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
     {
         return $this->bulkOperationsHandler->publishObjects(uuids: $uuids, datetime: $datetime);
-
     }//end publishObjects()
 
     /**
@@ -619,10 +599,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    public function depublishObjects(array $uuids=[], \DateTime|bool $datetime=true): array
+    public function depublishObjects(array $uuids = [], \DateTime|bool $datetime = true): array
     {
         return $this->bulkOperationsHandler->depublishObjects(uuids: $uuids, datetime: $datetime);
-
     }//end depublishObjects()
 
     /**
@@ -635,10 +614,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \Exception If the publishing operation fails.
      */
-    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
         return $this->bulkOperationsHandler->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
-
     }//end publishObjectsBySchema()
 
     /**
@@ -651,10 +629,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \Exception If the deletion operation fails.
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
         return $this->bulkOperationsHandler->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
-
     }//end deleteObjectsBySchema()
 
     /**
@@ -669,7 +646,6 @@ class ObjectEntityMapper extends QBMapper
     public function deleteObjectsByRegister(int $registerId): array
     {
         return $this->bulkOperationsHandler->deleteObjectsByRegister($registerId);
-
     }//end deleteObjectsByRegister()
 
     /**
@@ -684,7 +660,6 @@ class ObjectEntityMapper extends QBMapper
     public function processInsertChunk(array $insertChunk): array
     {
         return $this->bulkOperationsHandler->processInsertChunk($insertChunk);
-
     }//end processInsertChunk()
 
     /**
@@ -699,7 +674,6 @@ class ObjectEntityMapper extends QBMapper
     public function processUpdateChunk(array $updateChunk): array
     {
         return $this->bulkOperationsHandler->processUpdateChunk($updateChunk);
-
     }//end processUpdateChunk()
 
     /**
@@ -713,7 +687,6 @@ class ObjectEntityMapper extends QBMapper
     public function calculateOptimalChunkSize(array $insertObjects, array $updateObjects): int
     {
         return $this->bulkOperationsHandler->calculateOptimalChunkSize(insertObjects: $insertObjects, updateObjects: $updateObjects);
-
     }//end calculateOptimalChunkSize()
 
     // ==================================================================================
@@ -728,10 +701,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return array Array with 'large' and 'normal' keys.
      */
-    public function separateLargeObjects(array $objects, int $maxSafeSize=1000000): array
+    public function separateLargeObjects(array $objects, int $maxSafeSize = 1000000): array
     {
         return $this->queryOptimizationHandler->separateLargeObjects(objects: $objects, maxSafeSize: $maxSafeSize);
-
     }//end separateLargeObjects()
 
     /**
@@ -744,7 +716,6 @@ class ObjectEntityMapper extends QBMapper
     public function processLargeObjectsIndividually(array $largeObjects): array
     {
         return $this->queryOptimizationHandler->processLargeObjectsIndividually($largeObjects);
-
     }//end processLargeObjectsIndividually()
 
     /**
@@ -758,10 +729,9 @@ class ObjectEntityMapper extends QBMapper
      *
      * @throws \Exception If the bulk operation fails.
      */
-    public function bulkOwnerDeclaration(?string $defaultOwner=null, ?string $defaultOrganisation=null, int $batchSize=1000): array
+    public function bulkOwnerDeclaration(?string $defaultOwner = null, ?string $defaultOrganisation = null, int $batchSize = 1000): array
     {
         return $this->queryOptimizationHandler->bulkOwnerDeclaration(defaultOwner: $defaultOwner, defaultOrganisation: $defaultOrganisation, batchSize: $batchSize);
-
     }//end bulkOwnerDeclaration()
 
     /**
@@ -776,7 +746,6 @@ class ObjectEntityMapper extends QBMapper
     public function setExpiryDate(int $retentionMs): int
     {
         return $this->queryOptimizationHandler->setExpiryDate($retentionMs);
-
     }//end setExpiryDate()
 
     /**
@@ -790,7 +759,6 @@ class ObjectEntityMapper extends QBMapper
     public function applyCompositeIndexOptimizations(IQueryBuilder $_qb, array $filters): void
     {
         $this->queryOptimizationHandler->applyCompositeIndexOptimizations(_qb: $_qb, filters: $filters);
-
     }//end applyCompositeIndexOptimizations()
 
     /**
@@ -803,7 +771,6 @@ class ObjectEntityMapper extends QBMapper
     public function optimizeOrderBy(IQueryBuilder $qb): void
     {
         $this->queryOptimizationHandler->optimizeOrderBy($qb);
-
     }//end optimizeOrderBy()
 
     /**
@@ -818,7 +785,6 @@ class ObjectEntityMapper extends QBMapper
     public function addQueryHints(IQueryBuilder $qb, array $filters, bool $skipRbac): void
     {
         $this->queryOptimizationHandler->addQueryHints(qb: $qb, filters: $filters, skipRbac: $skipRbac);
-
     }//end addQueryHints()
 
     /**
@@ -831,7 +797,6 @@ class ObjectEntityMapper extends QBMapper
     public function hasJsonFilters(array $filters): bool
     {
         return $this->queryOptimizationHandler->hasJsonFilters($filters);
-
     }//end hasJsonFilters()
 
     // ==================================================================================
@@ -853,7 +818,7 @@ class ObjectEntityMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
      */
-    public function find(string|int $identifier, ?Register $register=null, ?Schema $schema=null, bool $includeDeleted=false, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    public function find(string|int $identifier, ?Register $register = null, ?Schema $schema = null, bool $includeDeleted = false, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -895,7 +860,6 @@ class ObjectEntityMapper extends QBMapper
         }
 
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -946,7 +910,6 @@ class ObjectEntityMapper extends QBMapper
         $qb->andWhere($qb->expr()->isNull('deleted'));
 
         return $this->findEntities($qb);
-
     }//end findMultiple()
 
     /**
@@ -969,7 +932,6 @@ class ObjectEntityMapper extends QBMapper
             ->andWhere($qb->expr()->isNull('o.deleted'));
 
         return $this->findEntities($qb);
-
     }//end findBySchema()
 
     /**
@@ -999,19 +961,19 @@ class ObjectEntityMapper extends QBMapper
      * @psalm-return list<ObjectEntity>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=null,
-        ?array $searchConditions=null,
-        ?array $searchParams=null,
-        array $sort=[],
-        ?string $search=null,
-        ?array $ids=null,
-        ?string $uses=null,
-        bool $includeDeleted=false,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        ?bool $published=null
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = null,
+        ?array $searchConditions = null,
+        ?array $searchParams = null,
+        array $sort = [],
+        ?string $search = null,
+        ?array $ids = null,
+        ?string $uses = null,
+        bool $includeDeleted = false,
+        ?Register $register = null,
+        ?Schema $schema = null,
+        ?bool $published = null
     ): array {
             $qb = $this->db->getQueryBuilder();
         $qb->select('*')->from('openregister_objects');
@@ -1023,7 +985,7 @@ class ObjectEntityMapper extends QBMapper
             $deletedFilter = $filters['@self.deleted'];
             if ($deletedFilter === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull('deleted'));
-            } else if ($deletedFilter === 'IS NULL') {
+            } elseif ($deletedFilter === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
 
@@ -1100,7 +1062,6 @@ class ObjectEntityMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**
@@ -1120,7 +1081,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function searchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): array|int
+    public function searchObjects(array $query = [], ?string $_activeOrganisationUuid = null, bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null, ?string $uses = null): array|int
     {
         // Extract common query parameters.
         $limit  = $query['_limit'] ?? 30;
@@ -1137,13 +1098,12 @@ class ObjectEntityMapper extends QBMapper
             limit: $limit,
             offset: $offset,
             filters: $query,
-        // Pass full query so filters like @self.deleted are available
+            // Pass full query so filters like @self.deleted are available
             sort: $sort,
             ids: $ids,
             uses: $uses,
             includeDeleted: $includeDeleted
         );
-
     }//end searchObjects()
 
     /**
@@ -1160,7 +1120,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int Count of objects.
      */
-    public function countSearchObjects(array $query=[], ?string $_activeOrganisationUuid=null, bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int
+    public function countSearchObjects(array $query = [], ?string $_activeOrganisationUuid = null, bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null, ?string $uses = null): int
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
@@ -1172,7 +1132,7 @@ class ObjectEntityMapper extends QBMapper
             $deletedFilter = $query['@self.deleted'];
             if ($deletedFilter === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull('deleted'));
-            } else if ($deletedFilter === 'IS NULL') {
+            } elseif ($deletedFilter === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull('deleted'));
             }
         } else {
@@ -1202,7 +1162,6 @@ class ObjectEntityMapper extends QBMapper
         $result = $qb->executeQuery();
         $row    = $result->fetch();
         return (int) ($row['COUNT(id)'] ?? 0);
-
     }//end countSearchObjects()
 
     /**
@@ -1214,7 +1173,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return int Count of objects.
      */
-    public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
+    public function countAll(?array $filters = null, ?Schema $schema = null, ?Register $register = null): int
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('id'))
@@ -1232,7 +1191,6 @@ class ObjectEntityMapper extends QBMapper
         $result = $qb->executeQuery();
         $row    = $result->fetch();
         return (int) ($row['COUNT(id)'] ?? 0);
-
     }//end countAll()
 
     /**
@@ -1257,7 +1215,6 @@ class ObjectEntityMapper extends QBMapper
         $result = $qb->executeQuery();
         $row    = $result->fetch();
         return (int) ($row['COUNT(id)'] ?? 0);
-
     }//end countBySchemas()
 
     /**
@@ -1271,7 +1228,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function findBySchemas(array $schemaIds, ?int $limit=null, ?int $offset=null): array
+    public function findBySchemas(array $schemaIds, ?int $limit = null, ?int $offset = null): array
     {
         if (empty($schemaIds) === true) {
             return [];
@@ -1293,7 +1250,6 @@ class ObjectEntityMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-
     }//end findBySchemas()
 
     /**
@@ -1309,7 +1265,7 @@ class ObjectEntityMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
      */
-    public function findByRelation(string $search, bool $partialMatch=true): array
+    public function findByRelation(string $search, bool $partialMatch = true): array
     {
         if (empty($search) === true) {
             return [];
@@ -1326,21 +1282,20 @@ class ObjectEntityMapper extends QBMapper
              * @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation
              */
             $qb->andWhere(
-                $qb->expr()->like('object', $qb->createNamedParameter('%'.$qb->escapeLikeParameter($search).'%'))
+                $qb->expr()->like('object', $qb->createNamedParameter('%' . $qb->escapeLikeParameter($search) . '%'))
             );
         } else {
             /*
              * @psalm-suppress UndefinedInterfaceMethod - escapeLikeParameter exists on QueryBuilder implementation
              */
             $qb->andWhere(
-                $qb->expr()->like('object', $qb->createNamedParameter('%"'.$qb->escapeLikeParameter($search).'"%'))
+                $qb->expr()->like('object', $qb->createNamedParameter('%"' . $qb->escapeLikeParameter($search) . '"%'))
             );
         }
 
         $qb->setMaxResults(100);
         // Limit to prevent performance issues.
         return $this->findEntities($qb);
-
     }//end findByRelation()
 
     // ==================================================================================
@@ -1361,7 +1316,6 @@ class ObjectEntityMapper extends QBMapper
 
         $rbacData = json_decode($rbacConfig, true);
         return $rbacData['enabled'] ?? false;
-
     }//end isRbacEnabled()
 
     /**
@@ -1378,7 +1332,6 @@ class ObjectEntityMapper extends QBMapper
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['enabled'] ?? false;
-
     }//end isMultiTenancyEnabled()
 
     /**
@@ -1396,6 +1349,5 @@ class ObjectEntityMapper extends QBMapper
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['adminOverride'] ?? true;
-
     }//end isMultitenancyAdminOverrideEnabled()
 }//end class

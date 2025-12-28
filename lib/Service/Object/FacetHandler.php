@@ -50,7 +50,6 @@ use Psr\Log\LoggerInterface;
  */
 class FacetHandler
 {
-
     /**
      * Cache TTL for facet responses (5 minutes).
      *
@@ -108,7 +107,6 @@ class FacetHandler
                 $this->logger->warning(message: 'Facet caching unavailable', context: ['error' => $e->getMessage()]);
             }
         }
-
     }//end __construct()
 
     /**
@@ -140,7 +138,7 @@ class FacetHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      */
-    public function getFacetsForObjects(array $query=[]): array
+    public function getFacetsForObjects(array $query = []): array
     {
         $startTime = microtime(true);
 
@@ -172,17 +170,16 @@ class FacetHandler
             $this->cacheFacetResponse(cacheKey: $cacheKey, result: $result);
 
         $this->logger->debug(
-                message: 'FacetHandler completed facet calculation',
-                context: [
-                    'executionTime'     => $executionTime.'ms',
+            message: 'FacetHandler completed facet calculation',
+            context: [
+                    'executionTime'     => $executionTime . 'ms',
                     'strategy'          => $result['performance_metadata']['strategy'] ?? 'unknown',
                     'cacheUsed'         => false,
                     'totalFacetResults' => $result['performance_metadata']['total_facet_results'] ?? 0,
                 ]
-                );
+        );
 
         return $result;
-
     }//end getFacetsForObjects()
 
     /**
@@ -205,7 +202,7 @@ class FacetHandler
      * @psalm-return   array{'@self': array, object_fields: array}
      * @phpstan-return array<string, mixed>
      */
-    public function getFacetableFields(array $baseQuery=[], int $sampleSize=100): array
+    public function getFacetableFields(array $baseQuery = [], int $sampleSize = 100): array
     {
         $startTime = microtime(true);
 
@@ -218,16 +215,15 @@ class FacetHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->debug(
-                message: 'Facetable fields discovery completed',
-                context: [
-                    'executionTime'       => $executionTime.'ms',
+            message: 'Facetable fields discovery completed',
+            context: [
+                    'executionTime'       => $executionTime . 'ms',
                     'schemaCount'         => count($schemas),
                     'facetableFieldCount' => count($facetableFields['@self'] ?? []) + count($facetableFields['object_fields'] ?? []),
                 ]
-                );
+        );
 
         return $facetableFields;
-
     }//end getFacetableFields()
 
     /**
@@ -248,7 +244,6 @@ class FacetHandler
             'created',
             'updated',
         ];
-
     }//end getMetadataFacetableFields()
 
     /**
@@ -279,7 +274,6 @@ class FacetHandler
         }
 
         return 0;
-
     }//end getFacetCount()
 
     /**
@@ -311,12 +305,12 @@ class FacetHandler
         // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
         if ($totalFacetResults === 0 && $hasRestrictiveFilters === true) {
             $this->logger->debug(
-                 message: 'Facets empty with restrictive filters, trying collection-wide fallback',
-                 context: [
+                message: 'Facets empty with restrictive filters, trying collection-wide fallback',
+                context: [
                      'originalQuery' => array_keys($facetQuery),
                      'totalResults'  => $totalFacetResults,
                  ]
-                 );
+            );
 
             // Create collection-wide query: keep register/schema context but remove restrictive filters.
             $collectionQuery = [
@@ -336,13 +330,13 @@ class FacetHandler
                 $fallbackUsed = true;
 
                 $this->logger->info(
-                     message: 'Smart faceting fallback successful',
-                     context: [
+                    message: 'Smart faceting fallback successful',
+                    context: [
                          'fallbackResults' => $fallbackResults,
                          'originalResults' => $totalFacetResults,
                          'collectionQuery' => array_keys($collectionQuery),
                      ]
-                     );
+                );
             }
         }//end if
 
@@ -355,7 +349,6 @@ class FacetHandler
                 'has_restrictive_filters' => $hasRestrictiveFilters,
             ],
         ];
-
     }//end calculateFacetsWithFallback()
 
     /**
@@ -392,8 +385,7 @@ class FacetHandler
         // Increment to invalidate when RBAC logic changes.
         ];
 
-        return 'facet_rbac_'.md5(json_encode($cacheData));
-
+        return 'facet_rbac_' . md5(json_encode($cacheData));
     }//end generateFacetCacheKey()
 
     /**
@@ -422,7 +414,6 @@ class FacetHandler
         }
 
         return null;
-
     }//end getCachedFacetResponse()
 
     /**
@@ -451,17 +442,16 @@ class FacetHandler
             $this->facetCache->set($cacheKey, $result, $ttl);
 
             $this->logger->debug(
-                    message: 'Facet response cached',
-                    context: [
+                message: 'Facet response cached',
+                context: [
                         'cacheKey' => $cacheKey,
                         'ttl'      => $ttl,
                         'strategy' => $result['performance_metadata']['strategy'] ?? 'unknown',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             // Cache set failed, continue without caching.
         }//end try
-
     }//end cacheFacetResponse()
 
     /**
@@ -488,7 +478,6 @@ class FacetHandler
         }
 
         return $total;
-
     }//end countFacetResults()
 
     /**
@@ -513,7 +502,6 @@ class FacetHandler
         }
 
         return false;
-
     }//end hasRestrictiveFilters()
 
     /**
@@ -546,7 +534,6 @@ class FacetHandler
         // No specific schema filter - get all schemas for collection-wide facetable discovery.
         // Null = no limit (get all).
         return $this->schemaMapper->findAll(limit: null);
-
     }//end getSchemasForQuery()
 
     /**
@@ -600,17 +587,16 @@ class FacetHandler
                 }
 
                 $this->logger->error(
-                        message: 'Failed to get facets from schema',
-                        context: [
+                    message: 'Failed to get facets from schema',
+                    context: [
                             'error'    => $e->getMessage(),
                             'schemaId' => $schemaId,
                         ]
-                        );
+                );
                 continue;
             }//end try
         }//end foreach
 
         return $facetableFields;
-
     }//end getFacetableFieldsFromSchemas()
 }//end class

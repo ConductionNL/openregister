@@ -67,7 +67,6 @@ class EmbeddingGeneratorHandler
     public function __construct(
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -81,7 +80,7 @@ class EmbeddingGeneratorHandler
      */
     public function getGenerator(array $config): EmbeddingGeneratorInterface
     {
-        $cacheKey = $config['provider'].'_'.$config['model'];
+        $cacheKey = $config['provider'] . '_' . $config['model'];
 
         if (isset($this->generatorCache[$cacheKey]) === false) {
             $this->logger->debug(
@@ -113,7 +112,6 @@ class EmbeddingGeneratorHandler
         }//end if
 
         return $this->generatorCache[$cacheKey];
-
     }//end getGenerator()
 
     /**
@@ -128,7 +126,6 @@ class EmbeddingGeneratorHandler
     public function getDefaultDimensions(string $model): int
     {
         return self::EMBEDDING_DIMENSIONS[$model] ?? 1536;
-
     }//end getDefaultDimensions()
 
     /**
@@ -161,7 +158,6 @@ class EmbeddingGeneratorHandler
             'text-embedding-3-large' => new OpenAI3LargeEmbeddingGenerator($llphantConfig),
             default => throw new Exception("Unsupported OpenAI model: {$model}")
         };
-
     }//end createOpenAIGenerator()
 
     /**
@@ -181,8 +177,7 @@ class EmbeddingGeneratorHandler
     {
         // Create a custom anonymous class that implements the EmbeddingGeneratorInterface.
         // This allows us to use any Fireworks model name without LLPhant's restrictions.
-        return new class($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
-
+        return new class ($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
             /**
              * Model name
              *
@@ -231,7 +226,7 @@ class EmbeddingGeneratorHandler
              */
             public function embedText(string $text): array
             {
-                $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/').'/embeddings';
+                $url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
 
                 $this->logger->debug(
                     message: 'Calling Fireworks AI API',
@@ -248,7 +243,7 @@ class EmbeddingGeneratorHandler
                     $ch,
                     CURLOPT_HTTPHEADER,
                     [
-                        'Authorization: Bearer '.$this->config['api_key'],
+                        'Authorization: Bearer ' . $this->config['api_key'],
                         'Content-Type: application/json',
                     ]
                 );
@@ -337,7 +332,6 @@ class EmbeddingGeneratorHandler
                 return $documents;
             }//end embedDocuments()
         };
-
     }//end createFireworksGenerator()
 
     /**
@@ -351,10 +345,9 @@ class EmbeddingGeneratorHandler
     private function createOllamaGenerator(string $model, array $config): OllamaEmbeddingGenerator
     {
         $ollamaConfig        = new OllamaConfig();
-        $ollamaConfig->url   = rtrim($config['base_url'] ?? 'http://localhost:11434', '/').'/api/';
+        $ollamaConfig->url   = rtrim($config['base_url'] ?? 'http://localhost:11434', '/') . '/api/';
         $ollamaConfig->model = $model;
 
         return new OllamaEmbeddingGenerator($ollamaConfig);
-
     }//end createOllamaGenerator()
 }//end class

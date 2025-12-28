@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister AgentDeletedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class AgentDeletedEvent extends Event
 {
-
     /**
      * The deleted agent.
      *
@@ -46,7 +46,6 @@ class AgentDeletedEvent extends Event
     {
         parent::__construct();
         $this->agent = $agent;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class AgentDeletedEvent extends Event
     public function getAgent(): Agent
     {
         return $this->agent;
-
     }//end getAgent()
 }//end class

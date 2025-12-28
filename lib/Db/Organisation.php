@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Organisation Entity
  *
@@ -67,7 +68,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Organisation extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the organisation
      *
@@ -246,7 +246,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType('request_quota', 'integer');
         $this->addType('authorization', 'json');
         $this->addType('parent', 'string');
-
     }//end __construct()
 
     /**
@@ -268,7 +267,6 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end addUser()
 
     /**
@@ -286,13 +284,13 @@ class Organisation extends Entity implements JsonSerializable
 
         $originalCount = count($this->users);
         $this->users   = array_values(
-                array_filter(
+            array_filter(
                 $this->users,
                 function ($id) use ($userId) {
                     return $id !== $userId;
                 }
-                )
-                );
+            )
+        );
 
         // Only mark as updated if a user was actually removed.
         if (count($this->users) !== $originalCount) {
@@ -300,7 +298,6 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end removeUser()
 
     /**
@@ -313,7 +310,6 @@ class Organisation extends Entity implements JsonSerializable
     public function hasUser(string $userId): bool
     {
         return $this->users !== null && in_array($userId, $this->users);
-
     }//end hasUser()
 
     /**
@@ -324,7 +320,6 @@ class Organisation extends Entity implements JsonSerializable
     public function getUserIds(): array
     {
         return $this->users ?? [];
-
     }//end getUserIds()
 
     /**
@@ -348,7 +343,6 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getRole()
 
     /**
@@ -359,7 +353,6 @@ class Organisation extends Entity implements JsonSerializable
     public function getGroups(): array
     {
         return $this->groups ?? [];
-
     }//end getGroups()
 
     /**
@@ -374,7 +367,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->groups = $groups ?? [];
         $this->markFieldUpdated('groups');
         return $this;
-
     }//end setGroups()
 
     /**
@@ -385,7 +377,6 @@ class Organisation extends Entity implements JsonSerializable
     public function getActive(): bool
     {
         return $this->active ?? true;
-
     }//end getActive()
 
     /**
@@ -407,7 +398,6 @@ class Organisation extends Entity implements JsonSerializable
 
         $this->markFieldUpdated('active');
         return $this;
-
     }//end setActive()
 
     /**
@@ -517,7 +507,6 @@ class Organisation extends Entity implements JsonSerializable
             'dashboard_view' => [],
             'llm_use'        => [],
         ];
-
     }//end getDefaultAuthorization()
 
     /**
@@ -528,7 +517,6 @@ class Organisation extends Entity implements JsonSerializable
     public function getAuthorization(): array
     {
         return $this->authorization ?? $this->getDefaultAuthorization();
-
     }//end getAuthorization()
 
     /**
@@ -543,7 +531,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
         $this->markFieldUpdated('authorization');
         return $this;
-
     }//end setAuthorization()
 
     /**
@@ -554,7 +541,6 @@ class Organisation extends Entity implements JsonSerializable
     public function getParent(): ?string
     {
         return $this->parent;
-
     }//end getParent()
 
     /**
@@ -569,7 +555,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->parent = $parent;
         $this->markFieldUpdated('parent');
         return $this;
-
     }//end setParent()
 
     /**
@@ -586,7 +571,6 @@ class Organisation extends Entity implements JsonSerializable
     {
         $this->children = $children;
         return $this;
-
     }//end setChildren()
 
     /**
@@ -665,7 +649,6 @@ class Organisation extends Entity implements JsonSerializable
             'created'       => $this->getCreatedFormatted(),
             'updated'       => $this->getUpdatedFormatted(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -685,7 +668,6 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return $this->uuid;
-
     }//end __toString()
 
     /**
@@ -700,7 +682,6 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getCreatedFormatted()
 
     /**
@@ -715,6 +696,5 @@ class Organisation extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getUpdatedFormatted()
 }//end class

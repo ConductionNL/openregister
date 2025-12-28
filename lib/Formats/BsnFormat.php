@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister BsnFormat
  *
@@ -58,6 +59,5 @@ class BsnFormat implements Format
         }
 
         return ($control % 11) === 0;
-
     }//end validate()
 }//end class

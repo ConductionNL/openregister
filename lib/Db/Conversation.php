@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Conversation Entity
  *
@@ -63,7 +64,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Conversation extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the conversation
      *
@@ -163,7 +163,6 @@ class Conversation extends Entity implements JsonSerializable
         $this->addType('deletedAt', 'datetime');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -175,7 +174,6 @@ class Conversation extends Entity implements JsonSerializable
     {
         $this->setDeletedAt(new DateTime());
         return $this;
-
     }//end softDelete()
 
     /**
@@ -187,7 +185,6 @@ class Conversation extends Entity implements JsonSerializable
     {
         $this->setDeletedAt(null);
         return $this;
-
     }//end restore()
 
     /**
@@ -222,6 +219,5 @@ class Conversation extends Entity implements JsonSerializable
             'created'      => $this->created?->format('c'),
             'updated'      => $this->updated?->format('c'),
         ];
-
     }//end jsonSerialize()
 }//end class

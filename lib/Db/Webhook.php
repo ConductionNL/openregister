@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
@@ -65,7 +66,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Webhook extends Entity implements JsonSerializable
 {
-
     /**
      * UUID
      *
@@ -247,7 +247,6 @@ class Webhook extends Entity implements JsonSerializable
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
         $this->addType('configuration', 'string');
-
     }//end __construct()
 
     /**
@@ -258,7 +257,6 @@ class Webhook extends Entity implements JsonSerializable
     public function getEventsArray(): array
     {
         return json_decode($this->events, true) ?? [];
-
     }//end getEventsArray()
 
     /**
@@ -271,7 +269,6 @@ class Webhook extends Entity implements JsonSerializable
     public function setEventsArray(array $events): void
     {
         $this->setEvents(json_encode($events));
-
     }//end setEventsArray()
 
     /**
@@ -286,7 +283,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         return json_decode($this->headers, true) ?? [];
-
     }//end getHeadersArray()
 
     /**
@@ -304,7 +300,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         $this->setHeaders(json_encode($headers));
-
     }//end setHeadersArray()
 
     /**
@@ -319,7 +314,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         return json_decode($this->filters, true) ?? [];
-
     }//end getFiltersArray()
 
     /**
@@ -337,7 +331,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         $this->setFilters(json_encode($filters));
-
     }//end setFiltersArray()
 
     /**
@@ -352,7 +345,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         return json_decode($this->configuration, true) ?? [];
-
     }//end getConfigurationArray()
 
     /**
@@ -370,7 +362,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         $this->setConfiguration(json_encode($configuration));
-
     }//end setConfigurationArray()
 
     /**
@@ -402,7 +393,6 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         return false;
-
     }//end matchesEvent()
 
     /**
@@ -444,7 +434,6 @@ class Webhook extends Entity implements JsonSerializable
             'updated'              => $this->updated?->format('c'),
             'configuration'        => $this->getConfigurationArray(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -533,6 +522,5 @@ class Webhook extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 }//end class

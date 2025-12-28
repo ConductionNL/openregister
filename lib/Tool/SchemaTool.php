@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Schema Tool
  *
@@ -41,7 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaTool extends AbstractTool
 {
-
     /**
      * Schema mapper
      *
@@ -63,7 +63,6 @@ class SchemaTool extends AbstractTool
     ) {
         parent::__construct($userSession, $logger);
         $this->schemaMapper = $schemaMapper;
-
     }//end __construct()
 
     /**
@@ -76,7 +75,6 @@ class SchemaTool extends AbstractTool
     public function getName(): string
     {
         return 'schema';
-
     }//end getName()
 
     /**
@@ -89,7 +87,6 @@ class SchemaTool extends AbstractTool
     public function getDescription(): string
     {
         return 'Manage schemas: list, view, create, update, or delete schemas. Schemas define structure and validation rules.';
-
     }//end getDescription()
 
     /**
@@ -205,7 +202,6 @@ class SchemaTool extends AbstractTool
                 ],
             ],
         ];
-
     }//end getFunctions()
 
     /**
@@ -219,7 +215,7 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
             $this->log(functionName: $functionName, parameters: $parameters);
 
@@ -237,7 +233,6 @@ class SchemaTool extends AbstractTool
             $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
             return $this->formatError(message: $e->getMessage());
         }
-
     }//end executeFunction()
 
     /**
@@ -251,7 +246,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
+    public function listSchemas(int $limit = 100, int $offset = 0, ?string $register = null): array
     {
         $filters = [];
         if ($register !== null) {
@@ -263,20 +258,19 @@ class SchemaTool extends AbstractTool
         $schemas = $this->schemaMapper->findAll(limit: $limit, offset: $offset, filters: $filters);
 
         $schemaList = array_map(
-                function ($schema) {
-                    return [
-                        'id'          => $schema->getId(),
-                        'uuid'        => $schema->getUuid(),
-                        'title'       => $schema->getTitle(),
-                        'description' => $schema->getDescription(),
-                        'version'     => $schema->getVersion(),
-                    ];
-                },
-                $schemas
-                );
+            function ($schema) {
+                return [
+                    'id'          => $schema->getId(),
+                    'uuid'        => $schema->getUuid(),
+                    'title'       => $schema->getTitle(),
+                    'description' => $schema->getDescription(),
+                    'version'     => $schema->getVersion(),
+                ];
+            },
+            $schemas
+        );
 
         return $this->formatSuccess(data: $schemaList, message: sprintf('Found %d schemas', count($schemaList)));
-
     }//end listSchemas()
 
     /**
@@ -312,7 +306,6 @@ class SchemaTool extends AbstractTool
             ],
             message: 'Schema retrieved successfully'
         );
-
     }//end getSchema()
 
     /**
@@ -329,7 +322,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function createSchema(string $title, array $properties, string $description='', ?array $required=null): array
+    public function createSchema(string $title, array $properties, string $description = '', ?array $required = null): array
     {
         $data = [
             'title'       => $title,
@@ -354,7 +347,6 @@ class SchemaTool extends AbstractTool
             ],
             message: 'Schema created successfully'
         );
-
     }//end createSchema()
 
     /**
@@ -372,7 +364,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function updateSchema(string $id, ?string $title=null, ?string $description=null, ?array $properties=null, ?array $required=null): array
+    public function updateSchema(string $id, ?string $title = null, ?string $description = null, ?array $properties = null, ?array $required = null): array
     {
         $schema = $this->schemaMapper->find(id: $id);
 
@@ -405,7 +397,6 @@ class SchemaTool extends AbstractTool
             ],
             message: 'Schema updated successfully'
         );
-
     }//end updateSchema()
 
     /**
@@ -428,6 +419,5 @@ class SchemaTool extends AbstractTool
             data: ['id' => $id],
             message: 'Schema deleted successfully'
         );
-
     }//end deleteSchema()
 }//end class

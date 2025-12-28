@@ -57,7 +57,6 @@ class FileSettingsController extends Controller
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -79,7 +78,6 @@ class FileSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end getFileSettings()
 
     /**
@@ -109,22 +107,21 @@ class FileSettingsController extends Controller
 
             $result = $this->settingsService->updateFileSettingsOnly($data);
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'message' => 'File settings updated successfully',
                         'data'    => $result,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end updateFileSettings()
 
     /**
@@ -147,28 +144,28 @@ class FileSettingsController extends Controller
             // Validate inputs.
             if (empty($apiEndpoint) === true || empty($apiKey) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'API endpoint and API key are required',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Test the connection by making a simple request.
-            $ch = curl_init($apiEndpoint.'/health');
+            $ch = curl_init($apiEndpoint . '/health');
             curl_setopt_array(
-                    $ch,
-                    [
+                $ch,
+                [
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_HTTPHEADER     => [
-                            'Authorization: Bearer '.$apiKey,
+                            'Authorization: Bearer ' . $apiKey,
                             'Content-Type: application/json',
                         ],
                         CURLOPT_TIMEOUT        => 10,
                         CURLOPT_SSL_VERIFYPEER => true,
                     ]
-                    );
+            );
 
             curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -177,38 +174,37 @@ class FileSettingsController extends Controller
 
             if ($curlError !== '') {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
-                            'error'   => 'Connection failed: '.$curlError,
+                            'error'   => 'Connection failed: ' . $curlError,
                         ]
-                        );
+                );
             }
 
             if ($httpCode === 200 || $httpCode === 201) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => true,
                             'message' => 'Dolphin connection successful',
                         ]
-                        );
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
-                            'error'   => 'Dolphin API returned HTTP '.$httpCode,
+                            'error'   => 'Dolphin API returned HTTP ' . $httpCode,
                         ]
-                        );
+                );
             }
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end testDolphinConnection()
 
     /**
@@ -229,22 +225,21 @@ class FileSettingsController extends Controller
             $status            = $solrSchemaService->getFileCollectionFieldStatus();
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'    => true,
                         'collection' => 'files',
                         'status'     => $status,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to get file collection field status: '.$e->getMessage(),
+                        'message' => 'Failed to get file collection field status: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }
-
     }//end getFileCollectionFields()
 
     /**
@@ -268,12 +263,12 @@ class FileSettingsController extends Controller
             $fileCollection = $this->settingsService->getSolrSettingsOnly()['fileCollection'] ?? null;
             if ($fileCollection === null || $fileCollection === '') {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => 'File collection not configured',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Set active collection to file collection temporarily.
@@ -296,22 +291,21 @@ class FileSettingsController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'    => $result,
                         'collection' => 'files',
                         'message'    => $message,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to create missing file fields: '.$e->getMessage(),
+                        'message' => 'Failed to create missing file fields: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end createMissingFileFields()
 
     /**
@@ -341,13 +335,13 @@ class FileSettingsController extends Controller
             $batchSize = min($batchSize, 500);
             // Max 500 per batch.
             $this->logger->info(
-                    '[SettingsController] Starting file warmup',
-                    [
+                '[SettingsController] Starting file warmup',
+                [
                         'max_files'    => $maxFiles,
                         'batch_size'   => $batchSize,
                         'skip_indexed' => $skipIndexed,
                     ]
-                    );
+            );
 
             // Get IndexService and TextExtractionService.
             $guzzleSolrService     = $this->container->get(IndexService::class);
@@ -370,14 +364,14 @@ class FileSettingsController extends Controller
             // If no files to process, return early.
             if (empty($filesToProcess) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'         => true,
                             'message'         => 'No files to process',
                             'files_processed' => 0,
                             'indexed'         => 0,
                             'failed'          => 0,
                         ]
-                        );
+                );
             }
 
             // Process files in batches.
@@ -394,34 +388,33 @@ class FileSettingsController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'         => true,
                         'message'         => 'File warmup completed',
                         'files_processed' => count($filesToProcess),
                         'indexed'         => $totalIndexed,
                         'failed'          => $totalFailed,
                         'errors'          => array_slice($allErrors, 0, 20),
-            // First 20 errors.
+                // First 20 errors.
                         'mode'            => $mode,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SettingsController] File warmup failed',
-                    [
+                '[SettingsController] File warmup failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'File warmup failed: '.$e->getMessage(),
+                        'message' => 'File warmup failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end warmupFiles()
 
     /**
@@ -446,40 +439,39 @@ class FileSettingsController extends Controller
 
             if ($result['indexed'] > 0) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => true,
                             'message' => 'File indexed successfully',
                             'file_id' => $fileId,
                         ]
-                        );
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => $result['errors'][0] ?? 'Failed to index file',
                             'file_id' => $fileId,
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SettingsController] Failed to index file',
-                    [
+                '[SettingsController] Failed to index file',
+                [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to index file: '.$e->getMessage(),
+                        'message' => 'Failed to index file: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end indexFile()
 
     /**
@@ -508,12 +500,12 @@ class FileSettingsController extends Controller
 
             if (empty($fileIds) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => true,
                             'message' => 'No files to reindex',
                             'indexed' => 0,
                         ]
-                        );
+                );
             }
 
             // Process in batches.
@@ -530,7 +522,7 @@ class FileSettingsController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'         => true,
                         'message'         => 'Reindex completed',
                         'files_processed' => count($fileIds),
@@ -538,24 +530,23 @@ class FileSettingsController extends Controller
                         'failed'          => $totalFailed,
                         'errors'          => array_slice($allErrors, 0, 20),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SettingsController] Reindex files failed',
-                    [
+                '[SettingsController] Reindex files failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Reindex failed: '.$e->getMessage(),
+                        'message' => 'Reindex failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end reindexFiles()
 
     /**
@@ -578,21 +569,20 @@ class FileSettingsController extends Controller
             return new JSONResponse(data: $stats);
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SettingsController] Failed to get file index stats',
-                    [
+                '[SettingsController] Failed to get file index stats',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to get statistics: '.$e->getMessage(),
+                        'message' => 'Failed to get statistics: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end getFileIndexStats()
 
     /**
@@ -637,15 +627,15 @@ class FileSettingsController extends Controller
             $untrackedFiles = $totalFilesInNextcloud - $dbStats['total'];
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'                => true,
                         'totalFiles'             => $totalFilesInNextcloud,
                         'processedFiles'         => $dbStats['completed'],
-            // Files successfully extracted (status='completed').
+                // Files successfully extracted (status='completed').
                         'pendingFiles'           => $dbStats['pending'],
-            // Files discovered and waiting for extraction.
+                // Files discovered and waiting for extraction.
                         'untrackedFiles'         => max(0, $untrackedFiles),
-            // Files not yet discovered.
+                // Files not yet discovered.
                         'totalChunks'            => $solrStats['total_chunks'] ?? 0,
                         'extractedTextStorageMB' => number_format($extractedTextStorageMB, 2),
                         'totalFilesStorageMB'    => number_format($totalFilesStorageMB, 2),
@@ -655,11 +645,11 @@ class FileSettingsController extends Controller
                         'processing'             => $dbStats['processing'],
                         'vectorized'             => $dbStats['vectorized'],
                     ]
-                    );
+            );
         } catch (Exception $e) {
             // Return zeros instead of error to avoid breaking UI.
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'                => true,
                         'totalFiles'             => 0,
                         'processedFiles'         => 0,
@@ -675,8 +665,7 @@ class FileSettingsController extends Controller
                         'vectorized'             => 0,
                         'error'                  => $e->getMessage(),
                     ]
-                    );
+            );
         }//end try
-
     }//end getFileExtractionStats()
 }//end class

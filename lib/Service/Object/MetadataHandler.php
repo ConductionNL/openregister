@@ -63,7 +63,6 @@ class MetadataHandler
         }
 
         return $current;
-
     }//end getValueFromPath()
 
     /**
@@ -94,13 +93,12 @@ class MetadataHandler
 
             // Add timestamp for uniqueness.
             $timestamp  = time();
-            $uniqueSlug = $slug.'-'.$timestamp;
+            $uniqueSlug = $slug . '-' . $timestamp;
 
             return $uniqueSlug;
         } catch (Exception $e) {
             return null;
         }
-
     }//end generateSlugFromValue()
 
     /**
@@ -132,6 +130,5 @@ class MetadataHandler
         }
 
         return $text;
-
     }//end createSlugHelper()
 }//end class

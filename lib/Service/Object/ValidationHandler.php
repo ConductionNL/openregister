@@ -54,7 +54,6 @@ class ValidationHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -70,7 +69,6 @@ class ValidationHandler
     public function handleValidationException(ValidationException|CustomValidationException $exception): mixed
     {
         return $this->validateHandler->handleValidationException($exception);
-
     }//end handleValidationException()
 
     /**
@@ -111,7 +109,6 @@ class ValidationHandler
                 }
             }
         }
-
     }//end validateRequiredFields()
 
     /**
@@ -198,7 +195,7 @@ class ValidationHandler
                     'uuid'  => $object->getUuid(),
                     'name'  => $object->getName(),
                     'data'  => $objectData,
-                    'error' => 'Unexpected error: '.$e->getMessage(),
+                    'error' => 'Unexpected error: ' . $e->getMessage(),
                 ];
             }//end try
         }//end foreach
@@ -207,7 +204,6 @@ class ValidationHandler
             'valid'   => $validObjects,
             'invalid' => $invalidObjects,
         ];
-
     }//end validateObjectsBySchema()
 
     /**
@@ -276,7 +272,7 @@ class ValidationHandler
                     // Generic error.
                     $errors[] = [
                         'path'    => 'general',
-                        'message' => 'Validation failed: '.$e->getMessage(),
+                        'message' => 'Validation failed: ' . $e->getMessage(),
                         'keyword' => 'exception',
                     ];
                 }
@@ -298,7 +294,6 @@ class ValidationHandler
             'invalid_objects' => $invalidObjects,
             'schema_id'       => $schemaId,
         ];
-
     }//end validateSchemaObjects()
 
     /**
@@ -318,6 +313,5 @@ class ValidationHandler
         // This method requires additional dependencies - placeholder for now.
         // Full implementation requires SchemaMapper, ObjectService->findAll, and Dot utilities.
         return [];
-
     }//end applyInversedByFilter()
 }//end class

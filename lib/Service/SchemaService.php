@@ -42,7 +42,6 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaService
 {
-
     /**
      * Schema mapper for schema operations
      *
@@ -104,19 +103,19 @@ class SchemaService
      */
     public function exploreSchemaProperties(int $schemaId): array
     {
-        $this->logger->info(message: 'Starting schema exploration for schema ID: '.$schemaId);
+        $this->logger->info(message: 'Starting schema exploration for schema ID: ' . $schemaId);
 
         // Get the schema to validate it exists.
         try {
             $schema = $this->schemaMapper->find($schemaId);
         } catch (\Exception $e) {
-            throw new Exception('Schema not found with ID: '.$schemaId);
+            throw new Exception('Schema not found with ID: ' . $schemaId);
         }
 
         // Get all objects for this schema.
         $objects = $this->objectEntityMapper->findBySchema($schemaId);
 
-        $this->logger->info(message: 'Found '.count($objects).' objects to analyze');
+        $this->logger->info(message: 'Found ' . count($objects) . ' objects to analyze');
 
         if (empty($objects) === true) {
             return [
@@ -176,7 +175,7 @@ class SchemaService
      *
      * @psalm-return array{discovered: array<array{name: mixed, types: array<never, never>, examples: array<never, never>, nullable: true, enum_values: array<never, never>, max_length: 0, min_length: int<1, max>, object_structure: null, array_structure: null, detected_format: null, string_patterns: array<never, never>, numeric_range: null, usage_count: int, usage_percentage?: float}>, usage_stats: array{counts?: array<int>, percentages?: array<float>}, data_types: array<never, never>}
      */
-    private function analyzeObjectProperties(array $objects, array $_existingProperties=[]): array
+    private function analyzeObjectProperties(array $objects, array $_existingProperties = []): array
     {
         $discoveredProperties = [];
         $usageStats           = [];
@@ -763,7 +762,7 @@ class SchemaService
 
             if ($usagePercentage >= 80) {
                 $confidence = 'high';
-            } else if ($usagePercentage >= 50) {
+            } elseif ($usagePercentage >= 50) {
                 $confidence = 'medium';
             }
 
@@ -1034,7 +1033,7 @@ class SchemaService
                 'recommended' => $recommendedType,
                 'description' => "Consider adding type '{$recommendedType}' based on analysis",
             ];
-        } else if ($currentType !== $recommendedType) {
+        } elseif ($currentType !== $recommendedType) {
             // Types don't match.
             $issues[]      = "Type mismatch: current type is '{$currentType}', recommended type is '{$recommendedType}'";
             $suggestions[] = [
@@ -1086,7 +1085,7 @@ class SchemaService
                     'recommended' => $suggestedMaxLength,
                     'description' => "Objects have max length of {$analysis['max_length']} characters",
                 ];
-            } else if ($currentMaxLength < $analysis['max_length']) {
+            } elseif ($currentMaxLength < $analysis['max_length']) {
                 $issues[]      = "max_length_too_small";
                 $suggestions[] = [
                     'type'        => 'constraint',
@@ -1099,7 +1098,8 @@ class SchemaService
         }//end if
 
         // Check for missing format.
-        if (($analysis['detected_format'] ?? null) !== null
+        if (
+            ($analysis['detected_format'] ?? null) !== null
             && ($analysis['detected_format'] !== null) === true
             && ($analysis['detected_format'] !== '') === true
         ) {
@@ -1174,7 +1174,7 @@ class SchemaService
                 'recommended' => $range['min'],
                 'description' => "Observed range starts at {$range['min']}",
             ];
-        } else if ($currentMin > $range['min']) {
+        } elseif ($currentMin > $range['min']) {
             $issues[]      = "minimum_too_high";
             $suggestions[] = [
                 'type'        => 'constraint',
@@ -1196,7 +1196,7 @@ class SchemaService
                 'recommended' => $range['max'],
                 'description' => "Observed range ends at {$range['max']}",
             ];
-        } else if ($currentMax < $range['max']) {
+        } elseif ($currentMax < $range['max']) {
             $issues[]      = "maximum_too_low";
             $suggestions[] = [
                 'type'        => 'constraint',
@@ -1291,7 +1291,7 @@ class SchemaService
                         'field'       => 'enum',
                         'current'     => 'unlimited',
                         'recommended' => implode(', ', $enumValues),
-                        'description' => "Property appears to have predefined values: ".implode(', ', $enumValues),
+                        'description' => "Property appears to have predefined values: " . implode(', ', $enumValues),
                     ];
                 } else {
                     // Check if current enum differs from analysis.
@@ -1520,13 +1520,14 @@ class SchemaService
         // Special handling for string-dominated fields.
         if ($dominantType === 'string') {
             // If most values are consistently numeric strings, recommend the numeric type.
-            if (in_array('integer_string', $patterns, true) === true
+            if (
+                in_array('integer_string', $patterns, true) === true
                 && in_array('float_string', $patterns, true) === false
             ) {
                 return 'integer';
-            } else if (in_array('float_string', $patterns, true) === true) {
+            } elseif (in_array('float_string', $patterns, true) === true) {
                 return 'number';
-            } else if (in_array('boolean_string', $patterns, true) === true) {
+            } elseif (in_array('boolean_string', $patterns, true) === true) {
                 return 'boolean';
             }
 
@@ -1671,7 +1672,7 @@ class SchemaService
      */
     public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema
     {
-        $this->logger->info(message: 'Updating schema '.$schemaId.' with '.count($propertyUpdates).' property updates');
+        $this->logger->info(message: 'Updating schema ' . $schemaId . ' with ' . count($propertyUpdates) . ' property updates');
 
         try {
             // Get existing schema.
@@ -1692,12 +1693,12 @@ class SchemaService
             // Save updated schema.
             $updatedSchema = $this->schemaMapper->update($schema);
 
-            $this->logger->info(message: 'Schema '.$schemaId.' successfully updated with exploration results');
+            $this->logger->info(message: 'Schema ' . $schemaId . ' successfully updated with exploration results');
 
             return $updatedSchema;
         } catch (\Exception $e) {
-            $this->logger->error(message: 'Failed to update schema '.$schemaId.': '.$e->getMessage());
-            throw new Exception('Failed to update schema properties: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to update schema ' . $schemaId . ': ' . $e->getMessage());
+            throw new Exception('Failed to update schema properties: ' . $e->getMessage());
         }//end try
     }//end updateSchemaFromExploration()
 }//end class

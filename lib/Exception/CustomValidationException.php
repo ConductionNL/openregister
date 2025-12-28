@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister CustomValidationException
  *
@@ -40,7 +41,6 @@ use Exception;
  */
 class CustomValidationException extends Exception
 {
-
     /**
      * The validation errors array
      *
@@ -72,7 +72,6 @@ class CustomValidationException extends Exception
 
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message);
-
     }//end __construct()
 
     /**
@@ -86,6 +85,5 @@ class CustomValidationException extends Exception
     public function getErrors(): array
     {
         return $this->errors;
-
     }//end getErrors()
 }//end class

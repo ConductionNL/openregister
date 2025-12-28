@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Upload Handler
  *
@@ -35,7 +36,6 @@ use Psr\Log\LoggerInterface;
  */
 class UploadHandler
 {
-
     /**
      * HTTP Client for making external requests.
      *
@@ -62,7 +62,6 @@ class UploadHandler
     ) {
         $this->client = $client;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -111,7 +110,6 @@ class UploadHandler
 
         // Process JSON blob from the post body.
         return $this->getJSONfromBody($data['json']);
-
     }//end getUploadedJson()
 
     /**
@@ -154,7 +152,6 @@ class UploadHandler
         $phpArray = $this->ensureArrayStructure($phpArray);
 
         return $phpArray;
-
     }//end decode()
 
     /**
@@ -174,14 +171,13 @@ class UploadHandler
             foreach ($data as $key => $value) {
                 if (is_object($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
-                } else if (is_array($value) === true) {
+                } elseif (is_array($value) === true) {
                     $data[$key] = $this->ensureArrayStructure($value);
                 }
             }
         }
 
         return $data;
-
     }//end ensureArrayStructure()
 
     /**
@@ -196,12 +192,12 @@ class UploadHandler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
+    private function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse
     {
         // Check for upload errors.
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
             return new JSONResponse(
-                data: ['error' => 'File upload error: '.$uploadedFile['error']],
+                data: ['error' => 'File upload error: ' . $uploadedFile['error']],
                 statusCode: 400
             );
         }
@@ -218,7 +214,6 @@ class UploadHandler
         }
 
         return $phpArray;
-
     }//end getJSONfromFile()
 
     /**
@@ -238,7 +233,7 @@ class UploadHandler
             $response = $this->client->request('GET', $url);
         } catch (GuzzleException $e) {
             return new JSONResponse(
-                data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()],
+                data: ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()],
                 statusCode: 400
             );
         }
@@ -257,7 +252,6 @@ class UploadHandler
         }
 
         return $phpArray;
-
     }//end getJSONfromURL()
 
     /**
@@ -287,6 +281,5 @@ class UploadHandler
         $phpArray = $this->ensureArrayStructure($phpArray);
 
         return $phpArray;
-
     }//end getJSONfromBody()
 }//end class

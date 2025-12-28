@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RegisterService
  *
@@ -49,7 +50,6 @@ use Psr\Log\LoggerInterface;
  */
 class RegisterService
 {
-
     /**
      * Register mapper
      *
@@ -111,7 +111,6 @@ class RegisterService
         $this->fileService         = $fileService;
         $this->organisationService = $organisationService;
         $this->logger->debug('RegisterService constructor completed.');
-
     }//end __construct()
 
     /**
@@ -129,10 +128,9 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
      */
-    public function find(int | string $id, array $_extend=[]): Register
+    public function find(int | string $id, array $_extend = []): Register
     {
         return $this->registerMapper->find(id: $id, _extend: $_extend);
-
     }//end find()
 
     /**
@@ -154,12 +152,12 @@ class RegisterService
      * @psalm-return array<Register>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        ?array $_extend=[]
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        ?array $_extend = []
     ): array {
         // Find all registers with optional filtering, pagination, and extensions.
         return $this->registerMapper->findAll(
@@ -170,7 +168,6 @@ class RegisterService
             searchParams: $searchParams,
             _extend: $_extend
         );
-
     }//end findAll()
 
     /**
@@ -188,13 +185,13 @@ class RegisterService
 
         // Create the register first.
         $register = $this->registerMapper->createFromArray(object: $data);
-        $this->logger->info('🔹 RegisterService: Register created with ID: '.$register->getId());
+        $this->logger->info('🔹 RegisterService: Register created with ID: ' . $register->getId());
 
         // Set organisation from active organisation for multi-tenancy (if not already set).
         if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
             $this->logger->info('🔹 RegisterService: Getting organisation for new entity');
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-            $this->logger->info('🔹 RegisterService: Got organisation UUID: '.$organisationUuid);
+            $this->logger->info('🔹 RegisterService: Got organisation UUID: ' . $organisationUuid);
             $register->setOrganisation($organisationUuid);
             $register = $this->registerMapper->update($register);
             $this->logger->info('🔹 RegisterService: Updated register with organisation');
@@ -206,7 +203,6 @@ class RegisterService
         $this->logger->info('🔹 RegisterService: Folder creation completed');
 
         return $register;
-
     }//end createFromArray()
 
     /**
@@ -228,7 +224,6 @@ class RegisterService
         $this->ensureRegisterFolderExists($register);
 
         return $register;
-
     }//end updateFromArray()
 
     /**
@@ -245,7 +240,6 @@ class RegisterService
     public function delete(Register $register): Register
     {
         return $this->registerMapper->delete($register);
-
     }//end delete()
 
     /**
@@ -285,9 +279,8 @@ class RegisterService
             } catch (Exception $e) {
                 // Log the error but don't fail the register creation/update.
                 // The register can still function without a folder.
-                $this->logger->error(message: "Failed to create folder for register {$entity->getId()}: ".$e->getMessage());
+                $this->logger->error(message: "Failed to create folder for register {$entity->getId()}: " . $e->getMessage());
             }
         }//end if
-
     }//end ensureRegisterFolderExists()
 }//end class

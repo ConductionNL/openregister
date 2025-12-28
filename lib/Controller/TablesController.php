@@ -44,6 +44,5 @@ class TablesController extends Controller
         private readonly IAppConfig $config
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 }//end class

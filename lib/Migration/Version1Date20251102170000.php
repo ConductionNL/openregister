@@ -62,6 +62,5 @@ class Version1Date20251102170000 extends SimpleMigrationStep
         // If the extend column exists from a previous installation, it will remain.
         // But is no longer used by the application.
         return null;
-
     }//end changeSchema()
 }//end class

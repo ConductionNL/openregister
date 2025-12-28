@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class RevertController
  *
@@ -17,10 +18,9 @@
  * @link https://OpenRegister.app
  */
 
-
 namespace OCA\OpenRegister\Controller;
-use DateTime;
 
+use DateTime;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -51,7 +51,6 @@ class RevertController extends Controller
         private readonly RevertHandler $revertService
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -83,9 +82,9 @@ class RevertController extends Controller
             $until = null;
             if (($data['datetime'] ?? null) !== null) {
                 $until = new DateTime($data['datetime']);
-            } else if (($data['auditTrailId'] ?? null) !== null) {
+            } elseif (($data['auditTrailId'] ?? null) !== null) {
                 $until = $data['auditTrailId'];
-            } else if (($data['version'] ?? null) !== null) {
+            } elseif (($data['version'] ?? null) !== null) {
                 $until = $data['version'];
             }
 
@@ -118,6 +117,5 @@ class RevertController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end revert()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Agents Controller
  *
@@ -54,7 +55,6 @@ use Exception;
  */
 class AgentsController extends Controller
 {
-
     /**
      * Agent mapper for database operations
      *
@@ -134,7 +134,6 @@ class AgentsController extends Controller
         $this->toolRegistry        = $toolRegistry;
         $this->logger = $logger;
         $this->userId = $userId;
-
     }//end __construct()
 
     /**
@@ -159,7 +158,6 @@ class AgentsController extends Controller
             templateName: 'index',
             params: []
         );
-
     }//end page()
 
     /**
@@ -231,7 +229,6 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end index()
 
     /**
@@ -285,7 +282,6 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_NOT_FOUND
             );
         }//end try
-
     }//end show()
 
     /**
@@ -364,11 +360,10 @@ class AgentsController extends Controller
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to create agent: '.$e->getMessage()],
+                data: ['error' => 'Failed to create agent: ' . $e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
-
     }//end create()
 
     /**
@@ -441,11 +436,10 @@ class AgentsController extends Controller
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to update agent: '.$e->getMessage()],
+                data: ['error' => 'Failed to update agent: ' . $e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
-
     }//end update()
 
     /**
@@ -468,7 +462,6 @@ class AgentsController extends Controller
     {
         // Delegate to update method (both handle partial updates).
         return $this->update($id);
-
     }//end patch()
 
     /**
@@ -530,7 +523,6 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
-
     }//end destroy()
 
     /**
@@ -568,7 +560,6 @@ class AgentsController extends Controller
 
             return new JSONResponse(data: ['error' => 'Failed to retrieve statistics'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
-
     }//end stats()
 
     /**
@@ -619,6 +610,5 @@ class AgentsController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end tools()
 }//end class

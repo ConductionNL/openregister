@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RegisterCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterCreatedEvent extends Event
 {
-
     /**
      * The newly created register
      *
@@ -46,7 +46,6 @@ class RegisterCreatedEvent extends Event
     {
         parent::__construct();
         $this->register = $register;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class RegisterCreatedEvent extends Event
     public function getRegister(): Register
     {
         return $this->register;
-
     }//end getRegister()
 }//end class

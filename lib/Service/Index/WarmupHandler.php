@@ -39,7 +39,6 @@ use ReflectionClass;
  */
 class WarmupHandler
 {
-
     /**
      * Search backend interface.
      *
@@ -98,7 +97,6 @@ class WarmupHandler
         $this->objectMapper  = $objectMapper;
         $this->db            = $db;
         $this->logger        = $logger;
-
     }//end __construct()
 
     /**
@@ -116,12 +114,12 @@ class WarmupHandler
      * @return array Results with statistics and errors.
      */
     public function warmupIndex(
-        array $schemas=[],
-        int $maxObjects=0,
-        string $mode='serial',
-        bool $collectErrors=false,
-        int $batchSize=1000,
-        array $schemaIds=[]
+        array $schemas = [],
+        int $maxObjects = 0,
+        string $mode = 'serial',
+        bool $collectErrors = false,
+        int $batchSize = 1000,
+        array $schemaIds = []
     ): array {
         $this->logger->info(
             '[WarmupHandler] Starting index warmup',
@@ -165,6 +163,5 @@ class WarmupHandler
                 'error'   => $e->getMessage(),
             ];
         }//end try
-
     }//end warmupIndex()
 }//end class

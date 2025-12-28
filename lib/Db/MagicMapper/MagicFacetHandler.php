@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MagicMapper Facet Handler
  *
@@ -38,7 +39,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
-
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -64,7 +64,6 @@ class MagicFacetHandler
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -82,7 +81,7 @@ class MagicFacetHandler
     private function getMetadataFieldFacet(string $field, array $config, array $baseQuery, string $tableName): array
     {
         $type       = $config['type'] ?? 'terms';
-        $columnName = '_'.$field;
+        $columnName = '_' . $field;
         // Metadata columns are prefixed with _.
         switch ($type) {
             case 'terms':
@@ -99,7 +98,6 @@ class MagicFacetHandler
             default:
                 return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
         }
-
     }//end getMetadataFieldFacet()
 
     /**
@@ -141,7 +139,6 @@ class MagicFacetHandler
             default:
                 return $this->getTermsFacet(columnName: $columnName, baseQuery: $baseQuery, tableName: $tableName);
         }
-
     }//end getSchemaPropertyFacet()
 
     /**
@@ -156,7 +153,7 @@ class MagicFacetHandler
      *
      * @psalm-return array{type: 'terms', field: string, buckets: list<array{count: int, value: mixed}>, total_buckets: int<0, max>, error?: string}
      */
-    private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit=100): array
+    private function getTermsFacet(string $columnName, array $baseQuery, string $tableName, int $limit = 100): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -190,13 +187,13 @@ class MagicFacetHandler
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Terms facet query failed',
-                    [
+                'Terms facet query failed',
+                [
                         'columnName' => $columnName,
                         'tableName'  => $tableName,
                         'error'      => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'type'          => 'terms',
@@ -206,7 +203,6 @@ class MagicFacetHandler
                 'error'         => $e->getMessage(),
             ];
         }//end try
-
     }//end getTermsFacet()
 
     /**
@@ -267,14 +263,14 @@ class MagicFacetHandler
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Date histogram facet query failed',
-                    [
+                'Date histogram facet query failed',
+                [
                         'columnName' => $columnName,
                         'interval'   => $interval,
                         'tableName'  => $tableName,
                         'error'      => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'type'          => 'date_histogram',
@@ -285,7 +281,6 @@ class MagicFacetHandler
                 'error'         => $e->getMessage(),
             ];
         }//end try
-
     }//end getDateHistogramFacet()
 
     /**
@@ -322,7 +317,7 @@ class MagicFacetHandler
         foreach ($ranges as $range) {
             $from = $range['from'] ?? null;
             $to   = $range['to'] ?? null;
-            $key  = $range['key'] ?? ($from.'-'.$to);
+            $key  = $range['key'] ?? ($from . '-' . $to);
 
             $qb = $this->db->getQueryBuilder();
             $qb->selectAlias($qb->createFunction('COUNT(*)'), 'count')
@@ -353,13 +348,13 @@ class MagicFacetHandler
                 ];
             } catch (\Exception $e) {
                 $this->logger->error(
-                        'Range facet query failed for range',
-                        [
+                    'Range facet query failed for range',
+                    [
                             'columnName' => $columnName,
                             'range'      => $range,
                             'error'      => $e->getMessage(),
                         ]
-                        );
+                );
             }
         }//end foreach
 
@@ -369,7 +364,6 @@ class MagicFacetHandler
             'buckets'       => $buckets,
             'total_buckets' => count($buckets),
         ];
-
     }//end getRangeFacet()
 
     /**
@@ -407,13 +401,13 @@ class MagicFacetHandler
         // Apply metadata filters (@self).
         if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             foreach ($baseQuery['@self'] ?? [] as $field => $value) {
-                $columnName = '_'.$field;
+                $columnName = '_' . $field;
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } else if ($value === 'IS NULL') {
+                } elseif ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value) === true) {
+                } elseif (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
@@ -423,27 +417,26 @@ class MagicFacetHandler
 
         // Apply object field filters.
         $objectFilters = array_filter(
-                $baseQuery,
-                function ($key) {
-                    return $key !== '@self' && str_starts_with($key, '_') === false;
-                },
-                ARRAY_FILTER_USE_KEY
-                );
+            $baseQuery,
+            function ($key) {
+                return $key !== '@self' && str_starts_with($key, '_') === false;
+            },
+            ARRAY_FILTER_USE_KEY
+        );
 
         foreach ($objectFilters as $field => $value) {
             $columnName = $this->sanitizeColumnName($field);
 
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
         }
-
     }//end applyBaseFilters()
 
     /**
@@ -534,7 +527,6 @@ class MagicFacetHandler
                 'facet_types' => ['date_histogram', 'range'],
             ],
         ];
-
     }//end getMetadataFacetableFields()
 
     /**
@@ -564,7 +556,6 @@ class MagicFacetHandler
         }
 
         return $facetableFields;
-
     }//end getSchemaFacetableFields()
 
     /**
@@ -602,7 +593,6 @@ class MagicFacetHandler
             default:
                 return ['terms'];
         }//end switch
-
     }//end determineFacetTypes()
 
     /**
@@ -628,7 +618,6 @@ class MagicFacetHandler
                 return '%Y-%m';
             // Default to month.
         }
-
     }//end getDateFormatForInterval()
 
     /**
@@ -693,17 +682,16 @@ class MagicFacetHandler
             return $ranges;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to generate auto ranges',
-                    [
+                'Failed to generate auto ranges',
+                [
                         'columnName' => $columnName,
                         'tableName'  => $tableName,
                         'error'      => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [];
         }//end try
-
     }//end generateAutoRanges()
 
     /**
@@ -720,11 +708,10 @@ class MagicFacetHandler
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_'.$sanitized;
+            $sanitized = 'col_' . $sanitized;
         }
 
         // Limit length to 64 characters (MySQL limit).
         return substr($sanitized, 0, 64);
-
     }//end sanitizeColumnName()
 }//end class

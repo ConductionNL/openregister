@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister DeleteObject Handler
  *
@@ -22,7 +23,6 @@
  *
  * @link https://www.OpenRegister.app
  */
-
 
 namespace OCA\OpenRegister\Service\Object;
 
@@ -58,7 +58,6 @@ use Psr\Log\LoggerInterface;
 
 class DeleteObject
 {
-
     /**
      * Audit trail mapper
      *
@@ -104,7 +103,6 @@ class DeleteObject
         $this->auditTrailMapper = $auditTrailMapper;
         $this->settingsService  = $settingsService;
         $this->logger           = $logger;
-
     }//end __construct()
 
     /**
@@ -204,7 +202,6 @@ class DeleteObject
         }
 
         return $result;
-
     }//end delete()
 
     /**
@@ -225,9 +222,9 @@ class DeleteObject
         Register | int | string $register,
         Schema | int | string $schema,
         string $uuid,
-        ?string $originalObjectId=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?string $originalObjectId = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): bool {
         try {
             $object = $this->objectEntityMapper->find($uuid, null, null, true);
@@ -241,7 +238,6 @@ class DeleteObject
         } catch (Exception $e) {
             return false;
         }
-
     }//end deleteObject()
 
     /**
@@ -279,7 +275,6 @@ class DeleteObject
                 $this->deleteObject(register: $register, schema: $schema, uuid: $value, originalObjectId: $originalObjectId);
             }
         }
-
     }//end cascadeDeleteObjects()
 
     /**
@@ -300,9 +295,8 @@ class DeleteObject
             // }
         } catch (\Exception $e) {
             // Log error but don't fail the deletion process.
-            $this->logger->warning('Failed to delete object folder for object '.$objectEntity->getId().': '.$e->getMessage());
+            $this->logger->warning('Failed to delete object folder for object ' . $objectEntity->getId() . ': ' . $e->getMessage());
         }
-
     }//end deleteObjectFolder()
 
     /**
@@ -320,6 +314,5 @@ class DeleteObject
             $this->logger->warning('Failed to check audit trails setting, defaulting to enabled', ['error' => $e->getMessage()]);
             return true;
         }
-
     }//end isAuditTrailsEnabled()
 }//end class

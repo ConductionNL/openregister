@@ -46,7 +46,6 @@ class GdprEntityMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_entities', GdprEntity::class);
-
     }//end __construct()
 
     /**
@@ -59,6 +58,5 @@ class GdprEntityMapper extends QBMapper
     public function findEntitiesPublic(IQueryBuilder $query): array
     {
         return parent::findEntities($query);
-
     }//end findEntitiesPublic()
 }//end class

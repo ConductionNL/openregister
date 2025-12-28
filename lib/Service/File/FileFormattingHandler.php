@@ -45,7 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileFormattingHandler
 {
-
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -67,7 +66,6 @@ class FileFormattingHandler
         private readonly IURLGenerator $urlGenerator,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -80,7 +78,6 @@ class FileFormattingHandler
     public function setFileService(FileService $fileService): void
     {
         $this->fileService = $fileService;
-
     }//end setFileService()
 
     /**
@@ -110,7 +107,7 @@ class FileFormattingHandler
             'path'        => $file->getPath(),
             'title'       => $file->getName(),
             'accessUrl'   => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) : null,
-            'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]).'/download' : null,
+            'downloadUrl' => count($shares) > 0 ? $this->fileService->getShareLink($shares[0]) . '/download' : null,
             'type'        => $file->getMimetype(),
             'extension'   => $file->getExtension(),
             'size'        => $file->getSize(),
@@ -137,7 +134,7 @@ class FileFormattingHandler
                 // If key already exists as array, append value.
                 if (isset($metadata[$key]) === true && is_array($metadata[$key]) === true) {
                     $metadata[$key][] = $value;
-                } else if (isset($metadata[$key]) === true) {
+                } elseif (isset($metadata[$key]) === true) {
                     // If key exists but not as array, convert to array with both values.
                     $metadata[$key] = [$metadata[$key], $value];
                 } else {
@@ -153,7 +150,6 @@ class FileFormattingHandler
         $metadata['labels'] = $remainingLabels;
 
         return $metadata;
-
     }//end formatFile()
 
     /**
@@ -180,7 +176,7 @@ class FileFormattingHandler
      * @throws InvalidPathException If any file path is invalid.
      * @throws NotFoundException    If files are not found.
      */
-    public function formatFiles(array $files, ?array $requestParams=[]): array
+    public function formatFiles(array $files, ?array $requestParams = []): array
     {
         // Format all files first.
         $formattedFiles = [];
@@ -210,7 +206,6 @@ class FileFormattingHandler
             'limit'   => $limit,
             'offset'  => $offset,
         ];
-
     }//end formatFiles()
 
     /**
@@ -254,7 +249,7 @@ class FileFormattingHandler
             $labels = $requestParams['labels'];
             if (is_string($labels) === true) {
                 $filters['labels'] = array_map('trim', explode(',', $labels));
-            } else if (is_array($labels) === true) {
+            } elseif (is_array($labels) === true) {
                 $filters['labels'] = $labels;
             }
         }
@@ -268,7 +263,7 @@ class FileFormattingHandler
             $extensions = $requestParams['extensions'];
             if (is_string($extensions) === true) {
                 $filters['extensions'] = array_map('trim', explode(',', $extensions));
-            } else if (is_array($extensions) === true) {
+            } elseif (is_array($extensions) === true) {
                 $filters['extensions'] = $extensions;
             }
         }
@@ -292,7 +287,6 @@ class FileFormattingHandler
         }
 
         return $filters;
-
     }//end extractFilterParameters()
 
     /**
@@ -333,101 +327,100 @@ class FileFormattingHandler
         }
 
         return array_filter(
-                $formattedFiles,
-                function (array $file) use ($filters): bool {
-                    // Filter by label presence (business logic filter).
-                    if (($filters['_hasLabels'] ?? null) !== null) {
-                        $hasLabels = empty($file['labels']) === false;
-                        if ($filters['_hasLabels'] !== $hasLabels) {
-                            return false;
-                        }
+            $formattedFiles,
+            function (array $file) use ($filters): bool {
+                // Filter by label presence (business logic filter).
+                if (($filters['_hasLabels'] ?? null) !== null) {
+                    $hasLabels = empty($file['labels']) === false;
+                    if ($filters['_hasLabels'] !== $hasLabels) {
+                        return false;
                     }
-
-                    // Filter for files without labels (business logic filter).
-                    if (($filters['_noLabels'] ?? null) !== null && $filters['_noLabels'] === true) {
-                        $hasLabels = empty($file['labels']) === false;
-                        if ($hasLabels === true) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by specific labels.
-                    if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
-                        $fileLabels       = $file['labels'] ?? [];
-                        $hasMatchingLabel = false;
-
-                        foreach ($filters['labels'] as $requiredLabel) {
-                            if (in_array($requiredLabel, $fileLabels, true) === true) {
-                                $hasMatchingLabel = true;
-                                break;
-                            }
-                        }
-
-                        if ($hasMatchingLabel === false) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by single extension.
-                    if (($filters['extension'] ?? null) !== null) {
-                        $fileExtension = $file['extension'] ?? '';
-                        if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by multiple extensions.
-                    if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
-                        $fileExtension        = $file['extension'] ?? '';
-                        $hasMatchingExtension = false;
-
-                        foreach ($filters['extensions'] as $allowedExtension) {
-                            if (strcasecmp($fileExtension, $allowedExtension) === 0) {
-                                $hasMatchingExtension = true;
-                                break;
-                            }
-                        }
-
-                        if ($hasMatchingExtension === false) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by file size range.
-                    if (($filters['minSize'] ?? null) !== null) {
-                        $fileSize = $file['size'] ?? 0;
-                        if ($fileSize < $filters['minSize']) {
-                            return false;
-                        }
-                    }
-
-                    if (($filters['maxSize'] ?? null) !== null) {
-                        $fileSize = $file['size'] ?? 0;
-                        if ($fileSize > $filters['maxSize']) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by title/filename content.
-                    if (($filters['title'] ?? null) !== null && empty($filters['title']) === false) {
-                        $fileTitle = $file['title'] ?? '';
-                        if (stripos($fileTitle, $filters['title']) === false) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by search term (searches in title).
-                    if (($filters['search'] ?? null) !== null && empty($filters['search']) === false) {
-                        $fileTitle = $file['title'] ?? '';
-                        if (stripos($fileTitle, $filters['search']) === false) {
-                            return false;
-                        }
-                    }
-
-                    // File passed all filters.
-                    return true;
                 }
-        );
 
+                // Filter for files without labels (business logic filter).
+                if (($filters['_noLabels'] ?? null) !== null && $filters['_noLabels'] === true) {
+                    $hasLabels = empty($file['labels']) === false;
+                    if ($hasLabels === true) {
+                        return false;
+                    }
+                }
+
+                // Filter by specific labels.
+                if (($filters['labels'] ?? null) !== null && empty($filters['labels']) === false) {
+                    $fileLabels       = $file['labels'] ?? [];
+                    $hasMatchingLabel = false;
+
+                    foreach ($filters['labels'] as $requiredLabel) {
+                        if (in_array($requiredLabel, $fileLabels, true) === true) {
+                            $hasMatchingLabel = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasMatchingLabel === false) {
+                        return false;
+                    }
+                }
+
+                // Filter by single extension.
+                if (($filters['extension'] ?? null) !== null) {
+                    $fileExtension = $file['extension'] ?? '';
+                    if (strcasecmp($fileExtension, $filters['extension']) !== 0) {
+                        return false;
+                    }
+                }
+
+                // Filter by multiple extensions.
+                if (($filters['extensions'] ?? null) !== null && empty($filters['extensions']) === false) {
+                    $fileExtension        = $file['extension'] ?? '';
+                    $hasMatchingExtension = false;
+
+                    foreach ($filters['extensions'] as $allowedExtension) {
+                        if (strcasecmp($fileExtension, $allowedExtension) === 0) {
+                            $hasMatchingExtension = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasMatchingExtension === false) {
+                        return false;
+                    }
+                }
+
+                // Filter by file size range.
+                if (($filters['minSize'] ?? null) !== null) {
+                    $fileSize = $file['size'] ?? 0;
+                    if ($fileSize < $filters['minSize']) {
+                        return false;
+                    }
+                }
+
+                if (($filters['maxSize'] ?? null) !== null) {
+                    $fileSize = $file['size'] ?? 0;
+                    if ($fileSize > $filters['maxSize']) {
+                        return false;
+                    }
+                }
+
+                // Filter by title/filename content.
+                if (($filters['title'] ?? null) !== null && empty($filters['title']) === false) {
+                    $fileTitle = $file['title'] ?? '';
+                    if (stripos($fileTitle, $filters['title']) === false) {
+                        return false;
+                    }
+                }
+
+                // Filter by search term (searches in title).
+                if (($filters['search'] ?? null) !== null && empty($filters['search']) === false) {
+                    $fileTitle = $file['title'] ?? '';
+                    if (stripos($fileTitle, $filters['search']) === false) {
+                        return false;
+                    }
+                }
+
+                // File passed all filters.
+                return true;
+            }
+        );
     }//end applyFileFilters()
 }//end class

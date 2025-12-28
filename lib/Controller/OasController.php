@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class OasController
  *
@@ -34,7 +35,6 @@ use Exception;
  */
 class OasController extends Controller
 {
-
     /**
      * OAS service instance
      *
@@ -56,7 +56,6 @@ class OasController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->oasService = $oasService;
-
     }//end __construct()
 
     /**
@@ -81,7 +80,6 @@ class OasController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end generateAll()
 
     /**
@@ -108,6 +106,5 @@ class OasController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end generate()
 }//end class

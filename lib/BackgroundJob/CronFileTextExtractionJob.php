@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Cron File Text Extraction Background Job
  *
@@ -16,7 +17,6 @@
  *
  * @link https://www.OpenRegister.nl
  */
-
 
 declare(strict_types=1);
 
@@ -76,12 +76,12 @@ class CronFileTextExtractionJob extends TimedJob
         $logger = \OC::$server->get(LoggerInterface::class);
 
         $logger->info(
-                message: '🔄 Cron File Text Extraction Job Started',
-                context: [
+            message: '🔄 Cron File Text Extraction Job Started',
+            context: [
                     'job_id'         => $this->getId(),
                     'scheduled_time' => date('Y-m-d H:i:s'),
                 ]
-                );
+        );
 
         try {
             /*
@@ -110,9 +110,9 @@ class CronFileTextExtractionJob extends TimedJob
 
             if ($extractionMode !== 'cron') {
                 $logger->debug(
-                        'Cron File Text Extraction Job skipped - extraction mode is not cron',
-                        ['extraction_mode' => $extractionMode]
-                        );
+                    'Cron File Text Extraction Job skipped - extraction mode is not cron',
+                    ['extraction_mode' => $extractionMode]
+                );
                 return;
             }
 
@@ -121,12 +121,12 @@ class CronFileTextExtractionJob extends TimedJob
             $extractionScope = $fileSettings['extractionScope'] ?? 'objects';
 
             $logger->info(
-                    'Starting cron file text extraction',
-                    [
+                'Starting cron file text extraction',
+                [
                         'batch_size'       => $batchSize,
                         'extraction_scope' => $extractionScope,
                     ]
-                    );
+            );
 
             // Get pending files based on extraction scope.
             $pendingFiles = $this->getPendingFiles(fileMapper: $fileMapper, extractionScope: $extractionScope, batchSize: $batchSize, logger: $logger);
@@ -137,12 +137,12 @@ class CronFileTextExtractionJob extends TimedJob
             }
 
             $logger->info(
-                    'Processing files in cron job',
-                    [
+                'Processing files in cron job',
+                [
                         'files_count' => count($pendingFiles),
                         'batch_size'  => $batchSize,
                     ]
-                    );
+            );
 
             // Process each file.
             $processed = 0;
@@ -157,50 +157,50 @@ class CronFileTextExtractionJob extends TimedJob
                     }
 
                     $logger->debug(
-                            'Processing file in cron job',
-                            [
+                        'Processing file in cron job',
+                        [
                                 'file_id'   => $fileId,
                                 'file_name' => $file['name'] ?? 'unknown',
                             ]
-                            );
+                    );
 
                     $textExtractionService->extractFile(fileId: $fileId, forceReExtract: false);
                     $processed++;
 
                     $logger->debug(
-                            'File processed successfully in cron job',
-                            ['file_id' => $fileId]
-                            );
+                        'File processed successfully in cron job',
+                        ['file_id' => $fileId]
+                    );
                 } catch (\Exception $e) {
                     $failed++;
                     $logger->error(
-                            'Failed to process file in cron job',
-                            [
+                        'Failed to process file in cron job',
+                        [
                                 'file_id' => $fileId ?? 0,
                                 'error'   => $e->getMessage(),
                             ]
-                            );
+                    );
                 }//end try
             }//end foreach
 
             $executionTime = microtime(true) - $startTime;
 
             $logger->info(
-                    '✅ Cron File Text Extraction Job Completed',
-                    [
+                '✅ Cron File Text Extraction Job Completed',
+                [
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'files_processed'        => $processed,
                         'files_failed'           => $failed,
                         'next_run'               => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $executionTime = microtime(true) - $startTime;
 
             $logger->error(
-                    message: '🚨 Cron File Text Extraction Job Exception',
-                    context: [
+                message: '🚨 Cron File Text Extraction Job Exception',
+                context: [
                         'job_id'                 => $this->getId(),
                         'execution_time_seconds' => round($executionTime, 2),
                         'exception'              => $e->getMessage(),
@@ -208,11 +208,10 @@ class CronFileTextExtractionJob extends TimedJob
                         'line'                   => $e->getLine(),
                         'trace'                  => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             // Don't re-throw for recurring jobs - let them retry next time.
         }//end try
-
     }//end run()
 
     /**
@@ -272,6 +271,5 @@ class CronFileTextExtractionJob extends TimedJob
 
             return [];
         }//end try
-
     }//end getPendingFiles()
 }//end class

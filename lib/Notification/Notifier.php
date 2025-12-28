@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Notification Provider
  *
@@ -33,7 +34,6 @@ use OCP\Notification\INotifier;
  */
 class Notifier implements INotifier
 {
-
     /**
      * L10N factory for translation.
      *
@@ -49,7 +49,6 @@ class Notifier implements INotifier
     public function __construct(IFactory $factory)
     {
         $this->factory = $factory;
-
     }//end __construct()
 
     /**
@@ -64,7 +63,6 @@ class Notifier implements INotifier
     public function getID(): string
     {
         return 'openregister';
-
     }//end getID()
 
     /**
@@ -75,7 +73,6 @@ class Notifier implements INotifier
     public function getName(): string
     {
         return $this->factory->get('openregister')->t('OpenRegister');
-
     }//end getName()
 
     /**
@@ -104,7 +101,6 @@ class Notifier implements INotifier
                 // Unknown subject.
                 throw new InvalidArgumentException('Unknown subject');
         }//end switch
-
     }//end prepare()
 
     /**
@@ -146,7 +142,7 @@ class Notifier implements INotifier
                 ->setLink(
                     link: \OC::$server->getURLGenerator()->linkToRouteAbsolute(
                         route: 'openregister.dashboard.page'
-                    ).'#/configurations/'.$parameters['configurationId'],
+                    ) . '#/configurations/' . $parameters['configurationId'],
                     requestType: 'GET'
                 );
 
@@ -154,6 +150,5 @@ class Notifier implements INotifier
         }
 
         return $notification;
-
     }//end prepareConfigurationUpdate()
 }//end class

@@ -51,93 +51,93 @@ class Version1Date20251107150000 extends SimpleMigrationStep
             $table = $schema->createTable('openregister_feedback');
 
             $table->addColumn(
-                    'id',
-                    Types::BIGINT,
-                    [
+                'id',
+                Types::BIGINT,
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                         'unsigned'      => true,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'uuid',
-                    Types::STRING,
-                    [
+                'uuid',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 36,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'message_id',
-                    Types::BIGINT,
-                    [
+                'message_id',
+                Types::BIGINT,
+                [
                         'notnull'  => true,
                         'unsigned' => true,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'conversation_id',
-                    Types::BIGINT,
-                    [
+                'conversation_id',
+                Types::BIGINT,
+                [
                         'notnull'  => true,
                         'unsigned' => true,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'agent_id',
-                    Types::BIGINT,
-                    [
+                'agent_id',
+                Types::BIGINT,
+                [
                         'notnull'  => true,
                         'unsigned' => true,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'user_id',
-                    Types::STRING,
-                    [
+                'user_id',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 64,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'organisation',
-                    Types::STRING,
-                    [
+                'organisation',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 36,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'type',
-                    Types::STRING,
-                    [
+                'type',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 20,
                         'comment' => 'positive or negative',
                     ]
-                    );
+            );
             $table->addColumn(
-                    'comment',
-                    Types::TEXT,
-                    [
+                'comment',
+                Types::TEXT,
+                [
                         'notnull' => false,
                         'comment' => 'Optional user comment about the feedback',
                     ]
-                    );
+            );
             $table->addColumn(
-                    'created',
-                    Types::DATETIME,
-                    [
+                'created',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'updated',
-                    Types::DATETIME,
-                    [
+                'updated',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             $table->setPrimaryKey(['id']);
             $table->addUniqueIndex(['uuid'], 'openregister_feedback_uuid');
@@ -155,6 +155,5 @@ class Version1Date20251107150000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

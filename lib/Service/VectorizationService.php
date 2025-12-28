@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Unified Vectorization Service
  *
@@ -45,7 +46,6 @@ use Psr\Log\LoggerInterface;
  */
 class VectorizationService
 {
-
     /**
      * Vector embeddings coordinator
      *
@@ -79,7 +79,6 @@ class VectorizationService
     ) {
         $this->vectorService = $vectorService;
         $this->logger        = $logger;
-
     }//end __construct()
 
     /**
@@ -94,13 +93,12 @@ class VectorizationService
     {
         $this->strategies[$entityType] = $strategy;
         $this->logger->debug(
-                '[VectorizationService] Strategy registered',
-                [
+            '[VectorizationService] Strategy registered',
+            [
                     'entityType'    => $entityType,
                     'strategyClass' => get_class($strategy),
                 ]
-                );
-
+        );
     }//end registerStrategy()
 
     /**
@@ -118,15 +116,15 @@ class VectorizationService
      *
      * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list<array{entity_id: int|string, error: string, item_index?: array-key}>}
      */
-    public function vectorizeBatch(string $entityType, array $options=[]): array
+    public function vectorizeBatch(string $entityType, array $options = []): array
     {
         $this->logger->info(
-                '[VectorizationService] Starting batch vectorization',
-                [
+            '[VectorizationService] Starting batch vectorization',
+            [
                     'entityType' => $entityType,
                     'options'    => $options,
                 ]
-                );
+        );
 
         // Get strategy for entity type.
         $strategy = $this->getStrategy($entityType);
@@ -148,12 +146,12 @@ class VectorizationService
             }
 
             $this->logger->info(
-                    '[VectorizationService] Processing entities',
-                    [
+                '[VectorizationService] Processing entities',
+                [
                         'entityType'  => $entityType,
                         'entityCount' => count($entities),
                     ]
-                    );
+            );
 
             // Process each entity.
             $totalItems = 0;
@@ -175,13 +173,13 @@ class VectorizationService
                 } catch (\Exception $e) {
                     $entityId = $strategy->getEntityIdentifier($entity);
                     $this->logger->error(
-                            '[VectorizationService] Failed to vectorize entity',
-                            [
+                        '[VectorizationService] Failed to vectorize entity',
+                        [
                                 'entityType' => $entityType,
                                 'entityId'   => $entityId,
                                 'error'      => $e->getMessage(),
                             ]
-                            );
+                    );
                     $errors[] = [
                         'entity_id' => $entityId,
                         'error'     => $e->getMessage(),
@@ -190,15 +188,15 @@ class VectorizationService
             }//end foreach
 
             $this->logger->info(
-                    '[VectorizationService] Batch vectorization completed',
-                    [
+                '[VectorizationService] Batch vectorization completed',
+                [
                         'entityType'    => $entityType,
                         'totalEntities' => count($entities),
                         'totalItems'    => $totalItems,
                         'vectorized'    => $vectorized,
                         'failed'        => $failed,
                     ]
-                    );
+            );
 
             return [
                 'success'        => true,
@@ -212,15 +210,14 @@ class VectorizationService
             ];
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[VectorizationService] Batch vectorization failed',
-                    [
+                '[VectorizationService] Batch vectorization failed',
+                [
                         'entityType' => $entityType,
                         'error'      => $e->getMessage(),
                     ]
-                    );
+            );
             throw $e;
         }//end try
-
     }//end vectorizeBatch()
 
     /**
@@ -305,12 +302,12 @@ class VectorizationService
                 } catch (\Exception $e) {
                     $failed += count($batch);
                     $this->logger->error(
-                            '[VectorizationService] Batch processing failed',
-                            [
+                        '[VectorizationService] Batch processing failed',
+                        [
                                 'entityId' => $entityId,
                                 'error'    => $e->getMessage(),
                             ]
-                            );
+                    );
                 }//end try
             }//end foreach
         } else {
@@ -337,7 +334,6 @@ class VectorizationService
             'failed'      => $failed,
             'errors'      => $errors,
         ];
-
     }//end vectorizeEntity()
 
     /**
@@ -365,7 +361,6 @@ class VectorizationService
             chunkText: $metadata['chunk_text'] ?? null,
             metadata: $metadata['additional_metadata'] ?? []
         );
-
     }//end storeVector()
 
     /**
@@ -384,7 +379,6 @@ class VectorizationService
         }
 
         return $this->strategies[$entityType];
-
     }//end getStrategy()
 
     // =============================================================================
@@ -409,10 +403,9 @@ class VectorizationService
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      */
-    public function generateEmbedding(string $text, ?string $provider=null): array
+    public function generateEmbedding(string $text, ?string $provider = null): array
     {
         return $this->vectorService->generateEmbedding(text: $text, provider: $provider);
-
     }//end generateEmbedding()
 
     /**
@@ -431,12 +424,11 @@ class VectorizationService
      */
     public function semanticSearch(
         string $query,
-        int $limit=10,
-        array $filters=[],
-        ?string $provider=null
+        int $limit = 10,
+        array $filters = [],
+        ?string $provider = null
     ): array {
         return $this->vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
-
     }//end semanticSearch()
 
     /**
@@ -456,13 +448,12 @@ class VectorizationService
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters=[],
-        int $limit=20,
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
-        ?string $provider=null
+        array $solrFilters = [],
+        int $limit = 20,
+        array $weights = ['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider = null
     ): array {
         return $this->vectorService->hybridSearch(query: $query, solrFilters: $solrFilters, limit: $limit, weights: $weights, provider: $provider);
-
     }//end hybridSearch()
 
     /**
@@ -475,7 +466,6 @@ class VectorizationService
     public function getVectorStats(): array
     {
         return $this->vectorService->getVectorStats();
-
     }//end getVectorStats()
 
     /**
@@ -491,10 +481,9 @@ class VectorizationService
      *
      * @psalm-return array{success: bool, error?: string, message: string, data?: array{provider: string, model: 'unknown'|mixed, vectorLength: int<0, max>, sampleValues: array<float>, testText: string}}
      */
-    public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
+    public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array
     {
         return $this->vectorService->testEmbedding(provider: $provider, config: $config, testText: $testText);
-
     }//end testEmbedding()
 
     /**
@@ -509,7 +498,6 @@ class VectorizationService
     public function checkEmbeddingModelMismatch(): array
     {
         return $this->vectorService->checkEmbeddingModelMismatch();
-
     }//end checkEmbeddingModelMismatch()
 
     /**
@@ -524,6 +512,5 @@ class VectorizationService
     public function clearAllEmbeddings(): array
     {
         return $this->vectorService->clearAllEmbeddings();
-
     }//end clearAllEmbeddings()
 }//end class

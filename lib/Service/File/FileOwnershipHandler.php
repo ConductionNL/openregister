@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileOwnershipHandler
 {
-
     /**
      * Application user name.
      *
@@ -72,7 +71,6 @@ class FileOwnershipHandler
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -118,7 +116,6 @@ class FileOwnershipHandler
         }//end if
 
         return $openRegisterUser;
-
     }//end getUser()
 
     /**
@@ -135,7 +132,6 @@ class FileOwnershipHandler
     public function getCurrentUser(): ?IUser
     {
         return $this->userSession->getUser();
-
     }//end getCurrentUser()
 
     /**
@@ -158,7 +154,7 @@ class FileOwnershipHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandler $fileSharingHandler=null): void
+    public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandler $fileSharingHandler = null): void
     {
         try {
             // Get current user.
@@ -206,11 +202,10 @@ class FileOwnershipHandler
                 $this->logger->info(message: "Successfully transferred ownership and shared file {$file->getName()} with {$currentUserId}");
             }//end if
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to transfer file ownership for {$file->getName()}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to transfer file ownership for {$file->getName()}: " . $e->getMessage());
             // Don't throw the exception to avoid breaking file operations.
             // The file operation should succeed even if ownership transfer fails.
         }//end try
-
     }//end transferFileOwnershipIfNeeded()
 
     /**
@@ -233,7 +228,7 @@ class FileOwnershipHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandler $fileSharingHandler=null): void
+    public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandler $fileSharingHandler = null): void
     {
         try {
             // Get current user.
@@ -281,10 +276,9 @@ class FileOwnershipHandler
                 $this->logger->info(message: "Successfully transferred ownership and shared folder {$folder->getName()} with {$currentUserId}");
             }//end if
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to transfer folder ownership for {$folder->getName()}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to transfer folder ownership for {$folder->getName()}: " . $e->getMessage());
             // Don't throw the exception to avoid breaking folder operations.
             // The folder operation should succeed even if ownership transfer fails.
         }//end try
-
     }//end transferFolderOwnershipIfNeeded()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Applications Controller
  *
@@ -49,7 +50,6 @@ use Exception;
  */
 class ApplicationsController extends Controller
 {
-
     /**
      * Application service for business logic
      *
@@ -105,7 +105,6 @@ class ApplicationsController extends Controller
         $this->applicationService = $applicationService;
         $this->applicationMapper  = $applicationMapper;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -130,7 +129,6 @@ class ApplicationsController extends Controller
             templateName: 'index',
             params: []
         );
-
     }//end page()
 
     /**
@@ -201,7 +199,6 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end index()
 
     /**
@@ -247,7 +244,6 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_NOT_FOUND
             );
         }//end try
-
     }//end show()
 
     /**
@@ -290,11 +286,10 @@ class ApplicationsController extends Controller
 
             // Return error response with message.
             return new JSONResponse(
-                data: ['error' => 'Failed to create application: '.$e->getMessage()],
+                data: ['error' => 'Failed to create application: ' . $e->getMessage()],
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
-
     }//end create()
 
     /**
@@ -329,26 +324,25 @@ class ApplicationsController extends Controller
 
             // Return successful response with updated application.
             return new JSONResponse(
-             data: $application,
-             statusCode: Http::STATUS_OK
+                data: $application,
+                statusCode: Http::STATUS_OK
             );
         } catch (Exception $e) {
             // Log error with application ID.
             $this->logger->error(
-             message: 'Failed to update application',
-             context: [
+                message: 'Failed to update application',
+                context: [
                  'id'    => $id,
                  'error' => $e->getMessage(),
-             ]
+                ]
             );
 
             // Return error response with message.
             return new JSONResponse(
-             data: ['error' => 'Failed to update application: '.$e->getMessage()],
-             statusCode: Http::STATUS_BAD_REQUEST
+                data: ['error' => 'Failed to update application: ' . $e->getMessage()],
+                statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
-
     }//end update()
 
     /**
@@ -371,7 +365,6 @@ class ApplicationsController extends Controller
     {
         // Delegate to update method (both handle partial updates).
         return $this->update($id);
-
     }//end patch()
 
     /**
@@ -417,7 +410,6 @@ class ApplicationsController extends Controller
                 statusCode: Http::STATUS_BAD_REQUEST
             );
         }//end try
-
     }//end destroy()
 
     /**
@@ -441,7 +433,6 @@ class ApplicationsController extends Controller
 
         // Return null if parameter not provided.
         return null;
-
     }//end extractLimit()
 
     /**
@@ -465,7 +456,6 @@ class ApplicationsController extends Controller
 
         // Return null if parameter not provided.
         return null;
-
     }//end extractOffset()
 
     /**
@@ -489,6 +479,5 @@ class ApplicationsController extends Controller
 
         // Return null if parameter not provided.
         return null;
-
     }//end extractPage()
 }//end class

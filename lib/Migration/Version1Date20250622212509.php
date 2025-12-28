@@ -255,7 +255,6 @@ class Version1Date20250622212509 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -271,6 +270,5 @@ class Version1Date20250622212509 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
 }//end class

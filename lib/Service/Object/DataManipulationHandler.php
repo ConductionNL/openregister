@@ -69,7 +69,6 @@ class DataManipulationHandler
         }
 
         return $current;
-
     }//end getValueFromPath()
 
     /**
@@ -94,13 +93,12 @@ class DataManipulationHandler
 
             // Add timestamp for uniqueness.
             $timestamp  = time();
-            $uniqueSlug = $slug.'-'.$timestamp;
+            $uniqueSlug = $slug . '-' . $timestamp;
 
             return $uniqueSlug;
         } catch (Exception $e) {
             return null;
         }
-
     }//end generateSlugFromValue()
 
     /**
@@ -130,7 +128,6 @@ class DataManipulationHandler
         }
 
         return $text;
-
     }//end createSlugHelper()
 
     /**
@@ -165,6 +162,5 @@ class DataManipulationHandler
         }
 
         return $mappedData;
-
     }//end mapObjectProperties()
 }//end class

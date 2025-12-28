@@ -54,204 +54,204 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-                    'id',
-                    'bigint',
-                    [
+                'id',
+                'bigint',
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                         'length'        => 20,
                         'unsigned'      => true,
                     ]
-                    );
+            );
 
             // Nextcloud file reference.
             $table->addColumn(
-                    'file_id',
-                    'bigint',
-                    [
+                'file_id',
+                'bigint',
+                [
                         'notnull'  => true,
                         'length'   => 20,
                         'unsigned' => true,
                         'comment'  => 'Nextcloud file ID from oc_filecache',
                     ]
-                    );
+            );
 
             // File metadata.
             $table->addColumn(
-                    'file_path',
-                    'string',
-                    [
+                'file_path',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 4000,
                         'comment' => 'Full file path in Nextcloud',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'file_name',
-                    'string',
-                    [
+                'file_name',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 255,
                         'comment' => 'File name with extension',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'mime_type',
-                    'string',
-                    [
+                'mime_type',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 255,
                         'comment' => 'MIME type (application/pdf, text/plain, etc.)',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'file_size',
-                    'bigint',
-                    [
+                'file_size',
+                'bigint',
+                [
                         'notnull'  => true,
                         'length'   => 20,
                         'unsigned' => true,
                         'comment'  => 'File size in bytes',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'file_checksum',
-                    'string',
-                    [
+                'file_checksum',
+                'string',
+                [
                         'notnull' => false,
                         'length'  => 64,
                         'comment' => 'File checksum for change detection',
                     ]
-                    );
+            );
 
             // Extracted text content.
             $table->addColumn(
-                    'text_content',
-                    'text',
-                    [
+                'text_content',
+                'text',
+                [
                         'notnull' => false,
                         'length'  => 16777215,
-            // MEDIUMTEXT (16MB).
+                // MEDIUMTEXT (16MB).
                         'comment' => 'Extracted text content from file',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'text_length',
-                    'integer',
-                    [
+                'text_length',
+                'integer',
+                [
                         'notnull'  => true,
                         'default'  => 0,
                         'unsigned' => true,
                         'comment'  => 'Length of extracted text in characters',
                     ]
-                    );
+            );
 
             // Extraction metadata.
             $table->addColumn(
-                    'extraction_method',
-                    'string',
-                    [
+                'extraction_method',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 50,
                         'default' => 'text_extract',
                         'comment' => 'Method used: text_extract, ocr, tika, api',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'extraction_status',
-                    'string',
-                    [
+                'extraction_status',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 20,
                         'default' => 'pending',
                         'comment' => 'Status: pending, processing, completed, failed, skipped',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'extraction_error',
-                    'text',
-                    [
+                'extraction_error',
+                'text',
+                [
                         'notnull' => false,
                         'comment' => 'Error message if extraction failed',
                     ]
-                    );
+            );
 
             // Processing flags.
             $table->addColumn(
-                    'chunked',
-                    'boolean',
-                    [
+                'chunked',
+                'boolean',
+                [
                         'notnull' => true,
                         'default' => false,
                         'comment' => 'Whether text has been chunked',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'chunk_count',
-                    'integer',
-                    [
+                'chunk_count',
+                'integer',
+                [
                         'notnull'  => true,
                         'default'  => 0,
                         'unsigned' => true,
                         'comment'  => 'Number of chunks created',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'indexed_in_solr',
-                    'boolean',
-                    [
+                'indexed_in_solr',
+                'boolean',
+                [
                         'notnull' => true,
                         'default' => false,
                         'comment' => 'Whether text has been indexed in SOLR',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'vectorized',
-                    'boolean',
-                    [
+                'vectorized',
+                'boolean',
+                [
                         'notnull' => true,
                         'default' => false,
                         'comment' => 'Whether text has been vectorized for semantic search',
                     ]
-                    );
+            );
 
             // Timestamps.
             $table->addColumn(
-                    'created_at',
-                    'datetime',
-                    [
+                'created_at',
+                'datetime',
+                [
                         'notnull' => true,
                         'comment' => 'When record was created',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'updated_at',
-                    'datetime',
-                    [
+                'updated_at',
+                'datetime',
+                [
                         'notnull' => true,
                         'comment' => 'When record was last updated',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'extracted_at',
-                    'datetime',
-                    [
+                'extracted_at',
+                'datetime',
+                [
                         'notnull' => false,
                         'comment' => 'When text extraction completed',
                     ]
-                    );
+            );
 
             // Set primary key.
             $table->setPrimaryKey(['id']);
@@ -269,7 +269,6 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -286,6 +285,5 @@ class Version002006000Date20251013000000 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         $output->info(message: 'File texts table created successfully');
-
     }//end postSchemaChange()
 }//end class

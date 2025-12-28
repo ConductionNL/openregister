@@ -58,7 +58,6 @@ use React\EventLoop\Loop;
 
 class ImportService
 {
-
     /**
      * Object entity mapper instance
      *
@@ -254,14 +253,14 @@ class ImportService
      */
     public function importFromExcel(
         string $filePath,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -345,14 +344,14 @@ class ImportService
      */
     public function importFromCsv(
         string $filePath,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -439,12 +438,12 @@ class ImportService
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
         Register $register,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $summary = [];
 
@@ -486,7 +485,7 @@ class ImportService
                         'name' => $register->getTitle(),
                     ],
                     'schema'   => null,
-                    'error'    => 'No matching schema found for sheet: '.$schemaSlug,
+                    'error'    => 'No matching schema found for sheet: ' . $schemaSlug,
                     'type'     => 'SchemaNotFoundException',
                 ];
                 continue;
@@ -562,14 +561,14 @@ class ImportService
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $summary = [
             'found'     => 0,
@@ -675,7 +674,7 @@ class ImportService
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
             if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1).'% operations avoided';
+                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
             }
 
             // Handle validation errors if validation was enabled.
@@ -735,12 +734,12 @@ class ImportService
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
         Register $register,
         Schema $schema,
-        bool $validation=false,
-        bool $events=false,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        bool $validation = false,
+        bool $events = false,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $summary = [
             'found'     => 0,
@@ -870,7 +869,7 @@ class ImportService
             // Add efficiency metrics from smart deduplication.
             $totalProcessed = count($summary['created']) + count($summary['updated']) + count($summary['unchanged']);
             if ($totalProcessed > 0 && count($summary['unchanged']) > 0) {
-                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1).'% operations avoided';
+                $summary['deduplication_efficiency'] = round((count($summary['unchanged']) / $totalProcessed) * 100, 1) . '% operations avoided';
             }
 
             // Handle validation errors if validation was enabled.
@@ -920,7 +919,7 @@ class ImportService
      *
      * @psalm-return array{'@self': array<string, int|mixed|string>,...}
      */
-    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, ?IUser $currentUser=null): array
+    private function transformCsvRowToObject(array $rowData, Register $register, Schema $schema, ?IUser $currentUser = null): array
     {
         // Use instance cache instead of static to prevent issues between requests.
         $schemaId = $schema->getId();
@@ -967,7 +966,7 @@ class ImportService
             if ($firstChar === '_') {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } else if ($firstChar === '@') {
+            } elseif ($firstChar === '@') {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -1040,7 +1039,7 @@ class ImportService
 
         // Handle date-only format (e.g., "2025-01-01").
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === true) {
-            return $value.' 00:00:00';
+            return $value . ' 00:00:00';
         }
 
         // Return original value if no transformation needed.
@@ -1133,7 +1132,7 @@ class ImportService
      *
      * @return array<string, mixed>|null Object data or null if transformation fails
      */
-    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, ?IUser $currentUser=null): ?array
+    private function transformExcelRowToObject(array $rowData, ?Register $register, ?Schema $schema, ?IUser $currentUser = null): ?array
     {
         // Separate regular properties from system properties.
         $objectData = [];
@@ -1151,7 +1150,7 @@ class ImportService
             if (str_starts_with($key, '_') === true) {
                 // REQUIREMENT: Columns starting with _ are completely ignored.
                 continue;
-            } else if (str_starts_with($key, '@') === true) {
+            } elseif (str_starts_with($key, '@') === true) {
                 // REQUIREMENT: @ columns only processed if user is admin.
                 if ($isAdmin === false) {
                     continue;
@@ -1219,7 +1218,7 @@ class ImportService
         while ($columnIndex <= 50) {
             // Check up to 50 columns.
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex);
-            $cellValue    = $sheet->getCell($columnLetter.'1')->getValue();
+            $cellValue    = $sheet->getCell($columnLetter . '1')->getValue();
 
             if ($cellValue === null || trim($cellValue) === '') {
                 // Found empty column, stop here.
@@ -1351,7 +1350,7 @@ class ImportService
 
         // Loop through each column in the mapping.
         foreach ($columnMapping as $columnLetter => $columnName) {
-            $cellValue = $sheet->getCell($columnLetter.$row)->getValue();
+            $cellValue = $sheet->getCell($columnLetter . $row)->getValue();
 
             // Convert cell value to string and trim whitespace.
             $cleanCellValue = '';
@@ -1397,7 +1396,7 @@ class ImportService
                 $selfPropertyName = substr($key, 1);
                 // Remove the _ prefix.
                 $selfData[$selfPropertyName] = $value;
-            } else if (str_starts_with($key, '@self.') === true) {
+            } elseif (str_starts_with($key, '@self.') === true) {
                 // Move properties starting with @self. to @self array and remove the @self. prefix.
                 $selfPropertyName = substr($key, 6);
                 // Remove the @self. prefix (6 characters).
@@ -1532,7 +1531,8 @@ class ImportService
 
             case 'object':
                 // Check if this is a related-object that should store UUID strings directly.
-                if (($propertyDef['objectConfiguration']['handling'] ?? null) !== null
+                if (
+                    ($propertyDef['objectConfiguration']['handling'] ?? null) !== null
                     && ($propertyDef['objectConfiguration']['handling'] === 'related-object') === true
                 ) {
                     // For related objects, store UUID strings directly instead of wrapping in objects.
@@ -1639,7 +1639,8 @@ class ImportService
                 $part = trim($part);
 
                 // Remove surrounding quotes.
-                if ((str_starts_with($part, '"') === true && str_ends_with($part, '"') === true)
+                if (
+                    (str_starts_with($part, '"') === true && str_ends_with($part, '"') === true)
                     || (str_starts_with($part, "'") === true && str_ends_with($part, "'") === true)
                 ) {
                     $part = substr($part, 1, -1);
@@ -1731,9 +1732,9 @@ class ImportService
      */
     public function scheduleSolrWarmup(
         array $importSummary,
-        int $delaySeconds=30,
-        string $mode='serial',
-        int $maxObjects=5000
+        int $delaySeconds = 30,
+        string $mode = 'serial',
+        int $maxObjects = 5000
     ): bool {
         try {
             // Calculate total objects imported across all sheets.
@@ -1849,7 +1850,7 @@ class ImportService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
+    public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate = false): bool
     {
         $totalImported = $this->calculateTotalImported($importSummary);
 

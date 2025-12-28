@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SourceCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class SourceCreatedEvent extends Event
 {
-
     /**
      * The newly created source.
      *
@@ -46,7 +46,6 @@ class SourceCreatedEvent extends Event
     {
         parent::__construct();
         $this->source = $source;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class SourceCreatedEvent extends Event
     public function getSource(): Source
     {
         return $this->source;
-
     }//end getSource()
 }//end class

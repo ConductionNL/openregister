@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Object Vectorization Strategy
  *
@@ -36,7 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 {
-
     /**
      * Object service
      *
@@ -73,7 +73,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->objectService   = $objectService;
         $this->settingsService = $settingsService;
         $this->logger          = $logger;
-
     }//end __construct()
 
     /**
@@ -91,12 +90,12 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $limit = $options['batch_size'] ?? 25;
 
         $this->logger->debug(
-                '[ObjectVectorizationStrategy] Fetching objects',
-                [
+            '[ObjectVectorizationStrategy] Fetching objects',
+            [
                     'views' => $views,
                     'limit' => $limit,
                 ]
-                );
+        );
 
         // Get objects using ObjectService with view support.
         $result = $this->objectService->searchObjects(
@@ -120,14 +119,13 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $count = count($objects);
 
         $this->logger->debug(
-                '[ObjectVectorizationStrategy] Fetched objects',
-                [
+            '[ObjectVectorizationStrategy] Fetched objects',
+            [
                     'count' => $count,
                 ]
-                );
+        );
 
         return $objects;
-
     }//end fetchEntities()
 
     /**
@@ -161,7 +159,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 'index' => 0,
             ],
         ];
-
     }//end extractVectorizationItems()
 
     /**
@@ -209,15 +206,15 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 
         // DEBUG: Log what we're receiving.
         $this->logger->debug(
-                '[ObjectVectorizationStrategy] Preparing metadata',
-                [
+            '[ObjectVectorizationStrategy] Preparing metadata',
+            [
                     'object_id'       => $objectId,
                     'has_@self'       => isset($objectData['@self']) === true,
                     '@self_keys'      => $this->extractSelfKeys($objectData),
                     'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                     'register_@self'  => $objectData['@self']['register'] ?? 'none',
                 ]
-                );
+        );
 
         // Extract title/name - check multiple possible fields.
         $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
@@ -226,7 +223,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         if ($title === null) {
-            $title = 'Object #'.$objectId;
+            $title = 'Object #' . $objectId;
         }
 
         // Extract description - check common variants.
@@ -264,7 +261,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
                 'uri'          => $objectData['uri'] ?? $objectData['_uri'] ?? $objectData['@self']['uri'] ?? null,
             ],
         ];
-
     }//end prepareVectorMetadata()
 
     /**
@@ -281,7 +277,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         return array_keys($objectData['@self']);
-
     }//end extractSelfKeys()
 
     /**
@@ -317,7 +312,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         return null;
-
     }//end extractFirstStringField()
 
     /**
@@ -340,7 +334,6 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         return 'unknown';
-
     }//end getEntityIdentifier()
 
     /**
@@ -360,18 +353,17 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $maxNestingDepth  = $config['maxNestingDepth'] ?? 10;
 
         $this->logger->debug(
-                '[ObjectVectorizationStrategy] Serializing object',
-                [
+            '[ObjectVectorizationStrategy] Serializing object',
+            [
                     'objectId'         => $object['id'] ?? 'unknown',
                     'includeMetadata'  => $includeMetadata,
                     'includeRelations' => $includeRelations,
                     'maxNestingDepth'  => $maxNestingDepth,
                 ]
-                );
+        );
 
         // Simple JSON serialization.
         // Future enhancement: smart serialization based on schema.
         return json_encode($object, JSON_PRETTY_PRINT);
-
     }//end serializeObject()
 }//end class

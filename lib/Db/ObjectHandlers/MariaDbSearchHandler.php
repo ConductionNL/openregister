@@ -65,7 +65,7 @@ class MariaDbSearchHandler
                 }
 
                 // Use table alias to avoid ambiguous column references when JOINs are present.
-                $qualifiedField = 'o.'.$field;
+                $qualifiedField = 'o.' . $field;
 
                 // Handle special null checks.
                 if ($value === 'IS NOT NULL') {
@@ -85,19 +85,19 @@ class MariaDbSearchHandler
                             case '~':
                                 // Contains.
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%'.$operatorValue.'%'))
+                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%' . $operatorValue . '%'))
                                 );
                                 break;
                             case '^':
                                 // Starts with.
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter($operatorValue.'%'))
+                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter($operatorValue . '%'))
                                 );
                                 break;
                             case '$':
                                 // Ends with.
                                 $queryBuilder->andWhere(
-                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%'.$operatorValue))
+                                    $queryBuilder->expr()->like($qualifiedField, $queryBuilder->createNamedParameter('%' . $operatorValue))
                                 );
                                 break;
                             case 'ne':
@@ -172,7 +172,7 @@ class MariaDbSearchHandler
 
                                         $orConditions->add(
                                             $queryBuilder->expr()->eq(
-                                                $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                                                $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
                                                 $queryBuilder->createNamedParameter(strtolower($val))
                                             )
                                         );
@@ -198,7 +198,7 @@ class MariaDbSearchHandler
 
                                     $queryBuilder->andWhere(
                                         $queryBuilder->expr()->eq(
-                                            $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                                            $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
                                             $queryBuilder->createNamedParameter(strtolower($val))
                                         )
                                     );
@@ -232,15 +232,15 @@ class MariaDbSearchHandler
                         $sqlOperator = $operator;
                         if ($operator === 'gte') {
                             $sqlOperator = '>=';
-                        } else if ($operator === 'lte') {
+                        } elseif ($operator === 'lte') {
                             $sqlOperator = '<=';
-                        } else if ($operator === 'gt') {
+                        } elseif ($operator === 'gt') {
                             $sqlOperator = '>';
-                        } else if ($operator === 'lt') {
+                        } elseif ($operator === 'lt') {
                             $sqlOperator = '<';
-                        } else if ($operator === 'ne') {
+                        } elseif ($operator === 'ne') {
                             $sqlOperator = '!=';
-                        } else if ($operator === 'eq') {
+                        } elseif ($operator === 'eq') {
                             $sqlOperator = '=';
                         }
 
@@ -420,7 +420,7 @@ class MariaDbSearchHandler
                     foreach ($value as $arrayValue) {
                         $orConditions->add(
                             $queryBuilder->expr()->eq(
-                                $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                                $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
                                 $queryBuilder->createNamedParameter(strtolower($arrayValue))
                             )
                         );
@@ -440,7 +440,7 @@ class MariaDbSearchHandler
 
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction('LOWER('.$qualifiedField.')'),
+                        $queryBuilder->createFunction('LOWER(' . $qualifiedField . ')'),
                         $queryBuilder->createNamedParameter(strtolower($value))
                     )
                 );
@@ -500,14 +500,14 @@ class MariaDbSearchHandler
     private function applyJsonFieldFilter(IQueryBuilder $queryBuilder, string $field, mixed $value): void
     {
         // Build the JSON path - convert dot notation to JSON path.
-        $jsonPath = '$.'.str_replace('.', '.', $field);
+        $jsonPath = '$.' . str_replace('.', '.', $field);
 
         // Handle special null checks.
         if ($value === 'IS NOT NULL') {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->isNotNull(
                     $queryBuilder->createFunction(
-                        'JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')'
+                        'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
                     )
                 )
             );
@@ -518,7 +518,7 @@ class MariaDbSearchHandler
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->isNull(
                     $queryBuilder->createFunction(
-                        'JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')'
+                        'JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')'
                     )
                 )
             );
@@ -536,7 +536,7 @@ class MariaDbSearchHandler
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
                             $queryBuilder->createFunction(
-                                'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
+                                'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
                             ),
                             $queryBuilder->createNamedParameter($arrayValue)
                         )
@@ -545,7 +545,7 @@ class MariaDbSearchHandler
                     // Check if the value exists within an array using JSON_CONTAINS.
                     $orConditions->add(
                         $queryBuilder->expr()->eq(
-                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($arrayValue)).")"),
+                            $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($arrayValue)) . ")"),
                             $queryBuilder->createNamedParameter(1)
                         )
                     );
@@ -556,7 +556,7 @@ class MariaDbSearchHandler
                 $orConditions->add(
                     $queryBuilder->expr()->eq(
                         $queryBuilder->createFunction(
-                            'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
+                            'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
                         ),
                         $queryBuilder->createNamedParameter(strtolower($arrayValue))
                     )
@@ -565,7 +565,7 @@ class MariaDbSearchHandler
                 // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
                 $orConditions->add(
                     $queryBuilder->expr()->eq(
-                        $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))).")"),
+                        $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . ")), " . $queryBuilder->createNamedParameter(json_encode(strtolower($arrayValue))) . ")"),
                         $queryBuilder->createNamedParameter(1)
                     )
                 );
@@ -584,7 +584,7 @@ class MariaDbSearchHandler
             $singleValueConditions->add(
                 $queryBuilder->expr()->eq(
                     $queryBuilder->createFunction(
-                        'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
+                        'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
                     ),
                     $queryBuilder->createNamedParameter($value)
                 )
@@ -593,7 +593,7 @@ class MariaDbSearchHandler
             // Check if the value exists within an array using JSON_CONTAINS.
             $singleValueConditions->add(
                 $queryBuilder->expr()->eq(
-                    $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath)."), ".$queryBuilder->createNamedParameter(json_encode($value)).")"),
+                    $queryBuilder->createFunction("JSON_CONTAINS(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . "), " . $queryBuilder->createNamedParameter(json_encode($value)) . ")"),
                     $queryBuilder->createNamedParameter(1)
                 )
             );
@@ -606,7 +606,7 @@ class MariaDbSearchHandler
         $singleValueConditions->add(
             $queryBuilder->expr()->eq(
                 $queryBuilder->createFunction(
-                    'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).')))'
+                    'LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . ')))'
                 ),
                 $queryBuilder->createNamedParameter(strtolower($value))
             )
@@ -615,7 +615,7 @@ class MariaDbSearchHandler
         // Check if the value exists within an array using JSON_CONTAINS (case-insensitive).
         $singleValueConditions->add(
             $queryBuilder->expr()->eq(
-                $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, ".$queryBuilder->createNamedParameter($jsonPath).")), ".$queryBuilder->createNamedParameter(json_encode(strtolower($value))).")"),
+                $queryBuilder->createFunction("JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, " . $queryBuilder->createNamedParameter($jsonPath) . ")), " . $queryBuilder->createNamedParameter(json_encode(strtolower($value))) . ")"),
                 $queryBuilder->createNamedParameter(1)
             )
         );
@@ -690,8 +690,8 @@ class MariaDbSearchHandler
             foreach (array_keys($indexedFields) as $columnName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
-                        $queryBuilder->createFunction('LOWER('.$columnName.')'),
-                        $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
+                        $queryBuilder->createFunction('LOWER(' . $columnName . ')'),
+                        $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
                     )
                 );
             }
@@ -701,8 +701,8 @@ class MariaDbSearchHandler
             foreach ($otherMetadataFields as $columnName) {
                 $termConditions->add(
                     $queryBuilder->expr()->like(
-                        $queryBuilder->createFunction('LOWER('.$columnName.')'),
-                        $queryBuilder->createNamedParameter('%'.$cleanTerm.'%')
+                        $queryBuilder->createFunction('LOWER(' . $columnName . ')'),
+                        $queryBuilder->createNamedParameter('%' . $cleanTerm . '%')
                     )
                 );
             }
@@ -759,11 +759,11 @@ class MariaDbSearchHandler
             }
 
             // Build the JSON path.
-            $jsonPath = '$.'.str_replace('.', '.', $field);
+            $jsonPath = '$.' . str_replace('.', '.', $field);
 
             $queryBuilder->addOrderBy(
                 $queryBuilder->createFunction(
-                    'JSON_UNQUOTE(JSON_EXTRACT(`object`, '.$queryBuilder->createNamedParameter($jsonPath).'))'
+                    'JSON_UNQUOTE(JSON_EXTRACT(`object`, ' . $queryBuilder->createNamedParameter($jsonPath) . '))'
                 ),
                 $direction
             );

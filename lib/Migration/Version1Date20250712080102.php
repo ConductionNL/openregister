@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration - Create Search Trails Table
  *
@@ -144,7 +145,6 @@ class Version1Date20250712080102 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**

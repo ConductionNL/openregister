@@ -52,7 +52,6 @@ class VectorStatsHandler
         private readonly IndexService $indexService,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -64,7 +63,7 @@ class VectorStatsHandler
      *
      * @psalm-return array{total_vectors: int, by_type: array<int>, by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int, source?: 'solr'|'solr_error'|'solr_unavailable'}
      */
-    public function getStats(string $backend='php'): array
+    public function getStats(string $backend = 'php'): array
     {
         try {
             if ($backend === 'solr') {
@@ -84,7 +83,6 @@ class VectorStatsHandler
                 'by_model'      => [],
             ];
         }//end try
-
     }//end getStats()
 
     /**
@@ -136,7 +134,6 @@ class VectorStatsHandler
             'object_vectors' => $byType['object'] ?? 0,
             'file_vectors'   => $byType['file'] ?? 0,
         ];
-
     }//end getStatsFromDatabase()
 
     /**
@@ -249,7 +246,6 @@ class VectorStatsHandler
                 'source'         => 'solr_error',
             ];
         }//end try
-
     }//end getStatsFromSolr()
 
     /**
@@ -287,7 +283,7 @@ class VectorStatsHandler
         }
 
         // Query Solr.
-        $solrUrl  = $solrBackend->buildSolrBaseUrl()."/{$collection}/select";
+        $solrUrl  = $solrBackend->buildSolrBaseUrl() . "/{$collection}/select";
         $response = $solrBackend->getHttpClient()->get($solrUrl, $options);
 
         $data  = json_decode((string) $response->getBody(), true);
@@ -313,6 +309,5 @@ class VectorStatsHandler
             'count'    => $count,
             'by_model' => $byModel,
         ];
-
     }//end countVectorsInCollection()
 }//end class

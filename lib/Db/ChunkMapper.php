@@ -46,7 +46,6 @@ class ChunkMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_chunks', Chunk::class);
-
     }//end __construct()
 
     /**
@@ -59,7 +58,6 @@ class ChunkMapper extends QBMapper
     public function findEntitiesPublic(IQueryBuilder $query): array
     {
         return parent::findEntities($query);
-
     }//end findEntitiesPublic()
 
     /**
@@ -90,7 +88,6 @@ class ChunkMapper extends QBMapper
             ->orderBy('chunk_index', 'ASC');
 
         return $this->findEntities($qb);
-
     }//end findBySource()
 
     /**
@@ -115,7 +112,6 @@ class ChunkMapper extends QBMapper
                 )
             )
             ->executeStatement();
-
     }//end deleteBySource()
 
     /**
@@ -156,7 +152,6 @@ class ChunkMapper extends QBMapper
         }
 
         return $timestamp;
-
     }//end getLatestUpdatedTimestamp()
 
     /**
@@ -175,7 +170,6 @@ class ChunkMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countAll()
 
     /**
@@ -197,7 +191,6 @@ class ChunkMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countIndexed()
 
     /**
@@ -219,7 +212,6 @@ class ChunkMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countUnindexed()
 
     /**
@@ -241,7 +233,6 @@ class ChunkMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countVectorized()
 
     /**
@@ -256,7 +247,7 @@ class ChunkMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
      */
-    public function findUnindexed(?int $limit=null, ?int $offset=null): array
+    public function findUnindexed(?int $limit = null, ?int $offset = null): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -273,6 +264,5 @@ class ChunkMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-
     }//end findUnindexed()
 }//end class

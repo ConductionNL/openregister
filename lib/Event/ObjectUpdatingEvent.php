@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectUpdatingEvent extends Event
 {
-
     /**
      * The updated object entity state
      *
@@ -55,7 +55,6 @@ class ObjectUpdatingEvent extends Event
         parent::__construct();
         $this->newObject = $newObject;
         $this->oldObject = $oldObject;
-
     }//end __construct()
 
     /**
@@ -66,7 +65,6 @@ class ObjectUpdatingEvent extends Event
     public function getNewObject(): ObjectEntity
     {
         return $this->newObject;
-
     }//end getNewObject()
 
     /**
@@ -77,6 +75,5 @@ class ObjectUpdatingEvent extends Event
     public function getOldObject(): ObjectEntity
     {
         return $this->oldObject;
-
     }//end getOldObject()
 }//end class

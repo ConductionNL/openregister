@@ -56,7 +56,6 @@ class PublishHandler
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -76,9 +75,9 @@ class PublishHandler
      */
     public function publish(
         string $uuid,
-        ?DateTime $date=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?DateTime $date = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): ObjectEntity {
         $this->logger->debug(
             message: '[PublishHandler] Publishing object',
@@ -115,9 +114,9 @@ class PublishHandler
             try {
                 error_log('[PublishHandler] About to create audit trail for publish action');
                 $auditTrail = $this->auditTrailMapper->createAuditTrail(old: $objectBeforeClone, new: $object, action: 'publish');
-                error_log('[PublishHandler] Audit trail created: '.$auditTrail->getId());
+                error_log('[PublishHandler] Audit trail created: ' . $auditTrail->getId());
             } catch (\Exception $auditError) {
-                error_log('[PublishHandler] Failed to create audit trail: '.$auditError->getMessage());
+                error_log('[PublishHandler] Failed to create audit trail: ' . $auditError->getMessage());
             }
 
             $this->logger->info(
@@ -139,7 +138,6 @@ class PublishHandler
             );
             throw $e;
         }//end try
-
     }//end publish()
 
     /**
@@ -159,9 +157,9 @@ class PublishHandler
      */
     public function depublish(
         string $uuid,
-        ?DateTime $date=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        ?DateTime $date = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): ObjectEntity {
         $this->logger->debug(
             message: '[PublishHandler] Depublishing object',
@@ -214,7 +212,6 @@ class PublishHandler
             );
             throw $e;
         }//end try
-
     }//end depublish()
 
     /**
@@ -262,7 +259,6 @@ class PublishHandler
         }
 
         return true;
-
     }//end isPublished()
 
     /**
@@ -309,6 +305,5 @@ class PublishHandler
         }
 
         return $status;
-
     }//end getPublicationStatus()
 }//end class

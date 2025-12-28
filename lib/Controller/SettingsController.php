@@ -131,7 +131,6 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsController extends Controller
 {
-
     /**
      * The OpenRegister object service
      *
@@ -166,7 +165,6 @@ class SettingsController extends Controller
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -185,7 +183,6 @@ class SettingsController extends Controller
         }
 
         throw new RuntimeException('OpenRegister service is not available.');
-
     }//end getObjectService()
 
     /**
@@ -205,7 +202,6 @@ class SettingsController extends Controller
 
         // Throw an exception if the service is not available.
         throw new RuntimeException('Configuration service is not available.');
-
     }//end getConfigurationService()
 
     /**
@@ -227,7 +223,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end index()
 
     /**
@@ -250,7 +245,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end update()
 
     /**
@@ -270,7 +264,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end load()
 
     /**
@@ -291,7 +284,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end updatePublishingOptions()
 
     /**
@@ -316,7 +308,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end rebase()
 
     /**
@@ -341,7 +332,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
         }
-
     }//end stats()
 
     /**
@@ -361,7 +351,6 @@ class SettingsController extends Controller
     public function getStatistics(): JSONResponse
     {
         return $this->stats();
-
     }//end getStatistics()
 
     /**
@@ -380,12 +369,12 @@ class SettingsController extends Controller
 
             if (($solrSettings['enabled'] === false)) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => 'SOLR is disabled',
                         ],
-                        statusCode: 400
-                        );
+                    statusCode: 400
+                );
             }
 
             // Create SolrSetup using IndexService for authenticated HTTP client.
@@ -398,7 +387,7 @@ class SettingsController extends Controller
 
             if ($result === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => true,
                             'message' => 'SOLR setup completed successfully',
                             'config'  => [
@@ -407,26 +396,25 @@ class SettingsController extends Controller
                                 'scheme' => $solrSettings['scheme'],
                             ],
                         ]
-                        );
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => 'SOLR setup failed - check logs',
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }//end if
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'SOLR setup error: '.$e->getMessage(),
+                        'message' => 'SOLR setup error: ' . $e->getMessage(),
                     ],
-                    statusCode: 422
-                    );
+                statusCode: 422
+            );
         }//end try
-
     }//end testSetupHandler()
 
     /**
@@ -454,24 +442,24 @@ class SettingsController extends Controller
             // Validate parameters.
             if ($batchSize < 1 || $batchSize > 5000) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => false,
                             'message'    => 'Invalid batch size. Must be between 1 and 5000',
                             'collection' => $name,
                         ],
-                        statusCode: 400
-                        );
+                    statusCode: 400
+                );
             }
 
             if ($maxObjects < 0) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => false,
                             'message'    => 'Invalid maxObjects. Must be 0 (all) or positive number',
                             'collection' => $name,
                         ],
-                        statusCode: 400
-                        );
+                    statusCode: 400
+                );
             }
 
             // Reindex the specified collection.
@@ -479,35 +467,34 @@ class SettingsController extends Controller
 
             if ($result['success'] === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => true,
                             'message'    => 'Reindex completed successfully',
                             'stats'      => $result['stats'] ?? [],
                             'collection' => $name,
                         ],
-                        statusCode: 200
-                        );
+                    statusCode: 200
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => false,
                             'message'    => $result['message'] ?? 'Failed to reindex collection',
                             'collection' => $name,
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'    => false,
-                        'message'    => 'Reindex failed: '.$e->getMessage(),
+                        'message'    => 'Reindex failed: ' . $e->getMessage(),
                         'collection' => $name,
                     ],
-                    statusCode: 422
-                );
+                statusCode: 422
+            );
         }//end try
-
     }//end reindexSpecificCollection()
 
     /**
@@ -531,7 +518,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end getSearchBackend()
 
     /**
@@ -563,18 +549,17 @@ class SettingsController extends Controller
             $result = $this->settingsService->updateSearchBackendConfig($backend);
 
             return new JSONResponse(
-                    data: array_merge(
+                data: array_merge(
                     $result,
                     [
                         'message'         => 'Backend updated successfully. Please reload the application.',
                         'reload_required' => true,
-                    ]
-                    )
-                    );
+                        ]
+                )
+            );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end updateSearchBackend()
 
     /**
@@ -636,7 +621,7 @@ class SettingsController extends Controller
                 $vectorSupport     = false;
                 $recommendedPlugin = 'pgvector for PostgreSQL';
                 $performanceNote   = 'Current: Similarity calculated in PHP (slow). Recommended: Migrate to PostgreSQL + pgvector for 10-100x speedup.';
-            } else if (strpos($platformName, 'postgres') !== false) {
+            } elseif (strpos($platformName, 'postgres') !== false) {
                 $dbType = 'PostgreSQL';
 
                 try {
@@ -669,7 +654,7 @@ class SettingsController extends Controller
                     $recommendedPlugin = 'pgvector (not found)';
                     $performanceNote   = 'Unable to detect pgvector. Install with: CREATE EXTENSION vector;';
                 }
-            } else if (strpos($platformName, 'sqlite') !== false) {
+            } elseif (strpos($platformName, 'sqlite') !== false) {
                 $dbType            = 'SQLite';
                 $vectorSupport     = false;
                 $recommendedPlugin = 'sqlite-vss or migrate to PostgreSQL';
@@ -677,7 +662,7 @@ class SettingsController extends Controller
             }//end if
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'  => true,
                         'database' => [
                             'type'              => $dbType,
@@ -688,25 +673,24 @@ class SettingsController extends Controller
                             'performanceNote'   => $performanceNote,
                         ],
                     ]
-                    );
+            );
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SettingsController] Failed to get database info',
-                    [
+                '[SettingsController] Failed to get database info',
+                [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'error'   => 'Failed to get database information: '.$e->getMessage(),
+                        'error'   => 'Failed to get database information: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end getDatabaseInfo()
 
     /**
@@ -728,7 +712,6 @@ class SettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end getVersionInfo()
 
     /**
@@ -758,14 +741,13 @@ class SettingsController extends Controller
             return new JSONResponse(data: $results);
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    statusCode: 422
-                );
+                statusCode: 422
+            );
         }//end try
-
     }//end testSchemaMapping()
 
     /**
@@ -809,17 +791,17 @@ class SettingsController extends Controller
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed, object_data: array|null}
                          */
 
-                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-                            $objectData = $org->getObject();
-                            return [
-                                'id'          => $org->getId(),
-                                'name'        => $org->getName(),
-                                'type'        => $objectData['type'] ?? 'NO TYPE',
-                                'object_data' => $objectData,
-                            ];
-                        },
-                        $result1['results']
-                        ),
+                    function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
+                        $objectData = $org->getObject();
+                        return [
+                            'id'          => $org->getId(),
+                            'name'        => $org->getName(),
+                            'type'        => $objectData['type'] ?? 'NO TYPE',
+                            'object_data' => $objectData,
+                        ];
+                    },
+                    $result1['results']
+                ),
             ];
 
             // Test 2: Try type filtering with samenwerking.
@@ -839,16 +821,16 @@ class SettingsController extends Controller
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
                          */
 
-                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-                            $objectData = $org->getObject();
-                            return [
-                                'id'   => $org->getId(),
-                                'name' => $org->getName(),
-                                'type' => $objectData['type'] ?? 'NO TYPE',
-                            ];
-                        },
-                        $result2['results']
-                        ),
+                    function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
+                        $objectData = $org->getObject();
+                        return [
+                            'id'   => $org->getId(),
+                            'name' => $org->getName(),
+                            'type' => $objectData['type'] ?? 'NO TYPE',
+                        ];
+                    },
+                    $result2['results']
+                ),
             ];
 
             // Test 3: Try type filtering with community.
@@ -867,16 +849,16 @@ class SettingsController extends Controller
                          *
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
                          */
-                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-                            $objectData = $org->getObject();
-                            return [
-                                'id'   => $org->getId(),
-                                'name' => $org->getName(),
-                                'type' => $objectData['type'] ?? 'NO TYPE',
-                            ];
-                        },
-                        $result3['results']
-                        ),
+                    function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
+                        $objectData = $org->getObject();
+                        return [
+                            'id'   => $org->getId(),
+                            'name' => $org->getName(),
+                            'type' => $objectData['type'] ?? 'NO TYPE',
+                        ];
+                    },
+                    $result3['results']
+                ),
             ];
 
             // Test 4: Try type filtering with both types.
@@ -895,16 +877,16 @@ class SettingsController extends Controller
                          *
                          * @psalm-return array{id: int, name: null|string, type: 'NO TYPE'|mixed}
                          */
-                        function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
-                            $objectData = $org->getObject();
-                            return [
-                                'id'   => $org->getId(),
-                                'name' => $org->getName(),
-                                'type' => $objectData['type'] ?? 'NO TYPE',
-                            ];
-                        },
-                        $result4['results']
-                        ),
+                    function (\OCA\OpenRegister\Db\ObjectEntity $org): array {
+                        $objectData = $org->getObject();
+                        return [
+                            'id'   => $org->getId(),
+                            'name' => $org->getName(),
+                            'type' => $objectData['type'] ?? 'NO TYPE',
+                        ];
+                    },
+                    $result4['results']
+                ),
             ];
 
             // Test 5: Direct database query to check type field.
@@ -925,30 +907,29 @@ class SettingsController extends Controller
                          *
                          * @psalm-return array{id: mixed, name: mixed, type: 'NO TYPE'|mixed, object_json: mixed}
                          */
-                        function (array $row): array {
-                            $objectData = json_decode($row['object'], true);
-                            return [
-                                'id'          => $row['id'],
-                                'name'        => $row['name'],
-                                'type'        => $objectData['type'] ?? 'NO TYPE',
-                                'object_json' => $row['object'],
-                            ];
-                        },
-                        $rows
-                        ),
+                    function (array $row): array {
+                        $objectData = json_decode($row['object'], true);
+                        return [
+                            'id'          => $row['id'],
+                            'name'        => $row['name'],
+                            'type'        => $objectData['type'] ?? 'NO TYPE',
+                            'object_json' => $row['object'],
+                        ];
+                    },
+                    $rows
+                ),
             ];
 
             return new JSONResponse(data: $results);
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end debugTypeFiltering()
 
     /**
@@ -967,17 +948,17 @@ class SettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|400|500, array{success: bool, error?: string, trace?: string, query?: string, results?: array<int, array<string, mixed>>, total?: int<0, max>, limit?: int, filters?: array, timestamp?: string}, array<never, never>>
      */
-    public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
+    public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): JSONResponse
     {
         try {
             if (empty(trim($query)) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Query parameter is required',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Use VectorizationService for semantic search.
@@ -987,7 +968,7 @@ class SettingsController extends Controller
             $results = $vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'   => true,
                         'query'     => $query,
                         'results'   => $results,
@@ -996,18 +977,17 @@ class SettingsController extends Controller
                         'filters'   => $filters,
                         'timestamp' => date('c'),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end semanticSearch()
 
     /**
@@ -1029,20 +1009,20 @@ class SettingsController extends Controller
      */
     public function hybridSearch(
         string $query,
-        int $limit=20,
-        array $solrFilters=[],
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
-        ?string $provider=null
+        int $limit = 20,
+        array $solrFilters = [],
+        array $weights = ['solr' => 0.5, 'vector' => 0.5],
+        ?string $provider = null
     ): JSONResponse {
         try {
             if (empty(trim($query)) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Query parameter is required',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Use VectorizationService for hybrid search.
@@ -1059,23 +1039,22 @@ class SettingsController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'   => true,
                         'query'     => $query,
                         ...$resultArray,
                         'timestamp' => date('c'),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end hybridSearch()
 }//end class

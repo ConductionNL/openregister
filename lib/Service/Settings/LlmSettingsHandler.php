@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister LLM Settings Handler
  *
@@ -41,7 +42,6 @@ use OCP\IConfig;
  */
 class LlmSettingsHandler
 {
-
     /**
      * Configuration service
      *
@@ -66,11 +66,10 @@ class LlmSettingsHandler
      */
     public function __construct(
         IConfig $config,
-        string $appName='openregister'
+        string $appName = 'openregister'
     ) {
         $this->config  = $config;
         $this->appName = $appName;
-
     }//end __construct()
 
     /**
@@ -144,9 +143,8 @@ class LlmSettingsHandler
 
             return $decoded;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve LLM settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve LLM settings: ' . $e->getMessage());
         }//end try
-
     }//end getLLMSettingsOnly()
 
     /**
@@ -197,8 +195,7 @@ class LlmSettingsHandler
             $this->config->setAppValue($this->appName, 'llm', json_encode($llmConfig));
             return $llmConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update LLM settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update LLM settings: ' . $e->getMessage());
         }//end try
-
     }//end updateLLMSettingsOnly()
 }//end class

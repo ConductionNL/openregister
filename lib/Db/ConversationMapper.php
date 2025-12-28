@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Conversation Mapper
  *
@@ -59,7 +60,6 @@ use OCP\IDBConnection;
  */
 class ConversationMapper extends QBMapper
 {
-
     /**
      * Event dispatcher for dispatching conversation events
      *
@@ -90,7 +90,6 @@ class ConversationMapper extends QBMapper
 
         // Store event dispatcher for use in CRUD operations.
         $this->eventDispatcher = $eventDispatcher;
-
     }//end __construct()
 
     /**
@@ -132,7 +131,6 @@ class ConversationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ConversationCreatedEvent($entity));
 
         return $entity;
-
     }//end insert()
 
     /**
@@ -166,7 +164,6 @@ class ConversationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ConversationUpdatedEvent($entity, $oldEntity));
 
         return $entity;
-
     }//end update()
 
     /**
@@ -186,7 +183,6 @@ class ConversationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ConversationDeletedEvent($entity));
 
         return $entity;
-
     }//end delete()
 
     /**
@@ -208,7 +204,6 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -230,7 +225,6 @@ class ConversationMapper extends QBMapper
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
 
         return $this->findEntity($qb);
-
     }//end findByUuid()
 
     /**
@@ -248,10 +242,10 @@ class ConversationMapper extends QBMapper
      */
     public function findByUser(
         string $userId,
-        ?string $organisation=null,
-        bool $includeDeleted=false,
-        int $limit=50,
-        int $offset=0
+        ?string $organisation = null,
+        bool $includeDeleted = false,
+        int $limit = 50,
+        int $offset = 0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -274,7 +268,6 @@ class ConversationMapper extends QBMapper
             ->setFirstResult($offset);
 
         return $this->findEntities($qb);
-
     }//end findByUser()
 
     /**
@@ -291,9 +284,9 @@ class ConversationMapper extends QBMapper
      */
     public function findDeletedByUser(
         string $userId,
-        ?string $organisation=null,
-        int $limit=50,
-        int $offset=0
+        ?string $organisation = null,
+        int $limit = 50,
+        int $offset = 0
     ): array {
         $qb = $this->db->getQueryBuilder();
 
@@ -312,7 +305,6 @@ class ConversationMapper extends QBMapper
             ->setFirstResult($offset);
 
         return $this->findEntities($qb);
-
     }//end findDeletedByUser()
 
     /**
@@ -354,7 +346,6 @@ class ConversationMapper extends QBMapper
         $result->closeCursor();
 
         return $titles;
-
     }//end findTitlesByUserAgent()
 
     /**
@@ -368,8 +359,8 @@ class ConversationMapper extends QBMapper
      */
     public function countByUser(
         string $userId,
-        ?string $organisation=null,
-        bool $includeDeleted=false
+        ?string $organisation = null,
+        bool $includeDeleted = false
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -392,7 +383,6 @@ class ConversationMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countByUser()
 
     /**
@@ -405,7 +395,7 @@ class ConversationMapper extends QBMapper
      */
     public function countDeletedByUser(
         string $userId,
-        ?string $organisation=null
+        ?string $organisation = null
     ): int {
         $qb = $this->db->getQueryBuilder();
 
@@ -424,7 +414,6 @@ class ConversationMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countDeletedByUser()
 
     /**
@@ -446,7 +435,6 @@ class ConversationMapper extends QBMapper
         $conversation->setUpdated(new DateTime());
 
         return $this->update($conversation);
-
     }//end softDelete()
 
     /**
@@ -466,7 +454,6 @@ class ConversationMapper extends QBMapper
         $conversation->setUpdated(new DateTime());
 
         return $this->update($conversation);
-
     }//end restore()
 
     /**
@@ -482,7 +469,7 @@ class ConversationMapper extends QBMapper
      *
      * @return bool True if user can access
      */
-    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid=null): bool
+    public function canUserAccessConversation(Conversation $conversation, string $userId, ?string $organisationUuid = null): bool
     {
         // User must be the owner.
         if ($conversation->getUserId() !== $userId) {
@@ -495,7 +482,6 @@ class ConversationMapper extends QBMapper
         }
 
         return true;
-
     }//end canUserAccessConversation()
 
     /**
@@ -512,6 +498,5 @@ class ConversationMapper extends QBMapper
     public function canUserModifyConversation(Conversation $conversation, string $userId): bool
     {
         return $conversation->getUserId() === $userId;
-
     }//end canUserModifyConversation()
 }//end class

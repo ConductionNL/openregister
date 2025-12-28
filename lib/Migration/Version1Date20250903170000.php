@@ -128,6 +128,5 @@ class Version1Date20250903170000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 }//end class

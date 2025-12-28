@@ -34,7 +34,6 @@ use Psr\Log\LoggerInterface;
  */
 class SolrHttpClient
 {
-
     /**
      * HTTP client for Solr requests.
      *
@@ -80,7 +79,6 @@ class SolrHttpClient
 
         $this->initializeConfig();
         $this->initializeHttpClient();
-
     }//end __construct()
 
     /**
@@ -100,7 +98,6 @@ class SolrHttpClient
             'core'    => ($settings['core'] ?? 'openregister'),
             'timeout' => ((int) ($settings['timeout'] ?? 30)),
         ];
-
     }//end initializeConfig()
 
     /**
@@ -122,7 +119,6 @@ class SolrHttpClient
                 ],
             ]
         );
-
     }//end initializeHttpClient()
 
     /**
@@ -135,7 +131,6 @@ class SolrHttpClient
         return !empty($this->config['enabled'])
             && !empty($this->config['host'])
             && !empty($this->config['core']);
-
     }//end isConfigured()
 
     /**
@@ -146,7 +141,6 @@ class SolrHttpClient
     public function getConfig(): array
     {
         return $this->config;
-
     }//end getConfig()
 
     /**
@@ -157,7 +151,6 @@ class SolrHttpClient
     public function getHttpClient(): GuzzleClient
     {
         return $this->httpClient;
-
     }//end getHttpClient()
 
     /**
@@ -172,7 +165,6 @@ class SolrHttpClient
         $path = $this->config['path'];
 
         return "http://{$host}:{$port}{$path}";
-
     }//end buildSolrBaseUrl()
 
     /**
@@ -182,13 +174,12 @@ class SolrHttpClient
      *
      * @return string Endpoint URL
      */
-    public function getEndpointUrl(?string $collection=null): string
+    public function getEndpointUrl(?string $collection = null): string
     {
         $baseUrl = $this->buildSolrBaseUrl();
         $core    = $collection ?? $this->config['core'];
 
         return "{$baseUrl}/{$core}";
-
     }//end getEndpointUrl()
 
     /**
@@ -201,7 +192,7 @@ class SolrHttpClient
      *
      * @throws Exception If request fails
      */
-    public function get(string $url, array $opts=[]): array
+    public function get(string $url, array $opts = []): array
     {
         try {
             $response = $this->httpClient->get($url, $opts);
@@ -212,7 +203,6 @@ class SolrHttpClient
             $this->logger->error('[SolrHttpClient] GET request failed', ['url' => $url, 'error' => $e->getMessage()]);
             throw $e;
         }//end try
-
     }//end get()
 
     /**
@@ -226,7 +216,7 @@ class SolrHttpClient
      *
      * @throws Exception If request fails
      */
-    public function post(string $url, array $data=[], array $opts=[]): array
+    public function post(string $url, array $data = [], array $opts = []): array
     {
         try {
             $opts['json'] = $data;
@@ -238,7 +228,6 @@ class SolrHttpClient
             $this->logger->error('[SolrHttpClient] POST request failed', ['url' => $url, 'error' => $e->getMessage()]);
             throw $e;
         }//end try
-
     }//end post()
 
     /**
@@ -261,6 +250,5 @@ class SolrHttpClient
         }
 
         return $baseCollectionName;
-
     }//end getTenantSpecificCollectionName()
 }//end class

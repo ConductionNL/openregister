@@ -138,7 +138,6 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -167,6 +166,5 @@ class Version1Date20251110000000 extends SimpleMigrationStep
         $output->info(message: '   • All existing organisations have parent = NULL (no hierarchy)');
         $output->info(message: '');
         $output->info(message: '✅ Migration completed successfully');
-
     }//end postSchemaChange()
 }//end class

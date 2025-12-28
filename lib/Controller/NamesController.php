@@ -69,7 +69,6 @@ class NamesController extends Controller
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -128,7 +127,7 @@ class NamesController extends Controller
                     } else {
                         $requestedIds = array_map('trim', explode(',', $requestedIds));
                     }
-                } else if (is_array($requestedIds) === false) {
+                } elseif (is_array($requestedIds) === false) {
                     $requestedIds = [(string) $requestedIds];
                 }
 
@@ -136,55 +135,54 @@ class NamesController extends Controller
                 $names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
 
                 $this->logger->debug(
-                        '📦 BULK NAME LOOKUP REQUEST',
-                        [
+                    '📦 BULK NAME LOOKUP REQUEST',
+                    [
                             'requested_count' => count($requestedIds),
                             'found_count'     => count($names),
-                            'execution_time'  => round((microtime(true) - $startTime) * 1000, 2).'ms',
+                            'execution_time'  => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
                         ]
-                        );
+                );
             } else {
                 // Get all object names (triggers warmup if needed).
                 $names = $this->objectCacheService->getAllObjectNames();
 
                 $this->logger->debug(
-                        '📋 ALL NAMES REQUEST',
-                        [
+                    '📋 ALL NAMES REQUEST',
+                    [
                             'total_names'    => count($names),
-                            'execution_time' => round((microtime(true) - $startTime) * 1000, 2).'ms',
+                            'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
                         ]
-                        );
+                );
             }//end if
 
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'names'          => $names,
                         'total'          => count($names),
                         'cached'         => true,
-                        'execution_time' => $executionTime.'ms',
+                        'execution_time' => $executionTime . 'ms',
                         'cache_stats'    => $this->objectCacheService->getStats(),
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: 'Names endpoint failed',
-                    context: [
+                message: 'Names endpoint failed',
+                context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'error'   => 'Failed to retrieve object names',
                         'message' => $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end index()
 
     /**
@@ -241,12 +239,12 @@ class NamesController extends Controller
 
             if ($requestedIds === null || is_array($requestedIds) === false) {
                 return new JSONResponse(
-                     data: [
+                    data: [
                          'error'   => 'Invalid request: ids array is required in request body',
                          'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
                      ],
-                     statusCode: 400
-                     );
+                    statusCode: 400
+                );
             }
 
             // Filter and validate IDs.
@@ -254,53 +252,52 @@ class NamesController extends Controller
 
             if (empty($requestedIds) === true) {
                 return new JSONResponse(
-                     data: [
+                    data: [
                          'error' => 'No valid IDs provided in request',
                      ],
-                     statusCode: 400
-                     );
+                    statusCode: 400
+                );
             }
 
             $names         = $this->objectCacheService->getMultipleObjectNames($requestedIds);
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->debug(
-                 '📦 BULK NAME POST REQUEST',
-                 [
+                '📦 BULK NAME POST REQUEST',
+                [
                      'requested_count' => count($requestedIds),
                      'found_count'     => count($names),
-                     'execution_time'  => $executionTime.'ms',
+                     'execution_time'  => $executionTime . 'ms',
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'names'          => $names,
                      'total'          => count($names),
                      'requested'      => count($requestedIds),
                      'cached'         => true,
-                     'execution_time' => $executionTime.'ms',
+                     'execution_time' => $executionTime . 'ms',
                      'cache_stats'    => $this->objectCacheService->getStats(),
                  ]
-                 );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                 message: 'POST names endpoint failed',
-                 context: [
+                message: 'POST names endpoint failed',
+                context: [
                      'error' => $e->getMessage(),
                      'trace' => $e->getTraceAsString(),
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'error'   => 'Failed to retrieve object names',
                      'message' => $e->getMessage(),
                  ],
-                 statusCode: 500
-                 );
+                statusCode: 500
+            );
         }//end try
-
     }//end create()
 
     /**
@@ -341,61 +338,60 @@ class NamesController extends Controller
 
             if ($name === null) {
                 $this->logger->debug(
-                     '❌ SINGLE NAME NOT FOUND',
-                     [
+                    '❌ SINGLE NAME NOT FOUND',
+                    [
                          'id'             => $id,
-                         'execution_time' => $executionTime.'ms',
+                         'execution_time' => $executionTime . 'ms',
                      ]
-                     );
+                );
 
                 return new JSONResponse(
-                     data: [
+                    data: [
                          'id'             => $id,
                          'name'           => null,
                          'found'          => false,
-                         'execution_time' => $executionTime.'ms',
+                         'execution_time' => $executionTime . 'ms',
                      ],
-                     statusCode: 404
-                     );
+                    statusCode: 404
+                );
             }
 
             $this->logger->debug(
-                 message: '🚀 SINGLE NAME LOOKUP',
-                 context: [
+                message: '🚀 SINGLE NAME LOOKUP',
+                context: [
                      'id'             => $id,
                      'name'           => $name,
-                     'execution_time' => $executionTime.'ms',
+                     'execution_time' => $executionTime . 'ms',
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'id'             => $id,
                      'name'           => $name,
                      'found'          => true,
                      'cached'         => true,
-                     'execution_time' => $executionTime.'ms',
+                     'execution_time' => $executionTime . 'ms',
                  ]
-                 );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                 message: 'Single name lookup failed',
-                 context: [
+                message: 'Single name lookup failed',
+                context: [
                      'id'    => $id,
                      'error' => $e->getMessage(),
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'id'      => $id,
                      'error'   => 'Failed to retrieve object name',
                      'message' => $e->getMessage(),
                  ],
-                 statusCode: 500
-                 );
+                statusCode: 500
+            );
         }//end try
-
     }//end show()
 
     /**
@@ -417,7 +413,7 @@ class NamesController extends Controller
             $stats = $this->objectCacheService->getStats();
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'cache_statistics'    => $stats,
                      'performance_metrics' => [
                          'name_cache_enabled'          => true,
@@ -425,24 +421,23 @@ class NamesController extends Controller
                          'warmup_available'            => true,
                      ],
                  ]
-                 );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                 message: 'Failed to get cache statistics',
-                 context: [
+                message: 'Failed to get cache statistics',
+                context: [
                      'error' => $e->getMessage(),
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'error'   => 'Failed to retrieve cache statistics',
                      'message' => $e->getMessage(),
                  ],
-                 statusCode: 500
-                 );
+                statusCode: 500
+            );
         }//end try
-
     }//end stats()
 
     /**
@@ -467,38 +462,37 @@ class NamesController extends Controller
             $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->logger->info(
-                 message: 'Manual name cache warmup completed',
-                 context: [
+                message: 'Manual name cache warmup completed',
+                context: [
                      'loaded_names'   => $loadedCount,
-                     'execution_time' => $executionTime.'ms',
+                     'execution_time' => $executionTime . 'ms',
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'success'        => true,
                      'loaded_names'   => $loadedCount,
-                     'execution_time' => $executionTime.'ms',
+                     'execution_time' => $executionTime . 'ms',
                      'cache_stats'    => $this->objectCacheService->getStats(),
                  ]
-                 );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                 'Manual cache warmup failed',
-                 [
+                'Manual cache warmup failed',
+                [
                      'error' => $e->getMessage(),
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'success' => false,
                      'error'   => 'Cache warmup failed',
                      'message' => $e->getMessage(),
                  ],
-                 statusCode: 500
-                 );
+                statusCode: 500
+            );
         }//end try
-
     }//end warmup()
 }//end class

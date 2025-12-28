@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration
  *
@@ -47,7 +48,6 @@ class Version1Date20240924200009 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end preSchemaChange()
 
     /**
@@ -141,7 +141,6 @@ class Version1Date20240924200009 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -157,6 +156,5 @@ class Version1Date20240924200009 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
 }//end class

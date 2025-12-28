@@ -57,7 +57,6 @@ class VectorizationHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -74,7 +73,7 @@ class VectorizationHandler
      *
      * @psalm-return array{success: true, message: string, entity_type: string, total_entities: int<0, max>, total_items: int<0, max>, vectorized: int<0, max>, failed: int<0, max>, errors?: list{0?: array{entity_id: int|string, error: string, item_index?: array-key},...}, processed?: mixed}
      */
-    public function vectorizeBatch(?array $views=null, int $batchSize=25): array
+    public function vectorizeBatch(?array $views = null, int $batchSize = 25): array
     {
         $this->logger->info(
             message: '[VectorizationHandler] Starting batch vectorization',
@@ -116,7 +115,6 @@ class VectorizationHandler
             );
             throw $e;
         }//end try
-
     }//end vectorizeBatch()
 
     /**
@@ -132,7 +130,7 @@ class VectorizationHandler
      *
      * @psalm-return array{total_objects: int<0, max>, views: array|null}
      */
-    public function getStatistics(?array $views=null): array
+    public function getStatistics(?array $views = null): array
     {
         $this->logger->debug(
             message: '[VectorizationHandler] Getting vectorization statistics',
@@ -168,7 +166,6 @@ class VectorizationHandler
             );
             throw $e;
         }//end try
-
     }//end getStatistics()
 
     /**
@@ -182,7 +179,7 @@ class VectorizationHandler
      *
      * @throws \Exception If count fails
      */
-    public function getCount(?array $schemas=null): int
+    public function getCount(?array $schemas = null): int
     {
         $this->logger->debug(
             message: '[VectorizationHandler] Getting object count',
@@ -210,6 +207,5 @@ class VectorizationHandler
             );
             throw $e;
         }//end try
-
     }//end getCount()
 }//end class

@@ -64,7 +64,6 @@ class PermissionHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -92,9 +91,9 @@ class PermissionHandler
     public function hasPermission(
         Schema $schema,
         string $action,
-        ?string $userId=null,
-        ?string $objectOwner=null,
-        bool $rbac=true
+        ?string $userId = null,
+        ?string $objectOwner = null,
+        bool $rbac = true
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
         if ($rbac === false) {
@@ -147,20 +146,20 @@ class PermissionHandler
                 $adminGroup = 'admin';
             }
 
-            if ($schema->hasPermission(
-                groupId: $groupId,
-                action: $action,
-                userId: $userId,
-                userGroup: $adminGroup,
-                objectOwner: $objectOwner
-            ) === true
+            if (
+                $schema->hasPermission(
+                    groupId: $groupId,
+                    action: $action,
+                    userId: $userId,
+                    userGroup: $adminGroup,
+                    objectOwner: $objectOwner
+                ) === true
             ) {
                 return true;
             }
         }
 
         return false;
-
     }//end hasPermission()
 
     /**
@@ -179,17 +178,18 @@ class PermissionHandler
     public function checkPermission(
         Schema $schema,
         string $action,
-        ?string $userId=null,
-        ?string $objectOwner=null,
-        bool $rbac=true
+        ?string $userId = null,
+        ?string $objectOwner = null,
+        bool $rbac = true
     ): void {
-        if ($this->hasPermission(
-            schema: $schema,
-            action: $action,
-            userId: $userId,
-            objectOwner: $objectOwner,
-            rbac: $rbac
-        ) === false
+        if (
+            $this->hasPermission(
+                schema: $schema,
+                action: $action,
+                userId: $userId,
+                objectOwner: $objectOwner,
+                rbac: $rbac
+            ) === false
         ) {
             $user     = $this->userSession->getUser();
             $userName = 'Anonymous';
@@ -201,7 +201,6 @@ class PermissionHandler
                 "User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'"
             );
         }
-
     }//end checkPermission()
 
     /**
@@ -243,13 +242,14 @@ class PermissionHandler
                         $schema = $this->schemaMapper->find($objectSchema);
                         // TODO: Add property-level RBAC check for 'create' action here.
                         // Check individual property permissions before allowing property values to be set.
-                        if ($this->hasPermission(
-                            schema: $schema,
-                            action: 'create',
-                            userId: $userId,
-                            objectOwner: $objectOwner,
-                            rbac: $rbac
-                        ) === false
+                        if (
+                            $this->hasPermission(
+                                schema: $schema,
+                                action: 'create',
+                                userId: $userId,
+                                objectOwner: $objectOwner,
+                                rbac: $rbac
+                            ) === false
                         ) {
                             continue;
                             // Skip this object if user doesn't have permission.
@@ -274,7 +274,6 @@ class PermissionHandler
         }//end foreach
 
         return $filteredObjects;
-
     }//end filterObjectsForPermissions()
 
     /**
@@ -319,13 +318,14 @@ class PermissionHandler
 
                         // TODO: Add property-level RBAC check for 'delete' action here
                         // Check if user has permission to delete objects with specific property values.
-                        if ($this->hasPermission(
-                            schema: $schema,
-                            action: 'delete',
-                            userId: $userId,
-                            objectOwner: $objectOwner,
-                            rbac: $rbac
-                        ) === false
+                        if (
+                            $this->hasPermission(
+                                schema: $schema,
+                                action: 'delete',
+                                userId: $userId,
+                                objectOwner: $objectOwner,
+                                rbac: $rbac
+                            ) === false
                         ) {
                             continue;
                             // Skip this object - no permission.
@@ -353,7 +353,6 @@ class PermissionHandler
         }//end foreach
 
         return array_values(array_filter($filteredUuids, fn($uuid) => $uuid !== null));
-
     }//end filterUuidsForPermissions()
 
     /**
@@ -376,6 +375,5 @@ class PermissionHandler
         } catch (Exception $e) {
             return null;
         }
-
     }//end getActiveOrganisationForContext()
 }//end class

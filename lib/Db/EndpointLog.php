@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Endpoint Log Entity
  *
@@ -38,7 +39,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class EndpointLog extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for this endpoint log entry.
      *
@@ -146,7 +146,6 @@ class EndpointLog extends Entity implements JsonSerializable
 
         // Calculate and set object size.
         $this->calculateSize();
-
     }//end __construct()
 
     /**
@@ -157,7 +156,6 @@ class EndpointLog extends Entity implements JsonSerializable
     public function getRequest(): ?array
     {
         return $this->request;
-
     }//end getRequest()
 
     /**
@@ -168,7 +166,6 @@ class EndpointLog extends Entity implements JsonSerializable
     public function getResponse(): ?array
     {
         return $this->response;
-
     }//end getResponse()
 
     /**
@@ -188,7 +185,6 @@ class EndpointLog extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -207,7 +203,7 @@ class EndpointLog extends Entity implements JsonSerializable
                 $value = [];
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -220,7 +216,6 @@ class EndpointLog extends Entity implements JsonSerializable
         $this->calculateSize();
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -244,7 +239,6 @@ class EndpointLog extends Entity implements JsonSerializable
         if ($this->size < 4096) {
             $this->size = 4096;
         }
-
     }//end calculateSize()
 
     /**
@@ -258,7 +252,6 @@ class EndpointLog extends Entity implements JsonSerializable
     public function getSize(): int
     {
         return $this->size;
-
     }//end getSize()
 
     /**
@@ -276,7 +269,6 @@ class EndpointLog extends Entity implements JsonSerializable
     public function setSize(int $size): void
     {
         $this->size = $size;
-
     }//end setSize()
 
     /**
@@ -318,6 +310,5 @@ class EndpointLog extends Entity implements JsonSerializable
             'created'       => $createdFormatted,
             'size'          => $this->size,
         ];
-
     }//end jsonSerialize()
 }//end class

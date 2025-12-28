@@ -1,4 +1,5 @@
 <?php
+
 /**
  * IndexService
  *
@@ -66,7 +67,6 @@ class IndexService
         private readonly SearchBackendInterface $searchBackend,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     // ========================================================================
@@ -89,7 +89,6 @@ class IndexService
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
         return $this->fileHandler->indexFileChunks(fileId: $fileId, chunks: $chunks, metadata: $metadata);
-
     }//end indexFileChunks()
 
     /**
@@ -103,10 +102,9 @@ class IndexService
      *
      * @psalm-return array{success: bool, stats: array{processed: int, indexed: int, failed: int, total_chunks: int, errors: array, execution_time_ms: float}}
      */
-    public function processUnindexedChunks(?int $limit=null): array
+    public function processUnindexedChunks(?int $limit = null): array
     {
         return $this->fileHandler->processUnindexedChunks(limit: $limit);
-
     }//end processUnindexedChunks()
 
     /**
@@ -121,7 +119,6 @@ class IndexService
     public function getFileStats(): array
     {
         return $this->fileHandler->getFileStats();
-
     }//end getFileStats()
 
     /**
@@ -136,7 +133,6 @@ class IndexService
     public function getChunkingStats(): array
     {
         return $this->fileHandler->getChunkingStats();
-
     }//end getChunkingStats()
 
     // ========================================================================
@@ -157,11 +153,11 @@ class IndexService
      * @return array Search results
      */
     public function searchObjects(
-        array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
-        bool $published=false,
-        bool $deleted=false
+        array $query = [],
+        bool $rbac = true,
+        bool $multitenancy = true,
+        bool $published = false,
+        bool $deleted = false
     ): array {
         return $this->objectHandler->searchObjects(
             query: $query,
@@ -170,7 +166,6 @@ class IndexService
             published: $published,
             deleted: $deleted
         );
-
     }//end searchObjects()
 
     /**
@@ -183,7 +178,6 @@ class IndexService
     public function commit(): bool
     {
         return $this->objectHandler->commit();
-
     }//end commit()
 
     /**
@@ -196,10 +190,9 @@ class IndexService
      *
      * @return bool Success status
      */
-    public function indexObject(ObjectEntity $object, bool $commit=false): bool
+    public function indexObject(ObjectEntity $object, bool $commit = false): bool
     {
         return $this->searchBackend->indexObject(object: $object, commit: $commit);
-
     }//end indexObject()
 
     /**
@@ -212,10 +205,9 @@ class IndexService
      *
      * @return bool Success status
      */
-    public function deleteObject(string|int $objectId, bool $commit=false): bool
+    public function deleteObject(string|int $objectId, bool $commit = false): bool
     {
         return $this->searchBackend->deleteObject(objectId: $objectId, commit: $commit);
-
     }//end deleteObject()
 
     // ========================================================================
@@ -235,15 +227,14 @@ class IndexService
      */
     public function ensureVectorFieldType(
         string $collection,
-        int $dimensions=4096,
-        string $similarity='cosine'
+        int $dimensions = 4096,
+        string $similarity = 'cosine'
     ): bool {
         return $this->schemaHandler->ensureVectorFieldType(
             collection: $collection,
             dimensions: $dimensions,
             similarity: $similarity
         );
-
     }//end ensureVectorFieldType()
 
     /**
@@ -257,10 +248,9 @@ class IndexService
      *
      * @psalm-return array{success: bool, error?: string, stats: array, execution_time_ms?: float, resolved_conflicts?: mixed}
      */
-    public function mirrorSchemas(bool $force=false): array
+    public function mirrorSchemas(bool $force = false): array
     {
         return $this->schemaHandler->mirrorSchemas(force: $force);
-
     }//end mirrorSchemas()
 
     /**
@@ -275,7 +265,6 @@ class IndexService
     public function getCollectionFieldStatus(string $collection): array
     {
         return $this->schemaHandler->getCollectionFieldStatus(collection: $collection);
-
     }//end getCollectionFieldStatus()
 
     /**
@@ -288,7 +277,6 @@ class IndexService
     public function getObjectCollectionFieldStatus(): array
     {
         return $this->schemaHandler->getCollectionFieldStatus(collection: 'objects');
-
     }//end getObjectCollectionFieldStatus()
 
     /**
@@ -308,7 +296,6 @@ class IndexService
             'success' => true,
             'fields'  => $fields,
         ];
-
     }//end getFieldsConfiguration()
 
     /**
@@ -322,14 +309,13 @@ class IndexService
      *
      * @return array Result
      */
-    public function createMissingFields(string $collection, array $missingFields, bool $dryRun=false): array
+    public function createMissingFields(string $collection, array $missingFields, bool $dryRun = false): array
     {
         return $this->schemaHandler->createMissingFields(
             collection: $collection,
             missingFields: $missingFields,
             dryRun: $dryRun
         );
-
     }//end createMissingFields()
 
     // ========================================================================
@@ -343,7 +329,7 @@ class IndexService
      *
      * @return bool Availability status
      */
-    public function isAvailable(bool $forceRefresh=false): bool
+    public function isAvailable(bool $forceRefresh = false): bool
     {
         try {
             return $this->searchBackend->isAvailable(forceRefresh: $forceRefresh);
@@ -356,7 +342,6 @@ class IndexService
             );
             return false;
         }//end try
-
     }//end isAvailable()
 
     /**
@@ -366,7 +351,7 @@ class IndexService
      *
      * @return array Test results
      */
-    public function testConnection(bool $includeCollectionTests=true): array
+    public function testConnection(bool $includeCollectionTests = true): array
     {
         try {
             return $this->searchBackend->testConnection(includeCollectionTests: $includeCollectionTests);
@@ -383,7 +368,6 @@ class IndexService
                 'error'     => $e->getMessage(),
             ];
         }//end try
-
     }//end testConnection()
 
     /**
@@ -408,7 +392,6 @@ class IndexService
                 'error'     => $e->getMessage(),
             ];
         }//end try
-
     }//end getStats()
 
     /**
@@ -446,7 +429,6 @@ class IndexService
                 'error'     => $e->getMessage(),
             ];
         }//end try
-
     }//end getDashboardStats()
 
     /**
@@ -467,7 +449,6 @@ class IndexService
             );
             return false;
         }//end try
-
     }//end optimize()
 
     /**
@@ -477,7 +458,7 @@ class IndexService
      *
      * @return array Result
      */
-    public function clearIndex(?string $collectionName=null): array
+    public function clearIndex(?string $collectionName = null): array
     {
         try {
             return $this->searchBackend->clearIndex(collectionName: $collectionName);
@@ -495,7 +476,6 @@ class IndexService
                 'error'   => $e->getMessage(),
             ];
         }//end try
-
     }//end clearIndex()
 
     /**
@@ -517,7 +497,6 @@ class IndexService
 
             return [];
         }//end try
-
     }//end getConfig()
 
     /**
@@ -531,14 +510,13 @@ class IndexService
      *
      * @return array Reindexing results with statistics.
      */
-    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
+    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
     {
         return $this->objectHandler->reindexAll(
             maxObjects: $maxObjects,
             batchSize: $batchSize,
             collectionName: $collectionName
         );
-
     }//end reindexAll()
 
     /**
@@ -551,13 +529,12 @@ class IndexService
      *
      * @return array Results with fixed/failed fields.
      */
-    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun = false): array
     {
         return $this->schemaHandler->fixMismatchedFields(
             mismatchedFields: $mismatchedFields,
             dryRun: $dryRun
         );
-
     }//end fixMismatchedFields()
 
     /**
@@ -570,13 +547,12 @@ class IndexService
      *
      * @return array Indexing results.
      */
-    public function indexFiles(array $fileIds, ?string $collectionName=null): array
+    public function indexFiles(array $fileIds, ?string $collectionName = null): array
     {
         return $this->fileHandler->indexFiles(
             fileIds: $fileIds,
             collectionName: $collectionName
         );
-
     }//end indexFiles()
 
     /**
@@ -589,7 +565,6 @@ class IndexService
     public function getFileIndexStats(): array
     {
         return $this->fileHandler->getFileIndexStats();
-
     }//end getFileIndexStats()
 
     /**
@@ -607,12 +582,12 @@ class IndexService
      * @return array Warmup results with statistics and errors.
      */
     public function warmupIndex(
-        array $schemas=[],
-        int $maxObjects=0,
-        string $mode='serial',
-        bool $collectErrors=false,
-        int $batchSize=1000,
-        array $schemaIds=[]
+        array $schemas = [],
+        int $maxObjects = 0,
+        string $mode = 'serial',
+        bool $collectErrors = false,
+        int $batchSize = 1000,
+        array $schemaIds = []
     ): array {
         return $this->searchBackend->warmupIndex(
             schemas: $schemas,
@@ -622,7 +597,6 @@ class IndexService
             batchSize: $batchSize,
             schemaIds: $schemaIds
         );
-
     }//end warmupIndex()
 
     // ========================================================================
@@ -639,7 +613,6 @@ class IndexService
     public function getBackend(): SearchBackendInterface
     {
         return $this->searchBackend;
-
     }//end getBackend()
 
     /**
@@ -657,12 +630,12 @@ class IndexService
      * @return array Search results with pagination info
      */
     public function searchObjectsPaginated(
-        array $query=[],
-        int $limit=30,
-        int $offset=0,
-        array $facets=[],
-        ?string $collection=null,
-        bool $includeTotal=true
+        array $query = [],
+        int $limit = 30,
+        int $offset = 0,
+        array $facets = [],
+        ?string $collection = null,
+        bool $includeTotal = true
     ): array {
         // Map IndexService parameters to SearchBackendInterface parameters.
         // Add pagination and other params to query array.
@@ -685,7 +658,6 @@ class IndexService
             published: false,
             deleted: false
         );
-
     }//end searchObjectsPaginated()
 
     /**
@@ -698,7 +670,6 @@ class IndexService
     public function getDocumentCount(): int
     {
         return $this->searchBackend->getDocumentCount();
-
     }//end getDocumentCount()
 
     /**
@@ -711,7 +682,6 @@ class IndexService
     public function collectionExists(string $collectionName): bool
     {
         return $this->searchBackend->collectionExists($collectionName);
-
     }//end collectionExists()
 
     /**
@@ -722,10 +692,9 @@ class IndexService
      *
      * @return array Creation result
      */
-    public function createCollection(string $name, array $config=[]): array
+    public function createCollection(string $name, array $config = []): array
     {
         return $this->searchBackend->createCollection(name: $name, config: $config);
-
     }//end createCollection()
 
     /**
@@ -738,7 +707,6 @@ class IndexService
     public function testConnectivityOnly(): array
     {
         return $this->testConnection(includeCollectionTests: false);
-
     }//end testConnectivityOnly()
 
     // ========================================================================
@@ -759,7 +727,7 @@ class IndexService
      *
      * @psalm-return array{collection: string, exists: true, tenant: null|string}
      */
-    public function ensureTenantCollection(?string $tenant=null): array
+    public function ensureTenantCollection(?string $tenant = null): array
     {
         $collectionName = $this->getTenantSpecificCollectionName($tenant);
 
@@ -772,7 +740,6 @@ class IndexService
             'exists'     => true,
             'tenant'     => $tenant,
         ];
-
     }//end ensureTenantCollection()
 
     /**
@@ -784,16 +751,15 @@ class IndexService
      *
      * @return string Collection name
      */
-    public function getTenantSpecificCollectionName(?string $tenant=null): string
+    public function getTenantSpecificCollectionName(?string $tenant = null): string
     {
         $baseName = $this->getConfig()['collection'] ?? 'openregister';
 
         if ($tenant !== null && empty($tenant) === false) {
-            return $baseName.'_'.$tenant;
+            return $baseName . '_' . $tenant;
         }
 
         return $baseName;
-
     }//end getTenantSpecificCollectionName()
 
     /**
@@ -810,7 +776,6 @@ class IndexService
     {
         $config = $this->getSolrConfig();
         return $config['endpoint'] ?? '';
-
     }//end getEndpointUrl()
 
     /**
@@ -825,17 +790,16 @@ class IndexService
      *
      * @throws Exception If backend is not Solr
      */
-    public function buildSolrBaseUrl(?string $collection=null): string
+    public function buildSolrBaseUrl(?string $collection = null): string
     {
         $config  = $this->getSolrConfig();
         $baseUrl = rtrim($config['endpoint'] ?? '', '/');
 
         if ($collection !== null) {
-            return $baseUrl.'/solr/'.$collection;
+            return $baseUrl . '/solr/' . $collection;
         }
 
-        return $baseUrl.'/solr';
-
+        return $baseUrl . '/solr';
     }//end buildSolrBaseUrl()
 
     /**
@@ -862,7 +826,6 @@ class IndexService
             'password'   => $config['password'] ?? '',
             'timeout'    => $config['timeout'] ?? 30,
         ];
-
     }//end getSolrConfig()
 
     /**
@@ -883,6 +846,5 @@ class IndexService
         }
 
         throw new Exception('HTTP client not available for current backend');
-
     }//end getHttpClient()
 }//end class

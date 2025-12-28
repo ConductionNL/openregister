@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Download Service
  *
@@ -49,7 +50,6 @@ use OCP\IURLGenerator;
  */
 class DownloadService
 {
-
     /**
      * Register mapper
      *
@@ -87,8 +87,8 @@ class DownloadService
     {
         // Step 1: Define the file name and path for the temporary JSON file.
         // Uses system temporary directory for file storage.
-        $fileName = $filename.'.json';
-        $filePath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$fileName;
+        $fileName = $filename . '.json';
+        $filePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
 
         // Step 2: Create and write the JSON data to the temporary file.
         file_put_contents($filePath, $jsonData);
@@ -98,8 +98,8 @@ class DownloadService
         // Content-Disposition tells browser to download file with specified name.
         // Content-Length specifies file size for download progress.
         header('Content-Type: application/json');
-        header('Content-Disposition: attachment; filename="'.$fileName.'"');
-        header('Content-Length: '.filesize($filePath));
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Content-Length: ' . filesize($filePath));
 
         // Step 4: Output the file contents to client.
         readfile($filePath);
@@ -109,7 +109,6 @@ class DownloadService
 
         // Step 6: Exit script execution to prevent further output.
         exit;
-
     }//end downloadJson()
 
     /**
@@ -137,6 +136,5 @@ class DownloadService
             'register' => $this->registerMapper,
             default => throw new InvalidArgumentException("Unknown object type: $objectType"),
         };
-
     }//end getMapper()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SchemaCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class SchemaCreatedEvent extends Event
 {
-
     /**
      * The newly created schema
      *
@@ -46,7 +46,6 @@ class SchemaCreatedEvent extends Event
     {
         parent::__construct();
         $this->schema = $schema;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class SchemaCreatedEvent extends Event
     public function getSchema(): Schema
     {
         return $this->schema;
-
     }//end getSchema()
 }//end class

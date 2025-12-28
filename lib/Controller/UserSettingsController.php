@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister User Settings Controller
  *
@@ -35,7 +36,6 @@ use Psr\Log\LoggerInterface;
  */
 class UserSettingsController extends Controller
 {
-
     /**
      * GitHub service instance.
      *
@@ -78,7 +78,6 @@ class UserSettingsController extends Controller
         $this->gitHubService = $gitHubService;
         $this->userSession   = $userSession;
         $this->logger        = $logger;
-
     }//end __construct()
 
     /**
@@ -104,13 +103,13 @@ class UserSettingsController extends Controller
 
             if ($token === null) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'hasToken' => false,
                             'isValid'  => false,
                             'message'  => 'No GitHub token configured',
                         ],
-                        statusCode: 200
-                        );
+                    statusCode: 200
+                );
             }
 
             // Validate the token.
@@ -118,19 +117,18 @@ class UserSettingsController extends Controller
             $isValid = $this->gitHubService->validateToken(userId: $user->getUID());
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'hasToken' => true,
                         'isValid'  => $isValid,
                         'message'  => $this->getTokenValidationMessage($isValid),
                     ],
-                    statusCode: 200
-                    );
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            $this->logger->error('Failed to get GitHub token status: '.$e->getMessage());
+            $this->logger->error('Failed to get GitHub token status: ' . $e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to get token status'], statusCode: 500);
         }//end try
-
     }//end getGitHubTokenStatus()
 
     /**
@@ -169,18 +167,17 @@ class UserSettingsController extends Controller
             $this->logger->info(message: "GitHub token set for user: {$user->getUID()}");
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'message' => 'GitHub token saved successfully',
                     ],
-                    statusCode: 200
-                    );
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to set GitHub token: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to set GitHub token: ' . $e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to save token: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to save token: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end setGitHubToken()
 
     /**
@@ -216,18 +213,17 @@ class UserSettingsController extends Controller
             $this->logger->info(message: "GitHub token removed for user: {$user->getUID()}");
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'message' => 'GitHub token removed successfully',
                     ],
-                    statusCode: 200
-                    );
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to remove GitHub token: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to remove GitHub token: ' . $e->getMessage());
 
             return new JSONResponse(data: ['error' => 'Failed to remove token'], statusCode: 500);
         }//end try
-
     }//end removeGitHubToken()
 
     /**
@@ -246,6 +242,5 @@ class UserSettingsController extends Controller
         }
 
         return 'Token is invalid or expired';
-
     }//end getTokenValidationMessage()
 }//end class

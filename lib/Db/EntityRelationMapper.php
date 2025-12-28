@@ -46,6 +46,5 @@ class EntityRelationMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_entity_relations', EntityRelation::class);
-
     }//end __construct()
 }//end class

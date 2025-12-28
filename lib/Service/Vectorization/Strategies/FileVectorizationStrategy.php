@@ -1,4 +1,5 @@
 <?php
+
 /**
  * File Vectorization Strategy
  *
@@ -37,7 +38,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileVectorizationStrategy implements VectorizationStrategyInterface
 {
-
     /**
      * Chunk mapper
      *
@@ -74,7 +74,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $this->chunkMapper = $chunkMapper;
         $this->db          = $db;
         $this->logger      = $logger;
-
     }//end __construct()
 
     /**
@@ -92,12 +91,12 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         $fileTypes = $options['file_types'] ?? [];
 
         $this->logger->debug(
-                '[FileVectorizationStrategy] Fetching file chunks',
-                [
+            '[FileVectorizationStrategy] Fetching file chunks',
+            [
                     'maxFiles'  => $maxFiles,
                     'fileTypes' => $fileTypes,
                 ]
-                );
+        );
 
         // Get all chunks for files (source_type = 'file').
         // We'll need to query by source_type only.
@@ -135,7 +134,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         return $fileChunks;
-
     }//end fetchEntities()
 
     /**
@@ -158,7 +156,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
                 'end_offset'   => $entity->getEndOffset(),
             ],
         ];
-
     }//end extractVectorizationItems()
 
     /**
@@ -201,7 +198,6 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
                 'end_offset'   => $item['end_offset'],
             ],
         ];
-
     }//end prepareVectorMetadata()
 
     /**
@@ -214,6 +210,5 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
     public function getEntityIdentifier($entity)
     {
         return $entity->getSourceId();
-
     }//end getEntityIdentifier()
 }//end class

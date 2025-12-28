@@ -38,7 +38,6 @@ use Psr\Log\LoggerInterface;
  */
 class StatisticsHandler
 {
-
     /**
      * Database connection.
      *
@@ -70,12 +69,11 @@ class StatisticsHandler
     public function __construct(
         IDBConnection $db,
         LoggerInterface $logger,
-        string $tableName='openregister_objects'
+        string $tableName = 'openregister_objects'
     ) {
         $this->db        = $db;
         $this->logger    = $logger;
         $this->tableName = $tableName;
-
     }//end __construct()
 
     /**
@@ -92,7 +90,7 @@ class StatisticsHandler
      *
      * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
      */
-    public function getStatistics(int|array|null $registerId=null, int|array|null $schemaId=null, array $exclude=[]): array
+    public function getStatistics(int|array|null $registerId = null, int|array|null $schemaId = null, array $exclude = []): array
     {
         try {
             $qb  = $this->db->getQueryBuilder();
@@ -105,7 +103,7 @@ class StatisticsHandler
                 $qb->createFunction('COUNT(CASE WHEN locked IS NOT NULL AND locked = TRUE THEN 1 END) as locked'),
                 // Only count as published if published <= now and (depublished is null or depublished > now).
                 $qb->createFunction(
-                    "COUNT(CASE WHEN published IS NOT NULL AND published <= '".$now."' AND (depublished IS NULL OR depublished > '".$now."') THEN 1 END) as published"
+                    "COUNT(CASE WHEN published IS NOT NULL AND published <= '" . $now . "' AND (depublished IS NULL OR depublished > '" . $now . "') THEN 1 END) as published"
                 )
             )
                 ->from($this->tableName);
@@ -163,7 +161,7 @@ class StatisticsHandler
                 'published' => (int) ($result['published'] ?? 0),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting statistics: '.$e->getMessage());
+            $this->logger->error('Error getting statistics: ' . $e->getMessage());
             return [
                 'total'     => 0,
                 'size'      => 0,
@@ -173,7 +171,6 @@ class StatisticsHandler
                 'published' => 0,
             ];
         }//end try
-
     }//end getStatistics()
 
     /**
@@ -186,7 +183,7 @@ class StatisticsHandler
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
-    public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -228,13 +225,12 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting register chart data: '.$e->getMessage());
+            $this->logger->error('Error getting register chart data: ' . $e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }//end try
-
     }//end getRegisterChartData()
 
     /**
@@ -247,7 +243,7 @@ class StatisticsHandler
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
      */
-    public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -289,13 +285,12 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting schema chart data: '.$e->getMessage());
+            $this->logger->error('Error getting schema chart data: ' . $e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }//end try
-
     }//end getSchemaChartData()
 
     /**
@@ -308,7 +303,7 @@ class StatisticsHandler
      *
      * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
      */
-    public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getSizeDistributionChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         try {
             // Define size ranges in bytes.
@@ -367,12 +362,11 @@ class StatisticsHandler
                 ),
             ];
         } catch (Exception $e) {
-            $this->logger->error('Error getting size distribution chart data: '.$e->getMessage());
+            $this->logger->error('Error getting size distribution chart data: ' . $e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }//end try
-
     }//end getSizeDistributionChartData()
 }//end class

@@ -101,7 +101,7 @@ class ValidateObject
      *
      * @return object The processed schema object with resolved references
      */
-    private function preprocessSchemaReferences(object $schemaObject, array $visited=[], bool $_skipUuidTransformed=false): object
+    private function preprocessSchemaReferences(object $schemaObject, array $visited = [], bool $_skipUuidTransformed = false): object
     {
         // Clone the schema object to avoid modifying the original.
         $processedSchema = json_decode(json_encode($schemaObject));
@@ -111,7 +111,8 @@ class ValidateObject
             foreach ($processedSchema->properties as $propertyName => $propertySchema) {
                 // Skip processing if this property has been transformed to a UUID type by OpenRegister logic.
                 // This prevents circular references for related-object properties.
-                if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'string'
+                if (
+                    ($propertySchema->type ?? null) !== null && $propertySchema->type === 'string'
                     && (($propertySchema->pattern ?? null) !== null) && str_contains($propertySchema->pattern, 'uuid') === true
                 ) {
                     continue;
@@ -143,7 +144,7 @@ class ValidateObject
      *
      * @return object The resolved property schema
      */
-    private function resolveSchemaProperty(object $propertySchema, array $visited=[]): object
+    private function resolveSchemaProperty(object $propertySchema, array $visited = []): object
     {
         // Handle $ref references.
         if (($propertySchema->{'$ref'} ?? null) !== null) {
@@ -152,7 +153,7 @@ class ValidateObject
             // Handle both string and object formats for $ref.
             if (is_object($reference) === true && (($reference->id ?? null) !== null)) {
                 $reference = $reference->id;
-            } else if (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
+            } elseif (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
                 $reference = $reference['id'];
             }
 
@@ -290,7 +291,7 @@ class ValidateObject
                         ],
                     ],
                 ];
-            } else if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
+            } elseif (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
                 // For inversedBy object properties, allow objects, UUIDs, or null (pre-validation cascading will handle transformation).
                 $propertySchema->oneOf = [
                     (object) [
@@ -489,7 +490,7 @@ class ValidateObject
             $reference = $ref;
             if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
                 $reference = $ref->id;
-            } else if (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
+            } elseif (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
                 $reference = $ref['id'];
             }
 
@@ -550,7 +551,8 @@ class ValidateObject
             // Check if this property has a $ref that references the current schema.
             if ($this->isSelfReference(propertySchema: $propertySchema, schemaSlug: $currentSchemaSlug) === true) {
                 // Check if this is a related-object with objectConfiguration.
-                if (($propertySchema->objectConfiguration ?? null) !== null
+                if (
+                    ($propertySchema->objectConfiguration ?? null) !== null
                     && (($propertySchema->objectConfiguration->handling ?? null) !== null) === true
                     && $propertySchema->objectConfiguration->handling === 'related-object'
                 ) {
@@ -583,7 +585,8 @@ class ValidateObject
                     }//end if
 
                     unset($propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
-                } else if (($propertySchema->type ?? null) !== null
+                } elseif (
+                    ($propertySchema->type ?? null) !== null
                     && $propertySchema->type === 'array'
                     && (($propertySchema->items ?? null) !== null) === true
                     && is_object($propertySchema->items) === true
@@ -659,7 +662,7 @@ class ValidateObject
      *
      * @return object The cleaned schema object
      */
-    private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
+    private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems = false): object
     {
 
         // Clone the schema object to avoid modifying the original.
@@ -712,7 +715,7 @@ class ValidateObject
      *
      * @return mixed The cleaned property schema
      */
-    private function cleanPropertyForValidation($propertySchema, bool $isArrayItems=false)
+    private function cleanPropertyForValidation($propertySchema, bool $isArrayItems = false)
     {
         // Handle non-object properties.
         if (is_object($propertySchema) === false) {
@@ -880,7 +883,7 @@ class ValidateObject
             $refId = $ref;
             if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
                 $refId = $ref->id;
-            } else if (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
+            } elseif (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
                 $refId = $ref['id'];
             }
 
@@ -943,9 +946,9 @@ class ValidateObject
      */
     public function validateObject(
         array $object,
-        Schema | int | string | null $schema=null,
-        object $schemaObject=new stdClass(),
-        int $_depth=0
+        Schema | int | string | null $schema = null,
+        object $schemaObject = new stdClass(),
+        int $_depth = 0
     ): ValidationResult {
 
         // Use == because === will never be true when comparing stdClass-instances.
@@ -953,10 +956,10 @@ class ValidateObject
         if ($schemaObject == new stdClass()) {
             if ($schema instanceof Schema) {
                 $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if ($schema !== null && is_int($schema) === true) {
+            } elseif ($schema !== null && is_int($schema) === true) {
                 // Handle int schema ID.
                 $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
-            } else if ($schema !== null) {
+            } elseif ($schema !== null) {
                 // At this point, $schema is string (not int, not Schema, already checked !== null).
                 // Use type annotation to help Psalm understand.
                 /*
@@ -1020,7 +1023,8 @@ class ValidateObject
 
                 // Check if this is an enum field.
                 $propertySchema = $schemaObject->properties->$key ?? null;
-                if (($propertySchema !== null) === true
+                if (
+                    ($propertySchema !== null) === true
                     && (($propertySchema->enum ?? null) !== null) === true
                     && is_array($propertySchema->enum) === true
                 ) {
@@ -1093,7 +1097,7 @@ class ValidateObject
                     if (($propertySchema->type ?? null) !== null && is_string($propertySchema->type) === true) {
                         // Convert single type to array with null support.
                         $propertySchema->type = [$propertySchema->type, 'null'];
-                    } else if (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
+                    } elseif (($propertySchema->type ?? null) !== null && is_array($propertySchema->type) === true) {
                         // Add null to existing type array if not already present.
                         if (in_array('null', $propertySchema->type, true) === false) {
                             $propertySchema->type[] = 'null';
@@ -1148,7 +1152,8 @@ class ValidateObject
     public function resolveSchema(Uri $uri): string
     {
         // Local schema resolution.
-        if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
+        if (
+            $this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
             && str_contains($uri->path() ?? '', '/api/schemas') === true
         ) {
             $exploded = explode('/', $uri->path() ?? '');
@@ -1158,7 +1163,8 @@ class ValidateObject
         }
 
         // File schema resolution.
-        if ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host()
+        if (
+            $this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
             && str_contains($uri->path(), '/api/files/schema') === true
         ) {
             // Return a basic file schema object.
@@ -1296,7 +1302,7 @@ class ValidateObject
 
             case 'format':
                 $format = $args['format'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. "."Please provide a value in the correct format.";
+                return "Property '{$propertyPath}' should match the format '{$format}' but the value '{$value}' does not. " . "Please provide a value in the correct format.";
 
             case 'minLength':
                 $minLength    = $args['min'] ?? 0;
@@ -1306,9 +1312,9 @@ class ValidateObject
                 }
 
                 if ($actualLength === 0) {
-                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. "."Please provide a non-empty string value.";
+                    return "Property '{$propertyPath}' should have at least {$minLength} characters, but is empty. " . "Please provide a non-empty string value.";
                 }
-                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. "."Please provide a longer string value.";
+                return "Property '{$propertyPath}' should have at least {$minLength} characters, but has {$actualLength}. " . "Please provide a longer string value.";
 
             case 'maxLength':
                 $maxLength    = $args['max'] ?? 0;
@@ -1316,15 +1322,15 @@ class ValidateObject
                 if (is_string($value) === true) {
                     $actualLength = strlen($value);
                 }
-                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. "."Please provide a shorter string value.";
+                return "Property '{$propertyPath}' should have at most {$maxLength} characters, but has {$actualLength}. " . "Please provide a shorter string value.";
 
             case 'minimum':
                 $minimum = $args['min'] ?? 0;
-                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}. "."Please provide a larger number.";
+                return "Property '{$propertyPath}' should be at least {$minimum}, but is {$value}. " . "Please provide a larger number.";
 
             case 'maximum':
                 $maximum = $args['max'] ?? 0;
-                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}. "."Please provide a smaller number.";
+                return "Property '{$propertyPath}' should be at most {$maximum}, but is {$value}. " . "Please provide a smaller number.";
 
             case 'enum':
                 $allowedValues = $args['values'] ?? [];
@@ -1338,13 +1344,13 @@ class ValidateObject
                             $allowedValues
                         )
                     );
-                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. "."Please choose one of the allowed values.";
+                    return "Property '{$propertyPath}' should be one of: {$valuesList}, but is '{$value}'. " . "Please choose one of the allowed values.";
                 }
-                return "Property '{$propertyPath}' has an invalid value '{$value}'. "."Please provide one of the allowed values.";
+                return "Property '{$propertyPath}' has an invalid value '{$value}'. " . "Please provide one of the allowed values.";
 
             case 'pattern':
                 $pattern = $args['pattern'] ?? 'unknown';
-                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. "."Please provide a value that matches the required pattern.";
+                return "Property '{$propertyPath}' should match the pattern '{$pattern}' but the value '{$value}' does not. " . "Please provide a value that matches the required pattern.";
 
             default:
                 // Check for sub-errors to provide more specific messages.
@@ -1352,7 +1358,7 @@ class ValidateObject
                 if (empty($subErrors) === false) {
                     return $this->formatValidationError($subErrors[0]);
                 }
-                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. "."Please check the property value and schema requirements.";
+                return "Property '{$propertyPath}' failed validation for rule '{$keyword}'. " . "Please check the property value and schema requirements.";
         }//end switch
     }//end formatValidationError()
 
@@ -1466,7 +1472,7 @@ class ValidateObject
             foreach ($uniqueFields as $field) {
                 $filters[$field] = $object[$field];
             }
-        } else if (is_string($uniqueFields) === true) {
+        } elseif (is_string($uniqueFields) === true) {
             $filters[$uniqueFields] = $object[$uniqueFields];
         }
 
@@ -1479,13 +1485,13 @@ class ValidateObject
                 $fieldNames = implode(', ', $uniqueFields);
             }
 
-            $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
+            $fieldValues = $uniqueFields . '=' . ($object[$uniqueFields] ?? 'null');
             if (is_array($uniqueFields) === true) {
                 $fieldValues = implode(
                     ', ',
                     array_map(
                         function ($field) use ($object) {
-                            return $field.'='.($object[$field] ?? 'null');
+                            return $field . '=' . ($object[$field] ?? 'null');
                         },
                         $uniqueFields
                     )

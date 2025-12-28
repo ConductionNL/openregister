@@ -99,7 +99,6 @@ class GitHubHandler
         $this->config = $config;
         $this->cache  = $cacheFactory->createDistributed('openregister_github_configs');
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -119,12 +118,12 @@ class GitHubHandler
         // Add authentication token if configured.
         $token = $this->config->getAppValue('openregister', 'github_api_token', '');
         if (empty($token) === false) {
-            $headers['Authorization'] = 'Bearer '.$token;
+            $headers['Authorization'] = 'Bearer ' . $token;
             $this->logger->debug(
                 'Using GitHub API token for authentication',
                 [
                     'token_length' => strlen($token),
-                    'token_prefix' => substr($token, 0, 8).'...',
+                    'token_prefix' => substr($token, 0, 8) . '...',
                 ]
             );
         } else {
@@ -132,7 +131,6 @@ class GitHubHandler
         }
 
         return $headers;
-
     }//end getHeaders()
 
     /**
@@ -152,7 +150,7 @@ class GitHubHandler
      *
      * @psalm-return array{total_count: 0|mixed, results: list<array{branch: string, config: array, description: ''|mixed, name: string, organization: array{avatar_url: ''|mixed, name: string, type: 'User'|mixed, url: ''|mixed}, owner: string, path: string, raw_url: non-empty-string, repo: string, repository: mixed, sha: null|string, stars: 0|mixed, url: mixed}>, page: int, per_page: int}
      */
-    public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
+    public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array
     {
         try {
             // Simplified single-phase search strategy to minimize API calls.
@@ -176,7 +174,7 @@ class GitHubHandler
                 // If search term is provided, add it to the query.
                 // GitHub Code Search supports searching in specific repos: repo:owner/repo.
                 // Or we can add the search term as additional filter.
-                $searchQuery .= ' '.$search;
+                $searchQuery .= ' ' . $search;
             }
 
             $this->logger->debug(
@@ -192,7 +190,7 @@ class GitHubHandler
             // This uses only 1 Code Search API call per search request.
             $response = $this->client->request(
                 'GET',
-                self::API_BASE.'/search/code',
+                self::API_BASE . '/search/code',
                 [
                     'query'   => [
                         'q'        => $searchQuery,
@@ -294,7 +292,6 @@ class GitHubHandler
             $userMessage = $this->getGitHubErrorMessage(statusCode: $statusCode, rawError: $errorMessage);
             throw new Exception($userMessage);
         }//end try
-
     }//end searchConfigurations()
 
     /**
@@ -314,15 +311,15 @@ class GitHubHandler
                 if (stripos($rawError, 'rate limit') !== false) {
                     $token = $this->config->getAppValue('openregister', 'github_api_token', '');
                     if (empty($token) === true) {
-                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). '.'Please configure a GitHub API token in Settings to increase to 5,000 requests/hour '.'(30/minute for Code Search).';
+                        return 'GitHub API rate limit exceeded (60 requests/hour for unauthenticated). ' . 'Please configure a GitHub API token in Settings to increase to 5,000 requests/hour ' . '(30/minute for Code Search).';
                     } else {
-                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). '.'Please wait a few minutes before trying again. '.'The discovery search makes multiple API calls to find configurations.';
+                        return 'GitHub Code Search API rate limit exceeded (30 requests per minute). ' . 'Please wait a few minutes before trying again. ' . 'The discovery search makes multiple API calls to find configurations.';
                     }
                 }
                 return 'Access forbidden. Please check your GitHub API token permissions in Settings.';
 
             case 401:
-                return 'GitHub API authentication failed. '.'Please check your API token in Settings or remove it to use unauthenticated access '.'(60 requests/hour limit).';
+                return 'GitHub API authentication failed. ' . 'Please check your API token in Settings or remove it to use unauthenticated access ' . '(60 requests/hour limit).';
 
             case 404:
                 return 'Repository or resource not found on GitHub. Please check the repository exists and is public.';
@@ -341,7 +338,6 @@ class GitHubHandler
                 }
                 return 'GitHub API request failed. Please try again or check your API token configuration in Settings.';
         }//end switch
-
     }//end getGitHubErrorMessage()
 
     /**
@@ -400,7 +396,6 @@ class GitHubHandler
         }
 
         return $enriched;
-
     }//end getEnrichedConfigDetails()
 
     /**
@@ -426,7 +421,7 @@ class GitHubHandler
      *     openregister: mixed|null
      * }|null
      */
-    public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): array|null
+    public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch = 'main'): array|null
     {
         try {
             // Use raw.githubusercontent.com - doesn't count against API rate limit.
@@ -484,7 +479,6 @@ class GitHubHandler
             );
             return null;
         }//end try
-
     }//end enrichConfigurationDetails()
 
     /**
@@ -514,7 +508,7 @@ class GitHubHandler
 
             $response = $this->client->request(
                 'GET',
-                self::API_BASE."/repos/{$owner}/{$repo}/branches",
+                self::API_BASE . "/repos/{$owner}/{$repo}/branches",
                 [
                     'headers' => $this->getHeaders(),
                 ]
@@ -546,9 +540,8 @@ class GitHubHandler
                     'repo'  => $repo,
                 ]
             );
-            throw new Exception('Failed to fetch branches: '.$e->getMessage());
+            throw new Exception('Failed to fetch branches: ' . $e->getMessage());
         }//end try
-
     }//end getBranches()
 
     /**
@@ -564,7 +557,7 @@ class GitHubHandler
      *
      * @since 0.2.10
      */
-    public function getFileContent(string $owner, string $repo, string $path, string $branch='main'): array
+    public function getFileContent(string $owner, string $repo, string $path, string $branch = 'main'): array
     {
         try {
             $this->logger->info(
@@ -579,7 +572,7 @@ class GitHubHandler
 
             $response = $this->client->request(
                 'GET',
-                self::API_BASE."/repos/{$owner}/{$repo}/contents/{$path}",
+                self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$path}",
                 [
                     'query'   => ['ref' => $branch],
                     'headers' => $this->getHeaders(),
@@ -594,7 +587,7 @@ class GitHubHandler
                 $json    = json_decode($content, true);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new Exception('Invalid JSON in file: '.json_last_error_msg());
+                    throw new Exception('Invalid JSON in file: ' . json_last_error_msg());
                 }
 
                 return $json;
@@ -612,9 +605,8 @@ class GitHubHandler
                     'branch' => $branch,
                 ]
             );
-            throw new Exception('Failed to fetch file: '.$e->getMessage());
+            throw new Exception('Failed to fetch file: ' . $e->getMessage());
         }//end try
-
     }//end getFileContent()
 
     /**
@@ -638,7 +630,7 @@ class GitHubHandler
      *
      * @psalm-return list<array{config: array{app: mixed|null, description: ''|mixed, title: mixed|string, type: 'manual'|mixed, version: '1.0.0'|mixed}, path: mixed, sha: mixed|null, url: mixed|null}>
      */
-    public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
+    public function listConfigurationFiles(string $owner, string $repo, string $branch = 'main', string $path = ''): array
     {
         try {
             $this->logger->info(
@@ -656,7 +648,7 @@ class GitHubHandler
 
             $response = $this->client->request(
                 'GET',
-                self::API_BASE.'/search/code',
+                self::API_BASE . '/search/code',
                 [
                     'query'   => [
                         'q' => $searchQuery,
@@ -698,9 +690,8 @@ class GitHubHandler
                     'branch' => $branch,
                 ]
             );
-            throw new Exception('Failed to list configuration files: '.$e->getMessage());
+            throw new Exception('Failed to list configuration files: ' . $e->getMessage());
         }//end try
-
     }//end listConfigurationFiles()
 
     /**
@@ -717,7 +708,7 @@ class GitHubHandler
      *
      * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      */
-    private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): array|null
+    private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch = 'main'): array|null
     {
         try {
             $content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
@@ -744,7 +735,6 @@ class GitHubHandler
             );
             return null;
         }//end try
-
     }//end parseConfigurationFile()
 
     /**
@@ -772,7 +762,7 @@ class GitHubHandler
      *     }
      * >
      */
-    public function getRepositories(int $page=1, int $perPage=100): array
+    public function getRepositories(int $page = 1, int $perPage = 100): array
     {
         // Check if GitHub API token is configured.
         $token = $this->config->getAppValue('openregister', 'github_api_token', '');
@@ -792,7 +782,7 @@ class GitHubHandler
 
             $response = $this->client->request(
                 'GET',
-                self::API_BASE.'/user/repos',
+                self::API_BASE . '/user/repos',
                 [
                     'query'   => [
                         'type'      => 'all',
@@ -857,9 +847,8 @@ class GitHubHandler
                     'status_code' => $statusCode,
                 ]
             );
-            throw new Exception('Failed to fetch repositories: '.$e->getMessage());
+            throw new Exception('Failed to fetch repositories: ' . $e->getMessage());
         }//end try
-
     }//end getRepositories()
 
     /**
@@ -890,7 +879,7 @@ class GitHubHandler
         try {
             $response = $this->client->request(
                 'GET',
-                self::API_BASE."/repos/{$owner}/{$repo}",
+                self::API_BASE . "/repos/{$owner}/{$repo}",
                 [
                     'headers' => $this->getHeaders(),
                 ]
@@ -917,9 +906,8 @@ class GitHubHandler
                     'repo'  => $repo,
                 ]
             );
-            throw new Exception('Failed to fetch repository info: '.$e->getMessage());
+            throw new Exception('Failed to fetch repository info: ' . $e->getMessage());
         }//end try
-
     }//end getRepositoryInfo()
 
     /**
@@ -949,7 +937,7 @@ class GitHubHandler
         string $branch,
         string $content,
         string $commitMessage,
-        ?string $fileSha=null
+        ?string $fileSha = null
     ): array {
         try {
             $this->logger->info(
@@ -984,7 +972,7 @@ class GitHubHandler
             $encodedPathSegments = array_map('rawurlencode', $pathSegments);
             $encodedPath         = implode('/', $encodedPathSegments);
 
-            $apiUrl = self::API_BASE."/repos/{$owner}/{$repo}/contents/{$encodedPath}";
+            $apiUrl = self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}";
 
             $this->logger->debug(
                 'GitHub API publish request',
@@ -1036,11 +1024,11 @@ class GitHubHandler
 
                     // Provide more context for common errors.
                     if ($statusCode === 404) {
-                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', "."or path '{$path}' may not exist or you may not have access";
-                    } else if ($statusCode === 403) {
-                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' "."or the branch '{$branch}' is protected";
-                    } else if ($statusCode === 422) {
-                        $errorMessage = "Validation Error - {$errorMessage}. "."Check that the branch '{$branch}' exists and the path '{$path}' is valid";
+                        $errorMessage = "Not Found - Repository '{$owner}/{$repo}', branch '{$branch}', " . "or path '{$path}' may not exist or you may not have access";
+                    } elseif ($statusCode === 403) {
+                        $errorMessage = "Forbidden - You may not have write access to repository '{$owner}/{$repo}' " . "or the branch '{$branch}' is protected";
+                    } elseif ($statusCode === 422) {
+                        $errorMessage = "Validation Error - {$errorMessage}. " . "Check that the branch '{$branch}' exists and the path '{$path}' is valid";
                     }
                 }
             }//end if
@@ -1057,9 +1045,8 @@ class GitHubHandler
                 ]
             );
 
-            throw new Exception('Failed to publish configuration: '.$errorMessage);
+            throw new Exception('Failed to publish configuration: ' . $errorMessage);
         }//end try
-
     }//end publishConfiguration()
 
     /**
@@ -1073,7 +1060,7 @@ class GitHubHandler
      * @return string|null File SHA or null if file doesn't exist
      * @throws \Exception If API request fails
      */
-    public function getFileSha(string $owner, string $repo, string $path, string $branch='main'): ?string
+    public function getFileSha(string $owner, string $repo, string $path, string $branch = 'main'): ?string
     {
         try {
             // URL encode the path for the GitHub API (path may contain slashes, spaces, etc.).
@@ -1083,7 +1070,7 @@ class GitHubHandler
 
             $response = $this->client->request(
                 'GET',
-                self::API_BASE."/repos/{$owner}/{$repo}/contents/{$encodedPath}",
+                self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}",
                 [
                     'query'   => [
                         'ref' => $branch,
@@ -1110,9 +1097,8 @@ class GitHubHandler
                     'path'  => $path,
                 ]
             );
-            throw new Exception('Failed to get file SHA: '.$e->getMessage());
+            throw new Exception('Failed to get file SHA: ' . $e->getMessage());
         }//end try
-
     }//end getFileSha()
 
     /**
@@ -1130,7 +1116,6 @@ class GitHubHandler
         } else {
             return null;
         }
-
     }//end getUserToken()
 
     /**
@@ -1148,7 +1133,6 @@ class GitHubHandler
         } else {
             $this->config->setUserValue($userId, 'openregister', 'github_token', $token);
         }
-
     }//end setUserToken()
 
     /**
@@ -1158,7 +1142,7 @@ class GitHubHandler
      *
      * @return bool True if token is valid, false otherwise
      */
-    public function validateToken(?string $userId=null): bool
+    public function validateToken(?string $userId = null): bool
     {
         try {
             // Get user token if userId provided, otherwise use app-level token.
@@ -1176,12 +1160,12 @@ class GitHubHandler
             $headers = [
                 'Accept'               => 'application/vnd.github+json',
                 'X-GitHub-Api-Version' => '2022-11-28',
-                'Authorization'        => 'Bearer '.$token,
+                'Authorization'        => 'Bearer ' . $token,
             ];
 
             $response = $this->client->request(
                 'GET',
-                self::API_BASE.'/user',
+                self::API_BASE . '/user',
                 ['headers' => $headers]
             );
 
@@ -1190,6 +1174,5 @@ class GitHubHandler
             $this->logger->error(message: 'GitHub token validation failed', context: ['error' => $e->getMessage()]);
             return false;
         }//end try
-
     }//end validateToken()
 }//end class

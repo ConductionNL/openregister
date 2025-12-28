@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Webhook Log Mapper
  *
@@ -52,7 +53,6 @@ class WebhookLogMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_webhook_logs', WebhookLog::class);
-
     }//end __construct()
 
     /**
@@ -74,7 +74,6 @@ class WebhookLogMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -88,7 +87,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
      */
-    public function findByWebhook(int $webhookId, ?int $limit=null, ?int $offset=null): array
+    public function findByWebhook(int $webhookId, ?int $limit = null, ?int $offset = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -106,7 +105,6 @@ class WebhookLogMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-
     }//end findByWebhook()
 
     /**
@@ -119,7 +117,7 @@ class WebhookLogMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\WebhookLog>
      */
-    public function findAll(?int $limit=null, ?int $offset=null): array
+    public function findAll(?int $limit = null, ?int $offset = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -136,7 +134,6 @@ class WebhookLogMapper extends QBMapper
         }
 
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**
@@ -160,7 +157,6 @@ class WebhookLogMapper extends QBMapper
             ->orderBy('next_retry_at', 'ASC');
 
         return $this->findEntities($qb);
-
     }//end findFailedForRetry()
 
     /**
@@ -180,7 +176,6 @@ class WebhookLogMapper extends QBMapper
         }
 
         return parent::insert($entity);
-
     }//end insert()
 
     /**
@@ -215,6 +210,5 @@ class WebhookLogMapper extends QBMapper
             'successful' => (int) ($row['successful'] ?? 0),
             'failed'     => (int) ($row['failed'] ?? 0),
         ];
-
     }//end getStatistics()
 }//end class

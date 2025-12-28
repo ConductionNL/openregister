@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Endpoints Controller
  *
@@ -53,7 +54,6 @@ use Psr\Log\LoggerInterface;
  */
 class EndpointsController extends Controller
 {
-
     /**
      * Endpoint mapper for database operations
      *
@@ -121,7 +121,6 @@ class EndpointsController extends Controller
         $this->endpointLogMapper = $endpointLogMapper;
         $this->endpointService   = $endpointService;
         $this->logger            = $logger;
-
     }//end __construct()
 
     /**
@@ -157,7 +156,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                message: 'Error listing endpoints: '.$e->getMessage(),
+                message: 'Error listing endpoints: ' . $e->getMessage(),
                 context: [
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -171,7 +170,6 @@ class EndpointsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end index()
 
     /**
@@ -211,7 +209,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                message: 'Error retrieving endpoint: '.$e->getMessage(),
+                message: 'Error retrieving endpoint: ' . $e->getMessage(),
                 context: [
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
@@ -226,7 +224,6 @@ class EndpointsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end show()
 
     /**
@@ -280,7 +277,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                'Error creating endpoint: '.$e->getMessage(),
+                'Error creating endpoint: ' . $e->getMessage(),
                 [
                     'data'  => $this->request->getParams(),
                     'trace' => $e->getTraceAsString(),
@@ -290,12 +287,11 @@ class EndpointsController extends Controller
             // Return error response to client.
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to create endpoint: '.$e->getMessage(),
+                    'error' => 'Failed to create endpoint: ' . $e->getMessage(),
                 ],
                 statusCode: 500
             );
         }//end try
-
     }//end create()
 
     /**
@@ -352,7 +348,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                'Error updating endpoint: '.$e->getMessage(),
+                'Error updating endpoint: ' . $e->getMessage(),
                 [
                     'id'    => $id,
                     'data'  => $this->request->getParams(),
@@ -363,12 +359,11 @@ class EndpointsController extends Controller
             // Return error response to client.
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to update endpoint: '.$e->getMessage(),
+                    'error' => 'Failed to update endpoint: ' . $e->getMessage(),
                 ],
                 statusCode: 500
             );
         }//end try
-
     }//end update()
 
     /**
@@ -420,7 +415,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                'Error deleting endpoint: '.$e->getMessage(),
+                'Error deleting endpoint: ' . $e->getMessage(),
                 [
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
@@ -435,7 +430,6 @@ class EndpointsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end destroy()
 
     /**
@@ -501,7 +495,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                'Error testing endpoint: '.$e->getMessage(),
+                'Error testing endpoint: ' . $e->getMessage(),
                 [
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
@@ -511,12 +505,11 @@ class EndpointsController extends Controller
             // Return error response to client.
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to test endpoint: '.$e->getMessage(),
+                    'error' => 'Failed to test endpoint: ' . $e->getMessage(),
                 ],
                 statusCode: 500
             );
         }//end try
-
     }//end test()
 
     /**
@@ -570,7 +563,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                message: 'Error retrieving endpoint logs: '.$e->getMessage(),
+                message: 'Error retrieving endpoint logs: ' . $e->getMessage(),
                 context: [
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
@@ -585,7 +578,6 @@ class EndpointsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end logs()
 
     /**
@@ -631,7 +623,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                message: 'Error retrieving endpoint log statistics: '.$e->getMessage(),
+                message: 'Error retrieving endpoint log statistics: ' . $e->getMessage(),
                 context: [
                     'id'    => $id,
                     'trace' => $e->getTraceAsString(),
@@ -646,7 +638,6 @@ class EndpointsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end logStats()
 
     /**
@@ -704,7 +695,7 @@ class EndpointsController extends Controller
         } catch (\Exception $e) {
             // Log error for debugging and monitoring.
             $this->logger->error(
-                message: 'Error retrieving endpoint logs: '.$e->getMessage(),
+                message: 'Error retrieving endpoint logs: ' . $e->getMessage(),
                 context: [
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -713,11 +704,10 @@ class EndpointsController extends Controller
             // Return error response to client.
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to retrieve endpoint logs: '.$e->getMessage(),
+                    'error' => 'Failed to retrieve endpoint logs: ' . $e->getMessage(),
                 ],
                 statusCode: 500
             );
         }//end try
-
     }//end allLogs()
 }//end class

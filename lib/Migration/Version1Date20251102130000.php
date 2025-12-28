@@ -65,14 +65,14 @@ class Version1Date20251102130000 extends SimpleMigrationStep
             // Add groups column if it doesn't exist.
             if ($table->hasColumn('groups') === false) {
                 $table->addColumn(
-                        'groups',
-                        Types::JSON,
-                        [
+                    'groups',
+                    Types::JSON,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Array of Nextcloud group IDs that have access to this application',
                         ]
-                        );
+                );
 
                 $output->info(message: '✅ Added groups column to openregister_applications table');
                 $output->info('🎯 Applications now support:');
@@ -89,6 +89,5 @@ class Version1Date20251102130000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

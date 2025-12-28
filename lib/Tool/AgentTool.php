@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AgentTool
  *
@@ -38,7 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class AgentTool extends AbstractTool implements ToolInterface
 {
-
     /**
      * Agent mapper for database operations
      *
@@ -60,7 +60,6 @@ class AgentTool extends AbstractTool implements ToolInterface
     ) {
         parent::__construct($userSession, $logger);
         $this->agentMapper = $agentMapper;
-
     }//end __construct()
 
     /**
@@ -73,7 +72,6 @@ class AgentTool extends AbstractTool implements ToolInterface
     public function getName(): string
     {
         return 'Agent Management';
-
     }//end getName()
 
     /**
@@ -86,7 +84,6 @@ class AgentTool extends AbstractTool implements ToolInterface
     public function getDescription(): string
     {
         return 'Manage AI agents: list, view, create, update, or delete agents with RBAC permissions and organisation boundaries.';
-
     }//end getDescription()
 
     /**
@@ -201,7 +198,6 @@ class AgentTool extends AbstractTool implements ToolInterface
                 ],
             ],
         ];
-
     }//end getFunctions()
 
     /**
@@ -214,16 +210,16 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
      */
-    public function listAgents(int $limit=50, int $offset=0): array
+    public function listAgents(int $limit = 50, int $offset = 0): array
     {
         try {
             $this->logger->info(
-                    '[AgentTool] Listing agents',
-                    [
+                '[AgentTool] Listing agents',
+                [
                         'limit'  => $limit,
                         'offset' => $offset,
                     ]
-                    );
+            );
 
             // Get agents via mapper (RBAC is enforced in mapper).
             $agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);
@@ -233,24 +229,23 @@ class AgentTool extends AbstractTool implements ToolInterface
             $results = array_map(fn ($agent) => $agent->jsonSerialize(), $agents);
 
             return $this->formatSuccess(
-                    data: [
+                data: [
                         'agents' => $results,
                         'total'  => $total,
                         'limit'  => $limit,
                         'offset' => $offset,
                     ],
-                    message: "Found {$total} agents."
-                    );
+                message: "Found {$total} agents."
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[AgentTool] Failed to list agents',
-                    [
+                '[AgentTool] Failed to list agents',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
-            return $this->formatError(message: 'Failed to list agents: '.$e->getMessage());
+            );
+            return $this->formatError(message: 'Failed to list agents: ' . $e->getMessage());
         }//end try
-
     }//end listAgents()
 
     /**
@@ -278,15 +273,14 @@ class AgentTool extends AbstractTool implements ToolInterface
             return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[AgentTool] Failed to get agent',
-                    [
+                '[AgentTool] Failed to get agent',
+                [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
-                    );
-            return $this->formatError(message: 'Failed to get agent: '.$e->getMessage());
+            );
+            return $this->formatError(message: 'Failed to get agent: ' . $e->getMessage());
         }//end try
-
     }//end getAgent()
 
     /**
@@ -303,9 +297,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function createAgent(
         string $name,
-        ?string $description=null,
-        ?string $type=null,
-        ?string $systemPrompt=null
+        ?string $description = null,
+        ?string $type = null,
+        ?string $systemPrompt = null
     ): array {
         try {
             $this->logger->info('[AgentTool] Creating agent', ['name' => $name]);
@@ -340,15 +334,14 @@ class AgentTool extends AbstractTool implements ToolInterface
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[AgentTool] Failed to create agent',
-                    [
+                '[AgentTool] Failed to create agent',
+                [
                         'name'  => $name,
                         'error' => $e->getMessage(),
                     ]
-                    );
-            return $this->formatError(message: 'Failed to create agent: '.$e->getMessage());
+            );
+            return $this->formatError(message: 'Failed to create agent: ' . $e->getMessage());
         }//end try
-
     }//end createAgent()
 
     /**
@@ -365,9 +358,9 @@ class AgentTool extends AbstractTool implements ToolInterface
      */
     public function updateAgent(
         string $uuid,
-        ?string $name=null,
-        ?string $description=null,
-        ?string $systemPrompt=null
+        ?string $name = null,
+        ?string $description = null,
+        ?string $systemPrompt = null
     ): array {
         try {
             $this->logger->info('[AgentTool] Updating agent', ['uuid' => $uuid]);
@@ -399,15 +392,14 @@ class AgentTool extends AbstractTool implements ToolInterface
             return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[AgentTool] Failed to update agent',
-                    [
+                '[AgentTool] Failed to update agent',
+                [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
-                    );
-            return $this->formatError(message: 'Failed to update agent: '.$e->getMessage());
+            );
+            return $this->formatError(message: 'Failed to update agent: ' . $e->getMessage());
         }//end try
-
     }//end updateAgent()
 
     /**
@@ -439,15 +431,14 @@ class AgentTool extends AbstractTool implements ToolInterface
             return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[AgentTool] Failed to delete agent',
-                    [
+                '[AgentTool] Failed to delete agent',
+                [
                         'uuid'  => $uuid,
                         'error' => $e->getMessage(),
                     ]
-                    );
-            return $this->formatError(message: 'Failed to delete agent: '.$e->getMessage());
+            );
+            return $this->formatError(message: 'Failed to delete agent: ' . $e->getMessage());
         }//end try
-
     }//end deleteAgent()
 
     /**
@@ -459,13 +450,12 @@ class AgentTool extends AbstractTool implements ToolInterface
      *
      * @return array Response
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
         // Convert snake_case to camelCase for PSR compliance.
         $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
 
         // Call the method directly (LLPhant-compatible).
         return $this->$methodName(...array_values($parameters));
-
     }//end executeFunction()
 }//end class

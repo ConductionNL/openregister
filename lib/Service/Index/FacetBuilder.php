@@ -32,7 +32,6 @@ use Psr\Log\LoggerInterface;
  */
 class FacetBuilder
 {
-
     /**
      * Solr backend service (temporary delegation).
      *
@@ -61,7 +60,6 @@ class FacetBuilder
     ) {
         $this->solrBackend = $solrBackend;
         $this->logger      = $logger;
-
     }//end __construct()
 
     /**
@@ -74,6 +72,5 @@ class FacetBuilder
         $this->logger->debug('FacetBuilder: Delegating to SolrBackend');
 
         return $this->solrBackend->getRawSolrFieldsForFacetConfiguration();
-
     }//end getRawSolrFieldsForFacetConfiguration()
 }//end class

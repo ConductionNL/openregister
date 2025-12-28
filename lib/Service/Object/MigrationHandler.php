@@ -63,7 +63,6 @@ class MigrationHandler
         private readonly DataManipulationHandler $dataManipulationHandler,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -148,13 +147,14 @@ class MigrationHandler
                     $objectDetail['objectTitle'] = $sourceObject->getName() ?? $sourceObject->getUuid();
 
                     // Verify the source object belongs to the expected register/schema (cast to int for comparison).
-                    if ((int) $sourceObject->getRegister() !== (int) $sourceRegister
+                    if (
+                        (int) $sourceObject->getRegister() !== (int) $sourceRegister
                         || (int) $sourceObject->getSchema() !== (int) $sourceSchema
                     ) {
                         $actualRegister = $sourceObject->getRegister();
                         $actualSchema   = $sourceObject->getSchema();
                         throw new InvalidArgumentException(
-                            "Object {$objectId} does not belong to the specified source register/schema. "."Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. "."Actual: register='{$actualRegister}', schema='{$actualSchema}'"
+                            "Object {$objectId} does not belong to the specified source register/schema. " . "Expected: register='{$sourceRegister}', schema='{$sourceSchema}'. " . "Actual: register='{$actualRegister}', schema='{$actualSchema}'"
                         );
                     }
 
@@ -205,7 +205,7 @@ class MigrationHandler
                 } catch (Exception $e) {
                     $objectDetail['error'] = $e->getMessage();
                     $migrationReport['statistics']['objectsFailed']++;
-                    $migrationReport['errors'][] = "Failed to migrate object {$objectId}: ".$e->getMessage();
+                    $migrationReport['errors'][] = "Failed to migrate object {$objectId}: " . $e->getMessage();
                 }//end try
 
                 $migrationReport['details'][] = $objectDetail;
@@ -239,6 +239,5 @@ class MigrationHandler
         }//end try
 
         return $migrationReport;
-
     }//end migrateObjects()
 }//end class

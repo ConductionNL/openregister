@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Feedback Entity
  *
@@ -52,7 +53,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Feedback extends Entity implements JsonSerializable
 {
-
     /**
      * UUID.
      *
@@ -138,7 +138,6 @@ class Feedback extends Entity implements JsonSerializable
         $this->addType('comment', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -163,6 +162,5 @@ class Feedback extends Entity implements JsonSerializable
             'created'        => $this->created?->format('c'),
             'updated'        => $this->updated?->format('c'),
         ];
-
     }//end jsonSerialize()
 }//end class

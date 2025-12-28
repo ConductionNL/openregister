@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Audit Trail
  *
@@ -63,7 +64,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the audit trail entry
      *
@@ -283,7 +283,6 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
         $this->addType(fieldName: 'size', type: 'integer');
         $this->addType(fieldName: 'expires', type: 'datetime');
-
     }//end __construct()
 
     /**
@@ -294,7 +293,6 @@ class AuditTrail extends Entity implements JsonSerializable
     public function getChanged(): array
     {
         return ($this->changed ?? []);
-
     }//end getChanged()
 
     /**
@@ -316,7 +314,6 @@ class AuditTrail extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -337,7 +334,7 @@ class AuditTrail extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -347,7 +344,6 @@ class AuditTrail extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -426,7 +422,6 @@ class AuditTrail extends Entity implements JsonSerializable
             'size'                  => $this->size,
             'expires'               => $expires,
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -446,16 +441,15 @@ class AuditTrail extends Entity implements JsonSerializable
 
         // Fallback to action if available.
         if ($this->action !== null && $this->action !== '') {
-            return 'Audit: '.$this->action;
+            return 'Audit: ' . $this->action;
         }
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'AuditTrail #'.$this->id;
+            return 'AuditTrail #' . $this->id;
         }
 
         // Final fallback.
         return 'Audit Trail';
-
     }//end __toString()
 }//end class

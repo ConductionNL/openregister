@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Agent Handler
  *
@@ -32,7 +33,6 @@ use Psr\Log\LoggerInterface;
  */
 class AgentHandler
 {
-
     /**
      * Agent mapper instance.
      *
@@ -48,9 +48,4 @@ class AgentHandler
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private LoggerInterface $logger;
-
-
-
-
-
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RevertHandler
  *
@@ -36,7 +37,6 @@ use Psr\Container\ContainerInterface;
  */
 class RevertHandler
 {
-
     /**
      * Audit trail mapper
      *
@@ -86,7 +86,7 @@ class RevertHandler
         string $schema,
         string $id,
         mixed $until,
-        bool $overwriteVersion=false
+        bool $overwriteVersion = false
     ): ObjectEntity {
         // Get the object.
         $object = $this->objectEntityMapper->find(identifier: $id);
@@ -120,6 +120,5 @@ class RevertHandler
         $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
 
         return $savedObject;
-
     }//end revert()
 }//end class

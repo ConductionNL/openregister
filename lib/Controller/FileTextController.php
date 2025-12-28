@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister File Text Controller
  *
@@ -62,7 +63,6 @@ class FileTextController extends Controller
         private readonly IAppConfig $config
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -85,31 +85,30 @@ class FileTextController extends Controller
             // For now, return a message indicating this endpoint needs to be updated.
             // TODO: Implement chunk retrieval for file text display.
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'message' => 'This endpoint is deprecated. Use chunk-based endpoints instead.',
                         'file_id' => $fileId,
                     ],
-                    statusCode: 404
-                    );
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileTextController] Failed to get file text',
-                    context: [
+                message: '[FileTextController] Failed to get file text',
+                context: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to retrieve file text: '.$e->getMessage(),
+                        'message' => 'Failed to retrieve file text: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end getFileText()
 
     /**
@@ -127,7 +126,8 @@ class FileTextController extends Controller
      */
     public function extractFileText(int $fileId): JSONResponse
     {
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
+        if (
+            $this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
             || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
         ) {
             $this->logger->info(message: '[FileTextController] File extraction is disabled. Not extracting text from files.');
@@ -139,29 +139,28 @@ class FileTextController extends Controller
             $this->textExtractionService->extractFile(fileId: $fileId, forceReExtract: true);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'message' => 'Text extracted successfully',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileTextController] Failed to extract file text',
-                    context: [
+                message: '[FileTextController] Failed to extract file text',
+                context: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to extract file text: '.$e->getMessage(),
+                        'message' => 'Failed to extract file text: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end extractFileText()
 
     /**
@@ -184,30 +183,29 @@ class FileTextController extends Controller
             $result = $this->textExtractionService->extractPendingFiles($limit);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'   => true,
                         'processed' => $result['processed'],
                         'failed'    => $result['failed'],
                         'total'     => $result['total'],
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileTextController] Failed bulk extraction',
-                    context: [
+                message: '[FileTextController] Failed bulk extraction',
+                context: [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Bulk extraction failed: '.$e->getMessage(),
+                        'message' => 'Bulk extraction failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end bulkExtract()
 
     /**
@@ -227,28 +225,27 @@ class FileTextController extends Controller
             $stats = $this->textExtractionService->getStats();
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'stats'   => $stats,
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to get stats',
-                    [
+                '[FileTextController] Failed to get stats',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to retrieve statistics: '.$e->getMessage(),
+                        'message' => 'Failed to retrieve statistics: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end getStats()
 
     /**
@@ -271,30 +268,29 @@ class FileTextController extends Controller
             // TODO: Implement chunk deletion for file.
             // For now, return a message indicating this needs implementation.
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'message' => 'Chunk deletion not yet implemented. Use chunk-based endpoints.',
                     ],
-                    statusCode: 501
-                    );
+                statusCode: 501
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileTextController] Failed to delete file text',
-                    context: [
+                message: '[FileTextController] Failed to delete file text',
+                context: [
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to delete file text: '.$e->getMessage(),
+                        'message' => 'Failed to delete file text: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end deleteFileText()
 
     /**
@@ -312,7 +308,7 @@ class FileTextController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, message?: string, stats?: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: 0|mixed, errors: array<int, mixed|string>, execution_time_ms: float}}, array<never, never>>
      */
-    public function processAndIndexExtracted(?int $limit=null, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
+    public function processAndIndexExtracted(?int $limit = null, ?int $chunkSize = null, ?int $chunkOverlap = null): JSONResponse
     {
         try {
             $options = [];
@@ -333,17 +329,16 @@ class FileTextController extends Controller
                 [
                     'error' => $e->getMessage(),
                 ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to process extracted files: '.$e->getMessage(),
+                        'message' => 'Failed to process extracted files: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end processAndIndexExtracted()
 
     /**
@@ -361,7 +356,7 @@ class FileTextController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      */
-    public function processAndIndexFile(int $fileId, ?int $chunkSize=null, ?int $chunkOverlap=null): JSONResponse
+    public function processAndIndexFile(int $fileId, ?int $chunkSize = null, ?int $chunkOverlap = null): JSONResponse
     {
         try {
             $options = [];
@@ -381,17 +376,16 @@ class FileTextController extends Controller
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to process file: '.$e->getMessage(),
+                        'message' => 'Failed to process file: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end processAndIndexFile()
 
     /**
@@ -411,27 +405,26 @@ class FileTextController extends Controller
             $stats = $this->indexService->getChunkingStats();
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'stats'   => $stats,
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[FileTextController] Failed to get chunking stats',
-                    [
+                '[FileTextController] Failed to get chunking stats',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Failed to get chunking stats: '.$e->getMessage(),
+                        'message' => 'Failed to get chunking stats: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end getChunkingStats()
 }//end class

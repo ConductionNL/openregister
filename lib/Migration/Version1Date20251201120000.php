@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20251201120000
  *
@@ -93,7 +94,6 @@ class Version1Date20251201120000 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -111,6 +111,5 @@ class Version1Date20251201120000 extends SimpleMigrationStep
     {
         $output->info('✅ Views multi-tenancy migration complete');
         $output->info('   Views can now be filtered by organisation');
-
     }//end postSchemaChange()
 }//end class

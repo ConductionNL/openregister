@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Add Active Organisation Flag Migration
  *
@@ -31,7 +32,6 @@ use OCP\IDBConnection;
  */
 class Version1Date20250123120000 extends SimpleMigrationStep
 {
-
     /**
      * Database connection
      *
@@ -49,7 +49,6 @@ class Version1Date20250123120000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-
     }//end __construct()
 
     /**
@@ -91,19 +90,18 @@ class Version1Date20250123120000 extends SimpleMigrationStep
             // Add active field (boolean flag for active organisation).
             if ($table->hasColumn('active') === false) {
                 $table->addColumn(
-                        'active',
-                        Types::BOOLEAN,
-                        [
+                    'active',
+                    Types::BOOLEAN,
+                    [
                             'notnull' => false,
                             'default' => true,
                         ]
-                        );
+                );
                 $output->info(message: 'Added active column to organisations table');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
 
     /**

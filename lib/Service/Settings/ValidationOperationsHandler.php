@@ -43,7 +43,6 @@ use Exception;
  */
 class ValidationOperationsHandler
 {
-
     /**
      * Container for lazy loading ObjectService to break circular dependency.
      *
@@ -58,7 +57,6 @@ class ValidationOperationsHandler
         IAppContainer $container
     ) {
         $this->container = $container;
-
     }//end __construct()
 
     /**
@@ -128,7 +126,7 @@ class ValidationOperationsHandler
                     'object_name' => $object->getName() ?? $object->getUuid(),
                     'register'    => $object->getRegister(),
                     'schema'      => $object->getSchema(),
-                    'errors'      => ['Validation failed: '.$e->getMessage()],
+                    'errors'      => ['Validation failed: ' . $e->getMessage()],
                 ];
             }//end try
         }//end foreach
@@ -149,6 +147,5 @@ class ValidationOperationsHandler
         ];
 
         return $validationResults;
-
     }//end validateAllObjects()
 }//end class

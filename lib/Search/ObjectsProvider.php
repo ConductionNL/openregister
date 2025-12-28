@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectsProvider
  *
@@ -40,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsProvider implements IFilteringProvider
 {
-
     /**
      * The localization service
      *
@@ -89,7 +89,6 @@ class ObjectsProvider implements IFilteringProvider
         $this->urlGenerator  = $urlGenerator;
         $this->objectService = $objectService;
         $this->logger        = $logger;
-
     }//end __construct()
 
     /**
@@ -102,7 +101,6 @@ class ObjectsProvider implements IFilteringProvider
     public function getId(): string
     {
         return 'openregister_objects';
-
     }//end getId()
 
     /**
@@ -113,7 +111,6 @@ class ObjectsProvider implements IFilteringProvider
     public function getName(): string
     {
         return $this->l10n->t('Open Register Objects');
-
     }//end getName()
 
     /**
@@ -132,7 +129,6 @@ class ObjectsProvider implements IFilteringProvider
     public function getOrder(string $_route, array $_routeParameters): ?int
     {
         return 10;
-
     }//end getOrder()
 
     /**
@@ -155,7 +151,6 @@ class ObjectsProvider implements IFilteringProvider
             'register',
             'schema',
         ];
-
     }//end getSupportedFilters()
 
     /**
@@ -169,7 +164,6 @@ class ObjectsProvider implements IFilteringProvider
     public function getAlternateIds(): array
     {
         return [];
-
     }//end getAlternateIds()
 
     /**
@@ -186,7 +180,6 @@ class ObjectsProvider implements IFilteringProvider
             new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
             new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
         ];
-
     }//end getCustomFilters()
 
     /**
@@ -283,12 +276,12 @@ class ObjectsProvider implements IFilteringProvider
         $searchQuery['_offset'] = 0;
 
         $this->logger->debug(
-                'OpenRegister search requested',
-                [
+            'OpenRegister search requested',
+            [
                     'search_query' => $searchQuery,
                     'has_search'   => empty($search) === false,
                 ]
-                );
+        );
 
         // Use searchObjectsPaginated for optimal performance.
         $searchResults = $this->objectService->searchObjectsPaginated(query: $searchQuery, _rbac: true, _multitenancy: true);
@@ -318,18 +311,17 @@ class ObjectsProvider implements IFilteringProvider
         }//end if
 
         $this->logger->debug(
-                'OpenRegister search completed',
-                [
+            'OpenRegister search completed',
+            [
                     'results_count' => count($searchResultEntries),
                     'total_results' => $searchResults['total'] ?? 0,
                 ]
-                );
+        );
 
         return SearchResult::complete(
             name: $this->l10n->t(text: 'Open Register Objects'),
             entries: $searchResultEntries
         );
-
     }//end search()
 
     /**
@@ -355,7 +347,7 @@ class ObjectsProvider implements IFilteringProvider
         // Add summary/description if available.
         if (empty($object['summary']) === false) {
             $parts[] = $object['summary'];
-        } else if (empty($object['description']) === false) {
+        } elseif (empty($object['description']) === false) {
             $descriptionPart = substr($object['description'], 0, 100);
             if (strlen($object['description']) > 100) {
                 $descriptionPart .= '...';
@@ -375,6 +367,5 @@ class ObjectsProvider implements IFilteringProvider
         } else {
             return $this->l10n->t(text: 'Open Register Object');
         }
-
     }//end buildDescription()
 }//end class

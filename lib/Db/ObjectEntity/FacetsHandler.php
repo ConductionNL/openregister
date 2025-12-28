@@ -36,7 +36,6 @@ use Psr\Log\LoggerInterface;
  */
 class FacetsHandler
 {
-
     /**
      * Logger instance.
      *
@@ -76,14 +75,13 @@ class FacetsHandler
     public function __construct(
         LoggerInterface $logger,
         SchemaMapper $schemaMapper,
-        ?MetaDataFacetHandler $metaDataFacetHandler=null,
-        ?MariaDbFacetHandler $mariaDbFacetHandler=null
+        ?MetaDataFacetHandler $metaDataFacetHandler = null,
+        ?MariaDbFacetHandler $mariaDbFacetHandler = null
     ) {
         $this->logger       = $logger;
         $this->schemaMapper = $schemaMapper;
         $this->metaDataFacetHandler = $metaDataFacetHandler;
         $this->mariaDbFacetHandler  = $mariaDbFacetHandler;
-
     }//end __construct()
 
     /**
@@ -103,7 +101,7 @@ class FacetsHandler
      *
      * @psalm-return array<array<array{type?: 'date_histogram'|'range'|'terms', buckets?: list{0?: array{key: mixed|string, results: int, from?: mixed, to?: mixed, label?: string}|mixed,...}, interval?: string, 0?: array{key: mixed|string, results: int, from?: mixed, to?: mixed}|mixed,...}|mixed|string>>
      */
-    public function getSimpleFacets(array $query=[]): array
+    public function getSimpleFacets(array $query = []): array
     {
         // Check if handlers are available.
         if ($this->metaDataFacetHandler === null || $this->mariaDbFacetHandler === null) {
@@ -133,10 +131,10 @@ class FacetsHandler
                         field: $field,
                         baseQuery: $baseQuery
                     );
-                } else if ($type === 'date_histogram') {
+                } elseif ($type === 'date_histogram') {
                     $interval = $config['interval'] ?? 'month';
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getDateHistogramFacet(field: $field, interval: $interval, baseQuery: $baseQuery);
-                } else if ($type === 'range') {
+                } elseif ($type === 'range') {
                     $ranges = $config['ranges'] ?? [];
                     $facets['@self'][$field] = $this->metaDataFacetHandler->getRangeFacet(field: $field, ranges: $ranges, baseQuery: $baseQuery);
                 }
@@ -160,14 +158,14 @@ class FacetsHandler
                     field: $field,
                     baseQuery: $baseQuery
                 );
-            } else if ($type === 'date_histogram') {
+            } elseif ($type === 'date_histogram') {
                 $interval       = $config['interval'] ?? 'month';
                 $facets[$field] = $this->mariaDbFacetHandler->getDateHistogramFacet(
                     field: $field,
                     interval: $interval,
                     baseQuery: $baseQuery
                 );
-            } else if ($type === 'range') {
+            } elseif ($type === 'range') {
                 $ranges         = $config['ranges'] ?? [];
                 $facets[$field] = $this->mariaDbFacetHandler->getRangeFacet(
                     field: $field,
@@ -178,7 +176,6 @@ class FacetsHandler
         }//end foreach
 
         return $facets;
-
     }//end getSimpleFacets()
 
     /**
@@ -197,7 +194,7 @@ class FacetsHandler
      *
      * @psalm-return array<string, array>
      */
-    public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
+    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
     {
         $facetableFields = [];
 
@@ -240,7 +237,6 @@ class FacetsHandler
         }//end foreach
 
         return $facetableFields;
-
     }//end getFacetableFieldsFromSchemas()
 
     /**
@@ -280,7 +276,6 @@ class FacetsHandler
             // Get specific schemas.
             return $this->schemaMapper->findMultiple($schemaFilters);
         }
-
     }//end getSchemasForQuery()
 
     /**
@@ -293,7 +288,6 @@ class FacetsHandler
     private function isPropertyFacetable(array $property): bool
     {
         return isset($property['facetable']) && $property['facetable'] === true;
-
     }//end isPropertyFacetable()
 
     /**
@@ -370,7 +364,6 @@ class FacetsHandler
         }//end switch
 
         return $config;
-
     }//end generateFieldConfigFromProperty()
 
     /**
@@ -389,7 +382,7 @@ class FacetsHandler
             case 'string':
                 if ($format === 'date' || $format === 'date-time') {
                     return ['date_histogram', 'range'];
-                } else if ($format === 'email' || $format === 'uri' || $format === 'uuid') {
+                } elseif ($format === 'email' || $format === 'uri' || $format === 'uuid') {
                     return ['terms'];
                 } else {
                     return ['terms'];
@@ -408,7 +401,6 @@ class FacetsHandler
             default:
                 return ['terms'];
         }//end switch
-
     }//end determineFacetTypesFromProperty()
 
     /**
@@ -445,6 +437,5 @@ class FacetsHandler
         }
 
         return $merged;
-
     }//end mergeFieldConfigs()
 }//end class

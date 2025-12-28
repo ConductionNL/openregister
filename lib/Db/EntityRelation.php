@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EntityRelation links detected entities to specific chunks with context.
  *
@@ -56,7 +57,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
-
     /**
      * Entity ID.
      *
@@ -174,7 +174,6 @@ class EntityRelation extends Entity implements JsonSerializable
         $this->addType('anonymized', 'boolean');
         $this->addType('anonymizedValue', 'string');
         $this->addType('createdAt', 'datetime');
-
     }//end __construct()
 
     /**
@@ -203,6 +202,5 @@ class EntityRelation extends Entity implements JsonSerializable
             'anonymizedValue' => $this->anonymizedValue,
             'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
         ];
-
     }//end jsonSerialize()
 }//end class

@@ -59,7 +59,6 @@ class BulkOperationsHandler
         private readonly CacheHandler $cacheHandler,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -88,12 +87,12 @@ class BulkOperationsHandler
      */
     public function saveObjects(
         array $objects,
-        ?Register $currentRegister=null,
-        ?Schema $currentSchema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $validation=false,
-        bool $events=false
+        ?Register $currentRegister = null,
+        ?Schema $currentSchema = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $validation = false,
+        bool $events = false
     ): array {
 
         // ARCHITECTURAL DELEGATION: Use specialized SaveObjects handler for bulk operations.
@@ -158,7 +157,6 @@ class BulkOperationsHandler
         }//end try
 
         return $bulkResult;
-
     }//end saveObjects()
 
     /**
@@ -175,7 +173,7 @@ class BulkOperationsHandler
      * @psalm-return   array<int, int>
      * @phpstan-return array<int, int>
      */
-    public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
+    public function deleteObjects(array $uuids = [], bool $_rbac = true, bool $_multitenancy = true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -235,7 +233,6 @@ class BulkOperationsHandler
         }//end if
 
         return $deletedObjectIds;
-
     }//end deleteObjects()
 
     /**
@@ -253,7 +250,7 @@ class BulkOperationsHandler
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function publishObjects(array $uuids=[], DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
+    public function publishObjects(array $uuids = [], DateTime|bool $datetime = true, bool $_rbac = true, bool $_multitenancy = true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -313,7 +310,6 @@ class BulkOperationsHandler
         }//end if
 
         return $publishedObjectIds;
-
     }//end publishObjects()
 
     /**
@@ -331,7 +327,7 @@ class BulkOperationsHandler
      * @psalm-return   array<int, string>
      * @phpstan-return array<int, string>
      */
-    public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true, bool $_rbac=true, bool $_multitenancy=true): array
+    public function depublishObjects(array $uuids = [], DateTime|bool $datetime = true, bool $_rbac = true, bool $_multitenancy = true): array
     {
         if (empty($uuids) === true) {
             return [];
@@ -391,7 +387,6 @@ class BulkOperationsHandler
         }//end if
 
         return $depublishedObjectIds;
-
     }//end depublishObjects()
 
     /**
@@ -407,7 +402,7 @@ class BulkOperationsHandler
      * @phpstan-return array{published_count: int, published_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{published_count: int<min, max>, published_uuids: array<int, string>, schema_id: int}
      */
-    public function publishObjectsBySchema(int $schemaId, bool $publishAll=false): array
+    public function publishObjectsBySchema(int $schemaId, bool $publishAll = false): array
     {
         // Use the mapper's schema publishing operation.
         $result = $this->objectEntityMapper->publishObjectsBySchema(schemaId: $schemaId, publishAll: $publishAll);
@@ -454,7 +449,6 @@ class BulkOperationsHandler
         }//end if
 
         return $result;
-
     }//end publishObjectsBySchema()
 
     /**
@@ -470,7 +464,7 @@ class BulkOperationsHandler
      * @phpstan-return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int}
      * @psalm-return   array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
      */
-    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete=false): array
+    public function deleteObjectsBySchema(int $schemaId, bool $hardDelete = false): array
     {
         // Use the mapper's schema deletion operation.
         $result = $this->objectEntityMapper->deleteObjectsBySchema(schemaId: $schemaId, hardDelete: $hardDelete);
@@ -517,7 +511,6 @@ class BulkOperationsHandler
         }//end if
 
         return $result;
-
     }//end deleteObjectsBySchema()
 
     /**
@@ -576,6 +569,5 @@ class BulkOperationsHandler
         }//end if
 
         return $result;
-
     }//end deleteObjectsByRegister()
 }//end class

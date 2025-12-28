@@ -52,7 +52,7 @@ interface TextExtractionHandlerInterface
      *
      * @throws \Exception When extraction fails.
      */
-    public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array;
+    public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array;
 
     /**
      * Get source metadata for a given source ID.

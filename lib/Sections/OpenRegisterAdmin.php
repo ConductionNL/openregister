@@ -31,7 +31,6 @@ use OCP\Settings\IIconSection;
  */
 class OpenRegisterAdmin implements IIconSection
 {
-
     /**
      * Localization service.
      *
@@ -56,7 +55,6 @@ class OpenRegisterAdmin implements IIconSection
     {
         $this->l            = $l;
         $this->urlGenerator = $urlGenerator;
-
     }//end __construct()
 
     /**
@@ -67,7 +65,6 @@ class OpenRegisterAdmin implements IIconSection
     public function getIcon(): string
     {
         return $this->urlGenerator->imagePath(appName: 'openregister', file: 'app-dark.svg');
-
     }//end getIcon()
 
     /**
@@ -80,7 +77,6 @@ class OpenRegisterAdmin implements IIconSection
     public function getID(): string
     {
         return 'openregister';
-
     }//end getID()
 
     /**
@@ -91,7 +87,6 @@ class OpenRegisterAdmin implements IIconSection
     public function getName(): string
     {
         return $this->l->t('Open Register');
-
     }//end getName()
 
     /**
@@ -104,6 +99,5 @@ class OpenRegisterAdmin implements IIconSection
     public function getPriority(): int
     {
         return 97;
-
     }//end getPriority()
 }//end class

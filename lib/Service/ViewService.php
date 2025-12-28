@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ViewService
  *
@@ -49,7 +50,6 @@ use Psr\Log\LoggerInterface;
  */
 class ViewService
 {
-
     /**
      * View mapper
      *
@@ -85,7 +85,6 @@ class ViewService
         // Store dependencies for use in service methods.
         $this->viewMapper = $viewMapper;
         $this->logger     = $logger;
-
     }//end __construct()
 
     /**
@@ -117,7 +116,6 @@ class ViewService
 
         // Step 3: Return view if access is granted.
         return $view;
-
     }//end find()
 
     /**
@@ -136,7 +134,6 @@ class ViewService
     {
         // Retrieve all views accessible to the user (owned or public).
         return $this->viewMapper->findAll(owner: $owner);
-
     }//end findAll()
 
     /**
@@ -185,10 +182,9 @@ class ViewService
             return $this->viewMapper->insert($view);
         } catch (Exception $e) {
             // Log error for debugging and monitoring.
-            $this->logger->error(message: 'Error creating view: '.$e->getMessage());
+            $this->logger->error(message: 'Error creating view: ' . $e->getMessage());
             throw $e;
         }//end try
-
     }//end create()
 
     /**
@@ -215,7 +211,7 @@ class ViewService
         bool $isPublic,
         bool $isDefault,
         array $query,
-        ?array $favoredBy=null
+        ?array $favoredBy = null
     ): View {
         try {
             $view = $this->find(id: $id, owner: $owner);
@@ -238,10 +234,9 @@ class ViewService
 
             return $this->viewMapper->update($view);
         } catch (Exception $e) {
-            $this->logger->error(message: 'Error updating view: '.$e->getMessage());
+            $this->logger->error(message: 'Error updating view: ' . $e->getMessage());
             throw $e;
         }//end try
-
     }//end update()
 
     /**
@@ -260,10 +255,9 @@ class ViewService
             $view = $this->find(id: $id, owner: $owner);
             $this->viewMapper->delete($view);
         } catch (Exception $e) {
-            $this->logger->error(message: 'Error deleting view: '.$e->getMessage());
+            $this->logger->error(message: 'Error deleting view: ' . $e->getMessage());
             throw $e;
         }
-
     }//end delete()
 
     /**
@@ -282,6 +276,5 @@ class ViewService
                 $this->viewMapper->update($view);
             }
         }
-
     }//end clearDefaultForUser()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Configuration Sync Job
  *
@@ -43,7 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class SyncConfigurationsJob extends TimedJob
 {
-
     /**
      * Configuration mapper instance.
      *
@@ -117,7 +117,6 @@ class SyncConfigurationsJob extends TimedJob
 
         // Run every hour (3600 seconds).
         $this->setInterval(3600);
-
     }//end __construct()
 
     /**
@@ -138,7 +137,7 @@ class SyncConfigurationsJob extends TimedJob
         try {
             // Get all configurations with sync enabled.
             $configurations = $this->configurationMapper->findBySyncEnabled();
-            $this->logger->info('Found '.count($configurations).' configurations with sync enabled');
+            $this->logger->info('Found ' . count($configurations) . ' configurations with sync enabled');
 
             $synced  = 0;
             $skipped = 0;
@@ -161,7 +160,7 @@ class SyncConfigurationsJob extends TimedJob
                     $this->logger->info("Successfully synced configuration {$configuration->getTitle()}");
                 } catch (Exception $e) {
                     $failed++;
-                    $this->logger->error("Error syncing configuration {$configuration->getId()}: ".$e->getMessage());
+                    $this->logger->error("Error syncing configuration {$configuration->getId()}: " . $e->getMessage());
 
                     // Update sync status to failed.
                     try {
@@ -172,7 +171,7 @@ class SyncConfigurationsJob extends TimedJob
                             _message: $e->getMessage()
                         );
                     } catch (Exception $statusError) {
-                        $this->logger->error("Failed to update sync status: ".$statusError->getMessage());
+                        $this->logger->error("Failed to update sync status: " . $statusError->getMessage());
                     }
 
                     continue;
@@ -183,9 +182,8 @@ class SyncConfigurationsJob extends TimedJob
                 "Configuration sync job completed: {$synced} synced, {$skipped} skipped, {$failed} failed"
             );
         } catch (Exception $e) {
-            $this->logger->error('Configuration sync job failed: '.$e->getMessage());
+            $this->logger->error('Configuration sync job failed: ' . $e->getMessage());
         }//end try
-
     }//end run()
 
     /**
@@ -211,7 +209,6 @@ class SyncConfigurationsJob extends TimedJob
         $hoursPassed = $diff / 3600;
 
         return $hoursPassed >= $interval;
-
     }//end isDueForSync()
 
     /**
@@ -246,7 +243,6 @@ class SyncConfigurationsJob extends TimedJob
             default:
                 throw new Exception("Unsupported source type: {$sourceType}");
         }
-
     }//end syncConfiguration()
 
     /**
@@ -292,7 +288,6 @@ class SyncConfigurationsJob extends TimedJob
             status: 'success',
             syncDate: new DateTime()
         );
-
     }//end syncFromGitHub()
 
     /**
@@ -347,7 +342,6 @@ class SyncConfigurationsJob extends TimedJob
             status: 'success',
             syncDate: new DateTime()
         );
-
     }//end syncFromGitLab()
 
     /**
@@ -372,7 +366,7 @@ class SyncConfigurationsJob extends TimedJob
 
         $configData = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Invalid JSON in URL response: '.json_last_error_msg());
+            throw new Exception('Invalid JSON in URL response: ' . json_last_error_msg());
         }
 
         // Get app ID and version.
@@ -393,7 +387,6 @@ class SyncConfigurationsJob extends TimedJob
             status: 'success',
             syncDate: new DateTime()
         );
-
     }//end syncFromUrl()
 
     /**
@@ -430,6 +423,5 @@ class SyncConfigurationsJob extends TimedJob
             status: 'success',
             syncDate: new DateTime()
         );
-
     }//end syncFromLocal()
 }//end class

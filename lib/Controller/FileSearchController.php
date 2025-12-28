@@ -59,7 +59,6 @@ class FileSearchController extends Controller
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -80,12 +79,12 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => 'Query parameter is required',
                         ],
-                        statusCode: 400
-                        );
+                    statusCode: 400
+                );
             }
 
             // Get file collection.
@@ -93,12 +92,12 @@ class FileSearchController extends Controller
             $fileCollection = $settings['solr']['fileCollection'] ?? null;
             if ($fileCollection === null || $fileCollection === '') {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => 'File collection not configured',
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }
 
             // Build SOLR query.
@@ -163,31 +162,30 @@ class FileSearchController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'     => true,
                         'query'       => $query,
                         'total'       => $numFound,
                         'results'     => array_values($groupedResults),
                         'search_type' => 'keyword',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileSearchController] Keyword search failed',
-                    context: [
+                message: '[FileSearchController] Keyword search failed',
+                context: [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Search failed: '.$e->getMessage(),
+                        'message' => 'Search failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end keywordSearch()
 
     /**
@@ -208,12 +206,12 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'message' => 'Query parameter is required',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Use existing semanticSearch method from VectorizationService.
@@ -224,31 +222,30 @@ class FileSearchController extends Controller
             );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'     => true,
                         'query'       => $query,
                         'total'       => count($results),
                         'results'     => $results,
                         'search_type' => 'semantic',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    message: '[FileSearchController] Semantic search failed',
-                    context: [
+                message: '[FileSearchController] Semantic search failed',
+                context: [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Semantic search failed: '.$e->getMessage(),
+                        'message' => 'Semantic search failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end semanticSearch()
 
     /**
@@ -272,24 +269,24 @@ class FileSearchController extends Controller
 
             if (empty($query) === true) {
                 return new JSONResponse(
-                     data: [
+                    data: [
                          'success' => false,
                          'message' => 'Query parameter is required',
                      ],
-                     statusCode: 400
-                     );
+                    statusCode: 400
+                );
             }
 
             // Use existing hybridSearch method from VectorizationService.
             $results = $this->vectorService->hybridSearch(
-             query: $query,
-             solrFilters: ['entityType' => 'file'],
-             limit: $limit,
-             weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
+                query: $query,
+                solrFilters: ['entityType' => 'file'],
+                limit: $limit,
+                weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
             );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'success'     => true,
                      'query'       => $query,
                      'total'       => count($results),
@@ -300,23 +297,22 @@ class FileSearchController extends Controller
                          'semantic' => $semanticWeight,
                      ],
                  ]
-                 );
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                 message: '[FileSearchController] Hybrid search failed',
-                 context: [
+                message: '[FileSearchController] Hybrid search failed',
+                context: [
                      'error' => $e->getMessage(),
                  ]
-                 );
+            );
 
             return new JSONResponse(
-                 data: [
+                data: [
                      'success' => false,
-                     'message' => 'Hybrid search failed: '.$e->getMessage(),
+                     'message' => 'Hybrid search failed: ' . $e->getMessage(),
                  ],
-                 statusCode: 500
-             );
+                statusCode: 500
+            );
         }//end try
-
     }//end hybridSearch()
 }//end class

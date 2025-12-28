@@ -38,7 +38,6 @@ class NewFacetingExample
     public function __construct(
         private readonly ObjectService $objectService
     ) {
-
     }//end __construct()
 
     /**
@@ -64,7 +63,6 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end basicTermsFaceting()
 
     /**
@@ -97,7 +95,6 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end dateHistogramFaceting()
 
     /**
@@ -133,7 +130,6 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end rangeFaceting()
 
     /**
@@ -204,7 +200,6 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end ecommerceFaceting()
 
     /**
@@ -244,7 +239,6 @@ class NewFacetingExample
 
         // This returns: results, total, page, pages, limit, offset, facets, next, prev.
         return $this->objectService->searchObjectsPaginated($query);
-
     }//end paginatedSearchWithFacets()
 
     /**
@@ -306,7 +300,6 @@ class NewFacetingExample
             ],
             'new_facets'      => $newFacets,
         ];
-
     }//end migrationExample()
 
     /**
@@ -370,7 +363,6 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end advancedFilteringWithFacets()
 
     /**
@@ -413,6 +405,5 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end performanceOptimizedFaceting()
 }//end class

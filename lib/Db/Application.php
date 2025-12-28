@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Application Entity
  *
@@ -73,7 +74,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Application extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the application
      *
@@ -236,7 +236,6 @@ class Application extends Entity implements JsonSerializable
         $this->addType('authorization', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -254,7 +253,6 @@ class Application extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-
     }//end isValidUuid()
 
     /**
@@ -265,7 +263,6 @@ class Application extends Entity implements JsonSerializable
     public function getOrganisation(): ?string
     {
         return $this->organisation;
-
     }//end getOrganisation()
 
     /**
@@ -279,7 +276,6 @@ class Application extends Entity implements JsonSerializable
     {
         $this->organisation = $organisation;
         $this->markFieldUpdated('organisation');
-
     }//end setOrganisation()
 
     /**
@@ -290,7 +286,6 @@ class Application extends Entity implements JsonSerializable
     public function getConfigurations(): array
     {
         return $this->configurations ?? [];
-
     }//end getConfigurations()
 
     /**
@@ -305,7 +300,6 @@ class Application extends Entity implements JsonSerializable
         $this->configurations = $configurations ?? [];
         $this->markFieldUpdated('configurations');
         return $this;
-
     }//end setConfigurations()
 
     /**
@@ -316,7 +310,6 @@ class Application extends Entity implements JsonSerializable
     public function getRegisters(): array
     {
         return $this->registers ?? [];
-
     }//end getRegisters()
 
     /**
@@ -331,7 +324,6 @@ class Application extends Entity implements JsonSerializable
         $this->registers = $registers ?? [];
         $this->markFieldUpdated('registers');
         return $this;
-
     }//end setRegisters()
 
     /**
@@ -342,7 +334,6 @@ class Application extends Entity implements JsonSerializable
     public function getSchemas(): array
     {
         return $this->schemas ?? [];
-
     }//end getSchemas()
 
     /**
@@ -357,7 +348,6 @@ class Application extends Entity implements JsonSerializable
         $this->schemas = $schemas ?? [];
         $this->markFieldUpdated('schemas');
         return $this;
-
     }//end setSchemas()
 
     /**
@@ -368,7 +358,6 @@ class Application extends Entity implements JsonSerializable
     public function getActive(): bool
     {
         return $this->active ?? true;
-
     }//end getActive()
 
     /**
@@ -389,7 +378,6 @@ class Application extends Entity implements JsonSerializable
 
         $this->markFieldUpdated('active');
         return $this;
-
     }//end setActive()
 
     /**
@@ -400,7 +388,6 @@ class Application extends Entity implements JsonSerializable
     public function getGroups(): array
     {
         return $this->groups ?? [];
-
     }//end getGroups()
 
     /**
@@ -415,7 +402,6 @@ class Application extends Entity implements JsonSerializable
         $this->groups = $groups ?? [];
         $this->markFieldUpdated('groups');
         return $this;
-
     }//end setGroups()
 
     /**
@@ -437,7 +423,6 @@ class Application extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -458,7 +443,7 @@ class Application extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -468,7 +453,6 @@ class Application extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -488,7 +472,6 @@ class Application extends Entity implements JsonSerializable
             'update' => [],
             'delete' => [],
         ];
-
     }//end getDefaultAuthorization()
 
     /**
@@ -499,7 +482,6 @@ class Application extends Entity implements JsonSerializable
     public function getAuthorization(): array
     {
         return $this->authorization ?? $this->getDefaultAuthorization();
-
     }//end getAuthorization()
 
     /**
@@ -514,7 +496,6 @@ class Application extends Entity implements JsonSerializable
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
         $this->markFieldUpdated('authorization');
         return $this;
-
     }//end setAuthorization()
 
     /**
@@ -566,7 +547,6 @@ class Application extends Entity implements JsonSerializable
             'updated'                => $this->getUpdatedFormatted(),
             'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -585,7 +565,6 @@ class Application extends Entity implements JsonSerializable
         }
 
         return $this->uuid;
-
     }//end __toString()
 
     /**
@@ -596,7 +575,6 @@ class Application extends Entity implements JsonSerializable
     public function getManagedByConfigurationEntity(): ?Configuration
     {
         return $this->managedByConfiguration;
-
     }//end getManagedByConfigurationEntity()
 
     /**
@@ -609,7 +587,6 @@ class Application extends Entity implements JsonSerializable
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
         $this->managedByConfiguration = $configuration;
-
     }//end setManagedByConfigurationEntity()
 
     /**
@@ -638,7 +615,6 @@ class Application extends Entity implements JsonSerializable
         }
 
         return false;
-
     }//end isManagedByConfiguration()
 
     /**
@@ -668,7 +644,6 @@ class Application extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfiguration()
 
     /**
@@ -683,7 +658,6 @@ class Application extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getCreatedFormatted()
 
     /**
@@ -698,7 +672,6 @@ class Application extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getUpdatedFormatted()
 
     /**
@@ -719,6 +692,5 @@ class Application extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfigurationData()
 }//end class

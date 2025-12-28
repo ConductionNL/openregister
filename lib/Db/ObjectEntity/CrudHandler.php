@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectEntity CRUD Handler
  *
@@ -36,7 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class CrudHandler
 {
-
     /**
      * Object entity mapper.
      *
@@ -83,7 +83,6 @@ class CrudHandler
         $this->db     = $db;
         $this->eventDispatcher = $eventDispatcher;
         $this->logger          = $logger;
-
     }//end __construct()
 
     /**
@@ -110,7 +109,6 @@ class CrudHandler
         $this->logger->info('[CrudHandler] Object inserted', ['id' => $entity->getId()]);
 
         return $entity;
-
     }//end insert()
 
     /**
@@ -121,7 +119,7 @@ class CrudHandler
      *
      * @return ObjectEntity The updated entity
      */
-    public function update(Entity $entity, bool $includeDeleted=false): ObjectEntity
+    public function update(Entity $entity, bool $includeDeleted = false): ObjectEntity
     {
         // Find old object for event.
         $qb = $this->db->getQueryBuilder();
@@ -149,7 +147,6 @@ class CrudHandler
         $this->logger->info('[CrudHandler] Object updated', ['id' => $entity->getId()]);
 
         return $entity;
-
     }//end update()
 
     /**
@@ -170,6 +167,5 @@ class CrudHandler
         $this->logger->info('[CrudHandler] Object deleted', ['id' => $entity->getId()]);
 
         return $result;
-
     }//end delete()
 }//end class

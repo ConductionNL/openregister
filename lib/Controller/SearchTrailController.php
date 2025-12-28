@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class SearchTrailController
  *
@@ -48,7 +49,6 @@ class SearchTrailController extends Controller
         private readonly SearchTrailService $searchTrailService
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -132,8 +132,8 @@ class SearchTrailController extends Controller
             $params,
             function ($key) {
                 return !in_array(
-                        $key,
-                        [
+                    $key,
+                    [
                             'limit',
                             '_limit',
                             'offset',
@@ -151,7 +151,7 @@ class SearchTrailController extends Controller
                             '_route',
                             'id',
                         ]
-                        );
+                );
             },
             ARRAY_FILTER_USE_KEY
         );
@@ -166,7 +166,6 @@ class SearchTrailController extends Controller
             'from'    => $from,
             'to'      => $to,
         ];
-
     }//end extractRequestParameters()
 
     /**
@@ -201,7 +200,7 @@ class SearchTrailController extends Controller
      *     prev?: null|string
      * }
      */
-    private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
+    private function paginate(array $results, ?int $total = 0, ?int $limit = 20, ?int $offset = 0, ?int $page = 1): array
     {
         // Ensure we have valid values (never null).
         $total = max(0, $total ?? 0);
@@ -245,17 +244,17 @@ class SearchTrailController extends Controller
         // Add next page link if there are more pages.
         if ($page < $pages) {
             $nextPage = $page + 1;
-            $nextUrl  = preg_replace('/([?&])_page=\d+/', '$1_page='.$nextPage, $currentUrl);
+            $nextUrl  = preg_replace('/([?&])_page=\d+/', '$1_page=' . $nextPage, $currentUrl);
             if (strpos($nextUrl, '_page=') === false) {
                 // Also handle legacy 'page' parameter.
-                $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$nextPage, $nextUrl);
+                $nextUrl = preg_replace('/([?&])page=\d+/', '$1_page=' . $nextPage, $nextUrl);
                 if (strpos($nextUrl, '_page=') === false) {
                     $separator = '&';
                     if (strpos($nextUrl, '?') !== false) {
                         $separator = '&';
                     }
 
-                    $nextUrl .= $separator.'_page='.$nextPage;
+                    $nextUrl .= $separator . '_page=' . $nextPage;
                 }
             }
 
@@ -265,17 +264,17 @@ class SearchTrailController extends Controller
         // Add previous page link if not on first page.
         if ($page > 1) {
             $prevPage = $page - 1;
-            $prevUrl  = preg_replace('/([?&])_page=\d+/', '$1_page='.$prevPage, $currentUrl);
+            $prevUrl  = preg_replace('/([?&])_page=\d+/', '$1_page=' . $prevPage, $currentUrl);
             if (strpos($prevUrl, '_page=') === false) {
                 // Also handle legacy 'page' parameter.
-                $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page='.$prevPage, $prevUrl);
+                $prevUrl = preg_replace('/([?&])page=\d+/', '$1_page=' . $prevPage, $prevUrl);
                 if (strpos($prevUrl, '_page=') === false) {
                     $separator = '&';
                     if (strpos($prevUrl, '?') !== false) {
                         $separator = '&';
                     }
 
-                    $prevUrl .= $separator.'_page='.$prevPage;
+                    $prevUrl .= $separator . '_page=' . $prevPage;
                 }
             }
 
@@ -283,7 +282,6 @@ class SearchTrailController extends Controller
         }
 
         return $paginatedResults;
-
     }//end paginate()
 
     /**
@@ -322,11 +320,10 @@ class SearchTrailController extends Controller
             return new JSONResponse(data: $paginatedResult);
         } catch (\Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Failed to retrieve search trails: '.$e->getMessage()],
+                data: ['error' => 'Failed to retrieve search trails: ' . $e->getMessage()],
                 statusCode: 500
             );
         }//end try
-
     }//end index()
 
     /**
@@ -353,9 +350,8 @@ class SearchTrailController extends Controller
                 statusCode: 404
             );
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to retrieve search trail: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to retrieve search trail: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end show()
 
     /**
@@ -400,9 +396,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $statistics);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get search statistics: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to get search statistics: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end statistics()
 
     /**
@@ -447,9 +442,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $paginatedTerms);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get popular search terms: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to get popular search terms: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end popularTerms()
 
     /**
@@ -478,9 +472,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get search activity: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to get search activity: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end activity()
 
     /**
@@ -525,9 +518,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $paginatedStats);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get register/schema statistics: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to get register/schema statistics: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end registerSchemaStats()
 
     /**
@@ -603,9 +595,8 @@ class SearchTrailController extends Controller
                 return new JSONResponse(data: $paginatedUserAgents);
             }//end if
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to get user agent statistics: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to get user agent statistics: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end userAgentStats()
 
     /**
@@ -648,9 +639,8 @@ class SearchTrailController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => 'Cleanup failed: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Cleanup failed: ' . $e->getMessage()], statusCode: 500);
         }
-
     }//end cleanup()
 
     /**
@@ -685,7 +675,7 @@ class SearchTrailController extends Controller
 
             // Export search trails using service.
             $searchTrails = $this->searchTrailService->getSearchTrails(
-                    config: [
+                config: [
                         'filters' => $params['filters'],
                         'search'  => $params['search'],
                         'from'    => $params['from'],
@@ -726,17 +716,17 @@ class SearchTrailController extends Controller
             if ($format === 'json') {
                 $content     = json_encode($exportData, JSON_PRETTY_PRINT);
                 $contentType = 'application/json';
-                $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.json';
+                $filename    = 'search-trails-' . date('Y-m-d-H-i-s') . '.json';
             } else {
                 // Default to CSV.
                 $content     = $this->arrayToCsv($exportData);
                 $contentType = 'text/csv';
-                $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.csv';
+                $filename    = 'search-trails-' . date('Y-m-d-H-i-s') . '.csv';
             }
 
             // Return export data.
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'data'    => [
                             'content'     => $content,
@@ -745,16 +735,15 @@ class SearchTrailController extends Controller
                             'size'        => strlen($content),
                         ],
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    data: [
-                        'error' => 'Export failed: '.$e->getMessage(),
+                data: [
+                        'error' => 'Export failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end export()
 
     /**
@@ -779,27 +768,26 @@ class SearchTrailController extends Controller
             // For now, we'll just return a success message since we don't have a delete method in the service.
             // In a real implementation, you'd add a deleteSearchTrail method to the service.
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'message' => 'Search trail deletion not implemented yet',
                     ]
-                    );
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'error' => 'Search trail not found',
                     ],
-                    statusCode: 404
-                    );
+                statusCode: 404
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    data: [
-                        'error' => 'Deletion failed: '.$e->getMessage(),
+                data: [
+                        'error' => 'Deletion failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end destroy()
 
     /**
@@ -827,21 +815,20 @@ class SearchTrailController extends Controller
             ];
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'results' => $result,
                         'message' => 'Multiple search trail deletion not implemented yet',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             return new JSONResponse(
-                    data: [
-                        'error' => 'Mass deletion failed: '.$e->getMessage(),
+                data: [
+                        'error' => 'Mass deletion failed: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end destroyMultiple()
 
     /**
@@ -872,7 +859,6 @@ class SearchTrailController extends Controller
         fclose($output);
 
         return $csv;
-
     }//end arrayToCsv()
 
     /**
@@ -898,30 +884,29 @@ class SearchTrailController extends Controller
 
             if ($result === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => true,
                             'message' => 'All search trails cleared successfully',
                             'deleted' => 'All expired search trails have been deleted',
                         ]
-                        );
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => true,
                             'message' => 'No expired search trails found to clear',
                             'deleted' => 0,
                         ]
-                        );
+                );
             }
         } catch (\Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'error'   => 'Failed to clear search trails: '.$e->getMessage(),
+                        'error'   => 'Failed to clear search trails: ' . $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end clearAll()
 }//end class

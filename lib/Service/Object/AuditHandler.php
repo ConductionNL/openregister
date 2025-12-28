@@ -53,7 +53,6 @@ class AuditHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -70,7 +69,7 @@ class AuditHandler
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function getLogs(string $uuid, array $filters=[]): array
+    public function getLogs(string $uuid, array $filters = []): array
     {
         $this->logger->debug(
             message: '[AuditHandler] Getting logs for object',
@@ -106,7 +105,6 @@ class AuditHandler
             );
             throw $e;
         }//end try
-
     }//end getLogs()
 
     /**
@@ -163,7 +161,6 @@ class AuditHandler
             );
             return false;
         }//end try
-
     }//end validateObjectOwnership()
 
     /**
@@ -203,7 +200,6 @@ class AuditHandler
         $auditFilters['order']    = $filters['order'] ?? 'DESC';
 
         return $auditFilters;
-
     }//end prepareFilters()
 
     /**
@@ -224,7 +220,6 @@ class AuditHandler
         }
 
         return (string) $schema;
-
     }//end extractSchemaId()
 
     /**
@@ -245,6 +240,5 @@ class AuditHandler
         }
 
         return null;
-
     }//end extractSchemaSlug()
 }//end class

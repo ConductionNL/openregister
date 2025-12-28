@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Log Cleanup Task
  *
@@ -35,7 +36,6 @@ use Psr\Log\LoggerInterface;
  */
 class LogCleanUpTask extends TimedJob
 {
-
     /**
      * The audit trail mapper for database operations
      *
@@ -76,7 +76,6 @@ class LogCleanUpTask extends TimedJob
 
         // Only run one instance of this job at a time.
         $this->setAllowParallelRuns(false);
-
     }//end __construct()
 
     /**
@@ -100,29 +99,28 @@ class LogCleanUpTask extends TimedJob
             // Log the result for monitoring purposes.
             if ($logsCleared === true) {
                 $this->logger->info(
-                'Successfully cleared expired audit trail logs',
-                [
+                    'Successfully cleared expired audit trail logs',
+                    [
                     'app' => 'openregister',
-                ]
+                    ]
                 );
             } else {
                 $this->logger->debug(
-                'No expired audit trail logs found to clear',
-                [
+                    'No expired audit trail logs found to clear',
+                    [
                     'app' => 'openregister',
-                ]
+                    ]
                 );
             }
         } catch (\Exception $e) {
             // Log any errors that occur during cleanup.
             $this->logger->error(
-            'Failed to clear expired audit trail logs: '.$e->getMessage(),
-            [
+                'Failed to clear expired audit trail logs: ' . $e->getMessage(),
+                [
                 'app'       => 'openregister',
                 'exception' => $e,
-            ]
+                ]
             );
         }//end try
-
     }//end run()
 }//end class

@@ -63,106 +63,106 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-            'id',
-            'bigint',
-            [
+                'id',
+                'bigint',
+                [
                 'autoincrement' => true,
                 'notnull'       => true,
                 'length'        => 20,
-            ]
+                ]
             );
 
             // Metric type (e.g., 'file_processed', 'embedding_generated', 'search_executed').
             $table->addColumn(
-            'metric_type',
-            'string',
-            [
+                'metric_type',
+                'string',
+                [
                 'notnull' => true,
                 'length'  => 64,
-            ]
+                ]
             );
 
             // Entity type (e.g., 'file', 'object', 'search').
             $table->addColumn(
-            'entity_type',
-            'string',
-            [
+                'entity_type',
+                'string',
+                [
                 'notnull' => false,
                 'length'  => 32,
                 'default' => null,
-            ]
+                ]
             );
 
             // Entity ID (if applicable).
             $table->addColumn(
-            'entity_id',
-            'string',
-            [
+                'entity_id',
+                'string',
+                [
                 'notnull' => false,
                 'length'  => 64,
                 'default' => null,
-            ]
+                ]
             );
 
             // User who triggered the action.
             $table->addColumn(
-            'user_id',
-            'string',
-            [
+                'user_id',
+                'string',
+                [
                 'notnull' => false,
                 'length'  => 64,
                 'default' => null,
-            ]
+                ]
             );
 
             // Success or failure.
             $table->addColumn(
-            'status',
-            'string',
-            [
+                'status',
+                'string',
+                [
                 'notnull' => true,
                 'length'  => 20,
                 'default' => 'success',
-            ]
+                ]
             );
 
             // Duration in milliseconds.
             $table->addColumn(
-            'duration_ms',
-            'integer',
-            [
+                'duration_ms',
+                'integer',
+                [
                 'notnull' => false,
                 'default' => null,
-            ]
+                ]
             );
 
             // Additional metadata (JSON).
             $table->addColumn(
-            'metadata',
-            'text',
-            [
+                'metadata',
+                'text',
+                [
                 'notnull' => false,
                 'default' => null,
-            ]
+                ]
             );
 
             // Error message (if failed).
             $table->addColumn(
-            'error_message',
-            'text',
-            [
+                'error_message',
+                'text',
+                [
                 'notnull' => false,
                 'default' => null,
-            ]
+                ]
             );
 
             // Timestamp.
             $table->addColumn(
-            'created_at',
-            'bigint',
-            [
+                'created_at',
+                'bigint',
+                [
                 'notnull' => true,
-            ]
+                ]
             );
 
             // Set primary key.
@@ -178,7 +178,6 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -195,6 +194,5 @@ class Version002005000Date20251013000000 extends SimpleMigrationStep
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         return null;
-
     }//end postSchemaChange()
 }//end class

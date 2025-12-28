@@ -27,7 +27,6 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchQueryExecutor
 {
-
     /**
      * Elasticsearch HTTP client for making requests
      *
@@ -64,7 +63,6 @@ class ElasticsearchQueryExecutor
         $this->httpClient   = $httpClient;
         $this->indexManager = $indexManager;
         $this->logger       = $logger;
-
     }//end __construct()
 
     /**
@@ -82,25 +80,25 @@ class ElasticsearchQueryExecutor
             // Build Elasticsearch query.
             $esQuery = $this->buildElasticsearchQuery($query);
 
-            $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_search';
+            $url    = $this->httpClient->buildBaseUrl() . '/' . $index . '/_search';
             $result = $this->httpClient->post($url, $esQuery);
 
             $this->logger->debug(
-                    '[ElasticsearchQueryExecutor] Search executed',
-                    [
+                '[ElasticsearchQueryExecutor] Search executed',
+                [
                         'index' => $index,
                         'hits'  => $result['hits']['total']['value'] ?? 0,
                     ]
-                    );
+            );
 
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ElasticsearchQueryExecutor] Search failed',
-                    [
+                '[ElasticsearchQueryExecutor] Search failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'hits' => [
@@ -109,7 +107,6 @@ class ElasticsearchQueryExecutor
                 ],
             ];
         }//end try
-
     }//end search()
 
     /**
@@ -154,7 +151,6 @@ class ElasticsearchQueryExecutor
         }
 
         return $query;
-
     }//end buildElasticsearchQuery()
 
     /**
@@ -167,19 +163,18 @@ class ElasticsearchQueryExecutor
         $index = $this->indexManager->getActiveIndexName();
 
         try {
-            $url    = $this->httpClient->buildBaseUrl().'/'.$index.'/_count';
+            $url    = $this->httpClient->buildBaseUrl() . '/' . $index . '/_count';
             $result = $this->httpClient->get($url);
 
             return $result['count'] ?? 0;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ElasticsearchQueryExecutor] Failed to get document count',
-                    [
+                '[ElasticsearchQueryExecutor] Failed to get document count',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return 0;
         }
-
     }//end getDocumentCount()
 }//end class

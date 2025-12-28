@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Bulk Operations Controller
  *
@@ -59,7 +60,6 @@ class BulkController extends Controller
         private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -75,7 +75,6 @@ class BulkController extends Controller
         }
 
         return $this->groupManager->isAdmin($user->getUID());
-
     }//end isCurrentUserAdmin()
 
     /**
@@ -85,7 +84,7 @@ class BulkController extends Controller
      * in the ObjectService, which will resolve slugs to IDs.
      *
      * @param string        $register      The register slug or ID
-     * @param string        $schema        The schema slug or ID  
+     * @param string        $schema        The schema slug or ID
      * @param ObjectService $objectService The object service
      *
      * @return array{register: int, schema: int} Resolved numeric IDs
@@ -115,10 +114,10 @@ class BulkController extends Controller
         // Get resolved numeric IDs.
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
-        
+
         // Reset ObjectService with resolved numeric IDs for consistency.
         $objectService->setRegister(register: (string) $resolvedRegisterId)->setSchema(schema: (string) $resolvedSchemaId);
-        
+
         return [
             'register' => $resolvedRegisterId,
             'schema'   => $resolvedSchemaId,
@@ -169,7 +168,7 @@ class BulkController extends Controller
             $deletedUuids = $this->objectService->deleteObjects($uuids);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'         => true,
                         'message'         => 'Bulk delete operation completed successfully',
                         'deleted_count'   => count($deletedUuids),
@@ -177,14 +176,13 @@ class BulkController extends Controller
                         'requested_count' => count($uuids),
                         'skipped_count'   => count($uuids) - count($deletedUuids),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk delete operation failed: '.$e->getMessage()],
+                data: ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end delete()
 
     /**
@@ -223,8 +221,8 @@ class BulkController extends Controller
                     $datetime = new DateTime($datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
-                            data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
-                            statusCode: Http::STATUS_BAD_REQUEST
+                        data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
+                        statusCode: Http::STATUS_BAD_REQUEST
                     );
                 }
             }
@@ -244,7 +242,7 @@ class BulkController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'         => true,
                         'message'         => 'Bulk publish operation completed successfully',
                         'published_count' => count($publishedUuids),
@@ -253,14 +251,13 @@ class BulkController extends Controller
                         'skipped_count'   => count($uuids) - count($publishedUuids),
                         'datetime_used'   => $datetimeUsed,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk publish operation failed: '.$e->getMessage()],
+                data: ['error' => 'Bulk publish operation failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end publish()
 
     /**
@@ -299,8 +296,8 @@ class BulkController extends Controller
                     $datetime = new DateTime($datetime);
                 } catch (Exception $e) {
                     return new JSONResponse(
-                            data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
-                            statusCode: Http::STATUS_BAD_REQUEST
+                        data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
+                        statusCode: Http::STATUS_BAD_REQUEST
                     );
                 }
             }
@@ -316,7 +313,7 @@ class BulkController extends Controller
             }
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'           => true,
                         'message'           => 'Bulk depublish operation completed successfully',
                         'depublished_count' => count($depublishedUuids),
@@ -325,14 +322,13 @@ class BulkController extends Controller
                         'skipped_count'     => count($uuids) - count($depublishedUuids),
                         'datetime_used'     => $datetimeUsed,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk depublish operation failed: '.$e->getMessage()],
+                data: ['error' => 'Bulk depublish operation failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end depublish()
 
     /**
@@ -376,7 +372,7 @@ class BulkController extends Controller
                     objects: $objects,
                     register: $register,
                     schema: null,
-                // Allow objects to specify their own schemas.
+                    // Allow objects to specify their own schemas.
                     _rbac: true,
                     _multitenancy: true,
                     validation: true,
@@ -399,21 +395,20 @@ class BulkController extends Controller
             }//end if
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'         => true,
                         'message'         => 'Bulk save operation completed successfully',
                         'saved_count'     => ($savedObjects['statistics']['saved'] ?? 0) + ($savedObjects['statistics']['updated'] ?? 0),
                         'saved_objects'   => $savedObjects,
                         'requested_count' => count($objects),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Bulk save operation failed: '.$e->getMessage()],
+                data: ['error' => 'Bulk save operation failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end save()
 
     /**
@@ -453,7 +448,7 @@ class BulkController extends Controller
             $result = $this->objectService->publishObjectsBySchema(schemaId: (int) $schema, publishAll: $publishAll);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'         => true,
                         'message'         => 'Schema objects publishing completed successfully',
                         'published_count' => $result['published_count'],
@@ -461,14 +456,13 @@ class BulkController extends Controller
                         'schema_id'       => $result['schema_id'],
                         'publish_all'     => $publishAll,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Schema objects publishing failed: '.$e->getMessage()],
+                data: ['error' => 'Schema objects publishing failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end publishSchema()
 
     /**
@@ -508,7 +502,7 @@ class BulkController extends Controller
             $result = $this->objectService->deleteObjectsBySchema(schemaId: (int) $schema, hardDelete: $hardDelete);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'       => true,
                         'message'       => 'Schema objects deletion completed successfully',
                         'deleted_count' => $result['deleted_count'],
@@ -516,14 +510,13 @@ class BulkController extends Controller
                         'schema_id'     => $result['schema_id'],
                         'hard_delete'   => $hardDelete,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Schema objects deletion failed: '.$e->getMessage()],
+                data: ['error' => 'Schema objects deletion failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end deleteSchema()
 
     /**
@@ -557,21 +550,20 @@ class BulkController extends Controller
             $result = $this->objectService->deleteObjectsByRegister((int) $register);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'       => true,
                         'message'       => 'Register objects deletion completed successfully',
                         'deleted_count' => $result['deleted_count'],
                         'deleted_uuids' => $result['deleted_uuids'],
                         'register_id'   => $result['register_id'],
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                data: ['error' => 'Register objects deletion failed: '.$e->getMessage()],
+                data: ['error' => 'Register objects deletion failed: ' . $e->getMessage()],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
-
     }//end deleteRegister()
 
     /**
@@ -628,8 +620,7 @@ class BulkController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Schema validation failed: '.$e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+            return new JSONResponse(data: ['error' => 'Schema validation failed: ' . $e->getMessage()], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
         }//end try
-
     }//end validateSchema()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister View
  *
@@ -55,7 +56,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class View extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the view
      *
@@ -155,7 +155,6 @@ class View extends Entity implements JsonSerializable
         $this->addType('favoredBy', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -166,7 +165,6 @@ class View extends Entity implements JsonSerializable
     public function getFavoredBy(): array
     {
         return $this->favoredBy ?? [];
-
     }//end getFavoredBy()
 
     /**
@@ -180,7 +178,6 @@ class View extends Entity implements JsonSerializable
     {
         $this->favoredBy = $favoredBy;
         $this->markFieldUpdated('favoredBy');
-
     }//end setFavoredBy()
 
     /**
@@ -191,7 +188,6 @@ class View extends Entity implements JsonSerializable
     public function getOrganisation(): ?string
     {
         return $this->organisation;
-
     }//end getOrganisation()
 
     /**
@@ -246,7 +242,6 @@ class View extends Entity implements JsonSerializable
             'updated'                => $this->getUpdatedFormatted(),
             'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -261,7 +256,6 @@ class View extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getCreatedFormatted()
 
     /**
@@ -276,7 +270,6 @@ class View extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getUpdatedFormatted()
 
     /**
@@ -297,7 +290,6 @@ class View extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfigurationFormatted()
 
     /**
@@ -352,7 +344,6 @@ class View extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -365,7 +356,6 @@ class View extends Entity implements JsonSerializable
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
         $this->managedByConfiguration = $configuration;
-
     }//end setManagedByConfigurationEntity()
 
     /**
@@ -395,6 +385,5 @@ class View extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfiguration()
 }//end class

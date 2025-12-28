@@ -75,7 +75,6 @@ class ExportHandler
         private readonly FileService $fileService,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -97,8 +96,8 @@ class ExportHandler
         Register $register,
         Schema $schema,
         array $filters,
-        string $type='excel',
-        ?IUser $currentUser=null
+        string $type = 'excel',
+        ?IUser $currentUser = null
     ): array {
         $this->logger->info(
             message: '[ExportHandler] Starting export',
@@ -178,7 +177,6 @@ class ExportHandler
             );
             throw $e;
         }//end try
-
     }//end export()
 
     /**
@@ -203,13 +201,13 @@ class ExportHandler
     public function import(
         Register $register,
         array $uploadedFile,
-        ?Schema $schema=null,
-        bool $validation=false,
-        bool $events=false,
-        bool $rbac=true,
-        bool $multitenancy=true,
-        bool $publish=false,
-        ?IUser $currentUser=null
+        ?Schema $schema = null,
+        bool $validation = false,
+        bool $events = false,
+        bool $rbac = true,
+        bool $multitenancy = true,
+        bool $publish = false,
+        ?IUser $currentUser = null
     ): array {
         $filename = $uploadedFile['name'] ?? 'unknown';
 
@@ -262,7 +260,7 @@ class ExportHandler
                     publish: $publish,
                     currentUser: $currentUser
                 );
-            } else if ($extension === 'csv') {
+            } elseif ($extension === 'csv') {
                 $result = $this->importService->importFromCsv(
                     filePath: $filePath,
                     register: $register,
@@ -299,7 +297,6 @@ class ExportHandler
             );
             throw $e;
         }//end try
-
     }//end import()
 
     /**
@@ -370,6 +367,5 @@ class ExportHandler
             );
             throw $e;
         }//end try
-
     }//end downloadObjectFiles()
 }//end class

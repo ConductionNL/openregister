@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ViewUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ViewUpdatedEvent extends Event
 {
-
     /**
      * The updated view state.
      *
@@ -59,6 +59,5 @@ class ViewUpdatedEvent extends Event
         parent::__construct();
         $this->newView = $newView;
         $this->oldView = $oldView;
-
     }//end __construct()
 }//end class

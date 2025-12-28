@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister AgentUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class AgentUpdatedEvent extends Event
 {
-
     /**
      * The updated agent state.
      *
@@ -59,7 +59,6 @@ class AgentUpdatedEvent extends Event
         parent::__construct();
         $this->newAgent = $newAgent;
         $this->oldAgent = $oldAgent;
-
     }//end __construct()
 
     /**
@@ -70,7 +69,6 @@ class AgentUpdatedEvent extends Event
     public function getAgent(): Agent
     {
         return $this->newAgent;
-
     }//end getAgent()
 
     /**
@@ -81,7 +79,6 @@ class AgentUpdatedEvent extends Event
     public function getNewAgent(): Agent
     {
         return $this->newAgent;
-
     }//end getNewAgent()
 
     /**
@@ -92,6 +89,5 @@ class AgentUpdatedEvent extends Event
     public function getOldAgent(): Agent
     {
         return $this->oldAgent;
-
     }//end getOldAgent()
 }//end class

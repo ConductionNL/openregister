@@ -46,7 +46,6 @@ use Psr\Log\LoggerInterface;
  */
 class CreateFileHandler
 {
-
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -72,7 +71,6 @@ class CreateFileHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -85,7 +83,6 @@ class CreateFileHandler
     public function setFileService(FileService $fileService): void
     {
         $this->fileService = $fileService;
-
     }//end setFileService()
 
     /**
@@ -115,11 +112,11 @@ class CreateFileHandler
         ObjectEntity|string $objectEntity,
         string $fileName,
         string $content,
-        bool $share=false,
-        array $tags=[],
-        Schema|int|string|null $_schema=null,
-        Register|int|string|null $_register=null,
-        int|string|null $registerId=null
+        bool $share = false,
+        array $tags = [],
+        Schema|int|string|null $_schema = null,
+        Register|int|string|null $_register = null,
+        int|string|null $registerId = null
     ): File {
         try {
             // Ensure we have an ObjectEntity instance.
@@ -141,7 +138,7 @@ class CreateFileHandler
 
             // Check if the file name is empty.
             if (empty($fileName) === true) {
-                throw new Exception("Failed to create file because no filename has been provided for object ".$objectEntity->getId());
+                throw new Exception("Failed to create file because no filename has been provided for object " . $objectEntity->getId());
             }
 
             // Security: Block executable files.
@@ -181,14 +178,13 @@ class CreateFileHandler
             return $file;
         } catch (NotPermittedException $e) {
             // Log permission error and rethrow exception.
-            $this->logger->error(message: "Permission denied creating file $fileName: ".$e->getMessage());
-            throw new NotPermittedException("Cannot create file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "Permission denied creating file $fileName: " . $e->getMessage());
+            throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
         } catch (Exception $e) {
             // Log general error and rethrow exception.
-            $this->logger->error(message: "Failed to create file $fileName: ".$e->getMessage());
-            throw new Exception("Failed to create file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "Failed to create file $fileName: " . $e->getMessage());
+            throw new Exception("Failed to create file $fileName: " . $e->getMessage());
         }//end try
-
     }//end addFile()
 
     /**
@@ -217,15 +213,15 @@ class CreateFileHandler
         ObjectEntity $objectEntity,
         string $fileName,
         string $content,
-        bool $share=false,
-        array $tags=[]
+        bool $share = false,
+        array $tags = []
     ): File {
         try {
             // Check if the file already exists for this object.
             $existingFile = $this->fileService->getFile(
-                    object: $objectEntity,
-                    file: $fileName
-                    );
+                object: $objectEntity,
+                file: $fileName
+            );
 
             if ($existingFile !== null) {
                 // File exists, update it.
@@ -233,18 +229,18 @@ class CreateFileHandler
 
                 // Update the existing file - pass the object so updateFile can find it in the object folder.
                 return $this->fileService->updateFile(
-                        filePath: $existingFile->getId(),
-                        content: $content,
-                        tags: $tags,
-                        object: $objectEntity
-                        );
+                    filePath: $existingFile->getId(),
+                    content: $content,
+                    tags: $tags,
+                    object: $objectEntity
+                );
             } else {
                 // File doesn't exist, create it.
                 $this->logger->info(message: "File $fileName doesn't exist for object {$objectEntity->getId()}, creating...");
 
                 return $this->addFile(
-                        objectEntity: $objectEntity,
-                        fileName: $fileName,
+                    objectEntity: $objectEntity,
+                    fileName: $fileName,
                     content: $content,
                     share: $share,
                     tags: $tags
@@ -252,13 +248,12 @@ class CreateFileHandler
             }//end if
         } catch (NotPermittedException $e) {
             // Log permission error and rethrow exception.
-            $this->logger->error(message: "Permission denied saving file $fileName: ".$e->getMessage());
-            throw new NotPermittedException("Cannot save file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "Permission denied saving file $fileName: " . $e->getMessage());
+            throw new NotPermittedException("Cannot save file $fileName: " . $e->getMessage());
         } catch (Exception $e) {
             // Log general error and rethrow exception.
-            $this->logger->error(message: "Failed to save file $fileName: ".$e->getMessage());
-            throw new Exception("Failed to save file $fileName: ".$e->getMessage());
+            $this->logger->error(message: "Failed to save file $fileName: " . $e->getMessage());
+            throw new Exception("Failed to save file $fileName: " . $e->getMessage());
         }//end try
-
     }//end saveFile()
 }//end class

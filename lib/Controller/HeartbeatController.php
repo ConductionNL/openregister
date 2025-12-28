@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Heartbeat Controller
  *
@@ -61,7 +62,6 @@ class HeartbeatController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -90,12 +90,11 @@ class HeartbeatController extends Controller
         // Return lightweight success response to keep connection alive.
         // Minimal processing ensures fast response time.
         return new JSONResponse(
-          data: [
+            data: [
               'status'    => 'alive',
               'timestamp' => time(),
               'message'   => 'Heartbeat successful - connection kept alive',
-          ]
-          );
-
+            ]
+        );
     }//end heartbeat()
 }//end class

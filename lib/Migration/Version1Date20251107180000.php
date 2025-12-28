@@ -67,14 +67,14 @@ class Version1Date20251107180000 extends SimpleMigrationStep
             // Add tools column (JSON array of enabled tool names).
             if ($table->hasColumn('tools') === false) {
                 $table->addColumn(
-                        'tools',
-                        Types::TEXT,
-                        [
+                    'tools',
+                    Types::TEXT,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'JSON array of enabled tool names for agent function calling',
                         ]
-                        );
+                );
                 $output->info(message: '✅ Added tools column to agents table');
                 $updated = true;
             } else {
@@ -84,15 +84,15 @@ class Version1Date20251107180000 extends SimpleMigrationStep
             // Add user column (for cron/background job scenarios).
             if ($table->hasColumn('user') === false) {
                 $table->addColumn(
-                        'user',
-                        Types::STRING,
-                        [
+                    'user',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'User ID for running agent in cron/background scenarios',
                         ]
-                        );
+                );
                 $output->info(message: '✅ Added user column to agents table');
                 $updated = true;
             } else {
@@ -107,7 +107,6 @@ class Version1Date20251107180000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -126,6 +125,5 @@ class Version1Date20251107180000 extends SimpleMigrationStep
         $output->info(message: '✅ Migration complete - Agents can now use LLphant function tools');
         $output->info('   Available tools: RegisterTool, SchemaTool, ObjectsTool');
         $output->info(message: '   Tools can be enabled per agent via the Edit Agent modal');
-
     }//end postSchemaChange()
 }//end class

@@ -127,7 +127,7 @@ class BulkRelationHandler
 
                         $_processedCount++;
                     }
-                } else if (($propertyInfo['isArray'] === true) && is_array($value) === true) {
+                } elseif (($propertyInfo['isArray'] === true) && is_array($value) === true) {
                     // Handle array of object relations.
                     foreach ($value as $relatedUuid) {
                         if (is_string($relatedUuid) === true && \Symfony\Component\Uid\Uuid::isValid($relatedUuid) === true) {
@@ -381,7 +381,7 @@ class BulkRelationHandler
      * @psalm-return   array<string, string>
      * @phpstan-return array<string, string>
      */
-    public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
+    public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array
     {
         $relations = [];
 
@@ -411,7 +411,7 @@ class BulkRelationHandler
                     // Check for explicit relation types.
                     if ($type === 'text' && in_array($format, ['uuid', 'uri', 'url'], true) === true) {
                         $isRelation = true;
-                    } else if ($type === 'object') {
+                    } elseif ($type === 'object') {
                         // Type 'object' with a string value is always a relation.
                         $isRelation = true;
                     }
@@ -420,7 +420,7 @@ class BulkRelationHandler
                     // If it looks like a UUID or URL, treat it as a relation.
                     if (\Symfony\Component\Uid\Uuid::isValid($value) === true) {
                         $isRelation = true;
-                    } else if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+                    } elseif (filter_var($value, FILTER_VALIDATE_URL) !== false) {
                         $isRelation = true;
                     }
                 }
@@ -428,7 +428,7 @@ class BulkRelationHandler
                 if ($isRelation === true) {
                     $relations[$currentPath] = $value;
                 }
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 // Recursively scan nested arrays/objects.
                 $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
                 $relations       = array_merge($relations, $nestedRelations);

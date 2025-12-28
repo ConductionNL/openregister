@@ -61,120 +61,120 @@ class Version1Date20251102140000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-                    'id',
-                    Types::INTEGER,
-                    [
+                'id',
+                Types::INTEGER,
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                         'unsigned'      => true,
                         'comment'       => 'Primary key',
                     ]
-                    );
+            );
 
             // UUID for external references.
             $table->addColumn(
-                    'uuid',
-                    Types::STRING,
-                    [
+                'uuid',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                         'comment' => 'Unique identifier for external references',
                     ]
-                    );
+            );
 
             // View name.
             $table->addColumn(
-                    'name',
-                    Types::STRING,
-                    [
+                'name',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 255,
                         'comment' => 'Name of the view',
                     ]
-                    );
+            );
 
             // Description.
             $table->addColumn(
-                    'description',
-                    Types::TEXT,
-                    [
+                'description',
+                Types::TEXT,
+                [
                         'notnull' => false,
                         'comment' => 'Optional description of the view',
                     ]
-                    );
+            );
 
             // Owner.
             $table->addColumn(
-                    'owner',
-                    Types::STRING,
-                    [
+                'owner',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 64,
                         'comment' => 'User ID of the view owner',
                     ]
-                    );
+            );
 
             // Public flag.
             $table->addColumn(
-                    'is_public',
-                    Types::BOOLEAN,
-                    [
+                'is_public',
+                Types::BOOLEAN,
+                [
                         'notnull' => true,
                         'default' => false,
                         'comment' => 'Whether the view is public and shareable',
                     ]
-                    );
+            );
 
             // Default flag.
             $table->addColumn(
-                    'is_default',
-                    Types::BOOLEAN,
-                    [
+                'is_default',
+                Types::BOOLEAN,
+                [
                         'notnull' => true,
                         'default' => false,
                         'comment' => 'Whether this is the user\'s default view',
                     ]
-                    );
+            );
 
             // Query parameters as JSON.
             $table->addColumn(
-                    'query',
-                    Types::JSON,
-                    [
+                'query',
+                Types::JSON,
+                [
                         'notnull' => true,
                         'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
                     ]
-                    );
+            );
 
             // Favorited by users.
             $table->addColumn(
-                    'favored_by',
-                    Types::JSON,
-                    [
+                'favored_by',
+                Types::JSON,
+                [
                         'notnull' => false,
                         'default' => null,
                         'comment' => 'Array of user IDs who favorited this view',
                     ]
-                    );
+            );
 
             // Timestamps.
             $table->addColumn(
-                    'created',
-                    Types::DATETIME,
-                    [
+                'created',
+                Types::DATETIME,
+                [
                         'notnull' => true,
                         'comment' => 'Creation timestamp',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'updated',
-                    Types::DATETIME,
-                    [
+                'updated',
+                Types::DATETIME,
+                [
                         'notnull' => true,
                         'comment' => 'Last update timestamp',
                     ]
-                    );
+            );
 
             // Set primary key.
             $table->setPrimaryKey(['id']);
@@ -201,6 +201,5 @@ class Version1Date20251102140000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

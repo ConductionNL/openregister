@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Schema
  *
@@ -84,7 +85,6 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  */
 class Schema extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the schema
      *
@@ -396,7 +396,6 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
-
     }//end __construct()
 
     /**
@@ -407,7 +406,6 @@ class Schema extends Entity implements JsonSerializable
     public function getRequired(): array
     {
         return ($this->required ?? []);
-
     }//end getRequired()
 
     /**
@@ -426,7 +424,6 @@ class Schema extends Entity implements JsonSerializable
         // This is critical for schema validation to work correctly.
         $this->required = ($required ?? []);
         $this->markFieldUpdated('required');
-
     }//end setRequired()
 
     /**
@@ -437,7 +434,6 @@ class Schema extends Entity implements JsonSerializable
     public function getProperties(): array
     {
         return ($this->properties ?? []);
-
     }//end getProperties()
 
     /**
@@ -448,7 +444,6 @@ class Schema extends Entity implements JsonSerializable
     public function getArchive(): array
     {
         return ($this->archive ?? []);
-
     }//end getArchive()
 
     /**
@@ -470,7 +465,6 @@ class Schema extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -496,7 +490,6 @@ class Schema extends Entity implements JsonSerializable
         $this->normalizeInversedByProperties();
 
         return $validator->validateProperties($this->properties);
-
     }//end validateProperties()
 
     /**
@@ -528,7 +521,7 @@ class Schema extends Entity implements JsonSerializable
         foreach ($this->authorization as $action => $groups) {
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
-                throw new InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: ".implode(', ', $validActions));
+                throw new InvalidArgumentException("Invalid authorization action: '{$action}'. Must be one of: " . implode(', ', $validActions));
             }
 
             // Validate groups is an array.
@@ -545,7 +538,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return true;
-
     }//end validateAuthorization()
 
     /**
@@ -570,7 +562,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if the group has permission for the action
      */
-    public function hasPermission(string $groupId, string $action, ?string $userId=null, ?string $userGroup=null, ?string $objectOwner=null): bool
+    public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null): bool
     {
         // Admin group always has all permissions.
         if ($groupId === 'admin' || $userGroup === 'admin') {
@@ -594,7 +586,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Check if group is in the allowed groups for this action.
         return in_array($groupId, $this->authorization[$action] ?? []);
-
     }//end hasPermission()
 
     /**
@@ -618,7 +609,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Return the specific groups that have permission.
         return $this->authorization[$action] ?? [];
-
     }//end getAuthorizedGroups()
 
     /**
@@ -663,7 +653,6 @@ class Schema extends Entity implements JsonSerializable
                 }
             }
         }//end foreach
-
     }//end normalizeInversedByProperties()
 
     /**
@@ -678,7 +667,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object, ?PropertyValidatorHandler $validator=null): static
+    public function hydrate(array $object, ?PropertyValidatorHandler $validator = null): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -747,7 +736,7 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }//end if
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -767,7 +756,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -856,7 +844,6 @@ class Schema extends Entity implements JsonSerializable
             'oneOf'          => $this->oneOf,
             'anyOf'          => $this->anyOf,
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -877,7 +864,7 @@ class Schema extends Entity implements JsonSerializable
         $schema->type        = 'object';
         $schema->required    = $this->required;
         $schema->{'$schema'} = 'https://json-schema.org/draft/2020-12/schema';
-        $schema->{'$id'}     = $urlGenerator->getBaseUrl().'/apps/openregister/api/v1/schemas/'.$this->uuid;
+        $schema->{'$id'}     = $urlGenerator->getBaseUrl() . '/apps/openregister/api/v1/schemas/' . $this->uuid;
         $schema->properties  = new stdClass();
 
         foreach ($this->properties ?? [] as $propertyName => $property) {
@@ -924,7 +911,6 @@ class Schema extends Entity implements JsonSerializable
         }//end foreach
 
         return $schema;
-
     }//end getSchemaObject()
 
     /**
@@ -942,7 +928,6 @@ class Schema extends Entity implements JsonSerializable
 
         $this->slug = $slug;
         $this->markFieldUpdated('slug');
-
     }//end setSlug()
 
     /**
@@ -953,7 +938,6 @@ class Schema extends Entity implements JsonSerializable
     public function getIcon(): ?string
     {
         return $this->icon;
-
     }//end getIcon()
 
     /**
@@ -967,7 +951,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->icon = $icon;
         $this->markFieldUpdated('icon');
-
     }//end setIcon()
 
     /**
@@ -994,7 +977,6 @@ class Schema extends Entity implements JsonSerializable
 
         // If we get here, something is wrong - return null.
         return null;
-
     }//end getConfiguration()
 
     /**
@@ -1133,7 +1115,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $this->markFieldUpdated('configuration');
-
     }//end setConfiguration()
 
     /**
@@ -1144,7 +1125,6 @@ class Schema extends Entity implements JsonSerializable
     public function getSearchable(): bool
     {
         return $this->searchable;
-
     }//end getSearchable()
 
     /**
@@ -1158,7 +1138,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->searchable = $searchable;
         $this->markFieldUpdated('searchable');
-
     }//end setSearchable()
 
     /**
@@ -1182,8 +1161,7 @@ class Schema extends Entity implements JsonSerializable
         }
 
         // Final fallback with ID.
-        return 'Schema #'.($this->id ?? 'unknown');
-
+        return 'Schema #' . ($this->id ?? 'unknown');
     }//end __toString()
 
     /**
@@ -1215,7 +1193,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Otherwise, it's already an array.
         return $this->facets;
-
     }//end getFacets()
 
     /**
@@ -1246,7 +1223,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $this->markFieldUpdated('facets');
-
     }//end setFacets()
 
     /**
@@ -1296,9 +1272,9 @@ class Schema extends Entity implements JsonSerializable
                 if ($facetType === 'date_histogram') {
                     $facetConfig['object_fields'][$propertyKey]['default_interval']    = 'month';
                     $facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
-                } else if ($facetType === 'range') {
+                } elseif ($facetType === 'range') {
                     $facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-                } else if ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
+                } elseif ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
                     $facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
                 }
             }
@@ -1306,7 +1282,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Set the generated facet configuration.
         $this->setFacets($facetConfig);
-
     }//end regenerateFacetsFromProperties()
 
     /**
@@ -1351,7 +1326,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Default to terms for other types.
         return 'terms';
-
     }//end determineFacetType()
 
     /**
@@ -1367,7 +1341,8 @@ class Schema extends Entity implements JsonSerializable
     private function determineFacetTypeForProperty(array $property, string $fieldName): string|null
     {
         // Check if explicitly marked as facetable.
-        if (($property['facetable'] ?? null) !== null
+        if (
+            ($property['facetable'] ?? null) !== null
             && ($property['facetable'] === true || $property['facetable'] === 'true'
             || (is_string($property['facetable']) === true && strtolower(trim($property['facetable'])) === 'true')) === true
         ) {
@@ -1420,7 +1395,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end determineFacetTypeForProperty()
 
     /**
@@ -1453,7 +1427,6 @@ class Schema extends Entity implements JsonSerializable
 
         // Default to terms for other types.
         return 'terms';
-
     }//end determineFacetTypeFromPropertyType()
 
     /**
@@ -1467,7 +1440,6 @@ class Schema extends Entity implements JsonSerializable
     public function getAllOf(): ?array
     {
         return $this->allOf;
-
     }//end getAllOf()
 
     /**
@@ -1485,7 +1457,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->allOf = $allOf;
         $this->markFieldUpdated('allOf');
-
     }//end setAllOf()
 
     /**
@@ -1499,7 +1470,6 @@ class Schema extends Entity implements JsonSerializable
     public function getOneOf(): ?array
     {
         return $this->oneOf;
-
     }//end getOneOf()
 
     /**
@@ -1516,7 +1486,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->oneOf = $oneOf;
         $this->markFieldUpdated('oneOf');
-
     }//end setOneOf()
 
     /**
@@ -1530,7 +1499,6 @@ class Schema extends Entity implements JsonSerializable
     public function getAnyOf(): ?array
     {
         return $this->anyOf;
-
     }//end getAnyOf()
 
     /**
@@ -1547,7 +1515,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->anyOf = $anyOf;
         $this->markFieldUpdated('anyOf');
-
     }//end setAnyOf()
 
     /**
@@ -1558,7 +1525,6 @@ class Schema extends Entity implements JsonSerializable
     public function getPublished(): ?DateTime
     {
         return $this->published;
-
     }//end getPublished()
 
     /**
@@ -1572,7 +1538,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->published = $published;
         $this->markFieldUpdated('published');
-
     }//end setPublished()
 
     /**
@@ -1583,7 +1548,6 @@ class Schema extends Entity implements JsonSerializable
     public function getDepublished(): ?DateTime
     {
         return $this->depublished;
-
     }//end getDepublished()
 
     /**
@@ -1597,7 +1561,6 @@ class Schema extends Entity implements JsonSerializable
     {
         $this->depublished = $depublished;
         $this->markFieldUpdated('depublished');
-
     }//end setDepublished()
 
     /**
@@ -1627,7 +1590,6 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return false;
-
     }//end isManagedByConfiguration()
 
     /**
@@ -1657,6 +1619,5 @@ class Schema extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfiguration()
 }//end class

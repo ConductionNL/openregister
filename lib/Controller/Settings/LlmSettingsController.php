@@ -61,7 +61,6 @@ class LlmSettingsController extends Controller
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -83,7 +82,6 @@ class LlmSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end getLLMSettings()
 
     /**
@@ -129,22 +127,21 @@ class LlmSettingsController extends Controller
 
             $result = $this->settingsService->updateLLMSettingsOnly($data);
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'message' => 'LLM settings updated successfully',
                         'data'    => $result,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end updateLLMSettings()
 
     /**
@@ -165,7 +162,6 @@ class LlmSettingsController extends Controller
     public function patchLLMSettings(): JSONResponse
     {
         return $this->updateLLMSettings();
-
     }//end patchLLMSettings()
 
     /**
@@ -195,24 +191,24 @@ class LlmSettingsController extends Controller
             // Validate input.
             if (empty($provider) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Missing provider',
                             'message' => 'Provider is required for testing',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             if (empty($config) === true || is_array($config) === false) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Invalid config',
                             'message' => 'Config must be provided as an object',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Delegate to VectorizationService for testing.
@@ -228,15 +224,14 @@ class LlmSettingsController extends Controller
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
-                        'message' => 'Failed to generate embedding: '.$e->getMessage(),
+                        'message' => 'Failed to generate embedding: ' . $e->getMessage(),
                     ],
-                    statusCode: 400
-                );
+                statusCode: 400
+            );
         }//end try
-
     }//end testEmbedding()
 
     /**
@@ -266,24 +261,24 @@ class LlmSettingsController extends Controller
             // Validate input.
             if (empty($provider) === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Missing provider',
                             'message' => 'Provider is required for testing',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             if (empty($config) === true || is_array($config) === false) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Invalid config',
                             'message' => 'Config must be provided as an object',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Delegate to ChatService for testing.
@@ -299,15 +294,14 @@ class LlmSettingsController extends Controller
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
-                        'message' => 'Failed to test chat: '.$e->getMessage(),
+                        'message' => 'Failed to test chat: ' . $e->getMessage(),
                     ],
-                    statusCode: 400
-                );
+                statusCode: 400
+            );
         }//end try
-
     }//end testChat()
 
     /**
@@ -329,17 +323,17 @@ class LlmSettingsController extends Controller
             $ollamaUrl = $settings['ollamaConfig']['url'] ?? 'http://localhost:11434';
 
             // Call Ollama API to get available models.
-            $apiUrl = rtrim($ollamaUrl, '/').'/api/tags';
+            $apiUrl = rtrim($ollamaUrl, '/') . '/api/tags';
 
             $ch = curl_init($apiUrl);
             curl_setopt_array(
-                    $ch,
-                    [
+                $ch,
+                [
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_TIMEOUT        => 5,
                         CURLOPT_FOLLOWLOCATION => true,
                     ]
-                    );
+            );
 
             $response  = curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -348,33 +342,33 @@ class LlmSettingsController extends Controller
 
             if ($curlError !== '') {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
-                            'error'   => 'Failed to connect to Ollama: '.$curlError,
+                            'error'   => 'Failed to connect to Ollama: ' . $curlError,
                             'models'  => [],
                         ]
-                        );
+                );
             }
 
             if ($httpCode !== 200) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => "Ollama API returned HTTP {$httpCode}",
                             'models'  => [],
                         ]
-                        );
+                );
             }
 
             $data = json_decode($response, true);
             if (isset($data['models']) === false || is_array($data['models']) === false) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success' => false,
                             'error'   => 'Unexpected response from Ollama API',
                             'models'  => [],
                         ]
-                        );
+                );
             }
 
             // Format models for frontend dropdown.
@@ -384,64 +378,63 @@ class LlmSettingsController extends Controller
                      *
                      * @psalm-return array{id: 'unknown'|mixed, name: 'unknown'|mixed, description: mixed|string, size: 0|mixed, modified: mixed|null}
                      */
-                    function (array $model): array {
-                        $name = $model['name'] ?? 'unknown';
-                        // Format size if available.
-                        $size = '';
-                        if (($model['size'] ?? null) !== null && is_numeric($model['size']) === true) {
-                            $size = $this->settingsService->formatBytes((int) $model['size']);
+                function (array $model): array {
+                    $name = $model['name'] ?? 'unknown';
+                    // Format size if available.
+                    $size = '';
+                    if (($model['size'] ?? null) !== null && is_numeric($model['size']) === true) {
+                        $size = $this->settingsService->formatBytes((int) $model['size']);
+                    }
+
+                    $family = $model['details']['family'] ?? '';
+
+                    // Build description.
+                    $description = $family;
+                    if ($size !== '') {
+                        // Add size separator if description exists.
+                        if ($description !== null && $description !== '') {
+                            $description .= ' • ';
                         }
 
-                        $family = $model['details']['family'] ?? '';
+                        $description .= $size;
+                    }
 
-                        // Build description.
-                        $description = $family;
-                        if ($size !== '') {
-                            // Add size separator if description exists.
-                            if ($description !== null && $description !== '') {
-                                $description .= ' • ';
-                            }
-
-                            $description .= $size;
-                        }
-
-                        return [
-                            'id'          => $name,
-                            'name'        => $name,
-                            'description' => $description,
-                            'size'        => $model['size'] ?? 0,
-                            'modified'    => $model['modified_at'] ?? null,
-                        ];
-                    },
-                    $data['models']
-                    );
+                    return [
+                        'id'          => $name,
+                        'name'        => $name,
+                        'description' => $description,
+                        'size'        => $model['size'] ?? 0,
+                        'modified'    => $model['modified_at'] ?? null,
+                    ];
+                },
+                $data['models']
+            );
 
             // Sort by name.
             usort(
-                    $models,
-                    function ($a, $b) {
-                        return strcmp($a['name'], $b['name']);
-                    }
-                    );
+                $models,
+                function ($a, $b) {
+                    return strcmp($a['name'], $b['name']);
+                }
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'models'  => $models,
                         'count'   => count($models),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                         'models'  => [],
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end getOllamaModels()
 
     /**
@@ -463,15 +456,14 @@ class LlmSettingsController extends Controller
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'has_vectors' => false,
                         'mismatch'    => false,
                         'error'       => $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }
-
     }//end checkEmbeddingModelMismatch()
 
     /**
@@ -497,14 +489,13 @@ class LlmSettingsController extends Controller
             }
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }
-
     }//end clearAllEmbeddings()
 
     /**
@@ -528,22 +519,21 @@ class LlmSettingsController extends Controller
             $stats = $vectorService->getVectorStats();
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'   => true,
                         'stats'     => $stats,
                         'timestamp' => date('c'),
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
                         'error'   => $e->getMessage(),
                         'trace'   => $e->getTraceAsString(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end getVectorStats()
 }//end class

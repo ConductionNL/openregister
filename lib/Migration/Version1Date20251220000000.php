@@ -72,21 +72,17 @@ class Version1Date20251220000000 extends SimpleMigrationStep
             // Add configuration column if it doesn't exist.
             if ($table->hasColumn('configuration') === false) {
                 $table->addColumn(
-                        'configuration',
-                        Types::TEXT,
-                        [
+                    'configuration',
+                    Types::TEXT,
+                    [
                             'notnull' => false,
                             'default' => null,
                         ]
-                        );
+                );
                 $output->info('Added configuration column to openregister_registers table for magic mapping support.');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class
-
-
-

@@ -112,6 +112,5 @@ class Version1Date20250902140000 extends SimpleMigrationStep
         $output->info(message: 'Skipping super-performance index creation to avoid MySQL key length issues');
 
         return $schema;
-
     }//end changeSchema()
 }//end class

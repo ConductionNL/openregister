@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Endpoint Entity
  *
@@ -41,7 +42,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Endpoint extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the endpoint.
      *
@@ -227,7 +227,6 @@ class Endpoint extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'updated', type: 'datetime');
-
     }//end __construct()
 
     /**
@@ -238,7 +237,6 @@ class Endpoint extends Entity implements JsonSerializable
     public function getEndpoint(): ?string
     {
         return $this->endpoint;
-
     }//end getEndpoint()
 
     /**
@@ -249,7 +247,6 @@ class Endpoint extends Entity implements JsonSerializable
     public function getEndpointArray(): array
     {
         return $this->endpointArray ?? [];
-
     }//end getEndpointArray()
 
     /**
@@ -260,7 +257,6 @@ class Endpoint extends Entity implements JsonSerializable
     public function getConditions(): array
     {
         return $this->conditions ?? [];
-
     }//end getConditions()
 
     /**
@@ -271,7 +267,6 @@ class Endpoint extends Entity implements JsonSerializable
     public function getRules(): array
     {
         return $this->rules ?? [];
-
     }//end getRules()
 
     /**
@@ -284,7 +279,6 @@ class Endpoint extends Entity implements JsonSerializable
     public function getGroups(): array
     {
         return $this->groups ?? [];
-
     }//end getGroups()
 
     /**
@@ -295,7 +289,6 @@ class Endpoint extends Entity implements JsonSerializable
     public function getConfigurations(): array
     {
         return $this->configurations ?? [];
-
     }//end getConfigurations()
 
     /**
@@ -315,7 +308,6 @@ class Endpoint extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -343,7 +335,6 @@ class Endpoint extends Entity implements JsonSerializable
         }
 
         return $generatedSlug;
-
     }//end getSlug()
 
     /**
@@ -362,7 +353,7 @@ class Endpoint extends Entity implements JsonSerializable
                 $value = [];
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -372,7 +363,6 @@ class Endpoint extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -422,6 +412,5 @@ class Endpoint extends Entity implements JsonSerializable
         }
 
         return $result;
-
     }//end jsonSerialize()
 }//end class

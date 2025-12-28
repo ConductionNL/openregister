@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SourceDeletedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class SourceDeletedEvent extends Event
 {
-
     /**
      * The deleted source.
      *
@@ -46,7 +46,6 @@ class SourceDeletedEvent extends Event
     {
         parent::__construct();
         $this->source = $source;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class SourceDeletedEvent extends Event
     public function getSource(): Source
     {
         return $this->source;
-
     }//end getSource()
 }//end class

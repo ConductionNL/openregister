@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ConfigurationUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ConfigurationUpdatedEvent extends Event
 {
-
     /**
      * The updated configuration state.
      *
@@ -59,6 +59,5 @@ class ConfigurationUpdatedEvent extends Event
         parent::__construct();
         $this->newConfiguration = $newConfiguration;
         $this->oldConfiguration = $oldConfiguration;
-
     }//end __construct()
 }//end class

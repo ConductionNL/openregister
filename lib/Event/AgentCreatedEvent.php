@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister AgentCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class AgentCreatedEvent extends Event
 {
-
     /**
      * The newly created agent.
      *
@@ -46,7 +46,6 @@ class AgentCreatedEvent extends Event
     {
         parent::__construct();
         $this->agent = $agent;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class AgentCreatedEvent extends Event
     public function getAgent(): Agent
     {
         return $this->agent;
-
     }//end getAgent()
 }//end class

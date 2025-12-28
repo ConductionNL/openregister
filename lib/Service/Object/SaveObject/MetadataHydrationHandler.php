@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister MetadataHydrationHandler
  *
@@ -47,7 +48,6 @@ class MetadataHydrationHandler
     public function __construct(
         private readonly LoggerInterface $logger,
     ) {
-
     }//end __construct()
 
     /**
@@ -109,7 +109,6 @@ class MetadataHydrationHandler
                 }
             }
         }
-
     }//end hydrateObjectMetadata()
 
     /**
@@ -144,7 +143,6 @@ class MetadataHydrationHandler
         }
 
         return $current;
-
     }//end getValueFromPath()
 
     /**
@@ -171,7 +169,6 @@ class MetadataHydrationHandler
 
         // Simple field path - use existing method.
         return $this->getValueFromPath(data: $data, path: $fieldPath);
-
     }//end extractMetadataValue()
 
     /**
@@ -225,7 +222,6 @@ class MetadataHydrationHandler
         } else {
             return null;
         }
-
     }//end processTwigLikeTemplate()
 
     /**
@@ -247,7 +243,6 @@ class MetadataHydrationHandler
 
         // Use the existing createSlug method for consistency.
         return $this->createSlug(trim($value));
-
     }//end createSlugFromValue()
 
     /**
@@ -303,7 +298,6 @@ class MetadataHydrationHandler
         }
 
         return null;
-
     }//end generateSlug()
 
     /**
@@ -338,6 +332,5 @@ class MetadataHydrationHandler
         $slug = trim($slug, '-');
 
         return $slug;
-
     }//end createSlug()
 }//end class

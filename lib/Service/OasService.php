@@ -53,7 +53,7 @@ class OasService
      *
      * @var string Base OAS resource file path
      */
-    private const OAS_RESOURCE_PATH = __DIR__.'/Resources/BaseOas.json';
+    private const OAS_RESOURCE_PATH = __DIR__ . '/Resources/BaseOas.json';
 
     /**
      * The OpenAPI specification being built
@@ -105,7 +105,7 @@ class OasService
      *
      * @throws \Exception When base OAS file cannot be read or parsed
      */
-    public function createOas(?string $registerId=null): array
+    public function createOas(?string $registerId = null): array
     {
         // Step 1: Reset OAS to base state from template file.
         $this->oas = $this->getBaseOas();
@@ -149,14 +149,14 @@ class OasService
             // Build enhanced description from register description or generate default.
             $description = $register->getDescription();
             if (empty($description) === true) {
-                $description = 'API for '.$register->getTitle().' register providing CRUD operations, filtering, and search capabilities.';
+                $description = 'API for ' . $register->getTitle() . ' register providing CRUD operations, filtering, and search capabilities.';
             }
 
             // Update info section while preserving base contact and license information.
             $this->oas['info'] = array_merge(
                 $this->oas['info'],
                 [
-                    'title'       => $register->getTitle().' API',
+                    'title'       => $register->getTitle() . ' API',
                     'version'     => $register->getVersion(),
                     'description' => $description,
                 ]
@@ -185,7 +185,7 @@ class OasService
                 // Add tag for the schema (keep original title for display).
                 $this->oas['tags'][] = [
                     'name'        => $schemaTitle,
-                    'description' => $schema->getDescription() ?? 'Operations for '.$schemaTitle,
+                    'description' => $schema->getDescription() ?? 'Operations for ' . $schemaTitle,
                 ];
             }
         }//end foreach
@@ -230,7 +230,7 @@ class OasService
 
         $oas = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('Could not parse base OAS file: '.json_last_error_msg());
+            throw new Exception('Could not parse base OAS file: ' . json_last_error_msg());
         }
 
         return $oas;
@@ -470,7 +470,7 @@ class OasService
      */
     private function addCrudPaths(object $register, object $schema): void
     {
-        $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
+        $basePath = '/' . $this->slugify($register->getTitle()) . '/' . $this->slugify($schema->getTitle());
 
         // Collection endpoints (tags are inside individual operations).
         $this->oas['paths'][$basePath] = [
@@ -479,7 +479,7 @@ class OasService
         ];
 
         // Individual resource endpoints (tags are inside individual operations).
-        $this->oas['paths'][$basePath.'/{id}'] = [
+        $this->oas['paths'][$basePath . '/{id}'] = [
             'get'    => $this->createGetOperation($schema),
             'put'    => $this->createPutOperation($schema),
             'delete' => $this->createDeleteOperation($schema),
@@ -499,32 +499,32 @@ class OasService
      */
     private function addExtendedPaths(object $register, object $schema): void
     {
-        $basePath = '/'.$this->slugify($register->getTitle()).'/'.$this->slugify($schema->getTitle());
+        $basePath = '/' . $this->slugify($register->getTitle()) . '/' . $this->slugify($schema->getTitle());
 
         // Only add whitelisted extended endpoints.
         foreach (self::INCLUDED_EXTENDED_ENDPOINTS ?? [] as $endpoint) {
             switch ($endpoint) {
                 case 'audit-trails':
-                    $this->oas['paths'][$basePath.'/{id}/audit-trails'] = [
+                    $this->oas['paths'][$basePath . '/{id}/audit-trails'] = [
                         'get' => $this->createLogsOperation($schema),
                     ];
                     break;
 
                 case 'files':
-                    $this->oas['paths'][$basePath.'/{id}/files'] = [
+                    $this->oas['paths'][$basePath . '/{id}/files'] = [
                         'get'  => $this->createGetFilesOperation($schema),
                         'post' => $this->createPostFileOperation($schema),
                     ];
                     break;
 
                 case 'lock':
-                    $this->oas['paths'][$basePath.'/{id}/lock'] = [
+                    $this->oas['paths'][$basePath . '/{id}/lock'] = [
                         'post' => $this->createLockOperation($schema),
                     ];
                     break;
 
                 case 'unlock':
-                    $this->oas['paths'][$basePath.'/{id}/unlock'] = [
+                    $this->oas['paths'][$basePath . '/{id}/unlock'] = [
                         'post' => $this->createUnlockOperation($schema),
                     ];
                     break;
@@ -546,7 +546,7 @@ class OasService
      *
      * @psalm-return list{0: array{name: '_extend'|mixed, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: 'property1,property2,property3'}, 1?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 2?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 3?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string}, 4?: array{name: mixed|string, in: 'query', required: false, description: string, schema: array{type: string, items?: array<never, never>}, example?: string},...}
      */
-    private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
+    private function createCommonQueryParameters(bool $isCollection = false, ?object $schema = null): array
     {
         $parameters = [
             [
@@ -628,7 +628,7 @@ class OasService
                         'name'        => $propertyName,
                         'in'          => 'query',
                         'required'    => false,
-                        'description' => 'Filter results by '.$propertyName,
+                        'description' => 'Filter results by ' . $propertyName,
                         'schema'      => $paramSchema,
                     ];
                 }//end foreach
@@ -696,14 +696,14 @@ class OasService
         }
 
         return [
-            'summary'     => 'Get all '.$schemaTitle.' objects',
-            'operationId' => 'getAll'.$this->pascalCase($schemaTitle),
+            'summary'     => 'Get all ' . $schemaTitle . ' objects',
+            'operationId' => 'getAll' . $this->pascalCase($schemaTitle),
             'tags'        => [$schemaTitle],
-            'description' => 'Retrieve a list of all '.$schemaTitle.' objects',
+            'description' => 'Retrieve a list of all ' . $schemaTitle . ' objects',
             'parameters'  => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
             'responses'   => [
                 '200' => [
-                    'description' => 'List of '.$schemaTitle.' objects with pagination metadata',
+                    'description' => 'List of ' . $schemaTitle . ' objects with pagination metadata',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -717,7 +717,7 @@ class OasService
                                             'results' => [
                                                 'type'  => 'array',
                                                 'items' => [
-                                                    '$ref' => '#/components/schemas/'.$sanitizedSchemaName,
+                                                    '$ref' => '#/components/schemas/' . $sanitizedSchemaName,
                                                 ],
                                             ],
                                         ],
@@ -749,17 +749,17 @@ class OasService
         }
 
         return [
-            'summary'     => 'Get a '.$schema->getTitle().' object by ID',
-            'operationId' => 'get'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Get a ' . $schema->getTitle() . ' object by ID',
+            'operationId' => 'get' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Retrieve a specific '.$schema->getTitle().' object by its unique identifier',
+            'description' => 'Retrieve a specific ' . $schema->getTitle() . ' object by its unique identifier',
             'parameters'  => array_merge(
                 [
                     [
                         'name'        => 'id',
                         'in'          => 'path',
                         'required'    => true,
-                        'description' => 'Unique identifier of the '.$schema->getTitle().' object',
+                        'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                         'schema'      => [
                             'type'   => 'string',
                             'format' => 'uuid',
@@ -770,17 +770,17 @@ class OasService
             ),
             'responses'   => [
                 '200' => [
-                    'description' => $schema->getTitle().' found.',
+                    'description' => $schema->getTitle() . ' found.',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName($schemaName),
+                                '$ref' => '#/components/schemas/' . $this->sanitizeSchemaName($schemaName),
                             ],
                         ],
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -810,17 +810,17 @@ class OasService
         // $schemaName = $schema->getTitle();
         // }
         return [
-            'summary'     => 'Update a '.$schema->getTitle().' object',
-            'operationId' => 'update'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Update a ' . $schema->getTitle() . ' object',
+            'operationId' => 'update' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Update an existing '.$schema->getTitle().' object with the provided data',
+            'description' => 'Update an existing ' . $schema->getTitle() . ' object with the provided data',
             'parameters'  => array_merge(
                 [
                     [
                         'name'        => 'id',
                         'in'          => 'path',
                         'required'    => true,
-                        'description' => 'Unique identifier of the '.$schema->getTitle().' object to update',
+                        'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to update',
                         'schema'      => [
                             'type'   => 'string',
                             'format' => 'uuid',
@@ -834,7 +834,7 @@ class OasService
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                            '$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(
                                 (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                             ),
                         ],
@@ -843,11 +843,11 @@ class OasService
             ],
             'responses'   => [
                 '200' => [
-                    'description' => $schema->getTitle().' updated successfully',
+                    'description' => $schema->getTitle() . ' updated successfully',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                                '$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(
                                     (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                                 ),
                             ],
@@ -855,7 +855,7 @@ class OasService
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -880,17 +880,17 @@ class OasService
     private function createPostOperation(object $schema): array
     {
         return [
-            'summary'     => 'Create a new '.$schema->getTitle().' object',
-            'operationId' => 'create'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Create a new ' . $schema->getTitle() . ' object',
+            'operationId' => 'create' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Create a new '.$schema->getTitle().' object with the provided data',
+            'description' => 'Create a new ' . $schema->getTitle() . ' object with the provided data',
             'parameters'  => $this->createCommonQueryParameters(),
             'requestBody' => [
                 'required' => true,
                 'content'  => [
                     'application/json' => [
                         'schema' => [
-                            '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                            '$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(
                                 (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                             ),
                         ],
@@ -899,11 +899,11 @@ class OasService
             ],
             'responses'   => [
                 '201' => [
-                    'description' => $schema->getTitle().' created successfully.',
+                    'description' => $schema->getTitle() . ' created successfully.',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
-                                '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(
+                                '$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(
                                     (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) ? $schema->getTitle() : 'UnknownSchema'
                                 ),
                             ],
@@ -926,16 +926,16 @@ class OasService
     private function createDeleteOperation(object $schema): array
     {
         return [
-            'summary'     => 'Delete a '.$schema->getTitle().' object',
-            'operationId' => 'delete'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Delete a ' . $schema->getTitle() . ' object',
+            'operationId' => 'delete' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Delete a specific '.$schema->getTitle().' object by its unique identifier',
+            'description' => 'Delete a specific ' . $schema->getTitle() . ' object by its unique identifier',
             'parameters'  => [
                 [
                     'name'        => 'id',
                     'in'          => 'path',
                     'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object to delete',
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to delete',
                     'schema'      => [
                         'type'   => 'string',
                         'format' => 'uuid',
@@ -944,10 +944,10 @@ class OasService
             ],
             'responses'   => [
                 '204' => [
-                    'description' => $schema->getTitle().' deleted successfully',
+                    'description' => $schema->getTitle() . ' deleted successfully',
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -972,16 +972,16 @@ class OasService
     private function createLogsOperation(object $schema): array
     {
         return [
-            'summary'     => 'Get audit logs for a '.$schema->getTitle().' object',
-            'operationId' => 'getLogs'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Get audit logs for a ' . $schema->getTitle() . ' object',
+            'operationId' => 'getLogs' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Retrieve the audit trail for a specific '.$schema->getTitle().' object',
+            'description' => 'Retrieve the audit trail for a specific ' . $schema->getTitle() . ' object',
             'parameters'  => [
                 [
                     'name'        => 'id',
                     'in'          => 'path',
                     'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object',
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema'      => [
                         'type'   => 'string',
                         'format' => 'uuid',
@@ -1003,7 +1003,7 @@ class OasService
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -1028,16 +1028,16 @@ class OasService
     private function createGetFilesOperation(object $schema): array
     {
         return [
-            'summary'     => 'Get files for a '.$schema->getTitle().' object',
-            'operationId' => 'getFiles'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Get files for a ' . $schema->getTitle() . ' object',
+            'operationId' => 'getFiles' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Retrieve all files associated with a specific '.$schema->getTitle().' object',
+            'description' => 'Retrieve all files associated with a specific ' . $schema->getTitle() . ' object',
             'parameters'  => [
                 [
                     'name'        => 'id',
                     'in'          => 'path',
                     'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object',
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema'      => [
                         'type'   => 'string',
                         'format' => 'uuid',
@@ -1059,7 +1059,7 @@ class OasService
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -1084,16 +1084,16 @@ class OasService
     private function createPostFileOperation(object $schema): array
     {
         return [
-            'summary'     => 'Upload a file for a '.$schema->getTitle().' object',
-            'operationId' => 'uploadFile'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Upload a file for a ' . $schema->getTitle() . ' object',
+            'operationId' => 'uploadFile' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Upload a new file and associate it with a specific '.$schema->getTitle().' object',
+            'description' => 'Upload a new file and associate it with a specific ' . $schema->getTitle() . ' object',
             'parameters'  => [
                 [
                     'name'        => 'id',
                     'in'          => 'path',
                     'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object',
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
                     'schema'      => [
                         'type'   => 'string',
                         'format' => 'uuid',
@@ -1129,7 +1129,7 @@ class OasService
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -1154,16 +1154,16 @@ class OasService
     private function createLockOperation(object $schema): array
     {
         return [
-            'summary'     => 'Lock a '.$schema->getTitle().' object',
-            'operationId' => 'lock'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Lock a ' . $schema->getTitle() . ' object',
+            'operationId' => 'lock' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Lock a specific '.$schema->getTitle().' object to prevent concurrent modifications',
+            'description' => 'Lock a specific ' . $schema->getTitle() . ' object to prevent concurrent modifications',
             'parameters'  => [
                 [
                     'name'        => 'id',
                     'in'          => 'path',
                     'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object to lock',
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to lock',
                     'schema'      => [
                         'type'   => 'string',
                         'format' => 'uuid',
@@ -1182,7 +1182,7 @@ class OasService
                     ],
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -1210,16 +1210,16 @@ class OasService
     private function createUnlockOperation(object $schema): array
     {
         return [
-            'summary'     => 'Unlock a '.$schema->getTitle().' object',
-            'operationId' => 'unlock'.$this->pascalCase($schema->getTitle()),
+            'summary'     => 'Unlock a ' . $schema->getTitle() . ' object',
+            'operationId' => 'unlock' . $this->pascalCase($schema->getTitle()),
             'tags'        => [$schema->getTitle()],
-            'description' => 'Remove the lock from a specific '.$schema->getTitle().' object',
+            'description' => 'Remove the lock from a specific ' . $schema->getTitle() . ' object',
             'parameters'  => [
                 [
                     'name'        => 'id',
                     'in'          => 'path',
                     'required'    => true,
-                    'description' => 'Unique identifier of the '.$schema->getTitle().' object to unlock',
+                    'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to unlock',
                     'schema'      => [
                         'type'   => 'string',
                         'format' => 'uuid',
@@ -1231,7 +1231,7 @@ class OasService
                     'description' => 'Object unlocked successfully',
                 ],
                 '404' => [
-                    'description' => $schema->getTitle().' not found',
+                    'description' => $schema->getTitle() . ' not found',
                     'content'     => [
                         'application/json' => [
                             'schema' => [
@@ -1304,7 +1304,7 @@ class OasService
 
         // Ensure it starts with a letter (prepend 'Schema_' if it starts with number).
         if (preg_match('/^[0-9]/', $sanitized) === true) {
-            $sanitized = 'Schema_'.$sanitized;
+            $sanitized = 'Schema_' . $sanitized;
         }
 
         return $sanitized;
@@ -1404,7 +1404,8 @@ class OasService
             if (empty($schema['$ref']) === false && is_string($schema['$ref']) === true) {
                 // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-                if (strpos($schema['$ref'], '#/components/schemas/') === 0
+                if (
+                    strpos($schema['$ref'], '#/components/schemas/') === 0
                     && isset($this->oas['components']['schemas'][$refPath]) === false
                 ) {
                 }

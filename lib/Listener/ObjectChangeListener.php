@@ -61,7 +61,6 @@ class ObjectChangeListener implements IEventListener
         private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -74,7 +73,8 @@ class ObjectChangeListener implements IEventListener
     public function handle(Event $event): void
     {
         // Only handle ObjectCreatedEvent and ObjectUpdatedEvent.
-        if (($event instanceof ObjectCreatedEvent) === false
+        if (
+            ($event instanceof ObjectCreatedEvent) === false
             && ($event instanceof ObjectUpdatedEvent) === false
         ) {
             return;
@@ -84,13 +84,13 @@ class ObjectChangeListener implements IEventListener
         $objectId = $object->getId();
 
         $this->logger->debug(
-                '[ObjectChangeListener] Object event detected',
-                [
+            '[ObjectChangeListener] Object event detected',
+            [
                     'event_type'  => get_class($event),
                     'object_id'   => $objectId,
                     'object_uuid' => $object->getUuid(),
                 ]
-                );
+        );
 
         // Get extraction mode and process accordingly.
         try {
@@ -100,15 +100,14 @@ class ObjectChangeListener implements IEventListener
             $this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ObjectChangeListener] Error determining extraction mode',
-                    [
+                '[ObjectChangeListener] Error determining extraction mode',
+                [
                         'object_id' => $objectId,
                         'error'     => $e->getMessage(),
                         'trace'     => $e->getTraceAsString(),
                     ]
-                    );
+            );
         }//end try
-
     }//end handle()
 
     /**
@@ -143,7 +142,6 @@ class ObjectChangeListener implements IEventListener
                 $this->processUnknownMode(mode: $mode, objectId: $objectId);
                 break;
         }//end switch
-
     }//end processExtractionMode()
 
     /**
@@ -157,29 +155,28 @@ class ObjectChangeListener implements IEventListener
     private function processImmediateExtraction(int $objectId, string $objectUuid): void
     {
         $this->logger->info(
-                '[ObjectChangeListener] Immediate mode - processing synchronously',
-                [
+            '[ObjectChangeListener] Immediate mode - processing synchronously',
+            [
                     'object_id'   => $objectId,
                     'object_uuid' => $objectUuid,
                 ]
-                );
+        );
 
         try {
             $this->textExtractionService->extractObject(objectId: $objectId, forceReExtract: false);
             $this->logger->info(
-                    '[ObjectChangeListener] Immediate extraction completed',
-                    ['object_id' => $objectId]
-                    );
+                '[ObjectChangeListener] Immediate extraction completed',
+                ['object_id' => $objectId]
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ObjectChangeListener] Immediate extraction failed',
-                    [
+                '[ObjectChangeListener] Immediate extraction failed',
+                [
                         'object_id' => $objectId,
                         'error'     => $e->getMessage(),
                     ]
-                    );
+            );
         }
-
     }//end processImmediateExtraction()
 
     /**
@@ -193,29 +190,28 @@ class ObjectChangeListener implements IEventListener
     private function processBackgroundExtraction(int $objectId, string $objectUuid): void
     {
         $this->logger->info(
-                '[ObjectChangeListener] Background mode - queueing extraction job',
-                [
+            '[ObjectChangeListener] Background mode - queueing extraction job',
+            [
                     'object_id'   => $objectId,
                     'object_uuid' => $objectUuid,
                 ]
-                );
+        );
 
         try {
             $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
             $this->logger->debug(
-                    '[ObjectChangeListener] Background extraction job queued',
-                    ['object_id' => $objectId]
-                    );
+                '[ObjectChangeListener] Background extraction job queued',
+                ['object_id' => $objectId]
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ObjectChangeListener] Failed to queue background job',
-                    [
+                '[ObjectChangeListener] Failed to queue background job',
+                [
                         'object_id' => $objectId,
                         'error'     => $e->getMessage(),
                     ]
-                    );
+            );
         }
-
     }//end processBackgroundExtraction()
 
     /**
@@ -228,10 +224,9 @@ class ObjectChangeListener implements IEventListener
     private function processCronMode(int $objectId): void
     {
         $this->logger->debug(
-                '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
-                ['object_id' => $objectId]
-                );
-
+            '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
+            ['object_id' => $objectId]
+        );
     }//end processCronMode()
 
     /**
@@ -244,10 +239,9 @@ class ObjectChangeListener implements IEventListener
     private function processManualMode(int $objectId): void
     {
         $this->logger->debug(
-                '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
-                ['object_id' => $objectId]
-                );
-
+            '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
+            ['object_id' => $objectId]
+        );
     }//end processManualMode()
 
     /**
@@ -261,14 +255,13 @@ class ObjectChangeListener implements IEventListener
     private function processUnknownMode(string $mode, int $objectId): void
     {
         $this->logger->warning(
-                '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
-                [
+            '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
+            [
                     'object_id'       => $objectId,
                     'extraction_mode' => $mode,
                 ]
-                );
+        );
 
         $this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
-
     }//end processUnknownMode()
 }//end class

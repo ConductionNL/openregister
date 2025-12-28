@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration to add default value to configurations type column
  *
@@ -69,6 +70,5 @@ class Version1Date20251107120000 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

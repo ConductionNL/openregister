@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ConversationUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ConversationUpdatedEvent extends Event
 {
-
     /**
      * The updated conversation state.
      *
@@ -59,7 +59,6 @@ class ConversationUpdatedEvent extends Event
         parent::__construct();
         $this->newConversation = $newConversation;
         $this->oldConversation = $oldConversation;
-
     }//end __construct()
 
     /**
@@ -70,7 +69,6 @@ class ConversationUpdatedEvent extends Event
     public function getConversation(): Conversation
     {
         return $this->newConversation;
-
     }//end getConversation()
 
     /**
@@ -81,7 +79,6 @@ class ConversationUpdatedEvent extends Event
     public function getNewConversation(): Conversation
     {
         return $this->newConversation;
-
     }//end getNewConversation()
 
     /**
@@ -92,6 +89,5 @@ class ConversationUpdatedEvent extends Event
     public function getOldConversation(): Conversation
     {
         return $this->oldConversation;
-
     }//end getOldConversation()
 }//end class

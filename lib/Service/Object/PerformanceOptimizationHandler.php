@@ -38,7 +38,6 @@ class PerformanceOptimizationHandler
      */
     public function __construct()
     {
-
     }//end __construct()
 
     /**
@@ -67,7 +66,6 @@ class PerformanceOptimizationHandler
         }
 
         return null;
-
     }//end getActiveOrganisationForContext()
 
     /**
@@ -101,7 +99,7 @@ class PerformanceOptimizationHandler
                     'Implement pagination with smaller page sizes',
                 ],
             ];
-        } else if ($totalTime > 500) {
+        } elseif ($totalTime > 500) {
             $recommendations[] = [
                 'type'        => 'warning',
                 'issue'       => 'Slow response time',
@@ -195,6 +193,5 @@ class PerformanceOptimizationHandler
         }
 
         return $recommendations;
-
     }//end getPerformanceRecommendations()
 }//end class

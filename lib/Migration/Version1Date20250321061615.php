@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -67,69 +68,69 @@ class Version1Date20250321061615 extends SimpleMigrationStep
         // Add organisation column to store organisation name.
         if ($table->hasColumn('organisation') === false) {
             $table->addColumn(
-                    'organisation',
-                    Types::STRING,
-                    [
+                'organisation',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add application column to store application name.
         if ($table->hasColumn('application') === false) {
             $table->addColumn(
-                    'application',
-                    Types::STRING,
-                    [
+                'application',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add validation column to store validation rules in JSON format.
         if ($table->hasColumn('validation') === false) {
             $table->addColumn(
-                    'validation',
-                    Types::JSON,
-                    [
+                'validation',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Add deleted column to store deletion details in JSON format.
         if ($table->hasColumn('deleted') === false) {
             $table->addColumn(
-                    'deleted',
-                    Types::JSON,
-                    [
+                'deleted',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Add geo column to store geo data in JSON format.
         if ($table->hasColumn('geo') === false) {
             $table->addColumn(
-                    'geo',
-                    Types::JSON,
-                    [
+                'geo',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Add retention column to store retention data in JSON format.
         if ($table->hasColumn('retention') === false) {
             $table->addColumn(
-                    'retention',
-                    Types::JSON,
-                    [
+                'retention',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Update the openregister_schemas table.
@@ -138,71 +139,71 @@ class Version1Date20250321061615 extends SimpleMigrationStep
         // Add slug column to store unique identifier for objects.
         if ($table->hasColumn('slug') === false) {
             $table->addColumn(
-                    'slug',
-                    Types::STRING,
-                    [
+                'slug',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add owner column to store the Nextcloud user that owns this schema.
         if ($table->hasColumn('owner') === false) {
             $table->addColumn(
-                    'owner',
-                    Types::STRING,
-                    [
+                'owner',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add application column to store application name.
         if ($table->hasColumn('application') === false) {
             $table->addColumn(
-                    'application',
-                    Types::STRING,
-                    [
+                'application',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add organisation column to store organisation name.
         if ($table->hasColumn('organisation') === false) {
             $table->addColumn(
-                    'organisation',
-                    Types::STRING,
-                    [
+                'organisation',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add authorization column to store authorization rules in JSON format.
         if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
-                    'authorization',
-                    Types::JSON,
-                    [
+                'authorization',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Add deleted column to store deletion timestamp.
         if ($table->hasColumn('deleted') === false) {
             $table->addColumn(
-                    'deleted',
-                    Types::DATETIME,
-                    [
+                'deleted',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Update the openregister_registers table.
@@ -211,71 +212,71 @@ class Version1Date20250321061615 extends SimpleMigrationStep
         // Add slug column to store unique identifier for registers.
         if ($table->hasColumn('slug') === false) {
             $table->addColumn(
-                    'slug',
-                    Types::STRING,
-                    [
+                'slug',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add owner column to store the Nextcloud user that owns this register.
         if ($table->hasColumn('owner') === false) {
             $table->addColumn(
-                    'owner',
-                    Types::STRING,
-                    [
+                'owner',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add application column to store application name.
         if ($table->hasColumn('application') === false) {
             $table->addColumn(
-                    'application',
-                    Types::STRING,
-                    [
+                'application',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add organisation column to store organisation name.
         if ($table->hasColumn('organisation') === false) {
             $table->addColumn(
-                    'organisation',
-                    Types::STRING,
-                    [
+                'organisation',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add authorization column to store authorization rules in JSON format.
         if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
-                    'authorization',
-                    Types::JSON,
-                    [
+                'authorization',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Add deleted column to store deletion timestamp.
         if ($table->hasColumn('deleted') === false) {
             $table->addColumn(
-                    'deleted',
-                    Types::DATETIME,
-                    [
+                'deleted',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Update the openregister_audit_trails table.
@@ -299,85 +300,85 @@ class Version1Date20250321061615 extends SimpleMigrationStep
         // Add organisation_id column to store the organization identifier (OIN, RSIN, KVK, etc.).
         if ($table->hasColumn('organisation_id') === false) {
             $table->addColumn(
-                    'organisation_id',
-                    Types::STRING,
-                    [
+                'organisation_id',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add organisation_id_type column to store the type of organization identifier used.
         if ($table->hasColumn('organisation_id_type') === false) {
             $table->addColumn(
-                    'organisation_id_type',
-                    Types::STRING,
-                    [
+                'organisation_id_type',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 50,
                     ]
-                    );
+            );
         }
 
         // Add processing_activity_id column to store Processing Activity ID.
         if ($table->hasColumn('processing_activity_id') === false) {
             $table->addColumn(
-                    'processing_activity_id',
-                    Types::STRING,
-                    [
+                'processing_activity_id',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add processing_activity_url column to store Processing Activity URL.
         if ($table->hasColumn('processing_activity_url') === false) {
             $table->addColumn(
-                    'processing_activity_url',
-                    Types::STRING,
-                    [
+                'processing_activity_url',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add processing_id column to store Processing ID.
         if ($table->hasColumn('processing_id') === false) {
             $table->addColumn(
-                    'processing_id',
-                    Types::STRING,
-                    [
+                'processing_id',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add confidentiality column to store data confidentiality level.
         if ($table->hasColumn('confidentiality') === false) {
             $table->addColumn(
-                    'confidentiality',
-                    Types::STRING,
-                    [
+                'confidentiality',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Add retention_period column to store data retention period.
         if ($table->hasColumn('retention_period') === false) {
             $table->addColumn(
-                    'retention_period',
-                    Types::STRING,
-                    [
+                'retention_period',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Drop the openregister_object_audit_logs table as it is no longer used.

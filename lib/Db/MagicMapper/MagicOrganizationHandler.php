@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MagicMapper Organization Handler
  *
@@ -37,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
-
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -83,7 +83,6 @@ class MagicOrganizationHandler
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -101,7 +100,6 @@ class MagicOrganizationHandler
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-
     }//end shouldPublishedObjectsBypassMultiTenancy()
 
     /**
@@ -126,7 +124,6 @@ class MagicOrganizationHandler
                 )
             )
         );
-
     }//end applyUnauthenticatedOrganizationAccess()
 
     /**
@@ -146,14 +143,13 @@ class MagicOrganizationHandler
             return null;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to get system default organization from configuration',
-                    [
+                'Failed to get system default organization from configuration',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return null;
         }
-
     }//end getSystemDefaultOrganizationUuid()
 
     /**
@@ -170,7 +166,6 @@ class MagicOrganizationHandler
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         return $multitenancyData['enabled'] ?? false;
-
     }//end isMultiTenancyEnabled()
 
     /**
@@ -188,6 +183,5 @@ class MagicOrganizationHandler
 
         $rbacData = json_decode($rbacConfig, true);
         return $rbacData['adminOverride'] ?? true;
-
     }//end isAdminOverrideEnabled()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Source Handler
  *
@@ -32,7 +33,6 @@ use Psr\Log\LoggerInterface;
  */
 class SourceHandler
 {
-
     /**
      * Source mapper instance.
      *
@@ -48,9 +48,4 @@ class SourceHandler
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private LoggerInterface $logger;
-
-
-
-
-
 }//end class

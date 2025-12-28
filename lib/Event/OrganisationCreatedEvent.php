@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Organisation Created Event
  *
@@ -35,7 +36,6 @@ use OCA\OpenRegister\Db\Organisation;
  */
 class OrganisationCreatedEvent extends Event
 {
-
     /**
      * The organisation that was created
      *
@@ -52,7 +52,6 @@ class OrganisationCreatedEvent extends Event
     {
         parent::__construct();
         $this->organisation = $organisation;
-
     }//end __construct()
 
     /**
@@ -63,6 +62,5 @@ class OrganisationCreatedEvent extends Event
     public function getOrganisation(): Organisation
     {
         return $this->organisation;
-
     }//end getOrganisation()
 }//end class

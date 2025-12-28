@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectEntity Locking Handler
  *
@@ -43,7 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class LockingHandler
 {
-
     /**
      * Default lock duration in seconds
      *
@@ -99,7 +99,6 @@ class LockingHandler
         $this->userSession     = $userSession;
         $this->eventDispatcher = $eventDispatcher;
         $this->logger          = $logger;
-
     }//end __construct()
 
     /**
@@ -117,7 +116,7 @@ class LockingHandler
      *
      * @return ObjectEntity The locked object
      */
-    public function lockObject($identifier, ?string $process=null, ?int $duration=null): ObjectEntity
+    public function lockObject($identifier, ?string $process = null, ?int $duration = null): ObjectEntity
     {
         // Find the object.
         $object = $this->mapper->find($identifier);
@@ -158,7 +157,6 @@ class LockingHandler
         );
 
         return $object;
-
     }//end lockObject()
 
     /**
@@ -208,6 +206,5 @@ class LockingHandler
         );
 
         return $object;
-
     }//end unlockObject()
 }//end class

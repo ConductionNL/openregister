@@ -41,7 +41,6 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251114130000 extends SimpleMigrationStep
 {
-
     /**
      * Database connection
      *
@@ -57,7 +56,6 @@ class Version1Date20251114130000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-
     }//end __construct()
 
     /**
@@ -115,7 +113,6 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         } else {
             $output->info(message: '   ℹ️  No schemas with extend field found');
         }
-
     }//end preSchemaChange()
 
     /**
@@ -159,6 +156,5 @@ class Version1Date20251114130000 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

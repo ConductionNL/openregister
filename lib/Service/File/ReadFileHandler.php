@@ -46,7 +46,6 @@ use OCA\OpenRegister\Service\File\FileValidationHandler;
  */
 class ReadFileHandler
 {
-
     /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
@@ -72,7 +71,6 @@ class ReadFileHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -85,7 +83,6 @@ class ReadFileHandler
     public function setFileService(FileService $fileService): void
     {
         $this->fileService = $fileService;
-
     }//end setFileService()
 
     /**
@@ -113,7 +110,7 @@ class ReadFileHandler
      * @throws NotFoundException If the folder is not found.
      * @throws DoesNotExistException If the object ID is not found.
      */
-    public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
+    public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File
     {
 
         // If string ID provided for object, try to find the object entity.
@@ -136,7 +133,7 @@ class ReadFileHandler
                     return $fileNode;
                 }
             } catch (Exception $e) {
-                $this->logger->error(message: 'getFile: Error finding file by ID '.$file.': '.$e->getMessage());
+                $this->logger->error(message: 'getFile: Error finding file by ID ' . $file . ': ' . $e->getMessage());
                 return null;
             }
 
@@ -176,7 +173,6 @@ class ReadFileHandler
         }//end if
 
         return null;
-
     }//end getFile()
 
     /**
@@ -217,10 +213,9 @@ class ReadFileHandler
 
             return $node;
         } catch (Exception $e) {
-            $this->logger->error(message: 'getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage());
+            $this->logger->error(message: 'getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage());
             return null;
         }//end try
-
     }//end getFileById()
 
     /**
@@ -236,7 +231,7 @@ class ReadFileHandler
      * @psalm-return   list<\OCP\Files\Node>
      * @phpstan-return array<int, \OCP\Files\Node>
      */
-    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
+    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly = false): array
     {
         // If string ID provided, try to find the object entity.
         if (is_string($object) === true) {
@@ -245,6 +240,5 @@ class ReadFileHandler
 
         // Use the new ID-based folder approach.
         return $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
-
     }//end getFiles()
 }//end class

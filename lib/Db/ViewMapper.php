@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister View Mapper
  *
@@ -144,7 +145,6 @@ class ViewMapper extends QBMapper
         $this->groupManager = $groupManager;
         // $this->configurationCacheService = $configurationCacheService; // REMOVED
         $this->eventDispatcher = $eventDispatcher;
-
     }//end __construct()
 
     /**
@@ -190,7 +190,6 @@ class ViewMapper extends QBMapper
         $this->enrichWithConfigurationInfo($entity);
 
         return $entity;
-
     }//end find()
 
     /**
@@ -204,7 +203,7 @@ class ViewMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\View>
      */
-    public function findAll(?string $owner=null): array
+    public function findAll(?string $owner = null): array
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'view');
@@ -236,7 +235,6 @@ class ViewMapper extends QBMapper
         }
 
         return $entities;
-
     }//end findAll()
 
     /**
@@ -270,7 +268,6 @@ class ViewMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ViewCreatedEvent($entity));
 
         return $entity;
-
     }//end insert()
 
     /**
@@ -301,7 +298,6 @@ class ViewMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ViewUpdatedEvent($entity, $oldEntity));
 
         return $entity;
-
     }//end update()
 
     /**
@@ -328,7 +324,6 @@ class ViewMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ViewDeletedEvent($entity));
 
         return $entity;
-
     }//end delete()
 
     /**
@@ -352,6 +347,5 @@ class ViewMapper extends QBMapper
         if ($managedBy !== null) {
             $view->setManagedByConfigurationEntity($managedBy);
         }
-
     }//end enrichWithConfigurationInfo()
 }//end class

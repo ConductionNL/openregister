@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class SetupHandler
 {
-
     /**
      * PSR-3 compliant logger for operation tracking
      *
@@ -138,7 +137,7 @@ class SetupHandler
      *
      * @return void
      */
-    private function trackStep(int $stepNumber, string $stepName, string $status, string $description, array $details=[]): void
+    private function trackStep(int $stepNumber, string $stepName, string $status, string $description, array $details = []): void
     {
         $stepData = [
             'step_number' => $stepNumber,
@@ -178,7 +177,7 @@ class SetupHandler
         // Use IndexService's buildSolrBaseUrl method for consistency.
         // This ensures URL building logic is centralized and consistent.
         $baseUrl = $this->solrService->buildSolrBaseUrl();
-        return $baseUrl.$path;
+        return $baseUrl . $path;
     }//end buildSolrUrl()
 
     /**
@@ -239,7 +238,7 @@ class SetupHandler
         $collectionName = $this->solrService->getTenantSpecificCollectionName('openregister');
         // Extract tenant ID from collection name pattern (e.g., "openregister_nc_xxx" -> "nc_xxx").
         if (preg_match('/_nc_([a-f0-9]+)$/', $collectionName, $matches) === 1) {
-            return 'nc_'.$matches[1];
+            return 'nc_' . $matches[1];
         }
 
         // Fallback: use a default tenant ID.
@@ -274,7 +273,7 @@ class SetupHandler
         }
 
         // For custom configSets, append tenant ID to make it tenant-specific.
-        $tenantSpecificName = $configSetName.'_'.$this->getTenantId();
+        $tenantSpecificName = $configSetName . '_' . $this->getTenantId();
         $this->logger->info(
             'Using custom tenant-specific ConfigSet',
             [
@@ -392,7 +391,7 @@ class SetupHandler
                 stepNumber: 2,
                 stepName: 'EnsureTenantConfigSet',
                 status: 'started',
-                description: 'Checking and creating tenant configSet "'.$tenantConfigSetName.'"'
+                description: 'Checking and creating tenant configSet "' . $tenantConfigSetName . '"'
             );
 
             try {
@@ -404,13 +403,13 @@ class SetupHandler
                         stepNumber: 2,
                         stepName: 'EnsureTenantConfigSet',
                         status: 'failed',
-                        description: 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                        description: 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
                         details: [
                             'configSet'              => $tenantConfigSetName,
                             'template'               => '_default',
                             'error_type'             => $errorDetails['error_type'] ?? 'configset_creation_failure',
                             'url_attempted'          => $errorDetails['url_attempted'] ?? 'unknown',
-                            'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                            'actual_error'           => $errorDetails['error_message'] ?? 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
                             'guzzle_response_status' => $errorDetails['guzzle_response_status'] ?? null,
                             'guzzle_response_body'   => $errorDetails['guzzle_response_body'] ?? null,
                             'solr_error_code'        => $errorDetails['solr_error_code'] ?? null,
@@ -425,7 +424,7 @@ class SetupHandler
                             'step'            => 2,
                             'step_name'       => 'ConfigSet Creation',
                             'error_type'      => 'configset_creation_failure',
-                            'error_message'   => 'Failed to create tenant configSet "'.$tenantConfigSetName.'"',
+                            'error_message'   => 'Failed to create tenant configSet "' . $tenantConfigSetName . '"',
                             'configSet'       => $tenantConfigSetName,
                             'template'        => '_default',
                             'troubleshooting' => [
@@ -445,7 +444,7 @@ class SetupHandler
                     stepNumber: 2,
                     stepName: 'EnsureTenantConfigSet',
                     status: 'completed',
-                    description: 'Tenant configSet "'.$tenantConfigSetName.'" is available'
+                    description: 'Tenant configSet "' . $tenantConfigSetName . '" is available'
                 );
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
@@ -545,7 +544,7 @@ class SetupHandler
                     stepNumber: 3,
                     stepName: 'ConfigSet Propagation',
                     status: 'failed',
-                    description: 'Exception during configSet propagation: '.$e->getMessage(),
+                    description: 'Exception during configSet propagation: ' . $e->getMessage(),
                     details: [
                         'exception_type' => get_class($e),
                         'configSet'      => $tenantConfigSetName,
@@ -569,7 +568,7 @@ class SetupHandler
                 stepNumber: 4,
                 stepName: 'Collection Creation',
                 status: 'started',
-                description: 'Checking and creating tenant collection "'.$tenantCollectionName.'"'
+                description: 'Checking and creating tenant collection "' . $tenantCollectionName . '"'
             );
 
             try {
@@ -591,7 +590,7 @@ class SetupHandler
                     // Enhanced error details for collection failure.
                     if ($this->lastErrorDetails === null) {
                         $this->lastErrorDetails = [
-                            'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
+                            'primary_error'      => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
                             'error_type'         => 'collection_creation_failure',
                             'operation'          => 'ensureTenantCollectionExists',
                             'step'               => 4,
@@ -617,7 +616,7 @@ class SetupHandler
                     stepNumber: 4,
                     stepName: 'Collection Creation',
                     status: 'completed',
-                    description: 'Tenant collection "'.$tenantCollectionName.'" is available'
+                    description: 'Tenant collection "' . $tenantCollectionName . '" is available'
                 );
                 $this->setupProgress['completed_steps']++;
             } catch (\Exception $e) {
@@ -773,7 +772,7 @@ class SetupHandler
                     'total_steps'               => $this->setupProgress['total_steps'],
                     'solr_host'                 => $this->solrConfig['host'] ?? 'localhost',
                     'solr_port'                 => $this->solrConfig['port'] ?? '8983',
-                    'admin_ui_url'              => 'http://'.($this->solrConfig['host'] ?? 'localhost').':'.($this->solrConfig['port'] ?? '8983').'/solr/',
+                    'admin_ui_url'              => 'http://' . ($this->solrConfig['host'] ?? 'localhost') . ':' . ($this->solrConfig['port'] ?? '8983') . '/solr/',
                 ]
             );
 
@@ -845,7 +844,7 @@ class SetupHandler
                         'Verify host/port configuration in settings',
                         'Check network connectivity between containers',
                         'Verify authentication credentials if required',
-                        'Check SOLR admin UI manually: '.$this->buildSolrUrl('/solr/'),
+                        'Check SOLR admin UI manually: ' . $this->buildSolrUrl('/solr/'),
                     ],
                 ];
 
@@ -1161,7 +1160,7 @@ class SetupHandler
                 $this->lastErrorDetails = [
                     'operation'              => 'createConfigSet',
                     'error_type'             => 'http_error',
-                    'error_message'          => 'HTTP error '.$response->getStatusCode(),
+                    'error_message'          => 'HTTP error ' . $response->getStatusCode(),
                     'url_attempted'          => $url,
                     'guzzle_response_status' => $response->getStatusCode(),
                     'guzzle_response_body'   => $responseBody,
@@ -1213,7 +1212,8 @@ class SetupHandler
             }
 
             // Check for network connectivity issues.
-            if (strpos($e->getMessage(), 'Connection refused') !== false
+            if (
+                strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
             ) {
@@ -1279,7 +1279,8 @@ class SetupHandler
                 $this->lastErrorDetails['error_category']  = 'authentication_failure';
                 $this->lastErrorDetails['has_credentials'] = empty($this->solrConfig['username']) === false
                     && empty($this->solrConfig['password']) === false;
-            } else if (strpos($e->getMessage(), 'Connection refused') !== false
+            } elseif (
+                strpos($e->getMessage(), 'Connection refused') !== false
                 || strpos($e->getMessage(), 'Could not resolve host') !== false
                 || strpos($e->getMessage(), 'timeout') !== false
             ) {
@@ -1346,7 +1347,7 @@ class SetupHandler
                 'solr_error_details'   => $errorDetails,
                 'full_response'        => $data,
                 'troubleshooting_tips' => [
-                    'Verify template configSet exists: '.$templateConfigSetName,
+                    'Verify template configSet exists: ' . $templateConfigSetName,
                     'Check SOLR admin UI for existing configSets',
                     'Ensure SOLR has write permissions for config directory',
                     'Verify SOLR is running in SolrCloud mode if using collections',
@@ -1368,7 +1369,7 @@ class SetupHandler
             'solr_error_details'   => $errorDetails,
             'full_solr_response'   => $data,
             'troubleshooting_tips' => [
-                'Verify template configSet "'.$templateConfigSetName.'" exists in SOLR',
+                'Verify template configSet "' . $templateConfigSetName . '" exists in SOLR',
                 'Check SOLR admin UI for existing configSets',
                 'Ensure SOLR has write permissions for config directory',
                 'Verify SOLR is running in SolrCloud mode if using collections',
@@ -1515,7 +1516,7 @@ class SetupHandler
             // $solrResponseValue = $retryDetails;
             // }
             $this->lastErrorDetails = [
-                'primary_error'      => 'Failed to create tenant collection "'.$tenantCollectionName.'"',
+                'primary_error'      => 'Failed to create tenant collection "' . $tenantCollectionName . '"',
                 'error_type'         => 'collection_creation_failure',
                 'operation'          => 'ensureTenantCollectionExists',
                 'step'               => 4,
@@ -1553,7 +1554,7 @@ class SetupHandler
      * @return bool True if collection created successfully
      * @throws \Exception If all retry attempts fail
      */
-    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts=6): bool
+    private function createCollectionWithRetry(string $collectionName, string $configSetName, int $maxAttempts = 6): bool
     {
         $attempt          = 0;
         $baseDelaySeconds = 2;
@@ -1658,7 +1659,7 @@ class SetupHandler
                     $retryDetails['total_elapsed_seconds'] = $totalElapsed;
 
                     throw new Exception(
-                        "SOLR ConfigSet propagation timeout: The configSet was created successfully "."but is still propagating across the SOLR cluster. "."This is normal in distributed SOLR environments. "."Attempted {$attempt} times over {$totalElapsed} seconds. "."Please wait 2-5 minutes and try the setup again.",
+                        "SOLR ConfigSet propagation timeout: The configSet was created successfully " . "but is still propagating across the SOLR cluster. " . "This is normal in distributed SOLR environments. " . "Attempted {$attempt} times over {$totalElapsed} seconds. " . "Please wait 2-5 minutes and try the setup again.",
                         500,
                         new Exception(json_encode($retryDetails))
                     );
@@ -1962,7 +1963,7 @@ class SetupHandler
                     'configSet'       => $configSetName,
                     'url_attempted'   => $url,
                     'error_type'      => 'http_error',
-                    'error_message'   => 'HTTP request failed with status '.$response->getStatusCode(),
+                    'error_message'   => 'HTTP request failed with status ' . $response->getStatusCode(),
                     'response_status' => $response->getStatusCode(),
                     'response_body'   => (string) $response->getBody(),
                 ];
@@ -2048,7 +2049,7 @@ class SetupHandler
                 'solr_error_details'   => $errorDetails,
                 'full_solr_response'   => $data,
                 'troubleshooting_tips' => [
-                    'Verify configSet "'.$configSetName.'" exists and is accessible',
+                    'Verify configSet "' . $configSetName . '" exists and is accessible',
                     'Check SOLR has permissions to create collections',
                     'Verify ZooKeeper coordination in SolrCloud',
                     'Check available disk space and memory on SOLR server',
@@ -2096,7 +2097,7 @@ class SetupHandler
     private function uploadConfigSet(string $configSetName): bool
     {
         // Path to our packaged configSet ZIP file (fixed version with proper XML structure).
-        $zipPath = __DIR__.'/../../resources/solr/openregister-configset-fixed.zip';
+        $zipPath = __DIR__ . '/../../resources/solr/openregister-configset-fixed.zip';
 
         if (file_exists($zipPath) === false) {
             $this->logger->error(
@@ -2111,7 +2112,7 @@ class SetupHandler
                 'operation'            => 'uploadConfigSet',
                 'configSet'            => $configSetName,
                 'error_type'           => 'zip_file_not_found',
-                'error_message'        => 'ConfigSet ZIP file not found at: '.$zipPath,
+                'error_message'        => 'ConfigSet ZIP file not found at: ' . $zipPath,
                 'zip_path'             => $zipPath,
                 'troubleshooting_tips' => [
                     'Ensure the configSet ZIP file exists in resources/solr/',
@@ -2135,7 +2136,7 @@ class SetupHandler
                 'configSet' => $configSetName,
                 'url'       => $url,
                 'zipPath'   => $zipPath,
-                'zipSize'   => filesize($zipPath).' bytes',
+                'zipSize'   => filesize($zipPath) . ' bytes',
             ]
         );
 
@@ -2189,7 +2190,7 @@ class SetupHandler
                     'configSet'       => $configSetName,
                     'url_attempted'   => $url,
                     'error_type'      => 'http_error',
-                    'error_message'   => 'HTTP error '.$response->getStatusCode(),
+                    'error_message'   => 'HTTP error ' . $response->getStatusCode(),
                     'response_status' => $response->getStatusCode(),
                     'response_body'   => $responseBody,
                 ];
@@ -2358,10 +2359,10 @@ class SetupHandler
             if ($result['action'] === 'added') {
                 $fieldResults['fields_added']++;
                 $fieldResults['added_fields'][] = $fieldName;
-            } else if ($result['action'] === 'updated') {
+            } elseif ($result['action'] === 'updated') {
                 $fieldResults['fields_updated']++;
                 $fieldResults['updated_fields'][] = $fieldName;
-            } else if ($result['action'] === 'skipped') {
+            } elseif ($result['action'] === 'skipped') {
                 $fieldResults['fields_skipped']++;
                 $fieldResults['skipped_fields'][] = $fieldName;
             }
@@ -2420,7 +2421,8 @@ class SetupHandler
         }
 
         // If add failed because field exists, try to update/replace.
-        if (strpos($addResult['error'] ?? '', 'already exists') !== false
+        if (
+            strpos($addResult['error'] ?? '', 'already exists') !== false
             || strpos($addResult['error'] ?? '', 'Field') !== false
         ) {
             $updateResult = $this->replaceSchemaFieldWithResult(
@@ -2465,7 +2467,7 @@ class SetupHandler
     private function addSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
         $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
 
         $payload = [
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
@@ -2484,7 +2486,7 @@ class SetupHandler
             if ($response->getStatusCode() !== 200) {
                 return [
                     'success'       => false,
-                    'error'         => 'HTTP error: '.$response->getStatusCode(),
+                    'error'         => 'HTTP error: ' . $response->getStatusCode(),
                     'response_body' => (string) $response->getBody(),
                 ];
             }
@@ -2526,7 +2528,7 @@ class SetupHandler
     private function replaceSchemaFieldWithResult(string $fieldName, array $fieldConfig): array
     {
         $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
 
         $payload = [
             'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),
@@ -2545,7 +2547,7 @@ class SetupHandler
             if ($response->getStatusCode() !== 200) {
                 return [
                     'success'       => false,
-                    'error'         => 'HTTP error: '.$response->getStatusCode(),
+                    'error'         => 'HTTP error: ' . $response->getStatusCode(),
                     'response_body' => (string) $response->getBody(),
                 ];
             }
@@ -2824,7 +2826,7 @@ class SetupHandler
     private function addSchemaField(string $fieldName, array $fieldConfig): bool
     {
         $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
 
         $payload = [
             'add-field' => array_merge(['name' => $fieldName], $fieldConfig),
@@ -2891,7 +2893,7 @@ class SetupHandler
     private function replaceSchemaField(string $fieldName, array $fieldConfig): bool
     {
         $tenantCollectionName = $this->getTenantCollectionName();
-        $url = $this->buildSolrUrl('/'.$tenantCollectionName.'/schema');
+        $url = $this->buildSolrUrl('/' . $tenantCollectionName . '/schema');
 
         $payload = [
             'replace-field' => array_merge(['name' => $fieldName], $fieldConfig),

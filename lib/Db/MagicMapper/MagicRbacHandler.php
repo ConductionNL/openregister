@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MagicMapper RBAC Handler
  *
@@ -83,7 +84,6 @@ class MagicRbacHandler
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
     ) {
-
     }//end __construct()
 
     /**
@@ -116,7 +116,6 @@ class MagicRbacHandler
             return;
             // Full public access - no filtering needed.
         }
-
     }//end applyUnauthenticatedAccess()
 
     /**
@@ -134,7 +133,6 @@ class MagicRbacHandler
         $rbacData = json_decode($rbacConfig, true);
         $enabled  = $rbacData['enabled'] ?? false;
         return $enabled === true;
-
     }//end isRbacEnabled()
 
     /**
@@ -153,6 +151,5 @@ class MagicRbacHandler
         $rbacData      = json_decode($rbacConfig, true);
         $adminOverride = $rbacData['adminOverride'] ?? true;
         return $adminOverride === true;
-
     }//end isAdminOverrideEnabled()
 }//end class

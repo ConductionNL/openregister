@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ApplicationCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ApplicationCreatedEvent extends Event
 {
-
     /**
      * The newly created application.
      *
@@ -46,7 +46,6 @@ class ApplicationCreatedEvent extends Event
     {
         parent::__construct();
         $this->application = $application;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class ApplicationCreatedEvent extends Event
     public function getApplication(): Application
     {
         return $this->application;
-
     }//end getApplication()
 }//end class

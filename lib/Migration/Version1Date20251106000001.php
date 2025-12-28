@@ -64,14 +64,14 @@ class Version1Date20251106000001 extends SimpleMigrationStep
             // Add request_quota column if missing.
             if ($table->hasColumn('request_quota') === false) {
                 $table->addColumn(
-                        'request_quota',
-                        Types::INTEGER,
-                        [
+                    'request_quota',
+                    Types::INTEGER,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'API request quota per day (0 = unlimited)',
                         ]
-                        );
+                );
                 $output->info(message: '   ✓ Added request_quota column');
                 $updated = true;
             }
@@ -79,14 +79,14 @@ class Version1Date20251106000001 extends SimpleMigrationStep
             // Add token_quota column if missing.
             if ($table->hasColumn('token_quota') === false) {
                 $table->addColumn(
-                        'token_quota',
-                        Types::INTEGER,
-                        [
+                    'token_quota',
+                    Types::INTEGER,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Token quota per request (0 = unlimited)',
                         ]
-                        );
+                );
                 $output->info(message: '   ✓ Added token_quota column');
                 $updated = true;
             }
@@ -94,14 +94,14 @@ class Version1Date20251106000001 extends SimpleMigrationStep
             // Add groups column if missing.
             if ($table->hasColumn('groups') === false) {
                 $table->addColumn(
-                        'groups',
-                        Types::JSON,
-                        [
+                    'groups',
+                    Types::JSON,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Nextcloud group IDs with access to this agent',
                         ]
-                        );
+                );
                 $output->info(message: '   ✓ Added groups column');
                 $updated = true;
             }
@@ -115,6 +115,5 @@ class Version1Date20251106000001 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

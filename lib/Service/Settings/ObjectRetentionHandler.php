@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Object and Retention Settings Handler
  *
@@ -36,7 +37,6 @@ use OCP\IConfig;
  */
 class ObjectRetentionHandler
 {
-
     /**
      * Nextcloud configuration instance
      *
@@ -57,11 +57,10 @@ class ObjectRetentionHandler
      * @param IConfig $config  Configuration service.
      * @param string  $appName Application name (default: 'openregister').
      */
-    public function __construct(IConfig $config, string $appName="openregister")
+    public function __construct(IConfig $config, string $appName = "openregister")
     {
         $this->config  = $config;
         $this->appName = $appName;
-
     }//end __construct()
 
     /**
@@ -107,9 +106,8 @@ class ObjectRetentionHandler
                 'autoRetry'            => $objectData['autoRetry'] ?? true,
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to get Object Management settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to get Object Management settings: ' . $e->getMessage());
         }//end try
-
     }//end getObjectSettingsOnly()
 
     /**
@@ -142,9 +140,8 @@ class ObjectRetentionHandler
             $this->config->setAppValue($this->appName, 'objectManagement', json_encode($objectConfig));
             return $objectConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update Object Management settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update Object Management settings: ' . $e->getMessage());
         }
-
     }//end updateObjectSettingsOnly()
 
     /**
@@ -197,9 +194,8 @@ class ObjectRetentionHandler
                 'searchTrailsEnabled'    => $this->convertToBoolean($retentionData['searchTrailsEnabled'] ?? true),
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve Retention settings: ' . $e->getMessage());
         }//end try
-
     }//end getRetentionSettingsOnly()
 
     /**
@@ -231,9 +227,8 @@ class ObjectRetentionHandler
             $this->config->setAppValue($this->appName, 'retention', json_encode($retentionConfig));
             return $retentionConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update Retention settings: '.$e->getMessage());
+            throw new RuntimeException('Failed to update Retention settings: ' . $e->getMessage());
         }
-
     }//end updateRetentionSettingsOnly()
 
     /**
@@ -253,9 +248,8 @@ class ObjectRetentionHandler
                 'appVersion' => '0.2.3',
             ];
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve version information: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve version information: ' . $e->getMessage());
         }
-
     }//end getVersionInfoOnly()
 
     /**
@@ -280,6 +274,5 @@ class ObjectRetentionHandler
         }
 
         return (bool) $value;
-
     }//end convertToBoolean()
 }//end class
