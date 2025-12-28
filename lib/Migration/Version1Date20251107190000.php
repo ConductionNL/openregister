@@ -76,7 +76,6 @@ class Version1Date20251107190000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -94,6 +93,5 @@ class Version1Date20251107190000 extends SimpleMigrationStep
     {
         $output->info(message: '✅ Migration complete - is_default column removed from organisations table');
         $output->info(message: '   Default organisation is now managed via configuration');
-
     }//end postSchemaChange()
 }//end class

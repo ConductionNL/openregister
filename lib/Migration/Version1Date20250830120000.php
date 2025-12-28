@@ -97,7 +97,6 @@ class Version1Date20250830120000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -137,6 +136,5 @@ class Version1Date20250830120000 extends SimpleMigrationStep
                 }
             }
         }//end if
-
     }//end postSchemaChange()
 }//end class

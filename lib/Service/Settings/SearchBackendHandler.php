@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Search Backend Settings Handler
  *
@@ -43,7 +44,6 @@ use Psr\Log\LoggerInterface;
  */
 class SearchBackendHandler
 {
-
     /**
      * Configuration service
      *
@@ -77,12 +77,11 @@ class SearchBackendHandler
     public function __construct(
         IConfig $config,
         LoggerInterface $logger,
-        string $appName='openregister'
+        string $appName = 'openregister'
     ) {
         $this->config  = $config;
         $this->logger  = $logger;
         $this->appName = $appName;
-
     }//end __construct()
 
     /**
@@ -109,9 +108,8 @@ class SearchBackendHandler
 
             return json_decode($backendConfig, true);
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve search backend configuration: '.$e->getMessage());
+            throw new RuntimeException('Failed to retrieve search backend configuration: ' . $e->getMessage());
         }
-
     }//end getSearchBackendConfig()
 
     /**
@@ -134,7 +132,7 @@ class SearchBackendHandler
 
             if (in_array($backend, $availableBackends, true) === false) {
                 throw new InvalidArgumentException(
-                    "Invalid backend '$backend'. Must be one of: ".implode(', ', $availableBackends)
+                    "Invalid backend '$backend'. Must be one of: " . implode(', ', $availableBackends)
                 );
             }
 
@@ -147,7 +145,7 @@ class SearchBackendHandler
             $this->config->setAppValue($this->appName, 'search_backend', json_encode($backendConfig));
 
             $this->logger->info(
-                'Search backend changed to: '.$backend,
+                'Search backend changed to: ' . $backend,
                 [
                     'app'     => 'openregister',
                     'backend' => $backend,
@@ -156,8 +154,7 @@ class SearchBackendHandler
 
             return $backendConfig;
         } catch (Exception $e) {
-            throw new RuntimeException('Failed to update search backend configuration: '.$e->getMessage());
+            throw new RuntimeException('Failed to update search backend configuration: ' . $e->getMessage());
         }//end try
-
     }//end updateSearchBackendConfig()
 }//end class

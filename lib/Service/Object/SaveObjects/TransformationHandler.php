@@ -15,7 +15,6 @@
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\Schema;
-
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -54,7 +53,6 @@ class TransformationHandler
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -186,12 +184,12 @@ class TransformationHandler
             // Properly extracted metadata with simpler getValueFromPath results.
             // DEBUG: Log mixed schema object structure.
             $this->logger->info(
-             "[SaveObjects] DEBUG - Mixed schema object structure",
-             [
+                "[SaveObjects] DEBUG - Mixed schema object structure",
+                [
                  'available_keys'      => array_keys($object),
                  'has_object_property' => isset($object['object']) === true,
                  'sample_data'         => array_slice($object, 0, 3, true),
-             ]
+                ]
             );
 
             // TEMPORARY FIX: Extract business data properly based on actual structure.
@@ -227,12 +225,12 @@ class TransformationHandler
 
                 // CRITICAL DEBUG: Log what we're removing and what remains.
                 $this->logger->info(
-                 "[SaveObjects] Metadata removal applied (mixed)",
-                 [
+                    "[SaveObjects] Metadata removal applied (mixed)",
+                    [
                      'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
                      'remaining_keys'       => array_keys($businessData),
                      'business_data_sample' => array_slice($businessData, 0, 3, true),
-                 ]
+                    ]
                 );
             }//end if
 
@@ -245,21 +243,21 @@ class TransformationHandler
                     $selfData['relations'] = $relations;
 
                     $this->logger->info(
-                     "[SaveObjects] Relations scanned in transformation",
-                     [
+                        "[SaveObjects] Relations scanned in transformation",
+                        [
                          'uuid'          => $selfData['uuid'] ?? 'unknown',
                          'relationCount' => count($relations),
                          'relations'     => array_slice($relations, 0, 3, true),
-                     ]
+                        ]
                     );
                 }
             } else {
                 $this->logger->info(
-                 "[SaveObjects] Relations already set from preparation",
-                 [
+                    "[SaveObjects] Relations already set from preparation",
+                    [
                      'uuid'          => $selfData['uuid'] ?? 'unknown',
                      'relationCount' => count($selfData['relations']),
-                 ]
+                    ]
                 );
             }//end if
 
@@ -274,6 +272,5 @@ class TransformationHandler
             'valid'   => $transformedObjects,
             'invalid' => $invalidObjects,
         ];
-
     }//end transformObjectsToDatabaseFormatInPlace()
 }//end class

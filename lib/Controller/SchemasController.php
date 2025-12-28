@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SchemasController handles REST API endpoints for schema management
  *
@@ -105,7 +106,6 @@ class SchemasController extends Controller
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -205,7 +205,6 @@ class SchemasController extends Controller
         }
 
         return new JSONResponse(data: ['results' => $schemasArr]);
-
     }//end index()
 
     /**
@@ -255,7 +254,6 @@ class SchemasController extends Controller
         }
 
             return new JSONResponse(data: $schemaArr);
-
     }//end show()
 
     /**
@@ -278,13 +276,13 @@ class SchemasController extends Controller
 
         // DEBUG: Log incoming request to track duplicate creation.
         $this->logger->info(
-                '[SchemasController::create] Starting schema creation',
-                [
+            '[SchemasController::create] Starting schema creation',
+            [
                     'title'            => $data['title'] ?? 'no title',
                     'has_organisation' => isset($data['organisation']),
                     'organisation'     => $data['organisation'] ?? 'not set',
                 ]
-                );
+        );
 
         // Remove internal parameters (starting with '_').
         foreach (array_keys($data) as $key) {
@@ -325,16 +323,17 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                    message: 'Schema creation failed',
-                    context: [
+                message: 'Schema creation failed',
+                context: [
                         'error_message' => $e->getMessage(),
                         'error_code'    => $e->getCode(),
                         'trace'         => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             // Check if this is a validation error by examining the message.
-            if (str_contains($e->getMessage(), 'Invalid') === true
+            if (
+                str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
                 || str_contains($e->getMessage(), 'format') === true
@@ -346,7 +345,8 @@ class SchemasController extends Controller
             }
 
             // For database constraint violations, return 409 Conflict.
-            if (str_contains($e->getMessage(), 'constraint') === true
+            if (
+                str_contains($e->getMessage(), 'constraint') === true
                 || str_contains($e->getMessage(), 'duplicate') === true
                 || str_contains($e->getMessage(), 'unique') === true
             ) {
@@ -356,7 +356,6 @@ class SchemasController extends Controller
             // Return 500 for other unexpected errors with actual error message.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end create()
 
     /**
@@ -411,17 +410,18 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                    message: 'Schema update failed',
-                    context: [
+                message: 'Schema update failed',
+                context: [
                         'schema_id'     => $id,
                         'error_message' => $e->getMessage(),
                         'error_code'    => $e->getCode(),
                         'trace'         => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             // Check if this is a validation error by examining the message.
-            if (str_contains($e->getMessage(), 'Invalid') === true
+            if (
+                str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
                 || str_contains($e->getMessage(), 'format') === true
@@ -433,7 +433,8 @@ class SchemasController extends Controller
             }
 
             // For database constraint violations, return 409 Conflict.
-            if (str_contains($e->getMessage(), 'constraint') === true
+            if (
+                str_contains($e->getMessage(), 'constraint') === true
                 || str_contains($e->getMessage(), 'duplicate') === true
                 || str_contains($e->getMessage(), 'unique') === true
             ) {
@@ -443,7 +444,6 @@ class SchemasController extends Controller
             // Return 500 for other unexpected errors with actual error message.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end update()
 
     /**
@@ -462,7 +462,6 @@ class SchemasController extends Controller
     public function patch(int $id): JSONResponse
     {
         return $this->update($id);
-
     }//end patch()
 
     /**
@@ -502,7 +501,6 @@ class SchemasController extends Controller
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end destroy()
 
     /**
@@ -522,10 +520,9 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function uploadUpdate(?int $id=null): JSONResponse
+    public function uploadUpdate(?int $id = null): JSONResponse
     {
         return $this->upload($id);
-
     }//end uploadUpdate()
 
     /**
@@ -545,7 +542,7 @@ class SchemasController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function upload(?int $id=null): JSONResponse
+    public function upload(?int $id = null): JSONResponse
     {
         if ($id !== null) {
             // If ID is provided, find the existing schema.
@@ -606,17 +603,18 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             // Log the actual error for debugging.
             $this->logger->error(
-                    'Schema upload failed',
-                    [
+                'Schema upload failed',
+                [
                         'schema_id'     => $id,
                         'error_message' => $e->getMessage(),
                         'error_code'    => $e->getCode(),
                         'trace'         => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             // Check if this is a validation error by examining the message.
-            if (str_contains($e->getMessage(), 'Invalid') === true
+            if (
+                str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
                 || str_contains($e->getMessage(), 'format') === true
@@ -628,7 +626,8 @@ class SchemasController extends Controller
             }
 
             // For database constraint violations, return 409 Conflict.
-            if (str_contains($e->getMessage(), 'constraint') === true
+            if (
+                str_contains($e->getMessage(), 'constraint') === true
                 || str_contains($e->getMessage(), 'duplicate') === true
                 || str_contains($e->getMessage(), 'unique') === true
             ) {
@@ -638,7 +637,6 @@ class SchemasController extends Controller
             // Return 500 for other unexpected errors with actual error message.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end upload()
 
     /**
@@ -669,7 +667,6 @@ class SchemasController extends Controller
 
         // Return the schema as JSON.
         return new JSONResponse(data: $schema);
-
     }//end download()
 
     /**
@@ -715,20 +712,19 @@ class SchemasController extends Controller
             $outgoingSchemasArray = array_map(fn($schema) => $schema->jsonSerialize(), array_values($outgoingSchemas));
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'incoming' => $incomingSchemasArray,
                         'outgoing' => $outgoingSchemasArray,
                         'total'    => count($incomingSchemasArray) + count($outgoingSchemasArray),
                     ]
-                    );
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the target schema doesn't exist.
             return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions.
-            return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end related()
 
     /**
@@ -785,7 +781,6 @@ class SchemasController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end stats()
 
     /**
@@ -809,7 +804,7 @@ class SchemasController extends Controller
     public function explore(int $id): JSONResponse
     {
         try {
-            $this->logger->info('Starting schema exploration for schema ID: '.$id);
+            $this->logger->info('Starting schema exploration for schema ID: ' . $id);
 
             $explorationResults = $this->schemaService->exploreSchemaProperties($id);
 
@@ -817,10 +812,9 @@ class SchemasController extends Controller
 
             return new JSONResponse(data: $explorationResults);
         } catch (\Exception $e) {
-            $this->logger->error('Schema exploration failed: '.$e->getMessage());
+            $this->logger->error('Schema exploration failed: ' . $e->getMessage());
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end explore()
 
     /**
@@ -849,27 +843,26 @@ class SchemasController extends Controller
                 return new JSONResponse(data: ['error' => 'No property updates provided'], statusCode: 400);
             }
 
-            $this->logger->info('Updating schema '.$id.' with '.count($propertyUpdates).' property updates');
+            $this->logger->info('Updating schema ' . $id . ' with ' . count($propertyUpdates) . ' property updates');
 
             $updatedSchema = $this->schemaService->updateSchemaFromExploration(schemaId: $id, propertyUpdates: $propertyUpdates);
 
             // Clear schema cache to ensure fresh data.
             $this->schemaCacheService->clearSchemaCache($id);
 
-            $this->logger->info('Schema '.$id.' successfully updated with exploration results');
+            $this->logger->info('Schema ' . $id . ' successfully updated with exploration results');
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => true,
                         'schema'  => $updatedSchema->jsonSerialize(),
-                        'message' => 'Schema updated successfully with '.count($propertyUpdates).' properties',
+                        'message' => 'Schema updated successfully with ' . count($propertyUpdates) . ' properties',
                     ]
-                    );
+            );
         } catch (\Exception $e) {
-            $this->logger->error('Failed to update schema from exploration: '.$e->getMessage());
+            $this->logger->error('Failed to update schema from exploration: ' . $e->getMessage());
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end updateFromExploration()
 
     /**
@@ -913,27 +906,26 @@ class SchemasController extends Controller
             $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'publish');
 
             $this->logger->info(
-                    'Schema published',
-                    [
+                'Schema published',
+                [
                         'schema_id'      => $id,
                         'published_date' => $date->format('Y-m-d H:i:s'),
                     ]
-                    );
+            );
 
             return new JSONResponse($updatedSchema->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to publish schema',
-                    [
+                'Failed to publish schema',
+                [
                         'schema_id' => $id,
                         'error'     => $e->getMessage(),
                     ]
-                    );
+            );
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
-
     }//end publish()
 
     /**
@@ -976,26 +968,25 @@ class SchemasController extends Controller
             $this->schemaFacetCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'depublish');
 
             $this->logger->info(
-                    'Schema depublished',
-                    [
+                'Schema depublished',
+                [
                         'schema_id'        => $id,
                         'depublished_date' => $date->format('Y-m-d H:i:s'),
                     ]
-                    );
+            );
 
             return new JSONResponse($updatedSchema->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Schema not found'], 404);
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to depublish schema',
-                    [
+                'Failed to depublish schema',
+                [
                         'schema_id' => $id,
                         'error'     => $e->getMessage(),
                     ]
-                    );
+            );
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
-
     }//end depublish()
 }//end class

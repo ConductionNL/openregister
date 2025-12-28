@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SearchBackendInterface
  *
@@ -55,7 +56,7 @@ interface SearchBackendInterface
      *
      * @return bool True if backend is available, false otherwise.
      */
-    public function isAvailable(bool $forceRefresh=false): bool;
+    public function isAvailable(bool $forceRefresh = false): bool;
 
     /**
      * Test the connection to the backend with detailed diagnostics.
@@ -64,7 +65,7 @@ interface SearchBackendInterface
      *
      * @return array Test results with status, timing, and error information.
      */
-    public function testConnection(bool $includeCollectionTests=true): array;
+    public function testConnection(bool $includeCollectionTests = true): array;
 
     /**
      * Index a single object in the search backend.
@@ -74,7 +75,7 @@ interface SearchBackendInterface
      *
      * @return bool True if indexing succeeded, false otherwise.
      */
-    public function indexObject(ObjectEntity $object, bool $commit=false): bool;
+    public function indexObject(ObjectEntity $object, bool $commit = false): bool;
 
     /**
      * Index multiple objects in bulk.
@@ -84,7 +85,7 @@ interface SearchBackendInterface
      *
      * @return array Result with success count, failure count, and errors.
      */
-    public function bulkIndexObjects(array $objects, bool $commit=true): array;
+    public function bulkIndexObjects(array $objects, bool $commit = true): array;
 
     /**
      * Delete an object from the search index.
@@ -94,7 +95,7 @@ interface SearchBackendInterface
      *
      * @return bool True if deletion succeeded, false otherwise.
      */
-    public function deleteObject(string|int $objectId, bool $commit=false): bool;
+    public function deleteObject(string|int $objectId, bool $commit = false): bool;
 
     /**
      * Delete multiple objects by query.
@@ -105,7 +106,7 @@ interface SearchBackendInterface
      *
      * @return array|bool Results array if returnDetails=true, bool otherwise.
      */
-    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool;
+    public function deleteByQuery(string $query, bool $commit = false, bool $returnDetails = false): array|bool;
 
     /**
      * Search objects with pagination support.
@@ -119,11 +120,11 @@ interface SearchBackendInterface
      * @return array Search results with objects, pagination, and facets.
      */
     public function searchObjectsPaginated(
-        array $query=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $published=false,
-        bool $deleted=false
+        array $query = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true,
+        bool $published = false,
+        bool $deleted = false
     ): array;
 
     /**
@@ -154,7 +155,7 @@ interface SearchBackendInterface
      *
      * @return array Results with count of deleted documents.
      */
-    public function clearIndex(?string $collectionName=null): array;
+    public function clearIndex(?string $collectionName = null): array;
 
     /**
      * Warm up the index by pre-loading data into cache.
@@ -169,12 +170,12 @@ interface SearchBackendInterface
      * @return array Warmup results with statistics and errors.
      */
     public function warmupIndex(
-        array $schemas=[],
-        int $maxObjects=0,
-        string $mode='serial',
-        bool $collectErrors=false,
-        int $batchSize=1000,
-        array $schemaIds=[]
+        array $schemas = [],
+        int $maxObjects = 0,
+        string $mode = 'serial',
+        bool $collectErrors = false,
+        int $batchSize = 1000,
+        array $schemaIds = []
     ): array;
 
     /**
@@ -199,7 +200,7 @@ interface SearchBackendInterface
      *
      * @return array Creation results.
      */
-    public function createCollection(string $name, array $config=[]): array;
+    public function createCollection(string $name, array $config = []): array;
 
     /**
      * Delete a collection/index from the backend.
@@ -208,7 +209,7 @@ interface SearchBackendInterface
      *
      * @return array Deletion results.
      */
-    public function deleteCollection(?string $collectionName=null): array;
+    public function deleteCollection(?string $collectionName = null): array;
 
     /**
      * Check if a collection/index exists.
@@ -305,5 +306,5 @@ interface SearchBackendInterface
      *
      * @return array Reindexing results with statistics.
      */
-    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array;
+    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array;
 }//end interface

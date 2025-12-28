@@ -50,7 +50,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
  */
 class LogService
 {
-
     /**
      * Audit trail mapper
      *
@@ -114,7 +113,6 @@ class LogService
         $this->objectEntityMapper = $objectEntityMapper;
         $this->registerMapper     = $registerMapper;
         $this->schemaMapper       = $schemaMapper;
-
     }//end __construct()
 
     /**
@@ -142,7 +140,7 @@ class LogService
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function getLogs(string $register, string $schema, string $id, array $config=[]): array
+    public function getLogs(string $register, string $schema, string $id, array $config = []): array
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail is accessible even after soft-delete
@@ -181,7 +179,6 @@ class LogService
             sort: $config['sort'] ?? ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
-
     }//end getLogs()
 
     /**
@@ -230,7 +227,6 @@ class LogService
 
         // Step 4: Return count of log entries.
         return count($logs);
-
     }//end count()
 
     /**
@@ -248,7 +244,7 @@ class LogService
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      */
-    public function getAllLogs(array $config=[]): array
+    public function getAllLogs(array $config = []): array
     {
         return $this->auditTrailMapper->findAll(
             limit: $config['limit'] ?? 20,
@@ -257,7 +253,6 @@ class LogService
             sort: $config['sort'] ?? ['created' => 'DESC'],
             search: $config['search'] ?? null
         );
-
     }//end getAllLogs()
 
     /**
@@ -269,11 +264,10 @@ class LogService
      *
      * @psalm-return int<0, max>
      */
-    public function countAllLogs(array $filters=[]): int
+    public function countAllLogs(array $filters = []): int
     {
         $logs = $this->auditTrailMapper->findAll(filters: $filters);
         return count($logs);
-
     }//end countAllLogs()
 
     /**
@@ -287,7 +281,6 @@ class LogService
     public function getLog(int $id)
     {
         return $this->auditTrailMapper->find($id);
-
     }//end getLog()
 
     /**
@@ -309,7 +302,7 @@ class LogService
      *
      * @psalm-return array{content: bool|string, filename: string, contentType: string}
      */
-    public function exportLogs(string $format, array $config=[]): array
+    public function exportLogs(string $format, array $config = []): array
     {
         // Get all logs with current filters.
         $logs = $this->auditTrailMapper->findAll(
@@ -334,7 +327,6 @@ class LogService
             default:
                 throw new InvalidArgumentException("Unsupported export format: {$format}");
         }
-
     }//end exportLogs()
 
     /**
@@ -353,9 +345,8 @@ class LogService
             $this->auditTrailMapper->delete($log);
             return true;
         } catch (Exception $e) {
-            throw new Exception("Failed to delete audit trail: ".$e->getMessage());
+            throw new Exception("Failed to delete audit trail: " . $e->getMessage());
         }
-
     }//end deleteLog()
 
     /**
@@ -372,7 +363,7 @@ class LogService
      *
      * @psalm-return array{deleted: int<0, max>, failed: int<0, max>, total: int<0, max>}
      */
-    public function deleteLogs(array $config=[]): array
+    public function deleteLogs(array $config = []): array
     {
         $deleted = 0;
         $failed  = 0;
@@ -412,9 +403,8 @@ class LogService
                 'total'   => $deleted + $failed,
             ];
         } catch (Exception $e) {
-            throw new Exception("Mass deletion failed: ".$e->getMessage());
+            throw new Exception("Mass deletion failed: " . $e->getMessage());
         }//end try
-
     }//end deleteLogs()
 
     /**
@@ -483,7 +473,6 @@ class LogService
         }//end foreach
 
         return $exportData;
-
     }//end prepareLogsForExport()
 
     /**
@@ -500,7 +489,7 @@ class LogService
         if (empty($data) === true) {
             return [
                 'content'     => '',
-                'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
+                'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.csv',
                 'contentType' => 'text/csv',
             ];
         }
@@ -521,10 +510,9 @@ class LogService
 
         return [
             'content'     => $content,
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.csv',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.csv',
             'contentType' => 'text/csv',
         ];
-
     }//end exportToCsv()
 
     /**
@@ -540,10 +528,9 @@ class LogService
     {
         return [
             'content'     => json_encode($data, JSON_PRETTY_PRINT),
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.json',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.json',
             'contentType' => 'application/json',
         ];
-
     }//end exportToJson()
 
     /**
@@ -570,10 +557,9 @@ class LogService
 
         return [
             'content'     => $xml->asXML(),
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.xml',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.xml',
             'contentType' => 'application/xml',
         ];
-
     }//end exportToXml()
 
     /**
@@ -587,15 +573,15 @@ class LogService
      */
     private function exportToTxt(array $data): array
     {
-        $content  = "Audit Trail Export - Generated on ".date('Y-m-d H:i:s')."\n";
-        $content .= str_repeat('=', 60)."\n\n";
+        $content  = "Audit Trail Export - Generated on " . date('Y-m-d H:i:s') . "\n";
+        $content .= str_repeat('=', 60) . "\n\n";
 
         foreach ($data as $index => $logData) {
-            $content .= "Entry #".((int) $index + 1)."\n";
-            $content .= str_repeat('-', 20)."\n";
+            $content .= "Entry #" . ((int) $index + 1) . "\n";
+            $content .= str_repeat('-', 20) . "\n";
 
             foreach ($logData as $key => $value) {
-                $content .= ucfirst($key).': '.($value ?? 'N/A')."\n";
+                $content .= ucfirst($key) . ': ' . ($value ?? 'N/A') . "\n";
             }
 
             $content .= "\n";
@@ -603,10 +589,9 @@ class LogService
 
         return [
             'content'     => $content,
-            'filename'    => 'audit_trails_'.date('Y-m-d_H-i-s').'.txt',
+            'filename'    => 'audit_trails_' . date('Y-m-d_H-i-s') . '.txt',
             'contentType' => 'text/plain',
         ];
-
     }//end exportToTxt()
 
     /**
@@ -623,6 +608,5 @@ class LogService
         }
 
         return (string) $changed;
-
     }//end getChangesFormatted()
 }//end class

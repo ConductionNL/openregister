@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister OrganisationUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class OrganisationUpdatedEvent extends Event
 {
-
     /**
      * The updated organisation state.
      *
@@ -59,6 +59,5 @@ class OrganisationUpdatedEvent extends Event
         parent::__construct();
         $this->newOrganisation = $newOrganisation;
         $this->oldOrganisation = $oldOrganisation;
-
     }//end __construct()
 }//end class

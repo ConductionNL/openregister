@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SourceUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class SourceUpdatedEvent extends Event
 {
-
     /**
      * The updated source state.
      *
@@ -59,7 +59,6 @@ class SourceUpdatedEvent extends Event
         parent::__construct();
         $this->newSource = $newSource;
         $this->oldSource = $oldSource;
-
     }//end __construct()
 
     /**
@@ -70,7 +69,6 @@ class SourceUpdatedEvent extends Event
     public function getSource(): Source
     {
         return $this->newSource;
-
     }//end getSource()
 
     /**
@@ -81,7 +79,6 @@ class SourceUpdatedEvent extends Event
     public function getNewSource(): Source
     {
         return $this->newSource;
-
     }//end getNewSource()
 
     /**
@@ -92,6 +89,5 @@ class SourceUpdatedEvent extends Event
     public function getOldSource(): Source
     {
         return $this->oldSource;
-
     }//end getOldSource()
 }//end class

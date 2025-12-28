@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20250126000000
  *
@@ -52,138 +53,138 @@ class Version1Date20251216100000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-                    'id',
-                    Types::BIGINT,
-                    [
+                'id',
+                Types::BIGINT,
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                         'unsigned'      => true,
                     ]
-                    );
+            );
 
             // Webhook ID reference.
             $table->addColumn(
-                    'webhook_id',
-                    Types::BIGINT,
-                    [
+                'webhook_id',
+                Types::BIGINT,
+                [
                         'notnull'  => true,
                         'unsigned' => true,
                     ]
-                    );
+            );
 
             // Event class name.
             $table->addColumn(
-                    'event_class',
-                    Types::STRING,
-                    [
+                'event_class',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 255,
                     ]
-                    );
+            );
 
             // Payload data (JSON).
             $table->addColumn(
-                    'payload',
-                    Types::TEXT,
-                    [
+                'payload',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Target URL.
             $table->addColumn(
-                    'url',
-                    Types::STRING,
-                    [
+                'url',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 1024,
                     ]
-                    );
+            );
 
             // HTTP method.
             $table->addColumn(
-                    'method',
-                    Types::STRING,
-                    [
+                'method',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 10,
                         'default' => 'POST',
                     ]
-                    );
+            );
 
             // Success status.
             $table->addColumn(
-                    'success',
-                    Types::BOOLEAN,
-                    [
+                'success',
+                Types::BOOLEAN,
+                [
                         'notnull' => true,
                         'default' => false,
                     ]
-                    );
+            );
 
             // HTTP status code.
             $table->addColumn(
-                    'status_code',
-                    Types::INTEGER,
-                    [
+                'status_code',
+                Types::INTEGER,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Request body (stored for debugging failures).
             $table->addColumn(
-                    'request_body',
-                    Types::TEXT,
-                    [
+                'request_body',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Response body.
             $table->addColumn(
-                    'response_body',
-                    Types::TEXT,
-                    [
+                'response_body',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Error message.
             $table->addColumn(
-                    'error_message',
-                    Types::TEXT,
-                    [
+                'error_message',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Attempt number.
             $table->addColumn(
-                    'attempt',
-                    Types::INTEGER,
-                    [
+                'attempt',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 1,
                     ]
-                    );
+            );
 
             // Next retry timestamp.
             $table->addColumn(
-                    'next_retry_at',
-                    Types::DATETIME,
-                    [
+                'next_retry_at',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Created timestamp.
             $table->addColumn(
-                    'created',
-                    Types::DATETIME,
-                    [
+                'created',
+                Types::DATETIME,
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
 
             // Indexes.
             $table->setPrimaryKey(['id']);
@@ -194,18 +195,17 @@ class Version1Date20251216100000 extends SimpleMigrationStep
 
             // Foreign key constraint.
             $table->addForeignKeyConstraint(
-                    foreignTable: 'openregister_webhooks',
-                    localColumnNames: ['webhook_id'],
-                    foreignColumnNames: ['id'],
-                    options: [
+                foreignTable: 'openregister_webhooks',
+                localColumnNames: ['webhook_id'],
+                foreignColumnNames: ['id'],
+                options: [
                         'onDelete' => 'CASCADE',
                     ]
-                    );
+            );
 
             return $schema;
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

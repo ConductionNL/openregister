@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class RegisterNotFoundException
  *
@@ -55,13 +56,12 @@ class RegisterNotFoundException extends Exception
      * @phpstan-param int $code
      * @phpstan-param Exception|null $previous
      */
-    public function __construct(string $registerSlugOrId, int $code=404, ?Exception $previous=null)
+    public function __construct(string $registerSlugOrId, int $code = 404, ?Exception $previous = null)
     {
         // Build error message with register identifier.
-        $message = "Register not found: '".$registerSlugOrId."'";
+        $message = "Register not found: '" . $registerSlugOrId . "'";
 
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message, $code, $previous);
-
     }//end __construct()
 }//end class

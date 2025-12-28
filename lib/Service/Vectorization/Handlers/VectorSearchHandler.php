@@ -53,7 +53,6 @@ class VectorSearchHandler
         private readonly IndexService $indexService,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -70,9 +69,9 @@ class VectorSearchHandler
      */
     public function semanticSearch(
         array $queryEmbedding,
-        int $limit=10,
-        array $filters=[],
-        string $backend='php'
+        int $limit = 10,
+        array $filters = [],
+        string $backend = 'php'
     ): array {
         $startTime = microtime(true);
 
@@ -179,9 +178,8 @@ class VectorSearchHandler
                     'search_time_ms' => $searchTime,
                 ]
             );
-            throw new Exception('Semantic search failed: '.$e->getMessage());
+            throw new Exception('Semantic search failed: ' . $e->getMessage());
         }//end try
-
     }//end semanticSearch()
 
     /**
@@ -199,8 +197,8 @@ class VectorSearchHandler
      */
     private function searchVectorsInSolr(
         array $queryEmbedding,
-        int $limit=10,
-        array $filters=[]
+        int $limit = 10,
+        array $filters = []
     ): array {
         $this->logger->debug(
             message: '[VectorSearchHandler] Searching vectors in Solr',
@@ -233,7 +231,7 @@ class VectorSearchHandler
             }
 
             // Build Solr KNN query.
-            $vectorString = '['.implode(', ', $queryEmbedding).']';
+            $vectorString = '[' . implode(', ', $queryEmbedding) . ']';
             $knnQuery     = "{!knn f={$vectorField} topK={$limit}}{$vectorString}";
 
             // Search each collection.
@@ -251,7 +249,7 @@ class VectorSearchHandler
                 /*
                  * @psalm-suppress UndefinedInterfaceMethod - buildSolrBaseUrl and getHttpClient exist on Solr backend implementation
                  */
-                $solrUrl = $solrBackend->buildSolrBaseUrl()."/{$collection}/select";
+                $solrUrl = $solrBackend->buildSolrBaseUrl() . "/{$collection}/select";
 
                 try {
                     /*
@@ -307,9 +305,8 @@ class VectorSearchHandler
                 message: '[VectorSearchHandler] Solr vector search failed',
                 context: ['error' => $e->getMessage()]
             );
-            throw new Exception('Solr vector search failed: '.$e->getMessage());
+            throw new Exception('Solr vector search failed: ' . $e->getMessage());
         }//end try
-
     }//end searchVectorsInSolr()
 
     /**
@@ -331,10 +328,10 @@ class VectorSearchHandler
      */
     public function hybridSearch(
         array $queryEmbedding,
-        array $solrResults=[],
-        int $limit=20,
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
-        string $backend='php'
+        array $solrResults = [],
+        int $limit = 20,
+        array $weights = ['solr' => 0.5, 'vector' => 0.5],
+        string $backend = 'php'
     ): array {
         $startTime = microtime(true);
 
@@ -387,9 +384,9 @@ class VectorSearchHandler
             foreach ($finalResults as $result) {
                 if ($result['in_vector'] === true && $result['in_solr'] === true) {
                     $both++;
-                } else if ($result['in_vector'] === true) {
+                } elseif ($result['in_vector'] === true) {
                     $vectorOnly++;
-                } else if ($result['in_solr'] === true) {
+                } elseif ($result['in_solr'] === true) {
                     $solrOnly++;
                 }
             }
@@ -418,9 +415,8 @@ class VectorSearchHandler
                     'search_time_ms' => $searchTime,
                 ]
             );
-            throw new Exception('Hybrid search failed: '.$e->getMessage());
+            throw new Exception('Hybrid search failed: ' . $e->getMessage());
         }//end try
-
     }//end hybridSearch()
 
     /**
@@ -438,15 +434,15 @@ class VectorSearchHandler
     private function reciprocalRankFusion(
         array $vectorResults,
         array $solrResults,
-        float $vectorWeight=0.5,
-        float $solrWeight=0.5
+        float $vectorWeight = 0.5,
+        float $solrWeight = 0.5
     ): array {
         $k = 60;
         $combinedScores = [];
 
         // Process vector results.
         foreach ($vectorResults as $rank => $result) {
-            $key = $result['entity_type'].'_'.$result['entity_id'];
+            $key = $result['entity_type'] . '_' . $result['entity_id'];
 
             if (isset($combinedScores[$key]) === false) {
                 $combinedScores[$key] = [
@@ -473,7 +469,7 @@ class VectorSearchHandler
 
         // Process SOLR results.
         foreach ($solrResults as $rank => $result) {
-            $key = $result['entity_type'].'_'.$result['entity_id'];
+            $key = $result['entity_type'] . '_' . $result['entity_id'];
 
             if (isset($combinedScores[$key]) === false) {
                 $combinedScores[$key] = [
@@ -504,7 +500,6 @@ class VectorSearchHandler
         usort($results, fn($a, $b) => $b['combined_score'] <=> $a['combined_score']);
 
         return $results;
-
     }//end reciprocalRankFusion()
 
     /**
@@ -516,7 +511,7 @@ class VectorSearchHandler
      *
      * @throws \Exception If query fails
      */
-    private function fetchVectors(array $filters=[]): array
+    private function fetchVectors(array $filters = []): array
     {
         try {
             $qb = $this->db->getQueryBuilder();
@@ -570,9 +565,8 @@ class VectorSearchHandler
                 message: 'Failed to fetch vectors',
                 context: ['error' => $e->getMessage()]
             );
-            throw new Exception('Failed to fetch vectors: '.$e->getMessage());
+            throw new Exception('Failed to fetch vectors: ' . $e->getMessage());
         }//end try
-
     }//end fetchVectors()
 
     /**
@@ -608,7 +602,6 @@ class VectorSearchHandler
         }
 
         return $dotProduct / ($magnitude1 * $magnitude2);
-
     }//end cosineSimilarity()
 
     /**
@@ -626,7 +619,6 @@ class VectorSearchHandler
         }
 
         return $doc['self_uuid'] ?? $doc['self_object_id'] ?? $doc['id'] ?? '';
-
     }//end extractEntityId()
 
     /**
@@ -671,7 +663,6 @@ class VectorSearchHandler
         }//end if
 
         return $collectionsToSearch;
-
     }//end getCollectionsToSearch()
 
     /**
@@ -691,6 +682,5 @@ class VectorSearchHandler
         }
 
         return $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
-
     }//end getSolrCollectionForEntityType()
 }//end class

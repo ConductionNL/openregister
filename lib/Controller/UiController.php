@@ -57,7 +57,6 @@ class UiController extends Controller
     {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -78,9 +77,9 @@ class UiController extends Controller
         try {
             // Create template response for SPA index page.
             $response = new TemplateResponse(
-                    appName: $this->appName,
-                    templateName: 'index',
-                    params: []
+                appName: $this->appName,
+                templateName: 'index',
+                params: []
             );
 
             // Configure Content Security Policy to allow API connections.
@@ -94,14 +93,13 @@ class UiController extends Controller
         } catch (\Exception $e) {
             // Return error template if rendering fails.
             $response = new TemplateResponse(
-                    appName: $this->appName,
-                    templateName: 'error',
-                    params: ['error' => $e->getMessage()]
+                appName: $this->appName,
+                templateName: 'error',
+                params: ['error' => $e->getMessage()]
             );
             $response->setStatus(500);
             return $response;
         }//end try
-
     }//end makeSpaResponse()
 
     /**
@@ -126,7 +124,6 @@ class UiController extends Controller
     {
         // Return SPA template response (routing handled client-side).
         return $this->makeSpaResponse();
-
     }//end registers()
 
     /**
@@ -151,7 +148,6 @@ class UiController extends Controller
     {
         // Return SPA template response (routing handled client-side).
         return $this->makeSpaResponse();
-
     }//end registersDetails()
 
     /**
@@ -174,7 +170,6 @@ class UiController extends Controller
     {
         // Return SPA template response (routing handled client-side).
         return $this->makeSpaResponse();
-
     }//end schemas()
 
     /**
@@ -196,7 +191,6 @@ class UiController extends Controller
     public function schemasDetails(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end schemasDetails()
 
     /**
@@ -215,7 +209,6 @@ class UiController extends Controller
     public function sources(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end sources()
 
     /**
@@ -234,7 +227,6 @@ class UiController extends Controller
     public function organisation(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end organisation()
 
     /**
@@ -253,7 +245,6 @@ class UiController extends Controller
     public function objects(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end objects()
 
     /**
@@ -272,7 +263,6 @@ class UiController extends Controller
     public function tables(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end tables()
 
     /**
@@ -291,7 +281,6 @@ class UiController extends Controller
     public function chat(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end chat()
 
     /**
@@ -310,7 +299,6 @@ class UiController extends Controller
     public function configurations(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end configurations()
 
     /**
@@ -329,7 +317,6 @@ class UiController extends Controller
     public function deleted(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end deleted()
 
     /**
@@ -348,7 +335,6 @@ class UiController extends Controller
     public function auditTrail(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end auditTrail()
 
     /**
@@ -367,7 +353,6 @@ class UiController extends Controller
     public function searchTrail(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end searchTrail()
 
     /**
@@ -386,7 +371,6 @@ class UiController extends Controller
     public function webhooks(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end webhooks()
 
     /**
@@ -405,7 +389,6 @@ class UiController extends Controller
     public function webhooksLogs(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end webhooksLogs()
 
     /**
@@ -424,7 +407,6 @@ class UiController extends Controller
     public function entities(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end entities()
 
     /**
@@ -446,7 +428,6 @@ class UiController extends Controller
     public function endpoints(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end endpoints()
 
     /**
@@ -468,6 +449,5 @@ class UiController extends Controller
     public function endpointLogs(): TemplateResponse
     {
         return $this->makeSpaResponse();
-
     }//end endpointLogs()
 }//end class

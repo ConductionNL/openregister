@@ -48,7 +48,6 @@ use React\EventLoop\Loop;
  */
 class ExportService
 {
-
     /**
      * Register mapper instance
      *
@@ -91,7 +90,6 @@ class ExportService
         $this->registerMapper = $registerMapper;
         $this->groupManager   = $groupManager;
         $this->objectService  = $objectService;
-
     }//end __construct()
 
     /**
@@ -116,7 +114,6 @@ class ExportService
         }
 
         return $adminGroup->inGroup($user);
-
     }//end isUserAdmin()
 
     /**
@@ -129,7 +126,7 @@ class ExportService
      *
      * @return Spreadsheet
      */
-    public function exportToExcel(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): Spreadsheet
+    public function exportToExcel(?Register $register = null, ?Schema $schema = null, array $filters = [], ?IUser $currentUser = null): Spreadsheet
     {
         // Create new spreadsheet.
         $spreadsheet = new Spreadsheet();
@@ -149,7 +146,6 @@ class ExportService
         }
 
         return $spreadsheet;
-
     }//end exportToExcel()
 
     /**
@@ -164,7 +160,7 @@ class ExportService
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      */
-    public function exportToCsv(?Register $register=null, ?Schema $schema=null, array $filters=[], ?IUser $currentUser=null): string
+    public function exportToCsv(?Register $register = null, ?Schema $schema = null, array $filters = [], ?IUser $currentUser = null): string
     {
         if ($register !== null && $schema === null) {
             throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
@@ -176,7 +172,6 @@ class ExportService
         ob_start();
         $writer->save('php://output');
         return ob_get_clean();
-
     }//end exportToCsv()
 
     /**
@@ -192,10 +187,10 @@ class ExportService
      */
     private function populateSheet(
         Spreadsheet $spreadsheet,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        array $filters=[],
-        ?IUser $currentUser=null
+        ?Register $register = null,
+        ?Schema $schema = null,
+        array $filters = [],
+        ?IUser $currentUser = null
     ): void {
         $sheet = $spreadsheet->createSheet();
 
@@ -210,7 +205,7 @@ class ExportService
 
         // Set headers.
         foreach ($headers as $col => $header) {
-            $sheet->setCellValue(coordinate: $col.$row, value: $header);
+            $sheet->setCellValue(coordinate: $col . $row, value: $header);
         }
 
         $row++;
@@ -255,9 +250,9 @@ class ExportService
         $objects = $this->objectService->searchObjects(
             query: $query,
             _rbac: true,
-        // Apply RBAC filtering.
+            // Apply RBAC filtering.
             _multitenancy: true,
-        // Apply multi-tenancy filtering.
+            // Apply multi-tenancy filtering.
             ids: null,
             uses: null
         );
@@ -265,12 +260,11 @@ class ExportService
         foreach ($objects as $object) {
             foreach ($headers as $col => $header) {
                 $value = $this->getObjectValue(object: $object, header: $header);
-                $sheet->setCellValue(coordinate: $col.$row, value: $value);
+                $sheet->setCellValue(coordinate: $col . $row, value: $value);
             }
 
             $row++;
         }
-
     }//end populateSheet()
 
     /**
@@ -283,7 +277,7 @@ class ExportService
      *
      * @psalm-return array<array-key>
      */
-    private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
+    private function getHeaders(?Schema $schema = null, ?IUser $currentUser = null): array
     {
         // Start with id as the first column.
         // Will contain the uuid.
@@ -340,13 +334,12 @@ class ExportService
             ];
 
             foreach ($metadataFields as $field) {
-                $headers[$col] = '@self.'.$field;
+                $headers[$col] = '@self.' . $field;
                 $col++;
             }
         }//end if
 
         return $headers;
-
     }//end getHeaders()
 
     /**
@@ -372,7 +365,8 @@ class ExportService
                 $value = $objectArray[$fieldName];
 
                 // Handle DateTime objects (they come as ISO strings from getObjectArray).
-                if (is_string($value) === true
+                if (
+                    is_string($value) === true
                     && str_contains(haystack: $value, needle: 'T') === true
                     && str_contains(haystack: $value, needle: 'Z') === true
                 ) {
@@ -416,7 +410,8 @@ class ExportService
                 $value = $objectArray[$fieldName];
 
                 // Handle DateTime objects (they come as ISO strings from getObjectArray).
-                if (is_string($value) === true
+                if (
+                    is_string($value) === true
                     && str_contains(haystack: $value, needle: 'T') === true
                     && str_contains(haystack: $value, needle: 'Z') === true
                 ) {
@@ -458,7 +453,6 @@ class ExportService
                 $value      = $objectData[$header] ?? null;
                 return $this->convertValueToString($value);
         }
-
     }//end getObjectValue()
 
     /**
@@ -494,7 +488,6 @@ class ExportService
 
         // Fallback for any other type.
         return (string) $value;
-
     }//end convertValueToString()
 
     /**
@@ -509,6 +502,5 @@ class ExportService
     private function getSchemasForRegister(Register $register): array
     {
         return $this->registerMapper->getSchemasByRegisterId($register->getId());
-
     }//end getSchemasForRegister()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MagicMapper Search Handler
  *
@@ -65,7 +66,6 @@ class MagicSearchHandler
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -106,12 +106,12 @@ class MagicSearchHandler
 
         // Clean the query: remove @self and all properties prefixed with _.
         $objectFilters = array_filter(
-                $query,
-                function ($key) {
-                    return $key !== '@self' && !str_starts_with($key, '_');
-                },
-                ARRAY_FILTER_USE_KEY
-                );
+            $query,
+            function ($key) {
+                return $key !== '@self' && !str_starts_with($key, '_');
+            },
+            ARRAY_FILTER_USE_KEY
+        );
 
         $queryBuilder = $this->db->getQueryBuilder();
 
@@ -161,7 +161,6 @@ class MagicSearchHandler
         } else {
             return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
         }
-
     }//end searchObjects()
 
     /**
@@ -194,7 +193,6 @@ class MagicSearchHandler
                 )
             );
         }
-
     }//end applyBasicFilters()
 
     /**
@@ -208,19 +206,18 @@ class MagicSearchHandler
     private function applyMetadataFilters(IQueryBuilder $qb, array $filters): void
     {
         foreach ($filters as $field => $value) {
-            $columnName = '_'.$field;
+            $columnName = '_' . $field;
             // Metadata columns are prefixed with _.
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
             } else {
                 $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
             }
         }
-
     }//end applyMetadataFilters()
 
     /**
@@ -243,16 +240,15 @@ class MagicSearchHandler
 
                 if ($value === 'IS NOT NULL') {
                     $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                } else if ($value === 'IS NULL') {
+                } elseif ($value === 'IS NULL') {
                     $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                } else if (is_array($value) === true) {
+                } elseif (is_array($value) === true) {
                     $qb->andWhere($qb->expr()->in("t.{$columnName}", $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
                 } else {
                     $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
                 }
             }
         }
-
     }//end applyObjectFilters()
 
     /**
@@ -269,7 +265,6 @@ class MagicSearchHandler
         $orX->add($qb->expr()->in('t._uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
         $orX->add($qb->expr()->in('t._slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
         $qb->andWhere($orX);
-
     }//end applyIdFilters()
 
     /**
@@ -291,18 +286,17 @@ class MagicSearchHandler
             if (($propertyConfig['type'] ?? '') === 'string') {
                 $columnName = $this->sanitizeColumnName($field);
                 $searchConditions->add(
-                    $qb->expr()->like("t.{$columnName}", $qb->createNamedParameter('%'.$search.'%'))
+                    $qb->expr()->like("t.{$columnName}", $qb->createNamedParameter('%' . $search . '%'))
                 );
             }
         }
 
         // Also search in metadata text fields.
-        $searchConditions->add($qb->expr()->like('t._name', $qb->createNamedParameter('%'.$search.'%')));
-        $searchConditions->add($qb->expr()->like('t._description', $qb->createNamedParameter('%'.$search.'%')));
-        $searchConditions->add($qb->expr()->like('t._summary', $qb->createNamedParameter('%'.$search.'%')));
+        $searchConditions->add($qb->expr()->like('t._name', $qb->createNamedParameter('%' . $search . '%')));
+        $searchConditions->add($qb->expr()->like('t._description', $qb->createNamedParameter('%' . $search . '%')));
+        $searchConditions->add($qb->expr()->like('t._summary', $qb->createNamedParameter('%' . $search . '%')));
 
         $qb->andWhere($searchConditions);
-
     }//end applyFullTextSearch()
 
     /**
@@ -326,15 +320,14 @@ class MagicSearchHandler
 
             if (str_starts_with($field, '@self.') === true) {
                 // Metadata field sorting.
-                $metadataField = '_'.str_replace('@self.', '', $field);
+                $metadataField = '_' . str_replace('@self.', '', $field);
                 $qb->addOrderBy("t.{$metadataField}", $direction);
-            } else if (($properties[$field] ?? null) !== null) {
+            } elseif (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
                 $columnName = $this->sanitizeColumnName($field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
             }
         }
-
     }//end applySorting()
 
     /**
@@ -365,7 +358,6 @@ class MagicSearchHandler
         }
 
         return $objects;
-
     }//end executeSearchQuery()
 
     /**
@@ -378,7 +370,7 @@ class MagicSearchHandler
      *
      * @return ObjectEntity|null ObjectEntity object or null if conversion fails
      */
-    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema, string $tableName=''): ?ObjectEntity
+    private function convertRowToObjectEntity(array $row, Register $register, Schema $schema, string $tableName = ''): ?ObjectEntity
     {
         try {
             $objectEntity = new ObjectEntity();
@@ -451,11 +443,11 @@ class MagicSearchHandler
                 // Convert deleted timestamp to array format expected by setDeleted.
                 $deletedDateTime = new DateTime($metadataData['deleted']);
                 $objectEntity->setDeleted(
-                        [
+                    [
                             'deleted'   => $deletedDateTime->format('c'),
                             'deletedBy' => $metadataData['deletedBy'] ?? null,
                         ]
-                        );
+                );
             }
 
             if (($metadataData['depublished'] ?? null) !== null) {
@@ -472,17 +464,16 @@ class MagicSearchHandler
             return $objectEntity;
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to convert row to ObjectEntity',
-                    [
+                'Failed to convert row to ObjectEntity',
+                [
                         'error'     => $e->getMessage(),
                         'tableName' => $tableName,
                         'row'       => $row,
                     ]
-                    );
+            );
 
             return null;
         }//end try
-
     }//end convertRowToObjectEntity()
 
     /**
@@ -499,11 +490,10 @@ class MagicSearchHandler
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_'.$sanitized;
+            $sanitized = 'col_' . $sanitized;
         }
 
         // Limit length to 64 characters (MySQL limit).
         return substr($sanitized, 0, 64);
-
     }//end sanitizeColumnName()
 }//end class

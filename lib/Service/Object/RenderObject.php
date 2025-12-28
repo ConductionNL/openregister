@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RenderObject Handler
  *
@@ -59,7 +60,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class RenderObject
 {
-
     /**
      * Cache of registers indexed by ID
      *
@@ -115,7 +115,6 @@ class RenderObject
         private readonly CacheHandler $objectCacheService,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -136,12 +135,11 @@ class RenderObject
     {
         $this->ultraPreloadCache = $ultraPreloadCache;
         $this->logger->debug(
-                'Ultra preload cache set',
-                [
+            'Ultra preload cache set',
+            [
                     'cachedObjectCount' => count($ultraPreloadCache),
                 ]
-                );
-
+        );
     }//end setUltraPreloadCache()
 
     /**
@@ -154,7 +152,6 @@ class RenderObject
     public function getUltraCacheSize(): int
     {
         return count($this->ultraPreloadCache);
-
     }//end getUltraCacheSize()
 
     /**
@@ -179,7 +176,6 @@ class RenderObject
         } catch (\Exception $e) {
             return null;
         }
-
     }//end getRegister()
 
     /**
@@ -204,7 +200,6 @@ class RenderObject
         } catch (\Exception $e) {
             return null;
         }
-
     }//end getSchema()
 
     /**
@@ -239,7 +234,6 @@ class RenderObject
         }
 
         return $object;
-
     }//end getObject()
 
     /**
@@ -252,7 +246,6 @@ class RenderObject
         $this->registersCache = [];
         $this->schemasCache   = [];
         $this->objectsCache   = [];
-
     }//end clearCache()
 
     /**
@@ -310,7 +303,6 @@ class RenderObject
         $object->setFiles($formattedFiles);
 
         return $object;
-
     }//end renderFiles()
 
     /**
@@ -348,11 +340,11 @@ class RenderObject
         // Extract tag names from tag objects and filter out 'object:' tags.
         $tagNames = array_filter(
             array_map(
-           static function ($tag) {
-                return $tag->getName();
-           },
-            $tags
-           ),
+                static function ($tag) {
+                    return $tag->getName();
+                },
+                $tags
+            ),
             static function ($tagName) {
                 // Filter out internal object tags.
                 return !str_starts_with($tagName, 'object:');
@@ -361,7 +353,6 @@ class RenderObject
 
         // Return array of filtered tag names.
         return array_values($tagNames);
-
     }//end getFileTags()
 
     /**
@@ -426,9 +417,9 @@ class RenderObject
                 // Check if this is a file property (direct or array[file]).
                 if ($this->isFilePropertyConfig($propertyConfig) === true) {
                     $objectData[$propertyName] = $this->hydrateFileProperty(
-                     propertyValue: $propertyValue,
-                     propertyConfig: $propertyConfig,
-                     _propertyName: $propertyName
+                        propertyValue: $propertyValue,
+                        propertyConfig: $propertyConfig,
+                        _propertyName: $propertyName
                     );
                 }
             }//end foreach
@@ -440,7 +431,6 @@ class RenderObject
         }//end try
 
         return $entity;
-
     }//end renderFileProperties()
 
     /**
@@ -464,7 +454,8 @@ class RenderObject
         }
 
         // Array of files.
-        if (($propertyConfig['type'] ?? '') === 'array'
+        if (
+            ($propertyConfig['type'] ?? '') === 'array'
             && (($propertyConfig['items'] ?? null) !== null)
             && ($propertyConfig['items']['type'] ?? '') === 'file'
         ) {
@@ -472,7 +463,6 @@ class RenderObject
         }
 
         return false;
-
     }//end isFilePropertyConfig()
 
     /**
@@ -572,7 +562,6 @@ class RenderObject
         }//end try
 
         return $entity;
-
     }//end hydrateMetadataFromFileProperties()
 
     /**
@@ -597,7 +586,6 @@ class RenderObject
         }
 
         return $value;
-
     }//end getValueFromPath()
 
     /**
@@ -655,7 +643,6 @@ class RenderObject
         } catch (Exception $e) {
             return null;
         }//end try
-
     }//end getFileObject()
 
     /**
@@ -685,17 +672,17 @@ class RenderObject
      */
     public function renderEntity(
         ObjectEntity $entity,
-        array | string | null $_extend=[],
-        int $depth=0,
-        ?array $filter=[],
-        ?array $fields=[],
-        ?array $unset=[],
-        ?array $registers=[],
-        ?array $schemas=[],
-        ?array $objects=[],
-        ?array $visitedIds=[],
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        array | string | null $_extend = [],
+        int $depth = 0,
+        ?array $filter = [],
+        ?array $fields = [],
+        ?array $unset = [],
+        ?array $registers = [],
+        ?array $schemas = [],
+        ?array $objects = [],
+        ?array $visitedIds = [],
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds ?? [], true) === true) {
             // @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
@@ -805,7 +792,7 @@ class RenderObject
                     $_extend[] = $key;
                 }
             }
-        } else if (is_string($_extend) === true) {
+        } elseif (is_string($_extend) === true) {
             $_extend = explode(',', $_extend);
         }
 
@@ -817,7 +804,6 @@ class RenderObject
         $entity->setObject($objectData);
 
         return $entity;
-
     }//end renderEntity()
 
     /**
@@ -837,10 +823,10 @@ class RenderObject
         }
 
         $wildcardExtends = array_filter(
-                $_extend,
-                function (string $key) {
-                    return str_contains($key, '.$.');
-                }
+            $_extend,
+            function (string $key) {
+                return str_contains($key, '.$.');
+            }
         );
 
         $extendedRoots = [];
@@ -873,7 +859,6 @@ class RenderObject
         }
 
         return $objectData->all();
-
     }//end handleWildcardExtends()
 
     /**
@@ -889,7 +874,7 @@ class RenderObject
      *
      * @throws \OCP\DB\Exception
      */
-    private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag=false, array $visitedIds=[]): array
+    private function handleExtendDot(array $data, array &$_extend, int $depth, bool $allFlag = false, array $visitedIds = []): array
     {
         $data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
@@ -911,7 +896,7 @@ class RenderObject
                 fn(string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
                 array_filter(
                     $_extend,
-                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key.'.')
+                    fn(string $singleKey) => str_starts_with(haystack: $singleKey, needle: $key . '.')
                 )
             );
 
@@ -935,38 +920,38 @@ class RenderObject
                     fn($v) => $v !== null && (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
                 );
                 $renderedValue = array_map(
-                        function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
-                            if (is_array($identifier) === true) {
-                                return null;
-                            }
+                    function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
+                        if (is_array($identifier) === true) {
+                            return null;
+                        }
 
-                            // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
-                            $object = $this->getObject(id: $identifier);
-                            if ($object === null) {
-                                // If not in cache, this object wasn't preloaded - skip it to prevent N+1.
-                                $this->logger->debug(
-                                        'Object not found in preloaded cache - skipping to prevent N+1 query',
-                                        [
-                                            'identifier' => $identifier,
-                                            'context'    => 'extend_array_processing',
-                                        ]
-                                        );
-                                return null;
-                            }
+                        // **PERFORMANCE OPTIMIZATION**: Use preloaded cache instead of individual queries.
+                        $object = $this->getObject(id: $identifier);
+                        if ($object === null) {
+                            // If not in cache, this object wasn't preloaded - skip it to prevent N+1.
+                            $this->logger->debug(
+                                'Object not found in preloaded cache - skipping to prevent N+1 query',
+                                [
+                                        'identifier' => $identifier,
+                                        'context'    => 'extend_array_processing',
+                                    ]
+                            );
+                            return null;
+                        }
 
-                            if (in_array($object->getUuid(), $visitedIds, true) === true) {
-                                return ['@circular' => true, 'id' => $object->getUuid()];
-                            }
+                        if (in_array($object->getUuid(), $visitedIds, true) === true) {
+                            return ['@circular' => true, 'id' => $object->getUuid()];
+                        }
 
-                            $subExtend = $keyExtends;
-                            if ($allFlag === true) {
-                                $subExtend = array_merge(['all'], $keyExtends);
-                            }
+                        $subExtend = $keyExtends;
+                        if ($allFlag === true) {
+                            $subExtend = array_merge(['all'], $keyExtends);
+                        }
 
-                            return $this->renderEntity(entity: $object, _extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
-                        },
-                        $value
-                        );
+                        return $this->renderEntity(entity: $object, _extend: $subExtend, depth: $depth + 1, filter: [], fields: [], unset: [], visitedIds: $visitedIds)->jsonSerialize();
+                    },
+                    $value
+                );
 
                 // Filter out any null values that might have been returned from the mapping.
                 $renderedValue = array_filter($renderedValue, fn($v) => $v !== null);
@@ -1036,7 +1021,6 @@ class RenderObject
         }//end foreach
 
         return $dataDot->jsonSerialize();
-
     }//end handleExtendDot()
 
     /**
@@ -1060,10 +1044,10 @@ class RenderObject
         array $_extend,
         array $objectData,
         int $depth,
-        ?array $_filter=[],
-        ?array $_fields=[],
-        ?array $_unset=[],
-        ?array $visitedIds=[]
+        ?array $_filter = [],
+        ?array $_fields = [],
+        ?array $_unset = [],
+        ?array $visitedIds = []
     ): array {
         // Add register and schema context to @self if requested.
         if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
@@ -1089,7 +1073,6 @@ class RenderObject
         $objectDataDot = $this->handleExtendDot(data: $objectData, _extend: $_extend, depth: $depth, allFlag: in_array('all', $_extend, true), visitedIds: $visitedIds);
 
         return $objectDataDot;
-
     }//end extendObject()
 
     /**
@@ -1108,15 +1091,14 @@ class RenderObject
         // Use array_filter to get properties with inversedBy configurations.
                         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property.
         $inversedProperties = array_filter(
-                $properties,
-                function ($property) {
-                    return (isset($property['inversedBy']) && empty($property['inversedBy']) === false) || (isset($property['items']['inversedBy']) && empty($property['items']['inversedBy']) === false);
-                }
-                );
+            $properties,
+            function ($property) {
+                return (isset($property['inversedBy']) && empty($property['inversedBy']) === false) || (isset($property['items']['inversedBy']) && empty($property['items']['inversedBy']) === false);
+            }
+        );
 
         // Extract the property names and their inversedBy values.
         return $inversedProperties;
-
     }//end getInversedProperties()
 
     /**
@@ -1140,12 +1122,12 @@ class RenderObject
         ObjectEntity $entity,
         array $objectData,
         int $_depth,
-        ?array $_filter=[],
-        ?array $_fields=[],
-        ?array $_unset=[],
-        ?array $_registers=[],
-        ?array $_schemas=[],
-        ?array $_objects=[]
+        ?array $_filter = [],
+        ?array $_fields = [],
+        ?array $_unset = [],
+        ?array $_registers = [],
+        ?array $_schemas = [],
+        ?array $_objects = []
     ): array {
         // Get the schema for this object.
         $schema = $this->getSchema($entity->getSchema());
@@ -1164,11 +1146,11 @@ class RenderObject
 
         // Set all found objects to the objectsCache.
         $ids = array_map(
-                function (ObjectEntity $object) {
-                    return $object->getUuid();
-                },
-                $referencingObjects
-                );
+            function (ObjectEntity $object) {
+                return $object->getUuid();
+            },
+            $referencingObjects
+        );
 
         // Filter out null IDs before combining arrays.
         $validIds     = [];
@@ -1195,7 +1177,7 @@ class RenderObject
                 $isArray            = true;
             }
             // Check if this is a direct object property with inversedBy.
-            else if (($propertyConfig['inversedBy'] ?? null) !== null) {
+            elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
                 $inversedByProperty = $propertyConfig['inversedBy'];
                 $targetSchema       = $propertyConfig['$ref'] ?? null;
                 $isArray            = false;
@@ -1218,7 +1200,7 @@ class RenderObject
             }
 
             $inversedObjects = array_values(
-                    array_filter(
+                array_filter(
                     $referencingObjects,
                     function (ObjectEntity $object) use ($inversedByProperty, $schemaId, $entity) {
                         $data = $object->getObject();
@@ -1239,15 +1221,15 @@ class RenderObject
                             return str_ends_with(haystack: $referenceValue, needle: $entity->getUuid()) && $object->getSchema() === $schemaId;
                         }
                     }
-                    )
-                    );
+                )
+            );
 
             $inversedUuids = array_map(
-                    function (ObjectEntity $object) {
-                        return $object->getUuid();
-                    },
-                    $inversedObjects
-                    );
+                function (ObjectEntity $object) {
+                    return $object->getUuid();
+                },
+                $inversedObjects
+            );
 
             // Set the inversed property value based on whether it's an array or single value.
             if ($isArray === true) {
@@ -1262,7 +1244,6 @@ class RenderObject
         }//end foreach
 
         return $objectData;
-
     }//end handleInversedProperties()
 
     /**
@@ -1321,7 +1302,6 @@ class RenderObject
 
         // If all else fails, try to use the reference as-is.
         return $cleanSchemaRef;
-
     }//end resolveSchemaReference()
 
     /**
@@ -1339,7 +1319,6 @@ class RenderObject
         }
 
         return $reference;
-
     }//end removeQueryParameters()
 
     /**
@@ -1362,12 +1341,12 @@ class RenderObject
      */
     public function renderEntities(
         array $entities,
-        array | string | null $_extend=[],
-        ?array $_filter=null,
-        ?array $_fields=null,
-        ?array $_unset=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true
+        array | string | null $_extend = [],
+        ?array $_filter = null,
+        ?array $_fields = null,
+        ?array $_unset = null,
+        bool $_rbac = true,
+        bool $_multitenancy = true
     ): array {
         $renderedEntities = [];
 
@@ -1386,6 +1365,5 @@ class RenderObject
         }
 
         return $renderedEntities;
-
     }//end renderEntities()
 }//end class

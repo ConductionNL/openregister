@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister BulkValidationHandler
  *
@@ -52,7 +53,6 @@ class BulkValidationHandler
     public function __construct(
         private readonly LoggerInterface $logger,
     ) {
-
     }//end __construct()
 
     /**
@@ -136,7 +136,6 @@ class BulkValidationHandler
         }//end foreach
 
         return $analysis;
-
     }//end performComprehensiveSchemaAnalysis()
 
     /**
@@ -167,7 +166,6 @@ class BulkValidationHandler
         }
 
         return (bool) $value;
-
     }//end castToBoolean()
 
     /**
@@ -192,6 +190,5 @@ class BulkValidationHandler
         }
 
         return [$object, $uuid];
-
     }//end handlePreValidationCascading()
 }//end class

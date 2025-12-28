@@ -47,7 +47,6 @@ use Symfony\Component\Yaml\Yaml;
  */
 class ImportHandler
 {
-
     /**
      * Schema mapper instance for handling schema operations.
      *
@@ -277,10 +276,10 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      */
-    public function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
+    public function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse
     {
         if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-            return new JSONResponse(data: ['error' => 'File upload error: '.$uploadedFile['error']], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'File upload error: ' . $uploadedFile['error']], statusCode: 400);
         }
 
         $fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
@@ -313,7 +312,7 @@ class ImportHandler
         try {
             $response = $this->client->request('GET', $url);
         } catch (GuzzleException $e) {
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()], statusCode: 400);
         }
 
         $responseBody = $response->getBody()->getContents();
@@ -369,7 +368,7 @@ class ImportHandler
      *
      * @throws Exception If import fails.
      */
-    public function importRegister(array $data, ?string $owner=null, ?string $appId=null, ?string $version=null, bool $force=false): Register
+    public function importRegister(array $data, ?string $owner = null, ?string $appId = null, ?string $version = null, bool $force = false): Register
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -417,8 +416,8 @@ class ImportHandler
 
             return $register;
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to import register: '.$e->getMessage());
-            throw new Exception('Failed to import register: '.$e->getMessage());
+            $this->logger->error(message: 'Failed to import register: ' . $e->getMessage());
+            throw new Exception('Failed to import register: ' . $e->getMessage());
         }//end try
     }//end importRegister()
 
@@ -439,7 +438,7 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate register detected during import from app '%s' (version %s). "."Register with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the register slugs to be unique. "."You can identify duplicates by checking registers with the same slug, uuid, or id.",
+            "Duplicate register detected during import from app '%s' (version %s). " . "Register with slug '%s' has multiple entries in the database: %s. " . "Please resolve this by removing duplicate entries or updating the register slugs to be unique. " . "You can identify duplicates by checking registers with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -492,7 +491,7 @@ class ImportHandler
 
             return implode('; ', $info);
         } catch (Exception $e) {
-            return "Unable to retrieve duplicate information: ".$e->getMessage();
+            return "Unable to retrieve duplicate information: " . $e->getMessage();
         }//end try
     }//end getDuplicateRegisterInfo()
 
@@ -513,7 +512,7 @@ class ImportHandler
         $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
 
         $errorMessage = sprintf(
-            "Duplicate schema detected during import from app '%s' (version %s). "."Schema with slug '%s' has multiple entries in the database: %s. "."Please resolve this by removing duplicate entries or updating the schema slugs to be unique. "."You can identify duplicates by checking schemas with the same slug, uuid, or id.",
+            "Duplicate schema detected during import from app '%s' (version %s). " . "Schema with slug '%s' has multiple entries in the database: %s. " . "Please resolve this by removing duplicate entries or updating the schema slugs to be unique. " . "You can identify duplicates by checking schemas with the same slug, uuid, or id.",
             $appId,
             $version,
             $slug,
@@ -566,7 +565,7 @@ class ImportHandler
 
             return implode('; ', $info);
         } catch (Exception $e) {
-            return "Unable to retrieve duplicate information: ".$e->getMessage();
+            return "Unable to retrieve duplicate information: " . $e->getMessage();
         }//end try
     }//end getDuplicateSchemaInfo()
 
@@ -587,10 +586,10 @@ class ImportHandler
     public function importSchema(
         array $data,
         array $slugsAndIdsMap,
-        ?string $owner=null,
-        ?string $appId=null,
-        ?string $version=null,
-        bool $force=false
+        ?string $owner = null,
+        ?string $appId = null,
+        ?string $version = null,
+        bool $force = false
     ): Schema {
         try {
             // Remove id, uuid, and organisation from the data.
@@ -645,7 +644,8 @@ class ImportHandler
                         $property['type'] = 'string';
                     }
 
-                    if (($property['format'] ?? null) !== null
+                    if (
+                        ($property['format'] ?? null) !== null
                         && ($property['format'] === 'string'
                         || $property['format'] === 'binary'
                         || $property['format'] === 'byte')
@@ -653,7 +653,8 @@ class ImportHandler
                         unset($property['format']);
                     }
 
-                    if (($property['items']['format'] ?? null) !== null
+                    if (
+                        ($property['items']['format'] ?? null) !== null
                         && ($property['items']['format'] === 'string'
                         || $property['items']['format'] === 'binary'
                         || $property['items']['format'] === 'byte')
@@ -665,7 +666,7 @@ class ImportHandler
                     if (($property['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $slugsAndIdsMap[$property['$ref']];
-                        } else if (($this->schemasMap[$property['$ref']] ?? null) !== null) {
+                        } elseif (($this->schemasMap[$property['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['$ref']]->getId();
                         }
                     }
@@ -673,7 +674,7 @@ class ImportHandler
                     if (($property['items']['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
-                        } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
+                        } elseif (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
@@ -684,13 +685,14 @@ class ImportHandler
                     }
 
                     // Handle register slug/ID in objectConfiguration (new structure).
-                    if (is_array($property['objectConfiguration'] ?? null) === true
+                    if (
+                        is_array($property['objectConfiguration'] ?? null) === true
                         && ($property['objectConfiguration']['register'] ?? null) !== null
                     ) {
                         $registerSlug = $property['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } else if ($registerSlug !== null) {
+                        } elseif ($registerSlug !== null) {
                             // Try to find existing register in database.
                             try {
                                 $existingRegister = $this->registerMapper->find($registerSlug);
@@ -699,7 +701,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '.'during schema property import (will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context ' . 'during schema property import (will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
@@ -709,7 +711,8 @@ class ImportHandler
                     }//end if
 
                     // Handle schema slug/ID in objectConfiguration (new structure).
-                    if (is_array($property['objectConfiguration'] ?? null) === true
+                    if (
+                        is_array($property['objectConfiguration'] ?? null) === true
                         && ($property['objectConfiguration']['schema'] ?? null) !== null
                     ) {
                         $schemaSlug = $property['objectConfiguration']['schema'];
@@ -727,7 +730,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
                                         sprintf(
-                                            'Schema with slug %s not found in current organisation context '.'during schema property import (will be resolved after schemas are imported).',
+                                            'Schema with slug %s not found in current organisation context ' . 'during schema property import (will be resolved after schemas are imported).',
                                             $schemaSlug
                                         )
                                     );
@@ -743,7 +746,8 @@ class ImportHandler
                             $property['items'] = (array) $property['items'];
                         }
 
-                        if (is_array($property['items']) === true
+                        if (
+                            is_array($property['items']) === true
                             && ($property['items']['objectConfiguration'] ?? null) !== null
                             && is_object($property['items']['objectConfiguration']) === true
                         ) {
@@ -752,14 +756,15 @@ class ImportHandler
                     }
 
                     // Handle register slug/ID in array items objectConfiguration (new structure).
-                    if (is_array($property['items'] ?? []) === true
+                    if (
+                        is_array($property['items'] ?? []) === true
                         && is_array($property['items']['objectConfiguration'] ?? []) === true
                         && isset($property['items']['objectConfiguration']['register']) === true
                     ) {
                         $registerSlug = $property['items']['objectConfiguration']['register'];
                         if (($this->registersMap[$registerSlug] ?? null) !== null) {
                             $property['items']['objectConfiguration']['register'] = $this->registersMap[$registerSlug]->getId();
-                        } else if ($registerSlug !== null) {
+                        } elseif ($registerSlug !== null) {
                             // Try to find existing register in database.
                             try {
                                 $existingRegister = $this->registerMapper->find($registerSlug);
@@ -768,7 +773,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Register with slug %s not found in current organisation context '.'during array items schema property import '.'(will be resolved after registers are imported).',
+                                        'Register with slug %s not found in current organisation context ' . 'during array items schema property import ' . '(will be resolved after registers are imported).',
                                         $registerSlug
                                     )
                                 );
@@ -778,7 +783,8 @@ class ImportHandler
                     }//end if
 
                     // Handle schema slug/ID in array items objectConfiguration (new structure).
-                    if (is_array($property['items'] ?? []) === true
+                    if (
+                        is_array($property['items'] ?? []) === true
                         && is_array($property['items']['objectConfiguration'] ?? []) === true
                         && isset($property['items']['objectConfiguration']['schema']) === true
                     ) {
@@ -797,7 +803,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                     $this->logger->info(
                                         sprintf(
-                                            'Schema with slug %s not found in current organisation context '.'during array items schema property import '.'(will be resolved after schemas are imported).',
+                                            'Schema with slug %s not found in current organisation context ' . 'during array items schema property import ' . '(will be resolved after schemas are imported).',
                                             $schemaSlug
                                         )
                                     );
@@ -811,7 +817,7 @@ class ImportHandler
                     if (($property['register'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $slugsAndIdsMap[$property['register']];
-                        } else if (($this->registersMap[$property['register']] ?? null) !== null) {
+                        } elseif (($this->registersMap[$property['register']] ?? null) !== null) {
                             $property['register'] = $this->registersMap[$property['register']]->getId();
                         }
                     }
@@ -819,7 +825,7 @@ class ImportHandler
                     if (is_array($property['items'] ?? []) === true && isset($property['items']['register']) === true) {
                         if (($slugsAndIdsMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $slugsAndIdsMap[$property['items']['register']];
-                        } else if (($this->registersMap[$property['items']['register']] ?? null) !== null) {
+                        } elseif (($this->registersMap[$property['items']['register']] ?? null) !== null) {
                             $property['items']['register'] = $this->registersMap[$property['items']['register']]->getId();
                         }
                     }
@@ -863,8 +869,8 @@ class ImportHandler
 
             return $schema;
         } catch (Exception $e) {
-            $this->logger->error(message: 'Failed to import schema: '.$e->getMessage());
-            throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
+            $this->logger->error(message: 'Failed to import schema: ' . $e->getMessage());
+            throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
         }//end try
     }//end importSchema()
 
@@ -900,16 +906,16 @@ class ImportHandler
      */
     public function importFromJson(
         array $data,
-        ?Configuration $configuration=null,
-        ?string $owner=null,
-        ?string $appId=null,
-        ?string $version=null,
-        bool $force=false
+        ?Configuration $configuration = null,
+        ?string $owner = null,
+        ?string $appId = null,
+        ?string $version = null,
+        bool $force = false
     ): array {
         // ⚠️ CRITICAL: Configuration entity is required for proper tracking.
         if ($configuration === null) {
             throw new Exception(
-                'importFromJson must be called with a Configuration entity. '.'Direct imports without a Configuration are not allowed to ensure proper entity tracking. '.'Please create a Configuration entity first before importing.'
+                'importFromJson must be called with a Configuration entity. ' . 'Direct imports without a Configuration are not allowed to ensure proper entity tracking. ' . 'Please create a Configuration entity first before importing.'
             );
         }
 
@@ -932,7 +938,7 @@ class ImportHandler
             // If we have a stored version, compare it with the current version.
             if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
                 $this->logger->info(
-                    message: "Skipping import for app {$appId} - current version {$version} "."is not newer than stored version {$storedVersion}"
+                    message: "Skipping import for app {$appId} - current version {$version} " . "is not newer than stored version {$storedVersion}"
                 );
 
                 // Return empty result to indicate no import was performed.
@@ -1074,7 +1080,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                                 $this->logger->info(
                                     sprintf(
-                                        'Schema with slug %s not found in current organisation context '.'during register import (will be created if defined in import).',
+                                        'Schema with slug %s not found in current organisation context ' . 'during register import (will be created if defined in import).',
                                         $schemaSlug
                                     )
                                 );
@@ -1222,12 +1228,13 @@ class ImportHandler
                 $openConnectorResult = $this->openConnectorConfigurationService->importConfiguration($data);
                 $result = array_replace_recursive($openConnectorResult, $result);
             } catch (Exception $e) {
-                $this->logger->warning('OpenConnector integration failed: '.$e->getMessage());
+                $this->logger->warning('OpenConnector integration failed: ' . $e->getMessage());
             }
         }
 
         // Create or update configuration entity to track imported data.
-        if ($appId !== null
+        if (
+            $appId !== null
             && $version !== null
             && (count($result['registers']) > 0
             || count($result['schemas']) > 0
@@ -1273,7 +1280,7 @@ class ImportHandler
      *     rules: array
      * }
      */
-    public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
+    public function importFromApp(string $appId, array $data, string $version, bool $force = false): array
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -1462,13 +1469,13 @@ class ImportHandler
                 // Standard OAS properties from info section.
                 if (($info['title'] ?? null) !== null) {
                     $configuration->setTitle($info['title']);
-                } else if (($xOpenregister['title'] ?? null) !== null) {
+                } elseif (($xOpenregister['title'] ?? null) !== null) {
                     $configuration->setTitle($xOpenregister['title']);
                 }
 
                 if (($info['description'] ?? null) !== null) {
                     $configuration->setDescription($info['description']);
-                } else if (($xOpenregister['description'] ?? null) !== null) {
+                } elseif (($xOpenregister['description'] ?? null) !== null) {
                     $configuration->setDescription($xOpenregister['description']);
                 }
 
@@ -1526,8 +1533,8 @@ class ImportHandler
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to import configuration for app {$appId}: ".$e->getMessage());
-            throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to import configuration for app {$appId}: " . $e->getMessage());
+            throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
         }//end try
     }//end importFromApp()
 
@@ -1558,17 +1565,17 @@ class ImportHandler
      *     rules: array
      * }
      */
-    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
+    public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array
     {
         try {
             // Resolve the file path relative to Nextcloud root.
             // Try multiple resolution strategies.
-            $fullPath = $this->appDataPath.'/../../../'.$filePath;
+            $fullPath = $this->appDataPath . '/../../../' . $filePath;
             $fullPath = realpath($fullPath);
 
             // If realpath fails, try direct path from Nextcloud root.
             if ($fullPath === false) {
-                $fullPath = '/var/www/html/'.$filePath;
+                $fullPath = '/var/www/html/' . $filePath;
                 // Normalize the path.
                 $fullPath = str_replace('//', '/', $fullPath);
             }
@@ -1586,7 +1593,7 @@ class ImportHandler
             // Parse JSON.
             $data = json_decode($jsonContent, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception("Invalid JSON in configuration file: ".json_last_error_msg());
+                throw new Exception("Invalid JSON in configuration file: " . json_last_error_msg());
             }
 
             // Set the sourceUrl in the data if not already set.
@@ -1612,13 +1619,13 @@ class ImportHandler
             );
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to import configuration from file: '.$e->getMessage(),
+                'Failed to import configuration from file: ' . $e->getMessage(),
                 [
                     'appId'    => $appId,
                     'filePath' => $filePath,
                 ]
             );
-            throw new Exception('Failed to import configuration from file: '.$e->getMessage());
+            throw new Exception('Failed to import configuration from file: ' . $e->getMessage());
         }//end try
     }//end importFromFilePath()
 
@@ -1635,7 +1642,7 @@ class ImportHandler
      *
      * @throws Exception If configuration creation/update fails.
      */
-    public function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner=null): Configuration
+    public function createOrUpdateConfiguration(array $data, string $appId, string $version, array $result, ?string $owner = null): Configuration
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
@@ -1778,8 +1785,8 @@ class ImportHandler
 
             return $configuration;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to create or update configuration for app {$appId}: ".$e->getMessage());
-            throw new Exception("Failed to create or update configuration: ".$e->getMessage());
+            $this->logger->error(message: "Failed to create or update configuration for app {$appId}: " . $e->getMessage());
+            throw new Exception("Failed to create or update configuration: " . $e->getMessage());
         }//end try
     }//end createOrUpdateConfiguration()
 }//end class

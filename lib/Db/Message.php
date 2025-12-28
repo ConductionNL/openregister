@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Message Entity
  *
@@ -52,7 +53,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Message extends Entity implements JsonSerializable
 {
-
     /**
      * Message role: User message
      */
@@ -129,7 +129,6 @@ class Message extends Entity implements JsonSerializable
         $this->addType('content', 'string');
         $this->addType('sources', 'json');
         $this->addType('created', 'datetime');
-
     }//end __construct()
 
     /**
@@ -158,6 +157,5 @@ class Message extends Entity implements JsonSerializable
             'sources'        => $this->sources,
             'created'        => $this->created?->format('c'),
         ];
-
     }//end jsonSerialize()
 }//end class

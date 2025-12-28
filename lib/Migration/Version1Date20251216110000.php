@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20251127000000
  *
@@ -65,17 +66,16 @@ class Version1Date20251216110000 extends SimpleMigrationStep
             // Add request_body column if it doesn't exist.
             if ($table->hasColumn('request_body') === false) {
                 $table->addColumn(
-                        'request_body',
-                        Types::TEXT,
-                        [
+                    'request_body',
+                    Types::TEXT,
+                    [
                             'notnull' => false,
                         ]
-                        );
+                );
                 $output->info('Added request_body column to openregister_webhook_logs table');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

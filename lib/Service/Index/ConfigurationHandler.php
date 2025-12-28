@@ -40,7 +40,6 @@ use Exception;
  */
 class ConfigurationHandler
 {
-
     /**
      * Solr configuration array.
      *
@@ -67,7 +66,6 @@ class ConfigurationHandler
     ) {
         $this->initializeConfig();
         $this->initializeHttpClient();
-
     }//end __construct()
 
     /**
@@ -90,7 +88,6 @@ class ConfigurationHandler
 
             $this->solrConfig = ['enabled' => false];
         }
-
     }//end initializeConfig()
 
     /**
@@ -125,12 +122,12 @@ class ConfigurationHandler
             ];
 
             $this->logger->info(
-                    'ConfigurationHandler: HTTP Basic Authentication configured',
-                    [
+                'ConfigurationHandler: HTTP Basic Authentication configured',
+                [
                         'username'  => $this->solrConfig['username'],
                         'auth_type' => 'basic',
                     ]
-                    );
+            );
         }
 
         // TODO: Switch back to Nextcloud HTTP client when local access restrictions are properly configured.
@@ -138,7 +135,6 @@ class ConfigurationHandler
         // Future improvement: $this->httpClient = $clientService->newClient(['allow_local_address' => true]).
         // This is necessary for SOLR/Zookeeper connections in Kubernetes environments.
         $this->httpClient = new GuzzleClient($clientConfig);
-
     }//end initializeHttpClient()
 
     /**
@@ -161,7 +157,6 @@ class ConfigurationHandler
         }
 
         return true;
-
     }//end isSolrConfigured()
 
     /**
@@ -178,7 +173,6 @@ class ConfigurationHandler
     {
         // Simply return the collection name without any tenant suffix.
         return $baseCollectionName;
-
     }//end getTenantSpecificCollectionName()
 
     /**
@@ -208,7 +202,7 @@ class ConfigurationHandler
         // Allow custom path for reverse proxies or non-standard setups.
         $path = $this->solrConfig['path'] ?? '';
         if (empty($path) === false) {
-            $path = '/'.ltrim($path, '/');
+            $path = '/' . ltrim($path, '/');
         }
 
         // Build protocol-relative or absolute URL based on configuration.
@@ -221,7 +215,6 @@ class ConfigurationHandler
 
         // No port specified - use default for the scheme.
         return sprintf('%s://%s%s', $scheme, $host, $path);
-
     }//end buildSolrBaseUrl()
 
     /**
@@ -232,7 +225,6 @@ class ConfigurationHandler
     public function getHttpClient(): GuzzleClient|null
     {
         return $this->httpClient;
-
     }//end getHttpClient()
 
     /**
@@ -245,7 +237,6 @@ class ConfigurationHandler
     public function getSolrConfig(): array
     {
         return $this->solrConfig;
-
     }//end getSolrConfig()
 
     /**
@@ -255,13 +246,12 @@ class ConfigurationHandler
      *
      * @return string Full endpoint URL.
      */
-    public function getEndpointUrl(?string $collection=null): string
+    public function getEndpointUrl(?string $collection = null): string
     {
         $baseUrl = $this->buildSolrBaseUrl();
         $core    = $collection ?? $this->solrConfig['core'] ?? 'openregister';
 
-        return $baseUrl.'/solr/'.$core;
-
+        return $baseUrl . '/solr/' . $core;
     }//end getEndpointUrl()
 
     /**
@@ -280,7 +270,6 @@ class ConfigurationHandler
         }
 
         return '✗ Not configured';
-
     }//end getConfigStatus()
 
     /**
@@ -296,8 +285,7 @@ class ConfigurationHandler
             return '✓ Using default port';
         }
 
-        return '✓ Port '.$port;
-
+        return '✓ Port ' . $port;
     }//end getPortStatus()
 
     /**
@@ -308,7 +296,6 @@ class ConfigurationHandler
     public function getCoreStatus(): string
     {
         $core = $this->solrConfig['core'] ?? 'openregister';
-        return '✓ Core: '.$core;
-
+        return '✓ Core: ' . $core;
     }//end getCoreStatus()
 }//end class

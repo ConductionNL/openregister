@@ -47,7 +47,6 @@ use LLPhant\OllamaConfig;
 
 class ResponseGenerationHandler
 {
-
     /**
      * Settings service
      *
@@ -115,7 +114,7 @@ class ResponseGenerationHandler
         array $context,
         array $messageHistory,
         ?Agent $agent,
-        array $selectedTools=[]
+        array $selectedTools = []
     ): string {
         $startTime = microtime(true);
 
@@ -173,7 +172,7 @@ class ResponseGenerationHandler
 
                 // Use native Ollama configuration.
                 $config      = new OllamaConfig();
-                $config->url = rtrim($ollamaConfig['url'], '/').'/api/';
+                $config->url = rtrim($ollamaConfig['url'], '/') . '/api/';
                 // Use agent model if set and not empty, otherwise fallback to global config.
                 $agentModel    = $agent?->getModel();
                 $config->model = ($ollamaConfig['chatModel'] ?? 'llama2');
@@ -212,7 +211,7 @@ class ResponseGenerationHandler
 
                         $config->organizationId = $openaiConfig['organizationId'];
                     }
-                } else if ($chatProvider === 'fireworks') {
+                } elseif ($chatProvider === 'fireworks') {
                     $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
                     if (empty($fireworksConfig['apiKey']) === true) {
                         throw new Exception('Fireworks AI API key is not configured');
@@ -254,7 +253,7 @@ class ResponseGenerationHandler
 
             if (empty($context['text']) === false) {
                 $systemPrompt .= "\n\nUse the following context to answer the user's question:\n\n";
-                $systemPrompt .= "CONTEXT:\n".$context['text']."\n\n";
+                $systemPrompt .= "CONTEXT:\n" . $context['text'] . "\n\n";
                 $systemPrompt .= "If the context doesn't contain relevant information, say so honestly. ";
                 $systemPrompt .= "Always cite which sources you used when answering.";
             }
@@ -286,7 +285,7 @@ class ResponseGenerationHandler
                     $functions
                     // Pass functions.
                 );
-            } else if ($chatProvider === 'ollama') {
+            } elseif ($chatProvider === 'ollama') {
                 // Use native Ollama chat with LLPhant's built-in tool support.
                 $chat = new OllamaChat($config);
 
@@ -329,10 +328,10 @@ class ResponseGenerationHandler
                     'model'          => $config->model,
                     'responseLength' => strlen($response),
                     'timings'        => [
-                        'total'         => round($totalTime, 2).'s',
-                        'toolsLoading'  => round($toolsTime, 3).'s',
-                        'llmGeneration' => round($llmTime, 2).'s',
-                        'overhead'      => round($totalTime - $llmTime - $toolsTime, 3).'s',
+                        'total'         => round($totalTime, 2) . 's',
+                        'toolsLoading'  => round($toolsTime, 3) . 's',
+                        'llmGeneration' => round($llmTime, 2) . 's',
+                        'overhead'      => round($totalTime - $llmTime - $toolsTime, 3) . 's',
                     ],
                 ]
             );
@@ -346,7 +345,7 @@ class ResponseGenerationHandler
                     'error'    => $e->getMessage(),
                 ]
             );
-            throw new Exception('Failed to generate response: '.$e->getMessage());
+            throw new Exception('Failed to generate response: ' . $e->getMessage());
         }//end try
     }//end generateResponse()
 
@@ -367,7 +366,7 @@ class ResponseGenerationHandler
      */
     private function callFireworksChatAPI(string $apiKey, string $model, string $baseUrl, string $message): string
     {
-        $url = rtrim($baseUrl, '/').'/chat/completions';
+        $url = rtrim($baseUrl, '/') . '/chat/completions';
 
         $this->logger->debug(
             message: '[ChatService] Calling Fireworks chat API directly',
@@ -394,7 +393,7 @@ class ResponseGenerationHandler
             $ch,
             CURLOPT_HTTPHEADER,
             [
-                'Authorization: Bearer '.$apiKey,
+                'Authorization: Bearer ' . $apiKey,
                 'Content-Type: application/json',
             ]
         );
@@ -442,7 +441,7 @@ class ResponseGenerationHandler
                 $responseStr = $response;
             }
 
-            throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
+            throw new Exception("Unexpected Fireworks API response format: " . $responseStr);
         }
 
         return $data['choices'][0]['message']['content'];
@@ -464,9 +463,9 @@ class ResponseGenerationHandler
      *
      * @throws \Exception If API call fails
      */
-    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory, array $functions=[]): string
+    private function callFireworksChatAPIWithHistory(string $apiKey, string $model, string $baseUrl, array $messageHistory, array $functions = []): string
     {
-        $url = rtrim($baseUrl, '/').'/chat/completions';
+        $url = rtrim($baseUrl, '/') . '/chat/completions';
 
             // Note: Function calling with Fireworks AI is not yet implemented.
         // Functions will be ignored for Fireworks provider.
@@ -522,7 +521,7 @@ class ResponseGenerationHandler
             $ch,
             CURLOPT_HTTPHEADER,
             [
-                'Authorization: Bearer '.$apiKey,
+                'Authorization: Bearer ' . $apiKey,
                 'Content-Type: application/json',
             ]
         );
@@ -570,7 +569,7 @@ class ResponseGenerationHandler
                 $responseStr = $response;
             }
 
-            throw new Exception("Unexpected Fireworks API response format: ".$responseStr);
+            throw new Exception("Unexpected Fireworks API response format: " . $responseStr);
         }
 
         return $data['choices'][0]['message']['content'];

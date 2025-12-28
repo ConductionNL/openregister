@@ -47,7 +47,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -60,7 +59,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
     public function getSourceType(): string
     {
         return 'object';
-
     }//end getSourceType()
 
     /**
@@ -88,7 +86,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @throws Exception When extraction fails.
      */
-    public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
+    public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array
     {
         $this->logger->info(message: '[ObjectHandler] Extracting text from object', context: ['objectId' => $sourceId]);
 
@@ -99,47 +97,47 @@ class ObjectHandler implements TextExtractionHandlerInterface
         $textParts = [];
 
         // Add object UUID and version.
-        $textParts[] = "Object ID: ".$object->getUuid();
+        $textParts[] = "Object ID: " . $object->getUuid();
         if ($object->getVersion() !== null) {
-            $textParts[] = "Version: ".$object->getVersion();
+            $textParts[] = "Version: " . $object->getVersion();
         }
 
         // Add schema information.
         try {
             if ($object->getSchema() !== null) {
                 $schema      = $this->schemaMapper->find($object->getSchema());
-                $textParts[] = "Type: ".($schema->getTitle() ?? $schema->getName() ?? 'Unknown');
+                $textParts[] = "Type: " . ($schema->getTitle() ?? $schema->getName() ?? 'Unknown');
                 if ($schema->getDescription() !== null && $schema->getDescription() !== '') {
-                    $textParts[] = "Schema Description: ".$schema->getDescription();
+                    $textParts[] = "Schema Description: " . $schema->getDescription();
                 }
             }
         } catch (Exception $e) {
             $this->logger->debug(
-                    '[ObjectHandler] Could not load schema',
-                    [
+                '[ObjectHandler] Could not load schema',
+                [
                         'object_id' => $sourceId,
                         'schema_id' => $object->getSchema(),
                     ]
-                    );
+            );
         }
 
         // Add register information.
         try {
             if ($object->getRegister() !== null) {
                 $register    = $this->registerMapper->find($object->getRegister());
-                $textParts[] = "Register: ".($register->getTitle() ?? $register->getName() ?? 'Unknown');
+                $textParts[] = "Register: " . ($register->getTitle() ?? $register->getName() ?? 'Unknown');
                 if ($register->getDescription() !== null && $register->getDescription() !== '') {
-                    $textParts[] = "Register Description: ".$register->getDescription();
+                    $textParts[] = "Register Description: " . $register->getDescription();
                 }
             }
         } catch (Exception $e) {
             $this->logger->debug(
-                    '[ObjectHandler] Could not load register',
-                    [
+                '[ObjectHandler] Could not load register',
+                [
                         'object_id'   => $sourceId,
                         'register_id' => $object->getRegister(),
                     ]
-                    );
+            );
         }
 
         // Extract text from object data.
@@ -147,13 +145,13 @@ class ObjectHandler implements TextExtractionHandlerInterface
         if (is_array($objectData) === true) {
             $extractedText = $this->extractTextFromArray($objectData);
             if (empty($extractedText) === false) {
-                $textParts[] = "Content: ".$extractedText;
+                $textParts[] = "Content: " . $extractedText;
             }
         }
 
         // Add organization.
         if ($object->getOrganization() !== null && $object->getOrganization() !== '') {
-            $textParts[] = "Organization: ".$object->getOrganization();
+            $textParts[] = "Organization: " . $object->getOrganization();
         }
 
         // Join all parts.
@@ -186,7 +184,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
                 'version'     => $object->getVersion(),
             ],
         ];
-
     }//end extractText()
 
     /**
@@ -212,7 +209,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
         }
 
         return $latestChunkTimestamp < $sourceTimestamp;
-
     }//end needsExtraction()
 
     /**
@@ -240,7 +236,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
             'owner'        => $object->getOwner(),
             'updated'      => $object->getUpdated(),
         ];
-
     }//end getSourceMetadata()
 
     /**
@@ -258,7 +253,6 @@ class ObjectHandler implements TextExtractionHandlerInterface
         } catch (DoesNotExistException $e) {
             return time();
         }
-
     }//end getSourceTimestamp()
 
     /**
@@ -270,7 +264,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @return string Extracted text.
      */
-    private function extractTextFromArray(array $data, string $prefix='', int $depth=0): string
+    private function extractTextFromArray(array $data, string $prefix = '', int $depth = 0): string
     {
         // Prevent excessive recursion.
         if ($depth > 10) {
@@ -290,9 +284,9 @@ class ObjectHandler implements TextExtractionHandlerInterface
             // Handle different value types.
             if (is_string($value) === true && trim($value) !== '' && trim($value) !== null) {
                 $textParts[] = "{$contextKey}: {$value}";
-            } else if (is_numeric($value) === true) {
+            } elseif (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
-            } else if (is_bool($value) === true) {
+            } elseif (is_bool($value) === true) {
                 if ($value === true) {
                     $boolStr = 'true';
                 } else {
@@ -300,7 +294,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
                 }
 
                 $textParts[] = "{$contextKey}: {$boolStr}";
-            } else if (is_array($value) === true && empty($value) === false) {
+            } elseif (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.
                 $nestedText = $this->extractTextFromArray(data: $value, prefix: $contextKey, depth: $depth + 1);
                 if (empty($nestedText) === false) {
@@ -310,6 +304,5 @@ class ObjectHandler implements TextExtractionHandlerInterface
         }//end foreach
 
         return implode("\n", $textParts);
-
     }//end extractTextFromArray()
 }//end class

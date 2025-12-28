@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ConfigurationDeletedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ConfigurationDeletedEvent extends Event
 {
-
     /**
      * The deleted configuration.
      *
@@ -46,7 +46,6 @@ class ConfigurationDeletedEvent extends Event
     {
         parent::__construct();
         $this->configuration = $configuration;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class ConfigurationDeletedEvent extends Event
     public function getConfiguration(): Configuration
     {
         return $this->configuration;
-
     }//end getConfiguration()
 }//end class

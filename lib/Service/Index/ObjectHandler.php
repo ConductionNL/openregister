@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ObjectHandler
  *
@@ -63,7 +64,6 @@ class ObjectHandler
         private readonly LoggerInterface $logger,
         private readonly SearchBackendInterface $searchBackend
     ) {
-
     }//end __construct()
 
     /**
@@ -80,20 +80,20 @@ class ObjectHandler
      * @throws Exception If objectCollection is not configured
      */
     public function searchObjects(
-        array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
-        bool $published=false,
-        bool $deleted=false
+        array $query = [],
+        bool $rbac = true,
+        bool $multitenancy = true,
+        bool $published = false,
+        bool $deleted = false
     ): array {
         $this->logger->debug(
-                '[ObjectHandler] Searching objects',
-                [
+            '[ObjectHandler] Searching objects',
+            [
                     'query'        => $query,
                     'rbac'         => $rbac,
                     'multitenancy' => $multitenancy,
                 ]
-                );
+        );
 
         // Build Solr query from OpenRegister query.
         $solrQuery = $this->buildSolrQuery(query: $query, rbac: $rbac, multitenancy: $multitenancy, published: $published, deleted: $deleted);
@@ -103,7 +103,6 @@ class ObjectHandler
 
         // Convert Solr results to OpenRegister format.
         return $this->convertToOpenRegisterFormat($results);
-
     }//end searchObjects()
 
     /**
@@ -151,7 +150,6 @@ class ObjectHandler
         }
 
         return $solrQuery;
-
     }//end buildSolrQuery()
 
     /**
@@ -173,7 +171,6 @@ class ObjectHandler
             'total'   => $response['numFound'] ?? 0,
             'start'   => $response['start'] ?? 0,
         ];
-
     }//end convertToOpenRegisterFormat()
 
     /**
@@ -200,14 +197,13 @@ class ObjectHandler
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ObjectHandler] Failed to commit to Solr',
-                    [
+                '[ObjectHandler] Failed to commit to Solr',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             throw $e;
         }//end try
-
     }//end commit()
 
     /**
@@ -221,7 +217,7 @@ class ObjectHandler
      *
      * @return array Reindexing results with statistics.
      */
-    public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array
+    public function reindexAll(int $maxObjects = 0, int $batchSize = 1000, ?string $collectionName = null): array
     {
         $this->logger->info(
             '[ObjectHandler] Starting full reindex',
@@ -247,6 +243,5 @@ class ObjectHandler
                 'error'   => $e->getMessage(),
             ];
         }//end try
-
     }//end reindexAll()
 }//end class

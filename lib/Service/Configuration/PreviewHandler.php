@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Preview Handler
  *
@@ -45,7 +46,6 @@ use Psr\Log\LoggerInterface;
  */
 class PreviewHandler
 {
-
     /**
      * Register mapper for database operations.
      *
@@ -91,7 +91,6 @@ class PreviewHandler
         $this->registerMapper = $registerMapper;
         $this->schemaMapper   = $schemaMapper;
         $this->logger         = $logger;
-
     }//end __construct()
 
     /**
@@ -107,7 +106,6 @@ class PreviewHandler
     public function setConfigurationService(ConfigurationService $configurationService): void
     {
         $this->configurationService = $configurationService;
-
     }//end setConfigurationService()
 
     /**
@@ -218,7 +216,6 @@ class PreviewHandler
         ];
 
         return $preview;
-
     }//end previewConfigurationChanges()
 
     /**
@@ -290,7 +287,6 @@ class PreviewHandler
         }
 
         return $preview;
-
     }//end previewRegisterChange()
 
     /**
@@ -362,7 +358,6 @@ class PreviewHandler
         }
 
         return $preview;
-
     }//end previewSchemaChange()
 
     /**
@@ -380,7 +375,6 @@ class PreviewHandler
     {
         // Method body will be extracted from ConfigurationService.
         return [];
-
     }//end previewObjectChange()
 
     /**
@@ -394,11 +388,10 @@ class PreviewHandler
      *
      * @psalm-return array<never, never>
      */
-    public function compareArrays(array $current, array $proposed, string $prefix=''): array
+    public function compareArrays(array $current, array $proposed, string $prefix = ''): array
     {
         // Method body will be extracted from ConfigurationService.
         return [];
-
     }//end compareArrays()
 
     /**
@@ -417,6 +410,5 @@ class PreviewHandler
     {
         // Method body will be extracted from ConfigurationService.
         return [];
-
     }//end importConfigurationWithSelection()
 }//end class

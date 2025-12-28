@@ -28,7 +28,6 @@
  * @link https://www.OpenRegister.nl
  */
 
-
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -159,15 +158,15 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 $output->info(message: '  📝 Adding view.organisation column');
 
                 $table->addColumn(
-                        'organisation',
-                        Types::STRING,
-                        [
+                    'organisation',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'Organisation UUID for multi-tenancy',
                         ]
-                        );
+                );
 
                 // Add index for faster filtering.
                 $table->addIndex(['organisation'], 'view_organisation_idx');
@@ -187,15 +186,15 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 $output->info(message: '  📝 Adding sources.organisation column');
 
                 $table->addColumn(
-                        'organisation',
-                        Types::STRING,
-                        [
+                    'organisation',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'Organisation UUID for multi-tenancy',
                         ]
-                        );
+                );
 
                 // Add index for faster filtering.
                 $table->addIndex(['organisation'], 'sources_organisation_idx');
@@ -215,15 +214,15 @@ class Version1Date20251106120000 extends SimpleMigrationStep
                 $output->info(message: '  📝 Adding registers.organisation column');
 
                 $table->addColumn(
-                        'organisation',
-                        Types::STRING,
-                        [
+                    'organisation',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                             'default' => null,
                             'comment' => 'Organisation UUID for multi-tenancy',
                         ]
-                        );
+                );
 
                 // Add index for faster filtering.
                 $table->addIndex(['organisation'], 'registers_organisation_idx');
@@ -282,6 +281,5 @@ class Version1Date20251106120000 extends SimpleMigrationStep
         } else {
             return null;
         }
-
     }//end changeSchema()
 }//end class

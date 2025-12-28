@@ -52,7 +52,6 @@ class PerformanceHandler
         private readonly CacheHandler $objectCacheService,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -105,7 +104,7 @@ class PerformanceHandler
                     context: [
                         'original'        => $originalExtendCount,
                         'optimized'       => $newExtendCount,
-                        'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100).'ms',
+                        'estimatedSaving' => ($originalExtendCount - $newExtendCount) * (100) . 'ms',
                     ]
                 );
             }
@@ -115,7 +114,6 @@ class PerformanceHandler
         $this->preloadCriticalEntities($query);
 
         $perfTimings['request_optimization'] = round((microtime(true) - $optimizeStart) * 1000, 2);
-
     }//end optimizeRequestForPerformance()
 
     /**
@@ -138,7 +136,7 @@ class PerformanceHandler
         if (empty($query['_extend']) === false) {
             if (is_array($query['_extend']) === true) {
                 $extendCount = count($query['_extend']);
-            } else if (is_string($query['_extend']) === true) {
+            } elseif (is_string($query['_extend']) === true) {
                 // Count comma-separated extend fields.
                 $extendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
             }
@@ -161,7 +159,6 @@ class PerformanceHandler
         $hasComplexFilters = $filterCount > 3;
 
         return !($hasComplexExtend || $hasFacets || $hasLargeLimit || $hasComplexFilters);
-
     }//end isSimpleRequest()
 
     /**
@@ -193,7 +190,6 @@ class PerformanceHandler
         // - Limit extend depth.
         // - Remove duplicate extends.
         return $extendArray;
-
     }//end optimizeExtendQueries()
 
     /**
@@ -216,7 +212,6 @@ class PerformanceHandler
         // - Preload registers.
         // - Warm up object cache for frequently accessed objects.
         return;
-
     }//end preloadCriticalEntities()
 
     /**
@@ -261,7 +256,7 @@ class PerformanceHandler
                             $allRelatedIds[] = $relatedId;
                         }
                     }
-                } else if (is_string($value) === true && $this->isUuid($value) === true) {
+                } elseif (is_string($value) === true && $this->isUuid($value) === true) {
                     // Handle single ID.
                     $allRelatedIds[] = $value;
                 }
@@ -289,12 +284,11 @@ class PerformanceHandler
                 'related_ids_found'     => count($allRelatedIds),
                 'include_related'       => $includeRelated,
                 'include_related_names' => $includeRelatedNames,
-                'execution_time'        => $executionTime.'ms',
+                'execution_time'        => $executionTime . 'ms',
             ]
         );
 
         return $relatedData;
-
     }//end extractRelatedData()
 
     /**
@@ -314,7 +308,6 @@ class PerformanceHandler
             '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
             $value
         ) === 1;
-
     }//end isUuid()
 
     /**
@@ -331,7 +324,6 @@ class PerformanceHandler
     {
         // Entity caching is disabled - always use fallback function.
         return call_user_func($fallbackFunc, $ids);
-
     }//end getCachedEntities()
 
     /**
@@ -351,7 +343,6 @@ class PerformanceHandler
         }
 
         return 0;
-
     }//end getFacetCount()
 
     /**
@@ -369,7 +360,6 @@ class PerformanceHandler
         }
 
         return 1;
-
     }//end calculateTotalPages()
 
     /**
@@ -398,6 +388,5 @@ class PerformanceHandler
         }
 
         return 0;
-
     }//end calculateExtendCount()
 }//end class

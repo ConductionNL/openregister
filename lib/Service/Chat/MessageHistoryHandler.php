@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Chat Message History Handler
  *
@@ -40,7 +41,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class MessageHistoryHandler
 {
-
     /**
      * Number of recent messages to keep in context
      *
@@ -86,7 +86,6 @@ class MessageHistoryHandler
         $this->messageMapper      = $messageMapper;
         $this->conversationMapper = $conversationMapper;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -136,9 +135,9 @@ class MessageHistoryHandler
                 // Use static factory methods based on role.
                 if ($role === 'user') {
                     $history[] = LLPhantMessage::user($content);
-                } else if ($role === 'assistant') {
+                } elseif ($role === 'assistant') {
                     $history[] = LLPhantMessage::assistant($content);
-                } else if ($role === 'system') {
+                } elseif ($role === 'system') {
                     $history[] = LLPhantMessage::system($content);
                 } else {
                     $this->logger->warning(
@@ -167,7 +166,6 @@ class MessageHistoryHandler
         );
 
         return $history;
-
     }//end buildMessageHistory()
 
     /**
@@ -186,7 +184,7 @@ class MessageHistoryHandler
         int $conversationId,
         string $role,
         string $content,
-        ?array $sources=null
+        ?array $sources = null
     ): Message {
         $message = new Message();
         $message->setUuid(Uuid::v4()->toRfc4122());
@@ -213,6 +211,5 @@ class MessageHistoryHandler
         );
 
         return $message;
-
     }//end storeMessage()
 }//end class

@@ -85,7 +85,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         // Note: Using raw SQL for composite indexes to handle MySQL key length limits.
         $connection  = \OC::$server->getDatabaseConnection();
         $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
-        $tableName   = $tablePrefix.'openregister_objects';
+        $tableName   = $tablePrefix . 'openregister_objects';
 
         $compositeIndexes = [
             // For base filtering (deleted + published state).
@@ -113,11 +113,11 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
             // Check all base columns exist (without length prefixes).
             $baseColumns = array_map(
-                    function ($col) {
-                        return preg_replace('/\(\d+\)/', '', $col);
-                    },
-                    $columns
-                    );
+                function ($col) {
+                    return preg_replace('/\(\d+\)/', '', $col);
+                },
+                $columns
+            );
 
             $allColumnsExist = true;
             foreach ($baseColumns as $column) {
@@ -129,16 +129,15 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
             if ($allColumnsExist === true) {
                 try {
-                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (".implode(', ', $columns).")";
+                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (" . implode(', ', $columns) . ")";
                     $connection->executeStatement($sql);
-                    $output->info("Added composite index {$indexName} on columns: ".implode(', ', $columns));
+                    $output->info("Added composite index {$indexName} on columns: " . implode(', ', $columns));
                 } catch (\Exception $e) {
-                    $output->info("Failed to create index {$indexName}: ".$e->getMessage());
+                    $output->info("Failed to create index {$indexName}: " . $e->getMessage());
                 }
             }
         }//end foreach
 
         return $schema;
-
     }//end changeSchema()
 }//end class

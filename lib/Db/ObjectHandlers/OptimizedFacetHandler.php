@@ -35,7 +35,6 @@ use OCP\IDBConnection;
  */
 class OptimizedFacetHandler
 {
-
     /**
      * Database connection
      *
@@ -58,7 +57,6 @@ class OptimizedFacetHandler
     public function __construct(IDBConnection $db)
     {
         $this->db = $db;
-
     }//end __construct()
 
     /**
@@ -79,7 +77,7 @@ class OptimizedFacetHandler
      *
      * @return array Combined facet results
      */
-    public function getBatchedFacets(array $facetConfig, array $baseQuery=[]): array
+    public function getBatchedFacets(array $facetConfig, array $baseQuery = []): array
     {
         $results = [];
 
@@ -100,7 +98,7 @@ class OptimizedFacetHandler
         foreach ($facetConfig as $facetName => $config) {
             if ($facetName === '@self' && is_array($config) === true) {
                 $metadataFacets = $config;
-            } else if ($facetName !== '@self') {
+            } elseif ($facetName !== '@self') {
                 $jsonFieldFacets[$facetName] = $config;
             }
         }
@@ -131,7 +129,6 @@ class OptimizedFacetHandler
         $this->facetCache[$cacheKey] = $results;
 
         return $results;
-
     }//end getBatchedFacets()
 
     /**
@@ -173,7 +170,6 @@ class OptimizedFacetHandler
         }
 
         return $results;
-
     }//end getBatchedMetadataFacets()
 
     /**
@@ -237,7 +233,6 @@ class OptimizedFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-
     }//end getOptimizedMetadataTermsFacet()
 
     /**
@@ -264,7 +259,7 @@ class OptimizedFacetHandler
     private function getOptimizedJsonTermsFacet(string $field, array $baseQuery): array
     {
         $queryBuilder = $this->db->getQueryBuilder();
-        $jsonPath     = '$'.$field;
+        $jsonPath     = '$' . $field;
 
         // Check if we should skip this facet due to too much data.
         $estimatedRows = $this->estimateRowCount($baseQuery);
@@ -279,16 +274,16 @@ class OptimizedFacetHandler
 
         // Use optimized JSON query with limits.
         $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath)."))"),
-                'field_value'
-            )
+            $queryBuilder->createFunction("JSON_UNQUOTE(JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . "))"),
+            'field_value'
+        )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
             ->from('openregister_objects')
             ->where(
-                    $queryBuilder->expr()->isNotNull(
-                            $queryBuilder->createFunction("JSON_EXTRACT(object, ".$queryBuilder->createNamedParameter($jsonPath).")")
-                            )
-                    )
+                $queryBuilder->expr()->isNotNull(
+                    $queryBuilder->createFunction("JSON_EXTRACT(object, " . $queryBuilder->createNamedParameter($jsonPath) . ")")
+                )
+            )
             ->groupBy('field_value')
             ->orderBy('doc_count', 'DESC');
         // Limit results for performance.
@@ -315,7 +310,6 @@ class OptimizedFacetHandler
             'type'    => 'terms',
             'buckets' => $buckets,
         ];
-
     }//end getOptimizedJsonTermsFacet()
 
     /**
@@ -340,8 +334,8 @@ class OptimizedFacetHandler
         // 1. Most selective: ID-based filters.
         if (($baseQuery['_ids'] ?? null) !== null && is_array($baseQuery['_ids']) === true && empty($baseQuery['_ids']) === false) {
             $queryBuilder->andWhere(
-                    $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
-                    );
+                $queryBuilder->expr()->in('id', $queryBuilder->createNamedParameter($baseQuery['_ids'], \Doctrine\DBAL\Connection::PARAM_INT_ARRAY))
+            );
         }
 
         // 2. High selectivity: register/schema filters.
@@ -363,15 +357,15 @@ class OptimizedFacetHandler
         if ($published === true) {
             $now = (new DateTime())->format('Y-m-d H:i:s');
             $queryBuilder->andWhere(
-                    $queryBuilder->expr()->andX(
-                            $queryBuilder->expr()->isNotNull('published'),
-                            $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                            $queryBuilder->expr()->orX(
-                                    $queryBuilder->expr()->isNull('depublished'),
-                                    $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                                    )
-                            )
-                    );
+                $queryBuilder->expr()->andX(
+                    $queryBuilder->expr()->isNotNull('published'),
+                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
+                    $queryBuilder->expr()->orX(
+                        $queryBuilder->expr()->isNull('depublished'),
+                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
+                    )
+                )
+            );
         }
 
         // 4. Low selectivity: organization filters.
@@ -418,7 +412,6 @@ class OptimizedFacetHandler
 
         $result = $queryBuilder->executeQuery();
         return (int) $result->fetchOne();
-
     }//end estimateRowCount()
 
     /**
@@ -438,7 +431,6 @@ class OptimizedFacetHandler
     private function generateCacheKey(array $facetConfig, array $baseQuery): string
     {
         return md5(json_encode(['facets' => $facetConfig, 'query' => $baseQuery]));
-
     }//end generateCacheKey()
 
     /**
@@ -495,7 +487,6 @@ class OptimizedFacetHandler
 
         // For other fields, return the value as-is.
         return (string) $value;
-
     }//end getFieldLabel()
 
     /**
@@ -506,6 +497,5 @@ class OptimizedFacetHandler
     public function clearCache(): void
     {
         $this->facetCache = [];
-
     }//end clearCache()
 }//end class

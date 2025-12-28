@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration to convert organisation columns from BIGINT to STRING (UUID)
  *
@@ -139,15 +140,15 @@ class Version1Date20251106000000 extends SimpleMigrationStep
             if ($table->hasColumn('organisation') === false) {
                 // Add organisation column if it doesn't exist.
                 $table->addColumn(
-                        'organisation',
-                        Types::STRING,
-                        [
+                    'organisation',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 36,
                             'default' => null,
                             'comment' => 'Organisation UUID for multi-tenancy',
                         ]
-                        );
+                );
 
                 $output->info(message: '✅ Added openregister_configurations.organisation column (VARCHAR(36))');
                 $updated = true;
@@ -170,6 +171,5 @@ class Version1Date20251106000000 extends SimpleMigrationStep
         } else {
             return null;
         }
-
     }//end changeSchema()
 }//end class

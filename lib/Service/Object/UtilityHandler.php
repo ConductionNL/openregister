@@ -46,7 +46,6 @@ class UtilityHandler
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper
     ) {
-
     }//end __construct()
 
     /**
@@ -68,7 +67,6 @@ class UtilityHandler
         }
 
         return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
-
     }//end isUuid()
 
     /**
@@ -91,7 +89,6 @@ class UtilityHandler
         }
 
         return [$value];
-
     }//end normalizeToArray()
 
     /**
@@ -114,7 +111,6 @@ class UtilityHandler
         }
 
         return '&';
-
     }//end getUrlSeparator()
 
     /**
@@ -142,7 +138,6 @@ class UtilityHandler
         }
 
         return $entity;
-
     }//end normalizeEntity()
 
     /**
@@ -164,11 +159,10 @@ class UtilityHandler
     {
         $count = count($lookupMap);
         if ($count > 0) {
-            return round($totalTime / $count, 2).'ms/object';
+            return round($totalTime / $count, 2) . 'ms/object';
         }
 
         return 'no_objects';
-
     }//end calculateEfficiency()
 
     /**
@@ -235,6 +229,5 @@ class UtilityHandler
         }//end foreach
 
         return $newParameters;
-
     }//end cleanQuery()
 }//end class

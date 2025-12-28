@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileTextExtractionJob extends QueuedJob
 {
-
     /**
      * Configuration service
      *
@@ -87,7 +86,8 @@ class FileTextExtractionJob extends QueuedJob
     {
         // Step 1: Check if file text extraction is enabled in configuration.
         // Skip extraction if disabled to avoid unnecessary processing.
-        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
+        if (
+            $this->config->hasKey(app: 'openregister', key: 'fileManagement') === false
             || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none'
         ) {
             $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
@@ -97,11 +97,11 @@ class FileTextExtractionJob extends QueuedJob
         // Step 2: Validate that required file_id argument is present.
         if (isset($argument['file_id']) === false) {
             $this->logger->error(
-                    '[FileTextExtractionJob] Missing file_id in job arguments',
-                    [
+                '[FileTextExtractionJob] Missing file_id in job arguments',
+                [
                         'argument' => $argument,
                     ]
-                    );
+            );
             return;
         }
 
@@ -110,12 +110,12 @@ class FileTextExtractionJob extends QueuedJob
 
         // Log start of extraction process for monitoring.
         $this->logger->info(
-                '[FileTextExtractionJob] Starting text extraction',
-                [
+            '[FileTextExtractionJob] Starting text extraction',
+            [
                     'file_id' => $fileId,
                     'job_id'  => $this->getId(),
                 ]
-                );
+        );
 
         // Record start time for performance metrics.
         $startTime = microtime(true);
@@ -129,27 +129,26 @@ class FileTextExtractionJob extends QueuedJob
 
             // Log successful completion with performance metrics.
             $this->logger->info(
-                    '[FileTextExtractionJob] Text extraction completed successfully',
-                    [
+                '[FileTextExtractionJob] Text extraction completed successfully',
+                [
                         'file_id'            => $fileId,
                         'processing_time_ms' => $processingTime,
                     ]
-                    );
+            );
         } catch (\Exception $e) {
             // Calculate processing time even on failure for metrics.
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
             // Log error with full exception details for debugging.
             $this->logger->error(
-                    '[FileTextExtractionJob] Exception during text extraction',
-                    [
+                '[FileTextExtractionJob] Exception during text extraction',
+                [
                         'file_id'            => $fileId,
                         'error'              => $e->getMessage(),
                         'trace'              => $e->getTraceAsString(),
                         'processing_time_ms' => $processingTime,
                     ]
-                    );
+            );
         }//end try
-
     }//end run()
 }//end class

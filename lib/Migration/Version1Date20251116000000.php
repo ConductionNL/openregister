@@ -51,7 +51,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $this->createEntityRelationsTable(output: $output, schema: $schema);
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -71,123 +70,123 @@ class Version1Date20251116000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_object_texts');
         $table->addColumn(
-                'id',
-                Types::BIGINT,
-                [
+            'id',
+            Types::BIGINT,
+            [
                     'autoincrement' => true,
                     'notnull'       => true,
                     'unsigned'      => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'uuid',
-                Types::STRING,
-                [
+            'uuid',
+            Types::STRING,
+            [
                     'length'  => 64,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'object_id',
-                Types::BIGINT,
-                [
+            'object_id',
+            Types::BIGINT,
+            [
                     'notnull'  => true,
                     'unsigned' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'register',
-                Types::STRING,
-                [
+            'register',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'schema',
-                Types::STRING,
-                [
+            'schema',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'text_blob',
-                Types::TEXT,
-                [
+            'text_blob',
+            Types::TEXT,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'text_length',
-                Types::INTEGER,
-                [
+            'text_length',
+            Types::INTEGER,
+            [
                     'notnull' => true,
                     'default' => 0,
                 ]
-                );
+        );
         $table->addColumn(
-                'property_map',
-                Types::JSON,
-                [
+            'property_map',
+            Types::JSON,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'extraction_status',
-                Types::STRING,
-                [
+            'extraction_status',
+            Types::STRING,
+            [
                     'length'  => 32,
                     'default' => 'completed',
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'chunked',
-                Types::BOOLEAN,
-                [
+            'chunked',
+            Types::BOOLEAN,
+            [
                     'default' => false,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'chunk_count',
-                Types::INTEGER,
-                [
+            'chunk_count',
+            Types::INTEGER,
+            [
                     'default' => 0,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'owner',
-                Types::STRING,
-                [
+            'owner',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'organisation',
-                Types::STRING,
-                [
+            'organisation',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'created_at',
-                Types::DATETIME,
-                [
+            'created_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'updated_at',
-                Types::DATETIME,
-                [
+            'updated_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
 
         $table->setPrimaryKey(['id']);
         $table->addUniqueIndex(['uuid'], 'object_texts_uuid_idx');
@@ -198,7 +197,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['organisation'], 'object_texts_org_idx');
 
         $output->info(message: '✅ Created openregister_object_texts table.');
-
     }//end createObjectTextTable()
 
     /**
@@ -218,171 +216,171 @@ class Version1Date20251116000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_chunks');
         $table->addColumn(
-                'id',
-                Types::BIGINT,
-                [
+            'id',
+            Types::BIGINT,
+            [
                     'autoincrement' => true,
                     'notnull'       => true,
                     'unsigned'      => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'uuid',
-                Types::STRING,
-                [
+            'uuid',
+            Types::STRING,
+            [
                     'length'  => 64,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'source_type',
-                Types::STRING,
-                [
+            'source_type',
+            Types::STRING,
+            [
                     'length'  => 50,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'source_id',
-                Types::BIGINT,
-                [
+            'source_id',
+            Types::BIGINT,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'text_content',
-                Types::TEXT,
-                [
+            'text_content',
+            Types::TEXT,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'start_offset',
-                Types::INTEGER,
-                [
-                    'notnull' => true,
-                    'default' => 0,
-                ]
-                );
-        $table->addColumn(
-                'end_offset',
-                Types::INTEGER,
-                [
+            'start_offset',
+            Types::INTEGER,
+            [
                     'notnull' => true,
                     'default' => 0,
                 ]
-                );
+        );
         $table->addColumn(
-                'chunk_index',
-                Types::INTEGER,
-                [
+            'end_offset',
+            Types::INTEGER,
+            [
                     'notnull' => true,
                     'default' => 0,
                 ]
-                );
+        );
         $table->addColumn(
-                'position_reference',
-                Types::JSON,
-                [
+            'chunk_index',
+            Types::INTEGER,
+            [
+                    'notnull' => true,
+                    'default' => 0,
+                ]
+        );
+        $table->addColumn(
+            'position_reference',
+            Types::JSON,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'language',
-                Types::STRING,
-                [
+            'language',
+            Types::STRING,
+            [
                     'length'  => 10,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'language_level',
-                Types::STRING,
-                [
+            'language_level',
+            Types::STRING,
+            [
                     'length'  => 20,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'language_confidence',
-                Types::DECIMAL,
-                [
+            'language_confidence',
+            Types::DECIMAL,
+            [
                     'precision' => 3,
                     'scale'     => 2,
                     'default'   => 0,
                     'notnull'   => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'detection_method',
-                Types::STRING,
-                [
+            'detection_method',
+            Types::STRING,
+            [
                     'length'  => 50,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'indexed',
-                Types::BOOLEAN,
-                [
+            'indexed',
+            Types::BOOLEAN,
+            [
                     'default' => false,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'embedding_provider',
-                Types::STRING,
-                [
+            'embedding_provider',
+            Types::STRING,
+            [
                     'length'  => 100,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'overlap_size',
-                Types::INTEGER,
-                [
+            'overlap_size',
+            Types::INTEGER,
+            [
                     'default' => 0,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'vectorized',
-                Types::BOOLEAN,
-                [
+            'vectorized',
+            Types::BOOLEAN,
+            [
                     'default' => false,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'owner',
-                Types::STRING,
-                [
+            'owner',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'organisation',
-                Types::STRING,
-                [
+            'organisation',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'created_at',
-                Types::DATETIME,
-                [
+            'created_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'updated_at',
-                Types::DATETIME,
-                [
+            'updated_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
 
         $table->setPrimaryKey(['id']);
         $table->addUniqueIndex(['uuid'], 'chunks_uuid_idx');
@@ -395,7 +393,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['organisation'], 'chunks_org_idx');
 
         $output->info(message: '✅ Created openregister_chunks table.');
-
     }//end createChunksTable()
 
     /**
@@ -415,89 +412,89 @@ class Version1Date20251116000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_entities');
         $table->addColumn(
-                'id',
-                Types::BIGINT,
-                [
+            'id',
+            Types::BIGINT,
+            [
                     'autoincrement' => true,
                     'notnull'       => true,
                     'unsigned'      => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'uuid',
-                Types::STRING,
-                [
+            'uuid',
+            Types::STRING,
+            [
                     'length'  => 64,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'type',
-                Types::STRING,
-                [
+            'type',
+            Types::STRING,
+            [
                     'length'  => 50,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'value',
-                Types::TEXT,
-                [
+            'value',
+            Types::TEXT,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'category',
-                Types::STRING,
-                [
+            'category',
+            Types::STRING,
+            [
                     'length'  => 50,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'belongs_to_entity_id',
-                Types::BIGINT,
-                [
+            'belongs_to_entity_id',
+            Types::BIGINT,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'metadata',
-                Types::JSON,
-                [
+            'metadata',
+            Types::JSON,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'owner',
-                Types::STRING,
-                [
+            'owner',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'organisation',
-                Types::STRING,
-                [
+            'organisation',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'detected_at',
-                Types::DATETIME,
-                [
+            'detected_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'updated_at',
-                Types::DATETIME,
-                [
+            'updated_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
 
         $table->setPrimaryKey(['id']);
         $table->addUniqueIndex(['uuid'], 'entities_uuid_idx');
@@ -508,7 +505,6 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         $table->addIndex(['organisation'], 'entities_org_idx');
 
         $output->info(message: '✅ Created openregister_entities table.');
-
     }//end createEntitiesTable()
 
     /**
@@ -528,123 +524,123 @@ class Version1Date20251116000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_entity_relations');
         $table->addColumn(
-                'id',
-                Types::BIGINT,
-                [
+            'id',
+            Types::BIGINT,
+            [
                     'autoincrement' => true,
                     'notnull'       => true,
                     'unsigned'      => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'entity_id',
-                Types::BIGINT,
-                [
+            'entity_id',
+            Types::BIGINT,
+            [
                     'notnull'  => true,
                     'unsigned' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'chunk_id',
-                Types::BIGINT,
-                [
+            'chunk_id',
+            Types::BIGINT,
+            [
                     'notnull'  => true,
                     'unsigned' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'role',
-                Types::STRING,
-                [
+            'role',
+            Types::STRING,
+            [
                     'length'  => 50,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'file_id',
-                Types::BIGINT,
-                [
+            'file_id',
+            Types::BIGINT,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'object_id',
-                Types::BIGINT,
-                [
+            'object_id',
+            Types::BIGINT,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'email_id',
-                Types::BIGINT,
-                [
+            'email_id',
+            Types::BIGINT,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'position_start',
-                Types::INTEGER,
-                [
+            'position_start',
+            Types::INTEGER,
+            [
                     'notnull' => true,
                     'default' => 0,
                 ]
-                );
+        );
         $table->addColumn(
-                'position_end',
-                Types::INTEGER,
-                [
+            'position_end',
+            Types::INTEGER,
+            [
                     'notnull' => true,
                     'default' => 0,
                 ]
-                );
+        );
         $table->addColumn(
-                'confidence',
-                Types::DECIMAL,
-                [
+            'confidence',
+            Types::DECIMAL,
+            [
                     'precision' => 3,
                     'scale'     => 2,
                     'default'   => 0,
                     'notnull'   => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'detection_method',
-                Types::STRING,
-                [
+            'detection_method',
+            Types::STRING,
+            [
                     'length'  => 50,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'context',
-                Types::TEXT,
-                [
+            'context',
+            Types::TEXT,
+            [
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'anonymized',
-                Types::BOOLEAN,
-                [
+            'anonymized',
+            Types::BOOLEAN,
+            [
                     'default' => false,
                     'notnull' => true,
                 ]
-                );
+        );
         $table->addColumn(
-                'anonymized_value',
-                Types::STRING,
-                [
+            'anonymized_value',
+            Types::STRING,
+            [
                     'length'  => 255,
                     'notnull' => false,
                 ]
-                );
+        );
         $table->addColumn(
-                'created_at',
-                Types::DATETIME,
-                [
+            'created_at',
+            Types::DATETIME,
+            [
                     'notnull' => true,
                 ]
-                );
+        );
 
         $table->setPrimaryKey(['id']);
         $table->addIndex(['entity_id'], 'entity_relations_entity_idx');
@@ -660,6 +656,5 @@ class Version1Date20251116000000 extends SimpleMigrationStep
         // Foreign key constraints can be added in a separate migration if needed.
         // Referential integrity is maintained at the application level.
         $output->info(message: '✅ Created openregister_entity_relations table.');
-
     }//end createEntityRelationsTable()
 }//end class

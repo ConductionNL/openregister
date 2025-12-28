@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Objects Tool
  *
@@ -42,7 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsTool extends AbstractTool
 {
-
     /**
      * Object service
      *
@@ -64,7 +64,6 @@ class ObjectsTool extends AbstractTool
     ) {
         parent::__construct($userSession, $logger);
         $this->objectService = $objectService;
-
     }//end __construct()
 
     /**
@@ -77,7 +76,6 @@ class ObjectsTool extends AbstractTool
     public function getName(): string
     {
         return 'objects';
-
     }//end getName()
 
     /**
@@ -90,7 +88,6 @@ class ObjectsTool extends AbstractTool
     public function getDescription(): string
     {
         return 'Manage objects: search, view, create, update, or delete objects. Objects are data records conforming to schemas.';
-
     }//end getDescription()
 
     /**
@@ -202,7 +199,6 @@ class ObjectsTool extends AbstractTool
                 ],
             ],
         ];
-
     }//end getFunctions()
 
     /**
@@ -216,7 +212,7 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
         $this->log(functionName: $functionName, parameters: $parameters);
 
@@ -234,7 +230,6 @@ class ObjectsTool extends AbstractTool
             $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
             return $this->formatError(message: $e->getMessage());
         }
-
     }//end executeFunction()
 
     /**
@@ -250,7 +245,7 @@ class ObjectsTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function searchObjects(int $limit=20, int $offset=0, ?string $register=null, ?string $schema=null, ?string $query=null): array
+    public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array
     {
         $filters = [];
         if ($register !== null) {
@@ -268,27 +263,27 @@ class ObjectsTool extends AbstractTool
         $filters = $this->applyViewFilters($filters);
 
         $result = $this->objectService->findAll(
-                config: [
+            config: [
                     'limit'   => $limit,
                     'offset'  => $offset,
                     'filters' => $filters,
                 ]
-                );
+        );
 
         $objectList = array_map(
-                function ($object) {
-                    return [
-                        'id'       => $object->getId(),
-                        'uuid'     => $object->getUuid(),
-                        'register' => $object->getRegister(),
-                        'schema'   => $object->getSchema(),
-                        'data'     => $object->getObject(),
-                        'created'  => $object->getCreated()?->format('Y-m-d H:i:s'),
-                        'updated'  => $object->getUpdated()?->format('Y-m-d H:i:s'),
-                    ];
-                },
-                $result['results'] ?? []
-                );
+            function ($object) {
+                return [
+                    'id'       => $object->getId(),
+                    'uuid'     => $object->getUuid(),
+                    'register' => $object->getRegister(),
+                    'schema'   => $object->getSchema(),
+                    'data'     => $object->getObject(),
+                    'created'  => $object->getCreated()?->format('Y-m-d H:i:s'),
+                    'updated'  => $object->getUpdated()?->format('Y-m-d H:i:s'),
+                ];
+            },
+            $result['results'] ?? []
+        );
 
         return $this->formatSuccess(
             data: [
@@ -297,7 +292,6 @@ class ObjectsTool extends AbstractTool
             ],
             message: sprintf('Found %d objects', count($objectList))
         );
-
     }//end searchObjects()
 
     /**
@@ -332,7 +326,6 @@ class ObjectsTool extends AbstractTool
             ],
             message: 'Object retrieved successfully'
         );
-
     }//end getObject()
 
     /**
@@ -376,7 +369,6 @@ class ObjectsTool extends AbstractTool
             ],
             message: 'Object created successfully'
         );
-
     }//end createObject()
 
     /**
@@ -420,7 +412,6 @@ class ObjectsTool extends AbstractTool
             ],
             message: 'Object updated successfully'
         );
-
     }//end updateObject()
 
     /**
@@ -448,6 +439,5 @@ class ObjectsTool extends AbstractTool
             data: ['id' => $id],
             message: 'Object deleted successfully'
         );
-
     }//end deleteObject()
 }//end class

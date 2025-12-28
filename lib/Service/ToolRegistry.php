@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Tool Registry
  *
@@ -60,7 +61,6 @@ use Psr\Log\LoggerInterface;
  */
 class ToolRegistry
 {
-
     /**
      * Registered tools
      *
@@ -103,7 +103,6 @@ class ToolRegistry
     ) {
         $this->eventDispatcher = $eventDispatcher;
         $this->logger          = $logger;
-
     }//end __construct()
 
     /**
@@ -127,13 +126,12 @@ class ToolRegistry
         $this->loaded = true;
 
         $this->logger->info(
-                '[ToolRegistry] Loaded tools',
-                [
+            '[ToolRegistry] Loaded tools',
+            [
                     'count' => count($this->tools),
                     'tools' => array_keys($this->tools),
                 ]
-                );
-
+        );
     }//end loadTools()
 
     /**
@@ -178,14 +176,13 @@ class ToolRegistry
         ];
 
         $this->logger->info(
-                '[ToolRegistry] Tool registered',
-                [
+            '[ToolRegistry] Tool registered',
+            [
                     'id'   => $id,
                     'name' => $metadata['name'],
                     'app'  => $metadata['app'],
                 ]
-                );
-
+        );
     }//end registerTool()
 
     /**
@@ -204,7 +201,6 @@ class ToolRegistry
         }
 
         return $this->tools[$id]['tool'];
-
     }//end getTool()
 
     /**
@@ -222,7 +218,6 @@ class ToolRegistry
         }
 
         return $result;
-
     }//end getAllTools()
 
     /**
@@ -248,6 +243,5 @@ class ToolRegistry
         }
 
         return $result;
-
     }//end getTools()
 }//end class

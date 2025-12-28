@@ -68,7 +68,6 @@ class FileSharingHandler
         private readonly LoggerInterface $logger,
         private readonly FileOwnershipHandler $fileOwnershipHandler
     ) {
-
     }//end __construct()
 
     /**
@@ -81,8 +80,7 @@ class FileSharingHandler
      */
     public function getShareLink(IShare $share): string
     {
-        return $this->getCurrentDomain().'/index.php/s/'.$share->getToken();
-
+        return $this->getCurrentDomain() . '/index.php/s/' . $share->getToken();
     }//end getShareLink()
 
     /**
@@ -96,14 +94,13 @@ class FileSharingHandler
      * @psalm-return   array<IShare>
      * @phpstan-return array<int, IShare>
      */
-    public function findShares(Node $file, int $shareType=3): array
+    public function findShares(Node $file, int $shareType = 3): array
     {
         // Use the OpenRegister system user instead of current user session.
         // This ensures we can find shares created by the OpenRegister system user.
         $userId = $this->fileOwnershipHandler->getUser()->getUID();
 
         return $this->shareManager->getSharesBy(userId: $userId, shareType: $shareType, path: $file, reshares: true);
-
     }//end findShares()
 
     /**
@@ -132,7 +129,7 @@ class FileSharingHandler
 
         // Create a new share.
         $share = $this->shareManager->newShare();
-        $share->setTarget(target: '/'.$shareData['path']);
+        $share->setTarget(target: '/' . $shareData['path']);
 
         if (empty($shareData['file']) === false) {
             $share->setNodeId(fileId: $shareData['file']->getId());
@@ -162,10 +159,9 @@ class FileSharingHandler
             $this->logger->info(message: "Successfully created share for {$shareData['path']}");
             return $share;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to create share for {$shareData['path']}: ".$e->getMessage());
-            throw new Exception("Failed to create share: ".$e->getMessage());
+            $this->logger->error(message: "Failed to create share for {$shareData['path']}: " . $e->getMessage());
+            throw new Exception("Failed to create share: " . $e->getMessage());
         }
-
     }//end createShare()
 
     /**
@@ -182,7 +178,7 @@ class FileSharingHandler
      * @psalm-return   void
      * @phpstan-return void
      */
-    public function shareFileWithUser(File $file, string $userId, int $permissions=31): void
+    public function shareFileWithUser(File $file, string $userId, int $permissions = 31): void
     {
         try {
             // Check if a share already exists with this user.
@@ -211,10 +207,9 @@ class FileSharingHandler
 
             $this->logger->info(message: "Created share for file {$file->getName()} with user {$userId}");
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to share file {$file->getName()} with user {$userId}: ".$e->getMessage());
+            $this->logger->error(message: "Failed to share file {$file->getName()} with user {$userId}: " . $e->getMessage());
             throw $e;
         }//end try
-
     }//end shareFileWithUser()
 
     /**
@@ -229,7 +224,7 @@ class FileSharingHandler
      * @psalm-return   IShare|null
      * @phpstan-return IShare|null
      */
-    public function shareFolderWithUser(Node $folder, string $userId, int $permissions=31): ?IShare
+    public function shareFolderWithUser(Node $folder, string $userId, int $permissions = 31): ?IShare
     {
         try {
             // Check if user exists.
@@ -240,7 +235,7 @@ class FileSharingHandler
 
             // Create the share.
             $share = $this->createShare(
-                    shareData: [
+                shareData: [
                         'path'        => ltrim($folder->getPath(), '/'),
                         'nodeId'      => $folder->getId(),
                         'nodeType'    => 'folder',
@@ -248,15 +243,14 @@ class FileSharingHandler
                         'permissions' => $permissions,
                         'sharedWith'  => $userId,
                     ]
-                    );
+            );
 
             $this->logger->info(message: "Successfully shared folder '{$folder->getName()}' with user '$userId'");
             return $share;
         } catch (Exception $e) {
-            $this->logger->error(message: "Failed to share folder '{$folder->getName()}' with user '$userId': ".$e->getMessage());
+            $this->logger->error(message: "Failed to share folder '{$folder->getName()}' with user '$userId': " . $e->getMessage());
             return null;
         }//end try
-
     }//end shareFolderWithUser()
 
     /**
@@ -277,6 +271,5 @@ class FileSharingHandler
         }
 
         return $baseUrl;
-
     }//end getCurrentDomain()
 }//end class

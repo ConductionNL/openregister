@@ -72,27 +72,27 @@ class Version1Date20251102150000 extends SimpleMigrationStep
             // Add query column if it doesn't exist.
             if ($table->hasColumn('query') === false) {
                 $table->addColumn(
-                        'query',
-                        Types::JSON,
-                        [
+                    'query',
+                    Types::JSON,
+                    [
                             'notnull' => true,
                             'comment' => 'Query parameters: registers, schemas, search terms, and facet filters',
                         ]
-                        );
+                );
                 $output->info(message: '   ✓ Added query column');
             }
 
             // Add favored_by column if it doesn't exist.
             if ($table->hasColumn('favored_by') === false) {
                 $table->addColumn(
-                        'favored_by',
-                        Types::JSON,
-                        [
+                    'favored_by',
+                    Types::JSON,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Array of user IDs who favorited this view',
                         ]
-                        );
+                );
                 $output->info(message: '   ✓ Added favored_by column');
             }
 
@@ -108,6 +108,5 @@ class Version1Date20251102150000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectEntity Query Builder Handler
  *
@@ -31,7 +32,6 @@ use Psr\Log\LoggerInterface;
  */
 class QueryBuilderHandler
 {
-
     /**
      * Database connection
      *
@@ -60,7 +60,6 @@ class QueryBuilderHandler
     ) {
         $this->db     = $db;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -73,7 +72,6 @@ class QueryBuilderHandler
     public function getQueryBuilder(): IQueryBuilder
     {
         return $this->db->getQueryBuilder();
-
     }//end getQueryBuilder()
 
     /**
@@ -115,6 +113,5 @@ class QueryBuilderHandler
 
         // Default fallback value (16MB).
         return 16777216;
-
     }//end getMaxAllowedPacketSize()
 }//end class

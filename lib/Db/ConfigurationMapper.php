@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Configuration Mapper
  *
@@ -125,7 +126,6 @@ class ConfigurationMapper extends QBMapper
         $this->groupManager       = $groupManager;
         $this->session            = $session;
         $this->eventDispatcher    = $eventDispatcher;
-
     }//end __construct()
 
     /**
@@ -147,7 +147,7 @@ class ConfigurationMapper extends QBMapper
      * @throws MultipleObjectsReturnedException
      * @throws \Exception If user doesn't have read permission
      */
-    public function find(int $id, bool $_multitenancy=true): Configuration
+    public function find(int $id, bool $_multitenancy = true): Configuration
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -164,7 +164,6 @@ class ConfigurationMapper extends QBMapper
         }
 
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -180,7 +179,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
-    public function findByApp(string $app, int $limit=50, int $offset=0): array
+    public function findByApp(string $app, int $limit = 50, int $offset = 0): array
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -198,7 +197,6 @@ class ConfigurationMapper extends QBMapper
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
-
     }//end findByApp()
 
     /**
@@ -236,7 +234,6 @@ class ConfigurationMapper extends QBMapper
             // No configuration found with this source URL.
             return null;
         }
-
     }//end findBySourceUrl()
 
     /**
@@ -255,7 +252,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
-    public function findBySyncEnabled(int $limit=50, int $offset=0): array
+    public function findBySyncEnabled(int $limit = 50, int $offset = 0): array
     {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -274,7 +271,6 @@ class ConfigurationMapper extends QBMapper
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
-
     }//end findBySyncEnabled()
 
     /**
@@ -294,7 +290,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message=''): Configuration
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message = ''): Configuration
     {
         // Verify RBAC permission to update.
         $this->verifyRbacPermission(action: 'update', entityType: 'configuration');
@@ -305,7 +301,6 @@ class ConfigurationMapper extends QBMapper
         $configuration->setUpdated(new DateTime());
 
         return $this->update($configuration);
-
     }//end updateSyncStatus()
 
     /**
@@ -360,7 +355,6 @@ class ConfigurationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent($result));
 
         return $result;
-
     }//end insert()
 
     /**
@@ -394,7 +388,6 @@ class ConfigurationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ConfigurationUpdatedEvent($result, $oldEntity));
 
         return $result;
-
     }//end update()
 
     /**
@@ -424,7 +417,6 @@ class ConfigurationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent($result));
 
         return $result;
-
     }//end delete()
 
     /**
@@ -442,7 +434,6 @@ class ConfigurationMapper extends QBMapper
 
         // Prepare the object before insertion.
         return $this->insert($config);
-
     }//end createFromArray()
 
     /**
@@ -470,7 +461,6 @@ class ConfigurationMapper extends QBMapper
         $object->hydrate(object: $data);
 
         return $this->update($object);
-
     }//end updateFromArray()
 
     /**
@@ -489,12 +479,12 @@ class ConfigurationMapper extends QBMapper
      * @psalm-return list<OCA\OpenRegister\Db\Configuration>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[],
-        bool $_multitenancy=true
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = [],
+        bool $_multitenancy = true
     ): array {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'configuration');
@@ -512,7 +502,7 @@ class ConfigurationMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -521,7 +511,7 @@ class ConfigurationMapper extends QBMapper
 
         // Apply search conditions.
         if (empty($searchConditions) === false) {
-            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
+            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
             foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
@@ -534,7 +524,6 @@ class ConfigurationMapper extends QBMapper
 
         // Execute the query and return the results.
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**

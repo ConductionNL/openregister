@@ -109,7 +109,6 @@ class Version1Date20251103120000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -139,6 +138,5 @@ class Version1Date20251103120000 extends SimpleMigrationStep
 
             $output->info(message: 'Dropped old table openregister_views');
         }//end if
-
     }//end postSchemaChange()
 }//end class

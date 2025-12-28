@@ -49,7 +49,6 @@ use OCP\IRequest;
  */
 class FilesController extends Controller
 {
-
     /**
      * File service for handling file operations
      *
@@ -93,7 +92,6 @@ class FilesController extends Controller
         // Store dependencies for use in controller methods.
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
-
     }//end __construct()
 
     /**
@@ -138,7 +136,6 @@ class FilesController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end index()
 
     /**
@@ -186,7 +183,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end show()
 
     /**
@@ -253,7 +249,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end create()
 
     /**
@@ -343,7 +338,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end save()
 
     /**
@@ -580,7 +574,7 @@ class FilesController extends Controller
 
             if ($content === false) {
                 throw new Exception(
-                    'Failed to read uploaded file content for: '.$file['name']
+                    'Failed to read uploaded file content for: ' . $file['name']
                 );
             }
 
@@ -613,7 +607,7 @@ class FilesController extends Controller
 
         if ($fileError !== null && ($fileError !== UPLOAD_ERR_OK) === true) {
             throw new Exception(
-                'File upload error for '.$file['name'].': '.$this->getUploadErrorMessage($fileError)
+                'File upload error for ' . $file['name'] . ': ' . $this->getUploadErrorMessage($fileError)
             );
         }
 
@@ -622,7 +616,7 @@ class FilesController extends Controller
 
         if (file_exists($tmpName) === false || is_readable($tmpName) === false) {
             throw new Exception(
-                'Temporary file not found or not readable for: '.$file['name']
+                'Temporary file not found or not readable for: ' . $file['name']
             );
         }
     }//end validateUploadedFile()
@@ -674,7 +668,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end update()
 
     /**
@@ -717,7 +710,6 @@ class FilesController extends Controller
                 statusCode: 400
             );
         }
-
     }//end delete()
 
     /**
@@ -765,7 +757,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end publish()
 
     /**
@@ -813,7 +804,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end depublish()
 
     /**
@@ -854,7 +844,6 @@ class FilesController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end downloadById()
 
     /**
@@ -878,9 +867,8 @@ class FilesController extends Controller
             UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server',
             UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
             UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
-            default => 'Unknown upload error (code: '.$errorCode.')',
+            default => 'Unknown upload error (code: ' . $errorCode . ')',
         };
-
     }//end getUploadErrorMessage()
 
     /**
@@ -915,7 +903,6 @@ class FilesController extends Controller
 
         // Fallback to false for other types.
         return false;
-
     }//end parseBool()
 
     /**
@@ -946,7 +933,6 @@ class FilesController extends Controller
 
         // Default to empty array.
         return [];
-
     }//end normalizeTags()
 
     /**
@@ -967,6 +953,5 @@ class FilesController extends Controller
             templateName: 'index',
             params: []
         );
-
     }//end page()
 }//end class

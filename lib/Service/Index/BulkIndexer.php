@@ -44,7 +44,6 @@ use RuntimeException;
  */
 class BulkIndexer
 {
-
     /**
      * Object entity mapper for DB queries.
      *
@@ -113,7 +112,6 @@ class BulkIndexer
         $this->searchBackend   = $searchBackend;
         $this->db     = $db;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -131,7 +129,7 @@ class BulkIndexer
      *
      * @psalm-return array{success: false, message: 'Method not yet extracted to BulkIndexer'}
      */
-    public function bulkIndexObjects(array $objects, bool $commit=true): array
+    public function bulkIndexObjects(array $objects, bool $commit = true): array
     {
         $this->logger->warning('[BulkIndexer] bulkIndexObjects not yet fully extracted - needs implementation');
 
@@ -139,7 +137,6 @@ class BulkIndexer
             'success' => false,
             'message' => 'Method not yet extracted to BulkIndexer',
         ];
-
     }//end bulkIndexObjects()
 
     /**
@@ -160,10 +157,10 @@ class BulkIndexer
      * @psalm-return array{success: bool, indexed: int<0, max>, batches: int<0, max>, batch_size?: int, skipped_non_searchable?: int, error?: 'Search backend is not available'}
      */
     public function bulkIndexFromDatabase(
-        int $batchSize=1000,
-        int $maxObjects=0,
-        array $solrFieldTypes=[],
-        array $schemaIds=[]
+        int $batchSize = 1000,
+        int $maxObjects = 0,
+        array $solrFieldTypes = [],
+        array $schemaIds = []
     ): array {
         // $schemaIds is guaranteed to be an array from function signature
         // Check backend availability.
@@ -220,7 +217,7 @@ class BulkIndexer
                     [
                         'batch'        => $batchCount + 1,
                         'objectsFound' => $objectsCount,
-                        'fetchTime'    => $fetchDuration.'ms',
+                        'fetchTime'    => $fetchDuration . 'ms',
                     ]
                 );
 
@@ -271,7 +268,7 @@ class BulkIndexer
                         '[BulkIndexer] Batch indexed',
                         [
                             'documents' => $indexed,
-                            'indexTime' => $indexDuration.'ms',
+                            'indexTime' => $indexDuration . 'ms',
                         ]
                     );
                 }
@@ -300,12 +297,11 @@ class BulkIndexer
         } catch (\Exception $e) {
             $this->logger->error('[BulkIndexer] Bulk indexing failed', ['error' => $e->getMessage()]);
             throw new RuntimeException(
-                'Bulk indexing failed: '.$e->getMessage().' (Indexed: '.($totalIndexed ?? 0).', Batches: '.($batchCount ?? 0).')',
+                'Bulk indexing failed: ' . $e->getMessage() . ' (Indexed: ' . ($totalIndexed ?? 0) . ', Batches: ' . ($batchCount ?? 0) . ')',
                 0,
                 $e
             );
         }//end try
-
     }//end bulkIndexFromDatabase()
 
     /**
@@ -315,7 +311,7 @@ class BulkIndexer
      *
      * @return int Count of searchable objects
      */
-    private function countSearchableObjects(array $schemaIds=[]): int
+    private function countSearchableObjects(array $schemaIds = []): int
     {
         // Get searchable schema IDs.
         $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
@@ -326,7 +322,6 @@ class BulkIndexer
 
         // Count objects with searchable schemas.
         return $this->objectMapper->countBySchemas($searchableSchemaIds);
-
     }//end countSearchableObjects()
 
     /**
@@ -340,7 +335,7 @@ class BulkIndexer
      *
      * @psalm-return list<OCA\OpenRegister\Db\OCA\OpenRegister\Db\ObjectEntity>
      */
-    private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds=[]): array
+    private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds = []): array
     {
         // Get searchable schema IDs.
         $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
@@ -351,7 +346,6 @@ class BulkIndexer
 
         // Fetch objects with searchable schemas.
         return $this->objectMapper->findBySchemas(schemaIds: $searchableSchemaIds, limit: $limit, offset: $offset);
-
     }//end fetchSearchableObjects()
 
     /**
@@ -363,7 +357,7 @@ class BulkIndexer
      *
      * @psalm-return list<int|string>
      */
-    private function getSearchableSchemaIds(array $schemaIds=[]): array
+    private function getSearchableSchemaIds(array $schemaIds = []): array
     {
         // If specific schemas requested, filter for searchable ones.
         if (empty($schemaIds) === false) {
@@ -392,6 +386,5 @@ class BulkIndexer
         }
 
         return $searchableIds;
-
     }//end getSearchableSchemaIds()
 }//end class

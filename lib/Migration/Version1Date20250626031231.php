@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20250626031231
  *
@@ -68,6 +69,5 @@ class Version1Date20250626031231 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

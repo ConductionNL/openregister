@@ -47,7 +47,6 @@ use Opis\JsonSchema\Format;
  */
 class SemVerFormat implements Format
 {
-
     /**
      * Regular expression pattern for Semantic Versioning
      *
@@ -80,6 +79,5 @@ REGEX;
 
         // Validate against SemVer pattern.
         return preg_match(self::SEMVER_PATTERN, $data) === 1;
-
     }//end validate()
 }//end class

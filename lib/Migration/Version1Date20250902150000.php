@@ -89,7 +89,6 @@ class Version1Date20250902150000 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -108,6 +107,5 @@ class Version1Date20250902150000 extends SimpleMigrationStep
         // Note: We'll regenerate facets via an OCC command rather than in migration.
         // To avoid dependency injection issues during migration.
         $output->info('Facets column added. Run `occ openregister:regenerate-facets` to populate facet data for existing schemas.');
-
     }//end postSchemaChange()
 }//end class

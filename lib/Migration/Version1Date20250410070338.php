@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -55,75 +56,75 @@ class Version1Date20250410070338 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_configurations') === false) {
             $table = $schema->createTable('openregister_configurations');
             $table->addColumn(
-                    'id',
-                    'integer',
-                    [
+                'id',
+                'integer',
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'title',
-                    'string',
-                    [
+                'title',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 255,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'description',
-                    'text',
-                    [
+                'description',
+                'text',
+                [
                         'notnull' => false,
                         'default' => '',
                     ]
-                    );
+            );
             $table->addColumn(
-                    'type',
-                    'string',
-                    [
+                'type',
+                'string',
+                [
                         'notnull' => true,
                         'length'  => 64,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'registers',
-                    Types::JSON,
-                    [
+                'registers',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'version',
-                    'string',
-                    [
+                'version',
+                'string',
+                [
                         'notnull' => false,
                         'length'  => 255,
                         'default' => '0.0.1',
                     ]
-                    );
+            );
             $table->addColumn(
-                    'owner',
-                    'string',
-                    [
+                'owner',
+                'string',
+                [
                         'notnull' => false,
                         'length'  => 64,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'created',
-                    'datetime',
-                    [
+                'created',
+                'datetime',
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'updated',
-                    'datetime',
-                    [
+                'updated',
+                'datetime',
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
 
             $table->setPrimaryKey(['id']);
             $table->addIndex(['type'], 'openregister_config_type_idx');
@@ -138,20 +139,20 @@ class Version1Date20250410070338 extends SimpleMigrationStep
         // Add the authorization column if it doesn't exist.
         if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
-                    'authorization',
-                    Types::JSON,
-                    [
+                'authorization',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
             $table->addColumn(
-                    'icon',
-                    'string',
-                    [
+                'icon',
+                'string',
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Update the openregister_registers table.
@@ -160,15 +161,14 @@ class Version1Date20250410070338 extends SimpleMigrationStep
         // Add the authorization column if it doesn't exist.
         if ($table->hasColumn('authorization') === false) {
             $table->addColumn(
-                    'authorization',
-                    Types::JSON,
-                    [
+                'authorization',
+                Types::JSON,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

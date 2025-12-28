@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectService Facet Examples
  *
@@ -38,7 +39,6 @@ class ObjectServiceFacetExample
     public function __construct(
         private readonly ObjectService $objectService
     ) {
-
     }//end __construct()
 
     /**
@@ -65,7 +65,6 @@ class ObjectServiceFacetExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
-
     }//end newFacetingApproach()
 
     /**
@@ -88,7 +87,6 @@ class ObjectServiceFacetExample
 
         // This will use the legacy getFacets method since no _facets config.
         return $this->objectService->getFacetsForObjects($query);
-
     }//end legacyFacetingApproach()
 
     /**
@@ -128,7 +126,6 @@ class ObjectServiceFacetExample
         ];
 
         return $this->objectService->searchObjectsPaginated($query);
-
     }//end paginatedSearchWithFacets()
 
     /**
@@ -218,7 +215,6 @@ class ObjectServiceFacetExample
         ];
 
         return $this->objectService->searchObjectsPaginated($query);
-
     }//end ecommerceFacetedSearch()
 
     /**
@@ -285,7 +281,6 @@ class ObjectServiceFacetExample
         ];
 
         return $this->objectService->searchObjectsPaginated($query);
-
     }//end analyticsDashboardFacets()
 
     /**
@@ -326,7 +321,6 @@ class ObjectServiceFacetExample
         // - category facet: counts for ALL categories (disjunctive).
         // - priority facet: counts within the context of other filters (conjunctive).
         return $result;
-
     }//end disjunctiveFacetingDemo()
 
     /**
@@ -347,8 +341,8 @@ class ObjectServiceFacetExample
 
         // Test new faceting approach.
         $newQuery = array_merge(
-                $baseQuery,
-                [
+            $baseQuery,
+            [
                     '_facets' => [
                         '@self'    => [
                             'register' => ['type' => 'terms'],
@@ -358,7 +352,7 @@ class ObjectServiceFacetExample
                         'priority' => ['type' => 'terms'],
                     ],
                 ]
-                );
+        );
 
         $startTime  = microtime(true);
         $newResults = $this->objectService->getFacetsForObjects($newQuery);
@@ -366,11 +360,11 @@ class ObjectServiceFacetExample
 
         // Test legacy faceting approach.
         $legacyQuery = array_merge(
-                $baseQuery,
-                [
+            $baseQuery,
+            [
                     '_queries' => ['status', 'priority'],
                 ]
-                );
+        );
 
         $startTime     = microtime(true);
         $legacyResults = $this->objectService->getFacetsForObjects($legacyQuery);
@@ -389,7 +383,6 @@ class ObjectServiceFacetExample
             ],
             'performance_improvement' => $this->calculatePerformanceImprovement(legacyTime: $legacyTime, newTime: $newTime),
         ];
-
     }//end performanceComparison()
 
     /**
@@ -442,7 +435,6 @@ class ObjectServiceFacetExample
         ];
 
         return $frontendData;
-
     }//end frontendIntegrationExample()
 
     /**
@@ -466,7 +458,7 @@ class ObjectServiceFacetExample
             if ($field === '@self') {
                 // Handle metadata facets.
                 foreach ($facet as $metaField => $metaFacet) {
-                    $transformed['metadata_'.$metaField] = [
+                    $transformed['metadata_' . $metaField] = [
                         'field'   => $metaField,
                         'type'    => $metaFacet['type'],
                         'label'   => ucfirst(str_replace('_', ' ', $metaField)),
@@ -485,7 +477,6 @@ class ObjectServiceFacetExample
         }//end foreach
 
         return $transformed;
-
     }//end transformFacetsForFrontend()
 
     /**
@@ -504,18 +495,17 @@ class ObjectServiceFacetExample
     private function transformBuckets(array $buckets): array
     {
         return array_map(
-                function ($bucket) {
-                    return [
-                        'value' => $bucket['key'],
-                        'label' => $bucket['label'] ?? $bucket['key'],
-                        'count' => $bucket['results'],
-                        'from'  => $bucket['from'] ?? null,
-                        'to'    => $bucket['to'] ?? null,
-                    ];
-                },
-                $buckets
-                );
-
+            function ($bucket) {
+                return [
+                    'value' => $bucket['key'],
+                    'label' => $bucket['label'] ?? $bucket['key'],
+                    'count' => $bucket['results'],
+                    'from'  => $bucket['from'] ?? null,
+                    'to'    => $bucket['to'] ?? null,
+                ];
+            },
+            $buckets
+        );
     }//end transformBuckets()
 
     /**
@@ -538,7 +528,7 @@ class ObjectServiceFacetExample
         // Extract metadata filters.
         if (($query['@self'] ?? null) !== null) {
             foreach ($query['@self'] as $field => $value) {
-                $filters['metadata_'.$field] = [
+                $filters['metadata_' . $field] = [
                     'field' => $field,
                     'value' => $value,
                     'type'  => 'metadata',
@@ -558,7 +548,6 @@ class ObjectServiceFacetExample
         }
 
         return $filters;
-
     }//end extractAppliedFilters()
 
     /**
@@ -571,7 +560,6 @@ class ObjectServiceFacetExample
         // Audit trails check - simplified for example class.
         // In real implementation, this would check settings service.
         return false;
-
     }//end isAuditTrailsEnabled()
 
     /**
@@ -590,6 +578,5 @@ class ObjectServiceFacetExample
 
         $improvement = (($legacyTime - $newTime) / $legacyTime) * 100;
         return round($improvement, 2);
-
     }//end calculatePerformanceImprovement()
 }//end class

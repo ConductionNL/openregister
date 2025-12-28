@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Endpoint Log Mapper
  *
@@ -72,7 +73,6 @@ class EndpointLogMapper extends QBMapper
     {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_endpoint_logs', EndpointLog::class);
-
     }//end __construct()
 
     /**
@@ -88,7 +88,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\EndpointLog>
      */
-    public function findAll(?int $limit=null, ?int $offset=null): array
+    public function findAll(?int $limit = null, ?int $offset = null): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -110,7 +110,6 @@ class EndpointLogMapper extends QBMapper
 
         // Step 5: Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**
@@ -127,7 +126,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
      */
-    public function findByEndpoint(int $endpointId, ?int $limit=null, ?int $offset=null): array
+    public function findByEndpoint(int $endpointId, ?int $limit = null, ?int $offset = null): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -150,7 +149,6 @@ class EndpointLogMapper extends QBMapper
 
         // Step 5: Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findByEndpoint()
 
     /**
@@ -177,7 +175,6 @@ class EndpointLogMapper extends QBMapper
 
         // Step 3: Execute query and return single entity.
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -191,7 +188,7 @@ class EndpointLogMapper extends QBMapper
      *
      * @psalm-return array{total: int, success: int, failed: int}
      */
-    public function getStatistics(?int $endpointId=null): array
+    public function getStatistics(?int $endpointId = null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -232,6 +229,5 @@ class EndpointLogMapper extends QBMapper
             'success' => $success,
             'failed'  => $failed,
         ];
-
     }//end getStatistics()
 }//end class

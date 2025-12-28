@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister View Handler
  *
@@ -32,7 +33,6 @@ use Psr\Log\LoggerInterface;
  */
 class ViewHandler
 {
-
     /**
      * View mapper instance.
      *
@@ -48,9 +48,4 @@ class ViewHandler
      * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private LoggerInterface $logger;
-
-
-
-
-
 }//end class

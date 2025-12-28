@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ConfigurationCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ConfigurationCreatedEvent extends Event
 {
-
     /**
      * The newly created configuration.
      *
@@ -46,7 +46,6 @@ class ConfigurationCreatedEvent extends Event
     {
         parent::__construct();
         $this->configuration = $configuration;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class ConfigurationCreatedEvent extends Event
     public function getConfiguration(): Configuration
     {
         return $this->configuration;
-
     }//end getConfiguration()
 }//end class

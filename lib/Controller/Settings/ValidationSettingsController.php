@@ -52,7 +52,6 @@ class ValidationSettingsController extends Controller
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -77,7 +76,7 @@ class ValidationSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(
                 data: [
-                    'error'             => 'Failed to validate objects: '.$e->getMessage(),
+                    'error'             => 'Failed to validate objects: ' . $e->getMessage(),
                     'total_objects'     => 0,
                     'valid_objects'     => 0,
                     'invalid_objects'   => 0,
@@ -85,9 +84,8 @@ class ValidationSettingsController extends Controller
                     'summary'           => ['has_errors' => true, 'error_count' => 1],
                 ],
                 statusCode: 500
-                );
+            );
         }//end try
-
     }//end validateAllObjects()
 
     /**
@@ -161,7 +159,7 @@ class ValidationSettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success'   => false,
-                    'error'     => 'Mass validation failed: '.$e->getMessage(),
+                    'error'     => 'Mass validation failed: ' . $e->getMessage(),
                     'stats'     => [
                         'total_objects'     => 0,
                         'processed_objects' => 0,
@@ -177,7 +175,6 @@ class ValidationSettingsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end massValidateObjects()
 
     /**
@@ -269,7 +266,7 @@ class ValidationSettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success'         => false,
-                    'error'           => 'Failed to predict memory usage: '.$e->getMessage(),
+                    'error'           => 'Failed to predict memory usage: ' . $e->getMessage(),
                     'prediction_safe' => true,
                     // Default to safe if we can't predict.
                     'formatted'       => [
@@ -280,6 +277,5 @@ class ValidationSettingsController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end predictMassValidationMemory()
 }//end class

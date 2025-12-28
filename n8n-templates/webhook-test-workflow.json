@@ -1,0 +1,70 @@
+{
+  "name": "PHPQA Webhook Test",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "phpqa-test",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [20, 300],
+      "webhookId": "phpqa-test-webhook"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {"name": "container", "value": "master-nextcloud-1"},
+            {"name": "appPath", "value": "/var/www/html/apps-extra/openregister"}
+          ]
+        }
+      },
+      "id": "set-config",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcs --report=summary --standard=PSR12 lib/ 2>&1 | head -20 || true\""
+      },
+      "id": "run-phpcs",
+      "name": "Run PHPCS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "=docker exec -u 33 {{ $json.container }} bash -c \"cd {{ $json.appPath }} && php vendor/bin/phpcbf --standard=PSR12 lib/ 2>&1 | head -20 || true\""
+      },
+      "id": "run-phpcbf",
+      "name": "Run PHPCBF",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Configuration"}]]
+    },
+    "Configuration": {
+      "main": [[{"node": "Run PHPCS"}]]
+    },
+    "Run PHPCS": {
+      "main": [[{"node": "Run PHPCBF"}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}

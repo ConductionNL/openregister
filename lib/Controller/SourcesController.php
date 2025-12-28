@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class SourcesController
  *
@@ -51,7 +52,6 @@ class SourcesController extends Controller
         private readonly SourceMapper $sourceMapper
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -96,7 +96,6 @@ class SourcesController extends Controller
                 ),
             ]
         );
-
     }//end index()
 
     /**
@@ -123,7 +122,6 @@ class SourcesController extends Controller
             // Return a 404 error if the source doesn't exist.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }
-
     }//end show()
 
     /**
@@ -158,7 +156,6 @@ class SourcesController extends Controller
 
         // Create a new source from the data.
         return new JSONResponse(data: $this->sourceMapper->createFromArray(object: $data));
-
     }//end create()
 
     /**
@@ -197,7 +194,6 @@ class SourcesController extends Controller
         // Update the source with the provided data.
         $source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
         return new JSONResponse(data: $source);
-
     }//end update()
 
     /**
@@ -216,7 +212,6 @@ class SourcesController extends Controller
     public function patch(int $id): JSONResponse
     {
         return $this->update($id);
-
     }//end patch()
 
     /**
@@ -243,7 +238,6 @@ class SourcesController extends Controller
 
         // Return an empty response.
         return new JSONResponse(data: []);
-
     }//end destroy()
 
     /**
@@ -261,6 +255,5 @@ class SourcesController extends Controller
         }
 
         return null;
-
     }//end getIntParam()
 }//end class

@@ -27,7 +27,6 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaMapper
 {
-
     /**
      * Logger instance.
      *
@@ -46,7 +45,6 @@ class SchemaMapper
         LoggerInterface $logger
     ) {
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -65,7 +63,6 @@ class SchemaMapper
         $this->logger->debug('[SchemaMapper] Mapping schema');
 
         return [];
-
     }//end mapToBackendSchema()
 
     /**
@@ -78,6 +75,5 @@ class SchemaMapper
     public function mapFieldType(string $fieldType): string
     {
         return $fieldType;
-
     }//end mapFieldType()
 }//end class

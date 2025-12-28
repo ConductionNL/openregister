@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Configuration Entity
  *
@@ -97,7 +98,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class Configuration extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the configuration
      *
@@ -374,7 +374,6 @@ class Configuration extends Entity implements JsonSerializable
         $this->addType('owner', 'string');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -392,7 +391,6 @@ class Configuration extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
-
     }//end isValidUuid()
 
     /**
@@ -414,7 +412,6 @@ class Configuration extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -445,7 +442,7 @@ class Configuration extends Entity implements JsonSerializable
                 continue;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -455,7 +452,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -541,7 +537,6 @@ class Configuration extends Entity implements JsonSerializable
             'created'            => $this->getCreatedFormatted(),
             'updated'            => $this->getUpdatedFormatted(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -558,7 +553,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return version_compare($this->remoteVersion, $this->localVersion, '>');
-
     }//end hasUpdateAvailable()
 
     /**
@@ -569,7 +563,6 @@ class Configuration extends Entity implements JsonSerializable
     public function isRemoteSource(): bool
     {
         return in_array($this->sourceType, ['github', 'gitlab', 'url']);
-
     }//end isRemoteSource()
 
     /**
@@ -580,7 +573,6 @@ class Configuration extends Entity implements JsonSerializable
     public function isLocalSource(): bool
     {
         return $this->sourceType === 'local';
-
     }//end isLocalSource()
 
     /**
@@ -591,7 +583,6 @@ class Configuration extends Entity implements JsonSerializable
     public function isManualSource(): bool
     {
         return $this->sourceType === 'manual';
-
     }//end isManualSource()
 
     /**
@@ -611,17 +602,16 @@ class Configuration extends Entity implements JsonSerializable
 
         // Fallback to type if available.
         if ($this->type !== null && $this->type !== '') {
-            return 'Config: '.$this->type;
+            return 'Config: ' . $this->type;
         }
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'Configuration #'.$this->id;
+            return 'Configuration #' . $this->id;
         }
 
         // Final fallback.
         return 'Configuration';
-
     }//end __toString()
 
     /**
@@ -636,7 +626,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getLastCheckedFormatted()
 
     /**
@@ -651,7 +640,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getLastSyncDateFormatted()
 
     /**
@@ -666,7 +654,6 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getCreatedFormatted()
 
     /**
@@ -681,6 +668,5 @@ class Configuration extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getUpdatedFormatted()
 }//end class

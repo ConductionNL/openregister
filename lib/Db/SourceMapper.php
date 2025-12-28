@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Source Mapper
  *
@@ -108,7 +109,6 @@ class SourceMapper extends QBMapper
         $this->groupManager       = $groupManager;
         $this->eventDispatcher    = $eventDispatcher;
         $this->appConfig          = $appConfig;
-
     }//end __construct()
 
     /**
@@ -136,7 +136,6 @@ class SourceMapper extends QBMapper
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntity(query: $qb);
-
     }//end find()
 
     /**
@@ -155,11 +154,11 @@ class SourceMapper extends QBMapper
      * @psalm-return list<OCA\OpenRegister\Db\Source>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=[],
-        ?array $searchConditions=[],
-        ?array $searchParams=[]
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = [],
+        ?array $searchConditions = [],
+        ?array $searchParams = []
     ): array {
         // Verify RBAC permission to read.
         $this->verifyRbacPermission(action: 'read', entityType: 'source');
@@ -174,7 +173,7 @@ class SourceMapper extends QBMapper
         foreach ($filters ?? [] as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
+            } elseif ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
             } else {
                 $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
@@ -182,7 +181,7 @@ class SourceMapper extends QBMapper
         }
 
         if (empty($searchConditions) === false) {
-            $qb->andWhere('('.implode(' OR ', $searchConditions).')');
+            $qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
             foreach ($searchParams ?? [] as $param => $value) {
                 $qb->setParameter($param, $value);
             }
@@ -192,7 +191,6 @@ class SourceMapper extends QBMapper
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities(query: $qb);
-
     }//end findAll()
 
     /**
@@ -227,7 +225,6 @@ class SourceMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new SourceCreatedEvent($entity));
 
         return $entity;
-
     }//end insert()
 
     /**
@@ -259,7 +256,6 @@ class SourceMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new SourceUpdatedEvent($entity, $oldEntity));
 
         return $entity;
-
     }//end update()
 
     /**
@@ -286,7 +282,6 @@ class SourceMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new SourceDeletedEvent($entity));
 
         return $entity;
-
     }//end delete()
 
     /**
@@ -307,7 +302,6 @@ class SourceMapper extends QBMapper
         }
 
         return $this->insert(entity: $source);
-
     }//end createFromArray()
 
     /**
@@ -331,6 +325,5 @@ class SourceMapper extends QBMapper
         }
 
         return $this->update($obj);
-
     }//end updateFromArray()
 }//end class

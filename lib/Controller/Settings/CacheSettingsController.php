@@ -54,7 +54,6 @@ class CacheSettingsController extends Controller
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -79,7 +78,6 @@ class CacheSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end getCacheStats()
 
     /**
@@ -107,7 +105,6 @@ class CacheSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end clearCache()
 
     /**
@@ -132,7 +129,6 @@ class CacheSettingsController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
         }
-
     }//end warmupNamesCache()
 
     /**
@@ -158,33 +154,32 @@ class CacheSettingsController extends Controller
 
             if ($result['success'] === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => true,
                             'message'    => 'Collection cleared successfully',
                             'collection' => $name,
                         ],
-                        statusCode: 200
-                        );
+                    statusCode: 200
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => false,
                             'message'    => $result['message'] ?? 'Failed to clear collection',
                             'collection' => $name,
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'    => false,
-                        'message'    => 'Collection clear failed: '.$e->getMessage(),
+                        'message'    => 'Collection clear failed: ' . $e->getMessage(),
                         'collection' => $name,
                     ],
-                    statusCode: 422
-                    );
+                statusCode: 422
+            );
         }//end try
-
     }//end clearSpecificCollection()
 }//end class

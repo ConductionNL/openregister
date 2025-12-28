@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Export Handler
  *
@@ -37,7 +38,6 @@ use Psr\Log\LoggerInterface;
  */
 class ExportHandler
 {
-
     /**
      * Schema mapper instance for handling schema operations.
      *
@@ -108,7 +108,6 @@ class ExportHandler
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -126,9 +125,9 @@ class ExportHandler
      * @throws \OCP\DB\Exception If database operations fail.
      */
     public function exportConfig(
-        array|Configuration|Register $input=[],
-        bool $includeObjects=false,
-        ?object $openConnectorService=null
+        array|Configuration|Register $input = [],
+        bool $includeObjects = false,
+        ?object $openConnectorService = null
     ): array {
         // Reset the maps for this export.
         $this->registersMap = [];
@@ -182,7 +181,7 @@ class ExportHandler
                     'path'   => $input->getGithubPath(),
                 ],
             ];
-        } else if ($input instanceof Register) {
+        } elseif ($input instanceof Register) {
             // Pass the register as an array to the exportConfig function.
             $registers = [$input];
             // Set the info from the register.
@@ -284,7 +283,6 @@ class ExportHandler
         }//end foreach
 
         return $openApiSpec;
-
     }//end exportConfig()
 
     /**
@@ -309,7 +307,6 @@ class ExportHandler
         unset($registerArray['id'], $registerArray['uuid'], $registerArray['organisation']);
 
         return $registerArray;
-
     }//end exportRegister()
 
     /**
@@ -485,7 +482,6 @@ class ExportHandler
         }//end foreach
 
         return $schemaArray;
-
     }//end exportSchema()
 
     /**
@@ -518,6 +514,5 @@ class ExportHandler
         } else {
             return $url;
         }
-
     }//end getLastNumericSegment()
 }//end class

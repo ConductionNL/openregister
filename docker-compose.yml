@@ -213,6 +213,7 @@ services:
   # Access at: http://localhost:5678
   # Default credentials: admin / admin (change in production!)
   # Documentation: https://docs.n8n.io
+  # MCP Integration: See website/docs/technical/n8n-mcp/setup.md
   n8n:
     profiles:
       - n8n
@@ -224,8 +225,10 @@ services:
     ports:
       - "5678:5678"
     volumes:
-      - n8n:/home/node/.n8n
+      - n8n:/root/.n8n
       - /var/run/docker.sock:/var/run/docker.sock
+      # Mount n8n-mcp configuration and data
+      - ./n8n-mcp:/usr/local/lib/n8n-mcp:ro
     environment:
       # Basic authentication
       - N8N_BASIC_AUTH_ACTIVE=true

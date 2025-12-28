@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Source
  *
@@ -49,7 +50,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Source extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the source
      *
@@ -136,7 +136,6 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
-
     }//end __construct()
 
     /**
@@ -158,7 +157,6 @@ class Source extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -183,7 +181,7 @@ class Source extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -193,7 +191,6 @@ class Source extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -204,7 +201,6 @@ class Source extends Entity implements JsonSerializable
     public function getOrganisation(): ?string
     {
         return $this->organisation;
-
     }//end getOrganisation()
 
     /**
@@ -218,7 +214,6 @@ class Source extends Entity implements JsonSerializable
     {
         $this->organisation = $organisation;
         $this->markFieldUpdated('organisation');
-
     }//end setOrganisation()
 
     /**
@@ -255,7 +250,6 @@ class Source extends Entity implements JsonSerializable
             'created'                => $created,
             'managedByConfiguration' => $this->getManagedByConfigurationData(),
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -280,12 +274,11 @@ class Source extends Entity implements JsonSerializable
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'Source #'.$this->id;
+            return 'Source #' . $this->id;
         }
 
         // Final fallback.
         return 'Source';
-
     }//end __toString()
 
     /**
@@ -296,7 +289,6 @@ class Source extends Entity implements JsonSerializable
     public function getManagedByConfigurationEntity(): ?Configuration
     {
         return $this->managedByConfiguration;
-
     }//end getManagedByConfigurationEntity()
 
     /**
@@ -309,7 +301,6 @@ class Source extends Entity implements JsonSerializable
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
         $this->managedByConfiguration = $configuration;
-
     }//end setManagedByConfigurationEntity()
 
     /**
@@ -339,7 +330,6 @@ class Source extends Entity implements JsonSerializable
         }
 
         return false;
-
     }//end isManagedByConfiguration()
 
     /**
@@ -369,7 +359,6 @@ class Source extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfiguration()
 
     /**
@@ -390,6 +379,5 @@ class Source extends Entity implements JsonSerializable
             'uuid'  => $this->managedByConfiguration->getUuid(),
             'title' => $this->managedByConfiguration->getTitle(),
         ];
-
     }//end getManagedByConfigurationData()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister SOLR Debug Command
  *
@@ -64,7 +65,6 @@ class SolrDebugCommand extends Command
         private readonly IClientService $clientService
     ) {
         parent::__construct();
-
     }//end __construct()
 
     /**
@@ -107,7 +107,6 @@ class SolrDebugCommand extends Command
                 InputOption::VALUE_NONE,
                 'Run all debug steps'
             );
-
     }//end configure()
 
     /**
@@ -152,7 +151,6 @@ class SolrDebugCommand extends Command
         }
 
         return Command::SUCCESS;
-
     }//end execute()
 
     /**
@@ -171,7 +169,7 @@ class SolrDebugCommand extends Command
         $overwriteHost = $this->config->getSystemValue(key: 'overwrite.cli.url', default: '');
 
         // Use overwrite host for tenant ID if set, otherwise use instance ID.
-        $tenantId = empty($overwriteHost) === false ? 'nc_'.hash('crc32', $overwriteHost) : 'nc_'.substr($instanceId, 0, 8);
+        $tenantId = empty($overwriteHost) === false ? 'nc_' . hash('crc32', $overwriteHost) : 'nc_' . substr($instanceId, 0, 8);
 
         // Display overwrite host value or 'not set'.
         $overwriteHostDisplay = ($overwriteHost !== '' && $overwriteHost !== null) ? $overwriteHost : 'not set';
@@ -183,12 +181,11 @@ class SolrDebugCommand extends Command
         // Get SOLR settings.
         $solrSettings       = $this->settingsService->getSolrSettings();
         $baseCoreName       = $solrSettings['core'] ?? 'openregister';
-        $tenantSpecificCore = $baseCoreName.'_'.$tenantId;
+        $tenantSpecificCore = $baseCoreName . '_' . $tenantId;
 
         $output->writeln("  Base Core Name: <comment>$baseCoreName</comment>");
         $output->writeln("  Tenant Specific Core: <comment>$tenantSpecificCore</comment>");
         $output->writeln('');
-
     }//end showTenantInfo()
 
     /**
@@ -237,7 +234,6 @@ class SolrDebugCommand extends Command
         }//end try
 
         $output->writeln('');
-
     }//end testSetup()
 
     /**
@@ -293,7 +289,6 @@ class SolrDebugCommand extends Command
         }//end try
 
         $output->writeln('');
-
     }//end testConnection()
 
     /**
@@ -322,7 +317,6 @@ class SolrDebugCommand extends Command
         }
 
         $output->writeln('');
-
     }//end checkCores()
 
     /**
@@ -338,11 +332,11 @@ class SolrDebugCommand extends Command
         // Test cores listing (standalone SOLR).
         $coresUrl = sprintf(
             '%s://%s:%d%s/admin/cores?action=STATUS&wt=json',
-                $solrSettings['scheme'],
+            $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
             $solrSettings['path']
-                );
+        );
 
         $output->writeln("  Testing cores API: <comment>$coresUrl</comment>");
 
@@ -364,11 +358,11 @@ class SolrDebugCommand extends Command
         // Test collections listing (SolrCloud).
         $collectionsUrl = sprintf(
             '%s://%s:%d%s/admin/collections?action=CLUSTERSTATUS&wt=json',
-                $solrSettings['scheme'],
+            $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
             $solrSettings['path']
-                );
+        );
 
         $output->writeln("  Testing collections API: <comment>$collectionsUrl</comment>");
 
@@ -385,7 +379,7 @@ class SolrDebugCommand extends Command
                     // $collectionData contains collection metadata but we only display the name.
                     unset($collectionData);
                     // Suppress unused variable warning.
-                    $output->writeln("    - <comment>".$collectionName."</comment>");
+                    $output->writeln("    - <comment>" . $collectionName . "</comment>");
                 }
             }
         } else {
@@ -395,11 +389,11 @@ class SolrDebugCommand extends Command
         // Test configSets listing.
         $configSetsUrl = sprintf(
             '%s://%s:%d%s/admin/configs?action=LIST&wt=json',
-                $solrSettings['scheme'],
+            $solrSettings['scheme'],
             $solrSettings['host'],
             $solrSettings['port'],
             $solrSettings['path']
-                );
+        );
 
         $output->writeln("  Testing configSets API: <comment>$configSetsUrl</comment>");
 
@@ -416,6 +410,5 @@ class SolrDebugCommand extends Command
         } else {
             $output->writeln('  <comment>❓ ConfigSets API not available</comment>');
         }
-
     }//end testSolrAdminAPI()
 }//end class

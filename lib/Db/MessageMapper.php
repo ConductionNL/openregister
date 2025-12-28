@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Message Mapper
  *
@@ -68,7 +69,6 @@ class MessageMapper extends QBMapper
     {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct($db, 'openregister_messages', Message::class);
-
     }//end __construct()
 
     /**
@@ -95,7 +95,6 @@ class MessageMapper extends QBMapper
 
         // Step 3: Execute query and return single entity.
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -114,8 +113,8 @@ class MessageMapper extends QBMapper
      */
     public function findByConversation(
         int $conversationId,
-        int $limit=100,
-        int $offset=0
+        int $limit = 100,
+        int $offset = 0
     ): array {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -130,7 +129,6 @@ class MessageMapper extends QBMapper
 
         // Step 3: Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findByConversation()
 
     /**
@@ -146,7 +144,7 @@ class MessageMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Message>
      */
-    public function findRecentByConversation(int $conversationId, int $limit=10): array
+    public function findRecentByConversation(int $conversationId, int $limit = 10): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -165,7 +163,6 @@ class MessageMapper extends QBMapper
         // Step 4: Reverse array to get oldest-first order for display.
         // This ensures messages appear in chronological order in UI.
         return array_reverse($messages);
-
     }//end findRecentByConversation()
 
     /**
@@ -191,7 +188,6 @@ class MessageMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countByConversation()
 
     /**
@@ -213,6 +209,5 @@ class MessageMapper extends QBMapper
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
         return $qb->executeStatement();
-
     }//end deleteByConversation()
 }//end class

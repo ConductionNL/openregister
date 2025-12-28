@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Register Tool
  *
@@ -42,7 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class RegisterTool extends AbstractTool
 {
-
     /**
      * Register service
      *
@@ -64,7 +64,6 @@ class RegisterTool extends AbstractTool
     ) {
         parent::__construct($userSession, $logger);
         $this->registerService = $registerService;
-
     }//end __construct()
 
     /**
@@ -77,7 +76,6 @@ class RegisterTool extends AbstractTool
     public function getName(): string
     {
         return 'register';
-
     }//end getName()
 
     /**
@@ -90,7 +88,6 @@ class RegisterTool extends AbstractTool
     public function getDescription(): string
     {
         return 'Manage registers: list, view, create, update, or delete registers. Registers organize schemas and objects.';
-
     }//end getDescription()
 
     /**
@@ -194,7 +191,6 @@ class RegisterTool extends AbstractTool
                 ],
             ],
         ];
-
     }//end getFunctions()
 
     /**
@@ -208,7 +204,7 @@ class RegisterTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
         $this->log(functionName: $functionName, parameters: $parameters);
 
@@ -226,7 +222,6 @@ class RegisterTool extends AbstractTool
             $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
             return $this->formatError(message: $e->getMessage());
         }
-
     }//end executeFunction()
 
     /**
@@ -241,7 +236,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function listRegisters(int $limit=100, int $offset=0): array
+    public function listRegisters(int $limit = 100, int $offset = 0): array
     {
 
         $filters = [];
@@ -250,20 +245,19 @@ class RegisterTool extends AbstractTool
         $registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
 
         $registerList = array_map(
-                function ($register) {
-                    return [
-                        'id'          => $register->getId(),
-                        'uuid'        => $register->getUuid(),
-                        'title'       => $register->getTitle(),
-                        'description' => $register->getDescription(),
-                        'slug'        => $register->getSlug(),
-                    ];
-                },
-                $registers
-                );
+            function ($register) {
+                return [
+                    'id'          => $register->getId(),
+                    'uuid'        => $register->getUuid(),
+                    'title'       => $register->getTitle(),
+                    'description' => $register->getDescription(),
+                    'slug'        => $register->getSlug(),
+                ];
+            },
+            $registers
+        );
 
         return $this->formatSuccess(data: $registerList, message: sprintf('Found %d registers', count($registerList)));
-
     }//end listRegisters()
 
     /**
@@ -295,7 +289,6 @@ class RegisterTool extends AbstractTool
             ],
             message: 'Register retrieved successfully'
         );
-
     }//end getRegister()
 
     /**
@@ -311,7 +304,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function createRegister(string $title, string $description='', ?string $slug=null): array
+    public function createRegister(string $title, string $description = '', ?string $slug = null): array
     {
         $data = [
             'title'       => $title,
@@ -334,7 +327,6 @@ class RegisterTool extends AbstractTool
             ],
             message: 'Register created successfully'
         );
-
     }//end createRegister()
 
     /**
@@ -350,7 +342,7 @@ class RegisterTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function updateRegister(string $id, ?string $title=null, ?string $description=null): array
+    public function updateRegister(string $id, ?string $title = null, ?string $description = null): array
     {
         $data = [];
         if ($title !== null) {
@@ -377,7 +369,6 @@ class RegisterTool extends AbstractTool
             ],
             message: 'Register updated successfully'
         );
-
     }//end updateRegister()
 
     /**
@@ -400,6 +391,5 @@ class RegisterTool extends AbstractTool
             data: ['id' => $id],
             message: 'Register deleted successfully'
         );
-
     }//end deleteRegister()
 }//end class

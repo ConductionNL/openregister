@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Notification Service
  *
@@ -44,7 +45,6 @@ use Psr\Log\LoggerInterface;
  */
 class NotificationService
 {
-
     /**
      * Notification manager instance
      *
@@ -135,7 +135,7 @@ class NotificationService
                 $notificationCount++;
             } catch (\Exception $e) {
                 // Log error but continue sending to other users.
-                $this->logger->error(message: "Failed to send notification to user {$userId}: ".$e->getMessage());
+                $this->logger->error(message: "Failed to send notification to user {$userId}: " . $e->getMessage());
             }
         }
 
@@ -143,7 +143,6 @@ class NotificationService
         $this->logger->info(message: "Sent {$notificationCount} notifications for configuration update");
 
         return $notificationCount;
-
     }//end notifyConfigurationUpdate()
 
     /**
@@ -178,17 +177,16 @@ class NotificationService
             ->setDateTime(new DateTime())
             ->setObject(type: 'configuration', id: (string) $configurationId)
             ->setSubject(
-                    subject: 'configuration_update_available',
-                    parameters: [
+                subject: 'configuration_update_available',
+                parameters: [
                         'configurationTitle' => $configurationTitle,
                         'configurationId'    => $configurationId,
                         'currentVersion'     => $currentVersion ?? 'unknown',
                         'newVersion'         => $newVersion ?? 'unknown',
                     ]
-                    );
+            );
 
         $this->notificationManager->notify($notification);
-
     }//end sendUpdateNotification()
 
     /**
@@ -211,6 +209,5 @@ class NotificationService
         $this->notificationManager->markProcessed($notification);
 
         $this->logger->info(message: "Marked configuration {$configuration->getTitle()} notifications as processed");
-
     }//end markConfigurationUpdated()
 }//end class

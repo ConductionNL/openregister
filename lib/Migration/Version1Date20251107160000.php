@@ -67,14 +67,14 @@ class Version1Date20251107160000 extends SimpleMigrationStep
             // Add UUID column if it doesn't exist.
             if ($table->hasColumn('uuid') === false) {
                 $table->addColumn(
-                        'uuid',
-                        Types::STRING,
-                        [
+                    'uuid',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 36,
                             'comment' => 'Unique identifier for external referencing',
                         ]
-                        );
+                );
 
                 // Add index for UUID lookups.
                 if ($table->hasIndex('file_texts_uuid_idx') === false) {
@@ -93,7 +93,6 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         }
 
         return null;
-
     }//end changeSchema()
 
     /**
@@ -117,6 +116,5 @@ class Version1Date20251107160000 extends SimpleMigrationStep
         // FileTextMapper when records are accessed/updated, to avoid.
         // Potential timeout issues with large datasets.
         $output->info(message: '✅ Migration complete - UUIDs will be generated on-demand');
-
     }//end postSchemaChange()
 }//end class

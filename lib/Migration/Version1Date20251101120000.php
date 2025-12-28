@@ -240,6 +240,5 @@ class Version1Date20251101120000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

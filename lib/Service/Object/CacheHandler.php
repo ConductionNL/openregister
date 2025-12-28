@@ -51,7 +51,6 @@ use Psr\Log\LoggerInterface;
  */
 class CacheHandler
 {
-
     /**
      * In-memory cache of objects indexed by ID/UUID
      *
@@ -142,9 +141,9 @@ class CacheHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly OrganisationMapper $organisationMapper,
         private readonly LoggerInterface $logger,
-        ?ICacheFactory $cacheFactory=null,
-        ?IUserSession $userSession=null,
-        ?IAppContainer $container=null
+        ?ICacheFactory $cacheFactory = null,
+        ?IUserSession $userSession = null,
+        ?IAppContainer $container = null
     ) {
         // Initialize query cache if available.
         if ($cacheFactory !== null) {
@@ -260,7 +259,7 @@ class CacheHandler
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
+    private function indexObjectInSolr(ObjectEntity $object, bool $commit = false): bool
     {
         // Get index service using factory pattern (performance optimized).
         $indexService = $this->getIndexService();
@@ -335,7 +334,7 @@ class CacheHandler
      *
      * @psalm-suppress UnusedReturnValue
      */
-    private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
+    private function removeObjectFromSolr(ObjectEntity $object, bool $commit = false): bool
     {
         // Get index service using factory pattern (performance optimized).
         $indexService = $this->getIndexService();
@@ -381,7 +380,7 @@ class CacheHandler
      *
      * @return array Dynamic search fields
      */
-    private function extractDynamicFieldsFromObject(array $objectData, string $prefix=''): array
+    private function extractDynamicFieldsFromObject(array $objectData, string $prefix = ''): array
     {
         $dynamicFields = [];
 
@@ -391,37 +390,37 @@ class CacheHandler
                 continue;
             }
 
-            $fieldName = $prefix.$key;
+            $fieldName = $prefix . $key;
 
             if (is_array($value) === true) {
                 if (($value[0] ?? null) === null) {
                     // Nested object - recurse with dot notation.
-                    $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
+                    $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName . '_');
                     $dynamicFields = array_merge($dynamicFields, $nestedFields);
                     continue;
                 }
 
                 // Multi-value array.
-                $dynamicFields[$fieldName.'_ss'] = $value;
+                $dynamicFields[$fieldName . '_ss'] = $value;
                 // Also add as text for searching.
-                $dynamicFields[$fieldName.'_txt'] = implode(' ', array_filter($value, 'is_string'));
+                $dynamicFields[$fieldName . '_txt'] = implode(' ', array_filter($value, 'is_string'));
                 continue;
             }
 
             if (is_string($value) === true) {
-                $dynamicFields[$fieldName.'_s']   = $value;
-                $dynamicFields[$fieldName.'_txt'] = $value;
-            } else if (is_int($value) === true || is_float($value) === true) {
+                $dynamicFields[$fieldName . '_s']   = $value;
+                $dynamicFields[$fieldName . '_txt'] = $value;
+            } elseif (is_int($value) === true || is_float($value) === true) {
                 $suffix = '_f';
                 if (is_int($value) === true) {
                     $suffix = '_i';
                 }
 
-                $dynamicFields[$fieldName.$suffix] = $value;
-            } else if (is_bool($value) === true) {
-                $dynamicFields[$fieldName.'_b'] = $value;
-            } else if ($this->isDateString($value) === true) {
-                $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr($value);
+                $dynamicFields[$fieldName . $suffix] = $value;
+            } elseif (is_bool($value) === true) {
+                $dynamicFields[$fieldName . '_b'] = $value;
+            } elseif ($this->isDateString($value) === true) {
+                $dynamicFields[$fieldName . '_dt'] = $this->formatDateForSolr($value);
             }//end if
         }//end foreach
 
@@ -466,7 +465,7 @@ class CacheHandler
             unset($key);
             if (is_string($value) === true) {
                 $textContent[] = $value;
-            } else if (is_array($value) === true) {
+            } elseif (is_array($value) === true) {
                 $this->extractTextFromArray(data: $value, textContent: $textContent);
             }
         }
@@ -652,7 +651,7 @@ class CacheHandler
      *
      * @return void
      */
-    public function clearSearchCache(?string $pattern=null): void
+    public function clearSearchCache(?string $pattern = null): void
     {
         // Clear in-memory cache.
         if ($pattern !== null) {
@@ -702,7 +701,7 @@ class CacheHandler
      *
      * @return void
      */
-    private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
+    private function clearSchemaRelatedCaches(?int $schemaId = null, ?int $registerId = null, string $operation = 'unknown'): void
     {
         $startTime = microtime(true);
 
@@ -756,7 +755,7 @@ class CacheHandler
                 'schemaId'      => $schemaId,
                 'registerId'    => $registerId,
                 'operation'     => $operation,
-                'executionTime' => $executionTime.'ms',
+                'executionTime' => $executionTime . 'ms',
                 'impact'        => 'all_users_affected',
                 'strategy'      => $strategy,
             ]
@@ -777,10 +776,10 @@ class CacheHandler
      * @return void
      */
     public function invalidateForObjectChange(
-        ?ObjectEntity $object=null,
-        string $operation='unknown',
-        ?int $registerId=null,
-        ?int $schemaId=null
+        ?ObjectEntity $object = null,
+        string $operation = 'unknown',
+        ?int $registerId = null,
+        ?int $schemaId = null
     ): void {
         $startTime = microtime(true);
 
@@ -812,7 +811,7 @@ class CacheHandler
                 if (($object->getId() !== null) === true && (string) $object->getId() !== $object->getUuid()) {
                     $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
-            } else if ($operation === 'delete') {
+            } elseif ($operation === 'delete') {
                 // Remove from search index with immediate commit for instant visibility.
                 $this->removeObjectFromSolr(object: $object, commit: true);
 
@@ -839,7 +838,7 @@ class CacheHandler
                 'registerId'    => $registerId,
                 'schemaId'      => $schemaId,
                 'objectId'      => $object?->getId(),
-                'executionTime' => $executionTime.'ms',
+                'executionTime' => $executionTime . 'ms',
                 'scope'         => 'all_users_in_schema',
             ]
         );
@@ -931,7 +930,7 @@ class CacheHandler
             );
         }
 
-        return 'search_'.hash('sha256', json_encode($keyComponents));
+        return 'search_' . hash('sha256', json_encode($keyComponents));
     }//end generateSearchCacheKey()
 
     /**
@@ -989,7 +988,7 @@ class CacheHandler
         $this->logger->info(
             'All object caches cleared (including name cache)',
             [
-                'executionTime' => $executionTime.'ms',
+                'executionTime' => $executionTime . 'ms',
             ]
         );
     }//end clearAllCaches()
@@ -1021,7 +1020,7 @@ class CacheHandler
      *
      * @return void
      */
-    public function setObjectName(string|int $identifier, string $name, int $ttl=3600): void
+    public function setObjectName(string|int $identifier, string $name, int $ttl = 3600): void
     {
         $key = (string) $identifier;
 
@@ -1034,7 +1033,7 @@ class CacheHandler
         // Store in distributed cache if available.
         if ($this->nameDistributedCache !== null) {
             try {
-                $this->nameDistributedCache->set('name_'.$key, $name, $ttl);
+                $this->nameDistributedCache->set('name_' . $key, $name, $ttl);
             } catch (\Exception $e) {
                 $this->logger->warning(
                     'Failed to cache object name in distributed cache',
@@ -1051,7 +1050,7 @@ class CacheHandler
             [
                 'identifier' => $key,
                 'name'       => $name,
-                'ttl'        => $ttl.'s',
+                'ttl'        => $ttl . 's',
             ]
         );
     }//end setObjectName()
@@ -1080,7 +1079,7 @@ class CacheHandler
         // Check distributed cache.
         if ($this->nameDistributedCache !== null) {
             try {
-                $cachedName = $this->nameDistributedCache->get('name_'.$key);
+                $cachedName = $this->nameDistributedCache->get('name_' . $key);
                 if ($cachedName !== null) {
                     // Store in in-memory cache for faster future access.
                     $this->nameCache[$key] = $cachedName;
@@ -1177,7 +1176,7 @@ class CacheHandler
             $distributedResults = [];
             foreach ($missingIdentifiers as $key) {
                 try {
-                    $cachedName = $this->nameDistributedCache->get('name_'.$key);
+                    $cachedName = $this->nameDistributedCache->get('name_' . $key);
                     if ($cachedName !== null) {
                         $distributedResults[$key] = $cachedName;
                         $this->nameCache[$key]    = $cachedName;
@@ -1272,7 +1271,7 @@ class CacheHandler
      * @phpstan-return array<string, string>
      * @psalm-return   array<string, string>
      */
-    public function getAllObjectNames(bool $forceWarmup=false): array
+    public function getAllObjectNames(bool $forceWarmup = false): array
     {
         $startTime = microtime(true);
 
@@ -1301,7 +1300,7 @@ class CacheHandler
                 'total_cached'        => count($this->nameCache),
                 'uuid_names_returned' => count($uuidNames),
                 'warmup_triggered'    => $shouldWarmup,
-                'execution_time'      => $executionTime.'ms',
+                'execution_time'      => $executionTime . 'ms',
             ]
         );
 
@@ -1359,7 +1358,7 @@ class CacheHandler
                     'organisations_processed' => count($organisations),
                     'objects_processed'       => count($objects),
                     'total_names_cached'      => $loadedCount,
-                    'execution_time'          => $executionTime.'ms',
+                    'execution_time'          => $executionTime . 'ms',
                 ]
             );
 

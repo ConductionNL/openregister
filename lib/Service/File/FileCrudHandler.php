@@ -67,7 +67,6 @@ class FileCrudHandler
         private readonly FileSharingHandler $fileSharingHandler,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -97,7 +96,6 @@ class FileCrudHandler
         // 4. Transferring ownership via fileOwnershipHandler.
         // 5. Creating shares via fileSharingHandler.
         throw new Exception("FileCrudHandler::createFolder() - Full implementation pending Phase 2 extraction");
-
     }//end createFolder()
 
     /**
@@ -125,7 +123,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::addFile()
      */
-    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
+    public function addFile(ObjectEntity|string $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [])
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -136,7 +134,6 @@ class FileCrudHandler
         // 5. Creating shares via fileSharingHandler if requested.
         // 6. Attaching tags.
         throw new Exception("FileCrudHandler::addFile() - Full implementation pending Phase 2 extraction");
-
     }//end addFile()
 
     /**
@@ -163,7 +160,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::updateFile()
      */
-    public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null)
+    public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null)
     {
         // TODO: Extract full implementation from FileService
         // This is one of the most complex methods involving:
@@ -174,7 +171,6 @@ class FileCrudHandler
         // 5. Transferring ownership via fileOwnershipHandler.
         // 6. Updating tags.
         throw new Exception("FileCrudHandler::updateFile() - Full implementation pending Phase 2 extraction");
-
     }//end updateFile()
 
     /**
@@ -195,7 +191,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::deleteFile()
      */
-    public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null)
+    public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -203,7 +199,6 @@ class FileCrudHandler
         // 2. Checking ownership via fileValidationHandler.
         // 3. Deleting the file.
         throw new Exception("FileCrudHandler::deleteFile() - Full implementation pending Phase 2 extraction");
-
     }//end deleteFile()
 
     /**
@@ -222,7 +217,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::getFile()
      */
-    public function getFile(ObjectEntity|string|null $object=null, string|int $file='')
+    public function getFile(ObjectEntity|string|null $object = null, string|int $file = '')
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -230,7 +225,6 @@ class FileCrudHandler
         // 2. Finding file by ID or path.
         // 3. Checking ownership via fileValidationHandler.
         throw new Exception("FileCrudHandler::getFile() - Full implementation pending Phase 2 extraction");
-
     }//end getFile()
 
     /**
@@ -255,7 +249,6 @@ class FileCrudHandler
         // 1. Using rootFolder->getById().
         // 2. Checking ownership via fileValidationHandler.
         throw new Exception("FileCrudHandler::getFileById() - Full implementation pending Phase 2 extraction");
-
     }//end getFileById()
 
     /**
@@ -274,7 +267,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::getFiles()
      */
-    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false)
+    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly = false)
     {
         // TODO: Extract full implementation from FileService
         // This involves:
@@ -282,7 +275,6 @@ class FileCrudHandler
         // 2. Listing directory contents.
         // 3. Filtering by share status if requested.
         throw new Exception("FileCrudHandler::getFiles() - Full implementation pending Phase 2 extraction");
-
     }//end getFiles()
 
     /**
@@ -310,7 +302,7 @@ class FileCrudHandler
      *
      * @todo Extract full implementation from FileService::saveFile()
      */
-    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share=false, array $tags=[])
+    public function saveFile(ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = [])
     {
         // TODO: Extract full implementation from FileService
         // This is an upsert operation that:
@@ -318,6 +310,5 @@ class FileCrudHandler
         // 2. Calls updateFile() if exists.
         // 3. Calls addFile() if not exists.
         throw new Exception("FileCrudHandler::saveFile() - Full implementation pending Phase 2 extraction");
-
     }//end saveFile()
 }//end class

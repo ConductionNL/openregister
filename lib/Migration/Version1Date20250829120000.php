@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Combined Schema and Object Enhancements Migration
  *
@@ -35,7 +36,6 @@ use OCP\IDBConnection;
  */
 class Version1Date20250829120000 extends SimpleMigrationStep
 {
-
     /**
      * Database connection
      *
@@ -51,7 +51,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-
     }//end __construct()
 
     /**
@@ -68,7 +67,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
         $this->cleanupDuplicateSlugs($output);
-
     }//end preSchemaChange()
 
     /**
@@ -85,7 +83,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
         // Clean up duplicates in schemas table.
         $this->cleanupTableDuplicates(tableName: 'openregister_schemas', entityType: 'schemas', output: $output);
-
     }//end cleanupDuplicateSlugs()
 
     /**
@@ -147,7 +144,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
                 $output->info("Updated {$entityType} '{$duplicate['title']}' (ID: {$duplicate['id']}) from slug '{$originalSlug}' to '{$newSlug}'");
             }
         }//end foreach
-
     }//end cleanupTableDuplicates()
 
     /**
@@ -160,19 +156,18 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      *
      * @return string The unique slug
      */
-    private function generateUniqueSlug(string $tableName, string $organisation, string $baseSlug, int $startNumber=2): string
+    private function generateUniqueSlug(string $tableName, string $organisation, string $baseSlug, int $startNumber = 2): string
     {
         $counter = $startNumber;
-        $newSlug = $baseSlug.'-'.$counter;
+        $newSlug = $baseSlug . '-' . $counter;
 
         // Keep incrementing until we find a unique slug.
         while ($this->slugExists(tableName: $tableName, organisation: $organisation, slug: $newSlug) === true) {
             $counter++;
-            $newSlug = $baseSlug.'-'.$counter;
+            $newSlug = $baseSlug . '-' . $counter;
         }
 
         return $newSlug;
-
     }//end generateUniqueSlug()
 
     /**
@@ -194,7 +189,6 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
         $count = $qb->executeQuery()->fetchOne();
         return ((int) $count > 0);
-
     }//end slugExists()
 
     /**
@@ -222,13 +216,13 @@ class Version1Date20250829120000 extends SimpleMigrationStep
 
             if ($table->hasColumn('image') === false) {
                 $table->addColumn(
-                        'image',
-                        Types::TEXT,
-                        [
+                    'image',
+                    Types::TEXT,
+                    [
                             'notnull' => false,
                             'comment' => 'Image data or reference representing the object (e.g. logo)',
                         ]
-                        );
+                );
                 $output->info(message: 'Added image column to openregister_objects table');
             }
         }
@@ -266,6 +260,5 @@ class Version1Date20250829120000 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

@@ -20,7 +20,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
-
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTime;
@@ -46,7 +45,6 @@ use Exception;
  */
 class PreparationHandler
 {
-
     /**
      * Static cache for registers to avoid repeated DB queries.
      *
@@ -200,24 +198,24 @@ class PreparationHandler
                 $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
                 if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
                     $this->logger->debug(
-                            'Auto-publishing NEW object in bulk creation',
-                            [
+                        'Auto-publishing NEW object in bulk creation',
+                        [
                                 'schema'           => $schema->getTitle(),
                                 'autoPublish'      => true,
                                 'isNewObject'      => true,
                                 'publishedFromCsv' => false,
                             ]
-                            );
+                    );
                     $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv === true) {
+                } elseif ($publishedFromCsv === true) {
                     $this->logger->debug(
-                            'Skipping auto-publish - published date provided from CSV',
-                            [
+                        'Skipping auto-publish - published date provided from CSV',
+                        [
                                 'schema'           => $schema->getTitle(),
                                 'publishedFromCsv' => true,
                                 'csvPublishedDate' => $selfData['published'],
                             ]
-                            );
+                    );
                 }//end if
             }//end if
 

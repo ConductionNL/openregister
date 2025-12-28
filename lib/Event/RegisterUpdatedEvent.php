@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RegisterUpdatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class RegisterUpdatedEvent extends Event
 {
-
     /**
      * The updated register state
      *
@@ -59,7 +59,6 @@ class RegisterUpdatedEvent extends Event
         parent::__construct();
         $this->newRegister = $newRegister;
         $this->oldRegister = $oldRegister;
-
     }//end __construct()
 
     /**
@@ -70,7 +69,6 @@ class RegisterUpdatedEvent extends Event
     public function getNewRegister(): Register
     {
         return $this->newRegister;
-
     }//end getNewRegister()
 
     /**
@@ -81,6 +79,5 @@ class RegisterUpdatedEvent extends Event
     public function getOldRegister(): Register
     {
         return $this->oldRegister;
-
     }//end getOldRegister()
 }//end class

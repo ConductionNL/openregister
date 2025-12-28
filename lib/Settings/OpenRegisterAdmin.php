@@ -30,7 +30,6 @@ use OCP\Settings\ISettings;
  */
 class OpenRegisterAdmin implements ISettings
 {
-
     /**
      * Localization helper
      *
@@ -55,7 +54,6 @@ class OpenRegisterAdmin implements ISettings
     {
         $this->config = $config;
         $this->l      = $l;
-
     }//end __construct()
 
     /**
@@ -72,7 +70,6 @@ class OpenRegisterAdmin implements ISettings
         ];
 
         return new TemplateResponse(appName: 'openregister', templateName: 'settings/admin', params: $parameters, renderAs: 'admin');
-
     }//end getForm()
 
     /**
@@ -87,7 +84,6 @@ class OpenRegisterAdmin implements ISettings
         // Name of the previously created section.
         $sectionName = 'openregister';
         return $sectionName;
-
     }//end getSection()
 
     /**
@@ -103,6 +99,5 @@ class OpenRegisterAdmin implements ISettings
     public function getPriority()
     {
         return 11;
-
     }//end getPriority()
 }//end class

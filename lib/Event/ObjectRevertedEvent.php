@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectRevertedEvent
  *
@@ -28,7 +29,6 @@ use OCP\EventDispatcher\Event;
  */
 class ObjectRevertedEvent extends Event
 {
-
     /**
      * The reverted object entity
      *
@@ -51,12 +51,11 @@ class ObjectRevertedEvent extends Event
      *
      * @return void
      */
-    public function __construct(ObjectEntity $object, $until=null)
+    public function __construct(ObjectEntity $object, $until = null)
     {
         parent::__construct();
         $this->object = $object;
         $this->until  = $until;
-
     }//end __construct()
 
     /**
@@ -67,7 +66,6 @@ class ObjectRevertedEvent extends Event
     public function getObject(): ObjectEntity
     {
         return $this->object;
-
     }//end getObject()
 
     /**
@@ -78,6 +76,5 @@ class ObjectRevertedEvent extends Event
     public function getRevertPoint()
     {
         return $this->until;
-
     }//end getRevertPoint()
 }//end class

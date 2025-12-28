@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Tool Registration Event
  *
@@ -59,7 +60,6 @@ use OCP\EventDispatcher\Event;
  */
 class ToolRegistrationEvent extends Event
 {
-
     /**
      * Tool registry
      *
@@ -76,7 +76,6 @@ class ToolRegistrationEvent extends Event
     {
         parent::__construct();
         $this->registry = $registry;
-
     }//end __construct()
 
     /**
@@ -99,6 +98,5 @@ class ToolRegistrationEvent extends Event
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
         $this->registry->registerTool(id: $id, tool: $tool, metadata: $metadata);
-
     }//end registerTool()
 }//end class

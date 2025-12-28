@@ -70,7 +70,7 @@ class Version1Date20250908174500 extends SimpleMigrationStep
                         $output->info(message: '🎯 This enables proper bulk update operations');
                         $output->info(message: '🚀 INSERT...ON DUPLICATE KEY UPDATE will now work correctly');
                     } catch (\Exception $e) {
-                        $output->info('❌ Could not create UUID unique constraint: '.$e->getMessage());
+                        $output->info('❌ Could not create UUID unique constraint: ' . $e->getMessage());
                         $output->info(message: '⚠️  This may cause duplicate object creation during imports');
 
                         // Don't fail the migration - log the issue but continue.
@@ -89,7 +89,6 @@ class Version1Date20250908174500 extends SimpleMigrationStep
         $output->info(message: '🎉 UUID unique constraint migration completed');
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -110,6 +109,5 @@ class Version1Date20250908174500 extends SimpleMigrationStep
         $output->info(message: '✅ No more duplicate object creation on re-imports');
         $output->info(message: '✅ Performance maintained with optimized bulk operations');
         $output->info(message: '🎯 Migration successful - deduplication system ready');
-
     }//end postSchemaChange()
 }//end class

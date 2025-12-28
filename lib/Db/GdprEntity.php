@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister GDPR Entity
  *
@@ -50,7 +51,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class GdprEntity extends Entity implements JsonSerializable
 {
-
     /**
      * UUID.
      *
@@ -145,7 +145,6 @@ class GdprEntity extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('detectedAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-
     }//end __construct()
 
     /**
@@ -170,6 +169,5 @@ class GdprEntity extends Entity implements JsonSerializable
             'detectedAt'        => $this->detectedAt?->format(DateTime::ATOM),
             'updatedAt'         => $this->updatedAt?->format(DateTime::ATOM),
         ];
-
     }//end jsonSerialize()
 }//end class

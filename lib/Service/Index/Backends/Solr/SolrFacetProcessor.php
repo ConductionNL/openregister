@@ -35,7 +35,6 @@ use Psr\Log\LoggerInterface;
  */
 class SolrFacetProcessor
 {
-
     /**
      * HTTP client.
      *
@@ -74,7 +73,6 @@ class SolrFacetProcessor
         $this->httpClient        = $httpClient;
         $this->collectionManager = $collectionManager;
         $this->logger            = $logger;
-
     }//end __construct()
 
     /**
@@ -97,7 +95,7 @@ class SolrFacetProcessor
         }
 
         try {
-            $url  = $this->httpClient->getEndpointUrl($collection).'/schema/fields?wt=json';
+            $url  = $this->httpClient->getEndpointUrl($collection) . '/schema/fields?wt=json';
             $data = $this->httpClient->get($url);
 
             $fields    = $data['fields'] ?? [];
@@ -115,23 +113,22 @@ class SolrFacetProcessor
             }
 
             $this->logger->debug(
-                    '[SolrFacetProcessor] Found facetable fields',
-                    [
+                '[SolrFacetProcessor] Found facetable fields',
+                [
                         'count' => count($facetable),
                     ]
-                    );
+            );
 
             return $facetable;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SolrFacetProcessor] Failed to get facetable fields',
-                    [
+                '[SolrFacetProcessor] Failed to get facetable fields',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return [];
         }//end try
-
     }//end getRawSolrFieldsForFacetConfiguration()
 
     /**
@@ -154,7 +151,6 @@ class SolrFacetProcessor
             'facet.field' => $facetFields,
             'facet.limit' => 100,
         ];
-
     }//end buildFacetQuery()
 
     /**
@@ -195,6 +191,5 @@ class SolrFacetProcessor
         }
 
         return $processed;
-
     }//end processFacetResponse()
 }//end class

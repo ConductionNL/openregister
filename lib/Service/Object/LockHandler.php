@@ -56,7 +56,6 @@ class LockHandler
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -74,7 +73,7 @@ class LockHandler
      * @throws LockedException If object is already locked
      * @throws \Exception      If lock operation fails
      */
-    public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
+    public function lock(string $identifier, ?string $process = null, ?int $duration = null): array
     {
         $this->logger->debug(
             message: '[LockHandler] Locking object',
@@ -127,7 +126,6 @@ class LockHandler
             );
             throw $e;
         }//end try
-
     }//end lock()
 
     /**
@@ -177,7 +175,6 @@ class LockHandler
             );
             throw $e;
         }//end try
-
     }//end unlock()
 
     /**
@@ -220,7 +217,6 @@ class LockHandler
             );
             return false;
         }//end try
-
     }//end isLocked()
 
     /**
@@ -270,6 +266,5 @@ class LockHandler
             );
             return null;
         }//end try
-
     }//end getLockInfo()
 }//end class

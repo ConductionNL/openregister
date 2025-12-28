@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Chat Controller
  *
@@ -55,7 +56,6 @@ use Psr\Log\LoggerInterface;
  */
 class ChatController extends Controller
 {
-
     /**
      * Chat service
      *
@@ -184,7 +184,6 @@ class ChatController extends Controller
         $this->db     = $db;
         $this->logger = $logger;
         $this->userId = $userId;
-
     }//end __construct()
 
     /**
@@ -245,7 +244,7 @@ class ChatController extends Controller
         try {
             return $this->conversationMapper->findByUuid($uuid);
         } catch (\Exception $e) {
-            throw new \Exception('The conversation with UUID '.$uuid.' does not exist', 404);
+            throw new \Exception('The conversation with UUID ' . $uuid . ' does not exist', 404);
         }
     }//end loadExistingConversation()
 
@@ -267,7 +266,7 @@ class ChatController extends Controller
         try {
             $agent = $this->agentMapper->findByUuid($agentUuid);
         } catch (\Exception $e) {
-            throw new \Exception('The agent with UUID '.$agentUuid.' does not exist', 404);
+            throw new \Exception('The agent with UUID ' . $agentUuid . ' does not exist', 404);
         }
 
         // Generate unique default title.
@@ -363,7 +362,6 @@ class ChatController extends Controller
             templateName: 'index',
             params: []
         );
-
     }//end page()
 
     /**
@@ -458,7 +456,6 @@ class ChatController extends Controller
                 statusCode: $statusCode
             );
         }//end try
-
     }//end sendMessage()
 
     /**
@@ -528,22 +525,21 @@ class ChatController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ChatController] Failed to get history',
-                    [
+                '[ChatController] Failed to get history',
+                [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'error'   => 'Failed to fetch conversation history',
                         'message' => $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end getHistory()
 
     /**
@@ -606,22 +602,21 @@ class ChatController extends Controller
             );
         } catch (\Exception $e) {
             $this->logger->error(
-                    '[ChatController] Failed to clear history',
-                    [
+                '[ChatController] Failed to clear history',
+                [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'error'   => 'Failed to clear conversation',
                         'message' => $e->getMessage(),
                     ],
-                    statusCode: 500
-                    );
+                statusCode: 500
+            );
         }//end try
-
     }//end clearHistory()
 
     /**
@@ -751,7 +746,6 @@ class ChatController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end sendFeedback()
 
     /**
@@ -810,6 +804,5 @@ class ChatController extends Controller
                 statusCode: 500
             );
         }//end try
-
     }//end getChatStats()
 }//end class

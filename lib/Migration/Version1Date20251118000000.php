@@ -49,7 +49,6 @@ class Version1Date20251118000000 extends SimpleMigrationStep
         $this->dropObjectTextsTable(output: $output, schema: $schema);
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -69,7 +68,6 @@ class Version1Date20251118000000 extends SimpleMigrationStep
 
         $schema->dropTable('openregister_file_texts');
         $output->info(message: '✅ Dropped deprecated openregister_file_texts table.');
-
     }//end dropFileTextsTable()
 
     /**
@@ -89,6 +87,5 @@ class Version1Date20251118000000 extends SimpleMigrationStep
 
         $schema->dropTable('openregister_object_texts');
         $output->info(message: '✅ Dropped deprecated openregister_object_texts table.');
-
     }//end dropObjectTextsTable()
 }//end class

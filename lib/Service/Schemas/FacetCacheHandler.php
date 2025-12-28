@@ -65,7 +65,6 @@ use Psr\Log\LoggerInterface;
  */
 class FacetCacheHandler
 {
-
     /**
      * Cache table name for facet data
      *
@@ -181,7 +180,6 @@ class FacetCacheHandler
         $this->db           = $db;
         $this->schemaMapper = $schemaMapper;
         $this->logger       = $logger;
-
     }//end __construct()
 
     /**
@@ -195,7 +193,7 @@ class FacetCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
+    public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl = 7200): void
     {
         $this->setCachedFacetData(schemaId: $schemaId, cacheKey: 'facetable_fields', facetType: 'config', facetConfig: [], data: $facetableFields, ttl: $ttl);
 
@@ -204,14 +202,13 @@ class FacetCacheHandler
         self::$facetConfigCache[$cacheKey] = $facetableFields;
 
         $this->logger->debug(
-                'Cached facetable fields configuration',
-                [
+            'Cached facetable fields configuration',
+            [
                     'schemaId'   => $schemaId,
                     'fieldCount' => count($facetableFields),
                     'ttl'        => $ttl,
                 ]
-                );
-
+        );
     }//end cacheFacetableFields()
 
     /**
@@ -227,7 +224,7 @@ class FacetCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      */
-    public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
+    public function invalidateForSchemaChange(int $schemaId, string $operation = 'update'): void
     {
         $startTime    = microtime(true);
         $deletedCount = 0;
@@ -242,12 +239,12 @@ class FacetCacheHandler
             // If the cache table doesn't exist yet, just log a debug message and continue.
             // This allows the app to work even if the migration hasn't been run yet.
             $this->logger->debug(
-                    'Schema facet cache table does not exist yet, skipping database cache invalidation',
-                    [
+                'Schema facet cache table does not exist yet, skipping database cache invalidation',
+                [
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
                     ]
-                    );
+            );
         }
 
         // Remove from memory cache (always safe to do).
@@ -263,16 +260,15 @@ class FacetCacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-                'Schema facet cache invalidated',
-                [
+            'Schema facet cache invalidated',
+            [
                     'schemaId'             => $schemaId,
                     'operation'            => $operation,
                     'deletedDbEntries'     => $deletedCount,
                     'clearedMemoryEntries' => $memoryClearedCount,
-                    'executionTime'        => $executionTime.'ms',
+                    'executionTime'        => $executionTime . 'ms',
                 ]
-                );
-
+        );
     }//end invalidateForSchemaChange()
 
     /**
@@ -301,14 +297,13 @@ class FacetCacheHandler
         $executionTime = round((microtime(true) - $startTime) * 1000, 2);
 
         $this->logger->info(
-                'All facet caches cleared',
-                [
+            'All facet caches cleared',
+            [
                     'deletedDbEntries'     => $deletedCount,
                     'clearedMemoryEntries' => $memoryCacheSize,
-                    'executionTime'        => $executionTime.'ms',
+                    'executionTime'        => $executionTime . 'ms',
                 ]
-                );
-
+        );
     }//end clearAllCaches()
 
     /**
@@ -335,16 +330,15 @@ class FacetCacheHandler
 
         if ($deletedCount > 0) {
             $this->logger->info(
-                    'Cleaned expired facet cache entries',
-                    [
+                'Cleaned expired facet cache entries',
+                [
                         'count'         => $deletedCount,
-                        'executionTime' => $executionTime.'ms',
+                        'executionTime' => $executionTime . 'ms',
                     ]
-                    );
+            );
         }
 
         return $deletedCount;
-
     }//end cleanExpiredEntries()
 
     /**
@@ -382,11 +376,10 @@ class FacetCacheHandler
         }
 
         $executionTime       = round((microtime(true) - $startTime) * 1000, 2);
-        $stats['query_time'] = $executionTime.'ms';
+        $stats['query_time'] = $executionTime . 'ms';
         $stats['timestamp']  = time();
 
         return $stats;
-
     }//end getCacheStatistics()
 
     /**
@@ -406,12 +399,12 @@ class FacetCacheHandler
             $schema = $this->schemaMapper->find($schemaId);
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Failed to load schema for facetable fields generation',
-                    [
+                'Failed to load schema for facetable fields generation',
+                [
                         'schemaId' => $schemaId,
                         'error'    => $e->getMessage(),
                     ]
-                    );
+            );
             return [];
         }
 
@@ -432,16 +425,15 @@ class FacetCacheHandler
         }
 
         $this->logger->debug(
-                'Generated facetable fields from schema',
-                [
+            'Generated facetable fields from schema',
+            [
                     'schemaId'       => $schemaId,
                     'metadataFields' => count($facetableFields['@self']),
                     'objectFields'   => count($facetableFields['object_fields']),
                 ]
-                );
+        );
 
         return $facetableFields;
-
     }//end generateFacetableFieldsFromSchema()
 
     /**
@@ -536,7 +528,6 @@ class FacetCacheHandler
                 'description' => 'Depublication date',
             ],
         ];
-
     }//end getMetadataFacetableFields()
 
     /**
@@ -570,7 +561,6 @@ class FacetCacheHandler
         }
 
         return false;
-
     }//end isPropertyFacetable()
 
     /**
@@ -611,7 +601,6 @@ class FacetCacheHandler
         }
 
         return $config;
-
     }//end generateFieldConfigFromProperty()
 
     /**
@@ -646,7 +635,6 @@ class FacetCacheHandler
             default:
                 return [self::FACET_TYPE_TERMS];
         }
-
     }//end determineFacetTypesFromProperty()
 
     /**
@@ -662,7 +650,6 @@ class FacetCacheHandler
     {
         $configHash = md5(json_encode($facetConfig));
         return "facet_{$facetType}_{$fieldName}_{$configHash}";
-
     }//end buildFacetCacheKey()
 
     /**
@@ -699,7 +686,6 @@ class FacetCacheHandler
         }
 
         return json_decode($result['cache_data'], true);
-
     }//end getCachedFacetData()
 
     /**
@@ -752,7 +738,7 @@ class FacetCacheHandler
             $qb = $this->db->getQueryBuilder();
             $qb->insert(self::FACET_CACHE_TABLE)
                 ->values(
-                     values: [
+                    values: [
                          'schema_id'    => $qb->createNamedParameter($schemaId),
                          'facet_type'   => $qb->createNamedParameter($facetType),
                          'field_name'   => $qb->createNamedParameter($cacheKey),
@@ -762,10 +748,9 @@ class FacetCacheHandler
                          'updated'      => $qb->createNamedParameter($now, 'datetime'),
                          'expires'      => $qb->createNamedParameter($expires, 'datetime'),
                      ]
-                    );
+                );
             $qb->executeStatement();
         }
-
     }//end setCachedFacetData()
 
     /**
@@ -785,6 +770,5 @@ class FacetCacheHandler
             ->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId)))
             ->andWhere($qb->expr()->eq('field_name', $qb->createNamedParameter($cacheKey)));
         $qb->executeStatement();
-
     }//end removeCachedFacetData()
 }//end class

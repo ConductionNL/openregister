@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Settings Service
  *
@@ -115,7 +116,6 @@ use Psr\Log\LoggerInterface;
  */
 class SettingsService
 {
-
     /**
      * Configuration service
      *
@@ -339,18 +339,18 @@ class SettingsService
         SearchTrailMapper $searchTrailMapper,
         IUserManager $userManager,
         IDBConnection $db,
-        ?SetupHandler $setupHandler=null,
-        ?CacheHandler $objectCacheService=null,
-        ?IAppContainer $container=null,
-        string $appName='openregister',
-        ?ValidationOperationsHandler $validationOperationsHandler=null,
-        ?SearchBackendHandler $searchBackendHandler=null,
-        ?LlmSettingsHandler $llmSettingsHandler=null,
-        ?FileSettingsHandler $fileSettingsHandler=null,
-        ?ObjectRetentionHandler $objectRetentionHandler=null,
-        ?CacheSettingsHandler $cacheSettingsHandler=null,
-        ?SolrSettingsHandler $solrSettingsHandler=null,
-        ?ConfigurationSettingsHandler $configurationSettingsHandler=null
+        ?SetupHandler $setupHandler = null,
+        ?CacheHandler $objectCacheService = null,
+        ?IAppContainer $container = null,
+        string $appName = 'openregister',
+        ?ValidationOperationsHandler $validationOperationsHandler = null,
+        ?SearchBackendHandler $searchBackendHandler = null,
+        ?LlmSettingsHandler $llmSettingsHandler = null,
+        ?FileSettingsHandler $fileSettingsHandler = null,
+        ?ObjectRetentionHandler $objectRetentionHandler = null,
+        ?CacheSettingsHandler $cacheSettingsHandler = null,
+        ?SolrSettingsHandler $solrSettingsHandler = null,
+        ?ConfigurationSettingsHandler $configurationSettingsHandler = null
     ) {
         $this->config           = $config;
         $this->auditTrailMapper = $auditTrailMapper;
@@ -378,7 +378,6 @@ class SettingsService
         $this->cacheSettingsHandler         = $cacheSettingsHandler;
         $this->solrSettingsHandler          = $solrSettingsHandler;
         $this->configurationSettingsHandler = $configurationSettingsHandler;
-
     }//end __construct()
 
     // ============================================
@@ -407,13 +406,12 @@ class SettingsService
 
             return json_decode($backendConfig, true);
         } catch (\Exception $e) {
-            $this->logger->error('Failed to retrieve search backend configuration: '.$e->getMessage());
+            $this->logger->error('Failed to retrieve search backend configuration: ' . $e->getMessage());
             return [
                 'active'    => 'solr',
                 'available' => ['solr', 'elasticsearch'],
             ];
         }
-
     }//end getSearchBackendConfig()
 
     /**
@@ -428,7 +426,6 @@ class SettingsService
         // Extract backend string from data array.
         $backend = $data['backend'] ?? $data['active'] ?? 'solr';
         return $this->searchBackendHandler->updateSearchBackendConfig($backend);
-
     }//end updateSearchBackendConfig()
 
     // LlmSettingsHandler methods (2).
@@ -441,7 +438,6 @@ class SettingsService
     public function getLLMSettingsOnly(): array
     {
         return $this->llmSettingsHandler->getLLMSettingsOnly();
-
     }//end getLLMSettingsOnly()
 
     /**
@@ -454,7 +450,6 @@ class SettingsService
     public function updateLLMSettingsOnly(array $data): array
     {
         return $this->llmSettingsHandler->updateLLMSettingsOnly($data);
-
     }//end updateLLMSettingsOnly()
 
     // FileSettingsHandler methods (2).
@@ -467,7 +462,6 @@ class SettingsService
     public function getFileSettingsOnly(): array
     {
         return $this->fileSettingsHandler->getFileSettingsOnly();
-
     }//end getFileSettingsOnly()
 
     /**
@@ -480,7 +474,6 @@ class SettingsService
     public function updateFileSettingsOnly(array $data): array
     {
         return $this->fileSettingsHandler->updateFileSettingsOnly($data);
-
     }//end updateFileSettingsOnly()
 
     // ObjectRetentionHandler methods (4).
@@ -495,7 +488,6 @@ class SettingsService
     public function getObjectSettingsOnly(): array
     {
         return $this->objectRetentionHandler->getObjectSettingsOnly();
-
     }//end getObjectSettingsOnly()
 
     /**
@@ -510,7 +502,6 @@ class SettingsService
     public function updateObjectSettingsOnly(array $data): array
     {
         return $this->objectRetentionHandler->updateObjectSettingsOnly($data);
-
     }//end updateObjectSettingsOnly()
 
     /**
@@ -523,7 +514,6 @@ class SettingsService
     public function getRetentionSettingsOnly(): array
     {
         return $this->objectRetentionHandler->getRetentionSettingsOnly();
-
     }//end getRetentionSettingsOnly()
 
     /**
@@ -538,7 +528,6 @@ class SettingsService
     public function updateRetentionSettingsOnly(array $data): array
     {
         return $this->objectRetentionHandler->updateRetentionSettingsOnly($data);
-
     }//end updateRetentionSettingsOnly()
 
     // CacheSettingsHandler methods (3 main ones).
@@ -551,7 +540,6 @@ class SettingsService
     public function getCacheStats(): array
     {
         return $this->cacheSettingsHandler->getCacheStats();
-
     }//end getCacheStats()
 
     /**
@@ -563,10 +551,9 @@ class SettingsService
      *
      * @psalm-return array{type: string, userId: null|string, timestamp: string, results: array{names?: array, distributed?: array, facet?: array, schema?: array, object?: array}, errors: array<never, never>, totalCleared: 0|mixed}
      */
-    public function clearCache(?string $cacheType=null): array
+    public function clearCache(?string $cacheType = null): array
     {
         return $this->cacheSettingsHandler->clearCache($cacheType);
-
     }//end clearCache()
 
     /**
@@ -579,7 +566,6 @@ class SettingsService
     public function warmupNamesCache(): array
     {
         return $this->cacheSettingsHandler->warmupNamesCache();
-
     }//end warmupNamesCache()
 
     // SolrSettingsHandler methods (7 main ones).
@@ -592,7 +578,6 @@ class SettingsService
     public function getSolrSettings(): array
     {
         return $this->solrSettingsHandler->getSolrSettings();
-
     }//end getSolrSettings()
 
     /**
@@ -605,7 +590,6 @@ class SettingsService
     public function getSolrSettingsOnly(): array
     {
         return $this->solrSettingsHandler->getSolrSettingsOnly();
-
     }//end getSolrSettingsOnly()
 
     /**
@@ -620,7 +604,6 @@ class SettingsService
     public function updateSolrSettingsOnly(array $data): array
     {
         return $this->solrSettingsHandler->updateSolrSettingsOnly($data);
-
     }//end updateSolrSettingsOnly()
 
     /**
@@ -631,7 +614,6 @@ class SettingsService
     public function getSolrDashboardStats(): array
     {
         return $this->solrSettingsHandler->getSolrDashboardStats();
-
     }//end getSolrDashboardStats()
 
     /**
@@ -642,7 +624,6 @@ class SettingsService
     public function getSolrFacetConfiguration(): array
     {
         return $this->solrSettingsHandler->getSolrFacetConfiguration();
-
     }//end getSolrFacetConfiguration()
 
     /**
@@ -655,7 +636,6 @@ class SettingsService
     public function updateSolrFacetConfiguration(array $data): array
     {
         return $this->solrSettingsHandler->updateSolrFacetConfiguration($data);
-
     }//end updateSolrFacetConfiguration()
 
     /**
@@ -671,12 +651,12 @@ class SettingsService
      * @return never Warmup result
      */
     public function warmupSolrIndex(
-        array $schemas=[],
-        int $maxObjects=0,
-        string $mode='serial',
-        bool $collectErrors=false,
-        int $batchSize=1000,
-        array $schemaIds=[]
+        array $schemas = [],
+        int $maxObjects = 0,
+        string $mode = 'serial',
+        bool $collectErrors = false,
+        int $batchSize = 1000,
+        array $schemaIds = []
     ) {
         // NOTE: This method calls a deprecated method that always throws.
         // TODO: Refactor to use IndexService->warmupIndex() directly.
@@ -692,7 +672,6 @@ class SettingsService
             $batchSize,
             $schemaIds
         );
-
     }//end warmupSolrIndex()
 
     // ConfigurationSettingsHandler methods (15 main ones).
@@ -707,7 +686,6 @@ class SettingsService
     public function getSettings(): array
     {
         return $this->configurationSettingsHandler->getSettings();
-
     }//end getSettings()
 
     /**
@@ -719,7 +697,6 @@ class SettingsService
     public function updateSettings(array $data): array
     {
         return $this->configurationSettingsHandler->updateSettings($data);
-
     }//end updateSettings()
 
     /**
@@ -734,7 +711,6 @@ class SettingsService
     public function updatePublishingOptions(array $data): array
     {
         return $this->configurationSettingsHandler->updatePublishingOptions($data);
-
     }//end updatePublishingOptions()
 
     /**
@@ -745,7 +721,6 @@ class SettingsService
     public function isMultiTenancyEnabled(): bool
     {
         return $this->configurationSettingsHandler->isMultiTenancyEnabled();
-
     }//end isMultiTenancyEnabled()
 
     /**
@@ -758,7 +733,6 @@ class SettingsService
     public function getRbacSettingsOnly(): array
     {
         return $this->configurationSettingsHandler->getRbacSettingsOnly();
-
     }//end getRbacSettingsOnly()
 
     /**
@@ -773,7 +747,6 @@ class SettingsService
     public function updateRbacSettingsOnly(array $data): array
     {
         return $this->configurationSettingsHandler->updateRbacSettingsOnly($data);
-
     }//end updateRbacSettingsOnly()
 
     /**
@@ -786,7 +759,6 @@ class SettingsService
     public function getOrganisationSettingsOnly(): array
     {
         return $this->configurationSettingsHandler->getOrganisationSettingsOnly();
-
     }//end getOrganisationSettingsOnly()
 
     /**
@@ -801,7 +773,6 @@ class SettingsService
     public function updateOrganisationSettingsOnly(array $data): array
     {
         return $this->configurationSettingsHandler->updateOrganisationSettingsOnly($data);
-
     }//end updateOrganisationSettingsOnly()
 
     /**
@@ -812,7 +783,6 @@ class SettingsService
     public function getDefaultOrganisationUuid(): ?string
     {
         return $this->configurationSettingsHandler->getDefaultOrganisationUuid();
-
     }//end getDefaultOrganisationUuid()
 
     /**
@@ -824,7 +794,6 @@ class SettingsService
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
         $this->configurationSettingsHandler->setDefaultOrganisationUuid($uuid);
-
     }//end setDefaultOrganisationUuid()
 
     /**
@@ -835,7 +804,6 @@ class SettingsService
     public function getTenantId(): ?string
     {
         return $this->configurationSettingsHandler->getTenantId();
-
     }//end getTenantId()
 
     /**
@@ -846,7 +814,6 @@ class SettingsService
     public function getOrganisationId(): ?string
     {
         return $this->configurationSettingsHandler->getOrganisationId();
-
     }//end getOrganisationId()
 
     /**
@@ -859,7 +826,6 @@ class SettingsService
     public function getMultitenancySettingsOnly(): array
     {
         return $this->configurationSettingsHandler->getMultitenancySettingsOnly();
-
     }//end getMultitenancySettingsOnly()
 
     /**
@@ -874,7 +840,6 @@ class SettingsService
     public function updateMultitenancySettingsOnly(array $data): array
     {
         return $this->configurationSettingsHandler->updateMultitenancySettingsOnly($data);
-
     }//end updateMultitenancySettingsOnly()
 
     /**
@@ -885,7 +850,6 @@ class SettingsService
     public function getVersionInfoOnly(): array
     {
         return $this->configurationSettingsHandler->getVersionInfoOnly();
-
     }//end getVersionInfoOnly()
 
     /**
@@ -901,7 +865,6 @@ class SettingsService
     public function validateAllObjects(): array
     {
         return $this->validationOperationsHandler->validateAllObjects();
-
     }//end validateAllObjects()
 
     /**
@@ -922,10 +885,10 @@ class SettingsService
      * @psalm-return array{stats: array{total_objects: int<1, max>|mixed, processed_objects: 0, successful_saves: 0, failed_saves: 0, duration_seconds: float, batches_processed: int<0, max>, objects_per_second: 0|float}, memory_usage: array{start_memory: int, end_memory: int, peak_memory: int, memory_used: int, peak_percentage: float, formatted: array{actual_used: string, peak_usage: string, peak_percentage: string}}, success?: bool|mixed, message?: mixed|string,...}
      */
     public function massValidateObjects(
-        int $maxObjects=0,
-        int $batchSize=1000,
-        string $mode='serial',
-        bool $collectErrors=false
+        int $maxObjects = 0,
+        int $batchSize = 1000,
+        string $mode = 'serial',
+        bool $collectErrors = false
     ): array {
         $startTime   = microtime(true);
         $startMemory = memory_get_usage(true);
@@ -1001,7 +964,7 @@ class SettingsService
             '📋 BATCH JOBS CREATED',
             [
                 'totalBatches'      => count($batchJobs),
-                'estimatedDuration' => round((count($batchJobs) * 2)).'s',
+                'estimatedDuration' => round((count($batchJobs) * 2)) . 's',
             ]
         );
 
@@ -1053,7 +1016,7 @@ class SettingsService
                 'peak_percentage' => round(
                     (max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100,
                     1
-                ).'%',
+                ) . '%',
             ],
         ];
 
@@ -1087,14 +1050,13 @@ class SettingsService
                 'successful'       => $results['stats']['successful_saves'],
                 'failed'           => $results['stats']['failed_saves'],
                 'total'            => $results['stats']['processed_objects'],
-                'duration'         => $results['stats']['duration_seconds'].'s',
+                'duration'         => $results['stats']['duration_seconds'] . 's',
                 'objectsPerSecond' => $results['stats']['objects_per_second'],
                 'mode'             => $mode,
             ]
         );
 
         return $results;
-
     }//end massValidateObjects()
 
     /**
@@ -1124,7 +1086,6 @@ class SettingsService
         }
 
         return $batchJobs;
-
     }//end createBatchJobs()
 
     /**
@@ -1171,9 +1132,9 @@ class SettingsService
                         object: $objectData,
                         extend: [],
                         register: $object->getRegister(),
-                    // Get the register ID.
+                        // Get the register ID.
                         schema: $object->getSchema(),
-                    // Get the schema ID.
+                        // Get the schema ID.
                         uuid: $object->getUuid()
                     );
 
@@ -1203,7 +1164,7 @@ class SettingsService
                     ];
 
                     $this->logger->error(
-                        'Mass validation failed for object '.$object->getUuid().': '.$e->getMessage()
+                        'Mass validation failed for object ' . $object->getUuid() . ': ' . $e->getMessage()
                     );
 
                     if ($collectErrors === false) {
@@ -1229,7 +1190,7 @@ class SettingsService
                     'processed'        => $batchProcessed,
                     'successful'       => $batchSuccesses,
                     'failed'           => count($batchErrors),
-                    'batchDuration'    => round($batchDuration * 1000).'ms',
+                    'batchDuration'    => round($batchDuration * 1000) . 'ms',
                     'objectsPerSecond' => $objectsPerSecond,
                     'totalProcessed'   => $results['stats']['processed_objects'],
                 ]
@@ -1243,8 +1204,8 @@ class SettingsService
                 $this->logger->debug(
                     '🧹 MEMORY CLEANUP',
                     [
-                        'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2).'MB',
-                        'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2).'MB',
+                        'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
+                        'peakMemory'  => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB',
                     ]
                 );
                 gc_collect_cycles();
@@ -1253,7 +1214,6 @@ class SettingsService
             // Clear objects from memory.
             unset($objects);
         }//end foreach
-
     }//end processJobsSerial()
 
     /**
@@ -1318,7 +1278,7 @@ class SettingsService
                 '✅ COMPLETED PARALLEL CHUNK',
                 [
                     'chunkIndex'       => $chunkIndex + 1,
-                    'chunkTime'        => $chunkTime.'ms',
+                    'chunkTime'        => $chunkTime . 'ms',
                     'objectsProcessed' => $chunkProcessed,
                     'totalProcessed'   => $results['stats']['processed_objects'],
                 ]
@@ -1327,7 +1287,6 @@ class SettingsService
             // Memory cleanup after each chunk.
             gc_collect_cycles();
         }//end foreach
-
     }//end processJobsParallel()
 
     /**
@@ -1372,9 +1331,9 @@ class SettingsService
                     object: $objectData,
                     extend: [],
                     register: $object->getRegister(),
-                // Get the register ID.
+                    // Get the register ID.
                     schema: $object->getSchema(),
-                // Get the schema ID.
+                    // Get the schema ID.
                     uuid: $object->getUuid()
                 );
 
@@ -1418,7 +1377,6 @@ class SettingsService
             'errors'     => $batchErrors,
             'duration'   => $batchDuration,
         ];
-
     }//end processBatchDirectly()
 
     /**
@@ -1429,7 +1387,7 @@ class SettingsService
      *
      * @return string Formatted string.
      */
-    public function formatBytes(int $bytes, int $precision=2): string
+    public function formatBytes(int $bytes, int $precision = 2): string
     {
         $units     = ['B', 'KB', 'MB', 'GB', 'TB'];
         $unitCount = count($units);
@@ -1442,8 +1400,7 @@ class SettingsService
         // Ensure $i is within bounds (0-4) for the $units array.
         $i = min($i, $unitCount - 1);
 
-        return round($bytes, $precision).' '.$units[$i];
-
+        return round($bytes, $precision) . ' ' . $units[$i];
     }//end formatBytes()
 
     /**
@@ -1471,7 +1428,6 @@ class SettingsService
         }
 
         return $value;
-
     }//end convertToBytes()
 
     /**
@@ -1493,8 +1449,7 @@ class SettingsService
         $end    = substr($token, -4);
         $middle = str_repeat('*', min(20, strlen($token) - 8));
 
-        return $start.$middle.$end;
-
+        return $start . $middle . $end;
     }//end maskToken()
 
     /**
@@ -1547,7 +1502,6 @@ class SettingsService
 
             return [];
         }//end try
-
     }//end getExpectedSchemaFields()
 
     /**
@@ -1604,7 +1558,8 @@ class SettingsService
                 $actualDocValues     = $actualField['docValues'] ?? false;
 
                 // Check if any configuration differs.
-                if ($expectedType !== $actualType
+                if (
+                    $expectedType !== $actualType
                     || $expectedMultiValued !== $actualMultiValued
                     || $expectedDocValues !== $actualDocValues
                 ) {
@@ -1648,7 +1603,6 @@ class SettingsService
                 'total_differences' => count($missing) + count($extra) + count($mismatched),
             ],
         ];
-
     }//end compareFields()
 
     /**
@@ -1696,7 +1650,6 @@ class SettingsService
                 'message' => $e->getMessage(),
             ];
         }//end try
-
     }//end getStats()
 
     /**
@@ -1711,7 +1664,7 @@ class SettingsService
      *
      * @psalm-return array{success: bool, error?: 'Rebase failed', message: string, rebased?: array{solr?: array{success: true, message: 'Solr configuration rebased'}, cache?: array{success: true, message: 'Cache cleared and ready for rebuild'}}, timestamp?: int<1, max>}
      */
-    public function rebase(array $options=[]): array
+    public function rebase(array $options = []): array
     {
         try {
             $this->logger->info('[SettingsService] Rebase requested', ['options' => $options]);
@@ -1754,6 +1707,5 @@ class SettingsService
                 'message' => $e->getMessage(),
             ];
         }//end try
-
     }//end rebase()
 }//end class

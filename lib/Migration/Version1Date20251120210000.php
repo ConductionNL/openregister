@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20251120210000
  *
@@ -52,222 +53,222 @@ class Version1Date20251120210000 extends SimpleMigrationStep
 
             // Primary key.
             $table->addColumn(
-                    'id',
-                    Types::BIGINT,
-                    [
+                'id',
+                Types::BIGINT,
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                         'unsigned'      => true,
                     ]
-                    );
+            );
             // Set primary key immediately to ensure it's available for foreign key references.
             $table->setPrimaryKey(['id']);
 
             // UUID for external reference.
             $table->addColumn(
-                    'uuid',
-                    Types::STRING,
-                    [
+                'uuid',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 255,
                     ]
-                    );
+            );
 
             // Webhook name/description.
             $table->addColumn(
-                    'name',
-                    Types::STRING,
-                    [
+                'name',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 255,
                     ]
-                    );
+            );
 
             // Target URL.
             $table->addColumn(
-                    'url',
-                    Types::STRING,
-                    [
+                'url',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 1024,
                     ]
-                    );
+            );
 
             // HTTP method (POST, PUT, GET, etc.).
             $table->addColumn(
-                    'method',
-                    Types::STRING,
-                    [
+                'method',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 10,
                         'default' => 'POST',
                     ]
-                    );
+            );
 
             // Events to listen to (JSON array).
             $table->addColumn(
-                    'events',
-                    Types::TEXT,
-                    [
+                'events',
+                Types::TEXT,
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
 
             // Custom headers (JSON object).
             $table->addColumn(
-                    'headers',
-                    Types::TEXT,
-                    [
+                'headers',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Secret for signing payloads.
             $table->addColumn(
-                    'secret',
-                    Types::STRING,
-                    [
+                'secret',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
 
             // Is webhook enabled.
             $table->addColumn(
-                    'enabled',
-                    Types::BOOLEAN,
-                    [
+                'enabled',
+                Types::BOOLEAN,
+                [
                         'notnull' => true,
                         'default' => true,
                     ]
-                    );
+            );
 
             // Organisation (multi-tenancy).
             $table->addColumn(
-                    'organisation',
-                    Types::STRING,
-                    [
+                'organisation',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
 
             // Event filters (JSON object).
             $table->addColumn(
-                    'filters',
-                    Types::TEXT,
-                    [
+                'filters',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Delivery configuration.
             $table->addColumn(
-                    'retry_policy',
-                    Types::STRING,
-                    [
+                'retry_policy',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 50,
                         'default' => 'exponential',
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'max_retries',
-                    Types::INTEGER,
-                    [
+                'max_retries',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 3,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'timeout',
-                    Types::INTEGER,
-                    [
+                'timeout',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 30,
                     ]
-                    );
+            );
 
             // Statistics.
             $table->addColumn(
-                    'last_triggered_at',
-                    Types::DATETIME,
-                    [
+                'last_triggered_at',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'last_success_at',
-                    Types::DATETIME,
-                    [
+                'last_success_at',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'last_failure_at',
-                    Types::DATETIME,
-                    [
+                'last_failure_at',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'total_deliveries',
-                    Types::INTEGER,
-                    [
+                'total_deliveries',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 0,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'successful_deliveries',
-                    Types::INTEGER,
-                    [
+                'successful_deliveries',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 0,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'failed_deliveries',
-                    Types::INTEGER,
-                    [
+                'failed_deliveries',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 0,
                     ]
-                    );
+            );
 
             // Timestamps.
             $table->addColumn(
-                    'created',
-                    Types::DATETIME,
-                    [
+                'created',
+                Types::DATETIME,
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
 
             $table->addColumn(
-                    'updated',
-                    Types::DATETIME,
-                    [
+                'updated',
+                Types::DATETIME,
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
 
             // Configuration (JSON object for additional webhook configuration).
             $table->addColumn(
-                    'configuration',
-                    Types::TEXT,
-                    [
+                'configuration',
+                Types::TEXT,
+                [
                         'notnull' => false,
                         'comment' => 'Additional webhook configuration (JSON object)',
                     ]
-                    );
+            );
 
             // Indexes (primary key already set above).
             $table->addUniqueIndex(['uuid'], 'openregister_webhooks_uuid');
@@ -287,138 +288,138 @@ class Version1Date20251120210000 extends SimpleMigrationStep
 
             // Primary key.
             $logsTable->addColumn(
-                    'id',
-                    Types::BIGINT,
-                    [
+                'id',
+                Types::BIGINT,
+                [
                         'autoincrement' => true,
                         'notnull'       => true,
                         'unsigned'      => true,
                     ]
-                    );
+            );
             $logsTable->setPrimaryKey(['id']);
 
             // Reference to webhook (using 'webhook' instead of 'webhook_id' to prevent Doctrine auto-foreign-key).
             $logsTable->addColumn(
-                    'webhook',
-                    Types::BIGINT,
-                    [
+                'webhook',
+                Types::BIGINT,
+                [
                         'notnull'  => true,
                         'unsigned' => true,
                         'comment'  => 'References openregister_webhooks.id',
                     ]
-                    );
+            );
             $logsTable->addIndex(['webhook'], 'webhook_logs_webhook_idx');
 
             // Event information.
             $logsTable->addColumn(
-                    'event_class',
-                    Types::STRING,
-                    [
+                'event_class',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 255,
                     ]
-                    );
+            );
 
             // Payload data (JSON).
             $logsTable->addColumn(
-                    'payload',
-                    Types::TEXT,
-                    [
+                'payload',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Target URL and method.
             $logsTable->addColumn(
-                    'url',
-                    Types::STRING,
-                    [
+                'url',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 1024,
                     ]
-                    );
+            );
 
             $logsTable->addColumn(
-                    'method',
-                    Types::STRING,
-                    [
+                'method',
+                Types::STRING,
+                [
                         'notnull' => true,
                         'length'  => 10,
                         'default' => 'POST',
                     ]
-                    );
+            );
 
             // Delivery status.
             $logsTable->addColumn(
-                    'success',
-                    Types::BOOLEAN,
-                    [
+                'success',
+                Types::BOOLEAN,
+                [
                         'notnull' => true,
                         'default' => false,
                     ]
-                    );
+            );
 
             $logsTable->addColumn(
-                    'status_code',
-                    Types::INTEGER,
-                    [
+                'status_code',
+                Types::INTEGER,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Request and response bodies (stored only on failure for debugging).
             $logsTable->addColumn(
-                    'request_body',
-                    Types::TEXT,
-                    [
+                'request_body',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             $logsTable->addColumn(
-                    'response_body',
-                    Types::TEXT,
-                    [
+                'response_body',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Error information.
             $logsTable->addColumn(
-                    'error_message',
-                    Types::TEXT,
-                    [
+                'error_message',
+                Types::TEXT,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
 
             // Retry information.
             $logsTable->addColumn(
-                    'attempt',
-                    Types::INTEGER,
-                    [
+                'attempt',
+                Types::INTEGER,
+                [
                         'notnull' => true,
                         'default' => 1,
                     ]
-                    );
+            );
 
             $logsTable->addColumn(
-                    'next_retry_at',
-                    Types::DATETIME,
-                    [
+                'next_retry_at',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
             $logsTable->addIndex(['next_retry_at'], 'webhook_logs_next_retry_at_idx');
 
             // Timestamp.
             $logsTable->addColumn(
-                    'created',
-                    Types::DATETIME,
-                    [
+                'created',
+                Types::DATETIME,
+                [
                         'notnull' => true,
                     ]
-                    );
+            );
             $logsTable->addIndex(['created'], 'webhook_logs_created_idx');
 
             $output->info('✅ Created webhook_logs table');
@@ -430,6 +431,5 @@ class Version1Date20251120210000 extends SimpleMigrationStep
         // Referential integrity is maintained by the application code instead.
         // When deleting a webhook, the application will also delete associated logs.
         return $schema;
-
     }//end changeSchema()
 }//end class

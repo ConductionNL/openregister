@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Search Trail
  *
@@ -78,7 +79,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class SearchTrail extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the search trail entry
      *
@@ -350,7 +350,6 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisationIdType', type: 'string');
         $this->addType(fieldName: 'expires', type: 'datetime');
         $this->addType(fieldName: 'size', type: 'integer');
-
     }//end __construct()
 
     /**
@@ -361,7 +360,6 @@ class SearchTrail extends Entity implements JsonSerializable
     public function getQueryParameters(): array
     {
         return ($this->queryParameters ?? []);
-
     }//end getQueryParameters()
 
     /**
@@ -372,7 +370,6 @@ class SearchTrail extends Entity implements JsonSerializable
     public function getFilters(): array
     {
         return ($this->filters ?? []);
-
     }//end getFilters()
 
     /**
@@ -383,7 +380,6 @@ class SearchTrail extends Entity implements JsonSerializable
     public function getSortParameters(): array
     {
         return ($this->sortParameters ?? []);
-
     }//end getSortParameters()
 
     /**
@@ -405,7 +401,6 @@ class SearchTrail extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -426,7 +421,7 @@ class SearchTrail extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -436,7 +431,6 @@ class SearchTrail extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -449,7 +443,6 @@ class SearchTrail extends Entity implements JsonSerializable
     public function setRegisterName(?string $registerName): void
     {
         $this->registerName = $registerName;
-
     }//end setRegisterName()
 
     /**
@@ -462,7 +455,6 @@ class SearchTrail extends Entity implements JsonSerializable
     public function setSchemaName(?string $schemaName): void
     {
         $this->schemaName = $schemaName;
-
     }//end setSchemaName()
 
     /**
@@ -557,7 +549,6 @@ class SearchTrail extends Entity implements JsonSerializable
             'expires'            => $expires,
             'size'               => $this->size,
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -577,16 +568,15 @@ class SearchTrail extends Entity implements JsonSerializable
 
         // Fallback to search term if available.
         if ($this->searchTerm !== null && $this->searchTerm !== '') {
-            return 'Search: '.$this->searchTerm;
+            return 'Search: ' . $this->searchTerm;
         }
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'SearchTrail #'.$this->id;
+            return 'SearchTrail #' . $this->id;
         }
 
         // Final fallback.
         return 'Search Trail';
-
     }//end __toString()
 }//end class

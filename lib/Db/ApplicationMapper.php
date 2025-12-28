@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Application Mapper
  *
@@ -135,7 +136,6 @@ class ApplicationMapper extends QBMapper
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;
         $this->eventDispatcher    = $eventDispatcher;
-
     }//end __construct()
 
     /**
@@ -176,7 +176,6 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entity.
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -217,7 +216,6 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entity.
         return $this->findEntity($qb);
-
     }//end findByUuid()
 
     /**
@@ -236,7 +234,7 @@ class ApplicationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
-    public function findByOrganisation(string $organisationUuid, int $limit=50, int $offset=0): array
+    public function findByOrganisation(string $organisationUuid, int $limit = 50, int $offset = 0): array
     {
         // Verify RBAC permission to read applications.
         $this->verifyRbacPermission(action: 'read', entityType: 'application');
@@ -258,7 +256,6 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findByOrganisation()
 
     /**
@@ -281,11 +278,11 @@ class ApplicationMapper extends QBMapper
      * @psalm-return list<OCA\OpenRegister\Db\Application>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        array $filters=[],
-        array $searchConditions=[],
-        array $searchParams=[]
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        array $searchConditions = [],
+        array $searchParams = []
     ): array {
         // Verify RBAC permission to read applications.
         $this->verifyRbacPermission(action: 'read', entityType: 'application');
@@ -324,7 +321,6 @@ class ApplicationMapper extends QBMapper
 
         // Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**
@@ -369,7 +365,6 @@ class ApplicationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ApplicationCreatedEvent($entity));
 
         return $entity;
-
     }//end insert()
 
     /**
@@ -412,7 +407,6 @@ class ApplicationMapper extends QBMapper
         );
 
         return $entity;
-
     }//end update()
 
     /**
@@ -446,7 +440,6 @@ class ApplicationMapper extends QBMapper
         $this->eventDispatcher->dispatchTyped(new ApplicationDeletedEvent($entity));
 
         return $entity;
-
     }//end delete()
 
     /**
@@ -471,7 +464,6 @@ class ApplicationMapper extends QBMapper
 
         // Insert entity into database (handles UUID, timestamps, organisation).
         return $this->insert($application);
-
     }//end createFromArray()
 
     /**
@@ -499,7 +491,6 @@ class ApplicationMapper extends QBMapper
 
         // Update entity in database (handles timestamp, organisation verification).
         return $this->update($application);
-
     }//end updateFromArray()
 
     /**
@@ -540,7 +531,6 @@ class ApplicationMapper extends QBMapper
 
         // Return count as integer.
         return (int) $count;
-
     }//end countByOrganisation()
 
     /**
@@ -577,6 +567,5 @@ class ApplicationMapper extends QBMapper
 
         // Return count as integer.
         return (int) $count;
-
     }//end countAll()
 }//end class

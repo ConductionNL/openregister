@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ViewCreatedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ViewCreatedEvent extends Event
 {
-
     /**
      * The newly created view.
      *
@@ -46,7 +46,6 @@ class ViewCreatedEvent extends Event
     {
         parent::__construct();
         $this->view = $view;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class ViewCreatedEvent extends Event
     public function getView(): View
     {
         return $this->view;
-
     }//end getView()
 }//end class

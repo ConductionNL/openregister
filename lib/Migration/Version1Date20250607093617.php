@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -17,7 +18,6 @@
  *
  * @link https://OpenRegister.app
  */
-
 
 declare(strict_types=1);
 
@@ -59,15 +59,14 @@ class Version1Date20250607093617 extends SimpleMigrationStep
         // Add the expires column if it doesn't exist.
         if ($table->hasColumn('expires') === false) {
             $table->addColumn(
-                    'expires',
-                    Types::DATETIME,
-                    [
+                'expires',
+                Types::DATETIME,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

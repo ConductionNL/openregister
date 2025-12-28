@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * OpenConnector Consumers Controller
  *
@@ -126,7 +125,6 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
-
 use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
@@ -168,7 +166,6 @@ use OCA\OpenRegister\Event\ConversationUpdatedEvent;
 use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
-
 use Twig\Loader\ArrayLoader;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -209,7 +206,6 @@ class Application extends App implements IBootstrap
     public function __construct()
     {
         parent::__construct(self::APP_ID);
-
     }//end __construct()
 
     /**
@@ -221,7 +217,7 @@ class Application extends App implements IBootstrap
      */
     public function register(IRegistrationContext $context): void
     {
-        include_once __DIR__.'/../../vendor/autoload.php';
+        include_once __DIR__ . '/../../vendor/autoload.php';
 
         /*
          * DEPENDENCY INJECTION STRATEGY:
@@ -281,7 +277,7 @@ class Application extends App implements IBootstrap
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     settingsService: null
-                // SettingsService - null to break circular dependency.
+                    // SettingsService - null to break circular dependency.
                 );
             }
         );
@@ -415,7 +411,7 @@ class Application extends App implements IBootstrap
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     fileService: null
-                // FileService - null to break circular dependency.
+                    // FileService - null to break circular dependency.
                 );
             }
         );
@@ -450,7 +446,7 @@ class Application extends App implements IBootstrap
             function ($container) {
                 // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                $appDataPath = $dataDir.'/appdata_openregister';
+                $appDataPath = $dataDir . '/appdata_openregister';
 
                 return new ConfigurationImportHandler(
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -472,7 +468,7 @@ class Application extends App implements IBootstrap
             function ($container) {
                 // Get the app data directory path.
                 $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-                $appDataPath = $dataDir.'/appdata_openregister';
+                $appDataPath = $dataDir . '/appdata_openregister';
 
                 return new ConfigurationService(
                     schemaMapper: $container->get(SchemaMapper::class),
@@ -806,6 +802,5 @@ class Application extends App implements IBootstrap
                 ]
             );
         }//end try
-
     }//end boot()
 }//end class

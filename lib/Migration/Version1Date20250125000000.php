@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Migration Version1Date20250125000000
  *
@@ -59,13 +60,13 @@ class Version1Date20250125000000 extends SimpleMigrationStep
         if ($table->hasColumn('configuration') === false) {
             $output->info('🔧 Adding configuration column to webhooks table...');
             $table->addColumn(
-                    'configuration',
-                    Types::TEXT,
-                    [
+                'configuration',
+                Types::TEXT,
+                [
                         'notnull' => false,
                         'comment' => 'Additional webhook configuration (JSON object)',
                     ]
-                    );
+            );
             $output->info('✅ Added configuration column to webhooks table');
             return $schema;
         } else {
@@ -73,6 +74,5 @@ class Version1Date20250125000000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

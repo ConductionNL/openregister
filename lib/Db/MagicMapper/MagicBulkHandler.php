@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MagicMapper Bulk Operations Handler
  *
@@ -54,7 +55,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class MagicBulkHandler
 {
-
     /**
      * Maximum packet size buffer percentage (0.1 = 10%, 0.5 = 50%)
      * Lower values = more conservative chunk sizes
@@ -75,7 +75,6 @@ class MagicBulkHandler
     ) {
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
-
     }//end __construct()
 
     /**
@@ -135,7 +134,6 @@ class MagicBulkHandler
         }//end foreach
 
         return $prepared;
-
     }//end prepareObjectsForDynamicTable()
 
     /**
@@ -179,7 +177,6 @@ class MagicBulkHandler
         }
 
         return [$insertObjects, $updateObjects];
-
     }//end categorizeObjectsForSave()
 
     /**
@@ -212,7 +209,6 @@ class MagicBulkHandler
         }
 
         return $insertedUuids;
-
     }//end bulkInsertToDynamicTable()
 
     /**
@@ -233,7 +229,7 @@ class MagicBulkHandler
 
         // Get columns from first object.
         $columns       = array_keys($chunk[0]);
-        $columnList    = '`'.implode('`, `', $columns).'`';
+        $columnList    = '`' . implode('`, `', $columns) . '`';
         $insertedUuids = [];
 
         // Build VALUES clause.
@@ -244,13 +240,13 @@ class MagicBulkHandler
         foreach ($chunk as $objectData) {
             $rowValues = [];
             foreach ($columns as $column) {
-                $paramName   = 'p'.$paramIndex;
-                $rowValues[] = ':'.$paramName;
+                $paramName   = 'p' . $paramIndex;
+                $rowValues[] = ':' . $paramName;
                 $parameters[$paramName] = $objectData[$column] ?? null;
                 $paramIndex++;
             }
 
-            $valuesClause[] = '('.implode(',', $rowValues).')';
+            $valuesClause[] = '(' . implode(',', $rowValues) . ')';
 
             // Collect UUID for return.
             if (($objectData['_uuid'] ?? null) !== null) {
@@ -259,25 +255,24 @@ class MagicBulkHandler
         }
 
         // Execute bulk insert.
-        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES ".implode(',', $valuesClause);
+        $sql = "INSERT INTO `{$tableName}` ({$columnList}) VALUES " . implode(',', $valuesClause);
 
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->execute($parameters);
         } catch (\Exception $e) {
             $this->logger->error(
-                    'Bulk insert to dynamic table failed',
-                    [
+                'Bulk insert to dynamic table failed',
+                [
                         'tableName' => $tableName,
                         'chunkSize' => count($chunk),
                         'error'     => $e->getMessage(),
                     ]
-                    );
+            );
             throw $e;
         }
 
         return $insertedUuids;
-
     }//end executeBulkInsertChunk()
 
     /**
@@ -326,19 +321,18 @@ class MagicBulkHandler
                 }
             } catch (\Exception $e) {
                 $this->logger->error(
-                        'Failed to update object in dynamic table',
-                        [
+                    'Failed to update object in dynamic table',
+                    [
                             'tableName' => $tableName,
                             'uuid'      => $uuid,
                             'error'     => $e->getMessage(),
                         ]
-                        );
+                );
                 // Continue with other objects.
             }
         }//end foreach
 
         return $updatedUuids;
-
     }//end bulkUpdateDynamicTable()
 
     /**
@@ -373,7 +367,6 @@ class MagicBulkHandler
 
         // Keep within reasonable bounds.
         return max(5, min(500, $safeChunkSize));
-
     }//end calculateOptimalChunkSize()
 
     /**
@@ -396,7 +389,6 @@ class MagicBulkHandler
 
         // Default fallback value (16MB).
         return 16777216;
-
     }//end getMaxAllowedPacketSize()
 
     /**
@@ -414,11 +406,11 @@ class MagicBulkHandler
                 // > 64MB.
                 $this->maxPacketSizeBuffer = 0.6;
                 // 60% buffer.
-            } else if ($maxPacketSize > 33554432) {
+            } elseif ($maxPacketSize > 33554432) {
                 // > 32MB.
                 $this->maxPacketSizeBuffer = 0.5;
                 // 50% buffer.
-            } else if ($maxPacketSize > 16777216) {
+            } elseif ($maxPacketSize > 16777216) {
                 // > 16MB.
                 $this->maxPacketSizeBuffer = 0.4;
                 // 40% buffer.
@@ -429,7 +421,6 @@ class MagicBulkHandler
         } catch (\Exception $e) {
             // Use default buffer on error.
         }//end try
-
     }//end initializeMaxPacketSize()
 
     /**
@@ -446,11 +437,10 @@ class MagicBulkHandler
 
         // Ensure it starts with a letter or underscore.
         if (preg_match('/^[a-zA-Z_]/', $sanitized) === 0) {
-            $sanitized = 'col_'.$sanitized;
+            $sanitized = 'col_' . $sanitized;
         }
 
         // Limit length to 64 characters (MySQL limit).
         return substr($sanitized, 0, 64);
-
     }//end sanitizeColumnName()
 }//end class

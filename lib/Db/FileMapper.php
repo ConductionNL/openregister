@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FileMapper
  *
@@ -78,7 +79,6 @@ use OCP\IURLGenerator;
  */
 class FileMapper extends QBMapper
 {
-
     /**
      * The URL generator for creating share links
      *
@@ -98,7 +98,6 @@ class FileMapper extends QBMapper
     ) {
         parent::__construct($db, 'openregister_files', \OCP\AppFramework\Db\Entity::class);
         $this->urlGenerator = $urlGenerator;
-
     }//end __construct()
 
     /**
@@ -113,44 +112,44 @@ class FileMapper extends QBMapper
      * @phpstan-param  array<int>|null $ids
      * @phpstan-return list<File>
      */
-    public function getFiles(?int $node=null, ?array $ids=null): array
+    public function getFiles(?int $node = null, ?array $ids = null): array
     {
         // Create a new query builder instance.
         $qb = $this->db->getQueryBuilder();
 
         // Select all filecache fields, share information, mimetype strings, and owner information.
         $qb->select(
-                'fc.fileid',
-                'fc.storage',
-                'fc.path',
-                'fc.path_hash',
-                'fc.parent',
-                'fc.name',
-                'mt.mimetype',
-                'mp.mimetype as mimepart',
-                'fc.size',
-                'fc.mtime',
-                'fc.storage_mtime',
-                'fc.encrypted',
-                'fc.unencrypted_size',
-                'fc.etag',
-                'fc.permissions',
-                'fc.checksum',
-                's.token as share_token',
-                's.stime as share_stime',
-                'st.id as storage_id'
-            )
+            'fc.fileid',
+            'fc.storage',
+            'fc.path',
+            'fc.path_hash',
+            'fc.parent',
+            'fc.name',
+            'mt.mimetype',
+            'mp.mimetype as mimepart',
+            'fc.size',
+            'fc.mtime',
+            'fc.storage_mtime',
+            'fc.encrypted',
+            'fc.unencrypted_size',
+            'fc.etag',
+            'fc.permissions',
+            'fc.checksum',
+            's.token as share_token',
+            's.stime as share_stime',
+            'st.id as storage_id'
+        )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
             ->leftJoin(
-                    'fc',
-                    'share',
-                    's',
+                'fc',
+                'share',
+                's',
                 $qb->expr()->andX(
                     $qb->expr()->eq('s.file_source', 'fc.fileid'),
                     $qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
-        // 3 = public link.
+                    // 3 = public link.
                 )
             )
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'));
@@ -175,7 +174,7 @@ class FileMapper extends QBMapper
             // Add share-related fields (public URLs if shared).
             if (empty($row['share_token']) === false) {
                 $row['accessUrl']   = $this->generateShareUrl($row['share_token']);
-                $row['downloadUrl'] = $this->generateShareUrl($row['share_token']).'/download';
+                $row['downloadUrl'] = $this->generateShareUrl($row['share_token']) . '/download';
             } else {
                 // Add authenticated URLs for non-shared files (requires login).
                 $row['accessUrl']   = $this->generateAuthenticatedAccessUrl($row['fileid']);
@@ -208,7 +207,6 @@ class FileMapper extends QBMapper
 
         // Return the list of files with share information.
         return $files;
-
     }//end getFiles()
 
     /**
@@ -228,37 +226,37 @@ class FileMapper extends QBMapper
 
         // Select all filecache fields, share information, mimetype strings, and owner information.
         $qb->select(
-                'fc.fileid',
-                'fc.storage',
-                'fc.path',
-                'fc.path_hash',
-                'fc.parent',
-                'fc.name',
-                'mt.mimetype',
-                'mp.mimetype as mimepart',
-                'fc.size',
-                'fc.mtime',
-                'fc.storage_mtime',
-                'fc.encrypted',
-                'fc.unencrypted_size',
-                'fc.etag',
-                'fc.permissions',
-                'fc.checksum',
-                's.token as share_token',
-                's.stime as share_stime',
-                'st.id as storage_id'
-            )
+            'fc.fileid',
+            'fc.storage',
+            'fc.path',
+            'fc.path_hash',
+            'fc.parent',
+            'fc.name',
+            'mt.mimetype',
+            'mp.mimetype as mimepart',
+            'fc.size',
+            'fc.mtime',
+            'fc.storage_mtime',
+            'fc.encrypted',
+            'fc.unencrypted_size',
+            'fc.etag',
+            'fc.permissions',
+            'fc.checksum',
+            's.token as share_token',
+            's.stime as share_stime',
+            'st.id as storage_id'
+        )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->leftJoin('fc', 'mimetypes', 'mp', $qb->expr()->eq('fc.mimepart', 'mp.id'))
             ->leftJoin(
-                    'fc',
-                    'share',
-                    's',
+                'fc',
+                'share',
+                's',
                 $qb->expr()->andX(
                     $qb->expr()->eq('s.file_source', 'fc.fileid'),
                     $qb->expr()->eq('s.share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT))
-        // 3 = public link.
+                    // 3 = public link.
                 )
             )
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
@@ -277,7 +275,7 @@ class FileMapper extends QBMapper
         // Add share-related fields (public URLs if shared).
         if (empty($file['share_token']) === false) {
             $file['accessUrl']   = $this->generateShareUrl($file['share_token']);
-            $file['downloadUrl'] = $this->generateShareUrl($file['share_token']).'/download';
+            $file['downloadUrl'] = $this->generateShareUrl($file['share_token']) . '/download';
         } else {
             // Add authenticated URLs for non-shared files (requires login).
             $file['accessUrl']   = $this->generateAuthenticatedAccessUrl($file['fileid']);
@@ -303,7 +301,6 @@ class FileMapper extends QBMapper
         }
 
         return $file;
-
     }//end getFile()
 
     /**
@@ -363,22 +360,21 @@ class FileMapper extends QBMapper
             // Use the fileid as the node id.
             $nodeId = (int) $rows[0]['fileid'];
             return $this->getFiles($nodeId);
-        } else if ($count > 1) {
+        } elseif ($count > 1) {
             // Multiple folders found with same UUID - pick the oldest one (lowest fileid).
             // TODO: Add nightly cron job to cleanup orphaned folders and logs.
             usort(
-                    $rows,
-                    function ($a, $b) {
-                        return (int) $a['fileid'] - (int) $b['fileid'];
-                    }
-                    );
+                $rows,
+                function ($a, $b) {
+                    return (int) $a['fileid'] - (int) $b['fileid'];
+                }
+            );
             $oldestNodeId = (int) $rows[0]['fileid'];
             return $this->getFiles($oldestNodeId);
         } else {
             // No results found, return empty array.
             return [];
         }
-
     }//end getFilesForObject()
 
     /**
@@ -394,8 +390,7 @@ class FileMapper extends QBMapper
     private function generateShareUrl(string $token): string
     {
         $baseUrl = $this->urlGenerator->getBaseUrl();
-        return $baseUrl.'/index.php/s/'.$token;
-
+        return $baseUrl . '/index.php/s/' . $token;
     }//end generateShareUrl()
 
     /**
@@ -414,8 +409,7 @@ class FileMapper extends QBMapper
     private function generateAuthenticatedAccessUrl(int $fileId): string
     {
         $baseUrl = $this->urlGenerator->getBaseUrl();
-        return $baseUrl.'/index.php/core/preview?fileId='.$fileId.'&x=1920&y=1080&a=1';
-
+        return $baseUrl . '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1';
     }//end generateAuthenticatedAccessUrl()
 
     /**
@@ -434,8 +428,7 @@ class FileMapper extends QBMapper
     private function generateAuthenticatedDownloadUrl(int $fileId): string
     {
         $baseUrl = $this->urlGenerator->getBaseUrl();
-        return $baseUrl.'/index.php/apps/openregister/api/files/'.$fileId.'/download';
-
+        return $baseUrl . '/index.php/apps/openregister/api/files/' . $fileId . '/download';
     }//end generateAuthenticatedDownloadUrl()
 
     /**
@@ -459,7 +452,7 @@ class FileMapper extends QBMapper
      *
      * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
      */
-    public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions=1): array
+    public function publishFile(int $fileId, string $sharedBy, string $shareOwner, int $permissions = 1): array
     {
         // Check if a public share already exists for this file.
         $existingShare = $this->getPublicShare($fileId);
@@ -469,7 +462,7 @@ class FileMapper extends QBMapper
                 'id'          => $existingShare['id'],
                 'token'       => $existingShare['token'],
                 'accessUrl'   => $this->generateShareUrl($existingShare['token']),
-                'downloadUrl' => $this->generateShareUrl($existingShare['token']).'/download',
+                'downloadUrl' => $this->generateShareUrl($existingShare['token']) . '/download',
                 'published'   => (new DateTime())->setTimestamp($existingShare['stime'])->format('c'),
             ];
         }
@@ -482,9 +475,9 @@ class FileMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
         $qb->insert('share')
             ->values(
-                    values: [
+                values: [
                         'share_type'    => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT),
-        // 3 = public link.
+                // 3 = public link.
                         'share_with'    => $qb->createNamedParameter(null),
                         'password'      => $qb->createNamedParameter(null),
                         'uid_owner'     => $qb->createNamedParameter($shareOwner),
@@ -492,9 +485,9 @@ class FileMapper extends QBMapper
                         'parent'        => $qb->createNamedParameter(null),
                         'item_type'     => $qb->createNamedParameter('file'),
                         'item_source'   => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-                        'item_target'   => $qb->createNamedParameter('/'.$fileId),
+                        'item_target'   => $qb->createNamedParameter('/' . $fileId),
                         'file_source'   => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-                        'file_target'   => $qb->createNamedParameter('/'.$fileId),
+                        'file_target'   => $qb->createNamedParameter('/' . $fileId),
                         'permissions'   => $qb->createNamedParameter($permissions, IQueryBuilder::PARAM_INT),
                         'stime'         => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
                         'accepted'      => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
@@ -503,7 +496,7 @@ class FileMapper extends QBMapper
                         'mail_send'     => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
                         'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
                     ]
-                    );
+            );
 
         $result = $qb->executeStatement();
 
@@ -518,10 +511,9 @@ class FileMapper extends QBMapper
             'id'          => $shareId,
             'token'       => $token,
             'accessUrl'   => $this->generateShareUrl($token),
-            'downloadUrl' => $this->generateShareUrl($token).'/download',
+            'downloadUrl' => $this->generateShareUrl($token) . '/download',
             'published'   => (new DateTime())->setTimestamp($currentTime)->format('c'),
         ];
-
     }//end publishFile()
 
     /**
@@ -550,7 +542,6 @@ class FileMapper extends QBMapper
             'deleted_shares' => $deletedCount,
             'file_id'        => $fileId,
         ];
-
     }//end depublishFile()
 
     /**
@@ -581,7 +572,6 @@ class FileMapper extends QBMapper
         }
 
         return $share;
-
     }//end getPublicShare()
 
     /**
@@ -619,7 +609,6 @@ class FileMapper extends QBMapper
         }
 
         return $token;
-
     }//end generateShareToken()
 
     /**
@@ -642,7 +631,6 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         return (int) ($row['count'] ?? 0);
-
     }//end countAllFiles()
 
     /**
@@ -665,7 +653,6 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         return (int) ($row['total_size'] ?? 0);
-
     }//end getTotalFilesSize()
 
     /**
@@ -688,20 +675,20 @@ class FileMapper extends QBMapper
      * @phpstan-param  int $limit
      * @phpstan-return list<array{fileid: int, path: string, name: string, mimetype: string, size: int, mtime: int, checksum: string|null}>
      */
-    public function findUntrackedFiles(int $limit=100): array
+    public function findUntrackedFiles(int $limit = 100): array
     {
         $qb = $this->db->getQueryBuilder();
 
         // Select files from oc_filecache that don't exist in oc_openregister_file_texts.
         $qb->select(
-                'fc.fileid',
-                'fc.path',
-                'fc.name',
-                'mt.mimetype',
-                'fc.size',
-                'fc.mtime',
-                'fc.checksum'
-            )
+            'fc.fileid',
+            'fc.path',
+            'fc.name',
+            'mt.mimetype',
+            'fc.size',
+            'fc.mtime',
+            'fc.checksum'
+        )
             ->from('filecache', 'fc')
             ->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
             ->leftJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
@@ -741,7 +728,6 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         return $files;
-
     }//end findUntrackedFiles()
 
     /**
@@ -777,7 +763,6 @@ class FileMapper extends QBMapper
         $result->closeCursor();
 
         return $count;
-
     }//end countUntrackedFiles()
 
     /**
@@ -834,6 +819,5 @@ class FileMapper extends QBMapper
         }
 
         return $storageResult > 0;
-
     }//end setFileOwnership()
 }//end class

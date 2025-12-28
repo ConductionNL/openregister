@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RegistersController handles REST API endpoints for register management
  *
@@ -24,7 +25,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
@@ -73,7 +73,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class RegistersController extends Controller
 {
-
     /**
      * Configuration service for handling import/export operations
      *
@@ -193,7 +192,6 @@ class RegistersController extends Controller
         $this->appManager       = $appManager;
         $this->oasService       = $oasService;
         $this->logger->debug('RegistersController constructor completed.');
-
     }//end __construct()
 
     /**
@@ -313,7 +311,6 @@ class RegistersController extends Controller
         }
 
         return new JSONResponse(data: ['results' => $registersArr]);
-
     }//end index()
 
     /**
@@ -376,7 +373,6 @@ class RegistersController extends Controller
         }
 
         return new JSONResponse(data: $registerArr);
-
     }//end show()
 
     /**
@@ -420,7 +416,6 @@ class RegistersController extends Controller
             // Handle our custom database constraint exceptions.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         }
-
     }//end create()
 
     /**
@@ -467,7 +462,6 @@ class RegistersController extends Controller
             // Handle our custom database constraint exceptions.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
         }
-
     }//end update()
 
     /**
@@ -492,7 +486,6 @@ class RegistersController extends Controller
         // PATCH works the same as PUT for this resource.
         // The service layer handles partial updates automatically.
         return $this->update($id);
-
     }//end patch()
 
     /**
@@ -528,7 +521,6 @@ class RegistersController extends Controller
             // Return 500 for other errors.
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end destroy()
 
     /**
@@ -560,19 +552,18 @@ class RegistersController extends Controller
             $schemasArray = array_map(fn($schema) => $schema->jsonSerialize(), $schemas);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'results' => $schemasArray,
                         'total'   => count($schemasArray),
                     ]
-                    );
+            );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Return a 404 error if the register doesn't exist.
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (Exception $e) {
             // Return a 500 error for other exceptions.
-            return new JSONResponse(data: ['error' => 'Internal server error: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end schemas()
 
     /**
@@ -601,9 +592,8 @@ class RegistersController extends Controller
             ],
         ];
         return new JSONResponse(
-                data: $this->objectEntityMapper->searchObjects(query: $query)
+            data: $this->objectEntityMapper->searchObjects(query: $query)
         );
-
     }//end objects()
 
     /**
@@ -679,9 +669,8 @@ class RegistersController extends Controller
                     return new DataDownloadResponse($jsonContent, $filename, 'application/json');
             }//end switch
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => 'Failed to export register: '.$e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to export register: ' . $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end export()
 
     /**
@@ -721,12 +710,12 @@ class RegistersController extends Controller
             // If path is empty, use a default filename based on register slug.
             if (empty($path) === true) {
                 $slug = $register->getSlug() ?? 'register';
-                $path = $slug.'_openregister.json';
+                $path = $slug . '_openregister.json';
             }
 
             $this->logger->info(
-                    'Publishing register OAS to GitHub',
-                    [
+                'Publishing register OAS to GitHub',
+                [
                         'register_id'   => $id,
                         'register_slug' => $register->getSlug(),
                         'owner'         => $owner,
@@ -734,7 +723,7 @@ class RegistersController extends Controller
                         'path'          => $path,
                         'branch'        => $branch,
                     ]
-                    );
+            );
 
             // Generate real OAS (OpenAPI Specification) for the register.
             // Do NOT add x-openregister metadata - this is a pure OAS file, not a configuration file.
@@ -763,15 +752,15 @@ class RegistersController extends Controller
             );
 
             $this->logger->info(
-                    "Successfully published register OAS {$register->getTitle()} to GitHub",
-                    [
+                "Successfully published register OAS {$register->getTitle()} to GitHub",
+                [
                         'owner'    => $owner,
                         'repo'     => $repo,
                         'branch'   => $branch,
                         'path'     => $path,
                         'file_url' => $result['file_url'] ?? null,
                     ]
-                    );
+            );
 
             // Check if published to default branch (required for Code Search indexing).
             $defaultBranch = null;
@@ -780,18 +769,18 @@ class RegistersController extends Controller
                 $defaultBranch = $repoInfo['default_branch'] ?? 'main';
             } catch (Exception $e) {
                 $this->logger->warning(
-                        'Could not fetch repository default branch',
-                        [
+                    'Could not fetch repository default branch',
+                    [
                             'owner' => $owner,
                             'repo'  => $repo,
                             'error' => $e->getMessage(),
                         ]
-                        );
+                );
             }
 
             $message = 'Register OAS published successfully to GitHub';
             if (($defaultBranch !== null && $defaultBranch !== '') === true && $branch !== $defaultBranch) {
-                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). "."GitHub Code Search primarily indexes the default branch, "."so this may not appear in search results immediately.";
+                $message .= ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}'). " . "GitHub Code Search primarily indexes the default branch, " . "so this may not appear in search results immediately.";
             } else {
                 $message .= ". Note: GitHub Code Search may take a few minutes to index new files.";
             }
@@ -815,17 +804,16 @@ class RegistersController extends Controller
                     'default_branch' => $defaultBranch,
                     'indexing_note'  => $indexingNote,
                 ],
-                    statusCode: 200
-                );
+                statusCode: 200
+            );
         } catch (DoesNotExistException $e) {
             $this->logger->error('Register not found for publishing', ['register_id' => $id]);
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
         } catch (Exception $e) {
-            $this->logger->error('Failed to publish register OAS to GitHub: '.$e->getMessage());
+            $this->logger->error('Failed to publish register OAS to GitHub: ' . $e->getMessage());
 
-            return new JSONResponse(data: ['error' => 'Failed to publish register OAS: '.$e->getMessage()], statusCode: 500);
+            return new JSONResponse(data: ['error' => 'Failed to publish register OAS: ' . $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end publishToGitHub()
 
     /**
@@ -843,7 +831,7 @@ class RegistersController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function import(int $id, bool $force=false): JSONResponse
+    public function import(int $id, bool $force = false): JSONResponse
     {
         try {
             // Get the uploaded file.
@@ -859,7 +847,7 @@ class RegistersController extends Controller
                 $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 if (in_array($extension, ['xlsx', 'xls']) === true) {
                     $type = 'excel';
-                } else if ($extension === 'csv') {
+                } elseif ($extension === 'csv') {
                     $type = 'csv';
                 } else {
                     $type = 'configuration';
@@ -874,15 +862,15 @@ class RegistersController extends Controller
 
             // Log import parameters for debugging.
             $this->logger->debug(
-                    'Import parameters received',
-                    [
+                'Import parameters received',
+                [
                         'includeObjects' => $includeObjects,
                         'validation'     => $validation,
                         'events'         => $events,
                         'publish'        => $publish,
                         'registerId'     => $id,
                     ]
-                    );
+            );
             // Find the register.
             $register = $this->registerService->find($id);
             // Handle different import types.
@@ -1008,15 +996,14 @@ class RegistersController extends Controller
             }//end switch
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'message' => 'Import successful',
                         'summary' => $summary,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
-
     }//end import()
 
     /**
@@ -1085,7 +1072,6 @@ class RegistersController extends Controller
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
-
     }//end stats()
 
     /**
@@ -1100,7 +1086,7 @@ class RegistersController extends Controller
      *
      * @return bool The parsed boolean value
      */
-    private function parseBooleanParam(string $paramName, bool $default=false): bool
+    private function parseBooleanParam(string $paramName, bool $default = false): bool
     {
         $value = $this->request->getParam(key: $paramName, default: $default);
 
@@ -1122,7 +1108,6 @@ class RegistersController extends Controller
 
         // Fallback to default.
         return $default;
-
     }//end parseBooleanParam()
 
     /**
@@ -1190,27 +1175,26 @@ class RegistersController extends Controller
             $updatedRegister = $this->registerMapper->update($register);
 
             $this->logger->info(
-                    'Register published',
-                    [
+                'Register published',
+                [
                         'register_id'    => $id,
                         'published_date' => $date->format('Y-m-d H:i:s'),
                     ]
-                    );
+            );
 
             return new JSONResponse($updatedRegister->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to publish register',
-                    [
+                'Failed to publish register',
+                [
                         'register_id' => $id,
                         'error'       => $e->getMessage(),
                     ]
-                    );
+            );
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
-
     }//end publish()
 
     /**
@@ -1277,26 +1261,25 @@ class RegistersController extends Controller
             $updatedRegister = $this->registerMapper->update($register);
 
             $this->logger->info(
-                    'Register depublished',
-                    [
+                'Register depublished',
+                [
                         'register_id'      => $id,
                         'depublished_date' => $date->format('Y-m-d H:i:s'),
                     ]
-                    );
+            );
 
             return new JSONResponse($updatedRegister->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Register not found'], 404);
         } catch (Exception $e) {
             $this->logger->error(
-                    'Failed to depublish register',
-                    [
+                'Failed to depublish register',
+                [
                         'register_id' => $id,
                         'error'       => $e->getMessage(),
                     ]
-                    );
+            );
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
-
     }//end depublish()
 }//end class

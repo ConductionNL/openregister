@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Webhook Log Entity
  *
@@ -61,7 +62,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class WebhookLog extends Entity implements JsonSerializable
 {
-
     /**
      * Webhook (ID of the webhook this log belongs to)
      *
@@ -176,7 +176,6 @@ class WebhookLog extends Entity implements JsonSerializable
 
         // Initialize created timestamp.
         $this->created = new DateTime();
-
     }//end __construct()
 
     /**
@@ -191,7 +190,6 @@ class WebhookLog extends Entity implements JsonSerializable
         }
 
         return json_decode($this->payload, true) ?? [];
-
     }//end getPayloadArray()
 
     /**
@@ -209,7 +207,6 @@ class WebhookLog extends Entity implements JsonSerializable
         }
 
         $this->setPayload(json_encode($payload));
-
     }//end setPayloadArray()
 
     /**
@@ -237,6 +234,5 @@ class WebhookLog extends Entity implements JsonSerializable
             'nextRetryAt'  => $this->nextRetryAt?->format('c'),
             'created'      => $this->created->format('c'),
         ];
-
     }//end jsonSerialize()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RelationCascadeHandler
  *
@@ -59,7 +60,6 @@ class RelationCascadeHandler
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
     ) {
-
     }//end __construct()
 
     /**
@@ -112,12 +112,11 @@ class RelationCascadeHandler
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->error('Error finding schema by slug: '.$e->getMessage());
+            $this->logger->error('Error finding schema by slug: ' . $e->getMessage());
         }
 
         // No match found.
         return null;
-
     }//end resolveSchemaReference()
 
     /**
@@ -134,7 +133,6 @@ class RelationCascadeHandler
         }
 
         return $reference;
-
     }//end removeQueryParameters()
 
     /**
@@ -186,12 +184,11 @@ class RelationCascadeHandler
                 }
             }
         } catch (\Exception $e) {
-            $this->logger->error('Error finding register by slug: '.$e->getMessage());
+            $this->logger->error('Error finding register by slug: ' . $e->getMessage());
         }
 
         // No match found.
         return null;
-
     }//end resolveRegisterReference()
 
     /**
@@ -206,7 +203,7 @@ class RelationCascadeHandler
      *
      * @return array Array of relation paths that need resolution.
      */
-    public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
+    public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array
     {
         $relations = [];
 
@@ -239,7 +236,7 @@ class RelationCascadeHandler
                     $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
                     $relations       = array_merge($relations, $nestedRelations);
                 }
-            } else if (is_string($value) === true && $this->isReference($value) === true) {
+            } elseif (is_string($value) === true && $this->isReference($value) === true) {
                 // Single reference value.
                 if ($hasRef === true || $this->looksLikeObjectReference($value) === true) {
                     $relations[] = $currentPath;
@@ -248,7 +245,6 @@ class RelationCascadeHandler
         }//end foreach
 
         return $relations;
-
     }//end scanForRelations()
 
     /**
@@ -271,7 +267,6 @@ class RelationCascadeHandler
         }
 
         return $current;
-
     }//end getPropertyDefinition()
 
     /**
@@ -290,7 +285,6 @@ class RelationCascadeHandler
         }
 
         return false;
-
     }//end isArrayOfReferences()
 
     /**
@@ -313,7 +307,6 @@ class RelationCascadeHandler
         }
 
         return false;
-
     }//end looksLikeObjectReference()
 
     /**
@@ -336,7 +329,8 @@ class RelationCascadeHandler
         }
 
         // Check for URL patterns.
-        if (str_contains($value, '/objects/') === true
+        if (
+            str_contains($value, '/objects/') === true
             || str_contains($value, '/api/') === true
         ) {
             return true;
@@ -348,7 +342,6 @@ class RelationCascadeHandler
         }
 
         return false;
-
     }//end isReference()
 
     /**
@@ -363,7 +356,7 @@ class RelationCascadeHandler
      *
      * @return ObjectEntity The updated object entity.
      */
-    public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
+    public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema = null): ObjectEntity
     {
         // Scan for relations.
         $relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
@@ -382,7 +375,6 @@ class RelationCascadeHandler
         $objectEntity->setObject($objectData);
 
         return $objectEntity;
-
     }//end updateObjectRelations()
 
     /**
@@ -429,14 +421,13 @@ class RelationCascadeHandler
             }
 
             $current[$lastKey] = $resolved;
-        } else if (is_string($value) === true) {
+        } elseif (is_string($value) === true) {
             // Single reference.
             $uuid = $this->extractUuidFromReference($value);
             if ($uuid !== null) {
                 $current[$lastKey] = $uuid;
             }
         }
-
     }//end resolveRelationPath()
 
     /**
@@ -475,7 +466,6 @@ class RelationCascadeHandler
         }
 
         return null;
-
     }//end extractUuidFromReference()
 
     /**
@@ -521,7 +511,6 @@ class RelationCascadeHandler
         }//end foreach
 
         return $data;
-
     }//end cascadeObjects()
 
     /**
@@ -540,7 +529,6 @@ class RelationCascadeHandler
         }
 
         return true;
-
     }//end isArrayOfScalars()
 
     /**
@@ -564,14 +552,13 @@ class RelationCascadeHandler
                 if ($uuid !== null) {
                     $createdUuids[] = $uuid;
                 }
-            } else if (is_string($object) === true && Uuid::isValid($object) === true) {
+            } elseif (is_string($object) === true && Uuid::isValid($object) === true) {
                 // Already a UUID reference.
                 $createdUuids[] = $object;
             }
         }
 
         return $createdUuids;
-
     }//end cascadeMultipleObjects()
 
     /**
@@ -591,7 +578,6 @@ class RelationCascadeHandler
         $this->logger->warning('Cascade object creation not yet implemented in extracted handler');
 
         return null;
-
     }//end cascadeSingleObject()
 
     /**
@@ -614,6 +600,5 @@ class RelationCascadeHandler
         $this->logger->warning('Inverse relation write-back not yet implemented in extracted handler');
 
         return $data;
-
     }//end handleInverseRelationsWriteBack()
 }//end class

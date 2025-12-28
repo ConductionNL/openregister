@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class Chunk
  *
@@ -72,7 +73,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Chunk extends Entity implements JsonSerializable
 {
-
     /**
      * UUID.
      *
@@ -250,7 +250,6 @@ class Chunk extends Entity implements JsonSerializable
         $this->addType('checksum', 'string');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
-
     }//end __construct()
 
     /**
@@ -284,6 +283,5 @@ class Chunk extends Entity implements JsonSerializable
             'updatedAt'          => $this->updatedAt?->format(DateTime::ATOM),
             'positionReference'  => $this->positionReference,
         ];
-
     }//end jsonSerialize()
 }//end class

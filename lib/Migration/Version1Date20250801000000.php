@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Multi-Tenancy Migration
  *
@@ -33,7 +34,6 @@ use OCP\IDBConnection;
  */
 class Version1Date20250801000000 extends SimpleMigrationStep
 {
-
     /**
      * Database connection
      *
@@ -49,7 +49,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-
     }//end __construct()
 
     /**
@@ -91,26 +90,26 @@ class Version1Date20250801000000 extends SimpleMigrationStep
             // Add users field (JSON array of user IDs).
             if ($table->hasColumn('users') === false) {
                 $table->addColumn(
-                        'users',
-                        Types::JSON,
-                        [
+                    'users',
+                    Types::JSON,
+                    [
                             'notnull' => false,
                             'default' => '[]',
                         ]
-                        );
+                );
                 $output->info(message: 'Added users column to organisations table');
             }
 
             // Add owner field (user ID who owns the organisation).
             if ($table->hasColumn('owner') === false) {
                 $table->addColumn(
-                        'owner',
-                        Types::STRING,
-                        [
+                    'owner',
+                    Types::STRING,
+                    [
                             'notnull' => false,
                             'length'  => 255,
                         ]
-                        );
+                );
                 $output->info(message: 'Added owner column to organisations table');
             }
 
@@ -140,7 +139,6 @@ class Version1Date20250801000000 extends SimpleMigrationStep
         }//end if
 
         return $schema;
-
     }//end changeSchema()
 
     /**

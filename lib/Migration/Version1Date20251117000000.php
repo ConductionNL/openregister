@@ -46,7 +46,6 @@ class Version1Date20251117000000 extends SimpleMigrationStep
         $this->addChecksumToChunks(output: $output, schema: $schema);
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -84,6 +83,5 @@ class Version1Date20251117000000 extends SimpleMigrationStep
         $table->addIndex(['checksum'], 'chunks_checksum_idx');
 
         $output->info(message: '✅ Added checksum column to openregister_chunks table.');
-
     }//end addChecksumToChunks()
 }//end class

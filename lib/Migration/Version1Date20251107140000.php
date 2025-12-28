@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Database Migration
  *
@@ -112,6 +113,5 @@ class Version1Date20251107140000 extends SimpleMigrationStep
         }//end if
 
         return null;
-
     }//end changeSchema()
 }//end class

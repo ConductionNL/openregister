@@ -32,7 +32,6 @@ use Psr\Log\LoggerInterface;
  */
 class SolrQueryExecutor
 {
-
     /**
      * HTTP client.
      *
@@ -71,7 +70,6 @@ class SolrQueryExecutor
         $this->httpClient        = $httpClient;
         $this->collectionManager = $collectionManager;
         $this->logger            = $logger;
-
     }//end __construct()
 
     /**
@@ -97,27 +95,27 @@ class SolrQueryExecutor
 
         try {
             $queryString = http_build_query($params);
-            $url         = $this->httpClient->getEndpointUrl($collection).'/select?'.$queryString;
+            $url         = $this->httpClient->getEndpointUrl($collection) . '/select?' . $queryString;
 
             $result = $this->httpClient->get($url);
 
             $this->logger->debug(
-                    '[SolrQueryExecutor] Search executed',
-                    [
+                '[SolrQueryExecutor] Search executed',
+                [
                         'collection' => $collection,
                         'query'      => $params['q'] ?? '*:*',
                         'numFound'   => $result['response']['numFound'] ?? 0,
                     ]
-                    );
+            );
 
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[SolrQueryExecutor] Search failed',
-                    [
+                '[SolrQueryExecutor] Search failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'response' => [
@@ -127,7 +125,6 @@ class SolrQueryExecutor
                 'error'    => $e->getMessage(),
             ];
         }//end try
-
     }//end search()
 
     /**
@@ -142,11 +139,11 @@ class SolrQueryExecutor
      * @return array Paginated search results
      */
     public function searchPaginated(
-        array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
-        bool $published=false,
-        bool $deleted=false
+        array $query = [],
+        bool $rbac = true,
+        bool $multitenancy = true,
+        bool $published = false,
+        bool $deleted = false
     ): array {
         // Build Solr query from OpenRegister query format.
         $solrQuery = $this->buildSolrQuery($query);
@@ -175,7 +172,6 @@ class SolrQueryExecutor
 
         // Convert to OpenRegister paginated format.
         return $this->convertToPaginatedFormat($result, $query);
-
     }//end searchPaginated()
 
     /**
@@ -206,7 +202,6 @@ class SolrQueryExecutor
         }
 
         return $solrQuery;
-
     }//end buildSolrQuery()
 
     /**
@@ -229,7 +224,6 @@ class SolrQueryExecutor
         }
 
         return implode(', ', $sortParts);
-
     }//end translateSortField()
 
     /**
@@ -260,7 +254,6 @@ class SolrQueryExecutor
             'page'    => $page,
             'pages'   => $limit > 0 ? (int) ceil($numFound / $limit) : 0,
         ];
-
     }//end convertToPaginatedFormat()
 
     /**
@@ -274,10 +267,10 @@ class SolrQueryExecutor
      * @return array Inspection results
      */
     public function inspectIndex(
-        string $query='*:*',
-        int $start=0,
-        int $rows=20,
-        string $fields=''
+        string $query = '*:*',
+        int $start = 0,
+        int $rows = 20,
+        string $fields = ''
     ): array {
         $params = [
             'q'     => $query,
@@ -291,7 +284,6 @@ class SolrQueryExecutor
         }
 
         return $this->search($params);
-
     }//end inspectIndex()
 
     /**
@@ -329,6 +321,5 @@ class SolrQueryExecutor
                 'error'      => $e->getMessage(),
             ];
         }//end try
-
     }//end getStats()
 }//end class

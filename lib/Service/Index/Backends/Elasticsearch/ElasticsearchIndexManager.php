@@ -26,7 +26,6 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticsearchIndexManager
 {
-
     /**
      * Elasticsearch HTTP client for making requests
      *
@@ -60,7 +59,6 @@ class ElasticsearchIndexManager
     ) {
         $this->httpClient = $httpClient;
         $this->logger     = $logger;
-
     }//end __construct()
 
     /**
@@ -73,14 +71,13 @@ class ElasticsearchIndexManager
     public function indexExists(string $indexName): bool
     {
         try {
-            $url      = $this->httpClient->buildBaseUrl().'/'.$indexName;
+            $url      = $this->httpClient->buildBaseUrl() . '/' . $indexName;
             $response = $this->httpClient->get($url);
 
             return isset($response['error']) === false;
         } catch (Exception $e) {
             return false;
         }
-
     }//end indexExists()
 
     /**
@@ -91,10 +88,10 @@ class ElasticsearchIndexManager
      *
      * @return bool True on success
      */
-    public function createIndex(string $indexName, array $mapping=[]): bool
+    public function createIndex(string $indexName, array $mapping = []): bool
     {
         try {
-            $url = $this->httpClient->buildBaseUrl().'/'.$indexName;
+            $url = $this->httpClient->buildBaseUrl() . '/' . $indexName;
 
             $settings = [
                 'settings' => [
@@ -113,25 +110,24 @@ class ElasticsearchIndexManager
 
             if ($success === true) {
                 $this->logger->info(
-                     '[ElasticsearchIndexManager] Index created',
-                     [
+                    '[ElasticsearchIndexManager] Index created',
+                    [
                          'index' => $indexName,
                      ]
-                     );
+                );
             }
 
             return $success;
         } catch (Exception $e) {
             $this->logger->error(
-                 '[ElasticsearchIndexManager] Failed to create index',
-                 [
+                '[ElasticsearchIndexManager] Failed to create index',
+                [
                      'index' => $indexName,
                      'error' => $e->getMessage(),
                  ]
-                 );
+            );
             return false;
         }//end try
-
     }//end createIndex()
 
     /**
@@ -144,32 +140,31 @@ class ElasticsearchIndexManager
     public function deleteIndex(string $indexName): bool
     {
         try {
-            $url      = $this->httpClient->buildBaseUrl().'/'.$indexName;
+            $url      = $this->httpClient->buildBaseUrl() . '/' . $indexName;
             $response = $this->httpClient->delete($url);
 
             $success = isset($response['acknowledged']) && $response['acknowledged'] === true;
 
             if ($success === true) {
                 $this->logger->info(
-                     '[ElasticsearchIndexManager] Index deleted',
-                     [
+                    '[ElasticsearchIndexManager] Index deleted',
+                    [
                          'index' => $indexName,
                      ]
-                     );
+                );
             }
 
             return $success;
         } catch (Exception $e) {
             $this->logger->error(
-                 '[ElasticsearchIndexManager] Failed to delete index',
-                 [
+                '[ElasticsearchIndexManager] Failed to delete index',
+                [
                      'index' => $indexName,
                      'error' => $e->getMessage(),
                  ]
-                 );
+            );
             return false;
         }//end try
-
     }//end deleteIndex()
 
     /**
@@ -183,16 +178,15 @@ class ElasticsearchIndexManager
     {
         if ($this->indexExists($indexName) === true) {
             $this->logger->debug(
-                 '[ElasticsearchIndexManager] Index already exists',
-                 [
+                '[ElasticsearchIndexManager] Index already exists',
+                [
                      'index' => $indexName,
                  ]
-                 );
+            );
             return true;
         }
 
         return $this->createIndex($indexName);
-
     }//end ensureIndex()
 
     /**
@@ -203,7 +197,6 @@ class ElasticsearchIndexManager
     public function getActiveIndexName(): string
     {
         return $this->activeIndex;
-
     }//end getActiveIndexName()
 
     /**
@@ -214,19 +207,18 @@ class ElasticsearchIndexManager
     public function getIndexStats(string $indexName): array
     {
         try {
-            $url = $this->httpClient->buildBaseUrl().'/'.$indexName.'/_stats';
+            $url = $this->httpClient->buildBaseUrl() . '/' . $indexName . '/_stats';
             return $this->httpClient->get($url);
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ElasticsearchIndexManager] Failed to get index stats',
-                    [
+                '[ElasticsearchIndexManager] Failed to get index stats',
+                [
                         'index' => $indexName,
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return [];
         }
-
     }//end getIndexStats()
 
     /**
@@ -237,20 +229,19 @@ class ElasticsearchIndexManager
     public function refreshIndex(string $indexName): bool
     {
         try {
-            $url      = $this->httpClient->buildBaseUrl().'/'.$indexName.'/_refresh';
+            $url      = $this->httpClient->buildBaseUrl() . '/' . $indexName . '/_refresh';
             $response = $this->httpClient->post($url, []);
 
             return isset($response['error']) === false;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[ElasticsearchIndexManager] Failed to refresh index',
-                    [
+                '[ElasticsearchIndexManager] Failed to refresh index',
+                [
                         'index' => $indexName,
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return false;
         }
-
     }//end refreshIndex()
 }//end class

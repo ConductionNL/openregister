@@ -49,7 +49,6 @@ class AbstractNodesFolderEventListener implements IEventListener
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
     ) {
-
     }//end __construct()
 
     /**
@@ -74,10 +73,9 @@ class AbstractNodesFolderEventListener implements IEventListener
             $event instanceof NodeCopiedEvent => $this->handleNodeCopied($event),
             $event instanceof NodeRenamedEvent => $this->handleNodeRenamed($event),
             default => throw new InvalidArgumentException(
-                'Unsupported event type: '.get_class($event)
+                'Unsupported event type: ' . get_class($event)
             ),
         };
-
     }//end handle()
 
     /**

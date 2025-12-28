@@ -44,7 +44,6 @@ class FileHandler implements TextExtractionHandlerInterface
         private readonly IRootFolder $rootFolder,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -57,7 +56,6 @@ class FileHandler implements TextExtractionHandlerInterface
     public function getSourceType(): string
     {
         return 'file';
-
     }//end getSourceType()
 
     /**
@@ -87,7 +85,7 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
+    public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array
     {
         $this->logger->info(message: '[FileHandler] Extracting text from file', context: ['fileId' => $sourceId]);
 
@@ -136,7 +134,6 @@ class FileHandler implements TextExtractionHandlerInterface
                 'file_size' => $file->getSize(),
             ],
         ];
-
     }//end extractText()
 
     /**
@@ -162,7 +159,6 @@ class FileHandler implements TextExtractionHandlerInterface
         }
 
         return $latestChunkTimestamp < $sourceTimestamp;
-
     }//end needsExtraction()
 
     /**
@@ -184,7 +180,6 @@ class FileHandler implements TextExtractionHandlerInterface
         }
 
         return $ncFile;
-
     }//end getSourceMetadata()
 
     /**
@@ -202,7 +197,6 @@ class FileHandler implements TextExtractionHandlerInterface
         } catch (DoesNotExistException $e) {
             return time();
         }
-
     }//end getSourceTimestamp()
 
     /**
@@ -229,23 +223,22 @@ class FileHandler implements TextExtractionHandlerInterface
             // From TextExtractionService (PDF, DOCX, etc.).
             // This should be refactored to use IndexService if needed.
             $this->logger->warning(
-                    '[FileHandler] Complex extraction not yet implemented',
-                    [
+                '[FileHandler] Complex extraction not yet implemented',
+                [
                         'mime_type' => $mimeType,
                     ]
-                    );
+            );
 
             return null;
         } catch (Exception $e) {
             $this->logger->error(
-                    '[FileHandler] Text extraction failed',
-                    [
+                '[FileHandler] Text extraction failed',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
             return null;
         }//end try
-
     }//end performTextExtraction()
 
     /**
@@ -268,6 +261,5 @@ class FileHandler implements TextExtractionHandlerInterface
             'confidence' => null,
             'method'     => null,
         ];
-
     }//end detectLanguage()
 }//end class

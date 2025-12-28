@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Feedback Mapper
  *
@@ -56,7 +57,6 @@ class FeedbackMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_feedback', Feedback::class);
-
     }//end __construct()
 
     /**
@@ -83,7 +83,6 @@ class FeedbackMapper extends QBMapper
         $entity->setUpdated($now);
 
         return parent::insert($entity);
-
     }//end insert()
 
     /**
@@ -98,7 +97,6 @@ class FeedbackMapper extends QBMapper
     {
         $entity->setUpdated(new DateTime());
         return parent::update($entity);
-
     }//end update()
 
     /**
@@ -123,7 +121,6 @@ class FeedbackMapper extends QBMapper
         } catch (DoesNotExistException $e) {
             return null;
         }
-
     }//end findByMessage()
 
     /**
@@ -141,6 +138,5 @@ class FeedbackMapper extends QBMapper
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
         $qb->executeStatement();
-
     }//end deleteByConversation()
 }//end class

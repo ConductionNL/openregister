@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister DataAccessProfile Entity
  *
@@ -40,7 +41,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class DataAccessProfile extends Entity implements JsonSerializable
 {
-
     /**
      * UUID.
      *
@@ -94,7 +94,6 @@ class DataAccessProfile extends Entity implements JsonSerializable
         $this->addType('permissions', 'json');
         $this->addType('created', 'datetime');
         $this->addType('updated', 'datetime');
-
     }//end __construct()
 
     /**
@@ -125,7 +124,6 @@ class DataAccessProfile extends Entity implements JsonSerializable
             'created'     => $created,
             'updated'     => $updated,
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -150,11 +148,10 @@ class DataAccessProfile extends Entity implements JsonSerializable
 
         // Fallback to ID if available.
         if ($this->id !== null) {
-            return 'DataAccessProfile #'.$this->id;
+            return 'DataAccessProfile #' . $this->id;
         }
 
         // Final fallback.
         return 'Data Access Profile';
-
     }//end __toString()
 }//end class

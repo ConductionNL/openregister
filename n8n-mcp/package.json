@@ -1,0 +1,23 @@
+{
+  "name": "openregister-n8n-mcp",
+  "version": "1.0.0",
+  "description": "n8n MCP integration for OpenRegister - enables AI agents to control n8n workflows",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "install": "npm install --no-save n8n-mcp-server@latest"
+  },
+  "keywords": [
+    "n8n",
+    "mcp",
+    "model-context-protocol",
+    "openregister",
+    "workflow-automation"
+  ],
+  "author": "Conduction",
+  "license": "EUPL-1.2",
+  "dependencies": {
+    "n8n-mcp-server": "^0.1.0"
+  }
+}
+

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister OrganisationDeletedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class OrganisationDeletedEvent extends Event
 {
-
     /**
      * The deleted organisation.
      *
@@ -46,7 +46,6 @@ class OrganisationDeletedEvent extends Event
     {
         parent::__construct();
         $this->organisation = $organisation;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class OrganisationDeletedEvent extends Event
     public function getOrganisation(): Organisation
     {
         return $this->organisation;
-
     }//end getOrganisation()
 }//end class

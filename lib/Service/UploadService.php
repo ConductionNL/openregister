@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister UploadService
  *
@@ -61,7 +62,6 @@ use Symfony\Component\Yaml\Yaml;
  */
 class UploadService
 {
-
     /**
      * HTTP client
      *
@@ -110,7 +110,6 @@ class UploadService
 
         // Process direct JSON input.
         return $this->processJsonUpload($data['json']);
-
     }//end getUploadedJson()
 
     /**
@@ -131,7 +130,6 @@ class UploadService
         }
 
         return $data;
-
     }//end removeInternalParameters()
 
     /**
@@ -156,7 +154,6 @@ class UploadService
         }
 
         return null;
-
     }//end validateUploadSource()
 
     /**
@@ -175,7 +172,6 @@ class UploadService
         // @todo use .json file content from POST as $json.
         // Method always throws, so this is unreachable but kept for API compatibility.
         $this->getJSONfromFile();
-
     }//end processFileUpload()
 
     /**
@@ -205,7 +201,6 @@ class UploadService
 
         // Fallback: return error response if parsing failed.
         return new JSONResponse(data: ['error' => 'Failed to parse JSON from URL'], statusCode: 400);
-
     }//end processUrlUpload()
 
     /**
@@ -230,7 +225,6 @@ class UploadService
         }
 
         return $phpArray;
-
     }//end processJsonUpload()
 
     /**
@@ -252,7 +246,7 @@ class UploadService
             $response = $this->client->request('GET', $url);
         } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             // Return error response if HTTP request fails.
-            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage()], statusCode: 400);
+            return new JSONResponse(data: ['error' => 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage()], statusCode: 400);
         }
 
         // Step 2: Get response body content as string.
@@ -282,7 +276,6 @@ class UploadService
         }
 
         return $phpArray;
-
     }//end getJSONfromURL()
 
     /**
@@ -297,6 +290,5 @@ class UploadService
         // @todo: Implement file reading logic here.
         // For now, return a simple array to ensure code consistency.
         throw new Exception('File upload handling is not yet implemented');
-
     }//end getJSONfromFile()
 }//end class

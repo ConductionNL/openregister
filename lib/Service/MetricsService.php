@@ -17,7 +17,6 @@
  * @link https://www.conduction.nl
  */
 
-
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
@@ -39,7 +38,6 @@ use Psr\Log\LoggerInterface;
 
 class MetricsService
 {
-
     /**
      * Database connection instance.
      *
@@ -115,7 +113,6 @@ class MetricsService
     ) {
         $this->db     = $db;
         $this->logger = $logger;
-
     }//end __construct()
 
     /**
@@ -142,13 +139,13 @@ class MetricsService
      */
     public function recordMetric(
         string $metricType,
-        ?string $entityType=null,
-        ?string $entityId=null,
-        string $status='success',
-        ?int $durationMs=null,
-        ?array $metadata=null,
-        ?string $errorMessage=null,
-        ?string $userId=null
+        ?string $entityType = null,
+        ?string $entityId = null,
+        string $status = 'success',
+        ?int $durationMs = null,
+        ?array $metadata = null,
+        ?string $errorMessage = null,
+        ?string $userId = null
     ): void {
         try {
             // Get query builder instance for database operations.
@@ -158,7 +155,7 @@ class MetricsService
             // Create named parameters for all values to prevent SQL injection.
             $qb->insert('openregister_metrics')
                 ->values(
-                        values: [
+                    values: [
                             [
                                 'metric_type'   => $qb->createNamedParameter($metricType),
                                 'entity_type'   => $qb->createNamedParameter($entityType),
@@ -171,7 +168,7 @@ class MetricsService
                                 'created_at'    => $qb->createNamedParameter(time()),
                             ],
                         ]
-                        );
+                );
 
             // Execute the insert query.
             $qb->executeStatement();
@@ -179,14 +176,13 @@ class MetricsService
             // Log errors but don't throw to prevent disrupting main operations.
             // Metrics recording failures should not break application functionality.
             $this->logger->error(
-                    message: '[MetricsService] Failed to record metric',
-                    context: [
+                message: '[MetricsService] Failed to record metric',
+                context: [
                         'metric_type' => $metricType,
                         'error'       => $e->getMessage(),
                     ]
             );
         }//end try
-
     }//end recordMetric()
 
     /**
@@ -198,7 +194,7 @@ class MetricsService
      *
      * @psalm-return array<int>
      */
-    public function getFilesProcessedPerDay(int $days=30): array
+    public function getFilesProcessedPerDay(int $days = 30): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -222,7 +218,6 @@ class MetricsService
         }
 
         return $data;
-
     }//end getFilesProcessedPerDay()
 
     /**
@@ -244,7 +239,7 @@ class MetricsService
      *
      * @psalm-return array{total: int, successful: int, failed: int, success_rate: float, estimated_cost_usd: float, period_days: int}
      */
-    public function getEmbeddingStats(int $days=30): array
+    public function getEmbeddingStats(int $days = 30): array
     {
         // Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -290,7 +285,6 @@ class MetricsService
             'estimated_cost_usd' => round($estimatedCost, 4),
             'period_days'        => $days,
         ];
-
     }//end getEmbeddingStats()
 
     /**
@@ -305,7 +299,7 @@ class MetricsService
      *
      * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
      */
-    public function getSearchLatencyStats(int $days=7): array
+    public function getSearchLatencyStats(int $days = 7): array
     {
         // Calculate start timestamp (N days ago).
         $startTime = time() - ($days * 86400);
@@ -355,7 +349,6 @@ class MetricsService
         }//end foreach
 
         return $stats;
-
     }//end getSearchLatencyStats()
 
     /**
@@ -376,7 +369,7 @@ class MetricsService
      *
      * @psalm-return array{daily_vectors_added: array<string, int>, current_storage_bytes: int, current_storage_mb: float, avg_vectors_per_day: float, period_days: int}
      */
-    public function getStorageGrowth(int $days=30): array
+    public function getStorageGrowth(int $days = 30): array
     {
         // Get query builder instance for daily vector counts.
         $qb = $this->db->getQueryBuilder();
@@ -429,7 +422,6 @@ class MetricsService
             'avg_vectors_per_day'   => $this->calculateAverageVectorsPerDay($growthData),
             'period_days'           => $days,
         ];
-
     }//end getStorageGrowth()
 
     /**
@@ -447,7 +439,6 @@ class MetricsService
             'search_latency'  => $this->getSearchLatencyStats(7),
             'storage_growth'  => $this->getStorageGrowth(30),
         ];
-
     }//end getDashboardMetrics()
 
     /**
@@ -462,7 +453,7 @@ class MetricsService
      *
      * @psalm-suppress PossiblyInvalidMethodCall
      */
-    public function cleanOldMetrics(int $retentionDays=90): int
+    public function cleanOldMetrics(int $retentionDays = 90): int
     {
         // Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -485,7 +476,6 @@ class MetricsService
         } else {
             return (int) $result->rowCount();
         }
-
     }//end cleanOldMetrics()
 
     /**
@@ -516,7 +506,6 @@ class MetricsService
         }
 
         return $encoded;
-
     }//end encodeMetadata()
 
     /**
@@ -540,7 +529,6 @@ class MetricsService
         // Calculate percentage: (successful / total) * 100.
         // Round to 2 decimal places for readability.
         return round(($successful / $total) * 100, 2);
-
     }//end calculateSuccessRate()
 
     /**
@@ -566,7 +554,6 @@ class MetricsService
 
         // Return 0.0 for invalid or null values.
         return 0.0;
-
     }//end roundAverageMs()
 
     /**
@@ -618,6 +605,5 @@ class MetricsService
          */
 
         return round($totalVectors / $days, 2);
-
     }//end calculateAverageVectorsPerDay()
 }//end class

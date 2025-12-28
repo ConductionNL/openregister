@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Webhook Mapper
  *
@@ -119,7 +120,6 @@ class WebhookMapper extends QBMapper
         // $this->organisationMapper = $organisationService.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
-
     }//end __construct()
 
     /**
@@ -152,7 +152,6 @@ class WebhookMapper extends QBMapper
 
         // Step 4: Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**
@@ -189,7 +188,6 @@ class WebhookMapper extends QBMapper
 
         // Step 4: Execute query and return single entity.
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -220,7 +218,6 @@ class WebhookMapper extends QBMapper
         $this->applyOrganisationFilter($qb);
 
         return $this->findEntities($qb);
-
     }//end findEnabled()
 
     /**
@@ -239,12 +236,11 @@ class WebhookMapper extends QBMapper
 
         // Filter webhooks that match the event.
         return array_filter(
-                $webhooks,
-                function ($webhook) use ($eventClass) {
-                    return $webhook->matchesEvent($eventClass);
-                }
-                );
-
+            $webhooks,
+            function ($webhook) use ($eventClass) {
+                return $webhook->matchesEvent($eventClass);
+            }
+        );
     }//end findForEvent()
 
     /**
@@ -274,7 +270,6 @@ class WebhookMapper extends QBMapper
         $this->setOrganisationOnCreate($entity);
 
         return parent::insert($entity);
-
     }//end insert()
 
     /**
@@ -298,7 +293,6 @@ class WebhookMapper extends QBMapper
         }
 
         return parent::update($entity);
-
     }//end update()
 
     /**
@@ -318,7 +312,6 @@ class WebhookMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);
-
     }//end delete()
 
     /**
@@ -332,7 +325,7 @@ class WebhookMapper extends QBMapper
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly=false): Webhook
+    public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook
     {
         $webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
 
@@ -353,7 +346,6 @@ class WebhookMapper extends QBMapper
         }
 
         return $this->update($webhook);
-
     }//end updateStatistics()
 
     /**
@@ -369,7 +361,6 @@ class WebhookMapper extends QBMapper
         $webhook->hydrate($data);
 
         return $this->insert($webhook);
-
     }//end createFromArray()
 
     /**
@@ -388,7 +379,6 @@ class WebhookMapper extends QBMapper
         $webhook->hydrate($data);
 
         return $this->update($webhook);
-
     }//end updateFromArray()
 
     /**
@@ -412,6 +402,5 @@ class WebhookMapper extends QBMapper
             // If query fails, table likely doesn't exist.
             return false;
         }
-
     }//end tableExists()
 }//end class

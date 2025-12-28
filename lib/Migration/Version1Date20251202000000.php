@@ -18,7 +18,6 @@
  * @link https://www.OpenRegister.nl
  */
 
-
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
@@ -71,14 +70,14 @@ class Version1Date20251202000000 extends SimpleMigrationStep
             // Add published field (datetime) - publication timestamp.
             if ($schemasTable->hasColumn('published') === false) {
                 $schemasTable->addColumn(
-                        'published',
-                        Types::DATETIME,
-                        [
+                    'published',
+                    Types::DATETIME,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Publication timestamp. When set, schema becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
                         ]
-                        );
+                );
 
                 $output->info('   ✓ Added published column to schemas table');
             } else {
@@ -88,14 +87,14 @@ class Version1Date20251202000000 extends SimpleMigrationStep
             // Add depublished field (datetime) - depublication timestamp.
             if ($schemasTable->hasColumn('depublished') === false) {
                 $schemasTable->addColumn(
-                        'depublished',
-                        Types::DATETIME,
-                        [
+                    'depublished',
+                    Types::DATETIME,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Depublication timestamp. When set, schema becomes inaccessible after this date/time.',
                         ]
-                        );
+                );
 
                 $output->info('   ✓ Added depublished column to schemas table');
             } else {
@@ -112,14 +111,14 @@ class Version1Date20251202000000 extends SimpleMigrationStep
             // Add published field (datetime) - publication timestamp.
             if ($registersTable->hasColumn('published') === false) {
                 $registersTable->addColumn(
-                        'published',
-                        Types::DATETIME,
-                        [
+                    'published',
+                    Types::DATETIME,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Publication timestamp. When set, register becomes publicly accessible regardless of organisation restrictions if published bypass is enabled.',
                         ]
-                        );
+                );
 
                 $output->info('   ✓ Added published column to registers table');
             } else {
@@ -129,14 +128,14 @@ class Version1Date20251202000000 extends SimpleMigrationStep
             // Add depublished field (datetime) - depublication timestamp.
             if ($registersTable->hasColumn('depublished') === false) {
                 $registersTable->addColumn(
-                        'depublished',
-                        Types::DATETIME,
-                        [
+                    'depublished',
+                    Types::DATETIME,
+                    [
                             'notnull' => false,
                             'default' => null,
                             'comment' => 'Depublication timestamp. When set, register becomes inaccessible after this date/time.',
                         ]
-                        );
+                );
 
                 $output->info('   ✓ Added depublished column to registers table');
             } else {
@@ -154,6 +153,5 @@ class Version1Date20251202000000 extends SimpleMigrationStep
         $output->info('   • Consistent publication handling across objects, schemas, and registers');
 
         return $schema;
-
     }//end changeSchema()
 }//end class

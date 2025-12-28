@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Endpoint Mapper
  *
@@ -119,7 +120,6 @@ class EndpointMapper extends QBMapper
         // $this->organisationMapper = $organisationService.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
-
     }//end __construct()
 
     /**
@@ -135,7 +135,7 @@ class EndpointMapper extends QBMapper
      *
      * @psalm-return list<OCA\OpenRegister\Db\Endpoint>
      */
-    public function findAll(?int $limit=null, ?int $offset=null): array
+    public function findAll(?int $limit = null, ?int $offset = null): array
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -160,7 +160,6 @@ class EndpointMapper extends QBMapper
 
         // Step 6: Execute query and return entities.
         return $this->findEntities($qb);
-
     }//end findAll()
 
     /**
@@ -192,7 +191,6 @@ class EndpointMapper extends QBMapper
 
         // Step 4: Execute query and return single entity.
         return $this->findEntity($qb);
-
     }//end find()
 
     /**
@@ -228,7 +226,6 @@ class EndpointMapper extends QBMapper
 
         // Persist to database.
         return $this->insert($endpoint);
-
     }//end createFromArray()
 
     /**
@@ -264,7 +261,6 @@ class EndpointMapper extends QBMapper
 
         // Persist to database.
         return $this->update($endpoint);
-
     }//end updateFromArray()
 
     /**
@@ -286,6 +282,5 @@ class EndpointMapper extends QBMapper
         $this->verifyOrganisationAccess($entity);
 
         return parent::delete($entity);
-
     }//end delete()
 }//end class

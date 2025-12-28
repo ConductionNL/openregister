@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ViewDeletedEvent
  *
@@ -27,7 +28,6 @@ use OCP\EventDispatcher\Event;
  */
 class ViewDeletedEvent extends Event
 {
-
     /**
      * The deleted view.
      *
@@ -46,7 +46,6 @@ class ViewDeletedEvent extends Event
     {
         parent::__construct();
         $this->view = $view;
-
     }//end __construct()
 
     /**
@@ -57,6 +56,5 @@ class ViewDeletedEvent extends Event
     public function getView(): View
     {
         return $this->view;
-
     }//end getView()
 }//end class

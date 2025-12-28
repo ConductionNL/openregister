@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Application Service
  *
@@ -42,7 +43,6 @@ use Psr\Log\LoggerInterface;
  */
 class ApplicationService
 {
-
     /**
      * Application mapper for database operations
      *
@@ -78,7 +78,6 @@ class ApplicationService
         // Store dependencies for use in service methods.
         $this->applicationMapper = $applicationMapper;
         $this->logger            = $logger;
-
     }//end __construct()
 
     /**
@@ -95,7 +94,7 @@ class ApplicationService
      *
      * @psalm-return array<int, Application>
      */
-    public function findAll(?int $limit=null, ?int $offset=null, array $filters=[]): array
+    public function findAll(?int $limit = null, ?int $offset = null, array $filters = []): array
     {
         // Delegate to mapper to retrieve applications with pagination and filters.
         return $this->applicationMapper->findAll(
@@ -103,7 +102,6 @@ class ApplicationService
             offset: $offset,
             filters: $filters
         );
-
     }//end findAll()
 
     /**
@@ -124,7 +122,6 @@ class ApplicationService
     {
         // Delegate to mapper to find application by ID.
         return $this->applicationMapper->find($id);
-
     }//end find()
 
     /**
@@ -157,7 +154,6 @@ class ApplicationService
         );
 
         return $application;
-
     }//end create()
 
     /**
@@ -194,7 +190,6 @@ class ApplicationService
         );
 
         return $application;
-
     }//end update()
 
     /**
@@ -230,7 +225,6 @@ class ApplicationService
             message: 'Application deleted successfully',
             context: ['id' => $id]
         );
-
     }//end delete()
 
     /**
@@ -247,6 +241,5 @@ class ApplicationService
     {
         // Delegate to mapper to count all applications.
         return $this->applicationMapper->countAll();
-
     }//end countAll()
 }//end class

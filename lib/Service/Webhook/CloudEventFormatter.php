@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister CloudEvent Formatter
  *
@@ -67,8 +68,8 @@ class CloudEventFormatter
     public function formatAsCloudEvent(
         string $eventType,
         array $payload,
-        ?string $source=null,
-        ?string $subject=null
+        ?string $source = null,
+        ?string $subject = null
     ): array {
         // Use default source if not provided.
         if ($source === null) {
@@ -98,7 +99,6 @@ class CloudEventFormatter
                 'version' => $this->getAppVersion(),
             ],
         ];
-
     }//end formatAsCloudEvent()
 
     /**
@@ -119,7 +119,7 @@ class CloudEventFormatter
     public function formatRequestAsCloudEvent(
         IRequest $request,
         string $eventType,
-        array $data=[]
+        array $data = []
     ): array {
         // Get request body.
         $requestBody = $request->getParams();
@@ -172,7 +172,6 @@ class CloudEventFormatter
                 'version' => $this->getAppVersion(),
             ],
         ];
-
     }//end formatRequestAsCloudEvent()
 
     /**
@@ -195,11 +194,10 @@ class CloudEventFormatter
             $protocol = 'https://';
         }
 
-        $host = $protocol.$request->getServerHost();
+        $host = $protocol . $request->getServerHost();
 
         // Append OpenRegister app path to source.
-        return $host.'/apps/openregister';
-
+        return $host . '/apps/openregister';
     }//end getSource()
 
     /**
@@ -220,14 +218,13 @@ class CloudEventFormatter
         // Example: /api/objects/{register}/{schema}/{id}.
         if (preg_match('#/api/objects/([^/]+)/([^/]+)(?:/([^/]+))?#', $path, $matches) === 1) {
             if (($matches[3] ?? null) !== null) {
-                return 'object:'.$matches[1].'/'.$matches[2].'/'.$matches[3];
+                return 'object:' . $matches[1] . '/' . $matches[2] . '/' . $matches[3];
             }
 
-            return 'object:'.$matches[1].'/'.$matches[2];
+            return 'object:' . $matches[1] . '/' . $matches[2];
         }
 
         return null;
-
     }//end getSubject()
 
     /**
@@ -262,7 +259,6 @@ class CloudEventFormatter
         }
 
         return $headers;
-
     }//end getRequestHeaders()
 
     /**
@@ -283,7 +279,6 @@ class CloudEventFormatter
         }
 
         return 'application/json';
-
     }//end getContentTypeHeader()
 
     /**
@@ -297,6 +292,5 @@ class CloudEventFormatter
     {
         // @todo Get actual version from appinfo/info.xml or composer.json.
         return '1.0.0';
-
     }//end getAppVersion()
 }//end class

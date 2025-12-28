@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Webhook Delivery Job
  *
@@ -48,7 +49,6 @@ use Psr\Log\LoggerInterface;
  */
 class WebhookDeliveryJob extends QueuedJob
 {
-
     /**
      * Webhook mapper
      *
@@ -102,7 +102,6 @@ class WebhookDeliveryJob extends QueuedJob
         $this->webhookMapper  = $webhookMapper;
         $this->webhookService = $webhookService;
         $this->logger         = $logger;
-
     }//end __construct()
 
     /**
@@ -129,11 +128,11 @@ class WebhookDeliveryJob extends QueuedJob
 
         if ($webhookId === null || $eventName === null) {
             $this->logger->error(
-                    'WebhookDeliveryJob called with invalid arguments',
-                    [
+                'WebhookDeliveryJob called with invalid arguments',
+                [
                         'argument' => $argument,
                     ]
-                    );
+            );
             return;
         }
 
@@ -193,6 +192,5 @@ class WebhookDeliveryJob extends QueuedJob
                 ]
             );
         }//end try
-
     }//end run()
 }//end class

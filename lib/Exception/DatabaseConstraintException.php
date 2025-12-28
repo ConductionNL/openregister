@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Database Constraint Exception
  *
@@ -41,7 +42,6 @@ use Exception;
  */
 class DatabaseConstraintException extends Exception
 {
-
     /**
      * HTTP status code for the error response
      *
@@ -60,11 +60,10 @@ class DatabaseConstraintException extends Exception
      * @param int            $httpStatus The HTTP status code (default: 409 Conflict)
      * @param Exception|null $previous   The previous exception
      */
-    public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
+    public function __construct(string $message, int $code = 0, int $httpStatus = 409, ?Exception $previous = null)
     {
         parent::__construct($message, $code, $previous);
         $this->httpStatusCode = $httpStatus;
-
     }//end __construct()
 
     /**
@@ -78,7 +77,6 @@ class DatabaseConstraintException extends Exception
     public function getHttpStatusCode(): int
     {
         return $this->httpStatusCode;
-
     }//end getHttpStatusCode()
 
     /**
@@ -94,7 +92,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      */
-    public static function fromDatabaseException(Exception $dbException, string $entityType='item'): DatabaseConstraintException
+    public static function fromDatabaseException(Exception $dbException, string $entityType = 'item'): DatabaseConstraintException
     {
         // Extract original database error message.
         $message = $dbException->getMessage();
@@ -105,7 +103,6 @@ class DatabaseConstraintException extends Exception
         // Create new exception with user-friendly message, preserving original exception.
         // HTTP status code defaults to 409 Conflict for constraint violations.
         return new self($userMessage, (int) $dbException->getCode(), 409, $dbException);
-
     }//end fromDatabaseException()
 
     /**
@@ -178,6 +175,5 @@ class DatabaseConstraintException extends Exception
         // Generic database error fallback.
         // Used when error message doesn't match any known patterns.
         return "There was a database error while saving your {$entityType}. Please try again or contact support if the problem persists.";
-
     }//end parseConstraintError()
 }//end class

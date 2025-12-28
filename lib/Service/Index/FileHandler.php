@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FileHandler
  *
@@ -56,7 +57,6 @@ class FileHandler
         private readonly ChunkMapper $chunkMapper,
         private readonly SearchBackendInterface $searchBackend
     ) {
-
     }//end __construct()
 
     /**
@@ -78,17 +78,17 @@ class FileHandler
     public function indexFileChunks(int $fileId, array $chunks, array $metadata): array
     {
         $this->logger->info(
-                '[FileHandler] Indexing file chunks',
-                [
+            '[FileHandler] Indexing file chunks',
+            [
                     'file_id'     => $fileId,
                     'chunk_count' => count($chunks),
                 ]
-                );
+        );
 
         $documents = [];
         foreach ($chunks as $index => $chunk) {
             $documents[] = [
-                'id'           => $chunk->getUuid() ?? $fileId.'_chunk_'.$index,
+                'id'           => $chunk->getUuid() ?? $fileId . '_chunk_' . $index,
                 'file_id'      => $fileId,
                 'chunk_index'  => $chunk->getChunkIndex(),
                 'total_chunks' => count($chunks),
@@ -120,7 +120,6 @@ class FileHandler
             'indexed'    => $indexedCount,
             'collection' => $collection,
         ];
-
     }//end indexFileChunks()
 
     /**
@@ -135,11 +134,11 @@ class FileHandler
         try {
             // Get document count from search backend (backend handles collection selection).
             $searchResults = $this->searchBackend->search(
-                    [
+                [
                         'q'    => '*:*',
                         'rows' => 0,
                     ]
-                    );
+            );
 
             $documentCount = $searchResults['response']['numFound'] ?? 0;
 
@@ -151,18 +150,17 @@ class FileHandler
             ];
         } catch (Exception $e) {
             $this->logger->error(
-                    '[FileHandler] Failed to get file stats',
-                    [
+                '[FileHandler] Failed to get file stats',
+                [
                         'error' => $e->getMessage(),
                     ]
-                    );
+            );
 
             return [
                 'available' => false,
                 'error'     => $e->getMessage(),
             ];
         }//end try
-
     }//end getFileStats()
 
     /**
@@ -178,14 +176,14 @@ class FileHandler
      *
      * @psalm-return array{success: true, stats: array{processed: 0|1|2, indexed: 0|1|2, failed: int, total_chunks: int, errors: list<non-empty-string>, execution_time_ms: float}}
      */
-    public function processUnindexedChunks(?int $limit=null): array
+    public function processUnindexedChunks(?int $limit = null): array
     {
         $this->logger->info(
-                '[FileHandler] Starting chunk indexing',
-                [
+            '[FileHandler] Starting chunk indexing',
+            [
                     'limit' => $limit,
                 ]
-                );
+        );
 
         $startTime = microtime(true);
         $stats     = [
@@ -240,14 +238,14 @@ class FileHandler
                 }
             } catch (Exception $e) {
                 $stats['failed']++;
-                $stats['errors'][] = "File {$fileId}: ".$e->getMessage();
+                $stats['errors'][] = "File {$fileId}: " . $e->getMessage();
                 $this->logger->error(
-                        '[FileHandler] Failed to process file chunks',
-                        [
+                    '[FileHandler] Failed to process file chunks',
+                    [
                             'file_id' => $fileId,
                             'error'   => $e->getMessage(),
                         ]
-                        );
+                );
             }//end try
         }//end foreach
 
@@ -255,17 +253,16 @@ class FileHandler
         $stats['execution_time_ms'] = $executionTime;
 
         $this->logger->info(
-                '[FileHandler] Chunk indexing complete',
-                [
+            '[FileHandler] Chunk indexing complete',
+            [
                     'stats' => $stats,
                 ]
-                );
+        );
 
         return [
             'success' => true,
             'stats'   => $stats,
         ];
-
     }//end processUnindexedChunks()
 
     /**
@@ -288,7 +285,6 @@ class FileHandler
             'unindexed_chunks'  => $unindexedChunks,
             'vectorized_chunks' => $vectorizedChunks,
         ];
-
     }//end getChunkingStats()
 
     /**
@@ -301,7 +297,7 @@ class FileHandler
      *
      * @return array Indexing results.
      */
-    public function indexFiles(array $fileIds, ?string $collectionName=null): array
+    public function indexFiles(array $fileIds, ?string $collectionName = null): array
     {
         $this->logger->info(
             '[FileHandler] Indexing files',
@@ -326,7 +322,6 @@ class FileHandler
                 'error'   => $e->getMessage(),
             ];
         }//end try
-
     }//end indexFiles()
 
     /**
@@ -356,6 +351,5 @@ class FileHandler
                 'error'   => $e->getMessage(),
             ];
         }//end try
-
     }//end getFileIndexStats()
 }//end class

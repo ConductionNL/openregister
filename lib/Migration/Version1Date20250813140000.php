@@ -66,15 +66,15 @@ class Version1Date20250813140000 extends SimpleMigrationStep
         // Add slug column if it doesn't exist.
         if ($table->hasColumn('slug') === false) {
             $table->addColumn(
-                    'slug',
-                    'string',
-                    [
+                'slug',
+                'string',
+                [
                         'notnull' => false,
                         'length'  => 255,
                         'default' => null,
                         'comment' => 'URL-friendly identifier for the object, unique within register+schema combination',
                     ]
-                    );
+            );
             $output->info(message: 'Added slug column to openregister_objects table');
         }
 
@@ -83,6 +83,5 @@ class Version1Date20250813140000 extends SimpleMigrationStep
         $output->info(message: 'Skipping complex index creation to avoid MySQL key length issues');
 
         return $schema;
-
     }//end changeSchema()
 }//end class

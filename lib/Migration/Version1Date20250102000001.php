@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Organisation Active Field Migration
  *
@@ -34,7 +35,6 @@ use OCP\IDBConnection;
  */
 class Version1Date20250102000001 extends SimpleMigrationStep
 {
-
     /**
      * Database connection
      *
@@ -50,7 +50,6 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     public function __construct(IDBConnection $connection)
     {
         $this->connection = $connection;
-
     }//end __construct()
 
     /**
@@ -92,20 +91,19 @@ class Version1Date20250102000001 extends SimpleMigrationStep
             // Add active field (boolean).
             if ($table->hasColumn('active') === false) {
                 $table->addColumn(
-                        'active',
-                        Types::BOOLEAN,
-                        [
+                    'active',
+                    Types::BOOLEAN,
+                    [
                             'notnull' => true,
                             'default' => true,
                             'comment' => 'Whether the organisation is active',
                         ]
-                        );
+                );
                 $output->info(message: 'Added active column to organisations table');
             }
         }
 
         return $schema;
-
     }//end changeSchema()
 
     /**
@@ -123,6 +121,5 @@ class Version1Date20250102000001 extends SimpleMigrationStep
     {
         // All organisations should be active by default (already set by column default).
         $output->info(message: 'All existing organisations are now active by default');
-
     }//end postSchemaChange()
 }//end class

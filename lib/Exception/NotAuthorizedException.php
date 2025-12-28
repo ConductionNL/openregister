@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister NotAuthorizedException
  *
@@ -54,12 +55,11 @@ class NotAuthorizedException extends Exception
      * @return void
      */
     public function __construct(
-        string $message='You are not authorized to perform this action',
-        int $code=403,
-        ?Throwable $previous=null
+        string $message = 'You are not authorized to perform this action',
+        int $code = 403,
+        ?Throwable $previous = null
     ) {
         // Call parent constructor to initialize base exception properties.
         parent::__construct($message, $code, $previous);
-
     }//end __construct()
 }//end class

@@ -34,11 +34,14 @@
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-		<!-- SOLR Configuration Section -->
-		<SolrConfiguration />
+	<!-- SOLR Configuration Section -->
+	<SolrConfiguration />
 
-		<!-- LLM Configuration Section -->
-		<LlmConfiguration />
+	<!-- n8n Workflow Configuration Section -->
+	<N8nConfiguration />
+
+	<!-- LLM Configuration Section -->
+	<LlmConfiguration />
 
 		<!-- File Configuration Section -->
 		<FileConfiguration />
@@ -65,6 +68,7 @@ import RbacConfiguration from './sections/RbacConfiguration.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
@@ -87,6 +91,7 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
+		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,

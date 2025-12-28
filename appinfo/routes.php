@@ -158,6 +158,15 @@ return [
         ['name' => 'Settings\ApiTokenSettings#testGitHubToken', 'url' => '/api/settings/api-tokens/test/github', 'verb' => 'POST'],
         ['name' => 'Settings\ApiTokenSettings#testGitLabToken', 'url' => '/api/settings/api-tokens/test/gitlab', 'verb' => 'POST'],
         
+        // n8n workflow integration.
+        ['name' => 'Settings\N8nSettings#getN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'GET'],
+        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'POST'],
+        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'PATCH'],
+        ['name' => 'Settings\N8nSettings#updateN8nSettings', 'url' => '/api/settings/n8n', 'verb' => 'PUT'],
+        ['name' => 'Settings\N8nSettings#testN8nConnection', 'url' => '/api/settings/n8n/test', 'verb' => 'POST'],
+        ['name' => 'Settings\N8nSettings#initializeN8n', 'url' => '/api/settings/n8n/initialize', 'verb' => 'POST'],
+        ['name' => 'Settings\N8nSettings#getWorkflows', 'url' => '/api/settings/n8n/workflows', 'verb' => 'GET'],
+        
         // Statistics endpoint.  
         ['name' => 'settings#getStatistics', 'url' => '/api/settings/statistics', 'verb' => 'GET'],
         

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Register
  *
@@ -69,7 +70,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Register extends Entity implements JsonSerializable
 {
-
     /**
      * Unique identifier for the register
      *
@@ -272,7 +272,6 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
-
     }//end __construct()
 
     /**
@@ -283,7 +282,6 @@ class Register extends Entity implements JsonSerializable
     public function getSchemas(): array
     {
         return ($this->schemas ?? []);
-
     }//end getSchemas()
 
     /**
@@ -309,16 +307,15 @@ class Register extends Entity implements JsonSerializable
 
         // Only keep IDs (int or string).
         $schemas = array_filter(
-                $schemas,
-                function ($item) {
-                    return is_int($item) || is_string($item);
-                }
-                );
+            $schemas,
+            function ($item) {
+                return is_int($item) || is_string($item);
+            }
+        );
 
         parent::setSchemas($schemas);
 
         return $this;
-
     }//end setSchemas()
 
     /**
@@ -340,7 +337,6 @@ class Register extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
 
     /**
@@ -365,7 +361,7 @@ class Register extends Entity implements JsonSerializable
                 $value = null;
             }
 
-            $method = 'set'.ucfirst($key);
+            $method = 'set' . ucfirst($key);
 
             try {
                 $this->$method($value);
@@ -375,7 +371,6 @@ class Register extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
 
     /**
@@ -451,11 +446,11 @@ class Register extends Entity implements JsonSerializable
 
         // Always return schemas as array of IDs (int/string).
         $schemas = array_filter(
-                $this->schemas ?? [],
-                function ($item) {
-                    return is_int($item) || is_string($item);
-                }
-                );
+            $this->schemas ?? [],
+            function ($item) {
+                return is_int($item) || is_string($item);
+            }
+        );
 
         $groups = $this->groups ?? [];
 
@@ -504,7 +499,6 @@ class Register extends Entity implements JsonSerializable
             ],
             'deleted'       => $deleted,
         ];
-
     }//end jsonSerialize()
 
     /**
@@ -530,8 +524,7 @@ class Register extends Entity implements JsonSerializable
         // Final fallback with ID.
         // Suppress redundant property initialization check.
         //
-        return 'Register #'.($this->id ?? 'unknown');
-
+        return 'Register #' . ($this->id ?? 'unknown');
     }//end __toString()
 
     /**
@@ -561,7 +554,6 @@ class Register extends Entity implements JsonSerializable
         }
 
         return false;
-
     }//end isManagedByConfiguration()
 
     /**
@@ -591,7 +583,6 @@ class Register extends Entity implements JsonSerializable
         }
 
         return null;
-
     }//end getManagedByConfiguration()
 
     /**
@@ -602,7 +593,6 @@ class Register extends Entity implements JsonSerializable
     public function getPublished(): ?DateTime
     {
         return $this->published;
-
     }//end getPublished()
 
     /**
@@ -616,7 +606,6 @@ class Register extends Entity implements JsonSerializable
     {
         $this->published = $published;
         $this->markFieldUpdated('published');
-
     }//end setPublished()
 
     /**
@@ -627,7 +616,6 @@ class Register extends Entity implements JsonSerializable
     public function getDepublished(): ?DateTime
     {
         return $this->depublished;
-
     }//end getDepublished()
 
     /**
@@ -641,7 +629,6 @@ class Register extends Entity implements JsonSerializable
     {
         $this->depublished = $depublished;
         $this->markFieldUpdated('depublished');
-
     }//end setDepublished()
 
     // ==================================================================================
@@ -656,7 +643,6 @@ class Register extends Entity implements JsonSerializable
     public function getConfiguration(): array
     {
         return ($this->configuration ?? []);
-
     }//end getConfiguration()
 
     /**
@@ -672,7 +658,6 @@ class Register extends Entity implements JsonSerializable
         $this->markFieldUpdated('configuration');
 
         return $this;
-
     }//end setConfiguration()
 
     /**
@@ -689,7 +674,6 @@ class Register extends Entity implements JsonSerializable
         $schemaConfig  = $schemaConfigs[$schemaId] ?? [];
 
         return ($schemaConfig['magicMapping'] ?? false) === true;
-
     }//end isMagicMappingEnabledForSchema()
 
     /**
@@ -706,7 +690,6 @@ class Register extends Entity implements JsonSerializable
         $schemaConfig  = $schemaConfigs[$schemaId] ?? [];
 
         return ($schemaConfig['autoCreateTable'] ?? false) === true;
-
     }//end isAutoCreateTableEnabledForSchema()
 
     /**
@@ -718,7 +701,7 @@ class Register extends Entity implements JsonSerializable
      *
      * @return static Returns self for method chaining.
      */
-    public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable=true, ?string $comment=null): static
+    public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static
     {
         $config = $this->getConfiguration();
 
@@ -738,7 +721,6 @@ class Register extends Entity implements JsonSerializable
         $this->setConfiguration($config);
 
         return $this;
-
     }//end enableMagicMappingForSchema()
 
     /**
@@ -758,7 +740,6 @@ class Register extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end disableMagicMappingForSchema()
 
     /**
@@ -781,6 +762,5 @@ class Register extends Entity implements JsonSerializable
         }
 
         return $schemaIds;
-
     }//end getSchemasWithMagicMapping()
 }//end class

@@ -176,7 +176,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         );
 
         return false;
-
     }//end shouldUseMagicMapper()
 
     /**
@@ -193,8 +192,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     private function resolveRegisterAndSchema(
         ObjectEntity $entity,
-        ?Register $register=null,
-        ?Schema $schema=null
+        ?Register $register = null,
+        ?Schema $schema = null
     ): array {
         // If register not provided, try to get it from entity.
         if ($register === null && $entity->getRegister() !== null) {
@@ -221,7 +220,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         return [$register, $schema];
-
     }//end resolveRegisterAndSchema()
 
     // ==================================================================================
@@ -248,11 +246,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function find(
         string|int $identifier,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        bool $includeDeleted=false,
-        bool $rbac=true,
-        bool $multitenancy=true
+        ?Register $register = null,
+        ?Schema $schema = null,
+        bool $includeDeleted = false,
+        bool $rbac = true,
+        bool $multitenancy = true
     ): ObjectEntity {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing find() to MagicMapper');
@@ -261,7 +259,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         $this->logger->debug('[UnifiedObjectMapper] Routing find() to ObjectEntityMapper');
         return $this->objectEntityMapper->find($identifier, $register, $schema, $includeDeleted, $rbac, $multitenancy);
-
     }//end find()
 
     /**
@@ -288,19 +285,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @psalm-return list<ObjectEntity>
      */
     public function findAll(
-        ?int $limit=null,
-        ?int $offset=null,
-        ?array $filters=null,
-        ?array $searchConditions=null,
-        ?array $searchParams=null,
-        array $sort=[],
-        ?string $search=null,
-        ?array $ids=null,
-        ?string $uses=null,
-        bool $includeDeleted=false,
-        ?Register $register=null,
-        ?Schema $schema=null,
-        ?bool $published=null
+        ?int $limit = null,
+        ?int $offset = null,
+        ?array $filters = null,
+        ?array $searchConditions = null,
+        ?array $searchParams = null,
+        array $sort = [],
+        ?string $search = null,
+        ?array $ids = null,
+        ?string $uses = null,
+        bool $includeDeleted = false,
+        ?Register $register = null,
+        ?Schema $schema = null,
+        ?bool $published = null
     ): array {
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug('[UnifiedObjectMapper] Routing findAll() to MagicMapper');
@@ -331,7 +328,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             schema: $schema,
             published: $published
         );
-
     }//end findAll()
 
     /**
@@ -350,7 +346,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing findMultiple() to ObjectEntityMapper (cross-schema operation)');
         return $this->objectEntityMapper->findMultiple($ids);
-
     }//end findMultiple()
 
     /**
@@ -368,7 +363,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing findBySchema() to ObjectEntityMapper (cross-register operation)');
         return $this->objectEntityMapper->findBySchema($schemaId);
-
     }//end findBySchema()
 
     /**
@@ -397,7 +391,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         $this->logger->debug('[UnifiedObjectMapper] Routing insert() to ObjectEntityMapper');
         return $this->objectEntityMapper->insert($entity);
-
     }//end insert()
 
     /**
@@ -426,7 +419,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         $this->logger->debug('[UnifiedObjectMapper] Routing update() to ObjectEntityMapper');
         return $this->objectEntityMapper->update(entity: $entity);
-
     }//end update()
 
     /**
@@ -455,7 +447,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         $this->logger->debug('[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper');
         return $this->objectEntityMapper->delete(entity: $entity);
-
     }//end delete()
 
     // ==================================================================================
@@ -477,11 +468,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @psalm-return array{locked: mixed, uuid: string}
      */
-    public function lockObject(string $uuid, ?int $lockDuration=null): array
+    public function lockObject(string $uuid, ?int $lockDuration = null): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing lockObject() to ObjectEntityMapper');
         return $this->objectEntityMapper->lockObject(uuid: $uuid, duration: $lockDuration);
-
     }//end lockObject()
 
     /**
@@ -497,7 +487,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing unlockObject() to ObjectEntityMapper');
         return $this->objectEntityMapper->unlockObject($uuid);
-
     }//end unlockObject()
 
     // ==================================================================================
@@ -515,11 +504,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array Array of processed UUIDs.
      */
-    public function ultraFastBulkSave(array $insertObjects=[], array $updateObjects=[]): array
+    public function ultraFastBulkSave(array $insertObjects = [], array $updateObjects = []): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing ultraFastBulkSave() to ObjectEntityMapper');
         return $this->objectEntityMapper->ultraFastBulkSave(insertObjects: $insertObjects, updateObjects: $updateObjects);
-
     }//end ultraFastBulkSave()
 
     /**
@@ -530,11 +518,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array Array of UUIDs of deleted objects.
      */
-    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
+    public function deleteObjects(array $uuids = [], bool $hardDelete = false): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing deleteObjects() to ObjectEntityMapper');
         return $this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
-
     }//end deleteObjects()
 
     /**
@@ -545,11 +532,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array Array of UUIDs of published objects.
      */
-    public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
+    public function publishObjects(array $uuids = [], DateTime|bool $datetime = true): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing publishObjects() to ObjectEntityMapper');
         return $this->objectEntityMapper->publishObjects(uuids: $uuids, datetime: $datetime);
-
     }//end publishObjects()
 
     /**
@@ -560,11 +546,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array Array of UUIDs of depublished objects.
      */
-    public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array
+    public function depublishObjects(array $uuids = [], DateTime|bool $datetime = true): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing depublishObjects() to ObjectEntityMapper');
         return $this->objectEntityMapper->depublishObjects(uuids: $uuids, datetime: $datetime);
-
     }//end depublishObjects()
 
     // ==================================================================================
@@ -584,13 +569,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return array Statistics including total, size, invalid, deleted, locked, published counts.
      */
     public function getStatistics(
-        int|array|null $registerId=null,
-        int|array|null $schemaId=null,
-        array $exclude=[]
+        int|array|null $registerId = null,
+        int|array|null $schemaId = null,
+        array $exclude = []
     ): array {
         $this->logger->debug('[UnifiedObjectMapper] Routing getStatistics() to ObjectEntityMapper');
         return $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
-
     }//end getStatistics()
 
     /**
@@ -601,11 +585,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getRegisterChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing getRegisterChartData() to ObjectEntityMapper');
         return $this->objectEntityMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
-
     }//end getRegisterChartData()
 
     /**
@@ -616,11 +599,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array Chart data with 'labels' and 'series' keys.
      */
-    public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
+    public function getSchemaChartData(?int $registerId = null, ?int $schemaId = null): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing getSchemaChartData() to ObjectEntityMapper');
         return $this->objectEntityMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
-
     }//end getSchemaChartData()
 
     // ==================================================================================
@@ -636,11 +618,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
-    public function getSimpleFacets(array $query=[]): array
+    public function getSimpleFacets(array $query = []): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing getSimpleFacets() to ObjectEntityMapper');
         return $this->objectEntityMapper->getSimpleFacets($query);
-
     }//end getSimpleFacets()
 
     /**
@@ -652,11 +633,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      */
-    public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
+    public function getFacetableFieldsFromSchemas(array $baseQuery = []): array
     {
         $this->logger->debug('[UnifiedObjectMapper] Routing getFacetableFieldsFromSchemas() to ObjectEntityMapper');
         return $this->objectEntityMapper->getFacetableFieldsFromSchemas($baseQuery);
-
     }//end getFacetableFieldsFromSchemas()
 
     // ==================================================================================
@@ -678,12 +658,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @psalm-return list<ObjectEntity>|int
      */
     public function searchObjects(
-        array $query=[],
-        ?string $activeOrganisationUuid=null,
-        bool $rbac=true,
-        bool $multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null
+        array $query = [],
+        ?string $activeOrganisationUuid = null,
+        bool $rbac = true,
+        bool $multitenancy = true,
+        ?array $ids = null,
+        ?string $uses = null
     ): array|int {
         $this->logger->debug('[UnifiedObjectMapper] searchObjects() - implementing cross-table search');
 
@@ -750,7 +730,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         );
 
         return $allResults;
-
     }//end searchObjects()
 
     /**
@@ -766,16 +745,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return int Count of objects.
      */
     public function countSearchObjects(
-        array $query=[],
-        ?string $activeOrganisationUuid=null,
-        bool $rbac=true,
-        bool $multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null
+        array $query = [],
+        ?string $activeOrganisationUuid = null,
+        bool $rbac = true,
+        bool $multitenancy = true,
+        ?array $ids = null,
+        ?string $uses = null
     ): int {
         $this->logger->debug('[UnifiedObjectMapper] Routing countSearchObjects() to ObjectEntityMapper');
         return $this->objectEntityMapper->countSearchObjects(query: $query, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
-
     }//end countSearchObjects()
 
     /**
@@ -788,13 +766,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @return int Count of objects.
      */
     public function countAll(
-        ?array $filters=null,
-        ?Schema $schema=null,
-        ?Register $register=null
+        ?array $filters = null,
+        ?Schema $schema = null,
+        ?Register $register = null
     ): int {
         $this->logger->debug('[UnifiedObjectMapper] Routing countAll() to ObjectEntityMapper');
         return $this->objectEntityMapper->countAll(filters: $filters, schema: $schema, register: $register);
-
     }//end countAll()
 
     // ==================================================================================
@@ -809,7 +786,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function getQueryBuilder(): IQueryBuilder
     {
         return $this->objectEntityMapper->getQueryBuilder();
-
     }//end getQueryBuilder()
 
     /**
@@ -820,7 +796,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function getMaxAllowedPacketSize(): int
     {
         return $this->objectEntityMapper->getMaxAllowedPacketSize();
-
     }//end getMaxAllowedPacketSize()
 
     // ==================================================================================
@@ -865,7 +840,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         return $magicSchemas;
-
     }//end identifyMagicMappedSchemas()
 
     /**
@@ -915,7 +889,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         $this->logger->debug('[UnifiedObjectMapper] Searching blob storage with exclusions');
         return $this->objectEntityMapper->searchObjects(query: $modifiedQuery, _activeOrganisationUuid: $activeOrganisationUuid, _rbac: $rbac, _multitenancy: $multitenancy, ids: $ids, uses: $uses);
-
     }//end searchBlobStorage()
 
     /**
@@ -985,7 +958,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }//end foreach
 
         return $results;
-
     }//end searchMagicTables()
 
     /**
@@ -1018,7 +990,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         return false;
-
     }//end allSchemasUseMagicMapping()
 
     /**
@@ -1044,7 +1015,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         return $unique;
-
     }//end deduplicateResults()
 
     /**
@@ -1083,7 +1053,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         );
 
         return $results;
-
     }//end applySorting()
 
     /**
@@ -1107,7 +1076,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         }
 
         return $results;
-
     }//end applyPagination()
 
     /**
@@ -1121,7 +1089,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     private function getObjectField(ObjectEntity $object, string $fieldName): mixed
     {
         // Try getter method first (e.g., getCreated, getUpdated).
-        $getter = 'get'.ucfirst($fieldName);
+        $getter = 'get' . ucfirst($fieldName);
         if (method_exists($object, $getter) === true) {
             return $object->$getter();
         }
@@ -1129,6 +1097,5 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Fall back to object data.
         $data = $object->getObject();
         return $data[$fieldName] ?? null;
-
     }//end getObjectField()
 }//end class

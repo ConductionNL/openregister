@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Vectorization Strategy Interface
  *

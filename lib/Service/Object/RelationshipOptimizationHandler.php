@@ -47,7 +47,6 @@ class RelationshipOptimizationHandler
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -66,7 +65,6 @@ class RelationshipOptimizationHandler
     {
         // Placeholder - will be filled with actual implementation.
         return [];
-
     }//end extractAllRelationshipIds()
 
     /**
@@ -84,7 +82,6 @@ class RelationshipOptimizationHandler
     {
         // Placeholder - will be filled with actual implementation.
         return [];
-
     }//end bulkLoadRelationshipsBatched()
 
     /**
@@ -102,7 +99,6 @@ class RelationshipOptimizationHandler
     {
         // Placeholder - will be filled with actual implementation.
         return [];
-
     }//end bulkLoadRelationshipsParallel()
 
     /**
@@ -120,7 +116,6 @@ class RelationshipOptimizationHandler
     {
         // Placeholder - will be filled with actual implementation.
         return [];
-
     }//end loadRelationshipChunkOptimized()
 
     /**
@@ -136,6 +131,5 @@ class RelationshipOptimizationHandler
     {
         // Placeholder - will be filled with actual implementation.
         return null;
-
     }//end createLightweightObjectEntity()
 }//end class

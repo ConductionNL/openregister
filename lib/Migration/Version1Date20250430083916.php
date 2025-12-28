@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Migration to add and modify columns in various tables and drop unused tables.
  *
@@ -17,7 +18,6 @@
  *
  * @link https://OpenRegister.app
  */
-
 
 declare(strict_types=1);
 
@@ -59,13 +59,13 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         // Add the authorization column if it doesn't exist.
         if ($table->hasColumn('icon') === false) {
             $table->addColumn(
-                    'icon',
-                    Types::STRING,
-                    [
+                'icon',
+                Types::STRING,
+                [
                         'notnull' => false,
                         'length'  => 255,
                     ]
-                    );
+            );
         }
 
         // Update the openregister_configurations table.
@@ -74,12 +74,12 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         // Add the authorization column if it doesn't exist.
         if ($table->hasColumn('size') === false) {
             $table->addColumn(
-                    'size',
-                    Types::INTEGER,
-                    [
+                'size',
+                Types::INTEGER,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         if ($table->hasColumn('published') === false) {
@@ -96,12 +96,12 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         // Add the authorization column if it doesn't exist.
         if ($table->hasColumn('size') === false) {
             $table->addColumn(
-                    'size',
-                    Types::INTEGER,
-                    [
+                'size',
+                Types::INTEGER,
+                [
                         'notnull' => false,
                     ]
-                    );
+            );
         }
 
         // Drop the files table (deprecated).
@@ -115,6 +115,5 @@ class Version1Date20250430083916 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 }//end class

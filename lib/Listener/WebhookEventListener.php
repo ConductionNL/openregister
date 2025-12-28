@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Webhook Event Listener
  *
@@ -68,7 +69,6 @@ use Psr\Log\LoggerInterface;
  */
 class WebhookEventListener implements IEventListener
 {
-
     /**
      * Webhook service
      *
@@ -95,7 +95,6 @@ class WebhookEventListener implements IEventListener
     ) {
         $this->webhookService = $webhookService;
         $this->logger         = $logger;
-
     }//end __construct()
 
     /**
@@ -112,24 +111,23 @@ class WebhookEventListener implements IEventListener
 
         if ($payload === null) {
             $this->logger->debug(
-                    'Could not extract payload from event',
-                    [
+                'Could not extract payload from event',
+                [
                         'event' => $eventClass,
                     ]
-                    );
+            );
             return;
         }
 
         $this->logger->debug(
-                'Processing event for webhooks',
-                [
+            'Processing event for webhooks',
+            [
                     'event' => $eventClass,
                 ]
-                );
+        );
 
         // Dispatch to webhook service.
         $this->webhookService->dispatchEvent(_event: $event, eventName: $eventClass, payload: $payload);
-
     }//end handle()
 
     /**
@@ -333,7 +331,8 @@ class WebhookEventListener implements IEventListener
         }
 
         // Configuration events.
-        if ($event instanceof ConfigurationCreatedEvent
+        if (
+            $event instanceof ConfigurationCreatedEvent
             || $event instanceof ConfigurationUpdatedEvent
             || $event instanceof ConfigurationDeletedEvent
         ) {
@@ -400,6 +399,5 @@ class WebhookEventListener implements IEventListener
         }//end if
 
         return null;
-
     }//end extractPayload()
 }//end class

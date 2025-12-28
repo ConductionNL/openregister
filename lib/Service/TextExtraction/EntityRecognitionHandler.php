@@ -49,8 +49,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class EntityRecognitionHandler
 {
-
-
     /**
      * Entity type constants.
      */
@@ -99,7 +97,6 @@ class EntityRecognitionHandler
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
-
     }//end __construct()
 
     /**
@@ -121,15 +118,15 @@ class EntityRecognitionHandler
      *
      * @psalm-return array{chunks_processed: int<0, max>, entities_found: int, relations_created: int}
      */
-    public function processSourceChunks(string $sourceType, int $sourceId, array $options=[]): array
+    public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array
     {
         $this->logger->info(
-                message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
-                context: [
+            message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
+            context: [
                     'source_type' => $sourceType,
                     'source_id'   => $sourceId,
                 ]
-                );
+        );
 
         // Get all chunks for this source (excluding metadata chunks).
         $chunks = $this->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
@@ -152,34 +149,33 @@ class EntityRecognitionHandler
                 $totalRelations += $result['relations_created'];
             } catch (Exception $e) {
                 $this->logger->error(
-                        message: '[EntityRecognitionHandler] Failed to process chunk',
-                        context: [
+                    message: '[EntityRecognitionHandler] Failed to process chunk',
+                    context: [
                             'chunk_id'    => $chunk->getId(),
                             'source_type' => $sourceType,
                             'source_id'   => $sourceId,
                             'error'       => $e->getMessage(),
                         ]
-                        );
+                );
             }//end try
         }//end foreach
 
         $this->logger->info(
-                message: '[EntityRecognitionHandler] Source processing complete',
-                context: [
+            message: '[EntityRecognitionHandler] Source processing complete',
+            context: [
                     'source_type'       => $sourceType,
                     'source_id'         => $sourceId,
                     'chunks_processed'  => $chunksProcessed,
                     'entities_found'    => $totalEntities,
                     'relations_created' => $totalRelations,
                 ]
-                );
+        );
 
         return [
             'chunks_processed'  => $chunksProcessed,
             'entities_found'    => $totalEntities,
             'relations_created' => $totalRelations,
         ];
-
     }//end processSourceChunks()
 
     /**
@@ -198,16 +194,16 @@ class EntityRecognitionHandler
      *
      * @psalm-return array{entities_found: int<0, max>, relations_created: int<0, max>, entities: list<array{confidence: float, type: string, value: string}>}
      */
-    public function extractFromChunk(Chunk $chunk, array $options=[]): array
+    public function extractFromChunk(Chunk $chunk, array $options = []): array
     {
         $this->logger->debug(
-                message: '[EntityRecognitionHandler] Extracting entities from chunk',
-                context: [
+            message: '[EntityRecognitionHandler] Extracting entities from chunk',
+            context: [
                     'chunk_id'    => $chunk->getId(),
                     'source_type' => $chunk->getSourceType(),
                     'source_id'   => $chunk->getSourceId(),
                 ]
-                );
+        );
 
         $method      = $options['method'] ?? self::METHOD_HYBRID;
         $entityTypes = $options['entity_types'] ?? null;
@@ -269,7 +265,7 @@ class EntityRecognitionHandler
                 // Set source references based on chunk source type.
                 if ($chunk->getSourceType() === 'file') {
                     $relation->setFileId($chunk->getSourceId());
-                } else if ($chunk->getSourceType() === 'object') {
+                } elseif ($chunk->getSourceType() === 'object') {
                     $relation->setObjectId($chunk->getSourceId());
                 }
 
@@ -284,14 +280,14 @@ class EntityRecognitionHandler
                 ];
             } catch (Exception $e) {
                 $this->logger->error(
-                        message: '[EntityRecognitionHandler] Failed to store entity',
-                        context: [
+                    message: '[EntityRecognitionHandler] Failed to store entity',
+                    context: [
                             'chunk_id' => $chunk->getId(),
                             'type'     => $detected['type'] ?? 'unknown',
                             'value'    => substr($detected['value'] ?? '', 0, 50),
                             'error'    => $e->getMessage(),
                         ]
-                        );
+                );
             }//end try
         }//end foreach
 
@@ -300,7 +296,6 @@ class EntityRecognitionHandler
             'relations_created' => $relationsCreated,
             'entities'          => $storedEntities,
         ];
-
     }//end extractFromChunk()
 
     /**
@@ -329,7 +324,6 @@ class EntityRecognitionHandler
             self::METHOD_HYBRID => $this->detectWithHybrid(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold),
             default => throw new Exception("Unknown detection method: {$method}")
         };
-
     }//end detectEntities()
 
     /**
@@ -402,7 +396,6 @@ class EntityRecognitionHandler
             $entities,
             fn($e) => $e['confidence'] >= $confidenceThreshold
         );
-
     }//end detectWithRegex()
 
     /**
@@ -428,7 +421,6 @@ class EntityRecognitionHandler
         $this->logger->debug(message: '[EntityRecognitionHandler] Presidio not yet implemented, using regex fallback');
 
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
-
     }//end detectWithPresidio()
 
     /**
@@ -454,7 +446,6 @@ class EntityRecognitionHandler
         $this->logger->debug(message: '[EntityRecognitionHandler] LLM extraction not yet implemented, using regex fallback');
 
         return $this->detectWithRegex(text: $text, entityTypes: $entityTypes, confidenceThreshold: $confidenceThreshold);
-
     }//end detectWithLLM()
 
     /**
@@ -481,7 +472,6 @@ class EntityRecognitionHandler
         // TODO: Add Presidio validation for higher confidence.
         // TODO: Add LLM validation for ambiguous cases.
         return $regexEntities;
-
     }//end detectWithHybrid()
 
     /**
@@ -533,7 +523,6 @@ class EntityRecognitionHandler
 
             return $this->entityMapper->insert($entity);
         }//end try
-
     }//end findOrCreateEntity()
 
     /**
@@ -553,7 +542,6 @@ class EntityRecognitionHandler
             self::ENTITY_TYPE_DATE => self::CATEGORY_TEMPORAL_DATA,
             default => self::CATEGORY_CONTEXTUAL_DATA
         };
-
     }//end getCategoryForType()
 
     /**
@@ -572,6 +560,5 @@ class EntityRecognitionHandler
         $end   = min(strlen($text), $positionEnd + $window);
 
         return substr($text, $start, $end - $start);
-
     }//end extractContext()
 }//end class

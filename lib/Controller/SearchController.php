@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class SearchController
  *
@@ -45,7 +46,6 @@ use OCA\OpenRegister\Service\IndexService;
  */
 class SearchController extends Controller
 {
-
     /**
      * The SOLR search service
      *
@@ -77,7 +77,6 @@ class SearchController extends Controller
 
         // Store index service for search operations.
         $this->indexService = $indexService;
-
     }//end __construct()
 
     /**
@@ -147,7 +146,6 @@ class SearchController extends Controller
                 'facets'  => $results['facets'] ?? [],
             ]
         );
-
     }//end search()
 
     /**
@@ -196,11 +194,11 @@ class SearchController extends Controller
 
             // Add wildcards for partial matching if not already present.
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
-                $lowerTerm = '*'.$lowerTerm;
+                $lowerTerm = '*' . $lowerTerm;
             }
 
             if (str_ends_with($lowerTerm, '*') === false && str_ends_with($lowerTerm, '%') === false) {
-                $lowerTerm = $lowerTerm.'*';
+                $lowerTerm = $lowerTerm . '*';
             }
 
             $processedTerms[] = $lowerTerm;
@@ -208,6 +206,5 @@ class SearchController extends Controller
 
         // Join multiple terms with OR logic (any term can match).
         return implode(' OR ', $processedTerms);
-
     }//end processSearchQuery()
 }//end class

@@ -65,7 +65,6 @@ class SolrOperationsController extends Controller
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
-
     }//end __construct()
 
     /**
@@ -90,7 +89,7 @@ class SolrOperationsController extends Controller
                     'user_id'    => $this->userId ?? 'unknown',
                     'request_id' => $this->request->getId() ?? 'unknown',
                 ]
-                );
+            );
 
             // Get SOLR settings.
             $solrSettings = $this->settingsService->getSolrSettings();
@@ -111,7 +110,7 @@ class SolrOperationsController extends Controller
                     'port'            => $solrSettings['port'] ?? 'not_set',
                     'has_credentials' => empty($solrSettings['username']) === false && empty($solrSettings['password']) === false,
                 ]
-                );
+            );
 
             // Create SolrSetup using IndexService for authenticated HTTP client.
             $guzzleSolrService = $this->container->get(IndexService::class);
@@ -137,10 +136,10 @@ class SolrOperationsController extends Controller
                         'duration'        => $setupProgress['completed_at'] ?? 'unknown',
                         'infrastructure'  => $infrastructureCreated,
                     ]
-                        );
+                );
 
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'        => true,
                             'message'        => 'SOLR setup completed successfully',
                             'timestamp'      => date('Y-m-d H:i:s'),
@@ -160,7 +159,7 @@ class SolrOperationsController extends Controller
                                 'Search functionality is ready for use',
                             ],
                         ]
-                        );
+                );
             } else {
                 // Get detailed error information and setup progress from SolrSetup.
                 $errorDetails  = $setup->getLastErrorDetails();
@@ -213,7 +212,7 @@ class SolrOperationsController extends Controller
                             ],
                         ],
                         statusCode: 422
-                        );
+                    );
                 } else {
                     // Fallback to generic error if no detailed error information is available.
                     $lastError = error_get_last();
@@ -231,7 +230,7 @@ class SolrOperationsController extends Controller
                     }
 
                     return new JSONResponse(
-                    data: [
+                        data: [
                         'success'               => false,
                         'message'               => 'SOLR setup failed',
                         'timestamp'             => date('Y-m-d H:i:s'),
@@ -250,8 +249,8 @@ class SolrOperationsController extends Controller
                             'Verify SOLR server connectivity',
                             'Check SOLR configuration',
                         ],
-                    ],
-                    statusCode: 422
+                        ],
+                        statusCode: 422
                     );
                 }//end if
             }//end if
@@ -271,7 +270,7 @@ class SolrOperationsController extends Controller
                     'exception_line'    => $e->getLine(),
                     'trace'             => $e->getTraceAsString(),
                 ]
-                );
+            );
 
             // Try to get detailed error information from SolrSetup if available.
             $detailedError = null;
@@ -295,14 +294,14 @@ class SolrOperationsController extends Controller
                         context: [
                             'error' => $progressException->getMessage(),
                         ]
-                        );
+                    );
                 }//end try
             }//end if
 
             return new JSONResponse(
                 data: [
                     'success'   => false,
-                    'message'   => 'SOLR setup failed: '.$e->getMessage(),
+                    'message'   => 'SOLR setup failed: ' . $e->getMessage(),
                     'timestamp' => date('Y-m-d H:i:s'),
                     'error'     => [
                         'type'           => get_class($e),
@@ -313,9 +312,8 @@ class SolrOperationsController extends Controller
                     ],
                 ],
                 statusCode: 422
-                );
+            );
         }//end try
-
     }//end setupSolr()
 
     /**
@@ -340,15 +338,14 @@ class SolrOperationsController extends Controller
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success' => false,
-                        'message' => 'Connection test failed: '.$e->getMessage(),
+                        'message' => 'Connection test failed: ' . $e->getMessage(),
                         'details' => ['exception' => $e->getMessage()],
                     ],
-                    statusCode: 422
-                );
+                statusCode: 422
+            );
         }
-
     }//end testSolrConnection()
 
     /**
@@ -394,18 +391,18 @@ class SolrOperationsController extends Controller
             // Validate mode parameter.
             if (in_array($mode, ['serial', 'parallel', 'hyper'], true) === false) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'error' => 'Invalid mode parameter. Must be "serial", "parallel", or "hyper"',
                         ],
-                        statusCode: 400
-                    );
+                    statusCode: 400
+                );
             }
 
             // Debug logging for schema IDs.
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->info(
-                    message: '🔥 WARMUP: Received warmup request',
-                    context: [
+                message: '🔥 WARMUP: Received warmup request',
+                context: [
                         'maxObjects'      => $maxObjects,
                         'mode'            => $mode,
                         'batchSize'       => $batchSize,
@@ -413,7 +410,7 @@ class SolrOperationsController extends Controller
                         'schemaIds_type'  => gettype($schemaIds),
                         'schemaIds_count' => $this->getSchemaIdsCount($schemaIds),
                     ]
-                    );
+            );
 
             // Phase 1: Use IndexService directly for SOLR operations.
             $guzzleSolrService = $this->container->get(IndexService::class);
@@ -422,17 +419,16 @@ class SolrOperationsController extends Controller
         } catch (Exception $e) {
             // **ERROR VISIBILITY**: Let exceptions bubble up with full details.
             return new JSONResponse(
-                    data: [
+                data: [
                         'error'           => $e->getMessage(),
                         'exception_class' => get_class($e),
                         'file'            => $e->getFile(),
                         'line'            => $e->getLine(),
                         'trace'           => $e->getTraceAsString(),
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end warmupSolrIndex()
 
     /**
@@ -464,7 +460,7 @@ class SolrOperationsController extends Controller
 
             if ($result['success'] === true) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'   => true,
                             'documents' => $result['documents'],
                             'total'     => $result['total'],
@@ -472,40 +468,39 @@ class SolrOperationsController extends Controller
                             'rows'      => $rows,
                             'query'     => $query,
                         ]
-                        );
+                );
             } else {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'       => false,
                             'error'         => $result['error'],
                             'error_details' => $result['error_details'] ?? null,
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }//end if
         } catch (Exception $e) {
             $logger = \OC::$server->get(\Psr\Log\LoggerInterface::class);
             $logger->error(
-                    message: 'Exception in inspectSolrIndex controller',
-                    context: [
+                message: 'Exception in inspectSolrIndex controller',
+                context: [
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]
-                    );
+            );
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'       => false,
-                        'error'         => 'Controller exception: '.$e->getMessage(),
+                        'error'         => 'Controller exception: ' . $e->getMessage(),
                         'error_details' => [
                             'exception_type' => get_class($e),
                             'trace'          => $e->getTraceAsString(),
                         ],
                     ],
-                    statusCode: 500
-                );
+                statusCode: 500
+            );
         }//end try
-
     }//end inspectSolrIndex()
 
     /**
@@ -530,7 +525,7 @@ class SolrOperationsController extends Controller
 
             if ($guzzleSolrService->isAvailable() === false) {
                 return new JSONResponse(
-                        data: [
+                    data: [
                             'success'    => false,
                             'message'    => 'SOLR is not available or not configured',
                             'prediction' => [
@@ -538,8 +533,8 @@ class SolrOperationsController extends Controller
                                 'prediction_safe' => false,
                             ],
                         ],
-                        statusCode: 422
-                        );
+                    statusCode: 422
+                );
             }
 
             // Use reflection to call the private method (for API access).
@@ -548,26 +543,25 @@ class SolrOperationsController extends Controller
             $prediction = $method->invoke($guzzleSolrService, $maxObjects);
 
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'    => true,
                         'message'    => 'Memory prediction calculated successfully',
                         'prediction' => $prediction,
                     ]
-                    );
+            );
         } catch (Exception $e) {
             return new JSONResponse(
-                    data: [
+                data: [
                         'success'    => false,
-                        'message'    => 'Failed to calculate memory prediction: '.$e->getMessage(),
+                        'message'    => 'Failed to calculate memory prediction: ' . $e->getMessage(),
                         'prediction' => [
                             'error'           => $e->getMessage(),
                             'prediction_safe' => false,
                         ],
                     ],
-                    statusCode: 422
-                );
+                statusCode: 422
+            );
         }//end try
-
     }//end getSolrMemoryPrediction()
 
     /**
@@ -600,13 +594,13 @@ class SolrOperationsController extends Controller
                         $message = 'Failed to commit index';
                     }
                     return new JSONResponse(
-                            data: [
+                        data: [
                                 'success'   => $success,
                                 'operation' => 'commit',
                                 'message'   => $message,
                                 'timestamp' => date('c'),
                             ]
-                            );
+                    );
 
                 case 'optimize':
                     $success = $guzzleSolrService->optimize();
@@ -618,13 +612,13 @@ class SolrOperationsController extends Controller
                         $message = 'Failed to optimize index';
                     }
                     return new JSONResponse(
-                            data: [
+                        data: [
                                 'success'   => $success,
                                 'operation' => 'optimize',
                                 'message'   => $message,
                                 'timestamp' => date('c'),
                             ]
-                            );
+                    );
 
                 case 'clear':
                     $result = $guzzleSolrService->clearIndex();
@@ -633,10 +627,10 @@ class SolrOperationsController extends Controller
                     if ($result['success'] === true) {
                         $message = 'Index cleared successfully';
                     } else {
-                        $message = 'Failed to clear index: '.($result['error'] ?? 'Unknown error');
+                        $message = 'Failed to clear index: ' . ($result['error'] ?? 'Unknown error');
                     }
                     return new JSONResponse(
-                            data: [
+                        data: [
                                 'success'       => $result['success'],
                                 'operation'     => 'clear',
                                 'error'         => $result['error'] ?? null,
@@ -644,20 +638,19 @@ class SolrOperationsController extends Controller
                                 'message'       => $message,
                                 'timestamp'     => date('c'),
                             ]
-                            );
+                    );
 
                 default:
                     return new JSONResponse(
-                            data: [
+                        data: [
                                 'success' => false,
-                                'message' => 'Unknown operation: '.$operation,
+                                'message' => 'Unknown operation: ' . $operation,
                             ],
-                            statusCode: 400
-                        );
+                        statusCode: 400
+                    );
             }//end switch
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end manageSolr()
 }//end class

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister AbstractNodeFolderEventListener
  *
@@ -50,7 +51,6 @@ class AbstractNodeFolderEventListener implements IEventListener
         private readonly ObjectService $objectService,
         private readonly FileService $fileService,
     ) {
-
     }//end __construct()
 
     /**
@@ -78,9 +78,8 @@ class AbstractNodeFolderEventListener implements IEventListener
             $event instanceof NodeDeletedEvent => $this->handleNodeDeleted($event),
             $event instanceof NodeTouchedEvent => $this->handleNodeTouched($event),
             $event instanceof NodeWrittenEvent => $this->handleNodeWritten($event),
-            default => throw new InvalidArgumentException('Unsupported event type: '.get_class($event)),
+            default => throw new InvalidArgumentException('Unsupported event type: ' . get_class($event)),
         };
-
     }//end handle()
 
     /**
