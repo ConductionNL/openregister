@@ -359,3 +359,5 @@ The migration to PostgreSQL with pgvector and pg_trgm provides OpenRegister with
 All search functionality is now native to PostgreSQL, making OpenRegister easier to deploy, maintain, and scale.
 
 
+
+

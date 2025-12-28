@@ -349,3 +349,5 @@ Solr and Elasticsearch are powerful search engines, but PostgreSQL with pgvector
 **We recommend PostgreSQL for new installations.** Legacy search engines are available via profiles for backwards compatibility and migration scenarios.
 
 
+
+

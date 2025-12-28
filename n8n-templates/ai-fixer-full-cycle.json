@@ -7,7 +7,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [20, 400]
+      "position": [
+        20,
+        400
+      ]
     },
     {
       "parameters": {
@@ -15,7 +18,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 */6 * * *"
+              "expression": "*/10 * * * *"
             }
           ]
         }
@@ -24,17 +27,23 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [20, 600]
+      "position": [
+        20,
+        600
+      ]
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    cycle: 0,\n    maxCycles: 10,\n    container: 'master-nextcloud-1',\n    appPath: '/var/www/html/apps-extra/openregister',\n    ollamaUrl: 'http://openregister-ollama:11434',\n    model: 'codellama:7b-instruct',\n    fixesApplied: [],\n    totalFixed: 0,\n    startTime: new Date().toISOString(),\n    initialIssues: 0\n  }\n}];"
+        "jsCode": "return [{\n  json: {\n    cycle: 0,\n    maxCycles: 10,\n    rescueCycle: 0,\n    maxRescueCycles: 5,\n    container: 'master-nextcloud-1',\n    appPath: '/var/www/html/apps-extra/openregister',\n    wslPath: '/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister',\n    ollamaUrl: 'http://openregister-ollama:11434',\n    model: 'codellama:7b-instruct',\n    fixesApplied: [],\n    totalFixed: 0,\n    startTime: Date.now(),\n    initialIssues: 0,\n    phase: 'initial'\n  }\n}];"
       },
       "id": "initialize",
       "name": "Initialize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 500]
+      "position": [
+        240,
+        500
+      ]
     },
     {
       "parameters": {
@@ -44,7 +53,10 @@
       "name": "Count Initial Issues",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [460, 500]
+      "position": [
+        460,
+        500
+      ]
     },
     {
       "parameters": {
@@ -54,7 +66,10 @@
       "name": "Store Initial Count",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 500]
+      "position": [
+        680,
+        500
+      ]
     },
     {
       "parameters": {
@@ -64,7 +79,10 @@
       "name": "Scan PHPCS for Issues",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [900, 500]
+      "position": [
+        900,
+        500
+      ]
     },
     {
       "parameters": {
@@ -74,7 +92,10 @@
       "name": "Parse Fixable Issues",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 500]
+      "position": [
+        1120,
+        500
+      ]
     },
     {
       "parameters": {
@@ -82,7 +103,8 @@
           "boolean": [
             {
               "value1": "={{ $json.hasIssues }}",
-              "value2": true
+              "value2": true,
+              "operation": "equal"
             }
           ]
         }
@@ -91,7 +113,10 @@
       "name": "Has Fixable Issues?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1340, 500]
+      "position": [
+        1340,
+        500
+      ]
     },
     {
       "parameters": {
@@ -101,7 +126,10 @@
       "name": "Prepare Context Read",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 400]
+      "position": [
+        1560,
+        400
+      ]
     },
     {
       "parameters": {
@@ -111,7 +139,10 @@
       "name": "Read File Context",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [1780, 400]
+      "position": [
+        1780,
+        400
+      ]
     },
     {
       "parameters": {
@@ -121,7 +152,10 @@
       "name": "Prepare AI Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2000, 400]
+      "position": [
+        2000,
+        400
+      ]
     },
     {
       "parameters": {
@@ -156,7 +190,10 @@
       "name": "Call Ollama AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [2220, 400]
+      "position": [
+        2220,
+        400
+      ]
     },
     {
       "parameters": {
@@ -166,7 +203,10 @@
       "name": "Validate AI Fix",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2440, 400]
+      "position": [
+        2440,
+        400
+      ]
     },
     {
       "parameters": {
@@ -174,7 +214,8 @@
           "boolean": [
             {
               "value1": "={{ $json.fixValid }}",
-              "value2": true
+              "value2": true,
+              "operation": "equal"
             }
           ]
         }
@@ -183,7 +224,10 @@
       "name": "Is Fix Valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [2660, 400]
+      "position": [
+        2660,
+        400
+      ]
     },
     {
       "parameters": {
@@ -193,7 +237,10 @@
       "name": "Prepare Apply Command",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2880, 300]
+      "position": [
+        2880,
+        300
+      ]
     },
     {
       "parameters": {
@@ -203,17 +250,23 @@
       "name": "Apply AI Fix",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [3100, 300]
+      "position": [
+        3100,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const config = $input.item.json;\nconst fixes = config.fixesApplied || [];\nfixes.push({\n  cycle: config.cycle,\n  file: config.currentIssue.file,\n  line: config.currentIssue.line,\n  message: config.currentIssue.message\n});\n\nconst result = {\n  ...config,\n  fixesApplied: fixes,\n  totalFixed: fixes.length\n};\n\nconsole.log(`✅ Applied fix #${result.totalFixed}`);\nreturn [{ json: result }];"
+        "jsCode": "const config = $input.item.json;\nconst fixes = config.fixesApplied || [];\nfixes.push({\n  cycle: config.cycle,\n  file: config.currentIssue.file,\n  line: config.currentIssue.line,\n  message: config.currentIssue.message\n});\n\nconst result = {\n  ...config,\n  fixesApplied: fixes,\n  totalFixed: fixes.length\n};\n\nconsole.log(`\u2705 Applied fix #${result.totalFixed}`);\nreturn [{ json: result }];"
       },
       "id": "track-fix",
       "name": "Track Fix",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3320, 300]
+      "position": [
+        3320,
+        300
+      ]
     },
     {
       "parameters": {
@@ -231,7 +284,10 @@
       "name": "Continue Cycles?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [3540, 400]
+      "position": [
+        3540,
+        400
+      ]
     },
     {
       "parameters": {
@@ -241,7 +297,10 @@
       "name": "Run PHPQA Verification",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [3760, 600]
+      "position": [
+        3760,
+        600
+      ]
     },
     {
       "parameters": {
@@ -251,7 +310,10 @@
       "name": "Count Final Issues",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [3980, 600]
+      "position": [
+        3980,
+        600
+      ]
     },
     {
       "parameters": {
@@ -261,7 +323,10 @@
       "name": "Calculate Improvement",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4200, 600]
+      "position": [
+        4200,
+        600
+      ]
     },
     {
       "parameters": {
@@ -271,7 +336,10 @@
       "name": "Run Newman Integration Tests",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [4420, 600]
+      "position": [
+        4420,
+        600
+      ]
     },
     {
       "parameters": {
@@ -281,7 +349,10 @@
       "name": "Check Test Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4640, 600]
+      "position": [
+        4640,
+        600
+      ]
     },
     {
       "parameters": {
@@ -289,7 +360,8 @@
           "boolean": [
             {
               "value1": "={{ $json.testsPassed }}",
-              "value2": true
+              "value2": true,
+              "operation": "equal"
             }
           ]
         }
@@ -298,7 +370,10 @@
       "name": "Tests Passed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [4860, 600]
+      "position": [
+        4860,
+        600
+      ]
     },
     {
       "parameters": {
@@ -308,7 +383,10 @@
       "name": "Generate Commit Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5080, 500]
+      "position": [
+        5080,
+        500
+      ]
     },
     {
       "parameters": {
@@ -318,109 +396,279 @@
       "name": "Git Commit Changes (WSL)",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [5300, 500]
+      "position": [
+        5300,
+        500
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const final = $input.item.json;\nconst commitOutput = final.stdout || '';\nconst committed = !commitOutput.includes('nothing to commit');\n\nconst report = {\n  title: '🤖 AI Code Fixer - Complete',\n  cycles: final.cycle,\n  fixesApplied: final.totalFixed,\n  improvement: final.improvement,\n  initialIssues: final.initialIssues,\n  finalIssues: final.finalIssues,\n  testsPassed: final.testsPassed,\n  committed: committed,\n  commitMessage: final.commitMessage,\n  duration: Math.round((new Date() - new Date(final.startTime)) / 1000) + 's',\n  model: final.model\n};\n\nconsole.log('=== FINAL REPORT ===');\nconsole.log(JSON.stringify(report, null, 2));\n\nreturn [{ json: report }];"
+        "jsCode": "const final = $input.item.json;\nconst commitOutput = final.stdout || '';\nconst committed = !commitOutput.includes('nothing to commit');\n\nconst report = {\n  title: '\ud83e\udd16 AI Code Fixer - Complete',\n  cycles: final.cycle,\n  fixesApplied: final.totalFixed,\n  improvement: final.improvement,\n  initialIssues: final.initialIssues,\n  finalIssues: final.finalIssues,\n  testsPassed: final.testsPassed,\n  committed: committed,\n  commitMessage: final.commitMessage,\n  duration: Math.round((new Date() - new Date(final.startTime)) / 1000) + 's',\n  model: final.model\n};\n\nconsole.log('=== FINAL REPORT ===');\nconsole.log(JSON.stringify(report, null, 2));\n\nreturn [{ json: report }];"
       },
       "id": "final-report",
       "name": "Generate Final Report",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5520, 500]
+      "position": [
+        5520,
+        500
+      ]
     }
   ],
   "connections": {
     "Manual Trigger": {
-      "main": [[{"node": "Initialize"}]]
+      "main": [
+        [
+          {
+            "node": "Initialize"
+          }
+        ]
+      ]
     },
     "Schedule Trigger": {
-      "main": [[{"node": "Initialize"}]]
+      "main": [
+        [
+          {
+            "node": "Initialize"
+          }
+        ]
+      ]
     },
     "Initialize": {
-      "main": [[{"node": "Count Initial Issues"}]]
+      "main": [
+        [
+          {
+            "node": "Count Initial Issues"
+          }
+        ]
+      ]
     },
     "Count Initial Issues": {
-      "main": [[{"node": "Store Initial Count"}]]
+      "main": [
+        [
+          {
+            "node": "Store Initial Count"
+          }
+        ]
+      ]
     },
     "Store Initial Count": {
-      "main": [[{"node": "Scan PHPCS for Issues"}]]
+      "main": [
+        [
+          {
+            "node": "Scan PHPCS for Issues"
+          }
+        ]
+      ]
     },
     "Scan PHPCS for Issues": {
-      "main": [[{"node": "Parse Fixable Issues"}]]
+      "main": [
+        [
+          {
+            "node": "Parse Fixable Issues"
+          }
+        ]
+      ]
     },
     "Parse Fixable Issues": {
-      "main": [[{"node": "Has Fixable Issues?"}]]
+      "main": [
+        [
+          {
+            "node": "Has Fixable Issues?"
+          }
+        ]
+      ]
     },
     "Has Fixable Issues?": {
       "main": [
-        [{"node": "Prepare Context Read"}],
-        [{"node": "Continue Cycles?"}]
+        [
+          {
+            "node": "Prepare Context Read"
+          }
+        ],
+        [
+          {
+            "node": "Continue Cycles?"
+          }
+        ]
       ]
     },
     "Prepare Context Read": {
-      "main": [[{"node": "Read File Context"}]]
+      "main": [
+        [
+          {
+            "node": "Read File Context"
+          }
+        ]
+      ]
     },
     "Read File Context": {
-      "main": [[{"node": "Prepare AI Prompt"}]]
+      "main": [
+        [
+          {
+            "node": "Prepare AI Prompt"
+          }
+        ]
+      ]
     },
     "Prepare AI Prompt": {
-      "main": [[{"node": "Call Ollama AI"}]]
+      "main": [
+        [
+          {
+            "node": "Call Ollama AI"
+          }
+        ]
+      ]
     },
     "Call Ollama AI": {
-      "main": [[{"node": "Validate AI Fix"}]]
+      "main": [
+        [
+          {
+            "node": "Validate AI Fix"
+          }
+        ]
+      ]
     },
     "Validate AI Fix": {
-      "main": [[{"node": "Is Fix Valid?"}]]
+      "main": [
+        [
+          {
+            "node": "Is Fix Valid?"
+          }
+        ]
+      ]
     },
     "Is Fix Valid?": {
       "main": [
-        [{"node": "Prepare Apply Command"}],
-        [{"node": "Track Fix"}]
+        [
+          {
+            "node": "Prepare Apply Command"
+          }
+        ],
+        [
+          {
+            "node": "Track Fix"
+          }
+        ]
       ]
     },
     "Prepare Apply Command": {
-      "main": [[{"node": "Apply AI Fix"}]]
+      "main": [
+        [
+          {
+            "node": "Apply AI Fix"
+          }
+        ]
+      ]
     },
     "Apply AI Fix": {
-      "main": [[{"node": "Track Fix"}]]
+      "main": [
+        [
+          {
+            "node": "Track Fix"
+          }
+        ]
+      ]
     },
     "Track Fix": {
-      "main": [[{"node": "Continue Cycles?"}]]
+      "main": [
+        [
+          {
+            "node": "Continue Cycles?"
+          }
+        ]
+      ]
     },
     "Continue Cycles?": {
       "main": [
-        [{"node": "Scan PHPCS for Issues"}],
-        [{"node": "Run PHPQA Verification"}]
+        [
+          {
+            "node": "Scan PHPCS for Issues"
+          }
+        ],
+        [
+          {
+            "node": "Run PHPQA Verification"
+          }
+        ]
       ]
     },
     "Run PHPQA Verification": {
-      "main": [[{"node": "Count Final Issues"}]]
+      "main": [
+        [
+          {
+            "node": "Count Final Issues"
+          }
+        ]
+      ]
     },
     "Count Final Issues": {
-      "main": [[{"node": "Calculate Improvement"}]]
+      "main": [
+        [
+          {
+            "node": "Calculate Improvement"
+          }
+        ]
+      ]
     },
     "Calculate Improvement": {
-      "main": [[{"node": "Run Newman Integration Tests"}]]
+      "main": [
+        [
+          {
+            "node": "Run Newman Integration Tests"
+          }
+        ]
+      ]
     },
     "Run Newman Integration Tests": {
-      "main": [[{"node": "Check Test Results"}]]
+      "main": [
+        [
+          {
+            "node": "Check Test Results"
+          }
+        ]
+      ]
     },
     "Check Test Results": {
-      "main": [[{"node": "Tests Passed?"}]]
+      "main": [
+        [
+          {
+            "node": "Tests Passed?"
+          }
+        ]
+      ]
     },
     "Tests Passed?": {
       "main": [
-        [{"node": "Generate Commit Message"}],
-        [{"node": "Generate Final Report"}]
+        [
+          {
+            "node": "Generate Commit Message"
+          }
+        ],
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
       ]
     },
     "Generate Commit Message": {
-      "main": [[{"node": "Git Commit Changes"}]]
+      "main": [
+        [
+          {
+            "node": "Git Commit Changes (WSL)"
+          }
+        ]
+      ]
     },
-    "Git Commit Changes": {
-      "main": [[{"node": "Generate Final Report"}]]
+    "Git Commit Changes (WSL)": {
+      "main": [
+        [
+          {
+            "node": "Generate Final Report"
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -428,9 +676,5 @@
     "executionTimeout": 7200,
     "saveExecutionProgress": true,
     "saveManualExecutions": true
-  },
-  "versionId": "1",
-  "id": "ai-fixer-full-cycle",
-  "tags": []
+  }
 }
-

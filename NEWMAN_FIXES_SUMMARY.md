@@ -138,3 +138,7 @@ DELETE FROM oc_openregister_schemas WHERE slug LIKE 'person-schema-%';
 4. **Monitoring**: Add logging for constraint violations
 5. **Documentation**: Update test guidelines to emphasize cleanup importance
 
+
+
+
+

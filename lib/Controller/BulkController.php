@@ -351,6 +351,13 @@ class BulkController extends Controller
                 return new JSONResponse(data: ['error' => 'Insufficient permissions. Admin access required.'], statusCode: Http::STATUS_FORBIDDEN);
             }
 
+            // Resolve slugs to numeric IDs.
+            try {
+                $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $this->objectService);
+            } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+            }
+
             // Get request data.
             $data    = $this->request->getParams();
             $objects = $data['objects'] ?? [];
@@ -362,31 +369,25 @@ class BulkController extends Controller
 
             // FLEXIBLE SCHEMA HANDLING: Support both single-schema and mixed-schema operations.
             // Use schema=0 to indicate mixed-schema operations where objects specify their own schemas.
-            $isMixedSchemaOperation = ($schema === '0' || (is_numeric($schema) && (int) $schema === 0));
+            $isMixedSchemaOperation = ($resolved['schema'] === 0);
 
             if ($isMixedSchemaOperation === true) {
-                // Mixed-schema operation - don't set a specific schema context.
-                $this->objectService->setRegister($register);
-                // Don't call setSchema() for mixed operations.
+                // Mixed-schema operation - use resolved register ID.
                 $savedObjects = $this->objectService->saveObjects(
                     objects: $objects,
-                    register: $register,
+                    register: $resolved['register'],
                     schema: null,
-                    // Allow objects to specify their own schemas.
                     _rbac: true,
                     _multitenancy: true,
                     validation: true,
                     events: false
                 );
             } else {
-                // Single-schema operation - traditional behavior.
-                $this->objectService->setRegister($register);
-                $this->objectService->setSchema($schema);
-
+                // Single-schema operation - use resolved numeric IDs.
                 $savedObjects = $this->objectService->saveObjects(
                     objects: $objects,
-                    register: $register,
-                    schema: $schema,
+                    register: $resolved['register'],
+                    schema: $resolved['schema'],
                     _rbac: true,
                     _multitenancy: true,
                     validation: true,

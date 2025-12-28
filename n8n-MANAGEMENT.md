@@ -171,3 +171,5 @@ docker volume inspect openregister_n8n | grep Mountpoint
 # Usually: /var/lib/docker/volumes/openregister_n8n/_data
 ```
 
+
+

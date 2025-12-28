@@ -227,3 +227,5 @@ Your OpenRegister is now configured with:
 **Version**: OpenRegister with PostgreSQL Search
 
 
+
+

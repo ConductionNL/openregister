@@ -616,3 +616,5 @@ PostgreSQL with pgvector and pg_trgm provides a complete, production-ready searc
 By leveraging PostgreSQL's advanced extensions, OpenRegister delivers powerful search capabilities while maintaining a lean, maintainable codebase.
 
 
+
+

@@ -47,3 +47,5 @@ fi
 
 echo "🎉 n8n workflow setup complete!"
 
+
+
